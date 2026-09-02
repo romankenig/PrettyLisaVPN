@@ -1,0 +1,39 @@
+# PrettyLisaVPN
+
+PrettyLisaVPN is a multi-platform commercial VPN service. This repository is a monorepo for the client applications, Backend control plane, infrastructure, and product documentation.
+
+## Repository Layout
+
+```text
+apps/
+  desktop/          Desktop client shared by Windows, macOS, and Linux
+  android/          Android mobile client
+  ios/              iOS client
+  android-tv/       Android TV client
+  chrome-extension/ Browser-only, proxy-based Chrome Extension
+backend/             Python 3.13 and FastAPI modular monolith
+infra/
+  terraform/        Infrastructure provisioning
+  ansible/          Host configuration and deployment automation
+  docker/           Local-development and deployment packaging
+  monitoring/       Metrics, logs, dashboards, and alerting configuration
+  environments/     Environment-specific infrastructure configuration
+docs/                Product, architecture, operations, and security documentation
+```
+
+## Architecture Principles
+
+- The Backend begins as a modular monolith.
+- PostgreSQL is the source of truth for persistent business data; Redis holds ephemeral data.
+- WireGuard is the primary system-wide VPN protocol.
+- The VPN control plane and data plane remain separate. User VPN traffic never passes through the Backend API.
+- The Chrome Extension uses a browser proxy rather than a system-wide WireGuard tunnel.
+- External services are integrated through replaceable provider interfaces.
+- User browsing history, destinations, DNS queries, URLs, and packet contents must not be collected or logged.
+
+See [AGENTS.md](AGENTS.md) for the complete product, architecture, security, and engineering rules.
+
+## Development Status
+
+The repository currently contains the initial monorepo skeleton. Component-specific setup and tooling should be added only as each component is implemented.
+
