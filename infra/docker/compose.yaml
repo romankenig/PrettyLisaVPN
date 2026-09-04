@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: prettylisa
+      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_DB: prettylisa
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prettylisa -d prettylisa"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  backend:
+    build: ../../backend
+    environment:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:local-development-only@postgres:5432/prettylisa
+      VALKEY_URL: redis://valkey:6379/0
+      ENVIRONMENT: development
+    ports:
+      - "127.0.0.1:8000:8000"
+    # No startup dependency gate: liveness stays available during dependency outages.
+volumes:
+  postgres-data:

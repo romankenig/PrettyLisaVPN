@@ -35,5 +35,5 @@ See [AGENTS.md](AGENTS.md) for the complete product, architecture, security, and
 
 ## Development Status
 
-The repository currently contains the initial monorepo skeleton. Component-specific setup and tooling should be added only as each component is implemented.
-
+The backend skeleton provides liveness, dependency readiness, and version endpoints.
+See [backend setup and verification](backend/README.md) for local Python and Docker workflows.
