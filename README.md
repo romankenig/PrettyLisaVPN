@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/prettylisavpn-logo.png" alt="PrettyLisaVPN logo" width="320">
+  <img src="docs/assets/prettylisavpn-logo.svg" alt="PrettyLisaVPN logo" width="320">
 </p>
 
 # PrettyLisaVPN
