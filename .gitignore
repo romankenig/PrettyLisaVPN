@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+keys/
 .venv/
 .tools/
 .uv-cache/
