@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/prettylisavpn-logo.png" alt="PrettyLisaVPN logo" width="320">
+</p>
+
 # PrettyLisaVPN
 
 PrettyLisaVPN is a multi-platform commercial VPN service. This repository is a monorepo for the client applications, Backend control plane, infrastructure, and product documentation.
