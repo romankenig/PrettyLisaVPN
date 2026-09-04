@@ -32,7 +32,10 @@ packages = ["src/prettylisavpn"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-markers = ["integration: requires real PostgreSQL and Valkey (RUN_INTEGRATION_TESTS=1)"]
+markers = [
+    "integration: requires real PostgreSQL and Valkey (RUN_INTEGRATION_TESTS=1)",
+    "docker: requires Docker and a built image (RUN_DOCKER_TESTS=1)",
+]
 
 [tool.ruff]
 target-version = "py313"

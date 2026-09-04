@@ -4,3 +4,10 @@
 !src/
 !src/**
 **/__pycache__/
+**/*.py[cod]
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/.git/
+**/.venv/

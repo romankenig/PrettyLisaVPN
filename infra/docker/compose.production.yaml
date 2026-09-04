@@ -1,0 +1,31 @@
+# Standalone deployment file: do not merge with the development Compose file.
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to a built release image tag or digest}
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      ENVIRONMENT: production
+      APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}
+      APPLICATION_VERSION: ${APPLICATION_VERSION:?Set APPLICATION_VERSION to the release version}
+      POSTGRES_URL: ${POSTGRES_URL:?Set POSTGRES_URL to the external PostgreSQL connection URL}
+      VALKEY_URL: ${VALKEY_URL:?Set VALKEY_URL to the external Valkey connection URL}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEPENDENCY_TIMEOUT_SECONDS: ${DEPENDENCY_TIMEOUT_SECONDS:-2}
+      POSTGRES_POOL_SIZE: ${POSTGRES_POOL_SIZE:-5}
+      POSTGRES_MAX_OVERFLOW: ${POSTGRES_MAX_OVERFLOW:-5}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

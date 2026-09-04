@@ -37,3 +37,13 @@ See [AGENTS.md](AGENTS.md) for the complete product, architecture, security, and
 
 The backend skeleton provides liveness, dependency readiness, and version endpoints.
 See [backend setup and verification](backend/README.md) for local Python and Docker workflows.
+
+Start the Docker development stack from this directory:
+
+```sh
+docker compose -f infra/docker/compose.yaml up --build -d --wait
+```
+
+The [backend Docker guide](backend/README.md#build-and-run-the-image) includes standalone
+`docker build` / `docker run` commands and a production Compose deployment using external
+PostgreSQL and Valkey services.

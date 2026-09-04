@@ -42,3 +42,7 @@ jobs:
       - run: uv run pytest
         env:
           RUN_INTEGRATION_TESTS: "1"
+      - run: docker build -t prettylisavpn-backend:test .
+      - run: uv run pytest -m docker
+        env:
+          RUN_DOCKER_TESTS: "1"
