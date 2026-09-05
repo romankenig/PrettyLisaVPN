@@ -1,53 +1,112 @@
 <p align="center">
-  <img src="docs/assets/prettylisavpn-logo.svg" alt="PrettyLisaVPN logo" width="320">
+  <img src="docs/assets/prettylisavpn-logo.svg" alt="Логотип PrettyLisaVPN" width="320">
 </p>
 
 # PrettyLisaVPN
 
-PrettyLisaVPN is a multi-platform commercial VPN service. This repository is a monorepo for the client applications, Backend control plane, infrastructure, and product documentation.
+PrettyLisaVPN — проект коммерческого VPN-сервиса для Windows, macOS, Linux, Android, iOS, Android TV и Chrome. В этом репозитории вместе хранятся серверная часть, заготовки клиентских приложений, инфраструктура и инструкции для разработчиков и администраторов.
 
-## Repository Layout
+**Сейчас готов технический каркас Backend, а не действующий VPN-сервис.** Он запускается в Docker, подключается к PostgreSQL и Valkey и предоставляет служебные HTTP-методы. Вход по почте, подписки, рекламные сессии, выдача VPN-конфигураций и сами клиенты пока не реализованы. Описание ниже задаёт целевую работу продукта.
+
+## Как будет работать приложение
+
+1. **Вход без пароля.** Пользователь вводит email и подтверждает его одноразовым кодом из письма — OTP. Постоянный пароль создавать и запоминать не нужно.
+2. **Регистрация устройства.** Приложение связывает устройство с аккаунтом. На аккаунте может быть не более пяти активных устройств; контроль ограничения должен выполнять сервер.
+3. **Выбор подключения.** Бесплатному пользователю доступен Autopilot: сервис автоматически подбирает VPN-сервер. Premium позволяет явно выбрать страну. Конкретный алгоритм Autopilot ещё предстоит реализовать.
+4. **Проверка доступа.** Backend проверяет тариф, устройство и возможность начать сессию, затем предоставляет данные для подключения. Управление аккаунтом происходит через HTTPS API.
+5. **Передача трафика.** Нативный клиент устанавливает туннель WireGuard с отдельным VPN-узлом. Посещения сайтов и другой пользовательский трафик идут через этот узел, минуя Backend API.
+6. **Бесплатные сессии.** Сеанс длится 15 минут. После его окончания для запуска следующих 15 минут нужно пройти рекламный сценарий с вознаграждением — rewarded ad. Premium не содержит рекламы и не имеет этого ограничения по времени.
+7. **Оплата Premium.** Покупки и регулярные списания обрабатывает внешний платёжный провайдер, например ЮКасса. Backend должен учитывать подтверждённое состояние подписки; реквизиты банковских карт сервис у себя не хранит.
+
+Расширение Chrome работает только с браузером и использует прокси. Оно не поднимает системный WireGuard-туннель и не защищает трафик остальных приложений. Раздельная маршрутизация по спискам включения и исключения запланирована на будущее и сейчас не реализована.
+
+## Архитектура верхнего уровня
+
+![Целевая архитектура: управление через Backend, трафик через отдельные VPN- и прокси-узлы](docs/assets/architecture.svg)
+
+На схеме показана **целевая архитектура**. Сейчас реализованы каркас API, подключения к хранилищам и конфигурация запуска API за Caddy; бизнес-модули, клиентские подключения и VPN-узлы ещё предстоит создать.
+
+Архитектура разделяет две задачи:
+
+- **Контур управления (control plane)** отвечает за вход, устройства, подписки и разрешение на подключение. Клиенты обращаются к Backend по HTTPS. Caddy принимает публичное соединение, обслуживает TLS-сертификат и передаёт API-запрос внутрь Docker-сети.
+- **Контур передачи трафика (data plane)** обслуживает соединения пользователя с интернетом. Это отдельные WireGuard-узлы для нативных приложений и прокси-узлы для Chrome. Backend не находится на пути VPN-трафика.
+
+| Компонент | Ответственность и причина выбора |
+| --- | --- |
+| Backend: Python 3.13, FastAPI | Модульный монолит: один развёртываемый сервис с разделением логики по предметным областям. Это упрощает старт и эксплуатацию; микросервисы для MVP не нужны. |
+| HTTP-контроллеры | Проверяют входные данные и вызывают прикладные сервисы. Правила тарифов и сессий должны находиться в прикладном/доменном слое, а не в обработчиках HTTP. |
+| PostgreSQL и SQLAlchemy 2.x | Постоянные бизнес-данные: в будущем аккаунты, устройства, подписки. PostgreSQL — источник истины. Бизнес-таблиц пока нет; Alembic нужно добавить вместе с первым изменением схемы. |
+| Valkey, совместимый с Redis | Временные данные: в будущем OTP, ограничения частоты запросов, блокировки, кэш и короткие сессии. Это не замена постоянной базе данных. |
+| Pydantic v2 | Проверка API-схем и конфигурации приложения. Ошибки API должны иметь стабильные машинные коды. |
+| Внешние провайдеры | Доставка email, платежи, реклама. Подключаются через заменяемые интерфейсы для подмены в тестах и смены поставщика без переписывания бизнес-логики. |
+| Docker, Terraform, Ansible | Docker уже используется для упаковки и запуска. Каталоги Terraform и Ansible пока являются заготовками для создания инфраструктуры и настройки серверов. Kubernetes для MVP не предусмотрен. |
+
+Продуктовая и маркетинговая аналитика должна помогать понимать использование функций и привлечение пользователей, не собирая историю посещений. Нельзя записывать в журналы адреса посещаемых ресурсов, DNS-запросы, URL и содержимое пакетов. OTP в production и приватные ключи WireGuard также не должны попадать в логи.
+
+## Структура репозитория
 
 ```text
 apps/
-  desktop/          Desktop client shared by Windows, macOS, and Linux
-  android/          Android mobile client
-  ios/              iOS client
-  android-tv/       Android TV client
-  chrome-extension/ Browser-only, proxy-based Chrome Extension
-backend/             Python 3.13 and FastAPI modular monolith
+  desktop/           Заготовка клиента Windows, macOS и Linux
+  android/           Заготовка клиента Android
+  ios/               Заготовка клиента iOS
+  android-tv/        Заготовка клиента Android TV
+  chrome-extension/  Заготовка браузерного прокси-клиента
+backend/             API, настройки, подключения к хранилищам и тесты
 infra/
-  terraform/        Infrastructure provisioning
-  ansible/          Host configuration and deployment automation
-  docker/           Local-development and deployment packaging
-  monitoring/       Metrics, logs, dashboards, and alerting configuration
-  environments/     Environment-specific infrastructure configuration
-docs/                Product, architecture, operations, and security documentation
+  deployment/        VPS: Backend + Caddy, HTTPS и скрипт развёртывания
+  docker/            Локальный стек и отдельный production-запуск Backend
+  terraform/         Заготовка описания облачных ресурсов
+  ansible/           Заготовка автоматизации настройки серверов
+  monitoring/        Заготовка мониторинга
+  environments/      Заготовка конфигурации окружений
+docs/                Инструкции настройки и эксплуатации, схемы
 ```
 
-## Architecture Principles
+## Быстрый запуск на своём компьютере
 
-- The Backend begins as a modular monolith.
-- PostgreSQL is the source of truth for persistent business data; Redis holds ephemeral data.
-- WireGuard is the primary system-wide VPN protocol.
-- The VPN control plane and data plane remain separate. User VPN traffic never passes through the Backend API.
-- The Chrome Extension uses a browser proxy rather than a system-wide WireGuard tunnel.
-- External services are integrated through replaceable provider interfaces.
-- User browsing history, destinations, DNS queries, URLs, and packet contents must not be collected or logged.
+Нужны Git и работающий Docker с Compose v2. На Windows Docker должен использовать Linux-контейнеры. Откройте терминал **в корне репозитория**, где находится этот README.
 
-See [AGENTS.md](AGENTS.md) for the complete product, architecture, security, and engineering rules.
+1. Соберите Backend и запустите его вместе с PostgreSQL и Valkey:
 
-## Development Status
+   ```sh
+   docker compose -f infra/docker/compose.yaml up --build -d --wait
+   ```
 
-The backend skeleton provides liveness, dependency readiness, and version endpoints.
-See [backend setup and verification](backend/README.md) for local Python and Docker workflows.
+   `-f` выбирает конфигурацию, `--build` собирает образ из исходников, `-d` оставляет контейнеры работать в фоне, а `--wait` ожидает запуска. Первый запуск займёт больше времени из-за скачивания образов.
 
-Start the Docker development stack from this directory:
+2. Посмотрите состояние контейнеров:
 
-```sh
-docker compose -f infra/docker/compose.yaml up --build -d --wait
-```
+   ```sh
+   docker compose -f infra/docker/compose.yaml ps
+   ```
 
-The [backend Docker guide](backend/README.md#build-and-run-the-image) includes standalone
-`docker build` / `docker run` commands and a production Compose deployment using external
-PostgreSQL and Valkey services.
+   Откройте [готовность API](http://127.0.0.1:8000/ready) и [версию API](http://127.0.0.1:8000/version) в браузере. `/ready` должен вернуть HTTP 200, если доступны обе базы. `/health` проверяет только работающий процесс, поэтому одного его недостаточно.
+
+3. Посмотрите сообщения Backend:
+
+   ```sh
+   docker compose -f infra/docker/compose.yaml logs -f backend
+   ```
+
+   `Ctrl+C` завершает просмотр логов; контейнер продолжает работать.
+
+4. После работы остановите локальный стек:
+
+   ```sh
+   docker compose -f infra/docker/compose.yaml down
+   ```
+
+   Данные PostgreSQL сохранятся в Docker-томе. Не добавляйте `-v`, если хотите их сохранить. Пароль в локальном Compose — публичный учебный пример, для VPS он не подходит.
+
+## Подробные инструкции
+
+| Задача | Документ |
+| --- | --- |
+| Запуск через Docker или Python, настройки, тесты | [Разработка Backend](backend/README.md) |
+| Подготовка VPS, домена, HTTPS и первый production-запуск | [Развёртывание Backend](docs/backend-deployment.md) |
+| Обновление кода на VPS, пересборка/загрузка образа, перезапуск и откат | [Обновление и перезапуск VPS](docs/vps-maintenance.md) |
+| Создание тестового окружения в Timeweb Cloud | [Настройка Timeweb](docs/timeweb-development-setup.md) |
+| Обязательные правила работы с репозиторием | [AGENTS.md](AGENTS.md) |
+
+Документацию, пояснения к настройке и описания дальнейших изменений ведём на русском языке. В инструкциях указываем, где выполнять команды, зачем нужен каждый шаг и как проверить результат. Технические идентификаторы, команды и названия переменных сохраняем в исходном виде.

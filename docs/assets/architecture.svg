@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="850" viewBox="0 0 1280 850" role="img" aria-labelledby="title description">
+  <title id="title">Целевая архитектура PrettyLisaVPN</title>
+  <desc id="description">Клиенты обращаются к Backend через HTTPS и Caddy. Backend использует PostgreSQL, Valkey и внешних провайдеров. Пользовательский трафик идёт отдельно через WireGuard или браузерный прокси в интернет. Сейчас реализованы каркас API, подключения к хранилищам и конфигурация Caddy, остальные компоненты запланированы.</desc>
+  <defs>
+    <marker id="blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#2563eb"/></marker>
+    <marker id="green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#087f5b"/></marker>
+    <style>
+      text { font-family: 'Segoe UI', Arial, sans-serif; fill: #172b4d; }
+      .title { font-size: 32px; font-weight: 700; }
+      .heading { font-size: 22px; font-weight: 700; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; fill: #405574; }
+      .box { fill: white; stroke: #b7c9e2; stroke-width: 2; rx: 14; }
+      .planned { stroke-dasharray: 7 5; }
+      .control { fill: none; stroke: #2563eb; stroke-width: 3; marker-end: url(#blue); }
+      .traffic { fill: none; stroke: #087f5b; stroke-width: 4; marker-end: url(#green); }
+    </style>
+  </defs>
+  <rect width="1280" height="850" rx="22" fill="#f7f9fd"/>
+  <text x="40" y="55" class="title">PrettyLisaVPN · целевая архитектура</text>
+  <text x="40" y="88" class="body">Управление доступом и передача пользовательского трафика разделены</text>
+  <rect x="28" y="116" width="1224" height="436" rx="18" fill="#edf3ff"/>
+  <text x="48" y="152" class="heading">01 / Контур управления · HTTPS API</text>
+  <rect x="50" y="203" width="235" height="180" class="box planned"/>
+  <text x="70" y="238" class="heading">Клиенты</text>
+  <text x="70" y="272" class="body">Windows · macOS · Linux</text>
+  <text x="70" y="302" class="body">Android · iOS · TV</text>
+  <text x="70" y="332" class="body">Расширение Chrome</text>
+  <text x="70" y="361" class="small">Вход · доступ к VPN</text>
+  <path d="M285 289H352" class="control"/>
+  <text x="294" y="275" class="small">HTTPS</text>
+  <rect x="358" y="230" width="166" height="120" class="box"/>
+  <text x="378" y="270" class="heading">Caddy</text>
+  <text x="378" y="302" class="small">TLS · 80/443</text>
+  <text x="378" y="328" class="small">Вход в API</text>
+  <path d="M524 289H582" class="control"/>
+  <rect x="588" y="191" width="310" height="219" class="box"/>
+  <text x="608" y="229" class="heading">Backend · FastAPI</text>
+  <text x="608" y="260" class="body">Python 3.13 · один сервис</text>
+  <text x="608" y="290" class="small">Сейчас: каркас и проверки API</text>
+  <rect x="608" y="310" width="270" height="80" rx="10" fill="#f7f9fd" stroke="#8ca6cb" stroke-dasharray="7 5"/>
+  <text x="624" y="337" class="small">Будущие бизнес-модули:</text>
+  <text x="624" y="361" class="small">вход · устройства · подписки</text>
+  <text x="624" y="383" class="small">сессии · управление VPN-узлами</text>
+  <path d="M898 246H958" class="control"/>
+  <rect x="964" y="190" width="258" height="108" class="box"/>
+  <text x="984" y="224" class="heading">PostgreSQL</text>
+  <text x="984" y="254" class="body">Постоянные данные</text>
+  <text x="984" y="280" class="small">Бизнес-таблиц пока нет</text>
+  <path d="M898 360H958" class="control"/>
+  <rect x="964" y="316" width="258" height="108" class="box"/>
+  <text x="984" y="350" class="heading">Valkey / Redis API</text>
+  <text x="984" y="380" class="body">Временные данные</text>
+  <text x="984" y="406" class="small">OTP · кэш · лимиты — в плане</text>
+  <path d="M741 410V454" class="control"/>
+  <rect x="450" y="460" width="772" height="68" class="box planned"/>
+  <text x="470" y="489" class="body">Внешние провайдеры через заменяемые интерфейсы</text>
+  <text x="470" y="515" class="small">Email OTP · платежи и подписки (например, ЮКасса) · rewarded ads</text>
+  <rect x="28" y="571" width="1224" height="199" rx="18" fill="#eaf7f1"/>
+  <text x="48" y="608" class="heading">02 / Контур трафика · отдельные узлы · запланирован</text>
+  <text x="55" y="654" class="body">Нативный клиент</text>
+  <text x="55" y="719" class="body">Расширение Chrome</text>
+  <path d="M280 647H471" class="traffic"/>
+  <text x="312" y="636" class="small">WireGuard</text>
+  <path d="M280 712H471" class="traffic"/>
+  <text x="315" y="700" class="small">Прокси</text>
+  <rect x="479" y="624" width="340" height="47" class="box planned"/>
+  <text x="499" y="655" class="body">VPN-узел выбранной страны</text>
+  <rect x="479" y="689" width="340" height="47" class="box planned"/>
+  <text x="499" y="720" class="body">Браузерный прокси-узел</text>
+  <path d="M819 647H979" class="traffic"/>
+  <path d="M819 712H979" class="traffic"/>
+  <rect x="987" y="624" width="235" height="112" class="box"/>
+  <text x="1020" y="683" class="heading">Интернет</text>
+  <text x="40" y="806" class="body">VPN-трафик не проходит через Backend API. История посещений не собирается.</text>
+  <text x="40" y="834" class="small">Пунктир: компоненты в плане. Сплошные блоки управления: существующая техническая основа.</text>
+</svg>

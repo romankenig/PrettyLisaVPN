@@ -1,142 +1,175 @@
-# Backend
+# Разработка Backend
 
-Python 3.13 FastAPI modular-monolith skeleton. No business modules or database tables
-exist yet, so no Alembic migration is needed at this stage. Add Alembic with the first
-schema change. PostgreSQL uses SQLAlchemy 2.x and asyncpg; Valkey uses the Redis-compatible
-redis-py async client. Connection pools belong to the application lifespan and connect
-lazily. `Postgres.session()` closes sessions and rolls back uncommitted work; callers
-must explicitly commit successful writes.
+Backend — сервер управления PrettyLisaVPN на Python 3.13 и FastAPI. Сейчас это каркас модульного монолита: настройки, подключения к PostgreSQL и Valkey, структурированные логи и служебные API. Бизнес-модули и таблицы ещё не созданы. Alembic нужно подключить при первом изменении схемы базы данных.
 
-## Docker development
+## Выбор способа запуска
 
-From the repository root, with Docker and Compose installed:
+| Способ | Когда использовать |
+| --- | --- |
+| Весь стек в Docker | Быстро проверить проект без установки Python на компьютер. |
+| Python на компьютере, базы в Docker | Разрабатывать Backend с автоматической перезагрузкой после изменения исходников. |
+| Backend на VPS | Использовать [инструкцию развёртывания](../docs/backend-deployment.md), а для обновлений — [инструкцию обслуживания](../docs/vps-maintenance.md). |
+
+Образ — собранный пакет приложения и зависимостей. Контейнер — запущенный экземпляр образа. Compose описывает несколько контейнеров, их сеть и настройки. Изменение исходников не меняет уже собранный образ автоматически.
+
+## Весь стек в Docker
+
+Установите Docker с Compose v2; на Windows включите Linux-контейнеры. Убедитесь, что Docker запущен:
+
+```sh
+docker version
+docker compose version
+```
+
+Команды ниже выполняются из корня репозитория, а не из `backend/`.
 
 ```sh
 docker compose -f infra/docker/compose.yaml up --build -d --wait
 docker compose -f infra/docker/compose.yaml ps
-docker compose -f infra/docker/compose.yaml logs -f backend
-docker compose -f infra/docker/compose.yaml down
 ```
 
-This runs the backend, PostgreSQL, and Valkey. Only loopback ports are published:
-8000, 5432, and 6379. PostgreSQL data persists in a named volume. The credentials
-in this development file are public, local-only examples. Rebuild with `up --build`
-after source changes; the runtime image does not enable auto-reload.
+Первая команда собирает Backend, запускает PostgreSQL и Valkey в фоне и ожидает запуска. Вторая показывает состояние контейнеров. Порты опубликованы только на `127.0.0.1`: API — 8000, PostgreSQL — 5432, Valkey — 6379. Они доступны с вашего компьютера, а не со всей локальной сети. Данные PostgreSQL сохраняются в именованном Docker-томе.
 
-If a host port is occupied, set `POSTGRES_PORT`, `VALKEY_PORT`, or `BACKEND_PORT`
-before running Compose. For example, on this Windows workstation:
+Откройте `http://127.0.0.1:8000/ready`: ожидается HTTP 200. При HTTP 503 одна из баз ещё не готова или недоступна. Для просмотра сообщений:
+
+```sh
+docker compose -f infra/docker/compose.yaml logs -f backend
+```
+
+`Ctrl+C` закрывает просмотр. После изменения кода повторите `up --build -d --wait`: у образа нет автоматической перезагрузки исходников.
+
+Если порт занят, задайте другой порт **до запуска Compose**. Пример для PowerShell:
 
 ```powershell
 $env:POSTGRES_PORT = "5433"
 docker compose -f infra/docker/compose.yaml up --build -d --wait
 ```
 
-These variables change host ports only; containers still use their standard internal
-ports. A host-side Python process should use `127.0.0.1` and the selected host ports
-in its `.env`. The earlier local `.tools/compose.local.yaml` override remains compatible.
+Для Bash на Linux/macOS: `export POSTGRES_PORT=5433`. Аналогично доступны `VALKEY_PORT` и `BACKEND_PORT`. Меняются только порты компьютера; внутри Docker-сети используются прежние порты. Если запускаете Python вне Docker, укажите выбранный порт в его `.env`. Существующий локальный файл `.tools/compose.local.yaml`, если он есть на вашем компьютере, остаётся совместимым.
 
-## Build and run the image
+Чтобы остановить стек:
 
-From the repository root:
+```sh
+docker compose -f infra/docker/compose.yaml down
+```
+
+Без `-v` том PostgreSQL сохраняется. Не используйте локальные демонстрационные пароли для общего сервера.
+
+## Python на компьютере, базы в Docker
+
+Нужны Python **3.13**, менеджер зависимостей **uv**, Git и Docker с Compose. Проверьте `python --version` и `uv --version`. Если установлен другой Python, настройте доступ к 3.13 перед установкой зависимостей.
+
+1. В корне репозитория запустите только базы:
+
+   ```sh
+   docker compose -f infra/docker/compose.yaml up -d --wait postgres valkey
+   ```
+
+   Контейнер Backend здесь не нужен: иначе он займёт порт, который потребуется локальному Python.
+
+2. Перейдите в `backend/` и создайте личную конфигурацию. В PowerShell:
+
+   ```powershell
+   cd backend
+   Copy-Item .env.example .env
+   ```
+
+   В Linux/macOS используйте `cp .env.example .env`. Копируйте шаблон только при первой настройке: не перезаписывайте уже заполненный `.env`. Файл должен оставаться вне Git.
+
+3. Откройте `.env` в редакторе. Для стандартного локального Compose значения уже подходят. Если меняли порты, исправьте их в `POSTGRES_URL` и `VALKEY_URL`.
+
+4. Установите версии зависимостей из `uv.lock` и запустите сервер:
+
+   ```sh
+   uv sync --frozen
+   uv run uvicorn prettylisavpn.main:create_app --factory --reload --no-access-log
+   ```
+
+   `--frozen` не пересчитывает версии зависимостей. `--factory` вызывает фабрику приложения, `--reload` перезапускает процесс после изменения кода, `--no-access-log` отключает журнал URL HTTP-запросов. Режим `--reload` предназначен для разработки.
+
+5. Откройте `http://127.0.0.1:8000/ready`. Для завершения Uvicorn нажмите `Ctrl+C`, затем при необходимости остановите базы командой `down` из корня репозитория.
+
+Запускайте uv из `backend/`: Pydantic ищет `.env` в текущем каталоге. Переменные окружения терминала имеют приоритет над файлом.
+
+## Настройки приложения
+
+Таблица соответствует [config.py](src/prettylisavpn/config.py). Все строки подключения с настоящими паролями являются секретами.
+
+| Переменная | Значение по умолчанию / назначение |
+| --- | --- |
+| `APPLICATION_NAME` | `PrettyLisaVPN`; непустое имя в `/version`. |
+| `APPLICATION_VERSION` | `0.1.0`; на VPS задавайте идентификатор фактически развёрнутой сборки. |
+| `ENVIRONMENT` | `development`; для рабочего сервиса используйте `production`. |
+| `LOG_LEVEL` | `INFO`; допустимы также `DEBUG`, `WARNING`, `ERROR`, `CRITICAL`. |
+| `POSTGRES_URL` | Локальная демонстрационная строка; схема обязательно `postgresql+asyncpg://`. На VPS задаётся явно. |
+| `VALKEY_URL` | `redis://localhost:6379/0`; допустимы `redis://` и `rediss://` (TLS). На VPS задаётся явно. |
+| `DEPENDENCY_TIMEOUT_SECONDS` | `2`; тайм-аут проверки зависимости, больше 0 и не больше 30 секунд. |
+| `POSTGRES_POOL_SIZE` | `5`; размер пула соединений, минимум 1. |
+| `POSTGRES_MAX_OVERFLOW` | `5`; дополнительные временные соединения сверх пула, минимум 0. |
+
+Отдельные `POSTGRES_HOST`, `POSTGRES_PASSWORD`, `VALKEY_HOST` и подобные переменные Backend **не читает**. Хост, порт, пользователь и пароль объединяются в URL. Символы со специальным значением в логине/пароле нужно кодировать для URL: например, `@` как `%40`. Не используйте онлайн-сервисы для кодирования настоящих паролей.
+
+Адрес должен быть доступен именно процессу приложения. `localhost` внутри контейнера означает сам контейнер; для локальной Docker-сети используйте имена `postgres` и `valkey`, для внешних баз — адреса провайдера. `host.docker.internal` в Docker Desktop позволяет обратиться к сервису на компьютере. Сохраняйте требования провайдера к TLS и проверке сертификатов.
+
+## Служебные методы и логи
+
+| Метод | Что проверяет | Ожидаемый результат |
+| --- | --- | --- |
+| `GET /health` | Процесс может отвечать; базы не опрашиваются. | HTTP 200 при работающем приложении. |
+| `GET /ready` | На каждый запрос выполняет PostgreSQL `SELECT 1` и Valkey `PING`. | HTTP 200, если обе зависимости доступны; иначе HTTP 503 и код `dependencies_unavailable`. |
+| `GET /version` | Метаданные запущенного приложения. | `application_name`, `application_version`, `environment`. |
+
+Недоступность базы не останавливает процесс. Поэтому Docker-статус `healthy`, основанный на `/health`, ещё не означает готовность сервиса; отдельно проверяйте `/ready`. Docker сам по себе не перезапускает контейнер только из-за статуса `unhealthy`.
+
+Подключения используют SQLAlchemy 2.x/asyncpg и Redis-совместимый асинхронный клиент для Valkey. Пулы создаются на время жизни приложения, подключаются по мере необходимости и закрываются при завершении. `Postgres.session()` закрывает сессию и откатывает незавершённую работу: успешную запись вызывающий код должен явно подтвердить через commit.
+
+Backend пишет JSON-логи с UTC-временем. Неожиданные HTTP-ошибки возвращают общий код `internal_error`; ошибки валидации не повторяют входные значения. Необработанные тексты исключений, SQL-параметры и HTTP access URL в логах приложения не записываются. Это описание Backend: политику логов внешнего reverse proxy нужно оценивать отдельно.
+
+## Сборка и отдельный запуск образа
+
+Из корня репозитория:
 
 ```sh
 docker build -t prettylisavpn-backend:0.1.0 backend
 ```
 
-Supply `POSTGRES_URL` and `VALKEY_URL` through your shell or deployment secret manager
-before running the following command (one line works in PowerShell and POSIX shells):
+Тег здесь иллюстративный. Для каждого релиза используйте уникальную версию или хеш коммита. Перед запуском передайте `POSTGRES_URL` и `VALKEY_URL` через окружение терминала или менеджер секретов:
 
 ```sh
 docker run -d --name prettylisa-backend --init --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop ALL --security-opt no-new-privileges:true --stop-timeout 30 -p 127.0.0.1:8000:8000 -e ENVIRONMENT=production -e APPLICATION_VERSION=0.1.0 -e POSTGRES_URL -e VALKEY_URL prettylisavpn-backend:0.1.0
+```
+
+Команда передаёт переменные по имени, не записывая пароль в аргументы. Приложение работает от UID/GID 10001, с файловой системой только для чтения и временным `/tmp`. Доступ администратора Docker позволяет читать окружение контейнера, поэтому его нужно ограничивать.
+
+Образ собирается в несколько этапов. Версия базового Python 3.13 закреплена digest, зависимости устанавливаются из `uv.lock`; uv, кэш сборки и инструменты тестирования не входят в итоговый образ. Исходники подключаются через `PYTHONPATH`. Контекст сборки ограничен разрешёнными файлами; `.env` и приватные ключи не должны попадать в образ. Секреты нельзя передавать через аргументы сборки.
+
+Uvicorn получает SIGTERM, даёт запросам до 20 секунд на завершение и закрывает пулы. Перед принудительной остановкой предусмотрено 30 секунд:
+
+```sh
 docker stop --time 30 prettylisa-backend
 docker rm prettylisa-backend
 ```
 
-The URLs must be reachable **from the container**. `localhost` inside a container refers
-to that container. Use external service DNS names in production, Compose service names
-inside the development network, or `host.docker.internal` for host services on Docker
-Desktop. PostgreSQL URLs use `postgresql+asyncpg://`; Valkey accepts `redis://` or
-`rediss://`. Configure TLS as required by the external providers.
+## Отдельный production Compose без Caddy
 
-The multi-stage image pins the Python 3.13 base digest and installs runtime dependencies
-from `uv.lock` with `--frozen`. uv and its installation cache stay in the builder stage;
-pytest, mypy, and other development dependencies are excluded. Application source is
-loaded through `PYTHONPATH`, avoiding an editable install and unpinned build dependencies.
-Update the base digest and lockfile deliberately when applying dependency/security updates.
+[compose.production.yaml](../infra/docker/compose.production.yaml) запускает **только Backend** с внешними PostgreSQL и Valkey. Это самостоятельный файл; не объединяйте его с локальным Compose. Он явно задаёт `ENVIRONMENT=production` и публикует API на loopback-порту 8000 (`BACKEND_PORT` позволяет изменить порт).
 
-The runtime uses UID/GID 10001, exposes only port 8000, and supports a read-only filesystem.
-The exec-form Uvicorn command receives SIGTERM, drains requests for up to 20 seconds,
-then runs FastAPI shutdown hooks to close pools. Allow 30 seconds before forced termination.
-Docker's healthcheck probes `/health`, so a dependency outage does not fail liveness.
-Use `/ready` for load-balancer readiness; Docker health status alone does not gate traffic
-or automatically restart an unhealthy container.
+1. Подготовьте образ и доступные из контейнера внешние базы.
+2. Скопируйте `infra/docker/.env.example` в неотслеживаемый `infra/docker/.env.production`. Заполните `BACKEND_IMAGE`, `APPLICATION_VERSION`, `POSTGRES_URL`, `VALKEY_URL`; остальные настройки необязательны.
+3. Из корня репозитория запустите:
 
-The build context is an allowlist; environment files and private-key files are excluded,
-including when placed under `src/`. Credentials are never build arguments or image
-environment defaults. Runtime environment values remain visible to Docker administrators;
-restrict daemon access and do not publish rendered Compose configurations containing secrets.
+   ```sh
+   docker compose -p prettylisa-production --env-file infra/docker/.env.production -f infra/docker/compose.production.yaml up -d --wait
+   docker compose -p prettylisa-production --env-file infra/docker/.env.production -f infra/docker/compose.production.yaml ps
+   ```
 
-## Production deployment
+4. Проверьте `/health`, `/ready`, `/version` по `http://127.0.0.1:8000`. Для публичного доступа нужен отдельно настроенный reverse proxy с TLS. Для готового варианта с Caddy используйте [инструкцию VPS](../docs/backend-deployment.md).
 
-`infra/docker/compose.production.yaml` is a **standalone** deployment file with just the
-backend. PostgreSQL and Valkey must already exist outside this deployment. Do not merge
-the development Compose file into it.
+Для остановки используйте те же `-p`, `--env-file`, `-f`, заменив `up -d --wait` на `down`. Не печатайте обычный `docker compose config` в общий лог: он может раскрыть секреты; для проверки используйте `config --quiet`.
 
-Build and tag the release image above, or pull your registry's immutable release image.
-Provide `BACKEND_IMAGE`, `APPLICATION_VERSION`, `POSTGRES_URL`, and `VALKEY_URL` through
-the deployment environment. Compose rejects missing or empty values. Alternatively,
-copy `infra/docker/.env.example` to an untracked `infra/docker/.env.production`, replace
-the placeholders locally, and use `--env-file infra/docker/.env.production` before `-f`.
-Do not commit the resulting file. The template lists the optional settings as well.
+## Проверки перед коммитом
 
-```sh
-docker compose -p prettylisa-production -f infra/docker/compose.production.yaml up -d --wait
-docker compose -p prettylisa-production -f infra/docker/compose.production.yaml ps
-docker compose -p prettylisa-production -f infra/docker/compose.production.yaml down
-```
-
-The deployment binds to loopback port 8000 by default (override `BACKEND_PORT`), drops
-Linux capabilities, prevents privilege escalation, and rotates JSON container logs.
-Provide a host reverse proxy/TLS endpoint for public access and route traffic only after
-`/ready` succeeds. The image has no database servers and does not create database schemas.
-
-## Run locally with Python
-
-Install Docker with Compose, Python 3.13, and uv. From the repository root:
-
-```powershell
-docker compose -f infra/docker/compose.yaml up -d postgres valkey
-cd backend
-Copy-Item .env.example .env
-uv sync --frozen
-uv run uvicorn prettylisavpn.main:create_app --factory --reload --no-access-log
-```
-
-On macOS/Linux use `cp .env.example .env` instead of `Copy-Item`.
-Run uv from `backend/` so settings load that directory's `.env` file.
-Environment variables override `.env`; the example lists all supported settings.
-Connection strings are secrets and should never be logged. Example credentials are
-for local development only; shared deployments require dedicated credentials and
-appropriate transport security.
-
-The API listens at `http://127.0.0.1:8000`:
-
-| Endpoint | Behavior |
-| --- | --- |
-| `GET /health` | Always 200 while the application can serve requests; no dependency access. |
-| `GET /ready` | Executes PostgreSQL `SELECT 1` and Valkey `PING` on every call; 200 only when both succeed, otherwise 503 with `dependencies_unavailable`. |
-| `GET /version` | Returns `application_name`, `application_version`, and `environment`. |
-
-Default version metadata is `PrettyLisaVPN`, `0.1.0`, `development`. Release packaging
-can override `APPLICATION_VERSION`. Each readiness probe is bounded by
-`DEPENDENCY_TIMEOUT_SECONDS`. Readiness failure does not stop the process. Pools are
-disposed on shutdown. Unexpected HTTP errors return a generic `internal_error` code;
-validation errors do not echo request inputs. Application logs are JSON with UTC
-timestamps. Raw exception messages, SQL parameters, and HTTP access URLs are not logged.
-
-## Verify
-
-From `backend/`:
+Из `backend/`, после `uv sync --frozen`:
 
 ```sh
 uv run ruff format --check .
@@ -145,31 +178,26 @@ uv run mypy
 uv run pytest
 ```
 
-The default suite requires no external services. With PostgreSQL and Valkey running,
-also run the real integration tests (including individual dependency failures):
+Ruff проверяет форматирование и типичные ошибки, mypy — типы, pytest — поведение. Обычный набор тестов не требует внешних сервисов. Если форматирование нужно исправить, выполните `uv run ruff format .`, просмотрите изменения и повторите проверки.
+
+Для интеграционных тестов запустите обе базы, убедитесь, что настройки указывают на тестовое окружение, и в PowerShell выполните:
 
 ```powershell
 $env:RUN_INTEGRATION_TESTS = "1"
 uv run pytest
+Remove-Item Env:RUN_INTEGRATION_TESTS
 ```
 
-On macOS/Linux: `RUN_INTEGRATION_TESTS=1 uv run pytest`.
-For the opt-in runtime-image tests, build `prettylisavpn-backend:test` from the repository
-root with `docker build -t prettylisavpn-backend:test backend`, then from `backend/` run:
+В Bash: `RUN_INTEGRATION_TESTS=1 uv run pytest`. Тесты проверяют настоящие соединения и отдельные отказы зависимостей; рабочие базы для тестирования не используйте.
+
+Для тестов Docker сначала из корня соберите `docker build -t prettylisavpn-backend:test backend`. Затем из `backend/`:
 
 ```powershell
 $env:RUN_DOCKER_TESTS = "1"
 uv run pytest -m docker
+Remove-Item Env:RUN_DOCKER_TESTS
 ```
 
-On macOS/Linux: `RUN_DOCKER_TESTS=1 uv run pytest -m docker`.
-Use `DOCKER_TEST_IMAGE` to test another tag. These tests check non-root operation, image
-contents, liveness without dependencies, graceful SIGTERM shutdown, and production Compose
-configuration. They create and remove a temporary container; they do not stop your stack.
+В Bash: `RUN_DOCKER_TESTS=1 uv run pytest -m docker`. `DOCKER_TEST_IMAGE` позволяет выбрать другой тег. Проверяются пользователь контейнера, содержимое образа, liveness без баз, корректная остановка и production Compose. Тесты создают временный контейнер и удаляют его после проверки, не останавливая ваш стек. CI выполняет проверки с настоящими сервисами и собранным образом.
 
-CI runs the complete suite against real service containers. To exercise the stack
-manually, stop one dependency with `docker compose -f infra/docker/compose.yaml stop valkey`;
-`/ready` should become 503 while `/health` remains 200. Start it again to restore readiness.
-
-Stop the stack with `docker compose -f infra/docker/compose.yaml down` from the repository
-root. The PostgreSQL named volume retains local data.
+Ручную проверку отказа выполняйте только локально: из корня остановите Valkey командой `docker compose -f infra/docker/compose.yaml stop valkey`. `/ready` должен вернуть 503, а `/health` — 200. Восстановите сервис командой `docker compose -f infra/docker/compose.yaml start valkey` и снова проверьте `/ready`.
