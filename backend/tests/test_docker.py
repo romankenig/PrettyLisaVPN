@@ -93,6 +93,16 @@ def production_env():
     }
 
 
+def deployment_env():
+    return {
+        **production_env(),
+        "API_DOMAIN": "api.example.invalid",
+        "ACME_EMAIL": "ops@example.invalid",
+        "HTTP_PORT": "18080",
+        "HTTPS_PORT": "18443",
+    }
+
+
 def test_production_compose_has_only_backend():
     result = docker(
         "compose",
@@ -131,3 +141,54 @@ def test_production_compose_rejects_missing_dependency_urls(missing):
     )
     assert result.returncode != 0
     assert missing in result.stderr
+
+
+def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
+    result = docker(
+        "compose",
+        "--project-name",
+        "prettylisavpn-test",
+        "--env-file",
+        str(ROOT / "infra/deployment/.env.example"),
+        "-f",
+        str(ROOT / "infra/deployment/compose.yaml"),
+        "config",
+        "--format",
+        "json",
+        env=deployment_env(),
+    )
+    config = json.loads(result.stdout)
+    assert set(config["services"]) == {"backend", "caddy"}
+
+    backend = config["services"]["backend"]
+    assert "ports" not in backend
+    assert backend["expose"] == ["8000"]
+    assert backend["restart"] == "unless-stopped"
+    assert backend["read_only"]
+    assert backend["environment"]["POSTGRES_URL"] == deployment_env()["POSTGRES_URL"]
+    assert backend["environment"]["VALKEY_URL"] == deployment_env()["VALKEY_URL"]
+    assert "volumes" not in backend
+
+    caddy = config["services"]["caddy"]
+    assert caddy["restart"] == "unless-stopped"
+    assert {port["target"] for port in caddy["ports"]} == {80, 443}
+    volume_targets = {volume["target"] for volume in caddy["volumes"]}
+    assert {"/config", "/data", "/etc/caddy/Caddyfile"} <= volume_targets
+
+
+def test_caddyfile_is_valid():
+    docker(
+        "run",
+        "--rm",
+        "--env",
+        "API_DOMAIN=api.example.invalid",
+        "--env",
+        "ACME_EMAIL=ops@example.invalid",
+        "--volume",
+        f"{ROOT / 'infra/deployment/Caddyfile'}:/etc/caddy/Caddyfile:ro",
+        "caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d",
+        "caddy",
+        "validate",
+        "--config",
+        "/etc/caddy/Caddyfile",
+    )

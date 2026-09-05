@@ -2,6 +2,8 @@
 .env.*
 !.env.example
 keys/
+infra/deployment/.env
+infra/deployment/state/
 .venv/
 .tools/
 .uv-cache/
