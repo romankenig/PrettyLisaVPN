@@ -1,28 +1,50 @@
 name: Backend
+
 on:
   push:
-    paths: ["backend/**", "infra/docker/**", ".github/workflows/backend.yaml"]
+    paths:
+      - "backend/**"
+      - "infra/docker/**"
+      - "infra/deployment/**"
+      - ".github/workflows/backend.yaml"
   pull_request:
-    paths: ["backend/**", "infra/docker/**", ".github/workflows/backend.yaml"]
+    paths:
+      - "backend/**"
+      - "infra/docker/**"
+      - "infra/deployment/**"
+      - ".github/workflows/backend.yaml"
+
 permissions:
   contents: read
+
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: Quality, tests, migrations, and image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
     services:
       postgres:
         image: postgres:17-alpine
         env:
           POSTGRES_USER: prettylisa
-          POSTGRES_PASSWORD: local-development-only
+          POSTGRES_PASSWORD: ci-only
           POSTGRES_DB: prettylisa
-        ports: ["5432:5432"]
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U prettylisa -d prettylisa"
           --health-interval 5s --health-timeout 3s --health-retries 10
       valkey:
         image: valkey/valkey:8-alpine
-        ports: ["6379:6379"]
+        ports:
+          - 6379:6379
         options: >-
           --health-cmd "valkey-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 10
@@ -30,19 +52,50 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - run: pip install uv==0.12.9
-      - run: uv sync --frozen
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run mypy
-      - run: uv run pytest
+
+      - name: Set up uv and dependency cache
+        uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.9"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Run unit tests
+        run: uv run pytest -m "not integration and not docker"
+
+      - name: Validate Alembic migrations
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
+      - name: Run integration tests
+        run: uv run pytest -m integration
         env:
           RUN_INTEGRATION_TESTS: "1"
-      - run: docker build -t prettylisavpn-backend:test .
-      - run: uv run pytest -m docker
+
+      - name: Build backend image
+        run: docker build --tag prettylisavpn-backend:test .
+
+      - name: Test backend image and deployment configuration
+        run: uv run pytest -m docker
         env:
           RUN_DOCKER_TESTS: "1"

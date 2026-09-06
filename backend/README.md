@@ -1,6 +1,6 @@
 # Разработка Backend
 
-Backend — сервер управления PrettyLisaVPN на Python 3.13 и FastAPI. Сейчас это каркас модульного монолита: настройки, подключения к PostgreSQL и Valkey, структурированные логи и служебные API. Бизнес-модули и таблицы ещё не созданы. Alembic нужно подключить при первом изменении схемы базы данных.
+Backend — сервер управления PrettyLisaVPN на Python 3.13 и FastAPI. Сейчас это каркас модульного монолита: настройки, подключения к PostgreSQL и Valkey, структурированные логи и служебные API. Бизнес-модули и таблицы ещё не созданы. Alembic подключён с пустой начальной ревизией; каждое будущее изменение схемы должно добавлять новую миграцию.
 
 ## Выбор способа запуска
 
@@ -179,6 +179,62 @@ uv run pytest
 ```
 
 Ruff проверяет форматирование и типичные ошибки, mypy — типы, pytest — поведение. Обычный набор тестов не требует внешних сервисов. Если форматирование нужно исправить, выполните `uv run ruff format .`, просмотрите изменения и повторите проверки.
+
+## Непрерывная интеграция
+
+Workflow [backend.yaml](../.github/workflows/backend.yaml) запускается для pull request и push, если изменены Backend, его Docker-конфигурация, deployment-конфигурация или сам workflow. Все проверки выполняются последовательно в одном job и останавливаются на первой ошибке:
+
+1. установка зависимостей строго из `uv.lock` с безопасным кэшем загрузок uv;
+2. проверка форматирования Ruff;
+3. lint Ruff и строгая проверка типов mypy;
+4. unit-тесты без инфраструктуры;
+5. применение Alembic до `head` и `alembic check` на временном PostgreSQL;
+6. интеграционные тесты с временными PostgreSQL и Valkey;
+7. сборка production Docker-образа и Docker-тесты образа и Compose-файлов.
+
+CI использует только одноразовые локальные учётные данные service containers. Production-секреты и доступ к deployment-среде ему не нужны; workflow ничего не публикует и не развёртывает.
+
+Чтобы воспроизвести проверки качества и unit-тесты, из `backend/` выполните:
+
+```sh
+uv sync --frozen
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy
+uv run pytest -m "not integration and not docker"
+```
+
+Для проверки миграций и интеграционных тестов сначала запустите PostgreSQL и Valkey из корня репозитория:
+
+```sh
+docker compose -f infra/docker/compose.yaml up -d --wait postgres valkey
+```
+
+Затем из `backend/`, используя локальные URL из `.env`, выполните:
+
+```sh
+uv run alembic upgrade head
+uv run alembic check
+RUN_INTEGRATION_TESTS=1 uv run pytest -m integration
+```
+
+В PowerShell последняя команда записывается так:
+
+```powershell
+$env:RUN_INTEGRATION_TESTS = "1"
+uv run pytest -m integration
+Remove-Item Env:RUN_INTEGRATION_TESTS
+```
+
+Docker-часть CI воспроизводится из корня репозитория и затем из `backend/`:
+
+```sh
+docker build --tag prettylisavpn-backend:test backend
+cd backend
+RUN_DOCKER_TESTS=1 uv run pytest -m docker
+```
+
+В PowerShell установите `RUN_DOCKER_TESTS` тем же способом, что и `RUN_INTEGRATION_TESTS` выше.
 
 Для интеграционных тестов запустите обе базы, убедитесь, что настройки указывают на тестовое окружение, и в PowerShell выполните:
 
