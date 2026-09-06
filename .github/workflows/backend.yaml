@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: backend-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -99,3 +99,165 @@ jobs:
         run: uv run pytest -m docker
         env:
           RUN_DOCKER_TESTS: "1"
+
+  deploy-development:
+    name: Deploy development
+    needs: check
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      vars.DEV_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: development
+    env:
+      DEPLOY_IMAGE: prettylisavpn-backend:${{ github.sha }}
+      DEPLOY_VERSION: dev-${{ github.sha }}
+      SSH_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-ssh
+      TRANSFER_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-transfer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate development secrets
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+          DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
+          DEV_ACME_EMAIL: ${{ secrets.DEV_ACME_EMAIL }}
+          DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
+          DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
+        run: |
+          missing=0
+          for secret_name in \
+            DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY \
+            DEV_SSH_KNOWN_HOSTS DEV_API_DOMAIN DEV_ACME_EMAIL \
+            DEV_POSTGRES_URL DEV_VALKEY_URL
+          do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "::error::Required development secret ${secret_name} is not configured"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Build development image
+        run: docker build --tag "$DEPLOY_IMAGE" backend
+
+      - name: Prepare encrypted connection and transfer files
+        env:
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+          DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
+          DEV_ACME_EMAIL: ${{ secrets.DEV_ACME_EMAIL }}
+          DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
+          DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
+        run: |
+          umask 077
+          mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$SSH_DIRECTORY/id_ed25519"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$SSH_DIRECTORY/known_hosts"
+          chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
+          ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
+
+          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL
+          do
+            value="${!value_name}"
+            if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
+              echo "::error::${value_name} must be a single-line env-file value without quotes"
+              exit 1
+            fi
+          done
+
+          {
+            printf "COMPOSE_PROJECT_NAME='prettylisavpn-development'\n"
+            printf "API_DOMAIN='%s'\n" "$DEV_API_DOMAIN"
+            printf "ACME_EMAIL='%s'\n" "$DEV_ACME_EMAIL"
+            printf "BACKEND_IMAGE='%s'\n" "$DEPLOY_IMAGE"
+            printf "APPLICATION_NAME='PrettyLisaVPN'\n"
+            printf "APPLICATION_VERSION='%s'\n" "$DEPLOY_VERSION"
+            printf "ENVIRONMENT='development'\n"
+            printf "LOG_LEVEL='INFO'\n"
+            printf "POSTGRES_URL='%s'\n" "$DEV_POSTGRES_URL"
+            printf "VALKEY_URL='%s'\n" "$DEV_VALKEY_URL"
+            printf "DEPENDENCY_TIMEOUT_SECONDS='5'\n"
+            printf "POSTGRES_POOL_SIZE='5'\n"
+            printf "POSTGRES_MAX_OVERFLOW='5'\n"
+            printf "HTTP_BIND_ADDRESS='0.0.0.0'\n"
+            printf "HTTP_PORT='80'\n"
+            printf "HTTPS_BIND_ADDRESS='0.0.0.0'\n"
+            printf "HTTPS_PORT='443'\n"
+          } > "$TRANSFER_DIRECTORY/development.env"
+
+          tar -czf "$TRANSFER_DIRECTORY/deployment.tar.gz" \
+            -C infra/deployment Caddyfile compose.yaml deploy.sh
+          docker save "$DEPLOY_IMAGE" | gzip -1 > "$TRANSFER_DIRECTORY/backend-image.tar.gz"
+
+      - name: Transfer and deploy development
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+        run: |
+          remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
+          incoming="/opt/prettylisavpn/incoming/${GITHUB_SHA}"
+          common_options=(
+            -i "$SSH_DIRECTORY/id_ed25519"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$SSH_DIRECTORY/known_hosts"
+            -o LogLevel=ERROR
+          )
+
+          ssh "${common_options[@]}" -p "$DEV_VPS_PORT" \
+            "$remote" "install -d -m 0700 '$incoming'"
+          scp "${common_options[@]}" -P "$DEV_VPS_PORT" \
+            "$TRANSFER_DIRECTORY/development.env" \
+            "$TRANSFER_DIRECTORY/deployment.tar.gz" \
+            "$TRANSFER_DIRECTORY/backend-image.tar.gz" \
+            "${remote}:${incoming}/"
+
+          ssh "${common_options[@]}" -p "$DEV_VPS_PORT" "$remote" \
+            "bash -s -- '$GITHUB_SHA' '$DEPLOY_IMAGE' '$DEPLOY_VERSION'" <<'REMOTE'
+          set -Eeuo pipefail
+
+          revision="$1"
+          expected_image="$2"
+          expected_version="$3"
+          deployment_root="/opt/prettylisavpn"
+          incoming_directory="${deployment_root}/incoming/${revision}"
+          release_directory="${deployment_root}/releases/${revision}"
+          environment_file="/etc/prettylisavpn/development.env"
+
+          cleanup() {
+            rm -f \
+              "${incoming_directory}/development.env" \
+              "${incoming_directory}/deployment.tar.gz" \
+              "${incoming_directory}/backend-image.tar.gz"
+            rmdir "$incoming_directory" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          install -d -m 0755 "$release_directory"
+          tar -xzf "${incoming_directory}/deployment.tar.gz" -C "$release_directory"
+          chmod 0755 "${release_directory}/deploy.sh"
+
+          loaded_image="$(gzip -dc "${incoming_directory}/backend-image.tar.gz" | docker load)"
+          if [[ "$loaded_image" != *"${expected_image}"* ]]; then
+            printf 'Loaded image did not match the expected revision.\n' >&2
+            exit 1
+          fi
+
+          SKIP_BACKEND_PULL=1 \
+            "${release_directory}/deploy.sh" "${incoming_directory}/development.env"
+
+          install -m 0600 "${incoming_directory}/development.env" "$environment_file"
+          ln -sfn "$release_directory" "${deployment_root}/current.next"
+          mv -Tf "${deployment_root}/current.next" "${deployment_root}/current"
+          printf 'Development revision %s deployed as %s.\n' "$revision" "$expected_version"
+          REMOTE

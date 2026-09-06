@@ -34,7 +34,10 @@ def test_runtime_image_configuration():
     code = (
         "import importlib.util, os, pathlib, sys; "
         "assert sys.version_info[:2] == (3, 13); assert os.getuid() == 10001; "
+        "assert importlib.util.find_spec('alembic') is not None; "
         "assert all(importlib.util.find_spec(m) is None for m in ('pytest', 'uv', 'mypy')); "
+        "assert pathlib.Path('/app/alembic.ini').is_file(); "
+        "assert pathlib.Path('/app/migrations/env.py').is_file(); "
         "assert not any(p.name.startswith('.env') or p.suffix in ('.pem', '.key') "
         "for p in pathlib.Path('/app').rglob('*'))"
     )

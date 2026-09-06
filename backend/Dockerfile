@@ -18,6 +18,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
 RUN groupadd --gid 10001 backend \
     && useradd --uid 10001 --gid backend --no-create-home --shell /usr/sbin/nologin backend
 COPY --from=builder /app/.venv /app/.venv
+COPY alembic.ini /app/alembic.ini
+COPY migrations /app/migrations
 COPY src /app/src
 USER 10001:10001
 EXPOSE 8000

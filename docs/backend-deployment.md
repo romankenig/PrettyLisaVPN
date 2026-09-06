@@ -6,6 +6,121 @@ Caddy принимает публичные HTTP/HTTPS-соединения, п�
 
 Для уже работающего сервера перейдите к [обновлению кода, перезапуску и откату](vps-maintenance.md). Для подготовки ресурсов в Timeweb есть [отдельная инструкция](timeweb-development-setup.md).
 
+## Автоматическое развёртывание development через GitHub Actions
+
+Автоматизация предназначена для отдельного development VPS. Она использует Compose-проект
+`prettylisavpn-development`, чтобы не затронуть контейнеры другого проекта на сервере. Порты
+80 и 443 всё равно должны быть выделены этому development-стеку, поэтому не размещайте его на
+том же VPS, где уже работает production reverse proxy.
+
+Workflow `Backend` автоматически развёртывает только development-среду после успешного job `Quality, tests, migrations, and image`. Deployment запускается только для push в ветку `develop` и только когда repository variable `DEV_DEPLOY_ENABLED` равна `true`. Pull request, другая ветка или неуспешный CI deployment не запускают. Production этим workflow не затрагивается.
+
+Каждая поставка получает образ `prettylisavpn-backend:<полный Git SHA>` и версию `dev-<полный Git SHA>`. CI собирает образ повторно после проверок, передаёт его и три открытых deployment-файла на VPS по SSH, запускает Alembic, пересоздаёт контейнеры и проверяет `/health`, `/ready` и точное значение `/version`. Образ не публикуется в реестр, а секретные значения не добавляются в артефакты GitHub и репозиторий.
+
+### Однократная подготовка пользователя VPS
+
+Сначала установите Docker по инструкции ниже. Затем создайте отдельного пользователя deployment и каталоги. Имя пользователя можно изменить, но оно должно совпасть с secret `DEV_VPS_USER`:
+
+```bash
+sudo adduser --disabled-password --gecos '' prettylisa-deploy
+sudo usermod -aG docker prettylisa-deploy
+sudo install -d -m 0755 -o prettylisa-deploy -g prettylisa-deploy \
+  /opt/prettylisavpn \
+  /opt/prettylisavpn/incoming \
+  /opt/prettylisavpn/releases
+sudo install -d -m 0700 -o prettylisa-deploy -g prettylisa-deploy \
+  /etc/prettylisavpn
+sudo install -d -m 0700 -o prettylisa-deploy -g prettylisa-deploy \
+  /home/prettylisa-deploy/.ssh
+sudoedit /home/prettylisa-deploy/.ssh/authorized_keys
+sudo chown prettylisa-deploy:prettylisa-deploy \
+  /home/prettylisa-deploy/.ssh/authorized_keys
+sudo chmod 600 /home/prettylisa-deploy/.ssh/authorized_keys
+```
+
+В `authorized_keys` поместите только публичную часть отдельного CI-ключа. Приватная часть хранится в GitHub Secret. Членство в группе `docker` фактически даёт административный доступ к VPS, поэтому этот ключ должен использоваться только данным репозиторием, без passphrase и без совместного использования с личными ключами.
+
+Завершите текущую SSH-сессию, подключитесь как deployment-пользователь и проверьте доступ:
+
+```bash
+ssh -p SSH_PORT prettylisa-deploy@VPS_HOST
+docker version
+test -w /opt/prettylisavpn/releases
+test -w /etc/prettylisavpn
+```
+
+Получите строку known hosts с доверенного компьютера и отдельно сравните fingerprint ключа сервера с консолью VPS или данными провайдера:
+
+```bash
+ssh-keyscan -p SSH_PORT VPS_HOST > dev-known-hosts
+ssh-keygen -lf dev-known-hosts
+```
+
+Не включайте deployment до проверки fingerprint: `DEV_SSH_KNOWN_HOSTS` используется с `StrictHostKeyChecking=yes`, и CI не принимает новый ключ сервера автоматически.
+
+### GitHub Environment и Secrets
+
+В настройках репозитория создайте Environment с точным именем `development`. Добавьте в него следующие secrets:
+
+| Secret | Значение |
+| --- | --- |
+| `DEV_VPS_HOST` | DNS-имя или IP development VPS. |
+| `DEV_VPS_PORT` | SSH-порт development VPS. |
+| `DEV_VPS_USER` | Выделенный пользователь, например `prettylisa-deploy`. |
+| `DEV_SSH_PRIVATE_KEY` | Полный приватный SSH-ключ этого пользователя. |
+| `DEV_SSH_KNOWN_HOSTS` | Проверенная строка или строки OpenSSH known hosts для VPS. |
+| `DEV_API_DOMAIN` | Публичный development-домен API без `https://` и пути. |
+| `DEV_ACME_EMAIL` | Email для ACME-уведомлений Caddy. |
+| `DEV_POSTGRES_URL` | Полный `postgresql+asyncpg://` URL development PostgreSQL. |
+| `DEV_VALKEY_URL` | Полный `redis://` или `rediss://` URL development Valkey. |
+
+Значения URL должны быть однострочными, а специальные символы реквизитов — URL-кодированными. Workflow не выводит значения secrets: он проверяет только наличие, создаёт env-файл с правами `0600` во временном каталоге runner и передаёт его по SSH. Постоянный `/etc/prettylisavpn/development.env` заменяется с правами `0600` только после успешных миграций и проверок нового релиза.
+
+После настройки сервера и всех secrets создайте repository variable `DEV_DEPLOY_ENABLED` со значением `true`. Именно repository variable, а не environment variable, используется для запуска job до загрузки Environment. До этого момента обычный CI работает, а deployment-job отображается как skipped.
+
+### Проверка автоматического deployment
+
+Отправьте коммит в `develop`. Версия меняется при каждом коммите автоматически. После зелёного job `Deploy development` проверьте:
+
+```bash
+expected_version="dev-$(git rev-parse HEAD)"
+curl --fail --show-error https://DEV_API_DOMAIN/health
+curl --fail --show-error https://DEV_API_DOMAIN/ready
+curl --fail --show-error https://DEV_API_DOMAIN/version
+printf 'Ожидаемая версия: %s\n' "$expected_version"
+```
+
+Ответ `/version` должен содержать точное значение `application_version`, напечатанное последней командой, и `environment` со значением `development`. Сам workflow выполняет те же проверки и завершится ошибкой при недоступности процесса, PostgreSQL, Valkey или при несовпадении версии.
+
+### Ручной откат development
+
+CI сохраняет каталоги релизов и загруженные образы по Git SHA. Найдите предыдущий успешный SHA в GitHub Actions и подключитесь к VPS deployment-пользователем. Убедитесь, что каталог и образ ещё существуют:
+
+```bash
+previous_sha=REPLACE_PREVIOUS_SUCCESSFUL_SHA
+test -x "/opt/prettylisavpn/releases/${previous_sha}/deploy.sh"
+docker image inspect "prettylisavpn-backend:${previous_sha}" >/dev/null
+```
+
+Измените только несекретные строки текущего env-файла, затем запустите сохранённую конфигурацию релиза:
+
+```bash
+environment_file=/etc/prettylisavpn/development.env
+sed -i \
+  "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE='prettylisavpn-backend:${previous_sha}'|" \
+  "$environment_file"
+sed -i \
+  "s|^APPLICATION_VERSION=.*|APPLICATION_VERSION='dev-${previous_sha}'|" \
+  "$environment_file"
+SKIP_BACKEND_PULL=1 \
+  "/opt/prettylisavpn/releases/${previous_sha}/deploy.sh" "$environment_file"
+ln -sfn "/opt/prettylisavpn/releases/${previous_sha}" \
+  /opt/prettylisavpn/current.next
+mv -Tf /opt/prettylisavpn/current.next /opt/prettylisavpn/current
+```
+
+Скрипт снова применит доступные миграции и выполнит health/readiness/version checks. Он не делает автоматический downgrade PostgreSQL: перед откатом на версию, несовместимую с новой схемой, восстановите базу по согласованному плану миграции. Не удаляйте старые образы и каталоги релизов до окончания периода отката.
+
 ## 1. Подготовьте доступы и адреса
 
 До начала понадобятся:
@@ -114,7 +229,7 @@ Docker-тома caddy_data/caddy_config  Сертификаты и состоя�
 
 ## 4. Подготовьте образ Backend
 
-`deploy.sh` **скачивает** указанный образ из реестра и не собирает его из Git. Существующий CI проверяет код и тестовый образ, но не публикует релиз автоматически.
+При ручном deployment `deploy.sh` скачивает указанный образ из реестра и не собирает его из Git. Автоматический development-job передаёт собранный образ непосредственно по SSH; production-образы CI не публикует и production не развёртывает.
 
 Сборку и публикацию выполните на машине сборки из проверенного коммита. Пример, где `RELEASE_VERSION` — уникальная версия, а `registry.example.com` нужно заменить адресом вашего реестра:
 
@@ -147,7 +262,7 @@ sudoedit /etc/prettylisavpn/deployment.env
 | `APPLICATION_VERSION` | Версия именно этого образа; её вернёт `/version`. Переменная сама по себе не меняет исполняемый код. |
 | `POSTGRES_URL` | Полная строка `postgresql+asyncpg://` с реквизитами PostgreSQL. |
 | `VALKEY_URL` | Полная строка `redis://` либо `rediss://` с реквизитами Valkey. |
-| `ENVIRONMENT` | `production` для рабочего сервиса; этот Compose также позволяет явно задать другое окружение. |
+| `ENVIRONMENT` | `production` для рабочего сервиса; автоматический development-job всегда задаёт `development`. |
 | `APPLICATION_NAME`, `LOG_LEVEL` | Обычно `PrettyLisaVPN`, `INFO`. |
 | `DEPENDENCY_TIMEOUT_SECONDS` | Обычно `2`; время проверки зависимости в секундах. |
 | `POSTGRES_POOL_SIZE`, `POSTGRES_MAX_OVERFLOW` | Обычно `5` и `5`: основные и дополнительные соединения. |
@@ -190,9 +305,9 @@ cd /opt/prettylisavpn/repository
 sudo bash ./infra/deployment/deploy.sh /etc/prettylisavpn/deployment.env
 ```
 
-Скрипт проверяет права env-файла, домен и Compose-конфигурацию, скачивает образы, создаёт/заменяет контейнеры и ожидает liveness Backend. Затем проверяет публичный `/health`. DNS он не изменяет. Замена единственного Backend может вызвать краткий перерыв в обслуживании; бесшовное обновление эта схема не гарантирует.
+Скрипт проверяет права env-файла, домен и Compose-конфигурацию, скачивает образы, применяет Alembic до `head`, создаёт/заменяет контейнеры и ожидает liveness Backend. Затем он проверяет публичные `/health`, `/ready` и ожидаемую версию через `/version`. Ошибка миграции останавливает выполнение до замены работающих контейнеров. DNS скрипт не изменяет. Замена единственного Backend может вызвать краткий перерыв в обслуживании; бесшовное обновление эта схема не гарантирует.
 
-После успешного выполнения обязательно проверьте все три метода:
+После успешного выполнения можно независимо повторить проверки трёх методов:
 
 ```bash
 curl --fail --show-error https://api.example.com/health
@@ -200,7 +315,7 @@ curl --fail --show-error https://api.example.com/ready
 curl --fail --show-error https://api.example.com/version
 ```
 
-Ожидается HTTP 200 у всех методов. `/ready` подтверждает доступность **обеих** баз; `/version` должен показать ожидаемую версию и окружение. Скрипт сам `/ready` не проверяет; Caddy также использует `/health` и не блокирует трафик автоматически при ошибке readiness.
+Ожидается HTTP 200 у всех методов. `/ready` подтверждает доступность **обеих** баз; `/version` должен показать ожидаемую версию и окружение. В автоматическом development deployment версия вычисляется как `dev-<полный Git SHA>`. Caddy использует `/health` для проверки upstream и не блокирует трафик автоматически при последующей ошибке readiness.
 
 Посмотрите контейнеры и последние сообщения:
 
