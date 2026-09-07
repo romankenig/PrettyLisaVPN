@@ -11,6 +11,7 @@ from prettylisavpn.auth_sessions import model as auth_sessions_model  # noqa: F4
 from prettylisavpn.config import Settings
 from prettylisavpn.database import Base
 from prettylisavpn.devices import model as devices_model  # noqa: F401
+from prettylisavpn.product_events import model as product_events_model  # noqa: F401
 from prettylisavpn.subscriptions import model as subscriptions_model  # noqa: F401
 from prettylisavpn.users import model as users_model  # noqa: F401
 
