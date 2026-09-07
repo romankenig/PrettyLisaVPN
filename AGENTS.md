@@ -67,6 +67,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Do not rewrite or reformat unrelated code.
 - Preserve backwards compatibility unless the task explicitly requires a breaking change.
 - Reuse existing tooling and dependencies when they already solve the requirement.
+- For client UI work, follow the shared logo and color rules in `docs/design-system.md`.
 - Every database schema change requires an Alembic migration.
 - Every new endpoint requires tests.
 - Every business rule requires unit tests.

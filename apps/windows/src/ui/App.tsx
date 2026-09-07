@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import logoUrl from "../assets/prettylisavpn-logo.svg";
 import { useApplication } from "../state/application";
 function Home() {
   const { config } = useApplication();
   return (
-    <section>
+    <section className="home">
       <p className="eyebrow">WINDOWS</p>
-      <h1>{config.applicationName}</h1>
+      <h1 className="visually-hidden">{config.applicationName}</h1>
+      <div className="logo-panel">
+        <img className="main-logo" src={logoUrl} alt="PrettyLisaVPN" />
+      </div>
       <p className="intro">Ваше пространство. Ваше подключение.</p>
       <span className="badge">{config.environment}</span>
       <p className="note">Основа приложения готова к развитию.</p>
@@ -47,9 +51,7 @@ export function App() {
   return (
     <div className="shell">
       <aside>
-        <div className="brand">
-          PrettyLisa<span>VPN</span>
-        </div>
+        <p className="brand">PrettyLisaVPN</p>
         <nav aria-label="Основная навигация">
           <NavLink to="/" end>
             Главная

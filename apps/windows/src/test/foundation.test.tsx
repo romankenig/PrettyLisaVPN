@@ -83,7 +83,7 @@ it("navigates without contacting the backend and reads native version through th
     </ApplicationProvider>,
   );
   expect(
-    screen.getByRole("heading", { name: "PrettyLisaVPN" }),
+    screen.getByRole("img", { name: "PrettyLisaVPN" }),
   ).toBeInTheDocument();
   expect(screen.getByText("development")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("link", { name: "О приложении" }));
