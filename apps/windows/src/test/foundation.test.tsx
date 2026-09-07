@@ -50,7 +50,7 @@ describe("configuration", () => {
   it("loads development defaults", () => {
     expect(loadConfig({})).toMatchObject({
       environment: "development",
-      backendBaseUrl: "http://127.0.0.1:8000",
+      backendBaseUrl: "https://api.prettylisavpn.com",
       backendTimeoutMs: 5000,
       backendHealthIntervalMs: 15000,
     });
@@ -82,9 +82,12 @@ describe("configuration", () => {
   });
 
   it("requires production HTTPS and valid timing settings", () => {
-    expect(() => loadConfig({ VITE_APP_ENVIRONMENT: "production" })).toThrow(
-      "BACKEND_HTTPS_REQUIRED",
-    );
+    expect(() =>
+      loadConfig({
+        VITE_APP_ENVIRONMENT: "production",
+        VITE_BACKEND_BASE_URL: "http://127.0.0.1:8000",
+      }),
+    ).toThrow("BACKEND_HTTPS_REQUIRED");
     expect(() => loadConfig({ VITE_BACKEND_TIMEOUT_MS: 999 })).toThrow(
       "INVALID_BACKEND_TIMEOUT",
     );

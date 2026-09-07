@@ -10,7 +10,7 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
   if (!["development", "test", "production"].includes(String(environment))) {
     throw new Error("INVALID_APP_ENVIRONMENT");
   }
-  const rawUrl = env.VITE_BACKEND_BASE_URL ?? "http://127.0.0.1:8000";
+  const rawUrl = env.VITE_BACKEND_BASE_URL ?? "https://api.prettylisavpn.com";
   let url: URL;
   try {
     url = new URL(String(rawUrl));
