@@ -14,6 +14,7 @@ from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
@@ -31,7 +32,9 @@ SESSION_TTL = timedelta(days=30)
 
 async def create_user(postgres: Postgres, email: str):
     async with postgres.session() as session:
-        user = await UserService(UserRepository(session)).create(email)
+        user = await UserService(UserRepository(session), SubscriptionRepository(session)).create(
+            email
+        )
         await session.commit()
         return user
 

@@ -4,6 +4,8 @@ from uuid import uuid4
 
 import pytest
 
+from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import User, UserStatus, normalize_email
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
@@ -26,9 +28,11 @@ def test_user_rejects_naive_timestamps():
 
 async def test_service_creates_normalized_active_user():
     repository = AsyncMock(spec=UserRepository)
+    subscription_repository = AsyncMock(spec=SubscriptionRepository)
     repository.add.side_effect = lambda user: user
+    subscription_repository.add.side_effect = lambda subscription: subscription
 
-    user = await UserService(repository).create("  Lisa@Example.COM ")
+    user = await UserService(repository, subscription_repository).create("  Lisa@Example.COM ")
 
     assert isinstance(user, User)
     assert user.email == "lisa@example.com"
@@ -36,3 +40,9 @@ async def test_service_creates_normalized_active_user():
     assert user.created_at == user.updated_at
     assert user.created_at.tzinfo is UTC
     repository.add.assert_awaited_once_with(user)
+    subscription = subscription_repository.add.await_args.args[0]
+    assert subscription.user_id == user.id
+    assert subscription.plan is SubscriptionPlan.FREE
+    assert subscription.status is SubscriptionStatus.ACTIVE
+    assert not subscription.auto_renew
+    assert subscription.current_period_end is None

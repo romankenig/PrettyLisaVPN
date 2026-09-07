@@ -20,6 +20,7 @@ from prettylisavpn.devices.domain import (
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import MAX_ACTIVE_DEVICES, DeviceService
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import User
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
@@ -36,7 +37,9 @@ pytestmark = [
 
 async def create_user(postgres: Postgres, email: str) -> User:
     async with postgres.session() as session:
-        user = await UserService(UserRepository(session)).create(email)
+        user = await UserService(UserRepository(session), SubscriptionRepository(session)).create(
+            email
+        )
         await session.commit()
         return user
 

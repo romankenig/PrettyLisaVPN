@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import UserStatus
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
@@ -28,7 +29,9 @@ async def test_user_persists_with_utc_timestamps():
     email = f"persistence-{uuid4()}@example.com"
     try:
         async with postgres.session() as session:
-            created = await UserService(UserRepository(session)).create(email)
+            created = await UserService(
+                UserRepository(session), SubscriptionRepository(session)
+            ).create(email)
             await session.commit()
 
         async with postgres.session() as session:
@@ -51,12 +54,16 @@ async def test_normalized_email_is_unique():
     normalized_email = f"{local_part}@example.com"
     try:
         async with postgres.session() as session:
-            await UserService(UserRepository(session)).create(f"  {local_part}@EXAMPLE.COM ")
+            await UserService(UserRepository(session), SubscriptionRepository(session)).create(
+                f"  {local_part}@EXAMPLE.COM "
+            )
             await session.commit()
 
         with pytest.raises(IntegrityError):
             async with postgres.session() as session:
-                await UserService(UserRepository(session)).create(normalized_email)
+                await UserService(UserRepository(session), SubscriptionRepository(session)).create(
+                    normalized_email
+                )
     finally:
         async with postgres.session() as session:
             await session.execute(delete(UserRecord).where(UserRecord.email == normalized_email))
