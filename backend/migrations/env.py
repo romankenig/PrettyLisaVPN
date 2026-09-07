@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from prettylisavpn.config import Settings
 from prettylisavpn.database import Base
+from prettylisavpn.users import model as users_model  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
