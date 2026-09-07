@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.users.domain import UserStatus
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
@@ -56,6 +57,25 @@ async def test_normalized_email_is_unique():
         with pytest.raises(IntegrityError):
             async with postgres.session() as session:
                 await UserService(UserRepository(session)).create(normalized_email)
+    finally:
+        async with postgres.session() as session:
+            await session.execute(delete(UserRecord).where(UserRecord.email == normalized_email))
+            await session.commit()
+        await postgres.close()
+
+
+async def test_database_rejects_case_variant_insert_without_service():
+    postgres = Postgres(Settings())
+    normalized_email = f"direct-{uuid4()}@example.com"
+    try:
+        async with postgres.session() as session:
+            session.add(UserRecord(email=normalized_email, status=UserStatus.ACTIVE))
+            await session.commit()
+
+        with pytest.raises(IntegrityError):
+            async with postgres.session() as session:
+                session.add(UserRecord(email=normalized_email.upper(), status=UserStatus.ACTIVE))
+                await session.flush()
     finally:
         async with postgres.session() as session:
             await session.execute(delete(UserRecord).where(UserRecord.email == normalized_email))

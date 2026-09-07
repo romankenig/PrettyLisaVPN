@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, String, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prettylisavpn.database import Base
@@ -16,6 +16,12 @@ def utc_now() -> datetime:
 
 class UserRecord(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(
+            "email = lower(btrim(email))",
+            name="ck_users_email_normalized",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True)
