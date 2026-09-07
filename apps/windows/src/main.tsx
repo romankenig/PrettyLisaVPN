@@ -4,6 +4,7 @@ import { HashRouter } from "react-router-dom";
 import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
 import { desktopAdapter } from "./native/desktop";
+import { createHttpTransport } from "./native/http";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import "./ui/styles.css";
@@ -15,7 +16,11 @@ try {
       <ApplicationProvider
         value={{
           config,
-          api: createApiClient(config.backendBaseUrl),
+          api: createApiClient(
+            config.backendBaseUrl,
+            createHttpTransport(),
+            config.backendTimeoutMs,
+          ),
           desktop: desktopAdapter,
         }}
       >
@@ -28,8 +33,8 @@ try {
 } catch {
   root.render(
     <main role="alert">
-      <h1>Не удалось запустить PrettyLisaVPN</h1>
-      <p>Проверьте конфигурацию приложения.</p>
+      <h1>не удалось запустить PrettyLisaVPN</h1>
+      <p>проверьте конфигурацию приложения.</p>
     </main>,
   );
 }

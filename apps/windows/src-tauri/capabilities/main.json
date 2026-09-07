@@ -1,7 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Only application version access for the main window.",
+  "description": "Application version and configured Backend HTTP access for the main window.",
   "windows": ["main"],
-  "permissions": ["core:app:allow-version"]
+  "permissions": [
+    "core:app:allow-version",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://**" }, { "url": "http://127.0.0.1:8000/**" }]
+    }
+  ]
 }

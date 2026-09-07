@@ -19,6 +19,7 @@
 }
 body {
   margin: 0;
+  background: var(--color-mercury);
 }
 .shell {
   display: flex;
@@ -28,7 +29,7 @@ aside {
   width: 220px;
   padding: 32px 22px;
   color: var(--color-mercury);
-  background: var(--color-christalle);
+  background: rgb(44 1 109 / 78%);
   border-right: 1px solid rgb(172 115 255 / 35%);
   display: flex;
   flex-direction: column;
@@ -69,8 +70,8 @@ main {
   padding: 72px 48px;
   color: var(--color-mercury);
   background:
-    radial-gradient(circle at 92% 8%, rgb(172 115 255 / 45%), transparent 34%),
-    var(--color-purple-heart);
+    radial-gradient(circle at 92% 8%, rgb(172 115 255 / 30%), transparent 34%),
+    rgb(95 34 217 / 76%);
 }
 .eyebrow {
   font-size: 12px;
@@ -108,12 +109,68 @@ h1 {
   padding: 7px 12px;
   border-radius: 20px;
   font-size: 12px;
-  margin-top: 28px;
+  margin-top: 22px;
 }
-.note {
-  color: var(--color-mercury);
-  margin-top: 48px;
-  font-size: 14px;
+.backend-card {
+  width: min(100%, 540px);
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid rgb(228 228 228 / 45%);
+  border-radius: 16px;
+  background: rgb(44 1 109 / 42%);
+  box-shadow: 0 18px 44px rgb(44 1 109 / 18%);
+}
+.backend-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-galliano);
+}
+.backend-card--online .status-dot {
+  background: var(--color-viking);
+}
+.backend-card--offline .status-dot {
+  background: var(--color-persian-red);
+}
+.backend-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0 0;
+}
+.backend-details div {
+  min-width: 0;
+}
+.backend-details dt {
+  margin: 0 0 5px;
+  color: var(--color-dusty-gray);
+  font-size: 12px;
+}
+.backend-details dd {
+  overflow-wrap: anywhere;
+}
+button {
+  margin-top: 18px;
+  padding: 9px 18px;
+  color: var(--color-black);
+  font: inherit;
+  font-weight: 600;
+  background: var(--color-viking);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+button:hover {
+  filter: brightness(0.96);
+}
+button:focus-visible {
+  outline: 2px solid var(--color-heliotrope);
+  outline-offset: 3px;
 }
 dl {
   margin-top: 32px;

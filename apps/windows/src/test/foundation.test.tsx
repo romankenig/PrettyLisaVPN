@@ -1,23 +1,75 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ApiError, createApiClient } from "../api/client";
 import { loadConfig } from "../config/config";
-import { createApiClient } from "../api/client";
+import type { HttpTransport } from "../native/http";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
+
+const health = { status: "ok" } as const;
+const version = {
+  application_name: "PrettyLisaVPN",
+  application_version: "0.2.0-dev",
+  environment: "development",
+};
+
+function jsonResponse(value: unknown, status = 200) {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function renderApplication(transport: HttpTransport) {
+  const config = loadConfig({});
+  return render(
+    <ApplicationProvider
+      value={{
+        config,
+        api: createApiClient(
+          config.backendBaseUrl,
+          transport,
+          config.backendTimeoutMs,
+        ),
+        desktop: { getVersion: async () => "0.1.0" },
+      }}
+    >
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>
+    </ApplicationProvider>,
+  );
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("configuration", () => {
   it("loads development defaults", () => {
     expect(loadConfig({})).toMatchObject({
       environment: "development",
       backendBaseUrl: "http://127.0.0.1:8000",
+      backendTimeoutMs: 5000,
+      backendHealthIntervalMs: 15000,
     });
   });
-  it("normalizes a configured backend path", () => {
+
+  it("loads and normalizes configured backend settings", () => {
     expect(
-      loadConfig({ VITE_BACKEND_BASE_URL: "https://api.example.invalid/api/" })
-        .backendBaseUrl,
-    ).toBe("https://api.example.invalid/api");
+      loadConfig({
+        VITE_BACKEND_BASE_URL: "https://api.example.invalid/api/",
+        VITE_BACKEND_TIMEOUT_MS: "3000",
+        VITE_BACKEND_HEALTH_INTERVAL_MS: "10000",
+      }),
+    ).toMatchObject({
+      backendBaseUrl: "https://api.example.invalid/api",
+      backendTimeoutMs: 3000,
+      backendHealthIntervalMs: 10000,
+    });
   });
+
   it.each([
     "file:///tmp",
     "https://user:secret@example.invalid",
@@ -28,65 +80,130 @@ describe("configuration", () => {
       "INVALID_BACKEND_BASE_URL",
     );
   });
-  it("requires production HTTPS and a known environment", () => {
+
+  it("requires production HTTPS and valid timing settings", () => {
     expect(() => loadConfig({ VITE_APP_ENVIRONMENT: "production" })).toThrow(
       "BACKEND_HTTPS_REQUIRED",
     );
-    expect(() => loadConfig({ VITE_APP_ENVIRONMENT: "unknown" })).toThrow(
-      "INVALID_APP_ENVIRONMENT",
+    expect(() => loadConfig({ VITE_BACKEND_TIMEOUT_MS: 999 })).toThrow(
+      "INVALID_BACKEND_TIMEOUT",
+    );
+    expect(() => loadConfig({ VITE_BACKEND_HEALTH_INTERVAL_MS: 4999 })).toThrow(
+      "INVALID_BACKEND_HEALTH_INTERVAL",
     );
   });
 });
-describe("API boundary", () => {
-  it("uses the configured base URL", async () => {
-    const data = {
-      application_name: "PrettyLisaVPN",
-      application_version: "0.1.0",
-      environment: "development",
-    };
-    const transport = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response(JSON.stringify(data)));
-    await expect(
-      createApiClient("https://api.example.invalid", transport).getVersion(),
-    ).resolves.toEqual(data);
-    expect(transport).toHaveBeenCalledWith(
+
+describe("typed API client", () => {
+  it("calls health and version through the configured transport", async () => {
+    const transport = vi.fn<HttpTransport>((input) =>
+      Promise.resolve(
+        jsonResponse(String(input).endsWith("/health") ? health : version),
+      ),
+    );
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.getHealth()).resolves.toEqual(health);
+    await expect(api.getVersion()).resolves.toEqual(version);
+    expect(transport).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.invalid/health",
+      expect.objectContaining({
+        method: "GET",
+        credentials: "omit",
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(transport).toHaveBeenNthCalledWith(
+      2,
       "https://api.example.invalid/version",
-      { signal: undefined, credentials: "omit" },
+      expect.any(Object),
     );
   });
-  it("returns safe errors for transport, HTTP and schema failures", async () => {
-    const transport = vi.fn<typeof fetch>();
-    const api = createApiClient("https://api.example.invalid", transport);
+
+  it("maps transport, HTTP, and schema failures to safe errors", async () => {
+    const transport = vi.fn<HttpTransport>();
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
     transport.mockRejectedValueOnce(new Error("sensitive detail"));
-    await expect(api.getVersion()).rejects.toThrow("NETWORK_ERROR");
-    transport.mockResolvedValueOnce(new Response("", { status: 503 }));
-    await expect(api.getVersion()).rejects.toThrow("HTTP_ERROR");
-    transport.mockResolvedValueOnce(new Response("{}"));
-    await expect(api.getVersion()).rejects.toThrow("INVALID_RESPONSE");
+    await expect(api.getHealth()).rejects.toEqual(
+      new ApiError("NETWORK_ERROR"),
+    );
+    transport.mockResolvedValueOnce(jsonResponse({}, 503));
+    await expect(api.getHealth()).rejects.toEqual(new ApiError("HTTP_ERROR"));
+    transport.mockResolvedValueOnce(jsonResponse({ status: "wrong" }));
+    await expect(api.getHealth()).rejects.toEqual(
+      new ApiError("INVALID_RESPONSE"),
+    );
+  });
+
+  it("bounds a stalled request with a timeout", async () => {
+    vi.useFakeTimers();
+    const transport = vi.fn<HttpTransport>(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          const abort = () => reject(new DOMException("aborted", "AbortError"));
+          if (init?.signal?.aborted) abort();
+          else init?.signal?.addEventListener("abort", abort, { once: true });
+        }),
+    );
+    const result = createApiClient(
+      "https://api.example.invalid",
+      transport,
+      1000,
+    ).getHealth();
+    const assertion = expect(result).rejects.toEqual(new ApiError("TIMEOUT"));
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await assertion;
   });
 });
-it("navigates without contacting the backend and reads native version through the adapter", async () => {
-  const config = loadConfig({});
-  const transport = vi.fn<typeof fetch>();
-  render(
-    <ApplicationProvider
-      value={{
-        config,
-        api: createApiClient(config.backendBaseUrl, transport),
-        desktop: { getVersion: async () => "0.1.0" },
-      }}
-    >
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>
-    </ApplicationProvider>,
-  );
-  expect(
-    screen.getByRole("img", { name: "PrettyLisaVPN" }),
-  ).toBeInTheDocument();
-  expect(screen.getByText("development")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("link", { name: "О приложении" }));
-  expect(await screen.findByText("0.1.0")).toBeInTheDocument();
-  expect(transport).not.toHaveBeenCalled();
+
+describe("startup backend state", () => {
+  it("shows online with version metadata", async () => {
+    const transport: HttpTransport = (input) =>
+      Promise.resolve(
+        jsonResponse(String(input).endsWith("/health") ? health : version),
+      );
+    renderApplication(transport);
+
+    expect(screen.getByText("backend: checking")).toBeInTheDocument();
+    expect(await screen.findByText("backend: online")).toBeInTheDocument();
+    expect(screen.getByText("0.2.0-dev")).toBeInTheDocument();
+    expect(screen.getAllByText("development").length).toBeGreaterThan(0);
+  });
+
+  it("detects an outage and retry restores online state", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let online = true;
+    const transport: HttpTransport = (input) => {
+      if (!online) return Promise.reject(new Error("offline"));
+      return Promise.resolve(
+        jsonResponse(String(input).endsWith("/health") ? health : version),
+      );
+    };
+    renderApplication(transport);
+
+    expect(await screen.findByText("backend: online")).toBeInTheDocument();
+    online = false;
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(await screen.findByText("backend: offline")).toBeInTheDocument();
+
+    online = true;
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    expect(screen.getByText("backend: checking")).toBeInTheDocument();
+    expect(await screen.findByText("backend: online")).toBeInTheDocument();
+    expect(screen.getByText("0.2.0-dev")).toBeInTheDocument();
+  });
+});
+
+it("keeps native functionality behind the desktop adapter", async () => {
+  const transport: HttpTransport = (input) =>
+    Promise.resolve(
+      jsonResponse(String(input).endsWith("/health") ? health : version),
+    );
+  renderApplication(transport);
+
+  fireEvent.click(screen.getByRole("link", { name: "о приложении" }));
+  await waitFor(() => expect(screen.getByText("0.1.0")).toBeInTheDocument());
 });
