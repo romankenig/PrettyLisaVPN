@@ -18,3 +18,6 @@ __pycache__/
 htmlcov/
 dist/
 build/
+node_modules/
+apps/windows/src-tauri/target/
+apps/windows/src-tauri/gen/
