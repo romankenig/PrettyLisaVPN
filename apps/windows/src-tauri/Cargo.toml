@@ -8,3 +8,4 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-http = "2"
+uuid = { version = "1", features = ["v4"] }

@@ -5,6 +5,7 @@ import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
 import { desktopAdapter } from "./native/desktop";
 import { createHttpTransport } from "./native/http";
+import { installationIdProvider } from "./native/installationId";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import "./ui/styles.css";
@@ -22,6 +23,7 @@ try {
             config.backendTimeoutMs,
           ),
           desktop: desktopAdapter,
+          installationId: installationIdProvider,
         }}
       >
         <HashRouter>

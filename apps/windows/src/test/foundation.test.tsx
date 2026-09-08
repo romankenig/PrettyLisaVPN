@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, createApiClient } from "../api/client";
 import { loadConfig } from "../config/config";
 import type { HttpTransport } from "../native/http";
+import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
 
@@ -33,6 +34,10 @@ function renderApplication(transport: HttpTransport) {
           config.backendTimeoutMs,
         ),
         desktop: { getVersion: async () => "0.1.0" },
+        installationId: {
+          getInstallationId: async () =>
+            "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
+        },
       }}
     >
       <MemoryRouter>

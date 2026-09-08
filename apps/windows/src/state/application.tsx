@@ -2,10 +2,12 @@ import { createContext, useContext, type ReactNode } from "react";
 import type { AppConfig } from "../config/config";
 import type { createApiClient } from "../api/client";
 import type { DesktopAdapter } from "../native/desktop";
+import type { InstallationIdProvider } from "../native/installationId";
 export interface ApplicationState {
   config: AppConfig;
   api: ReturnType<typeof createApiClient>;
   desktop: DesktopAdapter;
+  installationId: InstallationIdProvider;
 }
 const ApplicationContext = createContext<ApplicationState | null>(null);
 export function ApplicationProvider({

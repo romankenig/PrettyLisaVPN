@@ -2494,6 +2494,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-http",
+ "uuid",
 ]
 
 [[package]]
