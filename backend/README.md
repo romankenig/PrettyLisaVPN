@@ -109,6 +109,13 @@ docker compose -f infra/docker/compose.yaml down
 | `OTP_EMAIL_REQUEST_LIMIT`, `OTP_EMAIL_RATE_WINDOW_SECONDS` | `5`, `3600`; лимит запросов на email и окно лимита в секундах. |
 | `OTP_IP_REQUEST_LIMIT`, `OTP_IP_RATE_WINDOW_SECONDS` | `20`, `3600`; лимит запросов на IP и окно лимита в секундах. |
 | `OTP_MAX_VERIFICATION_ATTEMPTS` | `5`; число неверных попыток до удаления OTP. |
+| `EMAIL_PROVIDER` | `timeweb`; используется SMTP-интеграция почтового ящика Timeweb. |
+| `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | `smtp.timeweb.ru`, `465`. |
+| `EMAIL_SMTP_TLS_MODE` | `implicit_tls`; также поддерживается `starttls` для порта 587. |
+| `EMAIL_SMTP_USERNAME`, `EMAIL_FROM_ADDRESS` | `auth@prettylisavpn.com`; Timeweb требует совпадения SMTP-логина и отправителя. |
+| `EMAIL_SMTP_PASSWORD` | Пароль почтового ящика; без значения adapter не создаётся. Никогда не коммитьте. |
+| `EMAIL_FROM_NAME` | `PrettyLisaVPN`. |
+| `EMAIL_CONNECTION_TIMEOUT_SECONDS`, `EMAIL_SEND_TIMEOUT_SECONDS` | `5`, `10`; сетевой и общий тайм-аут отправки. |
 | `DEPENDENCY_TIMEOUT_SECONDS` | `2`; тайм-аут проверки зависимости, больше 0 и не больше 30 секунд. |
 | `POSTGRES_POOL_SIZE` | `5`; размер пула соединений, минимум 1. |
 | `POSTGRES_MAX_OVERFLOW` | `5`; дополнительные временные соединения сверх пула, минимум 0. |
@@ -128,6 +135,8 @@ docker compose -f infra/docker/compose.yaml down
 Недоступность базы не останавливает процесс. Поэтому Docker-статус `healthy`, основанный на `/health`, ещё не означает готовность сервиса; отдельно проверяйте `/ready`. Docker сам по себе не перезапускает контейнер только из-за статуса `unhealthy`.
 
 Подключения используют SQLAlchemy 2.x/asyncpg и Redis-совместимый асинхронный клиент для Valkey. Пулы создаются на время жизни приложения, подключаются по мере необходимости и закрываются при завершении. `Postgres.session()` закрывает сессию и откатывает незавершённую работу: успешную запись вызывающий код должен явно подтвердить через commit.
+
+Отправка OTP-писем описана в [руководстве EmailProvider](../docs/email-provider.md). SMTP-подключение создаётся на одну отправку и не повторяет её автоматически при неоднозначной сетевой ошибке.
 
 Backend пишет JSON-логи с UTC-временем. Неожиданные HTTP-ошибки возвращают общий код `internal_error`; ошибки валидации не повторяют входные значения. Необработанные тексты исключений, SQL-параметры и HTTP access URL в логах приложения не записываются. Это описание Backend: политику логов внешнего reverse proxy нужно оценивать отдельно.
 

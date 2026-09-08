@@ -159,6 +159,7 @@ jobs:
           DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
           DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
+          DEV_EMAIL_SMTP_PASSWORD: ${{ secrets.DEV_EMAIL_SMTP_PASSWORD }}
         run: |
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
@@ -167,7 +168,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET
+          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -188,6 +189,16 @@ jobs:
             printf "POSTGRES_URL='%s'\n" "$DEV_POSTGRES_URL"
             printf "VALKEY_URL='%s'\n" "$DEV_VALKEY_URL"
             printf "OTP_HMAC_SECRET='%s'\n" "$DEV_OTP_HMAC_SECRET"
+            printf "EMAIL_PROVIDER='timeweb'\n"
+            printf "EMAIL_SMTP_HOST='smtp.timeweb.ru'\n"
+            printf "EMAIL_SMTP_PORT='465'\n"
+            printf "EMAIL_SMTP_TLS_MODE='implicit_tls'\n"
+            printf "EMAIL_SMTP_USERNAME='auth@prettylisavpn.com'\n"
+            printf "EMAIL_SMTP_PASSWORD='%s'\n" "$DEV_EMAIL_SMTP_PASSWORD"
+            printf "EMAIL_FROM_ADDRESS='auth@prettylisavpn.com'\n"
+            printf "EMAIL_FROM_NAME='PrettyLisaVPN'\n"
+            printf "EMAIL_CONNECTION_TIMEOUT_SECONDS='5'\n"
+            printf "EMAIL_SEND_TIMEOUT_SECONDS='10'\n"
             printf "DEPENDENCY_TIMEOUT_SECONDS='5'\n"
             printf "POSTGRES_POOL_SIZE='5'\n"
             printf "POSTGRES_MAX_OVERFLOW='5'\n"

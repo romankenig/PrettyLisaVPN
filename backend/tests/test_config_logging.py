@@ -25,6 +25,15 @@ def test_environment_configuration(monkeypatch):
         {"valkey_url": "http://localhost"},
         {"dependency_timeout_seconds": 0},
         {"postgres_pool_size": 0},
+        {"email_smtp_port": 0},
+        {"email_provider": "unknown"},
+        {"email_smtp_tls_mode": "none"},
+        {"email_connection_timeout_seconds": 0},
+        {"email_send_timeout_seconds": 0},
+        {
+            "email_smtp_username": "auth@prettylisavpn.com",
+            "email_from_address": "other@prettylisavpn.com",
+        },
     ],
 )
 def test_invalid_configuration(overrides):
@@ -41,6 +50,12 @@ def test_json_logging_has_utc_timestamp_without_tracebacks():
     assert payload["event"] == "request_failed"
     assert payload["level"] == "ERROR"
     assert "secret-password" not in result
+
+
+def test_smtp_credential_is_redacted_from_settings_repr():
+    settings = Settings(_env_file=None, email_smtp_password="private-mailbox-password")
+
+    assert "private-mailbox-password" not in repr(settings)
 
 
 def test_logging_discards_access_urls():

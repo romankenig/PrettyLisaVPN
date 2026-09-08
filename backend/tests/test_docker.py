@@ -30,7 +30,10 @@ def test_runtime_image_configuration():
     assert config["StopSignal"] == "SIGTERM"
     assert config["Healthcheck"]["Test"][0] == "CMD"
     assert "/health" in config["Healthcheck"]["Test"][-1]
-    assert not any(key.startswith(("POSTGRES_URL=", "VALKEY_URL=")) for key in config["Env"])
+    assert not any(
+        key.startswith(("POSTGRES_URL=", "VALKEY_URL=", "EMAIL_SMTP_PASSWORD="))
+        for key in config["Env"]
+    )
     code = (
         "import importlib.util, os, pathlib, sys; "
         "assert sys.version_info[:2] == (3, 13); assert os.getuid() == 10001; "

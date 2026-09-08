@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     otp_ip_request_limit: int = Field(default=20, ge=1, le=1000)
     otp_ip_rate_window_seconds: int = Field(default=3600, ge=1, le=86400)
     otp_max_verification_attempts: int = Field(default=5, ge=1, le=20)
+    email_provider: Literal["timeweb"] = "timeweb"
+    email_smtp_host: str = Field(default="smtp.timeweb.ru", min_length=1)
+    email_smtp_port: int = Field(default=465, ge=1, le=65535)
+    email_smtp_tls_mode: Literal["implicit_tls", "starttls"] = "implicit_tls"
+    email_smtp_username: str = Field(default="auth@prettylisavpn.com", min_length=3)
+    email_smtp_password: SecretStr | None = None
+    email_from_address: str = Field(default="auth@prettylisavpn.com", min_length=3)
+    email_from_name: str = Field(default="PrettyLisaVPN", min_length=1, max_length=100)
+    email_connection_timeout_seconds: float = Field(default=5, gt=0, le=30)
+    email_send_timeout_seconds: float = Field(default=10, gt=0, le=60)
 
     @field_validator("postgres_url")
     @classmethod
@@ -56,4 +66,6 @@ class Settings(BaseSettings):
             and self.otp_hmac_secret.get_secret_value() == DEVELOPMENT_OTP_HMAC_SECRET
         ):
             raise ValueError("OTP_HMAC_SECRET must be changed in production")
+        if self.email_from_address != self.email_smtp_username:
+            raise ValueError("EMAIL_FROM_ADDRESS must match EMAIL_SMTP_USERNAME for Timeweb")
         return self

@@ -74,6 +74,7 @@ ssh-keygen -lf dev-known-hosts
 | `DEV_POSTGRES_URL` | Полный `postgresql+asyncpg://` URL development PostgreSQL. |
 | `DEV_VALKEY_URL` | Полный `redis://` или `rediss://` URL development Valkey. |
 | `DEV_OTP_HMAC_SECRET` | Отдельный случайный HMAC-секрет OTP длиной не менее 32 символов. |
+| `DEV_EMAIL_SMTP_PASSWORD` | Пароль ящика `auth@prettylisavpn.com`; нужен перед smoke-тестом или подключением auth-flow. |
 
 Значения URL должны быть однострочными, а специальные символы реквизитов — URL-кодированными. Workflow не выводит значения secrets: он проверяет только наличие, создаёт env-файл с правами `0600` во временном каталоге runner и передаёт его по SSH. Постоянный `/etc/prettylisavpn/development.env` заменяется с правами `0600` только после успешных миграций и проверок нового релиза.
 
@@ -265,6 +266,8 @@ sudoedit /etc/prettylisavpn/deployment.env
 | `VALKEY_URL` | Полная строка `redis://` либо `rediss://` с реквизитами Valkey. |
 | `OTP_HMAC_SECRET` | Отдельный случайный HMAC-секрет OTP длиной не менее 32 символов. |
 | `OTP_*` лимиты и TTL | Значения из env-шаблона; при необходимости настройте срок OTP, cooldown, окна лимитов и максимум попыток. |
+| `EMAIL_SMTP_PASSWORD` | Пароль ящика `auth@prettylisavpn.com`; храните только в защищённом env-файле. |
+| `EMAIL_*` SMTP-настройки | По умолчанию Timeweb `smtp.timeweb.ru:465` с implicit TLS; полный список в руководстве Backend. |
 | `ENVIRONMENT` | `production` для рабочего сервиса; автоматический development-job всегда задаёт `development`. |
 | `APPLICATION_NAME`, `LOG_LEVEL` | Обычно `PrettyLisaVPN`, `INFO`. |
 | `DEPENDENCY_TIMEOUT_SECONDS` | Обычно `2`; время проверки зависимости в секундах. |
