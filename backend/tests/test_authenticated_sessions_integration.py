@@ -39,6 +39,9 @@ pytestmark = [
 
 
 class FakeDependency:
+    def __init__(self) -> None:
+        self.otp = AsyncMock()
+
     async def ping(self) -> None:
         return None
 
