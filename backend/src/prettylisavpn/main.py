@@ -28,6 +28,8 @@ from prettylisavpn.auth.session_service import (
 )
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
+from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
+from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
 from prettylisavpn.emailing.timeweb import TimewebEmailProvider
 from prettylisavpn.logging import configure_logging
@@ -88,6 +90,7 @@ def create_app(
     product_events: ProductEventSink | None = None,
     login_service: LoginHandler | None = None,
     authenticated_sessions: AuthenticatedSessionHandler | None = None,
+    device_management: DeviceManagementHandler | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -134,6 +137,16 @@ def create_app(
                         config,
                     )
                 )
+                app.state.device_management = (
+                    device_management
+                    if device_management is not None
+                    else DeviceManagementService(
+                        cast(Postgres, pg),
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        cast(ProductEventSink, app.state.product_events),
+                        config,
+                    )
+                )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 logger.info("application_started")
                 yield
@@ -149,6 +162,7 @@ def create_app(
     app.add_middleware(SafeExceptionMiddleware)
     app.include_router(auth_router)
     app.include_router(account_router)
+    app.include_router(devices_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

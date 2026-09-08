@@ -66,6 +66,8 @@ class MeSummary:
 
 
 class AuthenticatedSessionHandler(Protocol):
+    async def authenticate(self, access_token: str) -> AccessIdentity: ...
+
     async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens: ...
 
     async def logout(self, access_token: str) -> None: ...
@@ -84,6 +86,19 @@ class AuthenticatedSessionService:
         self._events = events
         self._access_tokens = AccessTokenService(settings)
         self._refresh_token_ttl = timedelta(seconds=settings.refresh_token_ttl_seconds)
+
+    async def authenticate(self, access_token: str) -> AccessIdentity:
+        identity = self._decode_identity(access_token)
+        try:
+            async with self._postgres.session() as session:
+                auth_session = await AuthSessionRepository(session).get(identity.session_id)
+                auth_session = self._require_session(auth_session, identity)
+                await self._load_principals(session, auth_session)
+        except (InvalidSessionError, BlockedUserError, RevokedDeviceError):
+            raise
+        except SQLAlchemyError:
+            raise AuthServiceUnavailableError("Authentication storage is unavailable") from None
+        return identity
 
     async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens:
         try:

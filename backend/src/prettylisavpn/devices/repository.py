@@ -41,6 +41,14 @@ class DeviceRepository:
         record = await self._session.get(DeviceRecord, device_id)
         return self._to_domain(record) if record is not None else None
 
+    async def list_by_user(self, user_id: UUID) -> list[Device]:
+        records = await self._session.scalars(
+            select(DeviceRecord)
+            .where(DeviceRecord.user_id == user_id)
+            .order_by(DeviceRecord.created_at, DeviceRecord.id)
+        )
+        return [self._to_domain(record) for record in records]
+
     async def count_active(self, user_id: UUID) -> int:
         statement = select(func.count(DeviceRecord.id)).where(
             DeviceRecord.user_id == user_id,
