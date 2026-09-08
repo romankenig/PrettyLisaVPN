@@ -36,6 +36,10 @@ class AuthSessionRepository:
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 
+    async def get(self, session_id: UUID) -> AuthSession | None:
+        record = await self._session.get(AuthSessionRecord, session_id)
+        return self._to_domain(record) if record is not None else None
+
     async def rotate(
         self,
         session_id: UUID,

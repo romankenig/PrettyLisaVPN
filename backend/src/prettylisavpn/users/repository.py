@@ -1,5 +1,7 @@
 """Async persistence operations for users."""
 
+from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +27,13 @@ class UserRepository:
 
     async def get_by_email(self, email: str) -> User | None:
         statement = select(UserRecord).where(UserRecord.email == normalize_email(email))
+        record = await self._session.scalar(statement)
+        return self._to_domain(record) if record is not None else None
+
+    async def get_by_id(self, user_id: UUID, *, for_update: bool = False) -> User | None:
+        statement = select(UserRecord).where(UserRecord.id == user_id)
+        if for_update:
+            statement = statement.with_for_update()
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 

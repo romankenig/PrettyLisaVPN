@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from starlette.responses import JSONResponse
 
@@ -20,12 +21,22 @@ from prettylisavpn.auth.service import (
     ProductEventSink,
     RequestOtpService,
 )
+from prettylisavpn.auth.session_service import (
+    AuthenticatedSessionHandler,
+    AuthServiceUnavailableError,
+    InvalidRefreshTokenError,
+    InvalidSessionError,
+    RevokedDeviceError,
+)
+from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.devices.domain import DeviceLimitReachedError, DevicePlatform, DeviceStatus
 from prettylisavpn.emailing.domain import EmailProvider
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+account_router = APIRouter(tags=["account"])
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 class RequestOtpBody(BaseModel):
@@ -85,6 +96,39 @@ class VerifyOtpResponse(BaseModel):
     user: LoginUserResponse
     device: LoginDeviceResponse
     subscription: LoginSubscriptionResponse
+
+
+class RefreshBody(BaseModel):
+    session_id: UUID
+    refresh_token: Annotated[str, Field(min_length=1, max_length=512)]
+
+
+class RefreshResponse(BaseModel):
+    token_type: Literal["bearer"] = "bearer"
+    access_token: str
+    access_token_expires_in: int
+    refresh_token: str
+    refresh_token_expires_at: datetime
+    session_id: UUID
+
+
+class MeResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    plan: SubscriptionPlan
+    active_device_count: int
+
+
+class LogoutResponse(BaseModel):
+    status: Literal["logged_out"] = "logged_out"
+
+
+def bearer_token(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> str | None:
+    if credentials is None or credentials.scheme.casefold() != "bearer":
+        return None
+    return credentials.credentials
 
 
 @router.post(
@@ -161,4 +205,101 @@ async def verify_otp(body: VerifyOtpBody, request: Request) -> VerifyOtpResponse
             plan=result.subscription.plan,
             status=result.subscription.status,
         ),
+    )
+
+
+@router.post(
+    "/refresh",
+    response_model=RefreshResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Refresh credentials are unusable"},
+        403: {"model": ErrorResponse, "description": "User or device is blocked"},
+        503: {"model": ErrorResponse, "description": "Authentication service unavailable"},
+    },
+)
+async def refresh(body: RefreshBody, request: Request) -> RefreshResponse | JSONResponse:
+    service = cast(AuthenticatedSessionHandler, request.app.state.authenticated_sessions)
+    try:
+        result = await service.refresh(body.session_id, body.refresh_token)
+    except InvalidRefreshTokenError:
+        return error_response("invalid_refresh_token", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    return RefreshResponse(
+        access_token=result.access_token.token,
+        access_token_expires_in=result.access_token.expires_in_seconds,
+        refresh_token=result.auth_session.refresh_token,
+        refresh_token_expires_at=result.auth_session.session.expires_at,
+        session_id=result.auth_session.session.id,
+    )
+
+
+@router.post(
+    "/logout",
+    response_model=LogoutResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
+        403: {"model": ErrorResponse, "description": "User or device is blocked"},
+        503: {"model": ErrorResponse, "description": "Authentication service unavailable"},
+    },
+)
+async def logout(
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+) -> LogoutResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    service = cast(AuthenticatedSessionHandler, request.app.state.authenticated_sessions)
+    try:
+        await service.logout(token)
+    except InvalidAccessTokenError:
+        return error_response("invalid_access_token", 401)
+    except InvalidSessionError:
+        return error_response("invalid_session", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    return LogoutResponse()
+
+
+@account_router.get(
+    "/me",
+    response_model=MeResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
+        403: {"model": ErrorResponse, "description": "User or device is blocked"},
+        503: {"model": ErrorResponse, "description": "Authentication service unavailable"},
+    },
+)
+async def me(
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+) -> MeResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    service = cast(AuthenticatedSessionHandler, request.app.state.authenticated_sessions)
+    try:
+        result = await service.me(token)
+    except InvalidAccessTokenError:
+        return error_response("invalid_access_token", 401)
+    except InvalidSessionError:
+        return error_response("invalid_session", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    return MeResponse(
+        id=result.user_id,
+        email=result.email,
+        plan=result.plan,
+        active_device_count=result.active_device_count,
     )

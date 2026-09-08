@@ -40,18 +40,20 @@ class AuthSessionService:
         return IssuedAuthSession(session=persisted, refresh_token=refresh_token)
 
     async def rotate(self, session_id: UUID, refresh_token: str) -> IssuedAuthSession:
+        auth_session = await self.validate_refresh_token(session_id, refresh_token)
+        return await self.rotate_validated(auth_session)
+
+    async def validate_refresh_token(self, session_id: UUID, refresh_token: str) -> AuthSession:
         auth_session = await self._repository.get_for_update(session_id)
         now = datetime.now(UTC)
-        if (
-            auth_session is None
-            or not auth_session.is_active(now)
-            or not hmac.compare_digest(
-                auth_session.refresh_token_hash,
-                self.hash_refresh_token(refresh_token),
-            )
+        if auth_session is None or not self.is_refresh_token_usable(
+            auth_session, refresh_token, now
         ):
             raise InvalidAuthSessionError
+        return auth_session
 
+    async def rotate_validated(self, auth_session: AuthSession) -> IssuedAuthSession:
+        now = datetime.now(UTC)
         new_refresh_token = self._generate_refresh_token()
         rotated = AuthSession(
             id=auth_session.id,
@@ -80,6 +82,15 @@ class AuthSessionService:
     @staticmethod
     def hash_refresh_token(refresh_token: str) -> bytes:
         return hashlib.sha256(refresh_token.encode()).digest()
+
+    @classmethod
+    def is_refresh_token_usable(
+        cls, auth_session: AuthSession, refresh_token: str, at: datetime
+    ) -> bool:
+        return auth_session.is_active(at) and hmac.compare_digest(
+            auth_session.refresh_token_hash,
+            cls.hash_refresh_token(refresh_token),
+        )
 
     @staticmethod
     def _generate_refresh_token() -> str:

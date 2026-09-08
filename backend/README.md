@@ -135,10 +135,15 @@ docker compose -f infra/docker/compose.yaml down
 | `GET /version` | Метаданные запущенного приложения. | `application_name`, `application_version`, `environment`. |
 | `POST /auth/request-otp` | Валидирует email, применяет Valkey cooldown/лимиты и отправляет OTP. | HTTP 202 и `{"status":"accepted"}` без сведений о наличии аккаунта. |
 | `POST /auth/verify-otp` | Одноразово проверяет OTP и атомарно создаёт login-состояние. | Возвращает короткоживущий access token, вращаемый refresh token и контекст пользователя, устройства и подписки. |
+| `POST /auth/refresh` | Проверяет `session_id` и refresh token, затем атомарно меняет его хеш. | Возвращает новую пару access/refresh; повторное использование старого refresh token отклоняется. |
+| `POST /auth/logout` | Проверяет Bearer access token и отзывает связанную с ним текущую сессию. | HTTP 200 и `{"status":"logged_out"}`. |
+| `GET /me` | Проверяет access token, сессию, пользователя и устройство. | Возвращает `id`, `email`, текущий `plan` и `active_device_count`. |
 
 `POST /auth/request-otp` возвращает стабильные коды `otp_rate_limited` (429), `otp_service_unavailable` (503) и `email_service_unavailable` (503). OTP никогда не входит в HTTP-ответ.
 
 `POST /auth/verify-otp` принимает `email`, шестизначный `code`, UUID `installation_id`, `platform` и `device_name`. Ошибки: `otp_invalid_or_expired` (401), `user_blocked` (403), `device_limit_reached` (409), `otp_service_unavailable` и `login_service_unavailable` (503). В PostgreSQL хранится только SHA-256 refresh-токена; access token подписывается отдельным ключом, производным от `OTP_HMAC_SECRET` с доменным разделением. TTL задают `ACCESS_TOKEN_TTL_SECONDS` и `REFRESH_TOKEN_TTL_SECONDS`.
+
+`POST /auth/refresh` принимает `session_id` и `refresh_token`. Истёкший, отозванный, неверный или уже использованный токен даёт `invalid_refresh_token` (401). Защищённые методы используют `Authorization: Bearer <access_token>` и возвращают `authentication_required`, `invalid_access_token` либо `invalid_session` (401), `user_blocked` или `device_revoked` (403), `auth_service_unavailable` (503). Тела запросов и ответов с токенами не журналируются.
 
 Недоступность базы не останавливает процесс. Поэтому Docker-статус `healthy`, основанный на `/health`, ещё не означает готовность сервиса; отдельно проверяйте `/ready`. Docker сам по себе не перезапускает контейнер только из-за статуса `unhealthy`.
 

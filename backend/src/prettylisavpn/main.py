@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from prettylisavpn.auth.events import DatabaseProductEventSink
+from prettylisavpn.auth.router import account_router
 from prettylisavpn.auth.router import router as auth_router
 from prettylisavpn.auth.service import (
     LoginHandler,
@@ -20,6 +21,10 @@ from prettylisavpn.auth.service import (
     OtpIssuer,
     OtpVerifier,
     ProductEventSink,
+)
+from prettylisavpn.auth.session_service import (
+    AuthenticatedSessionHandler,
+    AuthenticatedSessionService,
 )
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
@@ -82,6 +87,7 @@ def create_app(
     email_provider: EmailProvider | None = None,
     product_events: ProductEventSink | None = None,
     login_service: LoginHandler | None = None,
+    authenticated_sessions: AuthenticatedSessionHandler | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -119,6 +125,15 @@ def create_app(
                         config,
                     )
                 )
+                app.state.authenticated_sessions = (
+                    authenticated_sessions
+                    if authenticated_sessions is not None
+                    else AuthenticatedSessionService(
+                        cast(Postgres, pg),
+                        cast(ProductEventSink, app.state.product_events),
+                        config,
+                    )
+                )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 logger.info("application_started")
                 yield
@@ -133,6 +148,7 @@ def create_app(
     )
     app.add_middleware(SafeExceptionMiddleware)
     app.include_router(auth_router)
+    app.include_router(account_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

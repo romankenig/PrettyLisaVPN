@@ -37,6 +37,10 @@ class DeviceRepository:
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 
+    async def get(self, device_id: UUID) -> Device | None:
+        record = await self._session.get(DeviceRecord, device_id)
+        return self._to_domain(record) if record is not None else None
+
     async def count_active(self, user_id: UUID) -> int:
         statement = select(func.count(DeviceRecord.id)).where(
             DeviceRecord.user_id == user_id,
