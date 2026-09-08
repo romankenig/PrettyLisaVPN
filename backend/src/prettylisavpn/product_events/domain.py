@@ -21,7 +21,9 @@ class ProductEventName(StrEnum):
 
 PROPERTY_ALLOWLIST: dict[ProductEventName, dict[str, frozenset[str]]] = {
     ProductEventName.LOGIN_FAILED: {
-        "reason": frozenset({"invalid_otp", "expired_otp", "rate_limited", "user_blocked"})
+        "reason": frozenset(
+            {"invalid_otp", "expired_otp", "rate_limited", "user_blocked", "device_limit"}
+        )
     },
     ProductEventName.DEVICE_REGISTERED: {
         "platform": frozenset(

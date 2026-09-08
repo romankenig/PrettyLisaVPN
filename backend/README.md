@@ -109,6 +109,8 @@ docker compose -f infra/docker/compose.yaml down
 | `OTP_EMAIL_REQUEST_LIMIT`, `OTP_EMAIL_RATE_WINDOW_SECONDS` | `5`, `3600`; лимит запросов на email и окно лимита в секундах. |
 | `OTP_IP_REQUEST_LIMIT`, `OTP_IP_RATE_WINDOW_SECONDS` | `20`, `3600`; лимит запросов на IP и окно лимита в секундах. |
 | `OTP_MAX_VERIFICATION_ATTEMPTS` | `5`; число неверных попыток до удаления OTP. |
+| `ACCESS_TOKEN_TTL_SECONDS` | `900`; срок действия подписанного access token. |
+| `REFRESH_TOKEN_TTL_SECONDS` | `2592000`; срок действия refresh-сессии (30 дней). |
 | `EMAIL_PROVIDER` | `timeweb`; используется SMTP-интеграция почтового ящика Timeweb. |
 | `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | `smtp.timeweb.ru`, `465`. |
 | `EMAIL_SMTP_TLS_MODE` | `implicit_tls`; также поддерживается `starttls` для порта 587. |
@@ -132,8 +134,11 @@ docker compose -f infra/docker/compose.yaml down
 | `GET /ready` | На каждый запрос выполняет PostgreSQL `SELECT 1` и Valkey `PING`. | HTTP 200, если обе зависимости доступны; иначе HTTP 503 и код `dependencies_unavailable`. |
 | `GET /version` | Метаданные запущенного приложения. | `application_name`, `application_version`, `environment`. |
 | `POST /auth/request-otp` | Валидирует email, применяет Valkey cooldown/лимиты и отправляет OTP. | HTTP 202 и `{"status":"accepted"}` без сведений о наличии аккаунта. |
+| `POST /auth/verify-otp` | Одноразово проверяет OTP и атомарно создаёт login-состояние. | Возвращает короткоживущий access token, вращаемый refresh token и контекст пользователя, устройства и подписки. |
 
-`POST /auth/request-otp` возвращает стабильные коды `otp_rate_limited` (429), `otp_service_unavailable` (503) и `email_service_unavailable` (503). OTP никогда не входит в HTTP-ответ. Endpoint проверки OTP и выдача токенов пока не реализованы.
+`POST /auth/request-otp` возвращает стабильные коды `otp_rate_limited` (429), `otp_service_unavailable` (503) и `email_service_unavailable` (503). OTP никогда не входит в HTTP-ответ.
+
+`POST /auth/verify-otp` принимает `email`, шестизначный `code`, UUID `installation_id`, `platform` и `device_name`. Ошибки: `otp_invalid_or_expired` (401), `user_blocked` (403), `device_limit_reached` (409), `otp_service_unavailable` и `login_service_unavailable` (503). В PostgreSQL хранится только SHA-256 refresh-токена; access token подписывается отдельным ключом, производным от `OTP_HMAC_SECRET` с доменным разделением. TTL задают `ACCESS_TOKEN_TTL_SECONDS` и `REFRESH_TOKEN_TTL_SECONDS`.
 
 Недоступность базы не останавливает процесс. Поэтому Docker-статус `healthy`, основанный на `/health`, ещё не означает готовность сервиса; отдельно проверяйте `/ready`. Docker сам по себе не перезапускает контейнер только из-за статуса `unhealthy`.
 

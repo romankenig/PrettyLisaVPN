@@ -14,6 +14,9 @@ from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.devices.domain import DevicePlatform
+from prettylisavpn.devices.repository import DeviceRepository
+from prettylisavpn.devices.service import DeviceService
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
@@ -45,13 +48,23 @@ async def delete_user(postgres: Postgres, user_id):
         await session.commit()
 
 
+async def create_device(postgres: Postgres, user_id):
+    async with postgres.session() as session:
+        device = await DeviceService(DeviceRepository(session)).register(
+            user_id, uuid4(), DevicePlatform.WINDOWS, "Test device"
+        )
+        await session.commit()
+        return device
+
+
 async def test_persists_only_refresh_token_hash_and_rotates_it():
     postgres = Postgres(Settings())
     user = await create_user(postgres, f"auth-session-{uuid4()}@example.com")
+    device = await create_device(postgres, user.id)
     try:
         async with postgres.session() as session:
             service = AuthSessionService(AuthSessionRepository(session), SESSION_TTL)
-            issued = await service.issue(user.id, uuid4())
+            issued = await service.issue(user.id, device.id)
             await session.commit()
 
         async with postgres.session() as session:
@@ -75,10 +88,11 @@ async def test_persists_only_refresh_token_hash_and_rotates_it():
 async def test_concurrent_rotation_accepts_old_token_once():
     postgres = Postgres(Settings())
     user = await create_user(postgres, f"auth-rotation-{uuid4()}@example.com")
+    device = await create_device(postgres, user.id)
     try:
         async with postgres.session() as session:
             issued = await AuthSessionService(AuthSessionRepository(session), SESSION_TTL).issue(
-                user.id, uuid4()
+                user.id, device.id
             )
             await session.commit()
 
@@ -104,8 +118,8 @@ async def test_concurrent_rotation_accepts_old_token_once():
 async def test_revokes_all_sessions_for_one_device():
     postgres = Postgres(Settings())
     user = await create_user(postgres, f"auth-revoke-{uuid4()}@example.com")
-    target_device_id = uuid4()
-    other_device_id = uuid4()
+    target_device_id = (await create_device(postgres, user.id)).id
+    other_device_id = (await create_device(postgres, user.id)).id
     try:
         async with postgres.session() as session:
             service = AuthSessionService(AuthSessionRepository(session), SESSION_TTL)

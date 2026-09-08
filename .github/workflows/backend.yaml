@@ -191,6 +191,8 @@ jobs:
             printf "POSTGRES_URL='%s'\n" "$DEV_POSTGRES_URL"
             printf "VALKEY_URL='%s'\n" "$DEV_VALKEY_URL"
             printf "OTP_HMAC_SECRET='%s'\n" "$DEV_OTP_HMAC_SECRET"
+            printf "ACCESS_TOKEN_TTL_SECONDS='900'\n"
+            printf "REFRESH_TOKEN_TTL_SECONDS='2592000'\n"
             printf "EMAIL_PROVIDER='timeweb'\n"
             printf "EMAIL_SMTP_HOST='smtp.timeweb.ru'\n"
             printf "EMAIL_SMTP_PORT='465'\n"

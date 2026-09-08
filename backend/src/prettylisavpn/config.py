@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     otp_ip_request_limit: int = Field(default=20, ge=1, le=1000)
     otp_ip_rate_window_seconds: int = Field(default=3600, ge=1, le=86400)
     otp_max_verification_attempts: int = Field(default=5, ge=1, le=20)
+    access_token_ttl_seconds: int = Field(default=900, ge=60, le=3600)
+    refresh_token_ttl_seconds: int = Field(default=2592000, ge=3600, le=31536000)
     email_provider: Literal["timeweb"] = "timeweb"
     email_smtp_host: str = Field(default="smtp.timeweb.ru", min_length=1)
     email_smtp_port: int = Field(default=465, ge=1, le=65535)

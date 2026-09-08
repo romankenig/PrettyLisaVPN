@@ -14,7 +14,13 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from prettylisavpn.auth.events import DatabaseProductEventSink
 from prettylisavpn.auth.router import router as auth_router
-from prettylisavpn.auth.service import OtpIssuer, ProductEventSink
+from prettylisavpn.auth.service import (
+    LoginHandler,
+    LoginService,
+    OtpIssuer,
+    OtpVerifier,
+    ProductEventSink,
+)
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
@@ -75,6 +81,7 @@ def create_app(
     otp_service: OtpIssuer | None = None,
     email_provider: EmailProvider | None = None,
     product_events: ProductEventSink | None = None,
+    login_service: LoginHandler | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -101,6 +108,16 @@ def create_app(
                     product_events
                     if product_events is not None
                     else DatabaseProductEventSink(cast(Postgres, pg))
+                )
+                app.state.login_service = (
+                    login_service
+                    if login_service is not None
+                    else LoginService(
+                        cast(OtpVerifier, app.state.otp_service),
+                        cast(Postgres, pg),
+                        cast(ProductEventSink, app.state.product_events),
+                        config,
+                    )
                 )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 logger.info("application_started")

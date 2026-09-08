@@ -1,6 +1,6 @@
 """Async persistence operations for users."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.users.domain import User, normalize_email
@@ -25,6 +25,20 @@ class UserRepository:
 
     async def get_by_email(self, email: str) -> User | None:
         statement = select(UserRecord).where(UserRecord.email == normalize_email(email))
+        record = await self._session.scalar(statement)
+        return self._to_domain(record) if record is not None else None
+
+    async def lock_identity(self, email: str) -> None:
+        """Serialize find-or-create operations for one normalized email."""
+        normalized_email = normalize_email(email)
+        await self._session.execute(
+            select(func.pg_advisory_xact_lock(func.hashtextextended(normalized_email, 0)))
+        )
+
+    async def get_by_email_for_update(self, email: str) -> User | None:
+        statement = (
+            select(UserRecord).where(UserRecord.email == normalize_email(email)).with_for_update()
+        )
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 

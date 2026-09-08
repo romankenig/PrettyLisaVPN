@@ -27,6 +27,16 @@ class DeviceService:
         platform: DevicePlatform,
         device_name: str,
     ) -> Device:
+        device, _ = await self.register_with_result(user_id, installation_id, platform, device_name)
+        return device
+
+    async def register_with_result(
+        self,
+        user_id: UUID,
+        installation_id: UUID,
+        platform: DevicePlatform,
+        device_name: str,
+    ) -> tuple[Device, bool]:
         if not await self._repository.lock_user(user_id):
             raise DeviceUserNotFoundError
 
@@ -34,32 +44,41 @@ class DeviceService:
         existing = await self._repository.get_by_installation_for_update(user_id, installation_id)
         if existing is not None and existing.is_active():
             if existing.platform is platform and existing.device_name == normalized_name:
-                return existing
-            return await self._repository.update(
-                self._with_active_metadata(existing, platform, normalized_name)
+                return existing, False
+            return (
+                await self._repository.update(
+                    self._with_active_metadata(existing, platform, normalized_name)
+                ),
+                False,
             )
 
         if await self._repository.count_active(user_id) >= MAX_ACTIVE_DEVICES:
             raise DeviceLimitReachedError
 
         if existing is not None:
-            return await self._repository.update(
-                self._with_active_metadata(existing, platform, normalized_name)
+            return (
+                await self._repository.update(
+                    self._with_active_metadata(existing, platform, normalized_name)
+                ),
+                True,
             )
 
         now = datetime.now(UTC)
-        return await self._repository.add(
-            Device(
-                id=uuid4(),
-                user_id=user_id,
-                installation_id=installation_id,
-                platform=platform,
-                device_name=normalized_name,
-                status=DeviceStatus.ACTIVE,
-                created_at=now,
-                updated_at=now,
-                revoked_at=None,
-            )
+        return (
+            await self._repository.add(
+                Device(
+                    id=uuid4(),
+                    user_id=user_id,
+                    installation_id=installation_id,
+                    platform=platform,
+                    device_name=normalized_name,
+                    status=DeviceStatus.ACTIVE,
+                    created_at=now,
+                    updated_at=now,
+                    revoked_at=None,
+                )
+            ),
+            True,
         )
 
     async def revoke(self, device_id: UUID) -> bool:
