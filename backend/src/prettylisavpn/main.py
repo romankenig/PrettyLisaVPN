@@ -3,6 +3,7 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import cast
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,16 +12,18 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from prettylisavpn.auth.events import DatabaseProductEventSink
+from prettylisavpn.auth.router import router as auth_router
+from prettylisavpn.auth.service import OtpIssuer, ProductEventSink
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
+from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
+from prettylisavpn.emailing.timeweb import TimewebEmailProvider
 from prettylisavpn.logging import configure_logging
+from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
 
 logger = logging.getLogger(__name__)
-
-
-def error_response(code: str, status_code: int) -> JSONResponse:
-    return JSONResponse({"error": {"code": code}}, status_code=status_code)
 
 
 class SafeExceptionMiddleware:
@@ -69,6 +72,9 @@ def create_app(
     *,
     postgres: Dependency | None = None,
     valkey: Dependency | None = None,
+    otp_service: OtpIssuer | None = None,
+    email_provider: EmailProvider | None = None,
+    product_events: ProductEventSink | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -81,6 +87,21 @@ def create_app(
             try:
                 app.state.postgres = pg
                 app.state.valkey = cache
+                app.state.otp_service = (
+                    otp_service if otp_service is not None else cast(Valkey, cache).otp
+                )
+                if email_provider is not None:
+                    app.state.email_provider = email_provider
+                else:
+                    try:
+                        app.state.email_provider = TimewebEmailProvider.from_settings(config)
+                    except EmailProviderConfigurationError:
+                        app.state.email_provider = None
+                app.state.product_events = (
+                    product_events
+                    if product_events is not None
+                    else DatabaseProductEventSink(cast(Postgres, pg))
+                )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 logger.info("application_started")
                 yield
@@ -94,6 +115,7 @@ def create_app(
         title=config.application_name, version=config.application_version, lifespan=lifespan
     )
     app.add_middleware(SafeExceptionMiddleware)
+    app.include_router(auth_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

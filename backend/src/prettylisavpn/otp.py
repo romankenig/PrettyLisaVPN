@@ -10,6 +10,7 @@ from ipaddress import ip_address
 from typing import cast
 
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 from prettylisavpn.config import Settings
 from prettylisavpn.users.domain import normalize_email
@@ -68,6 +69,10 @@ class IssuedOtp:
     expires_at: datetime
 
 
+class OtpServiceUnavailableError(RuntimeError):
+    """Valkey could not complete an OTP operation."""
+
+
 class OtpService:
     def __init__(self, client: Redis, settings: Settings) -> None:
         self._client = client
@@ -86,26 +91,29 @@ class OtpService:
         code = f"{secrets.randbelow(1_000_000):06d}"
         email_digest = self._identifier_digest("email", normalized_email)
         ip_digest = self._identifier_digest("ip", normalized_ip)
-        accepted = int(
-            await cast(
-                Awaitable[str],
-                self._client.eval(
-                    ISSUE_SCRIPT,
-                    4,
-                    f"otp:challenge:{email_digest}",
-                    f"otp:cooldown:{email_digest}",
-                    f"otp:rate:email:{email_digest}",
-                    f"otp:rate:ip:{ip_digest}",
-                    self._otp_verifier(normalized_email, code),
-                    str(self._ttl_seconds),
-                    str(self._cooldown_seconds),
-                    str(self._email_request_limit),
-                    str(self._email_rate_window_seconds),
-                    str(self._ip_request_limit),
-                    str(self._ip_rate_window_seconds),
+        try:
+            accepted = int(
+                await cast(
+                    Awaitable[str],
+                    self._client.eval(
+                        ISSUE_SCRIPT,
+                        4,
+                        f"otp:challenge:{email_digest}",
+                        f"otp:cooldown:{email_digest}",
+                        f"otp:rate:email:{email_digest}",
+                        f"otp:rate:ip:{ip_digest}",
+                        self._otp_verifier(normalized_email, code),
+                        str(self._ttl_seconds),
+                        str(self._cooldown_seconds),
+                        str(self._email_request_limit),
+                        str(self._email_rate_window_seconds),
+                        str(self._ip_request_limit),
+                        str(self._ip_rate_window_seconds),
+                    ),
                 ),
-            ),
-        )
+            )
+        except (RedisError, OSError, TimeoutError):
+            raise OtpServiceUnavailableError("OTP storage is unavailable") from None
         if accepted != 1:
             return None
         return IssuedOtp(
@@ -116,19 +124,30 @@ class OtpService:
     async def verify(self, email: str, code: str) -> bool:
         normalized_email = normalize_email(email)
         email_digest = self._identifier_digest("email", normalized_email)
-        verified = int(
-            await cast(
-                Awaitable[str],
-                self._client.eval(
-                    VERIFY_SCRIPT,
-                    1,
-                    f"otp:challenge:{email_digest}",
-                    self._otp_verifier(normalized_email, code),
-                    str(self._max_verification_attempts),
+        try:
+            verified = int(
+                await cast(
+                    Awaitable[str],
+                    self._client.eval(
+                        VERIFY_SCRIPT,
+                        1,
+                        f"otp:challenge:{email_digest}",
+                        self._otp_verifier(normalized_email, code),
+                        str(self._max_verification_attempts),
+                    ),
                 ),
-            ),
-        )
+            )
+        except (RedisError, OSError, TimeoutError):
+            raise OtpServiceUnavailableError("OTP storage is unavailable") from None
         return verified == 1
+
+    async def discard(self, email: str) -> None:
+        normalized_email = normalize_email(email)
+        email_digest = self._identifier_digest("email", normalized_email)
+        try:
+            await self._client.delete(f"otp:challenge:{email_digest}")
+        except (RedisError, OSError, TimeoutError):
+            raise OtpServiceUnavailableError("OTP storage is unavailable") from None
 
     def _identifier_digest(self, kind: str, value: str) -> str:
         return hmac.new(

@@ -74,7 +74,7 @@ ssh-keygen -lf dev-known-hosts
 | `DEV_POSTGRES_URL` | Полный `postgresql+asyncpg://` URL development PostgreSQL. |
 | `DEV_VALKEY_URL` | Полный `redis://` или `rediss://` URL development Valkey. |
 | `DEV_OTP_HMAC_SECRET` | Отдельный случайный HMAC-секрет OTP длиной не менее 32 символов. |
-| `DEV_EMAIL_SMTP_PASSWORD` | Пароль ящика `auth@prettylisavpn.com`; нужен перед smoke-тестом или подключением auth-flow. |
+| `DEV_EMAIL_SMTP_PASSWORD` | Пароль ящика `auth@prettylisavpn.com`; обязателен для отправки OTP. |
 
 Значения URL должны быть однострочными, а специальные символы реквизитов — URL-кодированными. Workflow не выводит значения secrets: он проверяет только наличие, создаёт env-файл с правами `0600` во временном каталоге runner и передаёт его по SSH. Постоянный `/etc/prettylisavpn/development.env` заменяется с правами `0600` только после успешных миграций и проверок нового релиза.
 
@@ -274,6 +274,8 @@ sudoedit /etc/prettylisavpn/deployment.env
 | `POSTGRES_POOL_SIZE`, `POSTGRES_MAX_OVERFLOW` | Обычно `5` и `5`: основные и дополнительные соединения. |
 | `HTTP_BIND_ADDRESS`, `HTTPS_BIND_ADDRESS` | Обычно `0.0.0.0`: публикация на сетевых интерфейсах VPS. |
 | `HTTP_PORT`, `HTTPS_PORT` | Обычно `80`, `443`: нужны для публичного HTTPS и получения сертификата. |
+
+Backend в этом Compose доступен только Caddy во внутренней сети и поэтому доверяет переданному Caddy `X-Forwarded-For` для IP rate limiting. Не публикуйте порт Backend напрямую наружу при `FORWARDED_ALLOW_IPS=*`.
 
 Примеры формы строк, а не готовые настройки:
 

@@ -133,12 +133,14 @@ jobs:
           DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
           DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
+          DEV_EMAIL_SMTP_PASSWORD: ${{ secrets.DEV_EMAIL_SMTP_PASSWORD }}
         run: |
           missing=0
           for secret_name in \
             DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY \
             DEV_SSH_KNOWN_HOSTS DEV_API_DOMAIN DEV_ACME_EMAIL \
-            DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET
+            DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET \
+            DEV_EMAIL_SMTP_PASSWORD
           do
             if [[ -z "${!secret_name:-}" ]]; then
               echo "::error::Required development secret ${secret_name} is not configured"

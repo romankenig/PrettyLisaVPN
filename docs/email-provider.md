@@ -31,7 +31,7 @@ EMAIL_SEND_TIMEOUT_SECONDS=10
 3. Имя: `DEV_EMAIL_SMTP_PASSWORD`.
 4. Значение: пароль ящика `auth@prettylisavpn.com`.
 
-Workflow переносит secret в защищённый `/etc/prettylisavpn/development.env` как `EMAIL_SMTP_PASSWORD`. Пока HTTP/auth-flow не подключён, отсутствие секрета не блокирует deployment.
+Workflow переносит secret в защищённый `/etc/prettylisavpn/development.env` как `EMAIL_SMTP_PASSWORD`. После появления `POST /auth/request-otp` этот secret обязателен для development deployment.
 
 ### Production VPS
 

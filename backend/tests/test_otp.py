@@ -3,9 +3,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import ValidationError
+from redis.exceptions import ConnectionError
 
 from prettylisavpn.config import Settings
-from prettylisavpn.otp import ISSUE_SCRIPT, VERIFY_SCRIPT, OtpService
+from prettylisavpn.otp import (
+    ISSUE_SCRIPT,
+    VERIFY_SCRIPT,
+    OtpService,
+    OtpServiceUnavailableError,
+)
 
 OTP_SECRET = "unit-test-otp-hmac-secret-with-adequate-length"
 
@@ -69,6 +75,36 @@ def test_verifiers_are_scoped_to_email_and_code():
     first = service._otp_verifier("first@example.com", "123456")
     assert first != service._otp_verifier("second@example.com", "123456")
     assert first != service._otp_verifier("first@example.com", "654321")
+
+
+async def test_discard_removes_only_normalized_email_challenge():
+    client = AsyncMock()
+    service = OtpService(client, settings())
+
+    await service.discard(" User@Example.COM ")
+
+    client.delete.assert_awaited_once()
+    key = client.delete.await_args.args[0]
+    assert key.startswith("otp:challenge:")
+    assert "user@example.com" not in key
+
+
+@pytest.mark.parametrize("operation", ["request", "verify", "discard"])
+async def test_valkey_failures_are_mapped_without_private_details(operation):
+    client = AsyncMock()
+    client.eval.side_effect = ConnectionError("redis://private-host")
+    client.delete.side_effect = ConnectionError("redis://private-host")
+    service = OtpService(client, settings())
+
+    with pytest.raises(OtpServiceUnavailableError) as captured:
+        if operation == "request":
+            await service.request("user@example.com", "192.0.2.1")
+        elif operation == "verify":
+            await service.verify("user@example.com", "123456")
+        else:
+            await service.discard("user@example.com")
+
+    assert "private-host" not in str(captured.value)
 
 
 def test_default_otp_ttl_is_five_minutes():

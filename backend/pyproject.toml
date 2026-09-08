@@ -17,6 +17,7 @@ dependencies = [
     "redis>=5.2,<7",
     "uvicorn>=0.34,<1",
     "aiosmtplib>=5.1.2,<6",
+    "email-validator>=2.2,<3",
 ]
 
 [dependency-groups]

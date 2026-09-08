@@ -131,6 +131,9 @@ docker compose -f infra/docker/compose.yaml down
 | `GET /health` | Процесс может отвечать; базы не опрашиваются. | HTTP 200 при работающем приложении. |
 | `GET /ready` | На каждый запрос выполняет PostgreSQL `SELECT 1` и Valkey `PING`. | HTTP 200, если обе зависимости доступны; иначе HTTP 503 и код `dependencies_unavailable`. |
 | `GET /version` | Метаданные запущенного приложения. | `application_name`, `application_version`, `environment`. |
+| `POST /auth/request-otp` | Валидирует email, применяет Valkey cooldown/лимиты и отправляет OTP. | HTTP 202 и `{"status":"accepted"}` без сведений о наличии аккаунта. |
+
+`POST /auth/request-otp` возвращает стабильные коды `otp_rate_limited` (429), `otp_service_unavailable` (503) и `email_service_unavailable` (503). OTP никогда не входит в HTTP-ответ. Endpoint проверки OTP и выдача токенов пока не реализованы.
 
 Недоступность базы не останавливает процесс. Поэтому Docker-статус `healthy`, основанный на `/health`, ещё не означает готовность сервиса; отдельно проверяйте `/ready`. Docker сам по себе не перезапускает контейнер только из-за статуса `unhealthy`.
 
