@@ -138,10 +138,50 @@ describe("typed API client", () => {
       new ApiError("NETWORK_ERROR"),
     );
     transport.mockResolvedValueOnce(jsonResponse({}, 503));
-    await expect(api.getHealth()).rejects.toEqual(new ApiError("HTTP_ERROR"));
+    await expect(api.getHealth()).rejects.toEqual(new ApiError("SERVER_ERROR"));
     transport.mockResolvedValueOnce(jsonResponse({ status: "wrong" }));
     await expect(api.getHealth()).rejects.toEqual(
       new ApiError("INVALID_RESPONSE"),
+    );
+  });
+
+  it("requests an OTP with a JSON email body", async () => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse({ status: "accepted" }, 202));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.requestOtp("user@example.com")).resolves.toEqual({
+      status: "accepted",
+    });
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/auth/request-otp",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "omit",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "user@example.com" }),
+        signal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it("maps OTP rate limits and provider failures to typed errors", async () => {
+    const transport = vi.fn<HttpTransport>();
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    transport.mockResolvedValueOnce(
+      jsonResponse({ error: { code: "otp_rate_limited" } }, 429),
+    );
+    await expect(api.requestOtp("user@example.com")).rejects.toEqual(
+      new ApiError("RATE_LIMITED"),
+    );
+
+    transport.mockResolvedValueOnce(
+      jsonResponse({ error: { code: "email_service_unavailable" } }, 503),
+    );
+    await expect(api.requestOtp("user@example.com")).rejects.toEqual(
+      new ApiError("SERVER_ERROR"),
     );
   });
 

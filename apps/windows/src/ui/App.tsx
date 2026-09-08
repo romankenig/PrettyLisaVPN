@@ -3,6 +3,8 @@ import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import logoUrl from "../assets/prettylisavpn-logo.svg";
 import { useBackendStatus } from "../state/backendStatus";
 import { useApplication } from "../state/application";
+import { Login } from "./Login";
+import { OtpVerification } from "./OtpVerification";
 function Home() {
   const { config, api } = useApplication();
   const { status, retry } = useBackendStatus(
@@ -87,6 +89,7 @@ export function App() {
             главная
           </NavLink>
           <NavLink to="/about">о приложении</NavLink>
+          <NavLink to="/login">войти</NavLink>
         </nav>
         <p className="sidebar-note">windows desktop</p>
       </aside>
@@ -94,6 +97,8 @@ export function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/verify-otp" element={<OtpVerification />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -10,8 +10,17 @@ export interface BackendVersion {
   readonly environment: string;
 }
 
+export interface RequestOtpResponse {
+  readonly status: "accepted";
+}
+
 export type ApiErrorCode =
-  "NETWORK_ERROR" | "TIMEOUT" | "HTTP_ERROR" | "INVALID_RESPONSE";
+  | "NETWORK_ERROR"
+  | "TIMEOUT"
+  | "RATE_LIMITED"
+  | "SERVER_ERROR"
+  | "HTTP_ERROR"
+  | "INVALID_RESPONSE";
 
 export class ApiError extends Error {
   constructor(readonly code: ApiErrorCode) {
@@ -23,6 +32,7 @@ export class ApiError extends Error {
 export interface ApiClient {
   getHealth(signal?: AbortSignal): Promise<BackendHealth>;
   getVersion(signal?: AbortSignal): Promise<BackendVersion>;
+  requestOtp(email: string, signal?: AbortSignal): Promise<RequestOtpResponse>;
 }
 
 export function createApiClient(
@@ -32,6 +42,7 @@ export function createApiClient(
 ): ApiClient {
   async function requestJson(
     path: string,
+    init: Pick<RequestInit, "method" | "headers" | "body">,
     signal?: AbortSignal,
   ): Promise<unknown> {
     const controller = new AbortController();
@@ -66,7 +77,7 @@ export function createApiClient(
       let response: Response;
       try {
         response = await transport(`${baseUrl}${path}`, {
-          method: "GET",
+          ...init,
           signal: controller.signal,
           credentials: "omit",
         });
@@ -74,7 +85,16 @@ export function createApiClient(
         throw new ApiError(timedOut ? "TIMEOUT" : "NETWORK_ERROR");
       }
 
-      if (!response.ok) throw new ApiError("HTTP_ERROR");
+      if (!response.ok) {
+        if (
+          response.status === 429 &&
+          (await readErrorCode(response)) === "otp_rate_limited"
+        ) {
+          throw new ApiError("RATE_LIMITED");
+        }
+        if (response.status >= 500) throw new ApiError("SERVER_ERROR");
+        throw new ApiError("HTTP_ERROR");
+      }
 
       try {
         return await response.json();
@@ -94,14 +114,14 @@ export function createApiClient(
 
   return {
     async getHealth(signal) {
-      const value = await requestJson("/health", signal);
+      const value = await requestJson("/health", { method: "GET" }, signal);
       if (!isRecord(value) || value.status !== "ok") {
         throw new ApiError("INVALID_RESPONSE");
       }
       return { status: "ok" };
     },
     async getVersion(signal) {
-      const value = await requestJson("/version", signal);
+      const value = await requestJson("/version", { method: "GET" }, signal);
       if (
         !isRecord(value) ||
         typeof value.application_name !== "string" ||
@@ -116,7 +136,32 @@ export function createApiClient(
         environment: value.environment,
       };
     },
+    async requestOtp(email, signal) {
+      const value = await requestJson(
+        "/auth/request-otp",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+        signal,
+      );
+      if (!isRecord(value) || value.status !== "accepted") {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return { status: "accepted" };
+    },
   };
+}
+
+async function readErrorCode(response: Response): Promise<unknown> {
+  try {
+    const value: unknown = await response.json();
+    if (!isRecord(value) || !isRecord(value.error)) return undefined;
+    return value.error.code;
+  } catch {
+    return undefined;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
