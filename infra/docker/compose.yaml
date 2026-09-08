@@ -30,6 +30,7 @@ services:
     environment:
       POSTGRES_URL: postgresql+asyncpg://prettylisa:local-development-only@postgres:5432/prettylisa
       VALKEY_URL: redis://valkey:6379/0
+      OTP_HMAC_SECRET: local-development-otp-hmac-secret-change-me
       ENVIRONMENT: development
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"

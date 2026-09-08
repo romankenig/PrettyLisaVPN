@@ -103,6 +103,12 @@ docker compose -f infra/docker/compose.yaml down
 | `LOG_LEVEL` | `INFO`; допустимы также `DEBUG`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `POSTGRES_URL` | Локальная демонстрационная строка; схема обязательно `postgresql+asyncpg://`. На VPS задаётся явно. |
 | `VALKEY_URL` | `redis://localhost:6379/0`; допустимы `redis://` и `rediss://` (TLS). На VPS задаётся явно. |
+| `OTP_HMAC_SECRET` | HMAC-секрет длиной не менее 32 символов. Для production обязателен отдельный случайный секрет. |
+| `OTP_TTL_SECONDS` | `300`; срок действия OTP в секундах. |
+| `OTP_REQUEST_COOLDOWN_SECONDS` | `60`; минимальный интервал между запросами OTP для одного email. |
+| `OTP_EMAIL_REQUEST_LIMIT`, `OTP_EMAIL_RATE_WINDOW_SECONDS` | `5`, `3600`; лимит запросов на email и окно лимита в секундах. |
+| `OTP_IP_REQUEST_LIMIT`, `OTP_IP_RATE_WINDOW_SECONDS` | `20`, `3600`; лимит запросов на IP и окно лимита в секундах. |
+| `OTP_MAX_VERIFICATION_ATTEMPTS` | `5`; число неверных попыток до удаления OTP. |
 | `DEPENDENCY_TIMEOUT_SECONDS` | `2`; тайм-аут проверки зависимости, больше 0 и не больше 30 секунд. |
 | `POSTGRES_POOL_SIZE` | `5`; размер пула соединений, минимум 1. |
 | `POSTGRES_MAX_OVERFLOW` | `5`; дополнительные временные соединения сверх пула, минимум 0. |
@@ -133,10 +139,10 @@ Backend пишет JSON-логи с UTC-временем. Неожиданные
 docker build -t prettylisavpn-backend:0.1.0 backend
 ```
 
-Тег здесь иллюстративный. Для каждого релиза используйте уникальную версию или хеш коммита. Перед запуском передайте `POSTGRES_URL` и `VALKEY_URL` через окружение терминала или менеджер секретов:
+Тег здесь иллюстративный. Для каждого релиза используйте уникальную версию или хеш коммита. Перед запуском передайте `POSTGRES_URL`, `VALKEY_URL` и `OTP_HMAC_SECRET` через окружение терминала или менеджер секретов:
 
 ```sh
-docker run -d --name prettylisa-backend --init --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop ALL --security-opt no-new-privileges:true --stop-timeout 30 -p 127.0.0.1:8000:8000 -e ENVIRONMENT=production -e APPLICATION_VERSION=0.1.0 -e POSTGRES_URL -e VALKEY_URL prettylisavpn-backend:0.1.0
+docker run -d --name prettylisa-backend --init --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop ALL --security-opt no-new-privileges:true --stop-timeout 30 -p 127.0.0.1:8000:8000 -e ENVIRONMENT=production -e APPLICATION_VERSION=0.1.0 -e POSTGRES_URL -e VALKEY_URL -e OTP_HMAC_SECRET prettylisavpn-backend:0.1.0
 ```
 
 Команда передаёт переменные по имени, не записывая пароль в аргументы. Приложение работает от UID/GID 10001, с файловой системой только для чтения и временным `/tmp`. Доступ администратора Docker позволяет читать окружение контейнера, поэтому его нужно ограничивать.
@@ -155,7 +161,7 @@ docker rm prettylisa-backend
 [compose.production.yaml](../infra/docker/compose.production.yaml) запускает **только Backend** с внешними PostgreSQL и Valkey. Это самостоятельный файл; не объединяйте его с локальным Compose. Он явно задаёт `ENVIRONMENT=production` и публикует API на loopback-порту 8000 (`BACKEND_PORT` позволяет изменить порт).
 
 1. Подготовьте образ и доступные из контейнера внешние базы.
-2. Скопируйте `infra/docker/.env.example` в неотслеживаемый `infra/docker/.env.production`. Заполните `BACKEND_IMAGE`, `APPLICATION_VERSION`, `POSTGRES_URL`, `VALKEY_URL`; остальные настройки необязательны.
+2. Скопируйте `infra/docker/.env.example` в неотслеживаемый `infra/docker/.env.production`. Заполните `BACKEND_IMAGE`, `APPLICATION_VERSION`, `POSTGRES_URL`, `VALKEY_URL`, `OTP_HMAC_SECRET`; остальные настройки необязательны.
 3. Из корня репозитория запустите:
 
    ```sh

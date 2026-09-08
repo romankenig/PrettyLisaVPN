@@ -93,6 +93,7 @@ def production_env():
         "APPLICATION_VERSION": "0.1.0",
         "POSTGRES_URL": "postgresql+asyncpg://example:example@external-postgres/example",
         "VALKEY_URL": "redis://external-valkey/0",
+        "OTP_HMAC_SECRET": "docker-test-otp-hmac-secret-at-least-32-characters",
     }
 
 
@@ -125,11 +126,12 @@ def test_production_compose_has_only_backend():
     assert backend["environment"]["ENVIRONMENT"] == "production"
     assert backend["environment"]["POSTGRES_URL"] == production_env()["POSTGRES_URL"]
     assert backend["environment"]["VALKEY_URL"] == production_env()["VALKEY_URL"]
+    assert backend["environment"]["OTP_HMAC_SECRET"] == production_env()["OTP_HMAC_SECRET"]
     assert len(backend["ports"]) == 1
     assert backend["ports"][0]["target"] == 8000
 
 
-@pytest.mark.parametrize("missing", ["POSTGRES_URL", "VALKEY_URL"])
+@pytest.mark.parametrize("missing", ["POSTGRES_URL", "VALKEY_URL", "OTP_HMAC_SECRET"])
 def test_production_compose_rejects_missing_dependency_urls(missing):
     env = production_env()
     env[missing] = ""
@@ -170,6 +172,7 @@ def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
     assert backend["read_only"]
     assert backend["environment"]["POSTGRES_URL"] == deployment_env()["POSTGRES_URL"]
     assert backend["environment"]["VALKEY_URL"] == deployment_env()["VALKEY_URL"]
+    assert backend["environment"]["OTP_HMAC_SECRET"] == deployment_env()["OTP_HMAC_SECRET"]
     assert "volumes" not in backend
 
     caddy = config["services"]["caddy"]

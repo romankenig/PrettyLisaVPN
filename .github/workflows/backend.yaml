@@ -29,6 +29,7 @@ jobs:
     env:
       POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
       VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-otp-hmac-secret-at-least-32-characters
     services:
       postgres:
         image: postgres:17-alpine
@@ -131,12 +132,13 @@ jobs:
           DEV_ACME_EMAIL: ${{ secrets.DEV_ACME_EMAIL }}
           DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
+          DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
         run: |
           missing=0
           for secret_name in \
             DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY \
             DEV_SSH_KNOWN_HOSTS DEV_API_DOMAIN DEV_ACME_EMAIL \
-            DEV_POSTGRES_URL DEV_VALKEY_URL
+            DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET
           do
             if [[ -z "${!secret_name:-}" ]]; then
               echo "::error::Required development secret ${secret_name} is not configured"
@@ -156,6 +158,7 @@ jobs:
           DEV_ACME_EMAIL: ${{ secrets.DEV_ACME_EMAIL }}
           DEV_POSTGRES_URL: ${{ secrets.DEV_POSTGRES_URL }}
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
+          DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
         run: |
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
@@ -164,7 +167,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL
+          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -184,6 +187,7 @@ jobs:
             printf "LOG_LEVEL='INFO'\n"
             printf "POSTGRES_URL='%s'\n" "$DEV_POSTGRES_URL"
             printf "VALKEY_URL='%s'\n" "$DEV_VALKEY_URL"
+            printf "OTP_HMAC_SECRET='%s'\n" "$DEV_OTP_HMAC_SECRET"
             printf "DEPENDENCY_TIMEOUT_SECONDS='5'\n"
             printf "POSTGRES_POOL_SIZE='5'\n"
             printf "POSTGRES_MAX_OVERFLOW='5'\n"

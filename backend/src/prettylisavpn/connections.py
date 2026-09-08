@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from prettylisavpn.config import Settings
+from prettylisavpn.otp import OtpService
 
 
 class Postgres:
@@ -48,6 +49,7 @@ class Valkey:
             socket_timeout=settings.dependency_timeout_seconds,
             decode_responses=True,
         )
+        self.otp = OtpService(self.client, settings)
 
     async def ping(self) -> None:
         if not await self.client.ping():

@@ -1,9 +1,11 @@
 """Environment configuration. Secrets are redacted in model representations."""
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEVELOPMENT_OTP_HMAC_SECRET = "local-development-otp-hmac-secret-change-me"
 
 
 class Settings(BaseSettings):
@@ -22,6 +24,16 @@ class Settings(BaseSettings):
     dependency_timeout_seconds: float = Field(default=2, gt=0, le=30)
     postgres_pool_size: int = Field(default=5, ge=1)
     postgres_max_overflow: int = Field(default=5, ge=0)
+    otp_hmac_secret: SecretStr = Field(
+        default=SecretStr(DEVELOPMENT_OTP_HMAC_SECRET), min_length=32
+    )
+    otp_ttl_seconds: int = Field(default=300, ge=1, le=3600)
+    otp_request_cooldown_seconds: int = Field(default=60, ge=0, le=3600)
+    otp_email_request_limit: int = Field(default=5, ge=1, le=100)
+    otp_email_rate_window_seconds: int = Field(default=3600, ge=1, le=86400)
+    otp_ip_request_limit: int = Field(default=20, ge=1, le=1000)
+    otp_ip_rate_window_seconds: int = Field(default=3600, ge=1, le=86400)
+    otp_max_verification_attempts: int = Field(default=5, ge=1, le=20)
 
     @field_validator("postgres_url")
     @classmethod
@@ -36,3 +48,12 @@ class Settings(BaseSettings):
         if not value.get_secret_value().startswith(("redis://", "rediss://")):
             raise ValueError("VALKEY_URL must use redis or rediss")
         return value
+
+    @model_validator(mode="after")
+    def validate_production_otp_secret(self) -> Self:
+        if (
+            self.environment == "production"
+            and self.otp_hmac_secret.get_secret_value() == DEVELOPMENT_OTP_HMAC_SECRET
+        ):
+            raise ValueError("OTP_HMAC_SECRET must be changed in production")
+        return self
