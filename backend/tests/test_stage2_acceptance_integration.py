@@ -99,7 +99,7 @@ async def test_complete_stage2_backend_lifecycle_and_storage_boundaries():
                 assert len(created_keys) == 3
                 assert all(OTP_KEY_PATTERN.fullmatch(key) for key in created_keys)
                 assert all(normalized_email not in key for key in created_keys)
-                assert all(await valkey.client.ttl(key) > 0 for key in created_keys)
+                assert all([(await valkey.client.ttl(key)) > 0 for key in created_keys])
                 challenge_key = next(
                     key for key in created_keys if key.startswith("otp:challenge:")
                 )
@@ -216,7 +216,7 @@ async def test_complete_stage2_backend_lifecycle_and_storage_boundaries():
                 keys_after_login = (await otp_keys(valkey)) - keys_before
                 assert all(OTP_KEY_PATTERN.fullmatch(key) for key in keys_after_login)
                 assert not any(key.startswith("otp:challenge:") for key in keys_after_login)
-                assert all(await valkey.client.ttl(key) > 0 for key in keys_after_login)
+                assert all([(await valkey.client.ttl(key)) > 0 for key in keys_after_login])
 
         assert ProductEventName.OTP_REQUESTED in events.names
         assert ProductEventName.OTP_SENT in events.names
