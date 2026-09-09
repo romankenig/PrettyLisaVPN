@@ -1,0 +1,62 @@
+name: Diagnose development email
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths: [".github/workflows/diagnose-development-email.yaml"]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Read safe email failure category
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: development
+    env:
+      SSH_DIRECTORY: /tmp/prettylisavpn-email-diagnostic-${{ github.run_id }}
+
+    steps:
+      - name: Prepare encrypted connection
+        env:
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p "$SSH_DIRECTORY"
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$SSH_DIRECTORY/id_ed25519"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$SSH_DIRECTORY/known_hosts"
+          chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
+          ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
+
+      - name: Read allowlisted runtime diagnostic
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+        run: |
+          remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
+          ssh \
+            -i "$SSH_DIRECTORY/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=$SSH_DIRECTORY/known_hosts" \
+            -o LogLevel=ERROR \
+            -p "$DEV_VPS_PORT" \
+            "$remote" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+          event="$({
+            docker compose \
+              --env-file /etc/prettylisavpn/development.env \
+              --file /opt/prettylisavpn/current/compose.yaml \
+              logs --since 30m --no-color backend 2>/dev/null || true
+          } | grep -Eo 'otp_email_delivery_failed_(authentication|recipient_rejected|unavailable|delivery)|email_provider_configuration_invalid' | tail -n 1)"
+          if [[ -z "$event" ]]; then
+            printf 'latest_email_failure=not_found\n'
+            exit 1
+          fi
+          printf 'latest_email_failure=%s\n' "$event"
+          REMOTE
