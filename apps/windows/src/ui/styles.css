@@ -373,6 +373,97 @@ dd {
   max-width: 560px;
   color: white;
 }
+.devices-page {
+  width: min(100%, 760px);
+}
+.devices-limit {
+  max-width: 620px;
+  color: var(--color-mercury);
+  line-height: 1.55;
+}
+.device-list {
+  display: grid;
+  gap: 14px;
+  padding: 0;
+  margin: 28px 0 0;
+  list-style: none;
+}
+.device-card {
+  padding: 20px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+  border: 1px solid rgb(228 228 228 / 55%);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgb(44 1 109 / 18%);
+}
+.device-card__heading,
+.device-card__footer,
+.confirmation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.device-card h2,
+.revoke-confirmation h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.device-card p {
+  margin: 6px 0 0;
+  color: var(--color-scorpion);
+}
+.device-card__footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(156 156 156 / 45%);
+}
+.current-device,
+.device-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.current-device,
+.device-status--active {
+  color: var(--color-christalle);
+  background: rgb(81 214 202 / 45%);
+}
+.device-status--revoked {
+  color: var(--color-scorpion);
+  background: rgb(156 156 156 / 35%);
+}
+.revoke-button {
+  margin-top: 0;
+  color: white;
+  background: var(--color-persian-red);
+}
+.revoke-confirmation {
+  margin-top: 18px;
+  padding: 20px;
+  color: var(--color-black);
+  background: white;
+  border: 2px solid var(--color-persian-red);
+  border-radius: 14px;
+}
+.revoke-confirmation p {
+  line-height: 1.5;
+}
+.confirmation-actions {
+  justify-content: flex-start;
+}
+.confirmation-actions .text-button {
+  margin-top: 0;
+}
+.device-notice {
+  color: white;
+  font-weight: 600;
+}
+.devices-empty {
+  margin-top: 28px;
+}
 @media (max-width: 760px) {
   aside {
     width: 180px;
@@ -382,5 +473,10 @@ dd {
   }
   .account-summary {
     grid-template-columns: 1fr;
+  }
+  .device-card__heading,
+  .device-card__footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

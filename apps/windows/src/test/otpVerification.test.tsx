@@ -63,6 +63,8 @@ function mockApi(): ApiClient {
     refresh: vi.fn(),
     me: vi.fn(),
     logout: vi.fn(),
+    listDevices: vi.fn(),
+    revokeDevice: vi.fn(),
   };
 }
 

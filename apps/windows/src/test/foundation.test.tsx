@@ -352,6 +352,84 @@ describe("typed API client", () => {
     );
   });
 
+  it("loads and validates devices with the in-memory access token", async () => {
+    const response = [
+      {
+        id: "123e4567-e89b-42d3-a456-426614174010",
+        installation_id: "123e4567-e89b-42d3-a456-426614174011",
+        device_name: "Windows device",
+        platform: "WINDOWS",
+        status: "ACTIVE",
+        created_at: "2026-09-01T10:00:00Z",
+        updated_at: "2026-09-01T10:00:00Z",
+        revoked_at: null,
+        is_current: true,
+      },
+    ];
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse(response));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.listDevices("access-token")).resolves.toEqual(response);
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/devices",
+      expect.objectContaining({
+        method: "GET",
+        headers: { authorization: "Bearer access-token" },
+      }),
+    );
+  });
+
+  it("revokes a device through the typed API contract", async () => {
+    const device = {
+      id: "123e4567-e89b-42d3-a456-426614174010",
+      installation_id: "123e4567-e89b-42d3-a456-426614174011",
+      device_name: "Android device",
+      platform: "ANDROID",
+      status: "REVOKED",
+      created_at: "2026-09-01T10:00:00Z",
+      updated_at: "2026-09-02T10:00:00Z",
+      revoked_at: "2026-09-02T10:00:00Z",
+      is_current: false,
+    };
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse({ status: "revoked", device }));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.revokeDevice("access-token", device.id)).resolves.toEqual({
+      status: "revoked",
+      device,
+    });
+    expect(transport).toHaveBeenCalledWith(
+      `https://api.example.invalid/devices/${device.id}`,
+      expect.objectContaining({
+        method: "DELETE",
+        headers: { authorization: "Bearer access-token" },
+      }),
+    );
+  });
+
+  it("maps device ownership and authentication errors", async () => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code: "device_not_found" } }, 404),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { code: "authentication_required" } }, 401),
+      );
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(
+      api.revokeDevice("access-token", "123e4567-e89b-42d3-a456-426614174010"),
+    ).rejects.toEqual(new ApiError("DEVICE_NOT_FOUND"));
+    await expect(api.listDevices("access-token")).rejects.toEqual(
+      new ApiError("AUTH_INVALID"),
+    );
+  });
+
   it.each([
     [401, "invalid_refresh_token"],
     [403, "device_revoked"],

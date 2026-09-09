@@ -26,6 +26,8 @@ function renderLogin(requestOtp: RequestOtp) {
     refresh: vi.fn(),
     me: vi.fn(),
     logout: vi.fn(),
+    listDevices: vi.fn(),
+    revokeDevice: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -135,6 +137,8 @@ describe("email login", () => {
       refresh: vi.fn(),
       me: vi.fn(),
       logout: vi.fn(),
+      listDevices: vi.fn(),
+      revokeDevice: vi.fn(),
     };
     render(
       <ApplicationProvider

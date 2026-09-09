@@ -29,6 +29,8 @@ function mockApi(): ApiClient {
     refresh: vi.fn(),
     me: vi.fn().mockResolvedValue(profile),
     logout: vi.fn().mockResolvedValue({ status: "logged_out" }),
+    listDevices: vi.fn().mockResolvedValue([]),
+    revokeDevice: vi.fn(),
   };
 }
 

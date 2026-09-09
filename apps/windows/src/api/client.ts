@@ -66,12 +66,39 @@ export interface LogoutResponse {
   readonly status: "logged_out";
 }
 
+export type DevicePlatform =
+  | "WINDOWS"
+  | "MACOS"
+  | "LINUX"
+  | "ANDROID"
+  | "IOS"
+  | "ANDROID_TV"
+  | "CHROME_EXTENSION";
+
+export interface DeviceResponse {
+  readonly id: string;
+  readonly installation_id: string;
+  readonly device_name: string;
+  readonly platform: DevicePlatform;
+  readonly status: "ACTIVE" | "REVOKED";
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly revoked_at: string | null;
+  readonly is_current: boolean;
+}
+
+export interface RevokeDeviceResponse {
+  readonly status: "revoked";
+  readonly device: DeviceResponse;
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "RATE_LIMITED"
   | "OTP_INVALID"
   | "DEVICE_LIMIT"
+  | "DEVICE_NOT_FOUND"
   | "AUTH_FORBIDDEN"
   | "AUTH_INVALID"
   | "SERVER_ERROR"
@@ -96,6 +123,15 @@ export interface ApiClient {
   refresh(body: RefreshRequest, signal?: AbortSignal): Promise<RefreshResponse>;
   me(accessToken: string, signal?: AbortSignal): Promise<MeResponse>;
   logout(accessToken: string, signal?: AbortSignal): Promise<LogoutResponse>;
+  listDevices(
+    accessToken: string,
+    signal?: AbortSignal,
+  ): Promise<DeviceResponse[]>;
+  revokeDevice(
+    accessToken: string,
+    deviceId: string,
+    signal?: AbortSignal,
+  ): Promise<RevokeDeviceResponse>;
 }
 
 export function createApiClient(
@@ -165,6 +201,7 @@ export function createApiClient(
         if (
           response.status === 401 &&
           [
+            "authentication_required",
             "invalid_refresh_token",
             "invalid_access_token",
             "invalid_session",
@@ -174,6 +211,9 @@ export function createApiClient(
         }
         if (response.status === 403 && errorCode === "device_revoked") {
           throw new ApiError("AUTH_INVALID");
+        }
+        if (response.status === 404 && errorCode === "device_not_found") {
+          throw new ApiError("DEVICE_NOT_FOUND");
         }
         if (response.status >= 500) throw new ApiError("SERVER_ERROR");
         throw new ApiError("HTTP_ERROR");
@@ -286,7 +326,62 @@ export function createApiClient(
       }
       return { status: "logged_out" };
     },
+    async listDevices(accessToken, signal) {
+      const value = await requestJson(
+        "/devices",
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (!Array.isArray(value) || !value.every(isDeviceResponse)) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return value;
+    },
+    async revokeDevice(accessToken, deviceId, signal) {
+      const value = await requestJson(
+        `/devices/${encodeURIComponent(deviceId)}`,
+        {
+          method: "DELETE",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (
+        !isRecord(value) ||
+        value.status !== "revoked" ||
+        !isDeviceResponse(value.device)
+      ) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return { status: "revoked", device: value.device };
+    },
   };
+}
+
+function isDeviceResponse(value: unknown): value is DeviceResponse {
+  return (
+    isRecord(value) &&
+    isUuid(value.id) &&
+    isUuid(value.installation_id) &&
+    isNonEmptyString(value.device_name) &&
+    [
+      "WINDOWS",
+      "MACOS",
+      "LINUX",
+      "ANDROID",
+      "IOS",
+      "ANDROID_TV",
+      "CHROME_EXTENSION",
+    ].includes(String(value.platform)) &&
+    ["ACTIVE", "REVOKED"].includes(String(value.status)) &&
+    isIsoDate(value.created_at) &&
+    isIsoDate(value.updated_at) &&
+    (value.revoked_at === null || isIsoDate(value.revoked_at)) &&
+    typeof value.is_current === "boolean"
+  );
 }
 
 function isRefreshResponse(value: unknown): value is RefreshResponse {
