@@ -41,6 +41,27 @@ export interface VerifyOtpResponse {
   };
 }
 
+export interface RefreshRequest {
+  readonly session_id: string;
+  readonly refresh_token: string;
+}
+
+export interface RefreshResponse {
+  readonly token_type: "bearer";
+  readonly access_token: string;
+  readonly access_token_expires_in: number;
+  readonly refresh_token: string;
+  readonly refresh_token_expires_at: string;
+  readonly session_id: string;
+}
+
+export interface MeResponse {
+  readonly id: string;
+  readonly email: string;
+  readonly plan: "FREE" | "PREMIUM";
+  readonly active_device_count: number;
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -48,6 +69,7 @@ export type ApiErrorCode =
   | "OTP_INVALID"
   | "DEVICE_LIMIT"
   | "AUTH_FORBIDDEN"
+  | "AUTH_INVALID"
   | "SERVER_ERROR"
   | "HTTP_ERROR"
   | "INVALID_RESPONSE";
@@ -67,6 +89,8 @@ export interface ApiClient {
     body: VerifyOtpRequest,
     signal?: AbortSignal,
   ): Promise<VerifyOtpResponse>;
+  refresh(body: RefreshRequest, signal?: AbortSignal): Promise<RefreshResponse>;
+  me(accessToken: string, signal?: AbortSignal): Promise<MeResponse>;
 }
 
 export function createApiClient(
@@ -132,6 +156,19 @@ export function createApiClient(
         }
         if (response.status === 403 && errorCode === "user_blocked") {
           throw new ApiError("AUTH_FORBIDDEN");
+        }
+        if (
+          response.status === 401 &&
+          [
+            "invalid_refresh_token",
+            "invalid_access_token",
+            "invalid_session",
+          ].includes(String(errorCode))
+        ) {
+          throw new ApiError("AUTH_INVALID");
+        }
+        if (response.status === 403 && errorCode === "device_revoked") {
+          throw new ApiError("AUTH_INVALID");
         }
         if (response.status >= 500) throw new ApiError("SERVER_ERROR");
         throw new ApiError("HTTP_ERROR");
@@ -205,7 +242,56 @@ export function createApiClient(
       if (!isVerifyOtpResponse(value)) throw new ApiError("INVALID_RESPONSE");
       return value;
     },
+    async refresh(body, signal) {
+      const value = await requestJson(
+        "/auth/refresh",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        },
+        signal,
+      );
+      if (!isRefreshResponse(value)) throw new ApiError("INVALID_RESPONSE");
+      return value;
+    },
+    async me(accessToken, signal) {
+      const value = await requestJson(
+        "/me",
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (!isMeResponse(value)) throw new ApiError("INVALID_RESPONSE");
+      return value;
+    },
   };
+}
+
+function isRefreshResponse(value: unknown): value is RefreshResponse {
+  return (
+    isRecord(value) &&
+    value.token_type === "bearer" &&
+    isNonEmptyString(value.access_token) &&
+    isPositiveInteger(value.access_token_expires_in) &&
+    isNonEmptyString(value.refresh_token) &&
+    isIsoDate(value.refresh_token_expires_at) &&
+    isUuid(value.session_id)
+  );
+}
+
+function isMeResponse(value: unknown): value is MeResponse {
+  return (
+    isRecord(value) &&
+    isUuid(value.id) &&
+    isNonEmptyString(value.email) &&
+    ["FREE", "PREMIUM"].includes(String(value.plan)) &&
+    typeof value.active_device_count === "number" &&
+    Number.isInteger(value.active_device_count) &&
+    value.active_device_count >= 0
+  );
 }
 
 function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {

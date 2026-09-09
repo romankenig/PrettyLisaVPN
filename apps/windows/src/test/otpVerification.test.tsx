@@ -25,7 +25,10 @@ import type {
 } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
-import { createTestCredentialStorage } from "./fakes";
+import {
+  createTestCredentialStorage,
+  createTestSessionRestoration,
+} from "./fakes";
 
 const email = "user@example.com";
 const installationId = "123e4567-e89b-42d3-a456-426614174000" as InstallationId;
@@ -57,6 +60,8 @@ function mockApi(): ApiClient {
     getVersion: vi.fn(),
     requestOtp: vi.fn().mockResolvedValue({ status: "accepted" }),
     verifyOtp: vi.fn().mockResolvedValue(verifiedSession),
+    refresh: vi.fn(),
+    me: vi.fn(),
   };
 }
 
@@ -76,6 +81,7 @@ function renderVerification(options: RenderOptions = {}) {
         desktop: { getVersion: async () => "0.1.0" },
         installationId: installationIdProvider,
         session,
+        sessionRestoration: createTestSessionRestoration(),
       }}
     >
       <MemoryRouter

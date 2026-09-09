@@ -127,6 +127,18 @@ TypeScript-адаптер `src/native/credentialStorage.ts` предоставл
 границы: поэтому CSP запрещает удалённые scripts, а произвольная навигация и сторонний frontend
 код не должны добавляться без отдельного security review.
 
+При запуске `SessionRestoration` один раз читает secure credential. Если записи нет или её срок
+истёк, приложение открывает Email login. Для действующей записи выполняется
+`POST /auth/refresh`, новый refresh token сразу заменяет прежний в Credential Manager, затем
+`GET /me` подтверждает пользователя и открывается Home. Access token остаётся только в памяти.
+Одинаковые параллельные startup-вызовы используют один promise, поэтому один refresh token не
+отправляется конкурентно дважды.
+
+Ответы Backend об invalid/revoked/blocked session очищают credential и возвращают к Login.
+Сетевой timeout, отсутствие соединения и временная ошибка Backend показывают отдельный экран с
+кнопкой повтора и **не удаляют** сохранённую сессию. Если сеть пропала после успешной ротации, в
+Credential Manager уже находится новый token, поэтому повтор использует актуальное значение.
+
 ## Идентификатор установки
 
 При первом native-запуске Rust генерирует случайный UUID v4 и атомарно сохраняет его в
@@ -147,7 +159,7 @@ src/
   ui/          Компоненты, экраны, Routes и стили
   config/      Проверка публичных настроек
   api/         HTTP-клиент; никаких импортов React или Tauri
-  auth/        In-memory access session и координация secure credential storage
+  auth/        In-memory access session, startup restoration и координация credentials
   state/       Контекст приложения и внедрение адаптеров
   native/      Tauri JS API и узкий адаптер Windows Credential Manager
   test/        Тесты конфигурации, API и навигации

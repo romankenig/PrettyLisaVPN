@@ -289,6 +289,15 @@ dd {
   color: var(--color-scorpion);
   font-size: 13px;
 }
+.startup-status {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+}
 @media (max-width: 760px) {
   aside {
     width: 180px;

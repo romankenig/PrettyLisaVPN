@@ -10,7 +10,10 @@ import { loadConfig } from "../config/config";
 import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
-import { createTestAuthenticationSession } from "./fakes";
+import {
+  createTestAuthenticationSession,
+  createTestSessionRestoration,
+} from "./fakes";
 
 type RequestOtp = ApiClient["requestOtp"];
 
@@ -20,6 +23,8 @@ function renderLogin(requestOtp: RequestOtp) {
     getVersion: vi.fn(),
     requestOtp,
     verifyOtp: vi.fn(),
+    refresh: vi.fn(),
+    me: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -32,6 +37,7 @@ function renderLogin(requestOtp: RequestOtp) {
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
         session: createTestAuthenticationSession(),
+        sessionRestoration: createTestSessionRestoration(),
       }}
     >
       <MemoryRouter initialEntries={["/login"]}>
@@ -125,6 +131,8 @@ describe("email login", () => {
       getVersion: vi.fn(),
       requestOtp: vi.fn(),
       verifyOtp: vi.fn(),
+      refresh: vi.fn(),
+      me: vi.fn(),
     };
     render(
       <ApplicationProvider
@@ -137,6 +145,7 @@ describe("email login", () => {
               "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
           },
           session: createTestAuthenticationSession(),
+          sessionRestoration: createTestSessionRestoration(),
         }}
       >
         <MemoryRouter initialEntries={["/auth/verify-otp"]}>

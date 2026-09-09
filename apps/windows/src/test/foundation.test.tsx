@@ -7,7 +7,10 @@ import type { HttpTransport } from "../native/http";
 import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
-import { createTestAuthenticationSession } from "./fakes";
+import {
+  createTestAuthenticationSession,
+  createTestSessionRestoration,
+} from "./fakes";
 
 const health = { status: "ok" } as const;
 const version = {
@@ -55,6 +58,7 @@ function renderApplication(transport: HttpTransport) {
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
         session: createTestAuthenticationSession(),
+        sessionRestoration: createTestSessionRestoration(),
       }}
     >
       <MemoryRouter>
@@ -277,6 +281,74 @@ describe("typed API client", () => {
         device_name: "Windows device",
       }),
     ).rejects.toEqual(new ApiError("INVALID_RESPONSE"));
+  });
+
+  it("rotates refresh credentials using the backend contract", async () => {
+    const response = {
+      token_type: "bearer" as const,
+      access_token: "new-access-token",
+      access_token_expires_in: 900,
+      refresh_token: "new-refresh-token",
+      refresh_token_expires_at: "2026-11-09T00:00:00Z",
+      session_id: verifiedSession.session_id,
+    };
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse(response));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+    const body = {
+      session_id: verifiedSession.session_id,
+      refresh_token: "old-refresh-token",
+    };
+
+    await expect(api.refresh(body)).resolves.toEqual(response);
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/auth/refresh",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+  });
+
+  it("loads /me with the in-memory access token", async () => {
+    const response = {
+      id: verifiedSession.user.id,
+      email: "user@example.com",
+      plan: "PREMIUM" as const,
+      active_device_count: 2,
+    };
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse(response));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.me("access-token")).resolves.toEqual(response);
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/me",
+      expect.objectContaining({
+        method: "GET",
+        headers: { authorization: "Bearer access-token" },
+      }),
+    );
+  });
+
+  it.each([
+    [401, "invalid_refresh_token"],
+    [403, "device_revoked"],
+  ] as const)("maps invalid session status %s and %s", async (status, code) => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse({ error: { code } }, status));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(
+      api.refresh({
+        session_id: verifiedSession.session_id,
+        refresh_token: "old-refresh-token",
+      }),
+    ).rejects.toEqual(new ApiError("AUTH_INVALID"));
   });
 
   it("bounds a stalled request with a timeout", async () => {

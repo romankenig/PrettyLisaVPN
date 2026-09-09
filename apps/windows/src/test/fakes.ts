@@ -1,4 +1,5 @@
 import { createAuthenticationSession } from "../auth/session";
+import type { SessionRestoration } from "../auth/restoration";
 import type {
   CredentialStorage,
   RefreshCredential,
@@ -24,4 +25,11 @@ export function createTestCredentialStorage(): CredentialStorage {
 
 export function createTestAuthenticationSession() {
   return createAuthenticationSession(createTestCredentialStorage());
+}
+
+export function createTestSessionRestoration(): SessionRestoration {
+  return {
+    restore: async () => "unauthenticated",
+    retry: async () => "unauthenticated",
+  };
 }
