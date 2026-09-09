@@ -77,7 +77,7 @@ describe("configuration", () => {
     expect(loadConfig({})).toMatchObject({
       environment: "development",
       backendBaseUrl: "https://api.prettylisavpn.com",
-      backendTimeoutMs: 5000,
+      backendTimeoutMs: 15000,
       backendHealthIntervalMs: 15000,
     });
   });

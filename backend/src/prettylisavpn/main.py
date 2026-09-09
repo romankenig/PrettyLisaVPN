@@ -112,6 +112,7 @@ def create_app(
                     try:
                         app.state.email_provider = TimewebEmailProvider.from_settings(config)
                     except EmailProviderConfigurationError:
+                        logger.warning("email_provider_configuration_invalid")
                         app.state.email_provider = None
                 app.state.product_events = (
                     product_events

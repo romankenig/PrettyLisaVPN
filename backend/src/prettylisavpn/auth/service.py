@@ -1,5 +1,6 @@
 """Passwordless authentication orchestration independent of HTTP."""
 
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import timedelta
@@ -17,7 +18,13 @@ from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import Device, DeviceLimitReachedError, DevicePlatform
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import DeviceService
-from prettylisavpn.emailing.domain import EmailDeliveryError, EmailProvider
+from prettylisavpn.emailing.domain import (
+    EmailAuthenticationError,
+    EmailDeliveryError,
+    EmailProvider,
+    EmailProviderUnavailableError,
+    EmailRecipientRejectedError,
+)
 from prettylisavpn.emailing.service import VerificationEmailService
 from prettylisavpn.otp import IssuedOtp, OtpServiceUnavailableError
 from prettylisavpn.product_events.domain import ProductEventName
@@ -26,6 +33,8 @@ from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import User, UserStatus, normalize_email
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
+
+logger = logging.getLogger(__name__)
 
 
 class OtpIssuer(Protocol):
@@ -121,7 +130,8 @@ class RequestOtpService:
 
         try:
             await self._email.send_code(normalized_email, issued.code, issued.expires_at)
-        except EmailDeliveryError:
+        except EmailDeliveryError as error:
+            logger.warning("otp_email_delivery_failed_%s", _email_failure_kind(error))
             try:
                 await self._otp.discard(normalized_email)
             except OtpServiceUnavailableError:
@@ -129,6 +139,16 @@ class RequestOtpService:
             raise OtpDeliveryUnavailableError("Email delivery is unavailable") from None
 
         await self._events.record(ProductEventName.OTP_SENT)
+
+
+def _email_failure_kind(error: EmailDeliveryError) -> str:
+    if isinstance(error, EmailAuthenticationError):
+        return "authentication"
+    if isinstance(error, EmailRecipientRejectedError):
+        return "recipient_rejected"
+    if isinstance(error, EmailProviderUnavailableError):
+        return "unavailable"
+    return "delivery"
 
 
 class LoginService:

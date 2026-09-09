@@ -13,7 +13,12 @@ from prettylisavpn.auth.service import (
     RequestOtpService,
 )
 from prettylisavpn.config import Settings
-from prettylisavpn.emailing.domain import EmailProviderUnavailableError
+from prettylisavpn.emailing.domain import (
+    EmailAuthenticationError,
+    EmailDeliveryError,
+    EmailProviderUnavailableError,
+    EmailRecipientRejectedError,
+)
 from prettylisavpn.main import create_app
 from prettylisavpn.otp import IssuedOtp, OtpServiceUnavailableError
 from prettylisavpn.product_events.domain import ProductEventName
@@ -84,6 +89,33 @@ async def test_request_service_discards_code_after_provider_failure_without_retr
 
     email_provider.send.assert_awaited_once()
     otp.discard.assert_awaited_once_with("user@example.com")
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "safe_log"),
+    [
+        (EmailAuthenticationError("private-auth-detail"), "authentication"),
+        (EmailRecipientRejectedError("private-recipient-detail"), "recipient_rejected"),
+        (EmailProviderUnavailableError("private-network-detail"), "unavailable"),
+        (EmailDeliveryError("private-delivery-detail"), "delivery"),
+    ],
+)
+async def test_request_service_logs_only_safe_provider_failure_category(
+    provider_error, safe_log, caplog
+):
+    otp = AsyncMock()
+    otp.request.return_value = issued_otp()
+    email_provider = AsyncMock()
+    email_provider.send.side_effect = provider_error
+    service = RequestOtpService(otp, email_provider, AsyncMock())
+
+    with pytest.raises(OtpDeliveryUnavailableError):
+        await service.request("user@example.com", "192.0.2.3")
+
+    assert f"otp_email_delivery_failed_{safe_log}" in caplog.text
+    assert "private-" not in caplog.text
+    assert "user@example.com" not in caplog.text
+    assert "123456" not in caplog.text
 
 
 async def test_discard_failure_does_not_replace_provider_failure():

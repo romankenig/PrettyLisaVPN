@@ -62,3 +62,24 @@ $mailbox = $null
 ```
 
 Не включайте автоматический retry после тайм-аута: SMTP-сервер мог принять письмо до обрыва ответа, и повтор создаст дубликат.
+
+## Диагностика
+
+Windows-клиент по умолчанию ждёт ответ Backend 15 секунд: это намеренно больше
+серверного `EMAIL_SEND_TIMEOUT_SECONDS=10`. Уменьшение
+`VITE_BACKEND_TIMEOUT_MS` до значения не выше SMTP timeout приводит к ложной
+ошибке сети, хотя Backend ещё отправляет письмо.
+
+При отказе Backend пишет только безопасную категорию без адреса получателя,
+OTP и SMTP-ответа:
+
+- `otp_email_delivery_failed_authentication` — проверьте, что в
+  `DEV_EMAIL_SMTP_PASSWORD` указан пароль именно почтового ящика, а не пароль
+  аккаунта Timeweb;
+- `otp_email_delivery_failed_unavailable` — проверьте DNS и исходящее TCP/TLS
+  соединение VPS с `smtp.timeweb.ru:465`;
+- `otp_email_delivery_failed_recipient_rejected` — SMTP отклонил получателя;
+- `otp_email_delivery_failed_delivery` — прочий отказ SMTP.
+
+После изменения GitHub Environment secret требуется новый deployment: уже
+запущенный контейнер не получает обновлённое значение автоматически.

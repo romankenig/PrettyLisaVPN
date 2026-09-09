@@ -29,7 +29,10 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
   if (environment === "production" && url.protocol !== "https:") {
     throw new Error("BACKEND_HTTPS_REQUIRED");
   }
-  const backendTimeoutMs = Number(env.VITE_BACKEND_TIMEOUT_MS ?? 5000);
+  // OTP delivery waits for the Backend's bounded SMTP send (up to 10 seconds).
+  // Keep the client deadline above that bound so a slow but valid delivery is
+  // not reported as a network failure.
+  const backendTimeoutMs = Number(env.VITE_BACKEND_TIMEOUT_MS ?? 15000);
   if (
     !Number.isInteger(backendTimeoutMs) ||
     backendTimeoutMs < 1000 ||

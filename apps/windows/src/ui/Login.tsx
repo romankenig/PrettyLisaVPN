@@ -98,11 +98,11 @@ function messageFor(error: unknown): string {
   if (error instanceof ApiError && error.code === "RATE_LIMITED") {
     return "Слишком много запросов. Попробуйте позже.";
   }
-  if (
-    error instanceof ApiError &&
-    (error.code === "NETWORK_ERROR" || error.code === "TIMEOUT")
-  ) {
+  if (error instanceof ApiError && error.code === "NETWORK_ERROR") {
     return "Не удалось подключиться. Проверьте сеть и попробуйте снова.";
+  }
+  if (error instanceof ApiError && error.code === "TIMEOUT") {
+    return "Сервис входа отвечает слишком долго. Попробуйте ещё раз позже.";
   }
   return "Сервис входа временно недоступен. Попробуйте позже.";
 }
