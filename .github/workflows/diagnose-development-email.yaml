@@ -50,6 +50,7 @@ jobs:
           set -Eeuo pipefail
           event="$({
             docker compose \
+              --project-name prettylisavpn-development \
               --env-file /etc/prettylisavpn/development.env \
               --file /opt/prettylisavpn/current/compose.yaml \
               logs --since 2h --no-color backend 2>/dev/null || true
@@ -57,6 +58,7 @@ jobs:
           printf 'latest_email_failure=%s\n' "${event:-not_found}"
 
           probe="$(docker compose \
+            --project-name prettylisavpn-development \
             --env-file /etc/prettylisavpn/development.env \
             --file /opt/prettylisavpn/current/compose.yaml \
             exec -T backend python -c '
