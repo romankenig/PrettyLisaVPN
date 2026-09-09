@@ -62,7 +62,7 @@ jobs:
             | tail -n 1 || true)"
           printf 'latest_email_failure=%s\n' "${event:-not_found}"
 
-          probe="$(docker exec -i "$backend_container" python -c '
+          probe="$(docker exec "$backend_container" python -c '
           import os
           import smtplib
           import ssl
