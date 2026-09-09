@@ -6,6 +6,7 @@ import {
   type ApiClient,
   type RequestOtpResponse,
 } from "../api/client";
+import { createInMemoryAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
@@ -18,6 +19,7 @@ function renderLogin(requestOtp: RequestOtp) {
     getHealth: vi.fn(),
     getVersion: vi.fn(),
     requestOtp,
+    verifyOtp: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -29,6 +31,7 @@ function renderLogin(requestOtp: RequestOtp) {
           getInstallationId: async () =>
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
+        session: createInMemoryAuthenticationSession(),
       }}
     >
       <MemoryRouter initialEntries={["/login"]}>
@@ -75,10 +78,7 @@ describe("email login", () => {
       "user@example.com",
       expect.any(AbortSignal),
     );
-    expect(
-      screen.getByText(/Если адрес может получать письма/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/user@example\.com/i)).not.toBeInTheDocument();
+    expect(screen.getByText("user@example.com")).toBeInTheDocument();
     expect(localStorage).toHaveLength(0);
   });
 
@@ -124,6 +124,7 @@ describe("email login", () => {
       getHealth: vi.fn(),
       getVersion: vi.fn(),
       requestOtp: vi.fn(),
+      verifyOtp: vi.fn(),
     };
     render(
       <ApplicationProvider
@@ -135,6 +136,7 @@ describe("email login", () => {
             getInstallationId: async () =>
               "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
           },
+          session: createInMemoryAuthenticationSession(),
         }}
       >
         <MemoryRouter initialEntries={["/auth/verify-otp"]}>

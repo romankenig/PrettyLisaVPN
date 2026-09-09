@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, createApiClient } from "../api/client";
+import { createInMemoryAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { HttpTransport } from "../native/http";
 import type { InstallationId } from "../native/installationId";
@@ -13,6 +14,21 @@ const version = {
   application_name: "PrettyLisaVPN",
   application_version: "0.2.0-dev",
   environment: "development",
+};
+const verifiedSession = {
+  token_type: "bearer" as const,
+  access_token: "access-token",
+  access_token_expires_in: 900,
+  refresh_token: "refresh-token",
+  refresh_token_expires_at: "2026-10-09T00:00:00Z",
+  session_id: "123e4567-e89b-42d3-a456-426614174001",
+  user: { id: "123e4567-e89b-42d3-a456-426614174002" },
+  device: {
+    id: "123e4567-e89b-42d3-a456-426614174003",
+    installation_id: "123e4567-e89b-42d3-a456-426614174000",
+    status: "ACTIVE" as const,
+  },
+  subscription: { plan: "FREE" as const, status: "ACTIVE" as const },
 };
 
 function jsonResponse(value: unknown, status = 200) {
@@ -38,6 +54,7 @@ function renderApplication(transport: HttpTransport) {
           getInstallationId: async () =>
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
+        session: createInMemoryAuthenticationSession(),
       }}
     >
       <MemoryRouter>
@@ -183,6 +200,83 @@ describe("typed API client", () => {
     await expect(api.requestOtp("user@example.com")).rejects.toEqual(
       new ApiError("SERVER_ERROR"),
     );
+  });
+
+  it("verifies an OTP using the backend login contract", async () => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse(verifiedSession));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+    const body = {
+      email: "user@example.com",
+      code: "012345",
+      installation_id: verifiedSession.device.installation_id,
+      platform: "WINDOWS" as const,
+      device_name: "Windows device",
+    };
+
+    await expect(api.verifyOtp(body)).resolves.toEqual(verifiedSession);
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/auth/verify-otp",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "omit",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it.each([
+    [401, "otp_invalid_or_expired", "OTP_INVALID"],
+    [409, "device_limit_reached", "DEVICE_LIMIT"],
+    [403, "user_blocked", "AUTH_FORBIDDEN"],
+    [429, "otp_rate_limited", "RATE_LIMITED"],
+  ] as const)(
+    "maps verify status %s and %s to %s",
+    async (status, backendCode, clientCode) => {
+      const transport = vi
+        .fn<HttpTransport>()
+        .mockResolvedValue(
+          jsonResponse({ error: { code: backendCode } }, status),
+        );
+      const api = createApiClient(
+        "https://api.example.invalid",
+        transport,
+        5000,
+      );
+
+      await expect(
+        api.verifyOtp({
+          email: "user@example.com",
+          code: "012345",
+          installation_id: verifiedSession.device.installation_id,
+          platform: "WINDOWS",
+          device_name: "Windows device",
+        }),
+      ).rejects.toEqual(new ApiError(clientCode));
+    },
+  );
+
+  it("rejects a malformed verification response", async () => {
+    const transport = vi.fn<HttpTransport>().mockResolvedValue(
+      jsonResponse({
+        ...verifiedSession,
+        refresh_token: "",
+      }),
+    );
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(
+      api.verifyOtp({
+        email: "user@example.com",
+        code: "012345",
+        installation_id: verifiedSession.device.installation_id,
+        platform: "WINDOWS",
+        device_name: "Windows device",
+      }),
+    ).rejects.toEqual(new ApiError("INVALID_RESPONSE"));
   });
 
   it("bounds a stalled request with a timeout", async () => {

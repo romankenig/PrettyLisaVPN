@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
+import { authenticationSession } from "./auth/session";
 import { desktopAdapter } from "./native/desktop";
 import { createHttpTransport } from "./native/http";
 import { installationIdProvider } from "./native/installationId";
@@ -24,6 +25,7 @@ try {
           ),
           desktop: desktopAdapter,
           installationId: installationIdProvider,
+          session: authenticationSession,
         }}
       >
         <HashRouter>

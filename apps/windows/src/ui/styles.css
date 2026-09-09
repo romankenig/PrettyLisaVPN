@@ -258,6 +258,37 @@ dd {
   justify-self: start;
   min-width: 144px;
 }
+.verified-email {
+  color: white;
+  overflow-wrap: anywhere;
+}
+.otp-input {
+  max-width: 230px;
+  font-family: "Cascadia Mono", "Consolas", monospace !important;
+  font-size: 24px !important;
+  letter-spacing: 8px;
+}
+.resend-row {
+  display: grid;
+  justify-items: start;
+  margin-top: 12px;
+}
+.text-button {
+  margin-top: 8px;
+  padding: 6px 0;
+  color: var(--color-purple-heart);
+  background: transparent;
+  border-radius: 0;
+  font-size: 13px;
+}
+.text-button:hover {
+  text-decoration: underline;
+}
+.form-notice {
+  margin: 8px 0 0;
+  color: var(--color-scorpion);
+  font-size: 13px;
+}
 @media (max-width: 760px) {
   aside {
     width: 180px;

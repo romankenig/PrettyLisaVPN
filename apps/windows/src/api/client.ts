@@ -14,10 +14,40 @@ export interface RequestOtpResponse {
   readonly status: "accepted";
 }
 
+export interface VerifyOtpRequest {
+  readonly email: string;
+  readonly code: string;
+  readonly installation_id: string;
+  readonly platform: "WINDOWS";
+  readonly device_name: string;
+}
+
+export interface VerifyOtpResponse {
+  readonly token_type: "bearer";
+  readonly access_token: string;
+  readonly access_token_expires_in: number;
+  readonly refresh_token: string;
+  readonly refresh_token_expires_at: string;
+  readonly session_id: string;
+  readonly user: { readonly id: string };
+  readonly device: {
+    readonly id: string;
+    readonly installation_id: string;
+    readonly status: "ACTIVE" | "REVOKED";
+  };
+  readonly subscription: {
+    readonly plan: "FREE" | "PREMIUM";
+    readonly status: "ACTIVE" | "CANCELED" | "EXPIRED";
+  };
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
   | "RATE_LIMITED"
+  | "OTP_INVALID"
+  | "DEVICE_LIMIT"
+  | "AUTH_FORBIDDEN"
   | "SERVER_ERROR"
   | "HTTP_ERROR"
   | "INVALID_RESPONSE";
@@ -33,6 +63,10 @@ export interface ApiClient {
   getHealth(signal?: AbortSignal): Promise<BackendHealth>;
   getVersion(signal?: AbortSignal): Promise<BackendVersion>;
   requestOtp(email: string, signal?: AbortSignal): Promise<RequestOtpResponse>;
+  verifyOtp(
+    body: VerifyOtpRequest,
+    signal?: AbortSignal,
+  ): Promise<VerifyOtpResponse>;
 }
 
 export function createApiClient(
@@ -86,11 +120,18 @@ export function createApiClient(
       }
 
       if (!response.ok) {
-        if (
-          response.status === 429 &&
-          (await readErrorCode(response)) === "otp_rate_limited"
-        ) {
+        const errorCode = await readErrorCode(response);
+        if (response.status === 429 && errorCode === "otp_rate_limited") {
           throw new ApiError("RATE_LIMITED");
+        }
+        if (response.status === 401 && errorCode === "otp_invalid_or_expired") {
+          throw new ApiError("OTP_INVALID");
+        }
+        if (response.status === 409 && errorCode === "device_limit_reached") {
+          throw new ApiError("DEVICE_LIMIT");
+        }
+        if (response.status === 403 && errorCode === "user_blocked") {
+          throw new ApiError("AUTH_FORBIDDEN");
         }
         if (response.status >= 500) throw new ApiError("SERVER_ERROR");
         throw new ApiError("HTTP_ERROR");
@@ -151,7 +192,65 @@ export function createApiClient(
       }
       return { status: "accepted" };
     },
+    async verifyOtp(body, signal) {
+      const value = await requestJson(
+        "/auth/verify-otp",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        },
+        signal,
+      );
+      if (!isVerifyOtpResponse(value)) throw new ApiError("INVALID_RESPONSE");
+      return value;
+    },
   };
+}
+
+function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {
+  if (
+    !isRecord(value) ||
+    value.token_type !== "bearer" ||
+    !isNonEmptyString(value.access_token) ||
+    !isPositiveInteger(value.access_token_expires_in) ||
+    !isNonEmptyString(value.refresh_token) ||
+    !isIsoDate(value.refresh_token_expires_at) ||
+    !isUuid(value.session_id) ||
+    !isRecord(value.user) ||
+    !isUuid(value.user.id) ||
+    !isRecord(value.device) ||
+    !isUuid(value.device.id) ||
+    !isUuid(value.device.installation_id) ||
+    !["ACTIVE", "REVOKED"].includes(String(value.device.status)) ||
+    !isRecord(value.subscription) ||
+    !["FREE", "PREMIUM"].includes(String(value.subscription.plan)) ||
+    !["ACTIVE", "CANCELED", "EXPIRED"].includes(
+      String(value.subscription.status),
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_PATTERN.test(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
 async function readErrorCode(response: Response): Promise<unknown> {
