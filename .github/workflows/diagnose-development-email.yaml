@@ -79,11 +79,17 @@ jobs:
                   )
           except smtplib.SMTPAuthenticationError:
               print("authentication")
+          except UnicodeError:
+              print("credential_encoding")
+          except KeyError:
+              print("configuration")
           except (OSError, TimeoutError, smtplib.SMTPException):
               print("unavailable")
+          except Exception:
+              print("unexpected")
           else:
               print("ok")
-          ' 2>/dev/null)"
+          ' 2>/dev/null || printf 'exec_failed')"
           printf 'smtp_probe=%s\n' "$probe"
           [[ "$probe" == "ok" ]]
           REMOTE
