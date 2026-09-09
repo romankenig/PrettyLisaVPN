@@ -2,12 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, createApiClient } from "../api/client";
-import { createInMemoryAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { HttpTransport } from "../native/http";
 import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
+import { createTestAuthenticationSession } from "./fakes";
 
 const health = { status: "ok" } as const;
 const version = {
@@ -54,7 +54,7 @@ function renderApplication(transport: HttpTransport) {
           getInstallationId: async () =>
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
-        session: createInMemoryAuthenticationSession(),
+        session: createTestAuthenticationSession(),
       }}
     >
       <MemoryRouter>

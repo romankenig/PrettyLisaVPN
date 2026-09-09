@@ -84,7 +84,7 @@ function OtpForm({ email }: { readonly email: string }) {
         },
         controller.signal,
       );
-      session.establish(toCredentials(result));
+      await session.establish(toCredentials(result));
       setCode("");
       setState({ phase: "success" });
     } catch (error) {

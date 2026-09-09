@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Application version, installation identity, and configured Backend HTTP access for the main window.",
+  "description": "Application version, installation identity, secure credential commands, and configured Backend HTTP access for the main window.",
   "windows": ["main"],
   "permissions": [
     "core:app:allow-version",

@@ -1,3 +1,5 @@
+import type { CredentialStorage } from "../native/credentialStorage";
+
 export interface SessionCredentials {
   readonly accessToken: string;
   readonly accessTokenExpiresIn: number;
@@ -9,25 +11,47 @@ export interface SessionCredentials {
   readonly plan: "FREE" | "PREMIUM";
 }
 
-export interface AuthenticationSession {
-  establish(credentials: SessionCredentials): void;
-  current(): SessionCredentials | null;
-  clear(): void;
+export interface ActiveSession {
+  readonly accessToken: string;
+  readonly accessTokenExpiresIn: number;
+  readonly sessionId: string;
+  readonly userId: string;
+  readonly deviceId: string;
+  readonly plan: "FREE" | "PREMIUM";
 }
 
-export function createInMemoryAuthenticationSession(): AuthenticationSession {
-  let credentials: SessionCredentials | null = null;
+export interface AuthenticationSession {
+  establish(credentials: SessionCredentials): Promise<void>;
+  current(): ActiveSession | null;
+  clear(): Promise<void>;
+}
+
+export function createAuthenticationSession(
+  credentialStorage: CredentialStorage,
+): AuthenticationSession {
+  let activeSession: ActiveSession | null = null;
   return {
-    establish(value) {
-      credentials = Object.freeze({ ...value });
+    async establish(credentials) {
+      await credentialStorage.save({
+        sessionId: credentials.sessionId,
+        refreshToken: credentials.refreshToken,
+        expiresAt: credentials.refreshTokenExpiresAt,
+      });
+      activeSession = Object.freeze({
+        accessToken: credentials.accessToken,
+        accessTokenExpiresIn: credentials.accessTokenExpiresIn,
+        sessionId: credentials.sessionId,
+        userId: credentials.userId,
+        deviceId: credentials.deviceId,
+        plan: credentials.plan,
+      });
     },
     current() {
-      return credentials;
+      return activeSession;
     },
-    clear() {
-      credentials = null;
+    async clear() {
+      await credentialStorage.delete();
+      activeSession = null;
     },
   };
 }
-
-export const authenticationSession = createInMemoryAuthenticationSession();

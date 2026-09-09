@@ -14,7 +14,7 @@ import {
   type VerifyOtpResponse,
 } from "../api/client";
 import {
-  createInMemoryAuthenticationSession,
+  createAuthenticationSession,
   type AuthenticationSession,
 } from "../auth/session";
 import { loadConfig } from "../config/config";
@@ -25,6 +25,7 @@ import type {
 } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
+import { createTestCredentialStorage } from "./fakes";
 
 const email = "user@example.com";
 const installationId = "123e4567-e89b-42d3-a456-426614174000" as InstallationId;
@@ -61,7 +62,9 @@ function mockApi(): ApiClient {
 
 function renderVerification(options: RenderOptions = {}) {
   const api = options.api ?? mockApi();
-  const session = options.session ?? createInMemoryAuthenticationSession();
+  const session =
+    options.session ??
+    createAuthenticationSession(createTestCredentialStorage());
   const installationIdProvider = options.installationIdProvider ?? {
     getInstallationId: async () => installationId,
   };
@@ -253,7 +256,8 @@ describe("OTP login integration", () => {
       }),
     );
     const api = createApiClient("https://api.example.invalid", transport, 5000);
-    const session = createInMemoryAuthenticationSession();
+    const credentialStorage = createTestCredentialStorage();
+    const session = createAuthenticationSession(credentialStorage);
     renderVerification({ api, session });
 
     enterCode("012345");
@@ -275,12 +279,15 @@ describe("OTP login integration", () => {
     expect(session.current()).toEqual({
       accessToken: "access-token",
       accessTokenExpiresIn: 900,
-      refreshToken: "refresh-token",
-      refreshTokenExpiresAt: "2026-10-09T00:00:00Z",
       sessionId: "123e4567-e89b-42d3-a456-426614174001",
       userId: "123e4567-e89b-42d3-a456-426614174002",
       deviceId: "123e4567-e89b-42d3-a456-426614174003",
       plan: "FREE",
+    });
+    await expect(credentialStorage.retrieve()).resolves.toEqual({
+      sessionId: "123e4567-e89b-42d3-a456-426614174001",
+      refreshToken: "refresh-token",
+      expiresAt: "2026-10-09T00:00:00Z",
     });
     expect(localStorage).toHaveLength(0);
     expect(sessionStorage).toHaveLength(0);

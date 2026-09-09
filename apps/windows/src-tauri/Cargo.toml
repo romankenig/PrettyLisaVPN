@@ -6,6 +6,9 @@ rust-version = "1.85"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
+serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-http = "2"
 uuid = { version = "1", features = ["v4"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Credentials"] }
+zeroize = "1"

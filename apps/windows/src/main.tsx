@@ -3,8 +3,9 @@ import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
-import { authenticationSession } from "./auth/session";
+import { createAuthenticationSession } from "./auth/session";
 import { desktopAdapter } from "./native/desktop";
+import { createCredentialStorage } from "./native/credentialStorage";
 import { createHttpTransport } from "./native/http";
 import { installationIdProvider } from "./native/installationId";
 import { ApplicationProvider } from "./state/application";
@@ -25,7 +26,7 @@ try {
           ),
           desktop: desktopAdapter,
           installationId: installationIdProvider,
-          session: authenticationSession,
+          session: createAuthenticationSession(createCredentialStorage()),
         }}
       >
         <HashRouter>

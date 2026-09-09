@@ -105,10 +105,27 @@ rate limit, сетевую ошибку и временную недоступн
 доступна после локального cooldown в 60 секунд; серверные rate limits остаются источником истины.
 Ошибочный, истёкший и уже использованный код показывают одинаковое безопасное сообщение.
 
-После успешной проверки access/refresh credentials передаются через узкий
-`AuthenticationSession` и пока хранятся **только в памяти процесса**. `localStorage` и
-`sessionStorage` для email, OTP или токенов не используются. Безопасное долговременное хранение
-токенов и authenticated Home в этот этап не входят.
+После успешной проверки credentials передаются через узкий `AuthenticationSession`. Access token
+и сведения о текущей сессии хранятся только в памяти процесса. Refresh token сохраняется как
+защищённый credential blob в Windows Credential Manager под фиксированным target
+`PrettyLisaVPN/auth/refresh-token/v1`; сохранение нового значения атомарно заменяет прежнее.
+Поддерживаются чтение для будущей ротации, замена и идемпотентное удаление. `localStorage`,
+`sessionStorage`, JSON-файлы и app config для email, OTP или токенов не используются.
+
+## Граница хранения credentials
+
+Windows Credential Manager шифрует credential blob средствами Windows для текущего пользователя.
+Rust-модуль `src-tauri/src/refresh_credentials.rs` — единственное место прямого доступа к Win32
+Credential API. Он возвращает наружу только стабильную ошибку `credential_storage_unavailable`,
+не содержащую token, payload или текст системной ошибки. Rust по возможности обнуляет временные
+буферы refresh token после записи и чтения.
+
+TypeScript-адаптер `src/native/credentialStorage.ts` предоставляет auth-слою только операции
+`save`, `retrieve`, `replace` и `delete`. Компоненты получают `AuthenticationSession`, чей
+`current()` не содержит refresh token. Сам token пересекает IPC только при входе и будущей
+ротации. Код, исполняемый внутри встроенного WebView bundle, остаётся доверенной частью этой
+границы: поэтому CSP запрещает удалённые scripts, а произвольная навигация и сторонний frontend
+код не должны добавляться без отдельного security review.
 
 ## Идентификатор установки
 
@@ -130,9 +147,9 @@ src/
   ui/          Компоненты, экраны, Routes и стили
   config/      Проверка публичных настроек
   api/         HTTP-клиент; никаких импортов React или Tauri
-  auth/        Узкий интерфейс сессии и временная in-memory реализация
+  auth/        In-memory access session и координация secure credential storage
   state/       Контекст приложения и внедрение адаптеров
-  native/      Единственное место импорта Tauri JS API
+  native/      Tauri JS API и узкий адаптер Windows Credential Manager
   test/        Тесты конфигурации, API и навигации
   main.tsx     Создание конфигурации и связывание зависимостей
 src-tauri/
@@ -143,8 +160,8 @@ src-tauri/
 HashRouter работает как в Vite, так и со встроенными ресурсами exe. React Context
 содержит настройки и адаптеры; будущие изменяемые состояния модулей добавляются сюда
 по мере необходимости. Rust предоставляет только узкую IPC-команду чтения installation ID;
-произвольного доступа к файловой системе или shell нет. OTP никогда не сохраняется; credentials
-до внедрения защищённого native-хранилища живут только в памяти. Версия native-приложения задаётся в
+произвольного доступа к файловой системе или shell нет. OTP никогда не сохраняется; access token
+живёт в памяти, а refresh token доступен только через native credential adapter. Версия native-приложения задаётся в
 `src-tauri/tauri.conf.json`; поддерживайте её согласованной с Cargo.toml и package.json.
 
 ## Проверки и сборка

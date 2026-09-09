@@ -6,11 +6,11 @@ import {
   type ApiClient,
   type RequestOtpResponse,
 } from "../api/client";
-import { createInMemoryAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
+import { createTestAuthenticationSession } from "./fakes";
 
 type RequestOtp = ApiClient["requestOtp"];
 
@@ -31,7 +31,7 @@ function renderLogin(requestOtp: RequestOtp) {
           getInstallationId: async () =>
             "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
         },
-        session: createInMemoryAuthenticationSession(),
+        session: createTestAuthenticationSession(),
       }}
     >
       <MemoryRouter initialEntries={["/login"]}>
@@ -136,7 +136,7 @@ describe("email login", () => {
             getInstallationId: async () =>
               "123e4567-e89b-42d3-a456-426614174000" as InstallationId,
           },
-          session: createInMemoryAuthenticationSession(),
+          session: createTestAuthenticationSession(),
         }}
       >
         <MemoryRouter initialEntries={["/auth/verify-otp"]}>
