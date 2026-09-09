@@ -67,30 +67,42 @@ jobs:
           import smtplib
           import ssl
 
-          try:
-              with smtplib.SMTP_SSL(
-                  os.environ["EMAIL_SMTP_HOST"],
-                  int(os.environ["EMAIL_SMTP_PORT"]),
-                  timeout=float(os.environ["EMAIL_CONNECTION_TIMEOUT_SECONDS"]),
-                  context=ssl.create_default_context(),
-              ) as smtp:
-                  smtp.login(
-                      os.environ["EMAIL_SMTP_USERNAME"],
-                      os.environ["EMAIL_SMTP_PASSWORD"],
-                  )
-          except smtplib.SMTPAuthenticationError:
-              print("authentication")
-          except UnicodeError:
-              print("credential_encoding")
-          except KeyError:
-              print("configuration")
-          except (OSError, TimeoutError, smtplib.SMTPException):
-              print("unavailable")
-          except Exception:
-              print("unexpected")
-          else:
-              print("ok")
+          def probe(port: int, starttls: bool) -> str:
+              try:
+                  if starttls:
+                      with smtplib.SMTP(
+                          os.environ["EMAIL_SMTP_HOST"], port, timeout=5
+                      ) as smtp:
+                          smtp.starttls(context=ssl.create_default_context())
+                          smtp.login(
+                              os.environ["EMAIL_SMTP_USERNAME"],
+                              os.environ["EMAIL_SMTP_PASSWORD"],
+                          )
+                  else:
+                      with smtplib.SMTP_SSL(
+                          os.environ["EMAIL_SMTP_HOST"],
+                          port,
+                          timeout=5,
+                          context=ssl.create_default_context(),
+                      ) as smtp:
+                          smtp.login(
+                              os.environ["EMAIL_SMTP_USERNAME"],
+                              os.environ["EMAIL_SMTP_PASSWORD"],
+                          )
+              except smtplib.SMTPAuthenticationError:
+                  return "authentication"
+              except UnicodeError:
+                  return "credential_encoding"
+              except KeyError:
+                  return "configuration"
+              except (OSError, TimeoutError, smtplib.SMTPException):
+                  return "unavailable"
+              except Exception:
+                  return "unexpected"
+              return "ok"
+
+          print(f"465={probe(465, False)},587={probe(587, True)}")
           ' 2>/dev/null || printf 'exec_failed')"
           printf 'smtp_probe=%s\n' "$probe"
-          [[ "$probe" == "ok" ]]
+          [[ "$probe" == *"=ok"* ]]
           REMOTE
