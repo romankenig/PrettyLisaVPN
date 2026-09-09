@@ -48,20 +48,21 @@ jobs:
             -p "$DEV_VPS_PORT" \
             "$remote" 'bash -s' <<'REMOTE'
           set -Eeuo pipefail
-          event="$({
-            docker compose \
-              --project-name prettylisavpn-development \
-              --env-file /etc/prettylisavpn/development.env \
-              --file /opt/prettylisavpn/current/compose.yaml \
-              logs --since 2h --no-color backend 2>/dev/null || true
-          } | grep -Eo 'otp_email_delivery_failed_(authentication|recipient_rejected|unavailable|delivery)|email_provider_configuration_invalid' | tail -n 1 || true)"
+          backend_container="$(docker ps \
+            --filter label=com.docker.compose.project=prettylisavpn-development \
+            --filter label=com.docker.compose.service=backend \
+            --format '{{.ID}}' | head -n 1)"
+          if [[ -z "$backend_container" ]]; then
+            printf 'smtp_probe=container_not_found\n'
+            exit 1
+          fi
+
+          event="$(docker logs --since 2h "$backend_container" 2>/dev/null \
+            | grep -Eo 'otp_email_delivery_failed_(authentication|recipient_rejected|unavailable|delivery)|email_provider_configuration_invalid' \
+            | tail -n 1 || true)"
           printf 'latest_email_failure=%s\n' "${event:-not_found}"
 
-          probe="$(docker compose \
-            --project-name prettylisavpn-development \
-            --env-file /etc/prettylisavpn/development.env \
-            --file /opt/prettylisavpn/current/compose.yaml \
-            exec -T backend python -c '
+          probe="$(docker exec -i "$backend_container" python -c '
           import os
           import smtplib
           import ssl
