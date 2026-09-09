@@ -54,9 +54,34 @@ jobs:
               --file /opt/prettylisavpn/current/compose.yaml \
               logs --since 2h --no-color backend 2>/dev/null || true
           } | grep -Eo 'otp_email_delivery_failed_(authentication|recipient_rejected|unavailable|delivery)|email_provider_configuration_invalid' | tail -n 1 || true)"
-          if [[ -z "$event" ]]; then
-            printf 'latest_email_failure=not_found\n'
-            exit 1
-          fi
-          printf 'latest_email_failure=%s\n' "$event"
+          printf 'latest_email_failure=%s\n' "${event:-not_found}"
+
+          probe="$(docker compose \
+            --env-file /etc/prettylisavpn/development.env \
+            --file /opt/prettylisavpn/current/compose.yaml \
+            exec -T backend python -c '
+          import os
+          import smtplib
+          import ssl
+
+          try:
+              with smtplib.SMTP_SSL(
+                  os.environ["EMAIL_SMTP_HOST"],
+                  int(os.environ["EMAIL_SMTP_PORT"]),
+                  timeout=float(os.environ["EMAIL_CONNECTION_TIMEOUT_SECONDS"]),
+                  context=ssl.create_default_context(),
+              ) as smtp:
+                  smtp.login(
+                      os.environ["EMAIL_SMTP_USERNAME"],
+                      os.environ["EMAIL_SMTP_PASSWORD"],
+                  )
+          except smtplib.SMTPAuthenticationError:
+              print("authentication")
+          except (OSError, TimeoutError, smtplib.SMTPException):
+              print("unavailable")
+          else:
+              print("ok")
+          ' 2>/dev/null)"
+          printf 'smtp_probe=%s\n' "$probe"
+          [[ "$probe" == "ok" ]]
           REMOTE
