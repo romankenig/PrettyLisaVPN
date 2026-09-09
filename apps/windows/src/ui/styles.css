@@ -298,11 +298,89 @@ dd {
   padding: 32px;
   text-align: center;
 }
+.account-home {
+  width: min(100%, 720px);
+}
+.account-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 28px;
+  overflow: hidden;
+  color: var(--color-black);
+  background: rgb(156 156 156 / 45%);
+  border: 1px solid rgb(228 228 228 / 45%);
+  border-radius: 16px;
+}
+.account-summary div {
+  display: grid;
+  gap: 6px;
+  padding: 20px;
+  background: var(--color-mercury);
+}
+.account-summary span,
+.connection-card__label {
+  color: var(--color-scorpion);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+.account-summary strong {
+  overflow-wrap: anywhere;
+}
+.account-status {
+  color: var(--color-christalle);
+}
+.connection-card {
+  margin-top: 24px;
+  padding: 24px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgb(44 1 109 / 18%);
+}
+.connection-card h2 {
+  margin: 8px 0;
+  font-size: 24px;
+}
+.connection-card p {
+  max-width: 560px;
+  line-height: 1.5;
+}
+.connection-card button:disabled {
+  cursor: not-allowed;
+}
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+.secondary-link {
+  padding: 10px 16px;
+  color: var(--color-black);
+  background: var(--color-viking);
+  border-radius: 9px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.logout-button {
+  margin-top: 0;
+  color: white;
+  background: var(--color-persian-red);
+}
+.account-error,
+.logout-error {
+  max-width: 560px;
+  color: white;
+}
 @media (max-width: 760px) {
   aside {
     width: 180px;
   }
   main {
     padding: 52px 28px;
+  }
+  .account-summary {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,4 +1,5 @@
 import type { CredentialStorage } from "../native/credentialStorage";
+import type { MeResponse } from "../api/client";
 
 export interface SessionCredentials {
   readonly accessToken: string;
@@ -18,11 +19,13 @@ export interface ActiveSession {
   readonly userId: string;
   readonly deviceId: string | null;
   readonly plan: "FREE" | "PREMIUM";
+  readonly profile: MeResponse | null;
 }
 
 export interface AuthenticationSession {
   establish(credentials: SessionCredentials): Promise<void>;
   activateRestored(credentials: RestoredSessionCredentials): void;
+  updateProfile(accessToken: string, profile: MeResponse): void;
   current(): ActiveSession | null;
   subscribe(listener: () => void): () => void;
   clear(): Promise<void>;
@@ -34,6 +37,7 @@ export interface RestoredSessionCredentials {
   readonly sessionId: string;
   readonly userId: string;
   readonly plan: "FREE" | "PREMIUM";
+  readonly profile: MeResponse;
 }
 
 export function createAuthenticationSession(
@@ -56,11 +60,22 @@ export function createAuthenticationSession(
         userId: credentials.userId,
         deviceId: credentials.deviceId,
         plan: credentials.plan,
+        profile: null,
       });
       publish();
     },
     activateRestored(credentials) {
       activeSession = Object.freeze({ ...credentials, deviceId: null });
+      publish();
+    },
+    updateProfile(accessToken, profile) {
+      if (activeSession?.accessToken !== accessToken) return;
+      activeSession = Object.freeze({
+        ...activeSession,
+        userId: profile.id,
+        plan: profile.plan,
+        profile: Object.freeze({ ...profile }),
+      });
       publish();
     },
     current() {

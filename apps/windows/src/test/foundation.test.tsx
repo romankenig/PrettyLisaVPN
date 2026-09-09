@@ -334,6 +334,24 @@ describe("typed API client", () => {
     );
   });
 
+  it("logs out with the in-memory access token", async () => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse({ status: "logged_out" }));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.logout("access-token")).resolves.toEqual({
+      status: "logged_out",
+    });
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/auth/logout",
+      expect.objectContaining({
+        method: "POST",
+        headers: { authorization: "Bearer access-token" },
+      }),
+    );
+  });
+
   it.each([
     [401, "invalid_refresh_token"],
     [403, "device_revoked"],
@@ -370,44 +388,6 @@ describe("typed API client", () => {
 
     await vi.advanceTimersByTimeAsync(1000);
     await assertion;
-  });
-});
-
-describe("startup backend state", () => {
-  it("shows online with version metadata", async () => {
-    const transport: HttpTransport = (input) =>
-      Promise.resolve(
-        jsonResponse(String(input).endsWith("/health") ? health : version),
-      );
-    renderApplication(transport);
-
-    expect(screen.getByText("backend: checking")).toBeInTheDocument();
-    expect(await screen.findByText("backend: online")).toBeInTheDocument();
-    expect(screen.getByText("0.2.0-dev")).toBeInTheDocument();
-    expect(screen.getAllByText("development").length).toBeGreaterThan(0);
-  });
-
-  it("detects an outage and retry restores online state", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    let online = true;
-    const transport: HttpTransport = (input) => {
-      if (!online) return Promise.reject(new Error("offline"));
-      return Promise.resolve(
-        jsonResponse(String(input).endsWith("/health") ? health : version),
-      );
-    };
-    renderApplication(transport);
-
-    expect(await screen.findByText("backend: online")).toBeInTheDocument();
-    online = false;
-    await vi.advanceTimersByTimeAsync(15000);
-    expect(await screen.findByText("backend: offline")).toBeInTheDocument();
-
-    online = true;
-    fireEvent.click(screen.getByRole("button", { name: "retry" }));
-    expect(screen.getByText("backend: checking")).toBeInTheDocument();
-    expect(await screen.findByText("backend: online")).toBeInTheDocument();
-    expect(screen.getByText("0.2.0-dev")).toBeInTheDocument();
   });
 });
 

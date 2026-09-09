@@ -62,6 +62,7 @@ function mockApi(): ApiClient {
     verifyOtp: vi.fn().mockResolvedValue(verifiedSession),
     refresh: vi.fn(),
     me: vi.fn(),
+    logout: vi.fn(),
   };
 }
 
@@ -289,6 +290,7 @@ describe("OTP login integration", () => {
       userId: "123e4567-e89b-42d3-a456-426614174002",
       deviceId: "123e4567-e89b-42d3-a456-426614174003",
       plan: "FREE",
+      profile: null,
     });
     await expect(credentialStorage.retrieve()).resolves.toEqual({
       sessionId: "123e4567-e89b-42d3-a456-426614174001",

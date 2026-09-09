@@ -25,6 +25,7 @@ function renderLogin(requestOtp: RequestOtp) {
     verifyOtp: vi.fn(),
     refresh: vi.fn(),
     me: vi.fn(),
+    logout: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -133,6 +134,7 @@ describe("email login", () => {
       verifyOtp: vi.fn(),
       refresh: vi.fn(),
       me: vi.fn(),
+      logout: vi.fn(),
     };
     render(
       <ApplicationProvider

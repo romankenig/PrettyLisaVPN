@@ -80,6 +80,7 @@ async function restoreSession(
       sessionId: refreshed.session_id,
       userId: profile.id,
       plan: profile.plan,
+      profile,
     });
     return "authenticated";
   } catch (error) {

@@ -103,6 +103,7 @@ describe("authentication session", () => {
       userId: "123e4567-e89b-42d3-a456-426614174002",
       deviceId: "123e4567-e89b-42d3-a456-426614174003",
       plan: "FREE",
+      profile: null,
     });
     await expect(storage.retrieve()).resolves.toEqual(credential);
 

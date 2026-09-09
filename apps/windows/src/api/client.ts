@@ -62,6 +62,10 @@ export interface MeResponse {
   readonly active_device_count: number;
 }
 
+export interface LogoutResponse {
+  readonly status: "logged_out";
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -91,6 +95,7 @@ export interface ApiClient {
   ): Promise<VerifyOtpResponse>;
   refresh(body: RefreshRequest, signal?: AbortSignal): Promise<RefreshResponse>;
   me(accessToken: string, signal?: AbortSignal): Promise<MeResponse>;
+  logout(accessToken: string, signal?: AbortSignal): Promise<LogoutResponse>;
 }
 
 export function createApiClient(
@@ -266,6 +271,20 @@ export function createApiClient(
       );
       if (!isMeResponse(value)) throw new ApiError("INVALID_RESPONSE");
       return value;
+    },
+    async logout(accessToken, signal) {
+      const value = await requestJson(
+        "/auth/logout",
+        {
+          method: "POST",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (!isRecord(value) || value.status !== "logged_out") {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return { status: "logged_out" };
     },
   };
 }
