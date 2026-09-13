@@ -62,6 +62,19 @@ usermod --append --groups sudo vpnadmin
 id vpnadmin
 ```
 
+Если baseline применяется автоматизированно и локальный пароль нельзя безопасно передать оператору, вместо `adduser` используйте пользователя с заблокированным паролем и passwordless sudo. Именно этот вариант не требует создания, вывода или сохранения секрета:
+
+```bash
+useradd --create-home --shell /bin/bash vpnadmin
+passwd --lock vpnadmin
+usermod --append --groups sudo vpnadmin
+printf '%s\n' 'vpnadmin ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/90-vpnadmin
+chmod 0440 /etc/sudoers.d/90-vpnadmin
+visudo -cf /etc/sudoers.d/90-vpnadmin
+```
+
+Используйте только один вариант. Во втором варианте Recovery Console login через `vpnadmin` невозможен: для аварийного доступа сбросьте root password через панель DigitalOcean, как описано ниже. Компрометация административного SSH-ключа в этом варианте сразу даёт root через sudo, поэтому ключ должен храниться и ротироваться как привилегированный секрет.
+
 Скопируйте уже проверенный публичный ключ из root-аккаунта, сохранив безопасные права:
 
 ```bash
@@ -87,7 +100,7 @@ sudo -v
 whoami
 ```
 
-Вход должен пройти без пароля SSH-аккаунта; `sudo -v` должен принять локальный пароль `vpnadmin`; `whoami` должен вывести `vpnadmin`. Не продолжайте, если эта проверка не прошла.
+Вход должен пройти без пароля SSH-аккаунта; `sudo -v` должен принять локальный пароль `vpnadmin`; `whoami` должен вывести `vpnadmin`. Для варианта с passwordless sudo вместо `sudo -v` выполните `sudo -n id` и ожидайте `uid=0(root)`. Не продолжайте, если эта проверка не прошла.
 
 Если официальный образ уже создал подходящего не-root пользователя с рабочим ключом и членством в `sudo`, можно использовать его вместо `vpnadmin`. Тогда во всех последующих командах и проверках замените имя пользователя, а новый аккаунт не создавайте.
 
@@ -154,14 +167,14 @@ ssh -o PreferredAuthentications=publickey -o PasswordAuthentication=no vpnadmin@
 ```text
 Status: active
 Logging: off
-Default: deny (incoming), allow (outgoing), deny (routed)
+Default: deny (incoming), allow (outgoing), disabled (routed)
 
 To                         Action      From
 --                         ------      ----
 22/tcp                     LIMIT IN    ADMIN_PUBLIC_IP
 ```
 
-UFW может показать отдельные IPv6-правила в варианте с доступом отовсюду. Никакие HTTP, HTTPS, database, cache, Docker API или VPN-порты открыты быть не должны.
+На Ubuntu 24.04 при выключенном IP forwarding UFW показывает `disabled (routed)`, даже если задан `ufw default deny routed`; подтвердите фактический безопасный policy командой `grep '^DEFAULT_FORWARD_POLICY=' /etc/default/ufw`, ожидая `DROP`. UFW может показать отдельные IPv6-правила в варианте с доступом отовсюду. Никакие HTTP, HTTPS, database, cache, Docker API или VPN-порты открыты быть не должны.
 
 ## 6. Усильте SSH только после проверки ключа
 
@@ -228,6 +241,23 @@ for unit in avahi-daemon.service cups.service cups-browsed.service ModemManager.
     sudo systemctl disable --now "$unit"
   fi
 done
+```
+
+Стандартный cloud image также может запустить `udisks2` и `multipathd`. Отключайте их только после подтверждения, что узел использует обычный virtio-диск и не имеет multipath storage:
+
+```bash
+lsblk -o NAME,TYPE,PKNAME,MOUNTPOINTS
+sudo multipath -ll
+sudo systemctl stop udisks2.service
+sudo systemctl mask udisks2.service
+sudo systemctl disable --now multipathd.service multipathd.socket
+sudo systemctl mask multipathd.service multipathd.socket
+```
+
+Для `ModemManager` на виртуальном сервере можно дополнительно запретить повторную D-Bus активацию:
+
+```bash
+sudo systemctl mask ModemManager.service
 ```
 
 Не отключайте `ssh`, `systemd-networkd`, `systemd-resolved`, `systemd-timesyncd`, `cloud-init`, `cloud-final`, `cron`, `dbus`, `polkit`, `unattended-upgrades` или DigitalOcean guest/monitoring agents, если они были сознательно установлены. Не удаляйте `snapd` вслепую: сначала выясните, использует ли его образ. Не устанавливайте Docker, PostgreSQL, Valkey, Caddy или Backend.
@@ -317,6 +347,7 @@ systemctl restart ssh
 ### Ненужная служба оказалась необходимой
 
 ```bash
+systemctl unmask UNIT_NAME.service
 systemctl enable --now UNIT_NAME.service
 systemctl status UNIT_NAME.service --no-pager
 ```
