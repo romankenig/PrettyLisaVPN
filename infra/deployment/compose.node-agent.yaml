@@ -1,0 +1,12 @@
+services:
+  backend:
+    environment:
+      VPN_NODE_STALE_TIMEOUT_SECONDS: ${VPN_NODE_STALE_TIMEOUT_SECONDS:-90}
+      VPN_NODE_HEALTH_POLL_INTERVAL_SECONDS: ${VPN_NODE_HEALTH_POLL_INTERVAL_SECONDS:-30}
+      VPN_NODE_AGENT_PORT: ${VPN_NODE_AGENT_PORT:-8443}
+      VPN_NODE_AGENT_AUTH_TOKEN: ${VPN_NODE_AGENT_AUTH_TOKEN:?Set the node agent machine token}
+      VPN_NODE_AGENT_TLS_CA: /run/secrets/node-agent/server-ca.crt
+      VPN_NODE_AGENT_TLS_CLIENT_CERTIFICATE: /run/secrets/node-agent/backend-client.crt
+      VPN_NODE_AGENT_TLS_CLIENT_KEY: /run/secrets/node-agent/backend-client.key
+    volumes:
+      - ${VPN_NODE_AGENT_TLS_DIRECTORY:?Set the protected Backend mTLS directory}:/run/secrets/node-agent:ro

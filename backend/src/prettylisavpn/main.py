@@ -1,5 +1,6 @@
 """Application factory and thin operational HTTP endpoints."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -35,6 +36,8 @@ from prettylisavpn.emailing.timeweb import TimewebEmailProvider
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
+from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient
+from prettylisavpn.vpn_nodes.monitor import NodeHealthMonitorPort, VpnNodeHealthMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +94,7 @@ def create_app(
     login_service: LoginHandler | None = None,
     authenticated_sessions: AuthenticatedSessionHandler | None = None,
     device_management: DeviceManagementHandler | None = None,
+    node_health_monitor: NodeHealthMonitorPort | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -149,8 +153,24 @@ def create_app(
                     )
                 )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
+                monitor = node_health_monitor
+                agent_client: HttpNodeAgentClient | None = None
+                if monitor is None and config.vpn_node_agent_is_configured():
+                    agent_client = HttpNodeAgentClient.from_settings(config)
+                    monitor = VpnNodeHealthMonitor(cast(Postgres, pg), agent_client, config)
+                monitor_stop = asyncio.Event()
+                monitor_task = (
+                    asyncio.create_task(monitor.run(monitor_stop)) if monitor is not None else None
+                )
                 logger.info("application_started")
-                yield
+                try:
+                    yield
+                finally:
+                    if monitor_task is not None:
+                        monitor_stop.set()
+                        await monitor_task
+                    if agent_client is not None:
+                        await agent_client.close()
             finally:
                 await cache.close()
         finally:

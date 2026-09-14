@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prettylisavpn.database import Base
-from prettylisavpn.vpn_nodes.domain import VpnNodeProvider, VpnNodeStatus
+from prettylisavpn.vpn_nodes.domain import VpnNodeHealthStatus, VpnNodeProvider, VpnNodeStatus
 
 
 def utc_now() -> datetime:
@@ -62,9 +62,24 @@ class VpnNodeRecord(Base):
             "updated_at >= created_at",
             name="ck_vpn_nodes_timestamps_order",
         ),
+        CheckConstraint(
+            "health_checked_at IS NULL OR health_checked_at >= created_at",
+            name="ck_vpn_nodes_health_checked_after_creation",
+        ),
+        CheckConstraint(
+            "last_seen_at IS NULL OR health_checked_at IS NULL "
+            "OR last_seen_at <= health_checked_at",
+            name="ck_vpn_nodes_last_seen_before_health_check",
+        ),
         Index("ix_vpn_nodes_status_country_code", "status", "country_code"),
         Index("ix_vpn_nodes_provider_region", "provider", "provider_region"),
         Index("ix_vpn_nodes_last_seen_at", "last_seen_at"),
+        Index(
+            "ix_vpn_nodes_effective_availability",
+            "status",
+            "health_status",
+            "last_seen_at",
+        ),
         UniqueConstraint("name", name="uq_vpn_nodes_name"),
         UniqueConstraint(
             "public_ipv4",
@@ -104,6 +119,16 @@ class VpnNodeRecord(Base):
         server_default=VpnNodeStatus.OFFLINE.value,
     )
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    health_status: Mapped[VpnNodeHealthStatus] = mapped_column(
+        Enum(
+            VpnNodeHealthStatus,
+            name="vpn_node_health_status",
+            values_callable=lambda enum: [status.value for status in enum],
+        ),
+        default=VpnNodeHealthStatus.UNKNOWN,
+        server_default=VpnNodeHealthStatus.UNKNOWN.value,
+    )
+    health_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )

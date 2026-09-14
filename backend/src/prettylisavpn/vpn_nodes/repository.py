@@ -1,11 +1,12 @@
 """Async persistence operations for VPN node metadata."""
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from prettylisavpn.vpn_nodes.domain import VpnNode
+from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 
 
@@ -28,6 +29,8 @@ class VpnNodeRepository:
             capacity=node.capacity,
             status=node.status,
             last_seen_at=node.last_seen_at,
+            health_status=node.health_status,
+            health_checked_at=node.health_checked_at,
             created_at=node.created_at,
             updated_at=node.updated_at,
         )
@@ -67,10 +70,33 @@ class VpnNodeRepository:
                 capacity=node.capacity,
                 status=node.status,
                 last_seen_at=node.last_seen_at,
+                health_status=node.health_status,
+                health_checked_at=node.health_checked_at,
                 updated_at=node.updated_at,
             )
         )
         return node
+
+    async def update_health(
+        self,
+        node_id: UUID,
+        health_status: VpnNodeHealthStatus,
+        health_checked_at: datetime,
+        last_seen_at: datetime | None,
+    ) -> VpnNode | None:
+        statement = (
+            update(VpnNodeRecord)
+            .where(VpnNodeRecord.id == node_id)
+            .values(
+                health_status=health_status,
+                health_checked_at=health_checked_at,
+                last_seen_at=last_seen_at,
+                updated_at=health_checked_at,
+            )
+            .returning(VpnNodeRecord)
+        )
+        record = await self._session.scalar(statement)
+        return self._to_domain(record) if record is not None else None
 
     @staticmethod
     def _to_domain(record: VpnNodeRecord) -> VpnNode:
@@ -90,4 +116,6 @@ class VpnNodeRepository:
             last_seen_at=record.last_seen_at,
             created_at=record.created_at,
             updated_at=record.updated_at,
+            health_status=record.health_status,
+            health_checked_at=record.health_checked_at,
         )

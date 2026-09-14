@@ -118,9 +118,16 @@ docker compose -f infra/docker/compose.yaml down
 | `EMAIL_SMTP_PASSWORD` | Пароль почтового ящика; без значения adapter не создаётся. Никогда не коммитьте. |
 | `EMAIL_FROM_NAME` | `PrettyLisaVPN`. |
 | `EMAIL_CONNECTION_TIMEOUT_SECONDS`, `EMAIL_SEND_TIMEOUT_SECONDS` | `5`, `10`; сетевой и общий тайм-аут отправки. |
+| `VPN_NODE_STALE_TIMEOUT_SECONDS` | `90`; после этого интервала без успешного authenticated health check узел недоступен для новых сессий. |
+| `VPN_NODE_HEALTH_POLL_INTERVAL_SECONDS` | `30`; период опроса, всегда меньше stale timeout. |
+| `VPN_NODE_AGENT_PORT` | `8443`; HTTPS/mTLS порт Node Control Agent. |
+| `VPN_NODE_AGENT_AUTH_TOKEN` | Дополнительный machine bearer secret, минимум 32 символа. |
+| `VPN_NODE_AGENT_TLS_CA`, `VPN_NODE_AGENT_TLS_CLIENT_CERTIFICATE`, `VPN_NODE_AGENT_TLS_CLIENT_KEY` | CA сервера и клиентская mTLS identity Backend; задаются только вместе с token и монтируются read-only. |
 | `DEPENDENCY_TIMEOUT_SECONDS` | `2`; тайм-аут проверки зависимости, больше 0 и не больше 30 секунд. |
 | `POSTGRES_POOL_SIZE` | `5`; размер пула соединений, минимум 1. |
 | `POSTGRES_MAX_OVERFLOW` | `5`; дополнительные временные соединения сверх пула, минимум 0. |
+
+Agent polling включается только при полном наборе mTLS/token настроек. Для production добавьте к обычной Compose-команде `-f infra/deployment/compose.node-agent.yaml`; override требует защищённый host-каталог `VPN_NODE_AGENT_TLS_DIRECTORY` и монтирует его read-only. Без override Backend сохраняет обратную совместимость и не запускает monitor.
 
 Отдельные `POSTGRES_HOST`, `POSTGRES_PASSWORD`, `VALKEY_HOST` и подобные переменные Backend **не читает**. Хост, порт, пользователь и пароль объединяются в URL. Символы со специальным значением в логине/пароле нужно кодировать для URL: например, `@` как `%40`. Не используйте онлайн-сервисы для кодирования настоящих паролей.
 

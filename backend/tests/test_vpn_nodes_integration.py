@@ -12,7 +12,12 @@ from sqlalchemy.exc import IntegrityError
 
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
-from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeProvider, VpnNodeStatus
+from prettylisavpn.vpn_nodes.domain import (
+    VpnNode,
+    VpnNodeHealthStatus,
+    VpnNodeProvider,
+    VpnNodeStatus,
+)
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 
@@ -71,15 +76,32 @@ async def test_round_trip_list_and_update_control_plane_metadata():
             updated = replace(
                 node,
                 status=VpnNodeStatus.DRAINING,
+                health_status=VpnNodeHealthStatus.HEALTHY,
                 capacity=200,
                 last_seen_at=node.last_seen_at + timedelta(seconds=30),
+                health_checked_at=node.updated_at + timedelta(seconds=30),
                 updated_at=node.updated_at + timedelta(seconds=30),
             )
             assert await repository.update(updated) == updated
             await session.commit()
 
         async with postgres.session() as session:
-            assert await VpnNodeRepository(session).get(node.id) == updated
+            repository = VpnNodeRepository(session)
+            assert await repository.get(node.id) == updated
+            health_checked_at = node.updated_at + timedelta(seconds=60)
+            health_updated = await repository.update_health(
+                node.id,
+                VpnNodeHealthStatus.UNHEALTHY,
+                health_checked_at,
+                updated.last_seen_at,
+            )
+            await session.commit()
+
+            assert health_updated is not None
+            assert health_updated.status is VpnNodeStatus.DRAINING
+            assert health_updated.capacity == 200
+            assert health_updated.health_status is VpnNodeHealthStatus.UNHEALTHY
+            assert health_updated.health_checked_at == health_checked_at
     finally:
         await delete_nodes(postgres, node.id)
         await postgres.close()

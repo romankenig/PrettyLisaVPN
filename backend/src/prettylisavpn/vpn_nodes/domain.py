@@ -20,6 +20,12 @@ class VpnNodeStatus(StrEnum):
     DISABLED = "DISABLED"
 
 
+class VpnNodeHealthStatus(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    HEALTHY = "HEALTHY"
+    UNHEALTHY = "UNHEALTHY"
+
+
 def _normalize_required(value: str, field_name: str, maximum_length: int) -> str:
     normalized = value.strip()
     if not normalized:
@@ -74,6 +80,8 @@ class VpnNode:
     last_seen_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    health_status: VpnNodeHealthStatus = VpnNodeHealthStatus.UNKNOWN
+    health_checked_at: datetime | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", _normalize_required(self.name, "name", 255))
@@ -98,7 +106,7 @@ class VpnNode:
         )
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
-        for field_name in ("last_seen_at", "created_at", "updated_at"):
+        for field_name in ("last_seen_at", "created_at", "updated_at", "health_checked_at"):
             object.__setattr__(
                 self,
                 field_name,
@@ -106,3 +114,11 @@ class VpnNode:
             )
         if self.updated_at < self.created_at:
             raise ValueError("updated_at must not be before created_at")
+        if self.health_checked_at is not None and self.health_checked_at < self.created_at:
+            raise ValueError("health_checked_at must not be before created_at")
+        if (
+            self.last_seen_at is not None
+            and self.health_checked_at is not None
+            and self.last_seen_at > self.health_checked_at
+        ):
+            raise ValueError("last_seen_at must not be after health_checked_at")

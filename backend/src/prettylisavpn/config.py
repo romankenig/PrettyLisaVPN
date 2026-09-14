@@ -1,5 +1,6 @@
 """Environment configuration. Secrets are redacted in model representations."""
 
+from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -24,6 +25,13 @@ class Settings(BaseSettings):
     dependency_timeout_seconds: float = Field(default=2, gt=0, le=30)
     postgres_pool_size: int = Field(default=5, ge=1)
     postgres_max_overflow: int = Field(default=5, ge=0)
+    vpn_node_stale_timeout_seconds: int = Field(default=90, ge=10, le=3600)
+    vpn_node_health_poll_interval_seconds: int = Field(default=30, ge=5, le=600)
+    vpn_node_agent_port: int = Field(default=8443, ge=1, le=65535)
+    vpn_node_agent_auth_token: SecretStr | None = Field(default=None, min_length=32)
+    vpn_node_agent_tls_ca: Path | None = None
+    vpn_node_agent_tls_client_certificate: Path | None = None
+    vpn_node_agent_tls_client_key: Path | None = None
     otp_hmac_secret: SecretStr = Field(
         default=SecretStr(DEVELOPMENT_OTP_HMAC_SECRET), min_length=32
     )
@@ -70,4 +78,19 @@ class Settings(BaseSettings):
             raise ValueError("OTP_HMAC_SECRET must be changed in production")
         if self.email_from_address != self.email_smtp_username:
             raise ValueError("EMAIL_FROM_ADDRESS must match EMAIL_SMTP_USERNAME for Timeweb")
+        agent_credentials = (
+            self.vpn_node_agent_auth_token,
+            self.vpn_node_agent_tls_ca,
+            self.vpn_node_agent_tls_client_certificate,
+            self.vpn_node_agent_tls_client_key,
+        )
+        if any(value is not None for value in agent_credentials) and not all(
+            value is not None for value in agent_credentials
+        ):
+            raise ValueError("VPN node agent mTLS and token settings must be configured together")
+        if self.vpn_node_health_poll_interval_seconds >= self.vpn_node_stale_timeout_seconds:
+            raise ValueError("VPN node health poll interval must be shorter than stale timeout")
         return self
+
+    def vpn_node_agent_is_configured(self) -> bool:
+        return self.vpn_node_agent_auth_token is not None
