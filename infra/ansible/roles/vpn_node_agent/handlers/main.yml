@@ -1,0 +1,7 @@
+---
+- name: Restart VPN node agent
+  ansible.builtin.systemd_service:
+    name: prettylisavpn-node-agent
+    daemon_reload: true
+    state: restarted
+  listen: restart vpn node agent

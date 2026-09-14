@@ -1,0 +1,4 @@
+---
+# Copy to node-agent.vault.yml, replace both placeholders, and encrypt with ansible-vault.
+vpn_node_agent_auth_token: REPLACE_WITH_AT_LEAST_32_RANDOM_CHARACTERS
+vpn_node_agent_backend_ipv4_cidr: 203.0.113.10/32

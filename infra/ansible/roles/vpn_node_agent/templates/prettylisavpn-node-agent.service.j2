@@ -1,0 +1,45 @@
+[Unit]
+Description=PrettyLisaVPN VPN Node Control Agent
+After=network-online.target wg-quick@{{ wireguard_interface }}.service
+Wants=network-online.target
+Requires=wg-quick@{{ wireguard_interface }}.service
+
+[Service]
+Type=simple
+User={{ vpn_node_agent_user }}
+Group={{ vpn_node_agent_group }}
+EnvironmentFile={{ vpn_node_agent_config_root }}/agent.env
+ExecStart={{ vpn_node_agent_install_root }}/venv/bin/python -m prettylisavpn_node_agent.main
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+LimitCORE=0
+UMask=0077
+
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateMounts=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+ProcSubset=pid
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

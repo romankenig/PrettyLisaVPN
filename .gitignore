@@ -3,6 +3,7 @@
 !.env.example
 keys/
 infra/ansible/inventories/production/hosts.yml
+infra/ansible/inventories/production/*.vault.yml
 infra/deployment/.env
 infra/deployment/state/
 .venv/
