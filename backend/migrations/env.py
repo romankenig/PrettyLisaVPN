@@ -15,6 +15,7 @@ from prettylisavpn.product_events import model as product_events_model  # noqa: 
 from prettylisavpn.subscriptions import model as subscriptions_model  # noqa: F401
 from prettylisavpn.users import model as users_model  # noqa: F401
 from prettylisavpn.vpn_nodes import model as vpn_nodes_model  # noqa: F401
+from prettylisavpn.vpn_sessions import model as vpn_sessions_model  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
