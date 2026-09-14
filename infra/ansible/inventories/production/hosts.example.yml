@@ -1,0 +1,10 @@
+---
+all:
+  children:
+    vpn_nodes:
+      hosts:
+        ubuntu-s-1vcpu-512mb-10gb-nyc1:
+          ansible_host: 204.48.17.50
+          ansible_user: vpnadmin
+          ansible_port: 22
+          # Keep the private key outside Git. Prefer --private-key on the command line.

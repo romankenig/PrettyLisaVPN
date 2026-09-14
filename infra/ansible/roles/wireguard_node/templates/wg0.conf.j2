@@ -1,0 +1,7 @@
+# Managed by Ansible. Do not add production peers to this static file.
+[Interface]
+Address = {{ wireguard_gateway_cidr }}
+ListenPort = {{ wireguard_listen_port }}
+SaveConfig = false
+# The private key is read locally by wg(8); Ansible never reads or transfers it.
+PostUp = wg set %i private-key {{ wireguard_private_key_path }}

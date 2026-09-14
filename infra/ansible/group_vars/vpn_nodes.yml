@@ -1,0 +1,11 @@
+---
+wireguard_client_subnet: 10.77.0.0/16
+wireguard_gateway_cidr: 10.77.0.1/16
+wireguard_listen_port: 51820
+
+# Leave null to use the interface carrying the host's default IPv4 route.
+wireguard_public_interface: null
+
+# The baseline must already have active UFW and working key-only SSH access.
+wireguard_manage_ufw: true
+wireguard_require_active_ufw: true
