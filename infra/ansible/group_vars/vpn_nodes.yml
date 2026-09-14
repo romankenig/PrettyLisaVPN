@@ -5,6 +5,8 @@ wireguard_listen_port: 51820
 
 # Leave null to use the interface carrying the host's default IPv4 route.
 wireguard_public_interface: null
+# Leave null to use the IPv4 source address selected by that default route.
+wireguard_public_ipv4: null
 
 # The baseline must already have active UFW and working key-only SSH access.
 wireguard_manage_ufw: true

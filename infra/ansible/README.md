@@ -34,9 +34,10 @@ wireguard_client_subnet: 10.77.0.0/16
 wireguard_gateway_cidr: 10.77.0.1/16
 wireguard_listen_port: 51820
 wireguard_public_interface: null  # auto-detect the default IPv4 interface
+wireguard_public_ipv4: null       # auto-detect the default route's source IPv4
 ```
 
-The gateway prefix must describe exactly the configured client subnet. Override values with reviewed inventory variables or `--extra-vars`; do not put secrets there.
+The role checks the selected interface and source address against `ip -4 route get 1.1.1.1`; it never assumes `eth0`. The gateway prefix must describe exactly the configured client subnet. Override values with reviewed inventory variables or `--extra-vars`; do not put secrets there.
 
 ## Deploy
 
@@ -69,13 +70,32 @@ sudo systemctl is-active wg-quick@wg0
 sysctl net.ipv4.ip_forward
 sudo ufw status verbose
 sudo ufw status numbered
+ip -4 route show default
+ip -4 route get 1.1.1.1
 sudo iptables -t nat -C POSTROUTING -s 10.77.0.0/16 -o "$(ip route show default | awk 'NR==1 {print $5}')" -j MASQUERADE
+sudo iptables -L ufw-user-forward -v -n -x --line-numbers
+sudo iptables -t nat -L POSTROUTING -v -n -x --line-numbers
+sudo nft list ruleset
 sudo stat -c '%a %U:%G %n' /etc/wireguard /etc/wireguard/server_private.key /etc/wireguard/server_public.key /etc/wireguard/wg0.conf
 sudo grep -c '^\[Peer\]' /etc/wireguard/wg0.conf
 sudo ss -lunp | grep ':51820 '
 ```
 
-Expected results: `wg0` has `10.77.0.1/16`; `wg-quick@wg0` is enabled and active; forwarding is `1`; UFW is active with logging off and preserves SSH; UDP/51820 is allowed; the NAT check succeeds; directory mode is `700`, key/config modes are `600`; peer count is `0`. `wg show` prints the server **public** key and no peers. Never print or copy `server_private.key`.
+Expected results: `wg0` has `10.77.0.1/16`; `wg-quick@wg0` is enabled and active; forwarding is `1`; UFW is active with logging off and preserves SSH; UDP/51820 is allowed only over IPv4 on the resolved public interface/address; the forwarding policy remains `DROP`; the only VPN forward allow is `10.77.0.0/16` from `wg0` to the resolved egress interface; and the NAT check succeeds. Directory mode is `700`, key/config modes are `600`; peer count is `0`. `wg show` prints the server **public** key and no peers. Never print or copy `server_private.key`.
+
+The counter commands initially show zero packets because this playbook intentionally installs no peers. After a future node agent adds an ephemeral test peer, capture counters before and after sending traffic through that test tunnel:
+
+```bash
+sudo wg show wg0 transfer
+sudo iptables -L ufw-user-forward -v -n -x --line-numbers
+sudo iptables -t nat -L POSTROUTING -v -n -x --line-numbers
+# Send IPv4 traffic through the temporary test tunnel, then repeat all three commands.
+sudo wg show wg0 transfer
+sudo iptables -L ufw-user-forward -v -n -x --line-numbers
+sudo iptables -t nat -L POSTROUTING -v -n -x --line-numbers
+```
+
+The peer receive/send byte counts and both matching packet/byte counters must increase. Confirm the test client's observed public IPv4 is the Droplet address, then remove the ephemeral peer. Do not add a static production peer for this verification. Counter inspection records only aggregate rule/peer totals; do not enable packet logging or capture DNS queries, URLs, destinations, or packet contents.
 
 ## Reboot verification
 
@@ -105,13 +125,15 @@ Run rollback from the preserved SSH session or DigitalOcean Recovery Console. Ca
 ```bash
 sudo systemctl disable --now wg-quick@wg0
 sudo ufw status numbered
-sudo ufw delete allow 51820/udp
+sudo ufw delete allow in on eth0 proto udp from 0.0.0.0/0 to 204.48.17.50 port 51820
 sudo ufw route delete allow in on wg0 out on "$(ip route show default | awk 'NR==1 {print $5}')" from 10.77.0.0/16
 sudo sed -i '/# BEGIN ANSIBLE MANAGED PRETTYLISAVPN WIREGUARD NAT/,/# END ANSIBLE MANAGED PRETTYLISAVPN WIREGUARD NAT/d' /etc/ufw/before.rules
 sudo rm -f /etc/sysctl.d/90-prettylisavpn-wireguard.conf /etc/wireguard/wg0.conf
 sudo sysctl -w net.ipv4.ip_forward=0
 sudo ufw reload
 ```
+
+The ingress deletion above is exact for the first node. For another node, substitute the interface and public IPv4 shown by `ip -4 route get 1.1.1.1`.
 
 The key files are intentionally retained so rollback is recoverable. After confirming that the key is no longer registered or needed, destroy it only with an explicit operator decision:
 

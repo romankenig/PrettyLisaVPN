@@ -20,6 +20,7 @@
         assert gateway.network == network;
         assert gateway.ip in network and gateway.ip not in (network.network_address, network.broadcast_address)
   changed_when: false
+  check_mode: false
 
 - name: Select public egress interface
   ansible.builtin.set_fact:
@@ -27,13 +28,39 @@
       {{ wireguard_public_interface
          if wireguard_public_interface
          else ansible_default_ipv4.interface }}
+    wireguard_ingress_ipv4: >-
+      {{ wireguard_public_ipv4
+         if wireguard_public_ipv4
+         else ansible_default_ipv4.address }}
 
 - name: Validate public egress interface
   ansible.builtin.assert:
     that:
       - wireguard_egress_interface is match('^[A-Za-z0-9_.-]{1,15}$')
       - wireguard_egress_interface != wireguard_interface
+      - wireguard_ingress_ipv4 is match('^[0-9]{1,3}(\.[0-9]{1,3}){3}$')
     fail_msg: A valid non-WireGuard public egress interface is required.
+
+- name: Resolve the effective public IPv4 route
+  ansible.builtin.command:
+    argv:
+      - ip
+      - -4
+      - route
+      - get
+      - "1.1.1.1"
+  register: wireguard_public_route
+  changed_when: false
+  check_mode: false
+
+- name: Require configured egress interface and source on the public route
+  ansible.builtin.assert:
+    that:
+      - "' dev ' ~ wireguard_egress_interface ~ ' ' in wireguard_public_route.stdout"
+      - "' src ' ~ wireguard_ingress_ipv4 ~ ' ' in wireguard_public_route.stdout ~ ' '"
+    fail_msg: >-
+      The selected WireGuard public interface/address does not match the effective IPv4 default
+      route. Set wireguard_public_interface and wireguard_public_ipv4 explicitly if needed.
 
 - name: Install official Ubuntu WireGuard and firewall packages
   ansible.builtin.apt:
@@ -106,6 +133,7 @@
   ansible.builtin.command: ufw status
   register: wireguard_ufw_status
   changed_when: false
+  check_mode: false
   when: wireguard_manage_ufw
 
 - name: Require baseline UFW before changing network access
@@ -122,12 +150,34 @@
   changed_when: false
   when: wireguard_manage_ufw
 
-- name: Allow WireGuard UDP ingress in UFW
+- name: Allow IPv4 WireGuard ingress only on the public interface and address
   ansible.builtin.command: >-
-    ufw allow {{ wireguard_listen_port }}/udp comment 'PrettyLisaVPN WireGuard'
+    ufw allow in on {{ wireguard_egress_interface }} proto udp from 0.0.0.0/0
+    to {{ wireguard_ingress_ipv4 }} port {{ wireguard_listen_port }}
+    comment 'PrettyLisaVPN WireGuard IPv4'
   register: wireguard_ufw_ingress
   changed_when: "'Rule added' in wireguard_ufw_ingress.stdout"
   when: wireguard_manage_ufw
+
+- name: Detect legacy dual-stack WireGuard ingress rule
+  ansible.builtin.shell: >-
+    set -o pipefail && ufw status |
+    grep -Eq '^{{ wireguard_listen_port }}/udp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
+  args:
+    executable: /bin/bash
+  register: wireguard_legacy_ufw_ingress
+  changed_when: false
+  failed_when: wireguard_legacy_ufw_ingress.rc not in [0, 1]
+  check_mode: false
+  when: wireguard_manage_ufw
+
+- name: Remove legacy dual-stack WireGuard ingress rule
+  ansible.builtin.command: ufw delete allow {{ wireguard_listen_port }}/udp
+  register: wireguard_legacy_ufw_delete
+  changed_when: "'Rule deleted' in wireguard_legacy_ufw_delete.stdout"
+  when:
+    - wireguard_manage_ufw
+    - wireguard_legacy_ufw_ingress.rc == 0
 
 - name: Allow client forwarding from WireGuard to public interface in UFW
   ansible.builtin.command: >-
@@ -158,3 +208,46 @@
     name: wg-quick@{{ wireguard_interface }}
     enabled: true
     state: started
+
+- name: Verify persistent IPv4 forwarding is active
+  ansible.builtin.command: sysctl -n net.ipv4.ip_forward
+  register: wireguard_forwarding_state
+  changed_when: false
+  failed_when: wireguard_forwarding_state.stdout | trim != '1'
+  check_mode: false
+
+- name: Verify narrow live forwarding rule
+  ansible.builtin.command:
+    argv:
+      - iptables
+      - -C
+      - ufw-user-forward
+      - -i
+      - "{{ wireguard_interface }}"
+      - -o
+      - "{{ wireguard_egress_interface }}"
+      - -s
+      - "{{ wireguard_client_subnet }}"
+      - -j
+      - ACCEPT
+  changed_when: false
+  check_mode: false
+  when: wireguard_manage_ufw
+
+- name: Verify live IPv4 NAT masquerading rule
+  ansible.builtin.command:
+    argv:
+      - iptables
+      - -t
+      - nat
+      - -C
+      - POSTROUTING
+      - -s
+      - "{{ wireguard_client_subnet }}"
+      - -o
+      - "{{ wireguard_egress_interface }}"
+      - -j
+      - MASQUERADE
+  changed_when: false
+  check_mode: false
+  when: wireguard_manage_ufw
