@@ -78,6 +78,7 @@ async def test_round_trip_list_and_update_control_plane_metadata():
                 status=VpnNodeStatus.DRAINING,
                 health_status=VpnNodeHealthStatus.HEALTHY,
                 capacity=200,
+                is_available_for_free=True,
                 last_seen_at=node.last_seen_at + timedelta(seconds=30),
                 health_checked_at=node.updated_at + timedelta(seconds=30),
                 updated_at=node.updated_at + timedelta(seconds=30),
@@ -100,6 +101,7 @@ async def test_round_trip_list_and_update_control_plane_metadata():
             assert health_updated is not None
             assert health_updated.status is VpnNodeStatus.DRAINING
             assert health_updated.capacity == 200
+            assert health_updated.is_available_for_free is True
             assert health_updated.health_status is VpnNodeHealthStatus.UNHEALTHY
             assert health_updated.health_checked_at == health_checked_at
     finally:

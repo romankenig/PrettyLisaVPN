@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus, VpnNodeStatus
 
 
@@ -12,12 +13,28 @@ class NodeUnavailabilityReason(StrEnum):
     NOT_HEALTHY = "NOT_HEALTHY"
     NEVER_SEEN = "NEVER_SEEN"
     STALE = "STALE"
+    PLAN_RESTRICTED = "PLAN_RESTRICTED"
+    CAPACITY_EXHAUSTED = "CAPACITY_EXHAUSTED"
 
 
 @dataclass(frozen=True, slots=True)
 class NodeAvailability:
     available: bool
     reason: NodeUnavailabilityReason | None
+
+
+@dataclass(frozen=True, slots=True)
+class VpnNodeCapacitySnapshot:
+    node: VpnNode
+    live_sessions: int
+
+    def __post_init__(self) -> None:
+        if self.live_sessions < 0:
+            raise ValueError("live_sessions must not be negative")
+
+    @property
+    def remaining_capacity(self) -> int:
+        return max(0, self.node.capacity - self.live_sessions)
 
 
 class VpnNodeAvailabilityPolicy:
@@ -37,4 +54,26 @@ class VpnNodeAvailabilityPolicy:
             return NodeAvailability(False, NodeUnavailabilityReason.NEVER_SEEN)
         if now - node.last_seen_at > self._stale_timeout:
             return NodeAvailability(False, NodeUnavailabilityReason.STALE)
+        return NodeAvailability(True, None)
+
+
+class VpnNodeEligibilityPolicy:
+    """Single plan, health, lifecycle, freshness, and capacity policy."""
+
+    def __init__(self, stale_timeout: timedelta) -> None:
+        self._availability = VpnNodeAvailabilityPolicy(stale_timeout)
+
+    def evaluate(
+        self,
+        snapshot: VpnNodeCapacitySnapshot,
+        plan: SubscriptionPlan,
+        now: datetime,
+    ) -> NodeAvailability:
+        operational = self._availability.evaluate(snapshot.node, now)
+        if not operational.available:
+            return operational
+        if plan is SubscriptionPlan.FREE and not snapshot.node.is_available_for_free:
+            return NodeAvailability(False, NodeUnavailabilityReason.PLAN_RESTRICTED)
+        if snapshot.remaining_capacity == 0:
+            return NodeAvailability(False, NodeUnavailabilityReason.CAPACITY_EXHAUSTED)
         return NodeAvailability(True, None)

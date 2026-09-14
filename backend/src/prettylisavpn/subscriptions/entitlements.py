@@ -16,7 +16,7 @@ class PlanEntitlements:
 FREE_ENTITLEMENTS = PlanEntitlements(
     vpn_session_limit=timedelta(minutes=15),
     rewarded_ad_required=True,
-    country_selection_allowed=False,
+    country_selection_allowed=True,
 )
 PREMIUM_ENTITLEMENTS = PlanEntitlements(
     vpn_session_limit=None,

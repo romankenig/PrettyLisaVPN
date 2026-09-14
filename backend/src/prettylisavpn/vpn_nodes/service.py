@@ -35,6 +35,7 @@ class VpnNodeRegistration:
     wireguard_port: int
     wireguard_public_key: str
     capacity: int
+    is_available_for_free: bool = False
 
 
 class VpnNodeService:
@@ -67,6 +68,7 @@ class VpnNodeService:
                     wireguard_port=registration.wireguard_port,
                     wireguard_public_key=registration.wireguard_public_key,
                     capacity=registration.capacity,
+                    is_available_for_free=registration.is_available_for_free,
                     status=VpnNodeStatus.OFFLINE,
                     last_seen_at=None,
                     created_at=checked_at,
@@ -85,6 +87,7 @@ class VpnNodeService:
             wireguard_port=registration.wireguard_port,
             wireguard_public_key=registration.wireguard_public_key,
             capacity=registration.capacity,
+            is_available_for_free=registration.is_available_for_free,
             updated_at=checked_at,
         )
         return await self._repository.update(updated)
@@ -111,10 +114,14 @@ class VpnNodeService:
             raise VpnNodeNotFoundError
         return self._availability.evaluate(updated, checked_at)
 
-    async def list_available(self, now: datetime | None = None) -> list[VpnNode]:
+    async def list_operationally_available(self, now: datetime | None = None) -> list[VpnNode]:
         checked_at = now if now is not None else datetime.now(UTC)
         return [
             node
             for node in await self._repository.list_all()
             if self._availability.evaluate(node, checked_at).available
         ]
+
+    async def list_available(self, now: datetime | None = None) -> list[VpnNode]:
+        """Backward-compatible operational-health view; not session eligibility."""
+        return await self.list_operationally_available(now)

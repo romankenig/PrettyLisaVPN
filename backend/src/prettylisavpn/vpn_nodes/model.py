@@ -5,6 +5,7 @@ from ipaddress import IPv4Address
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Enum,
@@ -72,6 +73,12 @@ class VpnNodeRecord(Base):
             name="ck_vpn_nodes_last_seen_before_health_check",
         ),
         Index("ix_vpn_nodes_status_country_code", "status", "country_code"),
+        Index(
+            "ix_vpn_nodes_country_free_status",
+            "country_code",
+            "is_available_for_free",
+            "status",
+        ),
         Index("ix_vpn_nodes_provider_region", "provider", "provider_region"),
         Index("ix_vpn_nodes_last_seen_at", "last_seen_at"),
         Index(
@@ -109,6 +116,9 @@ class VpnNodeRecord(Base):
     wireguard_port: Mapped[int] = mapped_column(Integer)
     wireguard_public_key: Mapped[str] = mapped_column(String(44))
     capacity: Mapped[int] = mapped_column(Integer)
+    is_available_for_free: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     status: Mapped[VpnNodeStatus] = mapped_column(
         Enum(
             VpnNodeStatus,

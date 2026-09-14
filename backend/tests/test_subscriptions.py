@@ -61,6 +61,8 @@ def test_plan_entitlements_are_provider_independent():
     assert entitlements_for(premium, now) == PREMIUM_ENTITLEMENTS
     assert FREE_ENTITLEMENTS.vpn_session_limit == timedelta(minutes=15)
     assert PREMIUM_ENTITLEMENTS.vpn_session_limit is None
+    assert FREE_ENTITLEMENTS.country_selection_allowed is True
+    assert PREMIUM_ENTITLEMENTS.country_selection_allowed is True
 
 
 def test_expired_premium_receives_free_entitlements():

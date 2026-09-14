@@ -35,7 +35,7 @@ def _normalize_required(value: str, field_name: str, maximum_length: int) -> str
     return normalized
 
 
-def _normalize_country_code(country_code: str) -> str:
+def normalize_country_code(country_code: str) -> str:
     normalized = country_code.strip().upper()
     if len(normalized) != 2 or not normalized.isascii() or not normalized.isalpha():
         raise ValueError("country_code must be a two-letter ASCII code")
@@ -82,6 +82,7 @@ class VpnNode:
     updated_at: datetime
     health_status: VpnNodeHealthStatus = VpnNodeHealthStatus.UNKNOWN
     health_checked_at: datetime | None = None
+    is_available_for_free: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", _normalize_required(self.name, "name", 255))
@@ -90,7 +91,7 @@ class VpnNode:
             "provider_region",
             _normalize_required(self.provider_region, "provider_region", 64),
         )
-        object.__setattr__(self, "country_code", _normalize_country_code(self.country_code))
+        object.__setattr__(self, "country_code", normalize_country_code(self.country_code))
         if self.city is not None:
             object.__setattr__(self, "city", _normalize_required(self.city, "city", 255))
         if not isinstance(self.public_ipv4, IPv4Address):
@@ -106,6 +107,8 @@ class VpnNode:
         )
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
+        if not isinstance(self.is_available_for_free, bool):
+            raise ValueError("is_available_for_free must be a boolean")
         for field_name in ("last_seen_at", "created_at", "updated_at", "health_checked_at"):
             object.__setattr__(
                 self,

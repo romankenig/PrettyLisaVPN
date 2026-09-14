@@ -20,12 +20,19 @@ from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
-from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeProvider, VpnNodeStatus
+from prettylisavpn.vpn_nodes.domain import (
+    VpnNode,
+    VpnNodeHealthStatus,
+    VpnNodeProvider,
+    VpnNodeStatus,
+)
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
+from prettylisavpn.vpn_nodes.selection import VpnNodeSelectionService
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
+from prettylisavpn.vpn_sessions.service import VpnSessionService
 
 pytestmark = [
     pytest.mark.integration,
@@ -60,6 +67,9 @@ async def create_dependencies(postgres: Postgres) -> tuple[UUID, UUID, UUID]:
         last_seen_at=now,
         created_at=now,
         updated_at=now,
+        health_status=VpnNodeHealthStatus.HEALTHY,
+        health_checked_at=now,
+        is_available_for_free=True,
     )
     async with postgres.session() as database_session:
         user = await UserService(
@@ -107,6 +117,16 @@ async def test_round_trip_lookup_list_and_lifecycle_update():
             assert await repository.get(vpn_session.id) == vpn_session
             assert await repository.get_live_for_device(device_id) == vpn_session
             assert await repository.list_by_user(user_id) == [vpn_session]
+            snapshots = await VpnNodeRepository(session).list_capacity_snapshots(
+                "DE", at=vpn_session.started_at
+            )
+            assert len(snapshots) == 1
+            assert snapshots[0].live_sessions == 1
+            assert vpn_session.expires_at is not None
+            after_expiry = await VpnNodeRepository(session).list_capacity_snapshots(
+                "DE", at=vpn_session.expires_at + timedelta(seconds=1)
+            )
+            assert after_expiry[0].live_sessions == 0
             disconnected_at = vpn_session.started_at + timedelta(minutes=1)
             disconnected = replace(
                 vpn_session,
@@ -137,6 +157,35 @@ async def test_database_prevents_two_live_sessions_for_one_device():
         with pytest.raises(IntegrityError):
             async with postgres.session() as session:
                 await VpnSessionRepository(session).add(second)
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_plan_aware_service_selects_node_and_creates_session_in_one_transaction():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    now = datetime.now(UTC)
+    try:
+        async with postgres.session() as session:
+            service = VpnSessionService(
+                VpnSessionRepository(session),
+                VpnNodeSelectionService(VpnNodeRepository(session), timedelta(seconds=90)),
+            )
+            created = await service.create(
+                user_id=user_id,
+                device_id=device_id,
+                country_code="de",
+                client_wireguard_public_key=public_key(7),
+                allocated_client_ipv4=IPv4Address("10.88.0.7"),
+                plan=SubscriptionPlan.FREE,
+                now=now,
+            )
+            await session.commit()
+
+        assert created.vpn_node_id == node_id
+        assert created.plan_snapshot is SubscriptionPlan.FREE
+        assert created.expires_at == now + timedelta(minutes=15)
     finally:
         await clean_up(postgres, user_id, node_id)
         await postgres.close()

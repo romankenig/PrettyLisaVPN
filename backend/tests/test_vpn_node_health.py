@@ -42,6 +42,7 @@ def make_node(**changes: object) -> VpnNode:
         wireguard_port=51820,
         wireguard_public_key=PUBLIC_KEY,
         capacity=100,
+        is_available_for_free=True,
         status=VpnNodeStatus.ACTIVE,
         last_seen_at=now,
         created_at=now - timedelta(days=1),
@@ -241,6 +242,7 @@ async def test_registration_starts_offline_and_preserves_lifecycle_on_reregistra
         wireguard_port=51820,
         wireguard_public_key=PUBLIC_KEY,
         capacity=100,
+        is_available_for_free=True,
     )
 
     created = await service.register(registration, now)
@@ -251,9 +253,11 @@ async def test_registration_starts_offline_and_preserves_lifecycle_on_reregistra
 
     assert created.status is VpnNodeStatus.OFFLINE
     assert created.health_status is VpnNodeHealthStatus.UNKNOWN
+    assert created.is_available_for_free is True
     assert updated.id == created.id
     assert updated.status is VpnNodeStatus.DRAINING
     assert updated.capacity == 200
+    assert updated.is_available_for_free is True
 
 
 async def test_http_agent_client_sends_machine_credential_and_uses_node_address():
