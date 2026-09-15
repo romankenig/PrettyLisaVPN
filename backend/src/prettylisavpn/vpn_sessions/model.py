@@ -69,8 +69,7 @@ class VpnSessionRecord(Base):
             postgresql_where=text("status IN ('PENDING', 'ACTIVE')"),
         ),
         Index(
-            "uq_vpn_sessions_live_node_ipv4",
-            "vpn_node_id",
+            "uq_vpn_sessions_live_ipv4",
             "allocated_client_ipv4",
             unique=True,
             postgresql_where=text("status IN ('PENDING', 'ACTIVE')"),

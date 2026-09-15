@@ -123,6 +123,8 @@ docker compose -f infra/docker/compose.yaml down
 | `EMAIL_FROM_NAME` | `PrettyLisaVPN`. |
 | `EMAIL_CONNECTION_TIMEOUT_SECONDS`, `EMAIL_SEND_TIMEOUT_SECONDS` | `5`, `10`; сетевой и общий тайм-аут отправки. |
 | `VPN_NODE_STALE_TIMEOUT_SECONDS` | `90`; после этого интервала без успешного authenticated health check узел недоступен для новых сессий. |
+| `VPN_CLIENT_SUBNET` | `10.77.0.0/16`; общий provider-independent IPv4-пул адресов VPN-клиентов. |
+| `VPN_CLIENT_GATEWAY_IPV4` | `10.77.0.1`; зарезервированный адрес gateway внутри `VPN_CLIENT_SUBNET`, клиентам не выдаётся. |
 | `VPN_NODE_HEALTH_POLL_INTERVAL_SECONDS` | `30`; период опроса, всегда меньше stale timeout. |
 | `VPN_NODE_AGENT_PORT` | `8443`; HTTPS/mTLS порт Node Control Agent. |
 | `VPN_NODE_AGENT_AUTH_TOKEN` | Дополнительный machine bearer secret, минимум 32 символа. |

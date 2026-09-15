@@ -83,7 +83,7 @@ class FakeSessionRepository:
     def __init__(self) -> None:
         self.sessions: list[VpnSession] = []
 
-    async def get_live_for_device(self, device_id: UUID) -> VpnSession | None:
+    async def get_live_for_device(self, device_id: UUID, at: datetime) -> VpnSession | None:
         return next(
             (
                 vpn_session
@@ -96,6 +96,11 @@ class FakeSessionRepository:
     async def add(self, vpn_session: VpnSession) -> VpnSession:
         self.sessions.append(vpn_session)
         return vpn_session
+
+
+class FakeAddressAllocator:
+    async def allocate(self, at: datetime) -> IPv4Address:
+        return IPv4Address("10.77.0.2")
 
 
 def test_policy_applies_plan_and_capacity_after_operational_health():
@@ -328,14 +333,13 @@ async def test_session_creation_uses_same_free_auto_eligibility_and_keeps_node_i
     )
     selection = VpnNodeSelectionService(capacity_repository, timedelta(seconds=90))
     session_repository = FakeSessionRepository()
-    service = VpnSessionService(session_repository, selection)
+    service = VpnSessionService(session_repository, selection, FakeAddressAllocator())
 
     vpn_session = await service.create(
         user_id=uuid4(),
         device_id=uuid4(),
         node_selection=NodeSelectionRequest.auto(),
         client_wireguard_public_key="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        allocated_client_ipv4=IPv4Address("10.77.0.2"),
         plan=SubscriptionPlan.FREE,
         now=NOW,
     )

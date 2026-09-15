@@ -1,5 +1,6 @@
 """VPN session persistence tests against local Compose PostgreSQL or CI."""
 
+import asyncio
 import os
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -29,6 +30,7 @@ from prettylisavpn.vpn_nodes.domain import (
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest, VpnNodeSelectionService
+from prettylisavpn.vpn_sessions.address_allocation import VpnClientAddressAllocator
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
@@ -115,7 +117,10 @@ async def test_round_trip_lookup_list_and_lifecycle_update():
         async with postgres.session() as session:
             repository = VpnSessionRepository(session)
             assert await repository.get(vpn_session.id) == vpn_session
-            assert await repository.get_live_for_device(device_id) == vpn_session
+            assert (
+                await repository.get_live_for_device(device_id, vpn_session.started_at)
+                == vpn_session
+            )
             assert await repository.list_by_user(user_id) == [vpn_session]
             snapshots = await VpnNodeRepository(session).list_capacity_snapshots(
                 "DE", at=vpn_session.started_at
@@ -138,7 +143,12 @@ async def test_round_trip_lookup_list_and_lifecycle_update():
             await session.commit()
 
         async with postgres.session() as session:
-            assert await VpnSessionRepository(session).get_live_for_device(device_id) is None
+            assert (
+                await VpnSessionRepository(session).get_live_for_device(
+                    device_id, datetime.now(UTC)
+                )
+                is None
+            )
     finally:
         await clean_up(postgres, user_id, node_id)
         await postgres.close()
@@ -171,13 +181,17 @@ async def test_plan_aware_service_selects_node_and_creates_session_in_one_transa
             service = VpnSessionService(
                 VpnSessionRepository(session),
                 VpnNodeSelectionService(VpnNodeRepository(session), timedelta(seconds=90)),
+                VpnClientAddressAllocator(
+                    VpnSessionRepository(session),
+                    Settings().vpn_client_subnet,
+                    {Settings().vpn_client_gateway_ipv4},
+                ),
             )
             created = await service.create(
                 user_id=user_id,
                 device_id=device_id,
                 node_selection=NodeSelectionRequest.country("de"),
                 client_wireguard_public_key=public_key(7),
-                allocated_client_ipv4=IPv4Address("10.88.0.7"),
                 plan=SubscriptionPlan.FREE,
                 now=now,
             )
@@ -185,6 +199,7 @@ async def test_plan_aware_service_selects_node_and_creates_session_in_one_transa
 
         assert created.vpn_node_id == node_id
         assert created.plan_snapshot is SubscriptionPlan.FREE
+        assert created.allocated_client_ipv4 == IPv4Address("10.77.0.2")
         assert created.expires_at == now + timedelta(minutes=15)
     finally:
         await clean_up(postgres, user_id, node_id)
@@ -209,6 +224,55 @@ async def test_terminal_session_releases_device_for_another_session():
             await repository.add(first)
             await repository.add(second)
             await session.commit()
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_concurrent_allocations_are_distinct_and_persisted():
+    postgres = Postgres(Settings())
+    user_id, first_device_id, node_id = await create_dependencies(postgres)
+    async with postgres.session() as session:
+        second_device = await DeviceService(DeviceRepository(session)).register(
+            user_id, uuid4(), DevicePlatform.ANDROID, "Second test device"
+        )
+        await session.commit()
+
+    async def allocate_and_persist(device_id: UUID, key_byte: int) -> VpnSession:
+        async with postgres.session() as session:
+            repository = VpnSessionRepository(session)
+            allocator = VpnClientAddressAllocator(
+                repository,
+                Settings().vpn_client_subnet,
+                {Settings().vpn_client_gateway_ipv4},
+            )
+            address = await allocator.allocate(datetime.now(UTC))
+            vpn_session = VpnSession.new(
+                user_id=user_id,
+                device_id=device_id,
+                vpn_node_id=node_id,
+                client_wireguard_public_key=public_key(key_byte),
+                allocated_client_ipv4=address,
+                plan_snapshot=SubscriptionPlan.PREMIUM,
+                now=datetime.now(UTC),
+            )
+            await repository.add(vpn_session)
+            await session.commit()
+            return vpn_session
+
+    try:
+        first, second = await asyncio.gather(
+            allocate_and_persist(first_device_id, 21),
+            allocate_and_persist(second_device.id, 22),
+        )
+
+        assert first.allocated_client_ipv4 != second.allocated_client_ipv4
+        async with postgres.session() as session:
+            persisted = await VpnSessionRepository(session).list_by_user(user_id)
+            assert {item.allocated_client_ipv4 for item in persisted} == {
+                first.allocated_client_ipv4,
+                second.allocated_client_ipv4,
+            }
     finally:
         await clean_up(postgres, user_id, node_id)
         await postgres.close()

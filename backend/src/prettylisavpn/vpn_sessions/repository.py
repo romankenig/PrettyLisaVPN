@@ -1,8 +1,10 @@
-"""Async persistence operations for VPN session state."""
+"""Async persistence operations for VPN session state and address ownership."""
 
+from datetime import datetime
+from ipaddress import IPv4Address
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
@@ -10,6 +12,8 @@ from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 
 
 class VpnSessionRepository:
+    _ADDRESS_ALLOCATION_LOCK_ID = 6_492_765_921_147_037_073
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -44,13 +48,39 @@ class VpnSessionRepository:
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 
-    async def get_live_for_device(self, device_id: UUID) -> VpnSession | None:
+    async def get_live_for_device(self, device_id: UUID, at: datetime) -> VpnSession | None:
         statement = select(VpnSessionRecord).where(
             VpnSessionRecord.device_id == device_id,
             VpnSessionRecord.status.in_((VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE)),
+            or_(VpnSessionRecord.expires_at.is_(None), VpnSessionRecord.expires_at > at),
         )
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
+
+    async def acquire_address_allocation_lock(self) -> None:
+        """Serialize allocation until the caller's surrounding transaction completes."""
+        await self._session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"),
+            {"lock_id": self._ADDRESS_ALLOCATION_LOCK_ID},
+        )
+
+    async def expire_allocations(self, at: datetime) -> None:
+        await self._session.execute(
+            update(VpnSessionRecord)
+            .where(
+                VpnSessionRecord.status.in_((VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE)),
+                VpnSessionRecord.expires_at.is_not(None),
+                VpnSessionRecord.expires_at <= at,
+            )
+            .values(status=VpnSessionStatus.EXPIRED, updated_at=at)
+        )
+
+    async def list_live_allocated_ipv4(self, at: datetime) -> set[IPv4Address]:
+        statement = select(VpnSessionRecord.allocated_client_ipv4).where(
+            VpnSessionRecord.status.in_((VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE)),
+            or_(VpnSessionRecord.expires_at.is_(None), VpnSessionRecord.expires_at > at),
+        )
+        return set(await self._session.scalars(statement))
 
     async def list_by_user(self, user_id: UUID) -> list[VpnSession]:
         records = await self._session.scalars(

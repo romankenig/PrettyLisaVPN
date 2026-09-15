@@ -1,18 +1,18 @@
 """Plan-aware VPN session creation with internal node placement."""
 
 from datetime import datetime, timedelta
-from ipaddress import IPv4Address
 from typing import Protocol
 from uuid import UUID
 
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.entitlements import FREE_ENTITLEMENTS
 from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest, VpnNodeSelectionService
+from prettylisavpn.vpn_sessions.address_allocation import VpnClientAddressAllocation
 from prettylisavpn.vpn_sessions.domain import VpnSession
 
 
 class VpnSessionPersistence(Protocol):
-    async def get_live_for_device(self, device_id: UUID) -> VpnSession | None: ...
+    async def get_live_for_device(self, device_id: UUID, at: datetime) -> VpnSession | None: ...
 
     async def add(self, vpn_session: VpnSession) -> VpnSession: ...
 
@@ -28,10 +28,12 @@ class VpnSessionService:
         self,
         repository: VpnSessionPersistence,
         node_selection: VpnNodeSelectionService,
+        address_allocator: VpnClientAddressAllocation,
         free_session_limit: timedelta | None = FREE_ENTITLEMENTS.vpn_session_limit,
     ) -> None:
         self._repository = repository
         self._node_selection = node_selection
+        self._address_allocator = address_allocator
         self._free_session_limit = free_session_limit
 
     async def create(
@@ -41,13 +43,13 @@ class VpnSessionService:
         device_id: UUID,
         node_selection: NodeSelectionRequest,
         client_wireguard_public_key: str,
-        allocated_client_ipv4: IPv4Address,
         plan: SubscriptionPlan,
         now: datetime,
     ) -> VpnSession:
-        if await self._repository.get_live_for_device(device_id) is not None:
+        if await self._repository.get_live_for_device(device_id, now) is not None:
             raise DeviceAlreadyHasLiveVpnSessionError
         node = await self._node_selection.select_node_for_session(node_selection, plan, now)
+        allocated_client_ipv4 = await self._address_allocator.allocate(now)
         vpn_session = VpnSession.new(
             user_id=user_id,
             device_id=device_id,
