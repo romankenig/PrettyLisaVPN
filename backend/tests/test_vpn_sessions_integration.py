@@ -5,12 +5,14 @@ import os
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address
+from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
+from prettylisavpn.auth.session_service import AccessIdentity
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform
@@ -21,6 +23,7 @@ from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
+from prettylisavpn.vpn_nodes.agent import NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.domain import (
     VpnNode,
     VpnNodeHealthStatus,
@@ -31,10 +34,18 @@ from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest, VpnNodeSelectionService
 from prettylisavpn.vpn_sessions.address_allocation import VpnClientAddressAllocator
+from prettylisavpn.vpn_sessions.connection import (
+    VpnConnectionService,
+    VpnSetupFailedError,
+    VpnUnavailableError,
+)
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
-from prettylisavpn.vpn_sessions.service import VpnSessionService
+from prettylisavpn.vpn_sessions.service import (
+    DeviceAlreadyHasLiveVpnSessionError,
+    VpnSessionService,
+)
 
 pytestmark = [
     pytest.mark.integration,
@@ -283,3 +294,120 @@ def test_schema_has_no_client_private_key_column():
 
     assert "client_wireguard_private_key" not in columns
     assert "wireguard_private_key" not in columns
+
+
+async def test_connection_orchestration_activates_only_after_agent_peer_creation():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    authentication = AsyncMock()
+    authentication.authenticate.return_value = AccessIdentity(user_id, device_id, uuid4())
+    agent = AsyncMock()
+    service = VpnConnectionService(postgres, authentication, agent, Settings())
+    try:
+        result = await service.connect("token", NodeSelectionRequest.auto(), public_key(31))
+
+        agent.add_peer.assert_awaited_once()
+        async with postgres.session() as session:
+            persisted = await VpnSessionRepository(session).get(result.session_id)
+        assert persisted is not None
+        assert persisted.status is VpnSessionStatus.ACTIVE
+        assert persisted.expires_at is not None
+        assert result.expires_at == persisted.expires_at
+        assert result.endpoint_port == 51820
+        assert result.client_ipv4 == persisted.allocated_client_ipv4
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_agent_failure_marks_pending_failed_and_releases_address_for_retry():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    authentication = AsyncMock()
+    authentication.authenticate.return_value = AccessIdentity(user_id, device_id, uuid4())
+    agent = AsyncMock()
+    agent.add_peer.side_effect = NodeAgentUnavailableError
+    service = VpnConnectionService(postgres, authentication, agent, Settings())
+    try:
+        with pytest.raises(VpnSetupFailedError):
+            await service.connect("token", NodeSelectionRequest.country("DE"), public_key(32))
+
+        async with postgres.session() as session:
+            failed = (await VpnSessionRepository(session).list_by_user(user_id))[0]
+        assert failed.status is VpnSessionStatus.FAILED
+        agent.remove_peer.assert_awaited_once()
+
+        agent.add_peer.side_effect = None
+        recovered = await service.connect(
+            "token", NodeSelectionRequest.country("DE"), public_key(33)
+        )
+        assert recovered.client_ipv4 == failed.allocated_client_ipv4
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_concurrent_connection_requests_for_one_device_create_only_one_session():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    authentication = AsyncMock()
+    authentication.authenticate.return_value = AccessIdentity(user_id, device_id, uuid4())
+    service = VpnConnectionService(postgres, authentication, AsyncMock(), Settings())
+    try:
+        results = await asyncio.gather(
+            service.connect("token", NodeSelectionRequest.auto(), public_key(34)),
+            service.connect("token", NodeSelectionRequest.auto(), public_key(35)),
+            return_exceptions=True,
+        )
+
+        assert sum(not isinstance(result, Exception) for result in results) == 1
+        assert (
+            sum(isinstance(result, DeviceAlreadyHasLiveVpnSessionError) for result in results) == 1
+        )
+        async with postgres.session() as session:
+            persisted = await VpnSessionRepository(session).list_by_user(user_id)
+        assert len(persisted) == 1
+        assert persisted[0].status is VpnSessionStatus.ACTIVE
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_capacity_race_allows_only_one_pending_reservation():
+    postgres = Postgres(Settings())
+    first_user_id, first_device_id, node_id = await create_dependencies(postgres)
+    async with postgres.session() as session:
+        users = UserService(UserRepository(session), SubscriptionRepository(session))
+        second_user = await users.create(f"capacity-race-{uuid4()}@example.com")
+        second_device = await DeviceService(DeviceRepository(session)).register(
+            second_user.id, uuid4(), DevicePlatform.ANDROID, "Capacity race device"
+        )
+        nodes = VpnNodeRepository(session)
+        node = await nodes.get(node_id)
+        assert node is not None
+        await nodes.update(replace(node, capacity=1))
+        await session.commit()
+
+    authentication = AsyncMock()
+    authentication.authenticate.side_effect = [
+        AccessIdentity(first_user_id, first_device_id, uuid4()),
+        AccessIdentity(second_user.id, second_device.id, uuid4()),
+    ]
+    service = VpnConnectionService(postgres, authentication, AsyncMock(), Settings())
+    try:
+        results = await asyncio.gather(
+            service.connect("first-token", NodeSelectionRequest.auto(), public_key(36)),
+            service.connect("second-token", NodeSelectionRequest.auto(), public_key(37)),
+            return_exceptions=True,
+        )
+
+        assert sum(not isinstance(result, Exception) for result in results) == 1
+        assert sum(isinstance(result, VpnUnavailableError) for result in results) == 1
+    finally:
+        async with postgres.session() as session:
+            await session.execute(
+                delete(UserRecord).where(UserRecord.id.in_((first_user_id, second_user.id)))
+            )
+            await session.execute(delete(VpnNodeRecord).where(VpnNodeRecord.id == node_id))
+            await session.commit()
+        await postgres.close()

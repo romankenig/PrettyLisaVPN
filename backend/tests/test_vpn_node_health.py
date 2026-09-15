@@ -285,3 +285,36 @@ async def test_http_agent_client_sends_machine_credential_and_uses_node_address(
     assert health.healthy is True
     assert str(requests[0].url) == "https://203.0.113.10:8443/v1/health"
     assert requests[0].headers["Authorization"] == "Bearer machine-secret"
+
+
+async def test_http_agent_client_adds_and_removes_peer_with_structured_json():
+    requests: list[Request] = []
+
+    def handler(request: Request) -> Response:
+        requests.append(request)
+        if request.method == "PUT":
+            return Response(
+                200,
+                json={
+                    "public_key": PUBLIC_KEY,
+                    "vpn_ip": "10.77.0.2",
+                    "latest_handshake_at": None,
+                    "created": True,
+                },
+            )
+        return Response(200, json={"removed": True})
+
+    async_client = AsyncClient(transport=MockTransport(handler))
+    agent = HttpNodeAgentClient(async_client, "machine-secret", 8443)
+    try:
+        await agent.add_peer(make_node(), PUBLIC_KEY, IPv4Address("10.77.0.2"))
+        await agent.remove_peer(make_node(), PUBLIC_KEY)
+    finally:
+        await agent.close()
+
+    assert [request.method for request in requests] == ["PUT", "DELETE"]
+    assert all(request.headers["Authorization"] == "Bearer machine-secret" for request in requests)
+    assert requests[0].read() == (
+        b'{"public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","vpn_ip":"10.77.0.2"}'
+    )
+    assert requests[1].read() == (b'{"public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}')

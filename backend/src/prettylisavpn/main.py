@@ -37,7 +37,7 @@ from prettylisavpn.emailing.timeweb import TimewebEmailProvider
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
-from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient
+from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient, NodeAgentPort
 from prettylisavpn.vpn_nodes.countries import (
     DatabaseVpnCountryCatalog,
     VpnCountryAvailabilityHandler,
@@ -45,6 +45,11 @@ from prettylisavpn.vpn_nodes.countries import (
 )
 from prettylisavpn.vpn_nodes.monitor import NodeHealthMonitorPort, VpnNodeHealthMonitor
 from prettylisavpn.vpn_nodes.router import router as vpn_router
+from prettylisavpn.vpn_sessions.connection import (
+    UnavailableVpnConnectionService,
+    VpnConnectionHandler,
+    VpnConnectionService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +108,8 @@ def create_app(
     device_management: DeviceManagementHandler | None = None,
     node_health_monitor: NodeHealthMonitorPort | None = None,
     vpn_country_availability: VpnCountryAvailabilityHandler | None = None,
+    vpn_connection: VpnConnectionHandler | None = None,
+    node_agent: NodeAgentPort | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -174,9 +181,26 @@ def create_app(
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 monitor = node_health_monitor
                 agent_client: HttpNodeAgentClient | None = None
-                if monitor is None and config.vpn_node_agent_is_configured():
+                active_agent = node_agent
+                if active_agent is None and config.vpn_node_agent_is_configured():
                     agent_client = HttpNodeAgentClient.from_settings(config)
-                    monitor = VpnNodeHealthMonitor(cast(Postgres, pg), agent_client, config)
+                    active_agent = agent_client
+                if monitor is None and active_agent is not None:
+                    monitor = VpnNodeHealthMonitor(cast(Postgres, pg), active_agent, config)
+                app.state.vpn_connection = (
+                    vpn_connection
+                    if vpn_connection is not None
+                    else VpnConnectionService(
+                        cast(Postgres, pg),
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        active_agent,
+                        config,
+                    )
+                    if active_agent is not None
+                    else UnavailableVpnConnectionService(
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
+                    )
+                )
                 monitor_stop = asyncio.Event()
                 monitor_task = (
                     asyncio.create_task(monitor.run(monitor_stop)) if monitor is not None else None
