@@ -292,7 +292,7 @@ async def test_http_agent_client_adds_and_removes_peer_with_structured_json():
 
     def handler(request: Request) -> Response:
         requests.append(request)
-        if request.method == "PUT":
+        if request.method in ("PUT", "GET"):
             return Response(
                 200,
                 json={
@@ -308,13 +308,24 @@ async def test_http_agent_client_adds_and_removes_peer_with_structured_json():
     agent = HttpNodeAgentClient(async_client, "machine-secret", 8443)
     try:
         await agent.add_peer(make_node(), PUBLIC_KEY, IPv4Address("10.77.0.2"))
+        assert await agent.peer_exists(make_node(), PUBLIC_KEY) is True
         await agent.remove_peer(make_node(), PUBLIC_KEY)
     finally:
         await agent.close()
 
-    assert [request.method for request in requests] == ["PUT", "DELETE"]
+    assert [request.method for request in requests] == ["PUT", "GET", "DELETE"]
     assert all(request.headers["Authorization"] == "Bearer machine-secret" for request in requests)
     assert requests[0].read() == (
         b'{"public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","vpn_ip":"10.77.0.2"}'
     )
-    assert requests[1].read() == (b'{"public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}')
+    assert requests[1].url.params["public_key"] == PUBLIC_KEY
+    assert requests[2].read() == (b'{"public_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}')
+
+
+async def test_http_agent_missing_peer_is_a_reconcilable_state():
+    async_client = AsyncClient(transport=MockTransport(lambda request: Response(404)))
+    agent = HttpNodeAgentClient(async_client, "machine-secret", 8443)
+    try:
+        assert await agent.peer_exists(make_node(), PUBLIC_KEY) is False
+    finally:
+        await agent.close()

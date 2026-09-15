@@ -127,6 +127,7 @@ docker compose -f infra/docker/compose.yaml down
 | `VPN_CLIENT_GATEWAY_IPV4` | `10.77.0.1`; зарезервированный адрес gateway внутри `VPN_CLIENT_SUBNET`, клиентам не выдаётся. |
 | `VPN_CLIENT_DNS` | JSON-массив IPv4 DNS resolver addresses; по умолчанию `["1.1.1.1","1.0.0.1"]`. Передаётся только native tunnel layer. |
 | `VPN_CLIENT_ALLOWED_IPS` | JSON-массив IPv4 CIDR; по умолчанию `["0.0.0.0/0"]` для full tunnel. Передаётся только native tunnel layer. |
+| `VPN_SESSION_RECONCILE_INTERVAL_SECONDS` | `15`; период durable expiry/peer cleanup reconciliation, не зависит от клиента. |
 | `VPN_NODE_HEALTH_POLL_INTERVAL_SECONDS` | `30`; период опроса, всегда меньше stale timeout. |
 | `VPN_NODE_AGENT_PORT` | `8443`; HTTPS/mTLS порт Node Control Agent. |
 | `VPN_NODE_AGENT_AUTH_TOKEN` | Дополнительный machine bearer secret, минимум 32 символа. |

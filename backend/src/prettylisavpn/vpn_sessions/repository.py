@@ -30,6 +30,7 @@ class VpnSessionRepository:
             started_at=vpn_session.started_at,
             expires_at=vpn_session.expires_at,
             disconnected_at=vpn_session.disconnected_at,
+            peer_removed_at=vpn_session.peer_removed_at,
             created_at=vpn_session.created_at,
             updated_at=vpn_session.updated_at,
         )
@@ -103,10 +104,51 @@ class VpnSessionRepository:
                 started_at=vpn_session.started_at,
                 expires_at=vpn_session.expires_at,
                 disconnected_at=vpn_session.disconnected_at,
+                peer_removed_at=vpn_session.peer_removed_at,
                 updated_at=vpn_session.updated_at,
             )
         )
         return vpn_session
+
+    async def get_owned_for_update(
+        self, session_id: UUID, user_id: UUID, device_id: UUID
+    ) -> VpnSession | None:
+        statement = (
+            select(VpnSessionRecord)
+            .where(
+                VpnSessionRecord.id == session_id,
+                VpnSessionRecord.user_id == user_id,
+                VpnSessionRecord.device_id == device_id,
+            )
+            .with_for_update()
+        )
+        record = await self._session.scalar(statement)
+        return self._to_domain(record) if record is not None else None
+
+    async def list_cleanup_pending(self) -> list[VpnSession]:
+        records = await self._session.scalars(
+            select(VpnSessionRecord)
+            .where(
+                VpnSessionRecord.status.in_(
+                    (
+                        VpnSessionStatus.EXPIRED,
+                        VpnSessionStatus.DISCONNECTED,
+                        VpnSessionStatus.FAILED,
+                    )
+                ),
+                VpnSessionRecord.peer_removed_at.is_(None),
+            )
+            .order_by(VpnSessionRecord.updated_at, VpnSessionRecord.id)
+        )
+        return [self._to_domain(record) for record in records]
+
+    async def list_active(self) -> list[VpnSession]:
+        records = await self._session.scalars(
+            select(VpnSessionRecord)
+            .where(VpnSessionRecord.status == VpnSessionStatus.ACTIVE)
+            .order_by(VpnSessionRecord.updated_at, VpnSessionRecord.id)
+        )
+        return [self._to_domain(record) for record in records]
 
     @staticmethod
     def _to_domain(record: VpnSessionRecord) -> VpnSession:
@@ -122,6 +164,7 @@ class VpnSessionRepository:
             started_at=record.started_at,
             expires_at=record.expires_at,
             disconnected_at=record.disconnected_at,
+            peer_removed_at=record.peer_removed_at,
             created_at=record.created_at,
             updated_at=record.updated_at,
         )

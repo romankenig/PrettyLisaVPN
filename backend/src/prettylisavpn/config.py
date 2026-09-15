@@ -37,6 +37,7 @@ class Settings(BaseSettings):
         default_factory=lambda: [IPv4Network("0.0.0.0/0")], min_length=1
     )
     vpn_node_health_poll_interval_seconds: int = Field(default=30, ge=5, le=600)
+    vpn_session_reconcile_interval_seconds: int = Field(default=15, ge=1, le=300)
     vpn_node_agent_port: int = Field(default=8443, ge=1, le=65535)
     vpn_node_agent_auth_token: SecretStr | None = Field(default=None, min_length=32)
     vpn_node_agent_tls_ca: Path | None = None

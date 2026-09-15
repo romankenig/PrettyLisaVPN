@@ -33,6 +33,11 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnUnavailableError,
 )
 from prettylisavpn.vpn_sessions.service import DeviceAlreadyHasLiveVpnSessionError
+from prettylisavpn.vpn_sessions.termination import (
+    OwnedVpnSessionNotFoundError,
+    VpnTerminationHandler,
+    VpnTerminationUnavailableError,
+)
 
 router = APIRouter(prefix="/vpn", tags=["vpn"])
 
@@ -87,6 +92,11 @@ class ActiveVpnSessionResponse(BaseModel):
     status: Literal["ACTIVE"] = "ACTIVE"
     expires_at: datetime | None
     transport: WireGuardTransportResponse
+
+
+class TerminatedVpnSessionResponse(BaseModel):
+    session_id: UUID
+    status: Literal["EXPIRED", "DISCONNECTED", "FAILED"]
 
 
 def _response(result: VpnCountryAvailability) -> VpnCountriesResponse:
@@ -194,3 +204,40 @@ async def create_vpn_session(
             allowed_ips=list(result.allowed_ips),
         ),
     )
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    response_model=TerminatedVpnSessionResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
+        403: {"model": ErrorResponse, "description": "User or current device is blocked"},
+        404: {"model": ErrorResponse, "description": "Owned VPN session not found"},
+        503: {"model": ErrorResponse, "description": "VPN termination unavailable"},
+    },
+)
+async def disconnect_vpn_session(
+    session_id: UUID,
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+) -> TerminatedVpnSessionResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    service = cast(VpnTerminationHandler, request.app.state.vpn_termination)
+    try:
+        result = await service.disconnect(token, session_id)
+    except InvalidAccessTokenError:
+        return error_response("invalid_access_token", 401)
+    except InvalidSessionError:
+        return error_response("invalid_session", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    except OwnedVpnSessionNotFoundError:
+        return error_response("VPN_SESSION_NOT_FOUND", 404)
+    except VpnTerminationUnavailableError:
+        return error_response("VPN_TERMINATION_UNAVAILABLE", 503)
+    return TerminatedVpnSessionResponse(session_id=result.session_id, status=result.status)

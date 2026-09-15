@@ -33,6 +33,8 @@ class NodeAgentPeerPort(Protocol):
 
     async def remove_peer(self, node: VpnNode, public_key: str) -> None: ...
 
+    async def peer_exists(self, node: VpnNode, public_key: str) -> bool: ...
+
 
 class NodeAgentPort(NodeAgentHealthPort, NodeAgentPeerPort, Protocol):
     pass
@@ -133,6 +135,23 @@ class HttpNodeAgentClient:
             _AgentRemovalResponse.model_validate(response.json())
         except (httpx.HTTPError, ValueError) as error:
             raise NodeAgentUnavailableError("node agent peer removal failed") from error
+
+    async def peer_exists(self, node: VpnNode, public_key: str) -> bool:
+        try:
+            response = await self._client.get(
+                self._url(node, "/v1/peers"),
+                headers=self._headers(),
+                params={"public_key": public_key},
+            )
+            if response.status_code == 404:
+                return False
+            response.raise_for_status()
+            peer = _AgentPeerResponse.model_validate(response.json())
+            if peer.public_key != public_key:
+                raise ValueError("node agent returned a mismatched peer")
+            return True
+        except (httpx.HTTPError, ValueError) as error:
+            raise NodeAgentUnavailableError("node agent peer query failed") from error
 
     def _url(self, node: VpnNode, path: str) -> str:
         return f"https://{node.public_ipv4}:{self._agent_port}{path}"

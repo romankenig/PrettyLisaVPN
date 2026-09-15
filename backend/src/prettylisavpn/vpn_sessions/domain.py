@@ -54,6 +54,7 @@ class VpnSession:
     started_at: datetime
     expires_at: datetime | None
     disconnected_at: datetime | None
+    peer_removed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -69,6 +70,7 @@ class VpnSession:
             "started_at",
             "expires_at",
             "disconnected_at",
+            "peer_removed_at",
             "created_at",
             "updated_at",
         ):
@@ -91,6 +93,13 @@ class VpnSession:
             raise ValueError("disconnected_at must not be before started_at")
         if (self.status is VpnSessionStatus.DISCONNECTED) != (self.disconnected_at is not None):
             raise ValueError("status and disconnected_at are inconsistent")
+        if self.peer_removed_at is not None and self.status in (
+            VpnSessionStatus.PENDING,
+            VpnSessionStatus.ACTIVE,
+        ):
+            raise ValueError("live sessions cannot have peer_removed_at")
+        if self.peer_removed_at is not None and self.peer_removed_at < self.started_at:
+            raise ValueError("peer_removed_at must not be before started_at")
 
     @classmethod
     def new(
@@ -124,6 +133,7 @@ class VpnSession:
             started_at=now,
             expires_at=expires_at,
             disconnected_at=None,
+            peer_removed_at=None,
             created_at=now,
             updated_at=now,
         )

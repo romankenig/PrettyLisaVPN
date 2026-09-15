@@ -46,6 +46,11 @@ from prettylisavpn.vpn_sessions.service import (
     DeviceAlreadyHasLiveVpnSessionError,
     VpnSessionService,
 )
+from prettylisavpn.vpn_sessions.termination import (
+    OwnedVpnSessionNotFoundError,
+    VpnSessionReconciler,
+    VpnSessionTerminationService,
+)
 
 pytestmark = [
     pytest.mark.integration,
@@ -410,4 +415,107 @@ async def test_capacity_race_allows_only_one_pending_reservation():
             )
             await session.execute(delete(VpnNodeRecord).where(VpnNodeRecord.id == node_id))
             await session.commit()
+        await postgres.close()
+
+
+async def test_manual_disconnect_enforces_ownership_and_is_idempotent():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    authentication = AsyncMock()
+    identity = AccessIdentity(user_id, device_id, uuid4())
+    authentication.authenticate.return_value = identity
+    agent = AsyncMock()
+    connection = VpnConnectionService(postgres, authentication, agent, Settings())
+    termination = VpnSessionTerminationService(postgres, authentication, agent)
+    try:
+        active = await connection.connect("token", NodeSelectionRequest.auto(), public_key(41))
+        authentication.authenticate.return_value = replace(identity, device_id=uuid4())
+        with pytest.raises(OwnedVpnSessionNotFoundError):
+            await termination.disconnect("other-device-token", active.session_id)
+
+        authentication.authenticate.return_value = identity
+        first = await termination.disconnect("token", active.session_id)
+        duplicate = await termination.disconnect("token", active.session_id)
+
+        assert first.status is duplicate.status is VpnSessionStatus.DISCONNECTED
+        agent.remove_peer.assert_awaited_once()
+        async with postgres.session() as session:
+            persisted = await VpnSessionRepository(session).get(active.session_id)
+        assert persisted is not None
+        assert persisted.disconnected_at is not None
+        assert persisted.peer_removed_at is not None
+        assert not persisted.is_live()
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_expiry_survives_restart_and_retries_agent_outage_without_extending_session():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    started_at = datetime.now(UTC) - timedelta(minutes=16)
+    expired = VpnSession.new(
+        user_id=user_id,
+        device_id=device_id,
+        vpn_node_id=node_id,
+        client_wireguard_public_key=public_key(42),
+        allocated_client_ipv4=IPv4Address("10.77.0.2"),
+        plan_snapshot=SubscriptionPlan.FREE,
+        now=started_at,
+    )
+    expired = replace(expired, status=VpnSessionStatus.ACTIVE)
+    async with postgres.session() as session:
+        await VpnSessionRepository(session).add(expired)
+        await session.commit()
+
+    agent = AsyncMock()
+    agent.remove_peer.side_effect = NodeAgentUnavailableError
+    try:
+        await VpnSessionReconciler(postgres, agent, Settings()).run_once()
+        async with postgres.session() as session:
+            after_outage = await VpnSessionRepository(session).get(expired.id)
+        assert after_outage is not None
+        assert after_outage.status is VpnSessionStatus.EXPIRED
+        assert after_outage.peer_removed_at is None
+
+        agent.remove_peer.side_effect = None
+        restarted_reconciler = VpnSessionReconciler(postgres, agent, Settings())
+        await restarted_reconciler.run_once()
+        async with postgres.session() as session:
+            cleaned = await VpnSessionRepository(session).get(expired.id)
+        assert cleaned is not None
+        assert cleaned.status is VpnSessionStatus.EXPIRED
+        assert cleaned.peer_removed_at is not None
+
+        removal_calls = agent.remove_peer.await_count
+        await restarted_reconciler.run_once()
+        assert agent.remove_peer.await_count == removal_calls
+    finally:
+        await clean_up(postgres, user_id, node_id)
+        await postgres.close()
+
+
+async def test_reconciler_releases_active_session_when_agent_peer_is_missing():
+    postgres = Postgres(Settings())
+    user_id, device_id, node_id = await create_dependencies(postgres)
+    active = replace(
+        make_session(user_id, device_id, node_id, 43),
+        status=VpnSessionStatus.ACTIVE,
+    )
+    async with postgres.session() as session:
+        await VpnSessionRepository(session).add(active)
+        await session.commit()
+    agent = AsyncMock()
+    agent.peer_exists.return_value = False
+    try:
+        await VpnSessionReconciler(postgres, agent, Settings()).run_once()
+
+        async with postgres.session() as session:
+            reconciled = await VpnSessionRepository(session).get(active.id)
+        assert reconciled is not None
+        assert reconciled.status is VpnSessionStatus.FAILED
+        assert reconciled.peer_removed_at is not None
+        assert not reconciled.is_live()
+    finally:
+        await clean_up(postgres, user_id, node_id)
         await postgres.close()

@@ -50,6 +50,13 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnConnectionHandler,
     VpnConnectionService,
 )
+from prettylisavpn.vpn_sessions.termination import (
+    UnavailableVpnTerminationService,
+    VpnSessionReconciler,
+    VpnSessionReconcilerPort,
+    VpnSessionTerminationService,
+    VpnTerminationHandler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +117,8 @@ def create_app(
     vpn_country_availability: VpnCountryAvailabilityHandler | None = None,
     vpn_connection: VpnConnectionHandler | None = None,
     node_agent: NodeAgentPort | None = None,
+    vpn_termination: VpnTerminationHandler | None = None,
+    vpn_session_reconciler: VpnSessionReconcilerPort | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -201,9 +210,30 @@ def create_app(
                         cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
                     )
                 )
+                app.state.vpn_termination = (
+                    vpn_termination
+                    if vpn_termination is not None
+                    else VpnSessionTerminationService(
+                        cast(Postgres, pg),
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        active_agent,
+                    )
+                    if active_agent is not None
+                    else UnavailableVpnTerminationService(
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
+                    )
+                )
+                reconciler = vpn_session_reconciler
+                if reconciler is None and active_agent is not None:
+                    reconciler = VpnSessionReconciler(cast(Postgres, pg), active_agent, config)
                 monitor_stop = asyncio.Event()
                 monitor_task = (
                     asyncio.create_task(monitor.run(monitor_stop)) if monitor is not None else None
+                )
+                reconciler_task = (
+                    asyncio.create_task(reconciler.run(monitor_stop))
+                    if reconciler is not None
+                    else None
                 )
                 logger.info("application_started")
                 try:
@@ -212,6 +242,9 @@ def create_app(
                     if monitor_task is not None:
                         monitor_stop.set()
                         await monitor_task
+                    if reconciler_task is not None:
+                        monitor_stop.set()
+                        await reconciler_task
                     if agent_client is not None:
                         await agent_client.close()
             finally:

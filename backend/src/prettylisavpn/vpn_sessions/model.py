@@ -53,9 +53,20 @@ class VpnSessionRecord(Base):
             "(status = 'DISCONNECTED') = (disconnected_at IS NOT NULL)",
             name="ck_vpn_sessions_status_disconnected_at",
         ),
+        CheckConstraint(
+            "peer_removed_at IS NULL OR status IN ('EXPIRED', 'DISCONNECTED', 'FAILED')",
+            name="ck_vpn_sessions_peer_removed_terminal",
+        ),
         Index("ix_vpn_sessions_user_id_created_at", "user_id", "created_at"),
         Index("ix_vpn_sessions_device_id_created_at", "device_id", "created_at"),
         Index("ix_vpn_sessions_node_status", "vpn_node_id", "status"),
+        Index(
+            "ix_vpn_sessions_cleanup_pending",
+            "status",
+            postgresql_where=text(
+                "peer_removed_at IS NULL AND status IN ('EXPIRED', 'DISCONNECTED', 'FAILED')"
+            ),
+        ),
         Index(
             "ix_vpn_sessions_status_expires_at",
             "status",
@@ -108,6 +119,7 @@ class VpnSessionRecord(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disconnected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    peer_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )

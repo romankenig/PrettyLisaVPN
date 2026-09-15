@@ -28,6 +28,7 @@ def make_session(**changes: object) -> VpnSession:
         started_at=now,
         expires_at=now + timedelta(minutes=15),
         disconnected_at=None,
+        peer_removed_at=None,
         created_at=now,
         updated_at=now,
     )
@@ -120,3 +121,17 @@ def test_disconnected_status_and_timestamp_must_agree():
 
 def test_terminal_status_is_not_live():
     assert not make_session(status=VpnSessionStatus.EXPIRED).is_live()
+
+
+def test_peer_cleanup_completion_is_valid_only_for_terminal_sessions():
+    removed_at = datetime.now(UTC) + timedelta(minutes=1)
+    with pytest.raises(ValueError, match="live sessions"):
+        make_session(peer_removed_at=removed_at)
+
+    disconnected = make_session(
+        status=VpnSessionStatus.DISCONNECTED,
+        disconnected_at=removed_at,
+        peer_removed_at=removed_at,
+        updated_at=removed_at,
+    )
+    assert disconnected.peer_removed_at == removed_at

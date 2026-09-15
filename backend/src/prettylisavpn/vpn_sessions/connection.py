@@ -166,7 +166,12 @@ class VpnConnectionService:
         except SQLAlchemyError:
             raise VpnSessionPersistenceUnavailableError from None
 
-    async def _set_status(self, session_id: UUID, status: VpnSessionStatus) -> VpnSession:
+    async def _set_status(
+        self,
+        session_id: UUID,
+        status: VpnSessionStatus,
+        peer_removed_at: datetime | None = None,
+    ) -> VpnSession:
         try:
             async with self._postgres.session() as database_session:
                 async with database_session.begin():
@@ -174,7 +179,12 @@ class VpnConnectionService:
                     current = await repository.get_for_update(session_id)
                     if current is None:
                         raise VpnSessionPersistenceUnavailableError
-                    updated = replace(current, status=status, updated_at=datetime.now(UTC))
+                    updated = replace(
+                        current,
+                        status=status,
+                        peer_removed_at=peer_removed_at,
+                        updated_at=datetime.now(UTC),
+                    )
                     return await repository.update(updated)
         except VpnSessionPersistenceUnavailableError:
             raise
@@ -182,13 +192,17 @@ class VpnConnectionService:
             raise VpnSessionPersistenceUnavailableError from None
 
     async def _compensate(self, node: VpnNode, pending: VpnSession, *, remove_peer: bool) -> None:
+        peer_removed_at: datetime | None = None
         if remove_peer:
             try:
                 await self._agent.remove_peer(node, pending.client_wireguard_public_key)
+                peer_removed_at = datetime.now(UTC)
             except NodeAgentUnavailableError:
                 pass
         try:
-            await self._set_status(pending.id, VpnSessionStatus.FAILED)
+            await self._set_status(
+                pending.id, VpnSessionStatus.FAILED, peer_removed_at=peer_removed_at
+            )
         except VpnSessionPersistenceUnavailableError:
             pass
 
