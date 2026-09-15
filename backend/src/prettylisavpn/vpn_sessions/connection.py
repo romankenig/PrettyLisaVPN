@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv4Network
 from typing import Protocol
 from uuid import UUID
 
@@ -57,6 +57,8 @@ class ActiveVpnTransport:
     endpoint_port: int
     server_public_key: str
     client_ipv4: IPv4Address
+    dns: tuple[IPv4Address, ...]
+    allowed_ips: tuple[IPv4Network, ...]
     expires_at: datetime | None
 
 
@@ -80,6 +82,8 @@ class VpnConnectionService:
         self._stale_timeout = timedelta(seconds=settings.vpn_node_stale_timeout_seconds)
         self._subnet = settings.vpn_client_subnet
         self._reserved = {settings.vpn_client_gateway_ipv4}
+        self._dns = tuple(settings.vpn_client_dns)
+        self._allowed_ips = tuple(settings.vpn_client_allowed_ips)
 
     async def connect(
         self, access_token: str, request: NodeSelectionRequest, public_key: str
@@ -106,6 +110,8 @@ class VpnConnectionService:
             endpoint_port=node.wireguard_port,
             server_public_key=node.wireguard_public_key,
             client_ipv4=active.allocated_client_ipv4,
+            dns=self._dns,
+            allowed_ips=self._allowed_ips,
             expires_at=active.expires_at,
         )
 

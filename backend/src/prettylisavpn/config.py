@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     vpn_node_stale_timeout_seconds: int = Field(default=90, ge=10, le=3600)
     vpn_client_subnet: IPv4Network = IPv4Network("10.77.0.0/16")
     vpn_client_gateway_ipv4: IPv4Address = IPv4Address("10.77.0.1")
+    vpn_client_dns: list[IPv4Address] = Field(
+        default_factory=lambda: [IPv4Address("1.1.1.1"), IPv4Address("1.0.0.1")],
+        min_length=1,
+    )
+    vpn_client_allowed_ips: list[IPv4Network] = Field(
+        default_factory=lambda: [IPv4Network("0.0.0.0/0")], min_length=1
+    )
     vpn_node_health_poll_interval_seconds: int = Field(default=30, ge=5, le=600)
     vpn_node_agent_port: int = Field(default=8443, ge=1, le=65535)
     vpn_node_agent_auth_token: SecretStr | None = Field(default=None, min_length=32)
@@ -76,6 +83,10 @@ class Settings(BaseSettings):
     def validate_production_otp_secret(self) -> Self:
         if self.vpn_client_subnet.version != 4:
             raise ValueError("VPN_CLIENT_SUBNET must be IPv4")
+        if any(address.version != 4 for address in self.vpn_client_dns):
+            raise ValueError("VPN_CLIENT_DNS must contain only IPv4 addresses")
+        if any(network.version != 4 for network in self.vpn_client_allowed_ips):
+            raise ValueError("VPN_CLIENT_ALLOWED_IPS must contain only IPv4 networks")
         if self.vpn_client_gateway_ipv4 not in self.vpn_client_subnet.hosts():
             raise ValueError(
                 "VPN_CLIENT_GATEWAY_IPV4 must be a usable address in VPN_CLIENT_SUBNET"

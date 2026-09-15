@@ -24,6 +24,11 @@ from prettylisavpn.vpn_nodes.domain import (
     VpnNodeProvider,
     VpnNodeStatus,
 )
+from prettylisavpn.vpn_nodes.router import (
+    AutopilotAvailabilityResponse,
+    CountryAvailabilityResponse,
+    VpnCountriesResponse,
+)
 from prettylisavpn.vpn_nodes.selection import CountryEligibility, VpnNodeSelectionService
 
 NOW = datetime(2026, 9, 15, 12, tzinfo=UTC)
@@ -231,3 +236,29 @@ async def test_autopilot_is_best_country_opportunity_not_country_average():
     assert result.autopilot == AutopilotEligibility(True, 90)
     assert result.autopilot.quality != 50
     assert repository.calls == 1
+
+
+def test_discovery_response_models_cannot_serialize_transport_or_infrastructure_fields():
+    forbidden = {
+        "node_id",
+        "node_name",
+        "node_count",
+        "provider",
+        "provider_region",
+        "node_ip",
+        "public_ipv4",
+        "capacity",
+        "internal_score",
+        "endpoint",
+        "server_public_key",
+        "client_address",
+        "dns",
+        "allowed_ips",
+    }
+    discovery_fields = (
+        set(VpnCountriesResponse.model_fields)
+        | set(CountryAvailabilityResponse.model_fields)
+        | set(AutopilotAvailabilityResponse.model_fields)
+    )
+
+    assert forbidden.isdisjoint(discovery_fields)

@@ -1,7 +1,7 @@
 """Authenticated HTTP transport for VPN targeting and country availability."""
 
 from datetime import datetime
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv4Interface, IPv4Network
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
@@ -74,13 +74,19 @@ class VpnEndpointResponse(BaseModel):
     port: int = Field(ge=1, le=65535)
 
 
+class WireGuardTransportResponse(BaseModel):
+    endpoint: VpnEndpointResponse
+    server_public_key: str
+    client_address: IPv4Interface
+    dns: list[IPv4Address]
+    allowed_ips: list[IPv4Network]
+
+
 class ActiveVpnSessionResponse(BaseModel):
     session_id: UUID
     status: Literal["ACTIVE"] = "ACTIVE"
-    endpoint: VpnEndpointResponse
-    server_public_key: str
-    client_ipv4: IPv4Address
     expires_at: datetime | None
+    transport: WireGuardTransportResponse
 
 
 def _response(result: VpnCountryAvailability) -> VpnCountriesResponse:
@@ -179,8 +185,12 @@ async def create_vpn_session(
         return error_response("VPN_SETUP_FAILED", 503)
     return ActiveVpnSessionResponse(
         session_id=result.session_id,
-        endpoint=VpnEndpointResponse(ipv4=result.endpoint_ipv4, port=result.endpoint_port),
-        server_public_key=result.server_public_key,
-        client_ipv4=result.client_ipv4,
         expires_at=result.expires_at,
+        transport=WireGuardTransportResponse(
+            endpoint=VpnEndpointResponse(ipv4=result.endpoint_ipv4, port=result.endpoint_port),
+            server_public_key=result.server_public_key,
+            client_address=IPv4Interface(f"{result.client_ipv4}/32"),
+            dns=list(result.dns),
+            allowed_ips=list(result.allowed_ips),
+        ),
     )

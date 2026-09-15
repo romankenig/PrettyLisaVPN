@@ -1,7 +1,7 @@
 """Authenticated VPN session targeting endpoint tests."""
 
 from datetime import UTC, datetime, timedelta
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv4Network
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -66,6 +66,8 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
         endpoint_port=51820,
         server_public_key=PUBLIC_KEY,
         client_ipv4=IPv4Address("10.77.0.2"),
+        dns=(IPv4Address("1.1.1.1"), IPv4Address("1.0.0.1")),
+        allowed_ips=(IPv4Network("0.0.0.0/0"),),
         expires_at=expires_at,
     )
 
@@ -80,10 +82,14 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
     assert response.json() == {
         "session_id": str(session_id),
         "status": "ACTIVE",
-        "endpoint": {"ipv4": "204.48.17.50", "port": 51820},
-        "server_public_key": PUBLIC_KEY,
-        "client_ipv4": "10.77.0.2",
         "expires_at": expires_at.isoformat().replace("+00:00", "Z"),
+        "transport": {
+            "endpoint": {"ipv4": "204.48.17.50", "port": 51820},
+            "server_public_key": PUBLIC_KEY,
+            "client_address": "10.77.0.2/32",
+            "dns": ["1.1.1.1", "1.0.0.1"],
+            "allowed_ips": ["0.0.0.0/0"],
+        },
     }
     service.connect.assert_awaited_once_with("access-token", expected_request, PUBLIC_KEY)
 
