@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 from typing import cast
 
 from fastapi import FastAPI, Request
@@ -37,7 +38,13 @@ from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
 from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient
+from prettylisavpn.vpn_nodes.countries import (
+    DatabaseVpnCountryCatalog,
+    VpnCountryAvailabilityHandler,
+    VpnCountryAvailabilityService,
+)
 from prettylisavpn.vpn_nodes.monitor import NodeHealthMonitorPort, VpnNodeHealthMonitor
+from prettylisavpn.vpn_nodes.router import router as vpn_router
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +102,7 @@ def create_app(
     authenticated_sessions: AuthenticatedSessionHandler | None = None,
     device_management: DeviceManagementHandler | None = None,
     node_health_monitor: NodeHealthMonitorPort | None = None,
+    vpn_country_availability: VpnCountryAvailabilityHandler | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -152,6 +160,17 @@ def create_app(
                         config,
                     )
                 )
+                app.state.vpn_country_availability = (
+                    vpn_country_availability
+                    if vpn_country_availability is not None
+                    else VpnCountryAvailabilityService(
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        DatabaseVpnCountryCatalog(
+                            cast(Postgres, pg),
+                            timedelta(seconds=config.vpn_node_stale_timeout_seconds),
+                        ),
+                    )
+                )
                 app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 monitor = node_health_monitor
                 agent_client: HttpNodeAgentClient | None = None
@@ -184,6 +203,7 @@ def create_app(
     app.include_router(auth_router)
     app.include_router(account_router)
     app.include_router(devices_router)
+    app.include_router(vpn_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
