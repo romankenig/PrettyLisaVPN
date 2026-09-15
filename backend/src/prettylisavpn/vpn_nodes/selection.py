@@ -4,7 +4,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
-from fractions import Fraction
 from typing import Protocol
 
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
@@ -13,6 +12,40 @@ from prettylisavpn.vpn_nodes.availability import (
     VpnNodeEligibilityPolicy,
 )
 from prettylisavpn.vpn_nodes.domain import VpnNode, normalize_country_code
+from prettylisavpn.vpn_nodes.strategy import (
+    LeastLoadedNodeSelectionStrategy,
+    NodeSelectionStrategy,
+)
+
+
+class NodeSelectionMode(StrEnum):
+    AUTO = "AUTO"
+    COUNTRY = "COUNTRY"
+
+
+@dataclass(frozen=True, slots=True)
+class NodeSelectionRequest:
+    mode: NodeSelectionMode
+    country_code: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mode, NodeSelectionMode):
+            raise ValueError("mode must be AUTO or COUNTRY")
+        if self.mode is NodeSelectionMode.AUTO:
+            if self.country_code is not None:
+                raise ValueError("AUTO selection must not include country_code")
+            return
+        if self.country_code is None:
+            raise ValueError("COUNTRY selection requires country_code")
+        object.__setattr__(self, "country_code", normalize_country_code(self.country_code))
+
+    @classmethod
+    def auto(cls) -> "NodeSelectionRequest":
+        return cls(NodeSelectionMode.AUTO)
+
+    @classmethod
+    def country(cls, country_code: str) -> "NodeSelectionRequest":
+        return cls(NodeSelectionMode.COUNTRY, country_code)
 
 
 class CountryQuality(StrEnum):
@@ -51,9 +84,11 @@ class VpnNodeSelectionService:
         self,
         repository: VpnNodeCapacityRepository,
         stale_timeout: timedelta,
+        strategy: NodeSelectionStrategy | None = None,
     ) -> None:
         self._repository = repository
         self._policy = VpnNodeEligibilityPolicy(stale_timeout)
+        self._strategy = strategy or LeastLoadedNodeSelectionStrategy()
 
     async def list_countries(
         self, plan: SubscriptionPlan, now: datetime
@@ -88,27 +123,21 @@ class VpnNodeSelectionService:
 
     async def select_node_for_session(
         self,
-        country_code: str,
+        request: NodeSelectionRequest,
         plan: SubscriptionPlan,
         now: datetime,
     ) -> VpnNode:
-        """Return an internal node only after locking country nodes for allocation."""
+        """Build AUTO/COUNTRY candidates, then invoke the same internal strategy."""
         self._require_aware(now)
-        normalized = normalize_country_code(country_code)
         snapshots = await self._repository.list_capacity_snapshots(
-            normalized, at=now, lock_nodes=True
+            request.country_code, at=now, lock_nodes=True
         )
         eligible = self._eligible(snapshots, plan, now)
         if not eligible:
-            raise NoEligibleVpnNodeError(normalized)
-        selected = max(
-            eligible,
-            key=lambda snapshot: (
-                Fraction(snapshot.remaining_capacity, snapshot.node.capacity),
-                snapshot.remaining_capacity,
-                str(snapshot.node.id),
-            ),
-        )
+            raise NoEligibleVpnNodeError(request.mode.value)
+        selected = self._strategy.select(eligible)
+        if selected not in eligible:
+            raise ValueError("node selection strategy returned a non-candidate")
         return selected.node
 
     def _summarize(

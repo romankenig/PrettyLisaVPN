@@ -1,5 +1,6 @@
 """Plan-aware node eligibility shared by country views and session creation."""
 
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address
@@ -22,9 +23,11 @@ from prettylisavpn.vpn_nodes.domain import (
 from prettylisavpn.vpn_nodes.selection import (
     CountryEligibility,
     CountryQuality,
+    NodeSelectionRequest,
     NoEligibleVpnNodeError,
     VpnNodeSelectionService,
 )
+from prettylisavpn.vpn_nodes.strategy import LeastLoadedNodeSelectionStrategy
 from prettylisavpn.vpn_sessions.domain import VpnSession
 from prettylisavpn.vpn_sessions.service import VpnSessionService
 
@@ -110,6 +113,132 @@ def test_policy_applies_plan_and_capacity_after_operational_health():
     assert exhausted_result.reason is NodeUnavailabilityReason.CAPACITY_EXHAUSTED
 
 
+def test_mvp_strategy_is_load_aware_and_deterministic_for_a_snapshot():
+    stable_winner = VpnNodeCapacitySnapshot(make_node(id=UUID(int=1), capacity=20), 5)
+    busier = VpnNodeCapacitySnapshot(make_node(id=UUID(int=2), capacity=10), 5)
+    tied_later_id = VpnNodeCapacitySnapshot(make_node(id=UUID(int=3), capacity=20), 5)
+    strategy = LeastLoadedNodeSelectionStrategy()
+
+    assert strategy.select([busier, tied_later_id, stable_winner]) == stable_winner
+    assert strategy.select([stable_winner, tied_later_id, busier]) == stable_winner
+
+
+async def test_auto_uses_all_plan_eligible_countries_for_free_and_premium():
+    free_node = make_node(country_code="DE", is_available_for_free=True, capacity=10)
+    premium_only = make_node(
+        country_code="US",
+        is_available_for_free=False,
+        capacity=10,
+        public_ipv4=IPv4Address("203.0.113.40"),
+        wireguard_public_key="BQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    selection = VpnNodeSelectionService(
+        FakeCapacityRepository(
+            [VpnNodeCapacitySnapshot(free_node, 8), VpnNodeCapacitySnapshot(premium_only, 0)]
+        ),
+        timedelta(seconds=90),
+    )
+
+    free_selected = await selection.select_node_for_session(
+        NodeSelectionRequest.auto(), SubscriptionPlan.FREE, NOW
+    )
+    premium_selected = await selection.select_node_for_session(
+        NodeSelectionRequest.auto(), SubscriptionPlan.PREMIUM, NOW
+    )
+
+    assert free_selected.id == free_node.id
+    assert premium_selected.id == premium_only.id
+
+
+async def test_country_ranks_multiple_nodes_only_inside_requested_country():
+    busier_de = make_node(id=UUID(int=10), country_code="DE", capacity=10)
+    better_de = make_node(
+        id=UUID(int=11),
+        country_code="DE",
+        capacity=20,
+        public_ipv4=IPv4Address("203.0.113.41"),
+        wireguard_public_key="BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    empty_us = make_node(
+        id=UUID(int=12),
+        country_code="US",
+        capacity=100,
+        public_ipv4=IPv4Address("203.0.113.42"),
+        wireguard_public_key="BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    selection = VpnNodeSelectionService(
+        FakeCapacityRepository(
+            [
+                VpnNodeCapacitySnapshot(busier_de, 5),
+                VpnNodeCapacitySnapshot(better_de, 5),
+                VpnNodeCapacitySnapshot(empty_us, 0),
+            ]
+        ),
+        timedelta(seconds=90),
+    )
+
+    selected = await selection.select_node_for_session(
+        NodeSelectionRequest.country("de"), SubscriptionPlan.PREMIUM, NOW
+    )
+
+    assert selected.id == better_de.id
+
+
+class LastCandidateStrategy:
+    def __init__(self) -> None:
+        self.candidate_sets: list[tuple[UUID, ...]] = []
+
+    def select(self, candidates: Sequence[VpnNodeCapacitySnapshot]) -> VpnNodeCapacitySnapshot:
+        self.candidate_sets.append(tuple(candidate.node.id for candidate in candidates))
+        return candidates[-1]
+
+
+async def test_auto_and_country_use_the_same_replaceable_strategy():
+    de = make_node(id=UUID(int=20), country_code="DE")
+    us = make_node(
+        id=UUID(int=21),
+        country_code="US",
+        public_ipv4=IPv4Address("203.0.113.43"),
+        wireguard_public_key="CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    full = make_node(
+        id=UUID(int=22),
+        capacity=1,
+        public_ipv4=IPv4Address("203.0.113.44"),
+        wireguard_public_key="CQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    unhealthy = make_node(
+        id=UUID(int=23),
+        health_status=VpnNodeHealthStatus.UNHEALTHY,
+        public_ipv4=IPv4Address("203.0.113.45"),
+        wireguard_public_key="CgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    )
+    strategy = LastCandidateStrategy()
+    selection = VpnNodeSelectionService(
+        FakeCapacityRepository(
+            [
+                VpnNodeCapacitySnapshot(de, 0),
+                VpnNodeCapacitySnapshot(full, 1),
+                VpnNodeCapacitySnapshot(unhealthy, 0),
+                VpnNodeCapacitySnapshot(us, 0),
+            ]
+        ),
+        timedelta(seconds=90),
+        strategy,
+    )
+
+    auto_selected = await selection.select_node_for_session(
+        NodeSelectionRequest.auto(), SubscriptionPlan.PREMIUM, NOW
+    )
+    country_selected = await selection.select_node_for_session(
+        NodeSelectionRequest.country("DE"), SubscriptionPlan.PREMIUM, NOW
+    )
+
+    assert auto_selected.id == us.id
+    assert country_selected.id == de.id
+    assert strategy.candidate_sets == [(de.id, us.id), (de.id,)]
+
+
 async def test_free_and_premium_country_selection_use_their_eligible_node_sets():
     free_node = make_node(capacity=10, is_available_for_free=True)
     premium_node = make_node(
@@ -129,10 +258,14 @@ async def test_free_and_premium_country_selection_use_their_eligible_node_sets()
     assert free_country == CountryEligibility("DE", True, CountryQuality.GOOD)
     assert premium_country == CountryEligibility("DE", True, CountryQuality.GOOD)
     assert (
-        await selection.select_node_for_session("DE", SubscriptionPlan.FREE, NOW)
+        await selection.select_node_for_session(
+            NodeSelectionRequest.country("DE"), SubscriptionPlan.FREE, NOW
+        )
     ).id == free_node.id
     assert (
-        await selection.select_node_for_session("DE", SubscriptionPlan.PREMIUM, NOW)
+        await selection.select_node_for_session(
+            NodeSelectionRequest.country("DE"), SubscriptionPlan.PREMIUM, NOW
+        )
     ).id == premium_node.id
 
 
@@ -180,10 +313,12 @@ async def test_exhausted_unhealthy_and_draining_countries_cannot_create_sessions
 
     assert country == CountryEligibility("DE", False, CountryQuality.UNAVAILABLE)
     with pytest.raises(NoEligibleVpnNodeError):
-        await selection.select_node_for_session("DE", SubscriptionPlan.FREE, NOW)
+        await selection.select_node_for_session(
+            NodeSelectionRequest.country("DE"), SubscriptionPlan.FREE, NOW
+        )
 
 
-async def test_session_creation_uses_same_free_country_eligibility_and_keeps_node_internal():
+async def test_session_creation_uses_same_free_auto_eligibility_and_keeps_node_internal():
     free_node = make_node(is_available_for_free=True)
     premium_only = make_node(
         capacity=100,
@@ -201,7 +336,7 @@ async def test_session_creation_uses_same_free_country_eligibility_and_keeps_nod
     vpn_session = await service.create(
         user_id=uuid4(),
         device_id=uuid4(),
-        country_code="DE",
+        node_selection=NodeSelectionRequest.auto(),
         client_wireguard_public_key="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         allocated_client_ipv4=IPv4Address("10.77.0.2"),
         plan=SubscriptionPlan.FREE,

@@ -28,7 +28,7 @@ from prettylisavpn.vpn_nodes.domain import (
 )
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
-from prettylisavpn.vpn_nodes.selection import VpnNodeSelectionService
+from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest, VpnNodeSelectionService
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
@@ -175,7 +175,7 @@ async def test_plan_aware_service_selects_node_and_creates_session_in_one_transa
             created = await service.create(
                 user_id=user_id,
                 device_id=device_id,
-                country_code="de",
+                node_selection=NodeSelectionRequest.country("de"),
                 client_wireguard_public_key=public_key(7),
                 allocated_client_ipv4=IPv4Address("10.88.0.7"),
                 plan=SubscriptionPlan.FREE,

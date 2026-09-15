@@ -7,7 +7,7 @@ from uuid import UUID
 
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.entitlements import FREE_ENTITLEMENTS
-from prettylisavpn.vpn_nodes.selection import VpnNodeSelectionService
+from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest, VpnNodeSelectionService
 from prettylisavpn.vpn_sessions.domain import VpnSession
 
 
@@ -39,7 +39,7 @@ class VpnSessionService:
         *,
         user_id: UUID,
         device_id: UUID,
-        country_code: str,
+        node_selection: NodeSelectionRequest,
         client_wireguard_public_key: str,
         allocated_client_ipv4: IPv4Address,
         plan: SubscriptionPlan,
@@ -47,7 +47,7 @@ class VpnSessionService:
     ) -> VpnSession:
         if await self._repository.get_live_for_device(device_id) is not None:
             raise DeviceAlreadyHasLiveVpnSessionError
-        node = await self._node_selection.select_node_for_session(country_code, plan, now)
+        node = await self._node_selection.select_node_for_session(node_selection, plan, now)
         vpn_session = VpnSession.new(
             user_id=user_id,
             device_id=device_id,
