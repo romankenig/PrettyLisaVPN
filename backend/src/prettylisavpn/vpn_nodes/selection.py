@@ -11,6 +11,10 @@ from prettylisavpn.vpn_nodes.availability import (
     VpnNodeCapacitySnapshot,
     VpnNodeEligibilityPolicy,
 )
+from prettylisavpn.vpn_nodes.country_quality import (
+    CountryQualityStrategy,
+    ResilientCapacityCountryQualityStrategy,
+)
 from prettylisavpn.vpn_nodes.domain import VpnNode, normalize_country_code
 from prettylisavpn.vpn_nodes.strategy import (
     LeastLoadedNodeSelectionStrategy,
@@ -48,19 +52,19 @@ class NodeSelectionRequest:
         return cls(NodeSelectionMode.COUNTRY, country_code)
 
 
-class CountryQuality(StrEnum):
-    GOOD = "GOOD"
-    LIMITED = "LIMITED"
-    UNAVAILABLE = "UNAVAILABLE"
-
-
 @dataclass(frozen=True, slots=True)
 class CountryEligibility:
     """Client-safe country result that contains no node identity or topology."""
 
     country_code: str
     available: bool
-    quality: CountryQuality
+    quality: int
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.quality <= 100:
+            raise ValueError("quality must be between 0 and 100")
+        if self.available != (self.quality > 0):
+            raise ValueError("availability and quality are inconsistent")
 
 
 class VpnNodeCapacityRepository(Protocol):
@@ -85,10 +89,14 @@ class VpnNodeSelectionService:
         repository: VpnNodeCapacityRepository,
         stale_timeout: timedelta,
         strategy: NodeSelectionStrategy | None = None,
+        country_quality_strategy: CountryQualityStrategy | None = None,
     ) -> None:
         self._repository = repository
         self._policy = VpnNodeEligibilityPolicy(stale_timeout)
         self._strategy = strategy or LeastLoadedNodeSelectionStrategy()
+        self._country_quality = country_quality_strategy or (
+            ResilientCapacityCountryQualityStrategy(stale_timeout)
+        )
 
     async def list_countries(
         self, plan: SubscriptionPlan, now: datetime
@@ -118,7 +126,7 @@ class VpnNodeSelectionService:
         country_code: str,
         plan: SubscriptionPlan,
         now: datetime,
-    ) -> CountryQuality:
+    ) -> int:
         return (await self.country_availability(country_code, plan, now)).quality
 
     async def select_node_for_session(
@@ -149,10 +157,10 @@ class VpnNodeSelectionService:
     ) -> CountryEligibility:
         eligible = self._eligible(snapshots, plan, now)
         if not eligible:
-            return CountryEligibility(country_code, False, CountryQuality.UNAVAILABLE)
-        remaining = sum(snapshot.remaining_capacity for snapshot in eligible)
-        capacity = sum(snapshot.node.capacity for snapshot in eligible)
-        quality = CountryQuality.LIMITED if remaining * 4 <= capacity else CountryQuality.GOOD
+            return CountryEligibility(country_code, False, 0)
+        quality = self._country_quality.score(eligible, now)
+        if not 1 <= quality <= 100:
+            raise ValueError("country quality strategy returned an out-of-range score")
         return CountryEligibility(country_code, True, quality)
 
     def _eligible(

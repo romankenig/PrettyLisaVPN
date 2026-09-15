@@ -22,7 +22,6 @@ from prettylisavpn.vpn_nodes.domain import (
 )
 from prettylisavpn.vpn_nodes.selection import (
     CountryEligibility,
-    CountryQuality,
     NodeSelectionRequest,
     NoEligibleVpnNodeError,
     VpnNodeSelectionService,
@@ -255,8 +254,8 @@ async def test_free_and_premium_country_selection_use_their_eligible_node_sets()
     free_country = await selection.country_availability("de", SubscriptionPlan.FREE, NOW)
     premium_country = await selection.country_availability("DE", SubscriptionPlan.PREMIUM, NOW)
 
-    assert free_country == CountryEligibility("DE", True, CountryQuality.GOOD)
-    assert premium_country == CountryEligibility("DE", True, CountryQuality.GOOD)
+    assert free_country == CountryEligibility("DE", True, 100)
+    assert premium_country == CountryEligibility("DE", True, 100)
     assert (
         await selection.select_node_for_session(
             NodeSelectionRequest.country("DE"), SubscriptionPlan.FREE, NOW
@@ -286,10 +285,8 @@ async def test_country_quality_ignores_ineligible_nodes_and_exposes_no_topology(
 
     country = await selection.country_availability("DE", SubscriptionPlan.FREE, NOW)
 
-    assert country == CountryEligibility("DE", True, CountryQuality.LIMITED)
-    assert (
-        await selection.country_quality("DE", SubscriptionPlan.FREE, NOW) is CountryQuality.LIMITED
-    )
+    assert country == CountryEligibility("DE", True, 20)
+    assert await selection.country_quality("DE", SubscriptionPlan.FREE, NOW) == 20
     assert not hasattr(country, "node_id")
     assert not hasattr(country, "public_ipv4")
 
@@ -311,7 +308,7 @@ async def test_exhausted_unhealthy_and_draining_countries_cannot_create_sessions
 
     country = await selection.country_availability("DE", SubscriptionPlan.FREE, NOW)
 
-    assert country == CountryEligibility("DE", False, CountryQuality.UNAVAILABLE)
+    assert country == CountryEligibility("DE", False, 0)
     with pytest.raises(NoEligibleVpnNodeError):
         await selection.select_node_for_session(
             NodeSelectionRequest.country("DE"), SubscriptionPlan.FREE, NOW
