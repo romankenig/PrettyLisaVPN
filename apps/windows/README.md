@@ -2,11 +2,14 @@
 
 Основа desktop-клиента: Tauri 2, Rust, React и TypeScript. Есть passwordless-вход,
 восстановление сессии, авторизованная главная, экран «О приложении», конфигурация и заменяемые
-API/native-адаптеры. Подключение VPN ещё не реализовано.
+API/native-адаптеры. Нативный слой умеет запускать, останавливать и проверять состояние
+WireGuardNT-туннеля; подключение этого слоя к продуктовому Home flow выполняется отдельно.
 
 ## Зависимости
 
-- Windows 10/11 x64.
+- Windows 10/11 x64. Для native tunnel рядом с exe требуется проверенный официальный
+  `wireguard.dll`; подготовка и лицензирование описаны в
+  [документе Windows WireGuard runtime](../../docs/windows-wireguard-runtime.md).
 - Node.js 24 LTS и pnpm 11.19.0: `npm install --global pnpm@11.19.0`.
 - Rust через [rustup](https://rustup.rs/) с MSVC toolchain. Версия 1.98.1,
   rustfmt и Clippy закреплены в `rust-toolchain.toml`; rustup загрузит их автоматически.
@@ -179,7 +182,7 @@ src/
   api/         HTTP-клиент; никаких импортов React или Tauri
   auth/        In-memory access session, startup restoration и координация credentials
   state/       Контекст приложения и внедрение адаптеров
-  native/      Tauri JS API и узкий адаптер Windows Credential Manager
+  native/      Tauri JS API, credentials и узкий WireGuard tunnel adapter
   test/        Тесты конфигурации, API и навигации
   main.tsx     Создание конфигурации и связывание зависимостей
 src-tauri/
@@ -214,6 +217,10 @@ pnpm tauri build --no-bundle
 компиляцию пустого bootstrap без Rust unit-тестов; поведение адаптеров проверяет Vitest.
 
 Сборка exe находится в `src-tauri/target/release/prettylisavpn-windows.exe`.
+Release manifest требует UAC elevation для управления сетевым адаптером; при tunnel smoke test
+через `pnpm tauri dev` нужно заранее открыть PowerShell от администратора. Для запуска tunnel рядом
+с exe нужно поместить официальный x64 `wireguard.dll`; приватный ключ остаётся в Credential Manager
+и не записывается в `.conf`.
 Создание установщика, подпись и автообновления не входят в этот каркас.
 
 Ручной smoke test: задайте доступный Backend в `.env.local`, выполните `pnpm tauri dev` и

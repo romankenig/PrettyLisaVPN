@@ -3,6 +3,7 @@
 mod installation_id;
 mod refresh_credentials;
 mod wireguard_keys;
+mod wireguard_tunnel;
 
 use tauri::Manager;
 
@@ -15,6 +16,7 @@ fn main() {
             app.manage(installation_id);
             app.manage(refresh_credentials::RefreshCredentialState::new());
             app.manage(wireguard_keys::WireGuardKeyState::new());
+            app.manage(wireguard_tunnel::WireGuardTunnelState::new());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -26,6 +28,9 @@ fn main() {
             wireguard_keys::ensure_wireguard_public_key,
             wireguard_keys::load_wireguard_public_key,
             wireguard_keys::delete_wireguard_key,
+            wireguard_tunnel::start_wireguard_tunnel,
+            wireguard_tunnel::stop_wireguard_tunnel,
+            wireguard_tunnel::get_wireguard_tunnel_state,
         ])
         .run(tauri::generate_context!())
         .expect("Unable to start PrettyLisaVPN");

@@ -76,7 +76,9 @@ impl WireGuardKeyState {
         Ok(())
     }
 
-    fn read_private_key(&self) -> io::Result<Option<Zeroizing<[u8; PRIVATE_KEY_BYTES]>>> {
+    pub(crate) fn read_private_key(
+        &self,
+    ) -> io::Result<Option<Zeroizing<[u8; PRIVATE_KEY_BYTES]>>> {
         let target = wide(&self.target);
         let mut raw = ptr::null_mut();
         // SAFETY: target is NUL-terminated and raw is a valid output pointer.
