@@ -17,9 +17,11 @@ type AvailabilityState =
 export function ConnectionLocationSelector({
   selection,
   onSelectionChange,
+  onConnectabilityChange,
 }: {
   readonly selection: VpnLocationSelection;
   readonly onSelectionChange: (selection: VpnLocationSelection) => void;
+  readonly onConnectabilityChange: (available: boolean) => void;
 }) {
   const { api, session } = useApplication();
   const activeSession = session.current();
@@ -76,6 +78,22 @@ export function ConnectionLocationSelector({
     );
     if (!selectedCountry?.available) onSelectionChange({ mode: "AUTO" });
   }, [onSelectionChange, selection, state]);
+
+  useEffect(() => {
+    if (state.phase !== "ready") {
+      onConnectabilityChange(false);
+      return;
+    }
+    const available =
+      selection.mode === "AUTO"
+        ? state.data.autopilot.available
+        : Boolean(
+            state.data.countries.find(
+              (country) => country.country_code === selection.country_code,
+            )?.available,
+          );
+    onConnectabilityChange(available);
+  }, [onConnectabilityChange, selection, state]);
 
   if (state.phase === "loading") {
     return <p role="status">загружаем доступные локации…</p>;
@@ -207,7 +225,7 @@ function AvailabilityNotice({
   );
 }
 
-function countryName(countryCode: string): string {
+export function countryName(countryCode: string): string {
   try {
     return (
       new Intl.DisplayNames(["ru"], { type: "region" }).of(countryCode) ??

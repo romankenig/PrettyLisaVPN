@@ -7,6 +7,11 @@ import {
   type VpnLocationSelection,
 } from "../vpn/selection";
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
+import { countryName } from "./ConnectionLocationSelector";
+import {
+  VpnConnectionError,
+  type ConnectedVpnSession,
+} from "../vpn/connection";
 
 type ProfileState =
   | { phase: "loading" }
@@ -14,7 +19,7 @@ type ProfileState =
   | { phase: "error"; message: string };
 
 export function Home() {
-  const { api, session } = useApplication();
+  const { api, session, vpnConnection } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
     session.current,
@@ -30,6 +35,14 @@ export function Home() {
   const logoutInFlight = useRef(false);
   const [locationSelection, setLocationSelection] =
     useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
+  const [locationConnectable, setLocationConnectable] = useState(false);
+  const [connectionState, setConnectionState] = useState<
+    | { readonly phase: "idle" }
+    | { readonly phase: "connecting" }
+    | { readonly phase: "connected"; readonly session: ConnectedVpnSession }
+    | { readonly phase: "error"; readonly message: string }
+  >({ phase: "idle" });
+  const connectInFlight = useRef(false);
 
   useEffect(() => {
     if (activeSession === null || activeSession.profile !== null) return;
@@ -59,13 +72,14 @@ export function Home() {
 
   if (activeSession === null) return null;
   const profile = activeSession.profile;
+  const accessToken = activeSession.accessToken;
 
   async function logout() {
     if (logoutInFlight.current || activeSession === null) return;
     logoutInFlight.current = true;
     setLogoutState("submitting");
     try {
-      await api.logout(activeSession.accessToken);
+      await api.logout(accessToken);
       await session.clear();
     } catch (error) {
       if (isInvalidSession(error)) {
@@ -79,6 +93,29 @@ export function Home() {
       setLogoutState("error");
     } finally {
       logoutInFlight.current = false;
+    }
+  }
+
+  async function connect() {
+    if (
+      connectInFlight.current ||
+      !locationConnectable ||
+      connectionState.phase === "connected"
+    ) {
+      return;
+    }
+    connectInFlight.current = true;
+    setConnectionState({ phase: "connecting" });
+    try {
+      const connected = await vpnConnection.connect(
+        accessToken,
+        locationSelection,
+      );
+      setConnectionState({ phase: "connected", session: connected });
+    } catch (error) {
+      setConnectionState({ phase: "error", message: connectionError(error) });
+    } finally {
+      connectInFlight.current = false;
     }
   }
 
@@ -106,27 +143,51 @@ export function Home() {
       <ConnectionLocationSelector
         selection={locationSelection}
         onSelectionChange={setLocationSelection}
+        onConnectabilityChange={setLocationConnectable}
       />
 
       <div className="connection-card">
         <div>
           <p className="connection-card__label">VPN</p>
-          <h2>Not connected</h2>
+          <h2>
+            {connectionState.phase === "connected"
+              ? "Connected"
+              : connectionState.phase === "connecting"
+                ? "CONNECTING"
+                : "Not connected"}
+          </h2>
           <p>
-            VPN-подключение появится на Stage 3 после реализации WireGuard
-            control plane.
+            {connectionState.phase === "connected"
+              ? `Локация: ${countryName(connectionState.session.countryCode)}`
+              : "Выберите локацию и установите защищённое соединение."}
           </p>
         </div>
         <button
           type="button"
-          disabled
+          disabled={
+            !locationConnectable ||
+            connectionState.phase === "connecting" ||
+            connectionState.phase === "connected"
+          }
           aria-describedby="connection-unavailable"
+          onClick={() => void connect()}
         >
-          CONNECT
+          {connectionState.phase === "connecting"
+            ? "CONNECTING"
+            : connectionState.phase === "connected"
+              ? "CONNECTED"
+              : "CONNECT"}
         </button>
         <p id="connection-unavailable" className="field-help">
-          Сейчас подключение недоступно.
+          {!locationConnectable
+            ? "Сейчас подключение недоступно."
+            : "Подключение использует выбранный режим без выбора конкретного сервера."}
         </p>
+        {connectionState.phase === "error" ? (
+          <p className="connection-error" role="alert">
+            {connectionState.message}
+          </p>
+        ) : null}
       </div>
 
       <div className="home-actions">
@@ -189,4 +250,19 @@ function profileError(error: unknown) {
     return "Не удалось подключиться. Проверьте сеть и попробуйте снова.";
   }
   return "Не удалось загрузить данные аккаунта. Попробуйте позже.";
+}
+
+function connectionError(error: unknown) {
+  if (error instanceof VpnConnectionError) {
+    if (error.code === "COUNTRY_UNAVAILABLE") {
+      return "Выбранная страна сейчас недоступна. Обновите список локаций.";
+    }
+    if (error.code === "VPN_UNAVAILABLE") {
+      return "Сейчас нет доступного VPN-соединения. Попробуйте позже.";
+    }
+    if (error.code === "LOCAL_TUNNEL_FAILED") {
+      return "Не удалось запустить VPN на этом компьютере. Подключение отменено.";
+    }
+  }
+  return "Не удалось установить VPN-соединение. Попробуйте снова.";
 }

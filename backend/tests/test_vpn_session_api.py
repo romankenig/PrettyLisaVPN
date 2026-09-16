@@ -67,6 +67,7 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
     session_id = uuid4()
     service.connect.return_value = ActiveVpnTransport(
         session_id=session_id,
+        country_code="DE",
         endpoint_ipv4=IPv4Address("204.48.17.50"),
         endpoint_port=51820,
         server_public_key=PUBLIC_KEY,
@@ -87,6 +88,7 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
     assert response.json() == {
         "session_id": str(session_id),
         "status": "ACTIVE",
+        "country_code": "DE",
         "expires_at": expires_at.isoformat().replace("+00:00", "Z"),
         "transport": {
             "endpoint": {"ipv4": "204.48.17.50", "port": 51820},

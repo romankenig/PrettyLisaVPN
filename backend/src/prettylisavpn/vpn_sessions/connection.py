@@ -53,6 +53,7 @@ class VpnSessionPersistenceUnavailableError(RuntimeError):
 @dataclass(frozen=True, slots=True)
 class ActiveVpnTransport:
     session_id: UUID
+    country_code: str
     endpoint_ipv4: IPv4Address
     endpoint_port: int
     server_public_key: str
@@ -106,6 +107,7 @@ class VpnConnectionService:
             raise
         return ActiveVpnTransport(
             session_id=active.id,
+            country_code=node.country_code,
             endpoint_ipv4=node.public_ipv4,
             endpoint_port=node.wireguard_port,
             server_public_key=node.wireguard_public_key,

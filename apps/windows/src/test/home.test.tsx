@@ -6,11 +6,16 @@ import { createAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { CredentialStorage } from "../native/credentialStorage";
 import type { InstallationId } from "../native/installationId";
+import type {
+  ConnectedVpnSession,
+  VpnConnectionOrchestrator,
+} from "../vpn/connection";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
 import {
   createTestCredentialStorage,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 const profile: MeResponse = {
@@ -35,6 +40,8 @@ function mockApi(): ApiClient {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -42,6 +49,7 @@ function renderWithSession(
   api: ApiClient,
   storage: CredentialStorage,
   session: ReturnType<typeof createAuthenticationSession>,
+  vpnConnection: VpnConnectionOrchestrator = createTestVpnConnection(),
 ) {
   const result = render(
     <ApplicationProvider
@@ -55,6 +63,7 @@ function renderWithSession(
         },
         session,
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection,
       }}
     >
       <MemoryRouter initialEntries={["/"]}>
@@ -68,6 +77,7 @@ function renderWithSession(
 function renderRestored(
   api = mockApi(),
   storage = createTestCredentialStorage(),
+  vpnConnection: VpnConnectionOrchestrator = createTestVpnConnection(),
 ) {
   const session = createAuthenticationSession(storage);
   session.activateRestored({
@@ -78,7 +88,7 @@ function renderRestored(
     plan: profile.plan,
     profile,
   });
-  return renderWithSession(api, storage, session);
+  return renderWithSession(api, storage, session, vpnConnection);
 }
 
 async function renderFresh(api: ApiClient) {
@@ -129,9 +139,8 @@ describe("authenticated Home", () => {
     expect(api.me).not.toHaveBeenCalled();
     expect(screen.getByText("Not connected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CONNECT" })).toBeDisabled();
-    expect(screen.getByText(/Stage 3/)).toBeInTheDocument();
     expect(
-      screen.getByText("Сейчас подключение недоступно."),
+      screen.getByText("загружаем доступные локации…"),
     ).toBeInTheDocument();
   });
 
@@ -187,5 +196,41 @@ describe("authenticated Home", () => {
     expect(
       await screen.findByRole("heading", { name: "устройства" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows CONNECTING and only reports Connected after orchestration confirmation", async () => {
+    let finishConnection!: (value: {
+      sessionId: string;
+      countryCode: string;
+      expiresAt: string | null;
+    }) => void;
+    const vpnConnection: VpnConnectionOrchestrator = {
+      connect: vi.fn(
+        () =>
+          new Promise<ConnectedVpnSession>((resolve) => {
+            finishConnection = resolve;
+          }),
+      ),
+    };
+    renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
+    const connectButton = await screen.findByRole("button", {
+      name: "CONNECT",
+    });
+    await waitFor(() => expect(connectButton).toBeEnabled());
+
+    fireEvent.click(connectButton);
+    expect(screen.getByRole("button", { name: "CONNECTING" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "CONNECTING" }));
+    expect(vpnConnection.connect).toHaveBeenCalledOnce();
+
+    finishConnection({
+      sessionId: "123e4567-e89b-42d3-a456-426614174020",
+      countryCode: "DE",
+      expiresAt: null,
+    });
+    expect(
+      await screen.findByRole("heading", { name: "Connected" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Локация: Германия")).toBeInTheDocument();
   });
 });

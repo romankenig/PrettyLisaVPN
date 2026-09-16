@@ -10,6 +10,7 @@ import { App } from "../ui/App";
 import {
   createTestAuthenticationSession,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 const health = { status: "ok" } as const;
@@ -59,6 +60,7 @@ function renderApplication(transport: HttpTransport) {
         },
         session: createTestAuthenticationSession(),
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter>
@@ -262,6 +264,74 @@ describe("typed API client", () => {
       ).rejects.toEqual(new ApiError(clientCode));
     },
   );
+
+  it("creates and terminates VPN sessions through the authenticated contract", async () => {
+    const sessionId = "123e4567-e89b-42d3-a456-426614174020";
+    const created = {
+      session_id: sessionId,
+      status: "ACTIVE",
+      country_code: "DE",
+      expires_at: "2026-09-16T10:15:00Z",
+      transport: {
+        endpoint: { ipv4: "204.48.17.50", port: 51820 },
+        server_public_key: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+        client_address: "10.77.0.2/32",
+        dns: ["1.1.1.1"],
+        allowed_ips: ["0.0.0.0/0"],
+      },
+    };
+    const terminated = { session_id: sessionId, status: "DISCONNECTED" };
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValueOnce(jsonResponse(created))
+      .mockResolvedValueOnce(jsonResponse(terminated));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+    const body = {
+      mode: "AUTO" as const,
+      public_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    };
+
+    await expect(api.createVpnSession("access-token", body)).resolves.toEqual(
+      created,
+    );
+    await expect(
+      api.disconnectVpnSession("access-token", sessionId),
+    ).resolves.toEqual(terminated);
+    expect(transport).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.invalid/vpn/sessions",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          authorization: "Bearer access-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+    expect(transport).toHaveBeenNthCalledWith(
+      2,
+      `https://api.example.invalid/vpn/sessions/${sessionId}`,
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it.each([
+    ["COUNTRY_UNAVAILABLE", "COUNTRY_UNAVAILABLE"],
+    ["VPN_UNAVAILABLE", "VPN_UNAVAILABLE"],
+  ] as const)("maps backend VPN error %s", async (backendCode, clientCode) => {
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse({ error: { code: backendCode } }, 409));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(
+      api.createVpnSession("access-token", {
+        mode: "AUTO",
+        public_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      }),
+    ).rejects.toEqual(new ApiError(clientCode));
+  });
 
   it("rejects a malformed verification response", async () => {
     const transport = vi.fn<HttpTransport>().mockResolvedValue(

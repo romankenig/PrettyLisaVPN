@@ -104,6 +104,33 @@ export interface VpnCountriesResponse {
   }[];
 }
 
+export type CreateVpnSessionRequest =
+  | { readonly mode: "AUTO"; readonly public_key: string }
+  | {
+      readonly mode: "COUNTRY";
+      readonly country_code: string;
+      readonly public_key: string;
+    };
+
+export interface ActiveVpnSessionResponse {
+  readonly session_id: string;
+  readonly status: "ACTIVE";
+  readonly country_code: string;
+  readonly expires_at: string | null;
+  readonly transport: {
+    readonly endpoint: { readonly ipv4: string; readonly port: number };
+    readonly server_public_key: string;
+    readonly client_address: string;
+    readonly dns: readonly string[];
+    readonly allowed_ips: readonly string[];
+  };
+}
+
+export interface TerminatedVpnSessionResponse {
+  readonly session_id: string;
+  readonly status: "EXPIRED" | "DISCONNECTED" | "FAILED";
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -111,6 +138,8 @@ export type ApiErrorCode =
   | "OTP_INVALID"
   | "DEVICE_LIMIT"
   | "DEVICE_NOT_FOUND"
+  | "COUNTRY_UNAVAILABLE"
+  | "VPN_UNAVAILABLE"
   | "AUTH_FORBIDDEN"
   | "AUTH_INVALID"
   | "SERVER_ERROR"
@@ -148,6 +177,16 @@ export interface ApiClient {
     accessToken: string,
     signal?: AbortSignal,
   ): Promise<VpnCountriesResponse>;
+  createVpnSession(
+    accessToken: string,
+    body: CreateVpnSessionRequest,
+    signal?: AbortSignal,
+  ): Promise<ActiveVpnSessionResponse>;
+  disconnectVpnSession(
+    accessToken: string,
+    vpnSessionId: string,
+    signal?: AbortSignal,
+  ): Promise<TerminatedVpnSessionResponse>;
 }
 
 export function createApiClient(
@@ -210,6 +249,12 @@ export function createApiClient(
         }
         if (response.status === 409 && errorCode === "device_limit_reached") {
           throw new ApiError("DEVICE_LIMIT");
+        }
+        if (response.status === 409 && errorCode === "COUNTRY_UNAVAILABLE") {
+          throw new ApiError("COUNTRY_UNAVAILABLE");
+        }
+        if (response.status === 409 && errorCode === "VPN_UNAVAILABLE") {
+          throw new ApiError("VPN_UNAVAILABLE");
         }
         if (response.status === 403 && errorCode === "user_blocked") {
           throw new ApiError("AUTH_FORBIDDEN");
@@ -388,7 +433,84 @@ export function createApiClient(
       }
       return value;
     },
+    async createVpnSession(accessToken, body, signal) {
+      const value = await requestJson(
+        "/vpn/sessions",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        signal,
+      );
+      if (!isActiveVpnSessionResponse(value)) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return value;
+    },
+    async disconnectVpnSession(accessToken, vpnSessionId, signal) {
+      if (!isUuid(vpnSessionId)) throw new ApiError("INVALID_RESPONSE");
+      const value = await requestJson(
+        `/vpn/sessions/${encodeURIComponent(vpnSessionId)}`,
+        {
+          method: "DELETE",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (!isTerminatedVpnSessionResponse(value)) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return value;
+    },
   };
+}
+
+function isActiveVpnSessionResponse(
+  value: unknown,
+): value is ActiveVpnSessionResponse {
+  return (
+    hasOnlyKeys(value, [
+      "session_id",
+      "status",
+      "country_code",
+      "expires_at",
+      "transport",
+    ]) &&
+    isUuid(value.session_id) &&
+    value.status === "ACTIVE" &&
+    /^[A-Z]{2}$/.test(String(value.country_code)) &&
+    (value.expires_at === null || isIsoDate(value.expires_at)) &&
+    hasOnlyKeys(value.transport, [
+      "endpoint",
+      "server_public_key",
+      "client_address",
+      "dns",
+      "allowed_ips",
+    ]) &&
+    hasOnlyKeys(value.transport.endpoint, ["ipv4", "port"]) &&
+    isIpv4(value.transport.endpoint.ipv4) &&
+    isPort(value.transport.endpoint.port) &&
+    isWireGuardPublicKey(value.transport.server_public_key) &&
+    isIpv4Cidr(value.transport.client_address) &&
+    isStringArray(value.transport.dns, isIpv4) &&
+    value.transport.dns.length > 0 &&
+    isStringArray(value.transport.allowed_ips, isIpCidr) &&
+    value.transport.allowed_ips.length > 0
+  );
+}
+
+function isTerminatedVpnSessionResponse(
+  value: unknown,
+): value is TerminatedVpnSessionResponse {
+  return (
+    hasOnlyKeys(value, ["session_id", "status"]) &&
+    isUuid(value.session_id) &&
+    ["EXPIRED", "DISCONNECTED", "FAILED"].includes(String(value.status))
+  );
 }
 
 function isVpnCountriesResponse(value: unknown): value is VpnCountriesResponse {
@@ -518,6 +640,57 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function isPort(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 65535
+  );
+}
+
+function isIpv4(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parts = value.split(".");
+  return (
+    parts.length === 4 &&
+    parts.every(
+      (part) =>
+        /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255,
+    )
+  );
+}
+
+function isIpv4Cidr(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const [address, prefix, extra] = value.split("/");
+  return (
+    extra === undefined &&
+    isIpv4(address) &&
+    /^\d{1,2}$/.test(prefix ?? "") &&
+    Number(prefix) <= 32
+  );
+}
+
+function isIpCidr(value: unknown): value is string {
+  return (
+    isIpv4Cidr(value) ||
+    (typeof value === "string" &&
+      /^[0-9a-f:]+\/(?:\d|[1-9]\d|1[01]\d|12[0-8])$/i.test(value))
+  );
+}
+
+function isWireGuardPublicKey(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9+/]{43}=$/.test(value);
+}
+
+function isStringArray(
+  value: unknown,
+  predicate: (item: unknown) => item is string,
+): value is string[] {
+  return Array.isArray(value) && value.every(predicate);
 }
 
 function isIsoDate(value: unknown): value is string {

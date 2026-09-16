@@ -28,6 +28,7 @@ import { App } from "../ui/App";
 import {
   createTestCredentialStorage,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 const email = "user@example.com";
@@ -69,6 +70,8 @@ function mockApi(): ApiClient {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -89,6 +92,7 @@ function renderVerification(options: RenderOptions = {}) {
         installationId: installationIdProvider,
         session,
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter

@@ -13,6 +13,7 @@ import { App } from "../ui/App";
 import {
   createTestAuthenticationSession,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 type RequestOtp = ApiClient["requestOtp"];
@@ -32,6 +33,8 @@ function renderLogin(requestOtp: RequestOtp) {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -45,6 +48,7 @@ function renderLogin(requestOtp: RequestOtp) {
         },
         session: createTestAuthenticationSession(),
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter initialEntries={["/login"]}>
@@ -150,6 +154,8 @@ describe("email login", () => {
         autopilot: { quality: 90, available: true },
         countries: [],
       }),
+      createVpnSession: vi.fn(),
+      disconnectVpnSession: vi.fn(),
     };
     render(
       <ApplicationProvider
@@ -163,6 +169,7 @@ describe("email login", () => {
           },
           session: createTestAuthenticationSession(),
           sessionRestoration: createTestSessionRestoration(),
+          vpnConnection: createTestVpnConnection(),
         }}
       >
         <MemoryRouter initialEntries={["/auth/verify-otp"]}>

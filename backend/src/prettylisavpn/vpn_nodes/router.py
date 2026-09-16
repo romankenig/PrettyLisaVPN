@@ -90,6 +90,7 @@ class WireGuardTransportResponse(BaseModel):
 class ActiveVpnSessionResponse(BaseModel):
     session_id: UUID
     status: Literal["ACTIVE"] = "ACTIVE"
+    country_code: str = Field(pattern=r"^[A-Z]{2}$")
     expires_at: datetime | None
     transport: WireGuardTransportResponse
 
@@ -195,6 +196,7 @@ async def create_vpn_session(
         return error_response("VPN_SETUP_FAILED", 503)
     return ActiveVpnSessionResponse(
         session_id=result.session_id,
+        country_code=result.country_code,
         expires_at=result.expires_at,
         transport=WireGuardTransportResponse(
             endpoint=VpnEndpointResponse(ipv4=result.endpoint_ipv4, port=result.endpoint_port),

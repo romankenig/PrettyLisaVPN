@@ -4,6 +4,7 @@ import type {
   CredentialStorage,
   RefreshCredential,
 } from "../native/credentialStorage";
+import type { VpnConnectionOrchestrator } from "../vpn/connection";
 
 export function createTestCredentialStorage(): CredentialStorage {
   let credential: RefreshCredential | null = null;
@@ -31,5 +32,13 @@ export function createTestSessionRestoration(): SessionRestoration {
   return {
     restore: async () => "unauthenticated",
     retry: async () => "unauthenticated",
+  };
+}
+
+export function createTestVpnConnection(): VpnConnectionOrchestrator {
+  return {
+    connect: async () => {
+      throw new Error("VPN_CONNECTION_NOT_CONFIGURED_IN_TEST");
+    },
   };
 }

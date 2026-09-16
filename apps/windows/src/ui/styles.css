@@ -425,6 +425,10 @@ dd {
 .connection-card button:disabled {
   cursor: not-allowed;
 }
+.connection-error {
+  color: var(--color-persian-red);
+  font-weight: 600;
+}
 .home-actions {
   display: flex;
   align-items: center;

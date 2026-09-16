@@ -10,6 +10,7 @@ import { App } from "../ui/App";
 import {
   createTestCredentialStorage,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 const currentDevice: DeviceResponse = {
@@ -51,6 +52,8 @@ function mockApi(): ApiClient {
       device: { ...otherDevice, status: "REVOKED" },
     }),
     listVpnCountries: vi.fn(),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -83,6 +86,7 @@ function renderDevices(api = mockApi()) {
         },
         session,
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter initialEntries={["/devices"]}>

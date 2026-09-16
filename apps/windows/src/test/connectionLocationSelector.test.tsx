@@ -18,6 +18,7 @@ import {
 import {
   createTestAuthenticationSession,
   createTestSessionRestoration,
+  createTestVpnConnection,
 } from "./fakes";
 
 const availability: VpnCountriesResponse = {
@@ -40,6 +41,8 @@ function mockApi(): ApiClient {
     listDevices: vi.fn(),
     revokeDevice: vi.fn(),
     listVpnCountries: vi.fn().mockResolvedValue(availability),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -68,6 +71,7 @@ function renderSelector(api = mockApi(), plan: "FREE" | "PREMIUM" = "FREE") {
         <ConnectionLocationSelector
           selection={selection}
           onSelectionChange={setSelection}
+          onConnectabilityChange={() => undefined}
         />
         <output>{JSON.stringify(selection)}</output>
       </>
@@ -86,6 +90,7 @@ function renderSelector(api = mockApi(), plan: "FREE" | "PREMIUM" = "FREE") {
         },
         session,
         sessionRestoration: createTestSessionRestoration(),
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter>

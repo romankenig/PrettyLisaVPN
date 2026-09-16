@@ -18,6 +18,7 @@ import type { InstallationId } from "../native/installationId";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
 import { SessionRestorationGate } from "../ui/SessionRestorationGate";
+import { createTestVpnConnection } from "./fakes";
 
 const stored: RefreshCredential = {
   sessionId: "123e4567-e89b-42d3-a456-426614174001",
@@ -58,6 +59,8 @@ function mockApi(): ApiClient {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
+    createVpnSession: vi.fn(),
+    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -91,6 +94,7 @@ function renderStartup(
         },
         session,
         sessionRestoration: restoration,
+        vpnConnection: createTestVpnConnection(),
       }}
     >
       <MemoryRouter initialEntries={["/"]}>

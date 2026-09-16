@@ -9,6 +9,9 @@ import { desktopAdapter } from "./native/desktop";
 import { createCredentialStorage } from "./native/credentialStorage";
 import { createHttpTransport } from "./native/http";
 import { installationIdProvider } from "./native/installationId";
+import { createWireGuardKeyManager } from "./native/wireguardKeys";
+import { createWireGuardTunnelController } from "./native/wireguardTransport";
+import { createVpnConnectionOrchestrator } from "./vpn/connection";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
@@ -28,6 +31,11 @@ try {
     credentialStorage,
     session,
   );
+  const vpnConnection = createVpnConnectionOrchestrator(
+    api,
+    createWireGuardKeyManager(),
+    createWireGuardTunnelController(),
+  );
   root.render(
     <StrictMode>
       <ApplicationProvider
@@ -38,6 +46,7 @@ try {
           installationId: installationIdProvider,
           session,
           sessionRestoration,
+          vpnConnection,
         }}
       >
         <HashRouter>
