@@ -50,6 +50,7 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnConnectionHandler,
     VpnConnectionService,
 )
+from prettylisavpn.vpn_sessions.status import VpnSessionStatusHandler, VpnSessionStatusService
 from prettylisavpn.vpn_sessions.termination import (
     UnavailableVpnTerminationService,
     VpnSessionReconciler,
@@ -116,6 +117,7 @@ def create_app(
     node_health_monitor: NodeHealthMonitorPort | None = None,
     vpn_country_availability: VpnCountryAvailabilityHandler | None = None,
     vpn_connection: VpnConnectionHandler | None = None,
+    vpn_session_status: VpnSessionStatusHandler | None = None,
     node_agent: NodeAgentPort | None = None,
     vpn_termination: VpnTerminationHandler | None = None,
     vpn_session_reconciler: VpnSessionReconcilerPort | None = None,
@@ -208,6 +210,15 @@ def create_app(
                     if active_agent is not None
                     else UnavailableVpnConnectionService(
                         cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
+                    )
+                )
+                app.state.vpn_session_status = (
+                    vpn_session_status
+                    if vpn_session_status is not None
+                    else VpnSessionStatusService(
+                        cast(Postgres, pg),
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        config,
                     )
                 )
                 app.state.vpn_termination = (

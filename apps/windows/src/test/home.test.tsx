@@ -6,10 +6,7 @@ import { createAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
 import type { CredentialStorage } from "../native/credentialStorage";
 import type { InstallationId } from "../native/installationId";
-import type {
-  ConnectedVpnSession,
-  VpnConnectionOrchestrator,
-} from "../vpn/connection";
+import type { VpnConnectionManager } from "../vpn/connection";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
 import {
@@ -41,6 +38,7 @@ function mockApi(): ApiClient {
       countries: [],
     }),
     createVpnSession: vi.fn(),
+    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
     disconnectVpnSession: vi.fn(),
   };
 }
@@ -49,7 +47,7 @@ function renderWithSession(
   api: ApiClient,
   storage: CredentialStorage,
   session: ReturnType<typeof createAuthenticationSession>,
-  vpnConnection: VpnConnectionOrchestrator = createTestVpnConnection(),
+  vpnConnection: VpnConnectionManager = createTestVpnConnection(),
 ) {
   const result = render(
     <ApplicationProvider
@@ -77,7 +75,7 @@ function renderWithSession(
 function renderRestored(
   api = mockApi(),
   storage = createTestCredentialStorage(),
-  vpnConnection: VpnConnectionOrchestrator = createTestVpnConnection(),
+  vpnConnection: VpnConnectionManager = createTestVpnConnection(),
 ) {
   const session = createAuthenticationSession(storage);
   session.activateRestored({
@@ -199,18 +197,43 @@ describe("authenticated Home", () => {
   });
 
   it("shows CONNECTING and only reports Connected after orchestration confirmation", async () => {
-    let finishConnection!: (value: {
-      sessionId: string;
-      countryCode: string;
-      expiresAt: string | null;
-    }) => void;
-    const vpnConnection: VpnConnectionOrchestrator = {
-      connect: vi.fn(
-        () =>
-          new Promise<ConnectedVpnSession>((resolve) => {
-            finishConnection = resolve;
-          }),
-      ),
+    let finishConnection!: () => void;
+    let connectionState: ReturnType<VpnConnectionManager["current"]> = {
+      phase: "DISCONNECTED",
+      backend: "NONE",
+      tunnel: "DOWN",
+    };
+    const listeners = new Set<() => void>();
+    const vpnConnection: VpnConnectionManager = {
+      current: () => connectionState,
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      reconcile: vi.fn().mockResolvedValue(undefined),
+      connect: vi.fn(async () => {
+        connectionState = {
+          phase: "CONNECTING",
+          backend: "UNKNOWN",
+          tunnel: "UNKNOWN",
+        };
+        listeners.forEach((listener) => listener());
+        await new Promise<void>((resolve) => {
+          finishConnection = resolve;
+        });
+        connectionState = {
+          phase: "CONNECTED",
+          backend: "ACTIVE",
+          tunnel: "UP",
+          session: {
+            sessionId: "123e4567-e89b-42d3-a456-426614174020",
+            countryCode: "DE",
+            expiresAt: null,
+          },
+        };
+        listeners.forEach((listener) => listener());
+      }),
+      dispose: vi.fn(),
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
     const connectButton = await screen.findByRole("button", {
@@ -223,11 +246,7 @@ describe("authenticated Home", () => {
     fireEvent.click(screen.getByRole("button", { name: "CONNECTING" }));
     expect(vpnConnection.connect).toHaveBeenCalledOnce();
 
-    finishConnection({
-      sessionId: "123e4567-e89b-42d3-a456-426614174020",
-      countryCode: "DE",
-      expiresAt: null,
-    });
+    finishConnection();
     expect(
       await screen.findByRole("heading", { name: "Connected" }),
     ).toBeInTheDocument();

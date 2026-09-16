@@ -26,6 +26,7 @@ from prettylisavpn.vpn_nodes.countries import (
 from prettylisavpn.vpn_nodes.selection import NodeSelectionMode, NodeSelectionRequest
 from prettylisavpn.vpn_sessions.address_allocation import AddressPoolExhaustedError
 from prettylisavpn.vpn_sessions.connection import (
+    ActiveVpnTransport,
     CountryUnavailableError,
     VpnConnectionHandler,
     VpnSessionPersistenceUnavailableError,
@@ -33,6 +34,10 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnUnavailableError,
 )
 from prettylisavpn.vpn_sessions.service import DeviceAlreadyHasLiveVpnSessionError
+from prettylisavpn.vpn_sessions.status import (
+    VpnSessionStatusHandler,
+    VpnSessionStatusUnavailableError,
+)
 from prettylisavpn.vpn_sessions.termination import (
     OwnedVpnSessionNotFoundError,
     VpnTerminationHandler,
@@ -98,6 +103,62 @@ class ActiveVpnSessionResponse(BaseModel):
 class TerminatedVpnSessionResponse(BaseModel):
     session_id: UUID
     status: Literal["EXPIRED", "DISCONNECTED", "FAILED"]
+
+
+class CurrentVpnSessionResponse(BaseModel):
+    session: ActiveVpnSessionResponse | None
+
+
+def _active_response(transport: ActiveVpnTransport) -> ActiveVpnSessionResponse:
+    return ActiveVpnSessionResponse(
+        session_id=transport.session_id,
+        country_code=transport.country_code,
+        expires_at=transport.expires_at,
+        transport=WireGuardTransportResponse(
+            endpoint=VpnEndpointResponse(
+                ipv4=transport.endpoint_ipv4, port=transport.endpoint_port
+            ),
+            server_public_key=transport.server_public_key,
+            client_address=IPv4Interface(f"{transport.client_ipv4}/32"),
+            dns=list(transport.dns),
+            allowed_ips=list(transport.allowed_ips),
+        ),
+    )
+
+
+@router.get(
+    "/sessions/current",
+    response_model=CurrentVpnSessionResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
+        403: {"model": ErrorResponse, "description": "User or current device is blocked"},
+        503: {"model": ErrorResponse, "description": "VPN session state unavailable"},
+    },
+)
+async def current_vpn_session(
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+) -> CurrentVpnSessionResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    service = cast(VpnSessionStatusHandler, request.app.state.vpn_session_status)
+    try:
+        result = await service.current(token)
+    except InvalidAccessTokenError:
+        return error_response("invalid_access_token", 401)
+    except InvalidSessionError:
+        return error_response("invalid_session", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    except VpnSessionStatusUnavailableError:
+        return error_response("VPN_SESSION_STATUS_UNAVAILABLE", 503)
+    return CurrentVpnSessionResponse(
+        session=None if result is None else _active_response(result)
+    )
 
 
 def _response(result: VpnCountryAvailability) -> VpnCountriesResponse:
@@ -194,18 +255,7 @@ async def create_vpn_session(
         return error_response("VPN_ADDRESS_POOL_EXHAUSTED", 503)
     except (VpnSetupFailedError, VpnSessionPersistenceUnavailableError):
         return error_response("VPN_SETUP_FAILED", 503)
-    return ActiveVpnSessionResponse(
-        session_id=result.session_id,
-        country_code=result.country_code,
-        expires_at=result.expires_at,
-        transport=WireGuardTransportResponse(
-            endpoint=VpnEndpointResponse(ipv4=result.endpoint_ipv4, port=result.endpoint_port),
-            server_public_key=result.server_public_key,
-            client_address=IPv4Interface(f"{result.client_ipv4}/32"),
-            dns=list(result.dns),
-            allowed_ips=list(result.allowed_ips),
-        ),
-    )
+    return _active_response(result)
 
 
 @router.delete(

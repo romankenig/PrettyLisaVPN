@@ -53,6 +53,7 @@ function mockApi(): ApiClient {
     }),
     listVpnCountries: vi.fn(),
     createVpnSession: vi.fn(),
+    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
     disconnectVpnSession: vi.fn(),
   };
 }

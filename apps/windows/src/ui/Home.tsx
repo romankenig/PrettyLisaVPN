@@ -8,10 +8,7 @@ import {
 } from "../vpn/selection";
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
 import { countryName } from "./ConnectionLocationSelector";
-import {
-  VpnConnectionError,
-  type ConnectedVpnSession,
-} from "../vpn/connection";
+import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 
 type ProfileState =
   | { phase: "loading" }
@@ -36,13 +33,19 @@ export function Home() {
   const [locationSelection, setLocationSelection] =
     useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
   const [locationConnectable, setLocationConnectable] = useState(false);
-  const [connectionState, setConnectionState] = useState<
-    | { readonly phase: "idle" }
-    | { readonly phase: "connecting" }
-    | { readonly phase: "connected"; readonly session: ConnectedVpnSession }
-    | { readonly phase: "error"; readonly message: string }
-  >({ phase: "idle" });
-  const connectInFlight = useRef(false);
+  const connectionState = useSyncExternalStore(
+    vpnConnection.subscribe,
+    vpnConnection.current,
+    vpnConnection.current,
+  );
+  const [connectionErrorMessage, setConnectionErrorMessage] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (activeSession === null) return;
+    void vpnConnection.reconcile(activeSession.accessToken);
+  }, [activeSession, vpnConnection]);
 
   useEffect(() => {
     if (activeSession === null || activeSession.profile !== null) return;
@@ -98,24 +101,18 @@ export function Home() {
 
   async function connect() {
     if (
-      connectInFlight.current ||
       !locationConnectable ||
-      connectionState.phase === "connected"
+      connectionState.phase === "CONNECTED" ||
+      connectionState.phase === "CONNECTING" ||
+      connectionState.phase === "RECONCILING"
     ) {
       return;
     }
-    connectInFlight.current = true;
-    setConnectionState({ phase: "connecting" });
+    setConnectionErrorMessage(null);
     try {
-      const connected = await vpnConnection.connect(
-        accessToken,
-        locationSelection,
-      );
-      setConnectionState({ phase: "connected", session: connected });
+      await vpnConnection.connect(accessToken, locationSelection);
     } catch (error) {
-      setConnectionState({ phase: "error", message: connectionError(error) });
-    } finally {
-      connectInFlight.current = false;
+      setConnectionErrorMessage(connectionError(error));
     }
   }
 
@@ -150,14 +147,15 @@ export function Home() {
         <div>
           <p className="connection-card__label">VPN</p>
           <h2>
-            {connectionState.phase === "connected"
+            {connectionState.phase === "CONNECTED"
               ? "Connected"
-              : connectionState.phase === "connecting"
+              : connectionState.phase === "CONNECTING" ||
+                  connectionState.phase === "RECONCILING"
                 ? "CONNECTING"
                 : "Not connected"}
           </h2>
           <p>
-            {connectionState.phase === "connected"
+            {connectionState.phase === "CONNECTED"
               ? `Локация: ${countryName(connectionState.session.countryCode)}`
               : "Выберите локацию и установите защищённое соединение."}
           </p>
@@ -166,15 +164,17 @@ export function Home() {
           type="button"
           disabled={
             !locationConnectable ||
-            connectionState.phase === "connecting" ||
-            connectionState.phase === "connected"
+            connectionState.phase === "CONNECTING" ||
+            connectionState.phase === "RECONCILING" ||
+            connectionState.phase === "CONNECTED"
           }
           aria-describedby="connection-unavailable"
           onClick={() => void connect()}
         >
-          {connectionState.phase === "connecting"
+          {connectionState.phase === "CONNECTING" ||
+          connectionState.phase === "RECONCILING"
             ? "CONNECTING"
-            : connectionState.phase === "connected"
+            : connectionState.phase === "CONNECTED"
               ? "CONNECTED"
               : "CONNECT"}
         </button>
@@ -183,9 +183,11 @@ export function Home() {
             ? "Сейчас подключение недоступно."
             : "Подключение использует выбранный режим без выбора конкретного сервера."}
         </p>
-        {connectionState.phase === "error" ? (
+        {connectionErrorMessage !== null ||
+        connectionState.phase === "UNAVAILABLE" ? (
           <p className="connection-error" role="alert">
-            {connectionState.message}
+            {connectionErrorMessage ??
+              connectionUnavailableMessage(connectionState)}
           </p>
         ) : null}
       </div>
@@ -265,4 +267,18 @@ function connectionError(error: unknown) {
     }
   }
   return "Не удалось установить VPN-соединение. Попробуйте снова.";
+}
+
+function unavailableMessage(
+  reason: "BACKEND_UNAVAILABLE" | "TUNNEL_UNAVAILABLE" | "CONNECTION_FAILED",
+) {
+  if (reason === "BACKEND_UNAVAILABLE")
+    return "VPN-туннель и серверная сессия не могут быть сверены: backend недоступен.";
+  if (reason === "TUNNEL_UNAVAILABLE")
+    return "Локальный VPN-туннель недоступен. Состояние Connected снято.";
+  return "Не удалось установить VPN-соединение. Попробуйте снова.";
+}
+
+function connectionUnavailableMessage(state: VpnConnectionState) {
+  return state.phase === "UNAVAILABLE" ? unavailableMessage(state.reason) : "";
 }

@@ -180,6 +180,48 @@ def test_disconnect_endpoint_returns_terminal_state_and_is_transport_free():
     service.disconnect.assert_awaited_once_with("token", session_id)
 
 
+def test_current_session_supports_restart_reconciliation_without_node_identity():
+    status_service = AsyncMock()
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    session_id = uuid4()
+    status_service.current.return_value = ActiveVpnTransport(
+        session_id=session_id,
+        country_code="DE",
+        endpoint_ipv4=IPv4Address("204.48.17.50"),
+        endpoint_port=51820,
+        server_public_key=PUBLIC_KEY,
+        client_ipv4=IPv4Address("10.77.0.2"),
+        dns=(IPv4Address("1.1.1.1"),),
+        allowed_ips=(IPv4Network("0.0.0.0/0"),),
+        expires_at=expires_at,
+    )
+    with api_client(AsyncMock()) as client:
+        client.app.state.vpn_session_status = status_service
+        response = client.get(
+            "/vpn/sessions/current", headers={"Authorization": "Bearer token"}
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["session"]["status"] == "ACTIVE"
+    assert body["session"]["country_code"] == "DE"
+    assert "node_id" not in str(body)
+    assert "provider" not in str(body)
+    status_service.current.assert_awaited_once_with("token")
+
+
+def test_current_session_returns_explicit_empty_state():
+    status_service = AsyncMock()
+    status_service.current.return_value = None
+    with api_client(AsyncMock()) as client:
+        client.app.state.vpn_session_status = status_service
+        response = client.get(
+            "/vpn/sessions/current", headers={"Authorization": "Bearer token"}
+        )
+    assert response.status_code == 200
+    assert response.json() == {"session": None}
+
+
 def test_disconnect_enforces_owned_session_lookup():
     service = AsyncMock()
     service.disconnect.side_effect = OwnedVpnSessionNotFoundError

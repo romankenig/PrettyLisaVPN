@@ -131,6 +131,10 @@ export interface TerminatedVpnSessionResponse {
   readonly status: "EXPIRED" | "DISCONNECTED" | "FAILED";
 }
 
+export interface CurrentVpnSessionResponse {
+  readonly session: ActiveVpnSessionResponse | null;
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -182,6 +186,10 @@ export interface ApiClient {
     body: CreateVpnSessionRequest,
     signal?: AbortSignal,
   ): Promise<ActiveVpnSessionResponse>;
+  getCurrentVpnSession(
+    accessToken: string,
+    signal?: AbortSignal,
+  ): Promise<CurrentVpnSessionResponse>;
   disconnectVpnSession(
     accessToken: string,
     vpnSessionId: string,
@@ -450,6 +458,23 @@ export function createApiClient(
         throw new ApiError("INVALID_RESPONSE");
       }
       return value;
+    },
+    async getCurrentVpnSession(accessToken, signal) {
+      const value = await requestJson(
+        "/vpn/sessions/current",
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (
+        !hasOnlyKeys(value, ["session"]) ||
+        (value.session !== null && !isActiveVpnSessionResponse(value.session))
+      ) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return { session: value.session };
     },
     async disconnectVpnSession(accessToken, vpnSessionId, signal) {
       if (!isUuid(vpnSessionId)) throw new ApiError("INVALID_RESPONSE");

@@ -34,6 +34,7 @@ function renderLogin(requestOtp: RequestOtp) {
       countries: [],
     }),
     createVpnSession: vi.fn(),
+    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
     disconnectVpnSession: vi.fn(),
   };
   return render(
@@ -155,6 +156,7 @@ describe("email login", () => {
         countries: [],
       }),
       createVpnSession: vi.fn(),
+      getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
       disconnectVpnSession: vi.fn(),
     };
     render(

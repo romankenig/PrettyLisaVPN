@@ -4,7 +4,7 @@ import type {
   CredentialStorage,
   RefreshCredential,
 } from "../native/credentialStorage";
-import type { VpnConnectionOrchestrator } from "../vpn/connection";
+import type { VpnConnectionManager } from "../vpn/connection";
 
 export function createTestCredentialStorage(): CredentialStorage {
   let credential: RefreshCredential | null = null;
@@ -35,10 +35,19 @@ export function createTestSessionRestoration(): SessionRestoration {
   };
 }
 
-export function createTestVpnConnection(): VpnConnectionOrchestrator {
+export function createTestVpnConnection(): VpnConnectionManager {
+  const state = {
+    phase: "DISCONNECTED",
+    backend: "NONE",
+    tunnel: "DOWN",
+  } as const;
   return {
+    current: () => state,
+    subscribe: () => () => undefined,
+    reconcile: async () => undefined,
     connect: async () => {
       throw new Error("VPN_CONNECTION_NOT_CONFIGURED_IN_TEST");
     },
+    dispose: () => undefined,
   };
 }

@@ -7,7 +7,7 @@ import {
 import type { WireGuardKeyManager } from "../native/wireguardKeys";
 import type { WireGuardTunnelController } from "../native/wireguardTransport";
 import {
-  createVpnConnectionOrchestrator,
+  createVpnConnectionManager,
   VpnConnectionError,
 } from "../vpn/connection";
 
@@ -28,6 +28,7 @@ const backendSession: ActiveVpnSessionResponse = {
 
 function dependencies() {
   const api = {
+    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
     createVpnSession: vi.fn().mockResolvedValue(backendSession),
     disconnectVpnSession: vi.fn().mockResolvedValue({
       session_id: backendSession.session_id,
@@ -50,14 +51,15 @@ function dependencies() {
 describe("Windows VPN connection orchestration", () => {
   it("connects AUTO using only the local public key and confirms native UP", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
-    ).resolves.toEqual({
-      sessionId: backendSession.session_id,
-      countryCode: "DE",
-      expiresAt: backendSession.expires_at,
+    ).resolves.toBeUndefined();
+    expect(connection.current()).toMatchObject({
+      phase: "CONNECTED",
+      backend: "ACTIVE",
+      tunnel: "UP",
     });
     expect(api.createVpnSession).toHaveBeenCalledWith("access-token", {
       mode: "AUTO",
@@ -79,7 +81,7 @@ describe("Windows VPN connection orchestration", () => {
 
   it("preserves COUNTRY targeting without selecting a node in React", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
 
     await connection.connect("access-token", {
       mode: "COUNTRY",
@@ -101,7 +103,7 @@ describe("Windows VPN connection orchestration", () => {
     async (code, selection) => {
       const { api, keys, tunnel } = dependencies();
       vi.mocked(api.createVpnSession).mockRejectedValue(new ApiError(code));
-      const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+      const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
 
       await expect(
         connection.connect("access-token", selection),
@@ -115,7 +117,7 @@ describe("Windows VPN connection orchestration", () => {
   it("cleans up backend and local state when native startup fails", async () => {
     const { api, keys, tunnel } = dependencies();
     vi.mocked(tunnel.start).mockRejectedValue(new Error("native failure"));
-    const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -130,7 +132,7 @@ describe("Windows VPN connection orchestration", () => {
   it("does not report success when native state confirmation is DOWN", async () => {
     const { api, keys, tunnel } = dependencies();
     vi.mocked(tunnel.state).mockResolvedValue("DOWN");
-    const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -144,7 +146,7 @@ describe("Windows VPN connection orchestration", () => {
     vi.mocked(keys.ensurePublicKey).mockImplementation(
       () => new Promise((resolve) => (resolveKey = resolve)),
     );
-    const connection = createVpnConnectionOrchestrator(api, keys, tunnel);
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
     const first = connection.connect("access-token", { mode: "AUTO" });
 
     await expect(
@@ -153,5 +155,101 @@ describe("Windows VPN connection orchestration", () => {
     resolveKey(PUBLIC_KEY);
     await first;
     expect(api.createVpnSession).toHaveBeenCalledOnce();
+  });
+
+  it("recovers a backend session after application restart", async () => {
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.getCurrentVpnSession).mockResolvedValue({
+      session: backendSession,
+    });
+    vi.mocked(tunnel.state)
+      .mockResolvedValueOnce("DOWN")
+      .mockResolvedValueOnce("UP");
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+
+    await connection.reconcile("access-token");
+
+    expect(tunnel.start).toHaveBeenCalledOnce();
+    expect(connection.current()).toMatchObject({
+      phase: "CONNECTED",
+      backend: "ACTIVE",
+      tunnel: "UP",
+    });
+  });
+
+  it("distinguishes backend unavailability from a native tunnel failure", async () => {
+    const first = dependencies();
+    vi.mocked(first.api.getCurrentVpnSession).mockRejectedValue(
+      new ApiError("NETWORK_ERROR"),
+    );
+    const backendUnavailable = createVpnConnectionManager(
+      first.api,
+      first.keys,
+      first.tunnel,
+      60_000,
+    );
+    await backendUnavailable.reconcile("access-token");
+    expect(backendUnavailable.current()).toMatchObject({
+      phase: "UNAVAILABLE",
+      reason: "BACKEND_UNAVAILABLE",
+      tunnel: "UP",
+    });
+
+    const second = dependencies();
+    vi.mocked(second.api.getCurrentVpnSession).mockResolvedValue({
+      session: backendSession,
+    });
+    vi.mocked(second.tunnel.state).mockRejectedValue(
+      new Error("native unavailable"),
+    );
+    const tunnelUnavailable = createVpnConnectionManager(
+      second.api,
+      second.keys,
+      second.tunnel,
+      60_000,
+    );
+    await tunnelUnavailable.reconcile("access-token");
+    expect(tunnelUnavailable.current()).toMatchObject({
+      phase: "UNAVAILABLE",
+      reason: "TUNNEL_UNAVAILABLE",
+      backend: "ACTIVE",
+    });
+  });
+
+  it("detects unexpected native termination without reporting Connected", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    await connection.connect("access-token", { mode: "AUTO" });
+    vi.mocked(tunnel.state).mockResolvedValue("DOWN");
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(connection.current()).toMatchObject({
+      phase: "UNAVAILABLE",
+      reason: "TUNNEL_UNAVAILABLE",
+      backend: "ACTIVE",
+      tunnel: "DOWN",
+    });
+    connection.dispose();
+    vi.useRealTimers();
+  });
+
+  it("ignores a stale restart reconciliation after a newer connect wins the race", async () => {
+    const { api, keys, tunnel } = dependencies();
+    let resolveCurrent!: (value: { session: null }) => void;
+    vi.mocked(api.getCurrentVpnSession).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCurrent = resolve;
+        }),
+    );
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const stale = connection.reconcile("access-token");
+    await connection.connect("access-token", { mode: "AUTO" });
+    resolveCurrent({ session: null });
+    await stale;
+
+    expect(connection.current()).toMatchObject({ phase: "CONNECTED" });
   });
 });

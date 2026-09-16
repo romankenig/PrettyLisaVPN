@@ -42,6 +42,7 @@ function mockApi(): ApiClient {
     revokeDevice: vi.fn(),
     listVpnCountries: vi.fn().mockResolvedValue(availability),
     createVpnSession: vi.fn(),
+    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
     disconnectVpnSession: vi.fn(),
   };
 }
