@@ -156,9 +156,7 @@ async def current_vpn_session(
         return error_response("auth_service_unavailable", 503)
     except VpnSessionStatusUnavailableError:
         return error_response("VPN_SESSION_STATUS_UNAVAILABLE", 503)
-    return CurrentVpnSessionResponse(
-        session=None if result is None else _active_response(result)
-    )
+    return CurrentVpnSessionResponse(session=None if result is None else _active_response(result))
 
 
 def _response(result: VpnCountryAvailability) -> VpnCountriesResponse:

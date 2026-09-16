@@ -197,9 +197,7 @@ def test_current_session_supports_restart_reconciliation_without_node_identity()
     )
     with api_client(AsyncMock()) as client:
         client.app.state.vpn_session_status = status_service
-        response = client.get(
-            "/vpn/sessions/current", headers={"Authorization": "Bearer token"}
-        )
+        response = client.get("/vpn/sessions/current", headers={"Authorization": "Bearer token"})
 
     assert response.status_code == 200
     body = response.json()
@@ -215,9 +213,7 @@ def test_current_session_returns_explicit_empty_state():
     status_service.current.return_value = None
     with api_client(AsyncMock()) as client:
         client.app.state.vpn_session_status = status_service
-        response = client.get(
-            "/vpn/sessions/current", headers={"Authorization": "Bearer token"}
-        )
+        response = client.get("/vpn/sessions/current", headers={"Authorization": "Bearer token"})
     assert response.status_code == 200
     assert response.json() == {"session": None}
 
