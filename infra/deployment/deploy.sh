@@ -79,7 +79,7 @@ else
 fi
 
 printf 'Applying database migrations...\n'
-"${compose[@]}" run --rm --no-deps backend alembic upgrade head
+"${compose[@]}" run --rm --no-deps --no-tty backend alembic upgrade head </dev/null
 
 printf 'Recreating application containers...\n'
 "${compose[@]}" up --detach --remove-orphans --wait --wait-timeout 120
