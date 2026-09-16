@@ -4,9 +4,10 @@ import {
   type ApiClient,
 } from "../api/client";
 import type { WireGuardKeyManager } from "../native/wireguardKeys";
-import type {
-  WireGuardTunnelController,
-  WireGuardTunnelState,
+import {
+  WireGuardTunnelError,
+  type WireGuardTunnelController,
+  type WireGuardTunnelState,
 } from "../native/wireguardTransport";
 import type { VpnLocationSelection } from "./selection";
 
@@ -65,6 +66,7 @@ export class VpnConnectionError extends Error {
       | "COUNTRY_UNAVAILABLE"
       | "VPN_UNAVAILABLE"
       | "LOCAL_TUNNEL_FAILED"
+      | "VPN_TRAFFIC_INTERCEPTED"
       | "LOCAL_TUNNEL_STOP_FAILED"
       | "CONNECTION_FAILED",
   ) {
@@ -355,13 +357,19 @@ export function createVpnConnectionManager(
         );
         try {
           await startAndConfirm(tunnel, backendSession);
-        } catch {
+        } catch (error) {
           await bestEffortLocalStop(tunnel);
           await bestEffortBackendCleanup(
             api,
             accessToken,
             backendSession.session_id,
           );
+          if (
+            error instanceof WireGuardTunnelError &&
+            error.code === "wireguard_data_plane_unavailable"
+          ) {
+            throw new VpnConnectionError("VPN_TRAFFIC_INTERCEPTED");
+          }
           throw new VpnConnectionError("LOCAL_TUNNEL_FAILED");
         }
         if (run === generation) {

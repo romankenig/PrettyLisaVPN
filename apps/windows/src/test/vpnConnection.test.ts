@@ -5,7 +5,10 @@ import {
   type ApiClient,
 } from "../api/client";
 import type { WireGuardKeyManager } from "../native/wireguardKeys";
-import type { WireGuardTunnelController } from "../native/wireguardTransport";
+import {
+  WireGuardTunnelError,
+  type WireGuardTunnelController,
+} from "../native/wireguardTransport";
 import {
   createVpnConnectionManager,
   VpnConnectionError,
@@ -123,6 +126,23 @@ describe("Windows VPN connection orchestration", () => {
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
     ).rejects.toEqual(new VpnConnectionError("LOCAL_TUNNEL_FAILED"));
+    expect(tunnel.stop).toHaveBeenCalledOnce();
+    expect(api.disconnectVpnSession).toHaveBeenCalledWith(
+      "access-token",
+      backendSession.session_id,
+    );
+  });
+
+  it("reports when another network filter intercepts the VPN data plane", async () => {
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(tunnel.start).mockRejectedValue(
+      new WireGuardTunnelError("wireguard_data_plane_unavailable"),
+    );
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+
+    await expect(
+      connection.connect("access-token", { mode: "AUTO" }),
+    ).rejects.toEqual(new VpnConnectionError("VPN_TRAFFIC_INTERCEPTED"));
     expect(tunnel.stop).toHaveBeenCalledOnce();
     expect(api.disconnectVpnSession).toHaveBeenCalledWith(
       "access-token",

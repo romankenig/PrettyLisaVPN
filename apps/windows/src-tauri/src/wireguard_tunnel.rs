@@ -1,12 +1,26 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
+use windows_sys::Win32::{
+    Foundation::{ERROR_OBJECT_ALREADY_EXISTS, ERROR_SUCCESS},
+    NetworkManagement::{
+        IpHelper::{
+            CreateIpForwardEntry2, DeleteIpForwardEntry2, FreeMibTable, GetBestRoute2,
+            GetIpForwardTable2, InitializeIpForwardEntry, MIB_IPFORWARD_ROW2, MIB_IPFORWARD_TABLE2,
+        },
+        Ndis::NET_LUID_LH,
+    },
+    Networking::WinSock::{AF_INET, IN_ADDR, SOCKADDR_INET},
+};
 use wireguard_nt::{Adapter, AdapterLoggingLevel, SetInterface, SetPeer};
 use zeroize::Zeroize;
 
@@ -17,6 +31,26 @@ const ADAPTER_POOL: &str = "PrettyLisaVPN";
 const KEEPALIVE_SECONDS: u16 = 25;
 const MAX_ALLOWED_IPS: usize = 64;
 const MAX_DNS_SERVERS: usize = 4;
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(8);
+const HANDSHAKE_POLL_INTERVAL: Duration = Duration::from_millis(100);
+const DATA_PLANE_TIMEOUT: Duration = Duration::from_secs(8);
+// 1280 remains safe when PrettyLisaVPN is carried inside another VPN while still
+// satisfying the IPv6 minimum MTU. The MVP is IPv4-only, but using this floor also
+// avoids HTTPS stalls caused by an outer tunnel silently dropping oversized packets.
+const TUNNEL_MTU_ARGUMENT: &str = "mtu=1280";
+// Some endpoint-security VPNs install the usual four /2 full-tunnel routes.
+// Eight /3 routes remain provider-neutral, cover all IPv4, and ensure Windows
+// selects PrettyLisaVPN without changing or removing another product's routes.
+const FULL_TUNNEL_ROUTE_PREFIXES: [(Ipv4Addr, u8); 8] = [
+    (Ipv4Addr::new(0, 0, 0, 0), 3),
+    (Ipv4Addr::new(32, 0, 0, 0), 3),
+    (Ipv4Addr::new(64, 0, 0, 0), 3),
+    (Ipv4Addr::new(96, 0, 0, 0), 3),
+    (Ipv4Addr::new(128, 0, 0, 0), 3),
+    (Ipv4Addr::new(160, 0, 0, 0), 3),
+    (Ipv4Addr::new(192, 0, 0, 0), 3),
+    (Ipv4Addr::new(224, 0, 0, 0), 3),
+];
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -44,6 +78,8 @@ pub enum TunnelStatus {
 
 struct ActiveTunnel {
     adapter: Adapter,
+    #[cfg(windows)]
+    routes: Vec<MIB_IPFORWARD_ROW2>,
 }
 
 pub struct WireGuardTunnelState {
@@ -82,6 +118,8 @@ impl WireGuardTunnelState {
             .read_private_key()
             .map_err(|_| TunnelError::KeyUnavailable)?
             .ok_or(TunnelError::KeyMissing)?;
+        #[cfg(windows)]
+        let endpoint_route = pre_tunnel_ipv4_default_route()?;
         let library_path = wireguard_library_path()?;
         // SAFETY: the absolute path is fixed beside our signed executable. Release packaging
         // must supply the official signed WireGuardNT DLL and verify its pinned digest.
@@ -117,16 +155,61 @@ impl WireGuardTunnelState {
             let _ = adapter.down();
             return Err(TunnelError::Unavailable);
         }
-        if let Err(error) = configure_dns(&parsed.dns) {
-            let _ = adapter.down();
-            return Err(error);
-        }
+        #[cfg(windows)]
+        let routes =
+            match configure_full_tunnel_routes(&adapter, parsed.endpoint.ip(), endpoint_route) {
+                Ok(routes) => routes,
+                Err(error) => {
+                    let _ = adapter.down();
+                    return Err(error);
+                }
+            };
         if adapter.up().is_err() {
+            #[cfg(windows)]
+            remove_routes(&routes);
             let _ = adapter.down();
             return Err(TunnelError::Unavailable);
         }
+        if configure_interface().is_err() {
+            #[cfg(windows)]
+            remove_routes(&routes);
+            let _ = adapter.down();
+            return Err(TunnelError::PrivilegesRequired);
+        }
 
-        *active = Some(ActiveTunnel { adapter });
+        #[cfg(windows)]
+        match full_tunnel_routes_are_selected(&adapter) {
+            Ok(true) => {}
+            Ok(false) | Err(_) => {
+                remove_routes(&routes);
+                let _ = adapter.down();
+                return Err(TunnelError::Unavailable);
+            }
+        }
+        if wait_for_handshake(&adapter).is_err() {
+            #[cfg(windows)]
+            remove_routes(&routes);
+            let _ = adapter.down();
+            return Err(TunnelError::HandshakeTimeout);
+        }
+        if verify_data_plane().is_err() {
+            #[cfg(windows)]
+            remove_routes(&routes);
+            let _ = adapter.down();
+            return Err(TunnelError::DataPlaneUnavailable);
+        }
+        if let Err(error) = configure_dns(&parsed.dns) {
+            #[cfg(windows)]
+            remove_routes(&routes);
+            let _ = adapter.down();
+            return Err(error);
+        }
+
+        *active = Some(ActiveTunnel {
+            adapter,
+            #[cfg(windows)]
+            routes,
+        });
         Ok(TunnelStatus::Up)
     }
 
@@ -136,6 +219,8 @@ impl WireGuardTunnelState {
             // Bringing the dedicated adapter down removes its default routes and makes
             // its adapter-scoped DNS inactive, restoring the original Windows network path.
             // Keep the handle on failure so a later idempotent stop can retry safely.
+            #[cfg(windows)]
+            remove_routes(&tunnel.routes);
             tunnel
                 .adapter
                 .down()
@@ -162,6 +247,148 @@ impl WireGuardTunnelState {
                 .map_err(|_| TunnelError::Unavailable),
         }
     }
+}
+
+#[cfg(windows)]
+fn ipv4_sockaddr(address: Ipv4Addr) -> SOCKADDR_INET {
+    let mut socket = SOCKADDR_INET::default();
+    socket.Ipv4.sin_family = AF_INET;
+    socket.Ipv4.sin_addr = IN_ADDR {
+        S_un: windows_sys::Win32::Networking::WinSock::IN_ADDR_0 {
+            S_addr: u32::from_ne_bytes(address.octets()),
+        },
+    };
+    socket
+}
+
+#[cfg(windows)]
+fn best_ipv4_route(endpoint: IpAddr) -> Result<MIB_IPFORWARD_ROW2, TunnelError> {
+    let IpAddr::V4(endpoint) = endpoint else {
+        return Err(TunnelError::InvalidConfiguration);
+    };
+    let destination = ipv4_sockaddr(endpoint);
+    let mut route = MIB_IPFORWARD_ROW2::default();
+    let mut source = SOCKADDR_INET::default();
+    let result = unsafe {
+        GetBestRoute2(
+            std::ptr::null(),
+            0,
+            std::ptr::null(),
+            &destination,
+            0,
+            &mut route,
+            &mut source,
+        )
+    };
+    if result == ERROR_SUCCESS {
+        Ok(route)
+    } else {
+        Err(TunnelError::Unavailable)
+    }
+}
+
+#[cfg(windows)]
+fn pre_tunnel_ipv4_default_route() -> Result<MIB_IPFORWARD_ROW2, TunnelError> {
+    let mut table: *mut MIB_IPFORWARD_TABLE2 = std::ptr::null_mut();
+    let result = unsafe { GetIpForwardTable2(AF_INET, &mut table) };
+    if result != ERROR_SUCCESS || table.is_null() {
+        return Err(TunnelError::Unavailable);
+    }
+
+    let selected = unsafe {
+        let table_ref = &*table;
+        std::slice::from_raw_parts(table_ref.Table.as_ptr(), table_ref.NumEntries as usize)
+            .iter()
+            .filter(|route| {
+                route.DestinationPrefix.PrefixLength == 0
+                    && route.DestinationPrefix.Prefix.si_family == AF_INET
+                    && route.NextHop.si_family == AF_INET
+                    && route.NextHop.Ipv4.sin_addr.S_un.S_addr != 0
+                    && !route.Loopback
+            })
+            .min_by_key(|route| route.Metric)
+            .copied()
+    };
+    unsafe { FreeMibTable(table.cast()) };
+    selected.ok_or(TunnelError::Unavailable)
+}
+
+#[cfg(windows)]
+fn route_for_interface(luid: u64, destination: Ipv4Addr, prefix: u8) -> MIB_IPFORWARD_ROW2 {
+    let mut route = MIB_IPFORWARD_ROW2::default();
+    unsafe { InitializeIpForwardEntry(&mut route) };
+    route.InterfaceLuid = unsafe { std::mem::transmute::<u64, NET_LUID_LH>(luid) };
+    route.DestinationPrefix.Prefix = ipv4_sockaddr(destination);
+    route.DestinationPrefix.PrefixLength = prefix;
+    route.NextHop.si_family = AF_INET;
+    route.Metric = 0;
+    route
+}
+
+#[cfg(windows)]
+fn configure_full_tunnel_routes(
+    adapter: &Adapter,
+    endpoint: IpAddr,
+    existing_endpoint_route: MIB_IPFORWARD_ROW2,
+) -> Result<Vec<MIB_IPFORWARD_ROW2>, TunnelError> {
+    let IpAddr::V4(endpoint) = endpoint else {
+        return Err(TunnelError::InvalidConfiguration);
+    };
+    let mut installed = Vec::with_capacity(FULL_TUNNEL_ROUTE_PREFIXES.len() + 1);
+
+    let mut endpoint_bypass = MIB_IPFORWARD_ROW2::default();
+    unsafe { InitializeIpForwardEntry(&mut endpoint_bypass) };
+    endpoint_bypass.InterfaceLuid = existing_endpoint_route.InterfaceLuid;
+    endpoint_bypass.InterfaceIndex = existing_endpoint_route.InterfaceIndex;
+    endpoint_bypass.DestinationPrefix.Prefix = ipv4_sockaddr(endpoint);
+    endpoint_bypass.DestinationPrefix.PrefixLength = 32;
+    endpoint_bypass.NextHop = existing_endpoint_route.NextHop;
+    endpoint_bypass.Metric = 0;
+    install_route(endpoint_bypass, &mut installed)?;
+
+    for (network, prefix) in FULL_TUNNEL_ROUTE_PREFIXES {
+        let route = route_for_interface(adapter.get_luid(), network, prefix);
+        if let Err(error) = install_route(route, &mut installed) {
+            remove_routes(&installed);
+            return Err(error);
+        }
+    }
+    Ok(installed)
+}
+
+#[cfg(windows)]
+fn install_route(
+    route: MIB_IPFORWARD_ROW2,
+    installed: &mut Vec<MIB_IPFORWARD_ROW2>,
+) -> Result<(), TunnelError> {
+    let result = unsafe { CreateIpForwardEntry2(&route) };
+    if result == ERROR_SUCCESS {
+        installed.push(route);
+        Ok(())
+    } else if result == ERROR_OBJECT_ALREADY_EXISTS {
+        Ok(())
+    } else {
+        Err(TunnelError::Unavailable)
+    }
+}
+
+#[cfg(windows)]
+fn remove_routes(routes: &[MIB_IPFORWARD_ROW2]) {
+    for route in routes.iter().rev() {
+        let _ = unsafe { DeleteIpForwardEntry2(route) };
+    }
+}
+
+#[cfg(windows)]
+fn full_tunnel_routes_are_selected(adapter: &Adapter) -> Result<bool, TunnelError> {
+    for address in [Ipv4Addr::new(1, 1, 1, 1), Ipv4Addr::new(129, 1, 1, 1)] {
+        let route = best_ipv4_route(IpAddr::V4(address))?;
+        let route_luid = unsafe { std::mem::transmute::<NET_LUID_LH, u64>(route.InterfaceLuid) };
+        if route_luid != adapter.get_luid() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 struct ParsedConfiguration {
@@ -245,6 +472,8 @@ enum TunnelError {
     KeyUnavailable,
     ComponentMissing,
     PrivilegesRequired,
+    HandshakeTimeout,
+    DataPlaneUnavailable,
     Unavailable,
 }
 
@@ -256,6 +485,8 @@ impl TunnelError {
             Self::KeyUnavailable => "wireguard_key_storage_unavailable",
             Self::ComponentMissing => "wireguard_component_missing",
             Self::PrivilegesRequired => "administrator_privileges_required",
+            Self::HandshakeTimeout => "wireguard_handshake_timeout",
+            Self::DataPlaneUnavailable => "wireguard_data_plane_unavailable",
             Self::Unavailable => "wireguard_tunnel_unavailable",
         }
     }
@@ -355,6 +586,73 @@ fn configure_dns(servers: &[IpAddr]) -> Result<(), TunnelError> {
     Ok(())
 }
 
+fn configure_interface() -> Result<(), TunnelError> {
+    let netsh = std::env::var_os("SystemRoot")
+        .map(PathBuf::from)
+        .map(|root| root.join("System32").join("netsh.exe"))
+        .filter(|path| path.is_file())
+        .ok_or(TunnelError::Unavailable)?;
+
+    let mut command = Command::new(&netsh);
+    command
+        .args([
+            "interface",
+            "ipv4",
+            "set",
+            "subinterface",
+            ADAPTER_NAME,
+            TUNNEL_MTU_ARGUMENT,
+            "store=active",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x0800_0000);
+    }
+    if !command
+        .status()
+        .map_err(|_| TunnelError::Unavailable)?
+        .success()
+    {
+        return Err(TunnelError::PrivilegesRequired);
+    }
+    Ok(())
+}
+
+fn wait_for_handshake(adapter: &Adapter) -> Result<(), TunnelError> {
+    let socket = std::net::UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
+        .map_err(|_| TunnelError::Unavailable)?;
+    socket
+        .send_to(&[0], (Ipv4Addr::new(1, 1, 1, 1), 9))
+        .map_err(|_| TunnelError::Unavailable)?;
+
+    let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+    while Instant::now() < deadline {
+        if adapter
+            .get_config()
+            .peers
+            .iter()
+            .any(|peer| peer.last_handshake.is_some())
+        {
+            return Ok(());
+        }
+        thread::sleep(HANDSHAKE_POLL_INTERVAL);
+    }
+    Err(TunnelError::HandshakeTimeout)
+}
+
+fn verify_data_plane() -> Result<(), TunnelError> {
+    TcpStream::connect_timeout(
+        &SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443),
+        DATA_PLANE_TIMEOUT,
+    )
+    .map(|_| ())
+    .map_err(|_| TunnelError::DataPlaneUnavailable)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -379,6 +677,34 @@ mod tests {
         assert_eq!(parsed.client_address.to_string(), "10.77.0.2/16");
         assert_eq!(parsed.allowed_ips[0].to_string(), "0.0.0.0/0");
         assert_eq!(parsed.dns.len(), 2);
+    }
+
+    #[test]
+    fn coexistence_routes_cover_ipv4_more_specifically_than_competing_vpn_routes() {
+        let routes = FULL_TUNNEL_ROUTE_PREFIXES
+            .iter()
+            .map(|(address, prefix)| ipnet::Ipv4Net::new(*address, *prefix).unwrap())
+            .collect::<Vec<_>>();
+
+        for address in [
+            Ipv4Addr::new(1, 1, 1, 1),
+            Ipv4Addr::new(33, 1, 1, 1),
+            Ipv4Addr::new(64, 0, 0, 1),
+            Ipv4Addr::new(97, 0, 0, 1),
+            Ipv4Addr::new(128, 0, 0, 1),
+            Ipv4Addr::new(161, 0, 0, 1),
+            Ipv4Addr::new(192, 0, 0, 1),
+            Ipv4Addr::new(255, 255, 255, 254),
+        ] {
+            assert_eq!(
+                routes
+                    .iter()
+                    .filter(|route| route.contains(&address))
+                    .count(),
+                1
+            );
+        }
+        assert!(routes.iter().all(|route| route.prefix_len() == 3));
     }
 
     #[test]
@@ -423,6 +749,14 @@ mod tests {
             "invalid_wireguard_configuration"
         );
         assert_eq!(TunnelError::KeyMissing.code(), "wireguard_key_missing");
+        assert_eq!(
+            TunnelError::HandshakeTimeout.code(),
+            "wireguard_handshake_timeout"
+        );
+        assert_eq!(
+            TunnelError::DataPlaneUnavailable.code(),
+            "wireguard_data_plane_unavailable"
+        );
         assert_eq!(
             TunnelError::ComponentMissing.code(),
             "wireguard_component_missing"

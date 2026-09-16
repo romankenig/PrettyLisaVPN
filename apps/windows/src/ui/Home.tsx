@@ -286,6 +286,9 @@ function connectionError(error: unknown) {
     if (error.code === "LOCAL_TUNNEL_FAILED") {
       return "Не удалось запустить VPN на этом компьютере. Подключение отменено.";
     }
+    if (error.code === "VPN_TRAFFIC_INTERCEPTED") {
+      return "Другой VPN или сетевой фильтр не пропускает интернет через PrettyLisaVPN. Отключите другой VPN и повторите подключение.";
+    }
     if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
       return "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.";
     }
