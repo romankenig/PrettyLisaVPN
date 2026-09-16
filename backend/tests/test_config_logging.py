@@ -32,6 +32,8 @@ def test_environment_configuration(monkeypatch):
         {"email_send_timeout_seconds": 0},
         {"vpn_node_stale_timeout_seconds": 9},
         {"vpn_node_health_poll_interval_seconds": 90},
+        {"vpn_client_allowed_ips": ["10.0.0.0/8"]},
+        {"vpn_client_allowed_ips": ["0.0.0.0/0", "10.0.0.0/8"]},
         {"vpn_node_agent_auth_token": "a" * 32},
         {
             "email_smtp_username": "auth@prettylisavpn.com",

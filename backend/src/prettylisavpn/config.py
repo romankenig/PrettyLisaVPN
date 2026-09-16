@@ -88,6 +88,8 @@ class Settings(BaseSettings):
             raise ValueError("VPN_CLIENT_DNS must contain only IPv4 addresses")
         if any(network.version != 4 for network in self.vpn_client_allowed_ips):
             raise ValueError("VPN_CLIENT_ALLOWED_IPS must contain only IPv4 networks")
+        if self.vpn_client_allowed_ips != [IPv4Network("0.0.0.0/0")]:
+            raise ValueError("VPN_CLIENT_ALLOWED_IPS must be the IPv4 full-tunnel route")
         if self.vpn_client_gateway_ipv4 not in self.vpn_client_subnet.hosts():
             raise ValueError(
                 "VPN_CLIENT_GATEWAY_IPV4 must be a usable address in VPN_CLIENT_SUBNET"

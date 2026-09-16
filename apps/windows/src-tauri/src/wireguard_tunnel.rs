@@ -110,11 +110,21 @@ impl WireGuardTunnelState {
             key.zeroize();
         }
         configured.map_err(|_| TunnelError::Unavailable)?;
-        adapter
+        if adapter
             .set_default_route(&[parsed.client_address], &interface)
-            .map_err(|_| TunnelError::Unavailable)?;
-        configure_dns(&parsed.dns)?;
-        adapter.up().map_err(|_| TunnelError::Unavailable)?;
+            .is_err()
+        {
+            let _ = adapter.down();
+            return Err(TunnelError::Unavailable);
+        }
+        if let Err(error) = configure_dns(&parsed.dns) {
+            let _ = adapter.down();
+            return Err(error);
+        }
+        if adapter.up().is_err() {
+            let _ = adapter.down();
+            return Err(TunnelError::Unavailable);
+        }
 
         *active = Some(ActiveTunnel { adapter });
         Ok(TunnelStatus::Up)
@@ -179,7 +189,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
             .client_address
             .parse::<IpNet>()
             .map_err(|_| TunnelError::InvalidConfiguration)?;
-        if client_address.addr().is_unspecified() {
+        if !matches!(client_address, IpNet::V4(_)) || client_address.addr().is_unspecified() {
             return Err(TunnelError::InvalidConfiguration);
         }
         if value.dns.is_empty() || value.dns.len() > MAX_DNS_SERVERS {
@@ -191,7 +201,15 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
             .map(|server| server.parse::<IpAddr>())
             .collect::<Result<Vec<_>, _>>()
             .map_err(|_| TunnelError::InvalidConfiguration)?;
-        if dns.iter().any(IpAddr::is_unspecified) {
+        if dns.iter().any(|server| match server {
+            IpAddr::V4(address) => {
+                address.is_unspecified()
+                    || address.is_broadcast()
+                    || address.is_loopback()
+                    || address.is_multicast()
+            }
+            IpAddr::V6(_) => true,
+        }) {
             return Err(TunnelError::InvalidConfiguration);
         }
         if value.allowed_ips.is_empty() || value.allowed_ips.len() > MAX_ALLOWED_IPS {
@@ -203,6 +221,12 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
             .map(|network| network.parse::<IpNet>())
             .collect::<Result<Vec<_>, _>>()
             .map_err(|_| TunnelError::InvalidConfiguration)?;
+        let ipv4_default = "0.0.0.0/0"
+            .parse::<IpNet>()
+            .map_err(|_| TunnelError::InvalidConfiguration)?;
+        if allowed_ips.as_slice() != [ipv4_default] {
+            return Err(TunnelError::InvalidConfiguration);
+        }
 
         Ok(Self {
             endpoint: SocketAddr::new(IpAddr::V4(endpoint_ip), value.endpoint.port),
@@ -374,6 +398,22 @@ mod tests {
         let mut invalid_endpoint = valid_configuration();
         invalid_endpoint.endpoint.ipv4 = "0.0.0.0".into();
         assert!(ParsedConfiguration::try_from(invalid_endpoint).is_err());
+
+        let mut split_tunnel = valid_configuration();
+        split_tunnel.allowed_ips = vec!["10.0.0.0/8".into()];
+        assert!(ParsedConfiguration::try_from(split_tunnel).is_err());
+
+        let mut mixed_routes = valid_configuration();
+        mixed_routes.allowed_ips.push("10.0.0.0/8".into());
+        assert!(ParsedConfiguration::try_from(mixed_routes).is_err());
+
+        let mut ipv6_dns = valid_configuration();
+        ipv6_dns.dns = vec!["2606:4700:4700::1111".into()];
+        assert!(ParsedConfiguration::try_from(ipv6_dns).is_err());
+
+        let mut ipv6_client = valid_configuration();
+        ipv6_client.client_address = "fd00::2/128".into();
+        assert!(ParsedConfiguration::try_from(ipv6_client).is_err());
     }
 
     #[test]

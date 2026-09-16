@@ -89,6 +89,53 @@ Tauri запускает Vite на `127.0.0.1:1420`, компилирует Rust
 Vite mode и `VITE_APP_ENVIRONMENT` независимы: `pnpm build` сам по себе не переключает
 метку development на production.
 
+## Проверка full-tunnel IPv4 и DNS
+
+Native tunnel принимает только IPv4-конфигурацию с единственным `AllowedIPs=0.0.0.0/0`.
+Split tunneling и IPv6 tunnel пока намеренно не поддерживаются. WireGuardNT назначает
+маршрут через выделенный адаптер `PrettyLisaVPN` с минимальной interface metric. DNS-серверы
+Backend задаются явно только этому адаптеру; приложение не записывает DNS-запросы, имена или
+ответы. При DISCONNECT адаптер переводится в DOWN, поэтому его маршруты и adapter-scoped DNS
+перестают участвовать в выборе Windows.
+
+Ручную проверку выполняйте в PowerShell от администратора. До CONNECT сохраните baseline:
+
+```powershell
+Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" | Sort-Object RouteMetric,InterfaceMetric | Format-Table ifAlias,NextHop,RouteMetric,InterfaceMetric
+Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object ServerAddresses | Format-Table InterfaceAlias,ServerAddresses
+curl.exe -4 https://api.ipify.org
+```
+
+После CONNECT проверьте, что Internet route и DNS принадлежат VPN-адаптеру, а наблюдаемый
+IPv4 изменился на адрес VPN node:
+
+```powershell
+Get-NetAdapter -Name "PrettyLisaVPN" | Format-Table Name,Status,InterfaceIndex
+Get-NetRoute -AddressFamily IPv4 -InterfaceAlias "PrettyLisaVPN" | Sort-Object DestinationPrefix | Format-Table DestinationPrefix,NextHop,RouteMetric,InterfaceMetric
+Find-NetRoute -RemoteIPAddress 1.1.1.1 | Format-List InterfaceAlias,NextHop,RouteMetric
+Get-DnsClientServerAddress -InterfaceAlias "PrettyLisaVPN" -AddressFamily IPv4 | Format-List InterfaceAlias,ServerAddresses
+curl.exe -4 https://api.ipify.org
+Resolve-DnsName -Name myip.opendns.com -Type A -Server 208.67.222.222 | Where-Object Type -eq A | Select-Object -ExpandProperty IPAddress
+```
+
+`Find-NetRoute` должен выбрать `PrettyLisaVPN`. Последние две команды должны показывать VPN
+egress, а не исходный ISP IPv4. Для дополнительной проверки откройте DNS leak test в браузере
+во время CONNECT и убедитесь, что ISP DNS отсутствует. Не сохраняйте результаты проверки в
+логи приложения или репозиторий.
+
+После DISCONNECT проверьте восстановление исходного пути:
+
+```powershell
+Get-NetAdapter -Name "PrettyLisaVPN" | Format-Table Name,Status
+Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" | Sort-Object RouteMetric,InterfaceMetric | Format-Table ifAlias,NextHop,RouteMetric,InterfaceMetric
+Find-NetRoute -RemoteIPAddress 1.1.1.1 | Format-List InterfaceAlias,NextHop,RouteMetric
+Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object ServerAddresses | Format-Table InterfaceAlias,ServerAddresses
+curl.exe -4 https://api.ipify.org
+```
+
+`PrettyLisaVPN` не должен быть выбранным маршрутом; default route, DNS и public IPv4 должны
+совпасть с baseline (с учётом обычных изменений DHCP/ISP).
+
 API-клиент содержит типизированные `GET /health` и `GET /version`, заменяемый HTTP-слой,
 ограничение времени запросов и безопасные коды ошибок. Tauri использует native HTTP plugin,
 поэтому удалённый HTTPS Backend не требует CORS-разрешения для WebView. Браузерный preview
