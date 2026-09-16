@@ -122,12 +122,16 @@ impl WireGuardTunnelState {
 
     fn stop(&self) -> Result<TunnelStatus, TunnelError> {
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
-        if let Some(tunnel) = active.take() {
+        if let Some(tunnel) = active.as_ref() {
+            // Bringing the dedicated adapter down removes its default routes and makes
+            // its adapter-scoped DNS inactive, restoring the original Windows network path.
+            // Keep the handle on failure so a later idempotent stop can retry safely.
             tunnel
                 .adapter
                 .down()
                 .map_err(|_| TunnelError::Unavailable)?;
         }
+        *active = None;
         Ok(TunnelStatus::Down)
     }
 

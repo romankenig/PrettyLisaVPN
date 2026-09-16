@@ -116,6 +116,15 @@ export function Home() {
     }
   }
 
+  async function disconnect() {
+    setConnectionErrorMessage(null);
+    try {
+      await vpnConnection.disconnect(accessToken);
+    } catch (error) {
+      setConnectionErrorMessage(connectionError(error));
+    }
+  }
+
   return (
     <section className="account-home" aria-labelledby="home-title">
       <p className="eyebrow">аккаунт</p>
@@ -146,14 +155,7 @@ export function Home() {
       <div className="connection-card">
         <div>
           <p className="connection-card__label">VPN</p>
-          <h2>
-            {connectionState.phase === "CONNECTED"
-              ? "Connected"
-              : connectionState.phase === "CONNECTING" ||
-                  connectionState.phase === "RECONCILING"
-                ? "CONNECTING"
-                : "Not connected"}
-          </h2>
+          <h2>{connectionHeading(connectionState)}</h2>
           <p>
             {connectionState.phase === "CONNECTED"
               ? `Локация: ${countryName(connectionState.session.countryCode)}`
@@ -163,20 +165,24 @@ export function Home() {
         <button
           type="button"
           disabled={
-            !locationConnectable ||
             connectionState.phase === "CONNECTING" ||
             connectionState.phase === "RECONCILING" ||
-            connectionState.phase === "CONNECTED"
+            connectionState.phase === "DISCONNECTING" ||
+            (!canDisconnect(connectionState) && !locationConnectable)
           }
           aria-describedby="connection-unavailable"
-          onClick={() => void connect()}
+          onClick={() =>
+            void (canDisconnect(connectionState) ? disconnect() : connect())
+          }
         >
-          {connectionState.phase === "CONNECTING" ||
-          connectionState.phase === "RECONCILING"
-            ? "CONNECTING"
-            : connectionState.phase === "CONNECTED"
-              ? "CONNECTED"
-              : "CONNECT"}
+          {connectionState.phase === "DISCONNECTING"
+            ? "DISCONNECTING"
+            : connectionState.phase === "CONNECTING" ||
+                connectionState.phase === "RECONCILING"
+              ? "CONNECTING"
+              : canDisconnect(connectionState)
+                ? "DISCONNECT"
+                : "CONNECT"}
         </button>
         <p id="connection-unavailable" className="field-help">
           {!locationConnectable
@@ -188,6 +194,13 @@ export function Home() {
           <p className="connection-error" role="alert">
             {connectionErrorMessage ??
               connectionUnavailableMessage(connectionState)}
+          </p>
+        ) : null}
+        {connectionState.phase === "DISCONNECTED" &&
+        connectionState.backend === "UNAVAILABLE" ? (
+          <p className="connection-error" role="status">
+            VPN на компьютере остановлен. Сервер завершит сессию после
+            восстановления связи.
           </p>
         ) : null}
       </div>
@@ -265,6 +278,9 @@ function connectionError(error: unknown) {
     if (error.code === "LOCAL_TUNNEL_FAILED") {
       return "Не удалось запустить VPN на этом компьютере. Подключение отменено.";
     }
+    if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
+      return "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.";
+    }
   }
   return "Не удалось установить VPN-соединение. Попробуйте снова.";
 }
@@ -281,4 +297,22 @@ function unavailableMessage(
 
 function connectionUnavailableMessage(state: VpnConnectionState) {
   return state.phase === "UNAVAILABLE" ? unavailableMessage(state.reason) : "";
+}
+
+function canDisconnect(state: VpnConnectionState) {
+  return (
+    state.phase === "CONNECTED" ||
+    (state.phase === "UNAVAILABLE" && state.tunnel !== "DOWN") ||
+    (state.phase === "UNAVAILABLE" && state.backend === "ACTIVE")
+  );
+}
+
+function connectionHeading(state: VpnConnectionState) {
+  if (state.phase === "CONNECTED") return "Connected";
+  if (state.phase === "CONNECTING" || state.phase === "RECONCILING")
+    return "CONNECTING";
+  if (state.phase === "DISCONNECTING" && state.tunnel === "UP")
+    return "DISCONNECTING";
+  if (state.tunnel === "DOWN") return "Not connected";
+  return "Connection status unavailable";
 }

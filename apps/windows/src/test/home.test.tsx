@@ -233,6 +233,29 @@ describe("authenticated Home", () => {
         };
         listeners.forEach((listener) => listener());
       }),
+      disconnect: vi.fn(async () => {
+        const session =
+          connectionState.phase === "CONNECTED"
+            ? connectionState.session
+            : {
+                sessionId: "123e4567-e89b-42d3-a456-426614174020",
+                countryCode: "DE",
+                expiresAt: null,
+              };
+        connectionState = {
+          phase: "DISCONNECTING",
+          backend: "ACTIVE",
+          tunnel: "UP",
+          session,
+        };
+        listeners.forEach((listener) => listener());
+        connectionState = {
+          phase: "DISCONNECTED",
+          backend: "NONE",
+          tunnel: "DOWN",
+        };
+        listeners.forEach((listener) => listener());
+      }),
       dispose: vi.fn(),
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
@@ -251,5 +274,11 @@ describe("authenticated Home", () => {
       await screen.findByRole("heading", { name: "Connected" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Локация: Германия")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "DISCONNECT" }));
+    expect(
+      await screen.findByRole("heading", { name: "Not connected" }),
+    ).toBeInTheDocument();
+    expect(vpnConnection.disconnect).toHaveBeenCalledOnce();
   });
 });

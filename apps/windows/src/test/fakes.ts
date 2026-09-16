@@ -48,6 +48,7 @@ export function createTestVpnConnection(): VpnConnectionManager {
     connect: async () => {
       throw new Error("VPN_CONNECTION_NOT_CONFIGURED_IN_TEST");
     },
+    disconnect: async () => undefined,
     dispose: () => undefined,
   };
 }

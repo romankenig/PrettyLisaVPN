@@ -252,4 +252,97 @@ describe("Windows VPN connection orchestration", () => {
 
     expect(connection.current()).toMatchObject({ phase: "CONNECTED" });
   });
+
+  it("stops the native tunnel before terminating the backend session", async () => {
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    await connection.connect("access-token", { mode: "AUTO" });
+
+    await connection.disconnect("access-token");
+
+    expect(tunnel.stop).toHaveBeenCalledOnce();
+    expect(api.disconnectVpnSession).toHaveBeenCalledWith(
+      "access-token",
+      backendSession.session_id,
+    );
+    expect(vi.mocked(tunnel.stop).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(api.disconnectVpnSession).mock.invocationCallOrder[0],
+    );
+    expect(connection.current()).toEqual({
+      phase: "DISCONNECTED",
+      backend: "NONE",
+      tunnel: "DOWN",
+    });
+  });
+
+  it("stays locally disconnected and retries backend cleanup after an outage", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.disconnectVpnSession)
+      .mockRejectedValueOnce(new ApiError("NETWORK_ERROR"))
+      .mockResolvedValue({
+        session_id: backendSession.session_id,
+        status: "DISCONNECTED",
+      });
+    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    await connection.connect("access-token", { mode: "AUTO" });
+
+    await connection.disconnect("access-token");
+    expect(connection.current()).toMatchObject({
+      phase: "DISCONNECTED",
+      backend: "UNAVAILABLE",
+      tunnel: "DOWN",
+    });
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(api.disconnectVpnSession).toHaveBeenCalledTimes(2);
+    expect(connection.current()).toEqual({
+      phase: "DISCONNECTED",
+      backend: "NONE",
+      tunnel: "DOWN",
+    });
+    connection.dispose();
+    vi.useRealTimers();
+  });
+
+  it("does not remove the backend peer when local tunnel stop cannot be confirmed", async () => {
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    await connection.connect("access-token", { mode: "AUTO" });
+    vi.mocked(tunnel.stop).mockRejectedValue(new Error("stop failed"));
+    vi.mocked(tunnel.state).mockResolvedValue("UP");
+
+    await expect(connection.disconnect("access-token")).rejects.toEqual(
+      new VpnConnectionError("LOCAL_TUNNEL_STOP_FAILED"),
+    );
+
+    expect(api.disconnectVpnSession).not.toHaveBeenCalled();
+    expect(connection.current()).toMatchObject({
+      phase: "UNAVAILABLE",
+      backend: "ACTIVE",
+      tunnel: "UP",
+    });
+  });
+
+  it("coalesces duplicate disconnect requests into one operation", async () => {
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    await connection.connect("access-token", { mode: "AUTO" });
+    let finishStop!: () => void;
+    vi.mocked(tunnel.stop).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishStop = () => resolve("DOWN");
+        }),
+    );
+
+    const first = connection.disconnect("access-token");
+    const second = connection.disconnect("access-token");
+    expect(first).toBe(second);
+    finishStop();
+    await Promise.all([first, second]);
+
+    expect(tunnel.stop).toHaveBeenCalledOnce();
+    expect(api.disconnectVpnSession).toHaveBeenCalledOnce();
+  });
 });
