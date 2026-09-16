@@ -92,6 +92,18 @@ export interface RevokeDeviceResponse {
   readonly device: DeviceResponse;
 }
 
+export interface VpnCountriesResponse {
+  readonly autopilot: {
+    readonly quality: number;
+    readonly available: boolean;
+  };
+  readonly countries: readonly {
+    readonly country_code: string;
+    readonly quality: number;
+    readonly available: boolean;
+  }[];
+}
+
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -132,6 +144,10 @@ export interface ApiClient {
     deviceId: string,
     signal?: AbortSignal,
   ): Promise<RevokeDeviceResponse>;
+  listVpnCountries(
+    accessToken: string,
+    signal?: AbortSignal,
+  ): Promise<VpnCountriesResponse>;
 }
 
 export function createApiClient(
@@ -358,7 +374,62 @@ export function createApiClient(
       }
       return { status: "revoked", device: value.device };
     },
+    async listVpnCountries(accessToken, signal) {
+      const value = await requestJson(
+        "/vpn/countries",
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (!isVpnCountriesResponse(value)) {
+        throw new ApiError("INVALID_RESPONSE");
+      }
+      return value;
+    },
   };
+}
+
+function isVpnCountriesResponse(value: unknown): value is VpnCountriesResponse {
+  return (
+    hasOnlyKeys(value, ["autopilot", "countries"]) &&
+    hasOnlyKeys(value.autopilot, ["quality", "available"]) &&
+    isAvailability(value.autopilot) &&
+    Array.isArray(value.countries) &&
+    value.countries.every(
+      (country) =>
+        hasOnlyKeys(country, ["country_code", "quality", "available"]) &&
+        /^[A-Z]{2}$/.test(String(country.country_code)) &&
+        isAvailability(country),
+    )
+  );
+}
+
+function isAvailability(value: unknown): value is {
+  readonly quality: number;
+  readonly available: boolean;
+} {
+  return (
+    isRecord(value) &&
+    typeof value.quality === "number" &&
+    Number.isInteger(value.quality) &&
+    value.quality >= 0 &&
+    value.quality <= 100 &&
+    typeof value.available === "boolean" &&
+    value.available === value.quality > 0
+  );
+}
+
+function hasOnlyKeys<T extends string>(
+  value: unknown,
+  keys: readonly T[],
+): value is Record<T, unknown> {
+  return (
+    isRecord(value) &&
+    Object.keys(value).length === keys.length &&
+    keys.every((key) => Object.hasOwn(value, key))
+  );
 }
 
 function isDeviceResponse(value: unknown): value is DeviceResponse {

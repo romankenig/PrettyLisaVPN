@@ -28,6 +28,10 @@ function renderLogin(requestOtp: RequestOtp) {
     logout: vi.fn(),
     listDevices: vi.fn(),
     revokeDevice: vi.fn(),
+    listVpnCountries: vi.fn().mockResolvedValue({
+      autopilot: { quality: 90, available: true },
+      countries: [],
+    }),
   };
   return render(
     <ApplicationProvider
@@ -142,6 +146,10 @@ describe("email login", () => {
       logout: vi.fn(),
       listDevices: vi.fn(),
       revokeDevice: vi.fn(),
+      listVpnCountries: vi.fn().mockResolvedValue({
+        autopilot: { quality: 90, available: true },
+        countries: [],
+      }),
     };
     render(
       <ApplicationProvider

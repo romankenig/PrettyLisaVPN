@@ -31,6 +31,10 @@ function mockApi(): ApiClient {
     logout: vi.fn().mockResolvedValue({ status: "logged_out" }),
     listDevices: vi.fn().mockResolvedValue([]),
     revokeDevice: vi.fn(),
+    listVpnCountries: vi.fn().mockResolvedValue({
+      autopilot: { quality: 90, available: true },
+      countries: [],
+    }),
   };
 }
 
@@ -102,7 +106,7 @@ describe("authenticated Home", () => {
     );
     await renderFresh(api);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByText(/загружаем данные аккаунта/)).toHaveTextContent(
       "загружаем данные аккаунта",
     );
     resolveProfile(profile);

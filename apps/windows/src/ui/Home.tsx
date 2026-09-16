@@ -2,6 +2,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, type MeResponse } from "../api/client";
 import { useApplication } from "../state/application";
+import {
+  DEFAULT_VPN_LOCATION_SELECTION,
+  type VpnLocationSelection,
+} from "../vpn/selection";
+import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
 
 type ProfileState =
   | { phase: "loading" }
@@ -23,6 +28,8 @@ export function Home() {
     "idle" | "submitting" | "error"
   >("idle");
   const logoutInFlight = useRef(false);
+  const [locationSelection, setLocationSelection] =
+    useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
 
   useEffect(() => {
     if (activeSession === null || activeSession.profile !== null) return;
@@ -95,6 +102,11 @@ export function Home() {
         </div>
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
+
+      <ConnectionLocationSelector
+        selection={locationSelection}
+        onSelectionChange={setLocationSelection}
+      />
 
       <div className="connection-card">
         <div>

@@ -54,6 +54,10 @@ function mockApi(): ApiClient {
     logout: vi.fn().mockResolvedValue({ status: "logged_out" }),
     listDevices: vi.fn().mockResolvedValue([]),
     revokeDevice: vi.fn(),
+    listVpnCountries: vi.fn().mockResolvedValue({
+      autopilot: { quality: 90, available: true },
+      countries: [],
+    }),
   };
 }
 

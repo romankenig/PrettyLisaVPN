@@ -65,6 +65,10 @@ function mockApi(): ApiClient {
     logout: vi.fn(),
     listDevices: vi.fn(),
     revokeDevice: vi.fn(),
+    listVpnCountries: vi.fn().mockResolvedValue({
+      autopilot: { quality: 90, available: true },
+      countries: [],
+    }),
   };
 }
 

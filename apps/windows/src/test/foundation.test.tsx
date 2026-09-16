@@ -381,6 +381,69 @@ describe("typed API client", () => {
     );
   });
 
+  it("loads product-only VPN country availability with authentication", async () => {
+    const response = {
+      autopilot: { quality: 91, available: true },
+      countries: [
+        { country_code: "DE", quality: 84, available: true },
+        { country_code: "US", quality: 0, available: false },
+      ],
+    };
+    const transport = vi
+      .fn<HttpTransport>()
+      .mockResolvedValue(jsonResponse(response));
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+
+    await expect(api.listVpnCountries("access-token")).resolves.toEqual(
+      response,
+    );
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.invalid/vpn/countries",
+      expect.objectContaining({
+        method: "GET",
+        headers: { authorization: "Bearer access-token" },
+      }),
+    );
+  });
+
+  it.each([
+    {
+      autopilot: { quality: 91, available: true, node_count: 2 },
+      countries: [],
+    },
+    {
+      autopilot: { quality: 0, available: true },
+      countries: [],
+    },
+    {
+      autopilot: { quality: 91, available: true },
+      countries: [
+        {
+          country_code: "DE",
+          quality: 84,
+          available: true,
+          provider: "DIGITALOCEAN",
+        },
+      ],
+    },
+  ])(
+    "rejects availability responses containing inconsistent or infrastructure data",
+    async (response) => {
+      const transport = vi
+        .fn<HttpTransport>()
+        .mockResolvedValue(jsonResponse(response));
+      const api = createApiClient(
+        "https://api.example.invalid",
+        transport,
+        5000,
+      );
+
+      await expect(api.listVpnCountries("access-token")).rejects.toEqual(
+        new ApiError("INVALID_RESPONSE"),
+      );
+    },
+  );
+
   it("revokes a device through the typed API contract", async () => {
     const device = {
       id: "123e4567-e89b-42d3-a456-426614174010",

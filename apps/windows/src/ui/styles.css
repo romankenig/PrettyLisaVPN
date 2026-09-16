@@ -330,6 +330,82 @@ dd {
 .account-status {
   color: var(--color-christalle);
 }
+.location-selector {
+  margin-top: 24px;
+  padding: 24px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+  border-radius: 16px;
+}
+.location-selector__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.location-selector__heading h2 {
+  margin: 8px 0 0;
+}
+.location-selector__heading button {
+  margin: 0;
+  color: var(--color-christalle);
+  background: transparent;
+  border: 1px solid rgb(44 1 109 / 28%);
+}
+.location-options {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+.location-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid rgb(44 1 109 / 14%);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.location-option:has(input:checked) {
+  border-color: var(--color-christalle);
+  box-shadow: 0 0 0 2px rgb(44 1 109 / 12%);
+}
+.location-option--disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.location-option__name {
+  display: grid;
+  gap: 3px;
+}
+.location-option__name small {
+  color: var(--color-scorpion);
+}
+.location-option__quality {
+  min-width: 42px;
+  color: var(--color-christalle);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: right;
+}
+.availability-warning {
+  margin: 16px 0 0;
+  color: var(--color-persian-red);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .connection-card {
   margin-top: 24px;
   padding: 24px;

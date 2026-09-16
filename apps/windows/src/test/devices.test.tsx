@@ -50,6 +50,7 @@ function mockApi(): ApiClient {
       status: "revoked",
       device: { ...otherDevice, status: "REVOKED" },
     }),
+    listVpnCountries: vi.fn(),
   };
 }
 
