@@ -14,6 +14,7 @@ export interface ConnectedVpnSession {
   readonly sessionId: string;
   readonly countryCode: string;
   readonly expiresAt: string | null;
+  readonly remainingSeconds: number | null;
 }
 export type VpnConnectionState =
   | {
@@ -88,14 +89,25 @@ export function createVpnConnectionManager(
   let inFlight = false;
   let disconnectInFlight: Promise<void> | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
+  let countdownTimer: ReturnType<typeof setInterval> | undefined;
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined;
   const listeners = new Set<() => void>();
   const emit = (next: VpnConnectionState) => {
     state = next;
     listeners.forEach((listener) => listener());
   };
-  const monitor = () => {
+  const clearSessionTimers = () => {
+    if (countdownTimer !== undefined) clearInterval(countdownTimer);
+    if (expiryTimer !== undefined) clearTimeout(expiryTimer);
+    countdownTimer = undefined;
+    expiryTimer = undefined;
+  };
+  const monitor = (accessToken: string) => {
     if (timer !== undefined) clearInterval(timer);
-    timer = setInterval(() => void checkNative(), monitorIntervalMs);
+    timer = setInterval(
+      () => void checkConnection(accessToken),
+      monitorIntervalMs,
+    );
   };
   const stopMonitor = () => {
     if (timer !== undefined) clearInterval(timer);
@@ -141,19 +153,50 @@ export function createVpnConnectionManager(
         .catch(() => undefined);
     }, monitorIntervalMs);
   };
-  const checkNative = async () => {
+  const activate = (
+    backendSession: ActiveVpnSessionResponse,
+    accessToken: string,
+  ) => {
+    clearSessionTimers();
+    const session = productSession(backendSession);
+    emit({ phase: "CONNECTED", backend: "ACTIVE", tunnel: "UP", session });
+    if (session.remainingSeconds !== null) {
+      const deadline = performance.now() + session.remainingSeconds * 1_000;
+      countdownTimer = setInterval(() => {
+        if (
+          state.phase !== "CONNECTED" ||
+          state.session.sessionId !== session.sessionId
+        )
+          return;
+        const remainingSeconds = Math.max(
+          0,
+          Math.ceil((deadline - performance.now()) / 1_000),
+        );
+        if (remainingSeconds !== state.session.remainingSeconds)
+          emit({ ...state, session: { ...state.session, remainingSeconds } });
+      }, 1_000);
+      expiryTimer = setTimeout(
+        () => void manager.disconnect(accessToken),
+        session.remainingSeconds * 1_000,
+      );
+    }
+    monitor(accessToken);
+  };
+  const checkConnection = async (accessToken: string) => {
     if (state.phase !== "CONNECTED") return;
     const observed = state;
     try {
-      if ((await tunnel.state()) === "UP") return;
-      if (state === observed)
-        emit({
-          phase: "UNAVAILABLE",
-          backend: "ACTIVE",
-          tunnel: "DOWN",
-          reason: "TUNNEL_UNAVAILABLE",
-          session: observed.session,
-        });
+      if ((await tunnel.state()) !== "UP") {
+        if (state === observed)
+          emit({
+            phase: "UNAVAILABLE",
+            backend: "ACTIVE",
+            tunnel: "DOWN",
+            reason: "TUNNEL_UNAVAILABLE",
+            session: observed.session,
+          });
+        return;
+      }
     } catch {
       if (state === observed)
         emit({
@@ -163,10 +206,33 @@ export function createVpnConnectionManager(
           reason: "TUNNEL_UNAVAILABLE",
           session: observed.session,
         });
+      return;
+    }
+    try {
+      const current = await api.getCurrentVpnSession(accessToken);
+      if (state !== observed) return;
+      if (current.session === null) {
+        desiredConnected = false;
+        clearSessionTimers();
+        await tunnel.stop();
+        if (state === observed)
+          emit({ phase: "DISCONNECTED", backend: "NONE", tunnel: "DOWN" });
+        return;
+      }
+      activate(current.session, accessToken);
+    } catch {
+      if (state === observed)
+        emit({
+          phase: "UNAVAILABLE",
+          backend: "UNAVAILABLE",
+          tunnel: "UP",
+          reason: "BACKEND_UNAVAILABLE",
+          session: observed.session,
+        });
     }
   };
 
-  return {
+  const manager: VpnConnectionManager = {
     current: () => state,
     subscribe(listener) {
       listeners.add(listener);
@@ -265,13 +331,7 @@ export function createVpnConnectionManager(
         }
       }
       if (run === generation) {
-        emit({
-          phase: "CONNECTED",
-          backend: "ACTIVE",
-          tunnel: "UP",
-          session: productSession(backendSession),
-        });
-        monitor();
+        activate(backendSession, accessToken);
       }
     },
     async connect(accessToken, selection) {
@@ -305,13 +365,7 @@ export function createVpnConnectionManager(
           throw new VpnConnectionError("LOCAL_TUNNEL_FAILED");
         }
         if (run === generation) {
-          emit({
-            phase: "CONNECTED",
-            backend: "ACTIVE",
-            tunnel: "UP",
-            session: productSession(backendSession),
-          });
-          monitor();
+          activate(backendSession, accessToken);
         }
       } catch (error) {
         const mapped = mapError(error);
@@ -340,6 +394,7 @@ export function createVpnConnectionManager(
       const session = "session" in state ? state.session : undefined;
       const run = ++generation;
       stopMonitor();
+      clearSessionTimers();
       const operation = (async () => {
         emit({
           phase: "DISCONNECTING",
@@ -411,9 +466,11 @@ export function createVpnConnectionManager(
     dispose() {
       generation += 1;
       stopMonitor();
+      clearSessionTimers();
       listeners.clear();
     },
   };
+  return manager;
 }
 
 function productSession(
@@ -423,6 +480,17 @@ function productSession(
     sessionId: session.session_id,
     countryCode: session.country_code,
     expiresAt: session.expires_at,
+    remainingSeconds:
+      session.expires_at === null
+        ? null
+        : Math.max(
+            0,
+            Math.ceil(
+              (Date.parse(session.expires_at) -
+                Date.parse(session.server_time)) /
+                1_000,
+            ),
+          ),
   };
 }
 async function startAndConfirm(

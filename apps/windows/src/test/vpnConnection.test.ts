@@ -17,6 +17,7 @@ const backendSession: ActiveVpnSessionResponse = {
   status: "ACTIVE",
   country_code: "DE",
   expires_at: "2026-09-16T10:15:00Z",
+  server_time: "2026-09-16T10:00:00Z",
   transport: {
     endpoint: { ipv4: "204.48.17.50", port: 51820 },
     server_public_key: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
@@ -344,5 +345,86 @@ describe("Windows VPN connection orchestration", () => {
 
     expect(tunnel.stop).toHaveBeenCalledOnce();
     expect(api.disconnectVpnSession).toHaveBeenCalledOnce();
+  });
+
+  it("derives the FREE countdown from server time despite Windows clock skew", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2035-01-01T00:00:00Z"));
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 2_000_000);
+
+    await connection.connect("access-token", { mode: "AUTO" });
+    expect(connection.current()).toMatchObject({
+      phase: "CONNECTED",
+      session: { remainingSeconds: 900 },
+    });
+    vi.setSystemTime(new Date("1999-01-01T00:00:00Z"));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(connection.current()).toMatchObject({
+      phase: "CONNECTED",
+      session: { remainingSeconds: 899 },
+    });
+    connection.dispose();
+    vi.useRealTimers();
+  });
+
+  it("stops an expired tunnel promptly after a sleep-sized timer jump without granting another session", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 2_000_000);
+    await connection.connect("access-token", { mode: "AUTO" });
+
+    await vi.advanceTimersByTimeAsync(900_000);
+
+    expect(tunnel.stop).toHaveBeenCalledOnce();
+    expect(api.disconnectVpnSession).toHaveBeenCalledWith(
+      "access-token",
+      backendSession.session_id,
+    );
+    expect(api.createVpnSession).toHaveBeenCalledOnce();
+    expect(connection.current()).toEqual({
+      phase: "DISCONNECTED",
+      backend: "NONE",
+      tunnel: "DOWN",
+    });
+    connection.dispose();
+    vi.useRealTimers();
+  });
+
+  it("restores the authoritative remaining time on app restart", async () => {
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.getCurrentVpnSession).mockResolvedValue({
+      session: {
+        ...backendSession,
+        server_time: "2026-09-16T10:10:00Z",
+      },
+    });
+    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+
+    await connection.reconcile("access-token");
+
+    expect(connection.current()).toMatchObject({
+      phase: "CONNECTED",
+      session: { remainingSeconds: 300 },
+    });
+  });
+
+  it("stops locally when backend reports that the peer session is already gone", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    await connection.connect("access-token", { mode: "AUTO" });
+    vi.mocked(api.getCurrentVpnSession).mockResolvedValue({ session: null });
+
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(tunnel.stop).toHaveBeenCalledOnce();
+    expect(connection.current()).toEqual({
+      phase: "DISCONNECTED",
+      backend: "NONE",
+      tunnel: "DOWN",
+    });
+    connection.dispose();
+    vi.useRealTimers();
   });
 });

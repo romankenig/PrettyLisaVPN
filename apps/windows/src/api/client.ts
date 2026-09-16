@@ -117,6 +117,7 @@ export interface ActiveVpnSessionResponse {
   readonly status: "ACTIVE";
   readonly country_code: string;
   readonly expires_at: string | null;
+  readonly server_time: string;
   readonly transport: {
     readonly endpoint: { readonly ipv4: string; readonly port: number };
     readonly server_public_key: string;
@@ -503,12 +504,14 @@ function isActiveVpnSessionResponse(
       "status",
       "country_code",
       "expires_at",
+      "server_time",
       "transport",
     ]) &&
     isUuid(value.session_id) &&
     value.status === "ACTIVE" &&
     /^[A-Z]{2}$/.test(String(value.country_code)) &&
     (value.expires_at === null || isIsoDate(value.expires_at)) &&
+    isIsoDate(value.server_time) &&
     hasOnlyKeys(value.transport, [
       "endpoint",
       "server_public_key",

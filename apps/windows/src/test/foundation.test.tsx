@@ -272,6 +272,7 @@ describe("typed API client", () => {
       status: "ACTIVE",
       country_code: "DE",
       expires_at: "2026-09-16T10:15:00Z",
+      server_time: "2026-09-16T10:00:00Z",
       transport: {
         endpoint: { ipv4: "204.48.17.50", port: 51820 },
         server_public_key: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",

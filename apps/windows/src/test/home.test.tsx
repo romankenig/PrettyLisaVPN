@@ -229,6 +229,7 @@ describe("authenticated Home", () => {
             sessionId: "123e4567-e89b-42d3-a456-426614174020",
             countryCode: "DE",
             expiresAt: null,
+            remainingSeconds: 615,
           },
         };
         listeners.forEach((listener) => listener());
@@ -241,6 +242,7 @@ describe("authenticated Home", () => {
                 sessionId: "123e4567-e89b-42d3-a456-426614174020",
                 countryCode: "DE",
                 expiresAt: null,
+                remainingSeconds: null,
               };
         connectionState = {
           phase: "DISCONNECTING",
@@ -258,7 +260,15 @@ describe("authenticated Home", () => {
       }),
       dispose: vi.fn(),
     };
-    renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
+    const rendered = renderRestored(
+      mockApi(),
+      createTestCredentialStorage(),
+      vpnConnection,
+    );
+    rendered.session.updateProfile("access-token", {
+      ...profile,
+      plan: "FREE",
+    });
     const connectButton = await screen.findByRole("button", {
       name: "CONNECT",
     });
@@ -274,6 +284,7 @@ describe("authenticated Home", () => {
       await screen.findByRole("heading", { name: "Connected" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Локация: Германия")).toBeInTheDocument();
+    expect(screen.getByRole("timer")).toHaveTextContent("Осталось: 10:15");
 
     fireEvent.click(screen.getByRole("button", { name: "DISCONNECT" }));
     expect(

@@ -1,6 +1,6 @@
 """Authenticated HTTP transport for VPN targeting and country availability."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network
 from typing import Annotated, Literal, cast
 from uuid import UUID
@@ -97,6 +97,7 @@ class ActiveVpnSessionResponse(BaseModel):
     status: Literal["ACTIVE"] = "ACTIVE"
     country_code: str = Field(pattern=r"^[A-Z]{2}$")
     expires_at: datetime | None
+    server_time: datetime
     transport: WireGuardTransportResponse
 
 
@@ -114,6 +115,7 @@ def _active_response(transport: ActiveVpnTransport) -> ActiveVpnSessionResponse:
         session_id=transport.session_id,
         country_code=transport.country_code,
         expires_at=transport.expires_at,
+        server_time=datetime.now(UTC),
         transport=WireGuardTransportResponse(
             endpoint=VpnEndpointResponse(
                 ipv4=transport.endpoint_ipv4, port=transport.endpoint_port

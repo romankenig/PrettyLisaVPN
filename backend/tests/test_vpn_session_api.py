@@ -85,7 +85,10 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
         )
 
     assert response.status_code == 200
-    assert response.json() == {
+    response_body = response.json()
+    server_time = response_body.pop("server_time")
+    assert datetime.fromisoformat(server_time.replace("Z", "+00:00")).tzinfo is not None
+    assert response_body == {
         "session_id": str(session_id),
         "status": "ACTIVE",
         "country_code": "DE",
@@ -203,6 +206,10 @@ def test_current_session_supports_restart_reconciliation_without_node_identity()
     body = response.json()
     assert body["session"]["status"] == "ACTIVE"
     assert body["session"]["country_code"] == "DE"
+    assert (
+        datetime.fromisoformat(body["session"]["server_time"].replace("Z", "+00:00")).tzinfo
+        is not None
+    )
     assert "node_id" not in str(body)
     assert "provider" not in str(body)
     status_service.current.assert_awaited_once_with("token")

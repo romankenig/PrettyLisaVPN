@@ -161,6 +161,14 @@ export function Home() {
               ? `Локация: ${countryName(connectionState.session.countryCode)}`
               : "Выберите локацию и установите защищённое соединение."}
           </p>
+          {profile?.plan === "FREE" &&
+          connectionState.phase === "CONNECTED" &&
+          connectionState.session.remainingSeconds !== null ? (
+            <p role="timer">
+              Осталось:{" "}
+              {formatRemaining(connectionState.session.remainingSeconds)}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -315,4 +323,10 @@ function connectionHeading(state: VpnConnectionState) {
     return "DISCONNECTING";
   if (state.tunnel === "DOWN") return "Not connected";
   return "Connection status unavailable";
+}
+
+function formatRemaining(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
