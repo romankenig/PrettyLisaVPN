@@ -12,6 +12,21 @@ from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeProvider, VpnNodeStat
 PUBLIC_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 
+def test_supports_provider_neutral_netcup_metadata():
+    node = make_node(
+        name="v2202609417978522114",
+        provider=VpnNodeProvider.NETCUP,
+        provider_region="nuremberg",
+        country_code="de",
+        city="Nuremberg",
+        public_ipv4=IPv4Address("5.181.49.183"),
+    )
+
+    assert node.provider is VpnNodeProvider.NETCUP
+    assert node.provider_region == "nuremberg"
+    assert node.country_code == "DE"
+
+
 def make_node(**changes: object) -> VpnNode:
     now = datetime.now(UTC)
     node = VpnNode(

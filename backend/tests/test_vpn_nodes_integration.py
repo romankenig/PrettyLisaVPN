@@ -60,7 +60,12 @@ async def delete_nodes(postgres: Postgres, *node_ids) -> None:
 
 async def test_round_trip_list_and_update_control_plane_metadata():
     postgres = Postgres(Settings())
-    node = make_node()
+    node = make_node(
+        provider=VpnNodeProvider.NETCUP,
+        provider_region="nuremberg",
+        city="Nuremberg",
+        public_ipv4=IPv4Address("5.181.49.183"),
+    )
     try:
         async with postgres.session() as session:
             created = await VpnNodeRepository(session).add(node)

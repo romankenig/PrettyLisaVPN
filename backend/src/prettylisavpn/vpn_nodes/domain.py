@@ -11,6 +11,7 @@ from uuid import UUID
 
 class VpnNodeProvider(StrEnum):
     DIGITALOCEAN = "DIGITALOCEAN"
+    NETCUP = "NETCUP"
 
 
 class VpnNodeStatus(StrEnum):
