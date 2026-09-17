@@ -25,6 +25,22 @@ describe("native WireGuard tunnel controller", () => {
     expect(JSON.stringify(invokeNative.mock.calls)).not.toContain("private");
   });
 
+  it("exposes WireGuardNT peer counters for before/after traffic comparison", async () => {
+    const diagnostics = {
+      peerPublicKey: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+      endpoint: "204.48.17.50:51820",
+      allowedIps: ["0.0.0.0/0"],
+      persistentKeepalive: 25,
+      txBytes: 128,
+      rxBytes: 256,
+    };
+    const invokeNative = vi.fn().mockResolvedValue(diagnostics);
+    const controller = createWireGuardTunnelController(invokeNative);
+
+    await expect(controller.diagnostics()).resolves.toEqual(diagnostics);
+    expect(invokeNative).toHaveBeenCalledWith("get_wireguard_peer_diagnostics");
+  });
+
   it("stops and queries state without configuration", async () => {
     const invokeNative = vi
       .fn()

@@ -48,6 +48,7 @@ function dependencies() {
     start: vi.fn().mockResolvedValue("UP"),
     stop: vi.fn().mockResolvedValue("DOWN"),
     state: vi.fn().mockResolvedValue("UP"),
+    diagnostics: vi.fn().mockResolvedValue(null),
   };
   return { api, keys, tunnel };
 }

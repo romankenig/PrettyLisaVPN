@@ -31,6 +31,7 @@ fn main() {
             wireguard_tunnel::start_wireguard_tunnel,
             wireguard_tunnel::stop_wireguard_tunnel,
             wireguard_tunnel::get_wireguard_tunnel_state,
+            wireguard_tunnel::get_wireguard_peer_diagnostics,
         ])
         .run(tauri::generate_context!())
         .expect("Unable to start PrettyLisaVPN");

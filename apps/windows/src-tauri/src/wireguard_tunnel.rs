@@ -77,6 +77,17 @@ pub enum TunnelStatus {
     Up,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WireGuardPeerDiagnostics {
+    peer_public_key: String,
+    endpoint: String,
+    allowed_ips: Vec<String>,
+    persistent_keepalive: u16,
+    tx_bytes: u64,
+    rx_bytes: u64,
+}
+
 struct ActiveTunnel {
     adapter: Adapter,
     #[cfg(windows)]
@@ -140,7 +151,7 @@ impl WireGuardTunnelState {
                 preshared_key: None,
                 keep_alive: Some(KEEPALIVE_SECONDS),
                 endpoint: parsed.endpoint,
-                allowed_ips: parsed.allowed_ips,
+                allowed_ips: parsed.allowed_ips.clone(),
             }],
         };
 
@@ -149,6 +160,12 @@ impl WireGuardTunnelState {
             key.zeroize();
         }
         configured.map_err(|_| TunnelError::Unavailable)?;
+        let diagnostics = read_peer_diagnostics(&adapter)?;
+        log_peer_diagnostics("after_set_config", &diagnostics);
+        if validate_peer_readback(&diagnostics, &parsed).is_err() {
+            let _ = adapter.down();
+            return Err(TunnelError::ConfigurationReadbackMismatch);
+        }
         if adapter
             .set_default_route(&[parsed.client_address], &interface)
             .is_err()
@@ -248,6 +265,69 @@ impl WireGuardTunnelState {
                 .map_err(|_| TunnelError::Unavailable),
         }
     }
+
+    fn diagnostics(&self) -> Result<Option<WireGuardPeerDiagnostics>, TunnelError> {
+        let active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
+        let Some(tunnel) = active.as_ref() else {
+            return Ok(None);
+        };
+        let diagnostics = read_peer_diagnostics(&tunnel.adapter)?;
+        log_peer_diagnostics("runtime_snapshot", &diagnostics);
+        Ok(Some(diagnostics))
+    }
+}
+
+fn read_peer_diagnostics(adapter: &Adapter) -> Result<WireGuardPeerDiagnostics, TunnelError> {
+    let configuration =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| adapter.get_config()))
+            .map_err(|_| TunnelError::Unavailable)?;
+    if configuration.peers.len() != 1 {
+        return Err(TunnelError::ConfigurationReadbackMismatch);
+    }
+    let peer = &configuration.peers[0];
+    Ok(WireGuardPeerDiagnostics {
+        peer_public_key: STANDARD.encode(peer.public_key),
+        endpoint: peer.endpoint.to_string(),
+        allowed_ips: peer.allowed_ips.iter().map(ToString::to_string).collect(),
+        persistent_keepalive: peer.persistent_keepalive,
+        tx_bytes: peer.tx_bytes,
+        rx_bytes: peer.rx_bytes,
+    })
+}
+
+fn validate_peer_readback(
+    diagnostics: &WireGuardPeerDiagnostics,
+    expected: &ParsedConfiguration,
+) -> Result<(), TunnelError> {
+    let expected_allowed_ips = expected
+        .allowed_ips
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    if diagnostics.peer_public_key != STANDARD.encode(expected.server_public_key)
+        || diagnostics.endpoint != expected.endpoint.to_string()
+        || diagnostics.allowed_ips != expected_allowed_ips
+        || !diagnostics
+            .allowed_ips
+            .iter()
+            .any(|network| network == "0.0.0.0/0")
+        || diagnostics.persistent_keepalive != KEEPALIVE_SECONDS
+    {
+        return Err(TunnelError::ConfigurationReadbackMismatch);
+    }
+    Ok(())
+}
+
+fn log_peer_diagnostics(stage: &str, diagnostics: &WireGuardPeerDiagnostics) {
+    eprintln!(
+        "wireguard_peer_diagnostics stage={stage} peer_public_key={} endpoint={} allowed_ips={:?} persistent_keepalive={} tx_bytes={} rx_bytes={}",
+        diagnostics.peer_public_key,
+        diagnostics.endpoint,
+        diagnostics.allowed_ips,
+        diagnostics.persistent_keepalive,
+        diagnostics.tx_bytes,
+        diagnostics.rx_bytes,
+    );
 }
 
 #[cfg(windows)]
@@ -469,6 +549,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
 #[derive(Debug)]
 enum TunnelError {
     InvalidConfiguration,
+    ConfigurationReadbackMismatch,
     KeyMissing,
     KeyUnavailable,
     ComponentMissing,
@@ -482,6 +563,7 @@ impl TunnelError {
     fn code(&self) -> &'static str {
         match self {
             Self::InvalidConfiguration => "invalid_wireguard_configuration",
+            Self::ConfigurationReadbackMismatch => "wireguard_configuration_readback_mismatch",
             Self::KeyMissing => "wireguard_key_missing",
             Self::KeyUnavailable => "wireguard_key_storage_unavailable",
             Self::ComponentMissing => "wireguard_component_missing",
@@ -516,6 +598,13 @@ pub fn get_wireguard_tunnel_state(
     tunnel: tauri::State<'_, WireGuardTunnelState>,
 ) -> Result<TunnelStatus, &'static str> {
     tunnel.status().map_err(|error| error.code())
+}
+
+#[tauri::command]
+pub fn get_wireguard_peer_diagnostics(
+    tunnel: tauri::State<'_, WireGuardTunnelState>,
+) -> Result<Option<WireGuardPeerDiagnostics>, &'static str> {
+    tunnel.diagnostics().map_err(|error| error.code())
 }
 
 fn decode_public_key(encoded: &str) -> Result<[u8; 32], TunnelError> {
@@ -766,6 +855,45 @@ mod tests {
         assert_eq!(
             TunnelError::ComponentMissing.code(),
             "wireguard_component_missing"
+        );
+        assert_eq!(
+            TunnelError::ConfigurationReadbackMismatch.code(),
+            "wireguard_configuration_readback_mismatch"
+        );
+    }
+
+    #[test]
+    fn validates_expected_wireguardnt_peer_readback() {
+        let parsed = ParsedConfiguration::try_from(valid_configuration()).unwrap();
+        let diagnostics = WireGuardPeerDiagnostics {
+            peer_public_key: STANDARD.encode(parsed.server_public_key),
+            endpoint: parsed.endpoint.to_string(),
+            allowed_ips: vec!["0.0.0.0/0".into()],
+            persistent_keepalive: KEEPALIVE_SECONDS,
+            tx_bytes: 128,
+            rx_bytes: 256,
+        };
+
+        assert!(validate_peer_readback(&diagnostics, &parsed).is_ok());
+    }
+
+    #[test]
+    fn rejects_wireguardnt_peer_readback_without_full_tunnel_allowed_ips() {
+        let parsed = ParsedConfiguration::try_from(valid_configuration()).unwrap();
+        let diagnostics = WireGuardPeerDiagnostics {
+            peer_public_key: STANDARD.encode(parsed.server_public_key),
+            endpoint: parsed.endpoint.to_string(),
+            allowed_ips: vec!["10.77.0.0/16".into()],
+            persistent_keepalive: KEEPALIVE_SECONDS,
+            tx_bytes: 0,
+            rx_bytes: 0,
+        };
+
+        assert_eq!(
+            validate_peer_readback(&diagnostics, &parsed)
+                .unwrap_err()
+                .code(),
+            "wireguard_configuration_readback_mismatch"
         );
     }
 

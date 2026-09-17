@@ -17,12 +17,22 @@ export interface WireGuardTransportConfiguration {
 
 export type WireGuardTunnelState = "UP" | "DOWN";
 
+export interface WireGuardPeerDiagnostics {
+  readonly peerPublicKey: string;
+  readonly endpoint: string;
+  readonly allowedIps: readonly string[];
+  readonly persistentKeepalive: number;
+  readonly txBytes: number;
+  readonly rxBytes: number;
+}
+
 export interface WireGuardTunnelController {
   start(
     configuration: WireGuardTransportConfiguration,
   ): Promise<WireGuardTunnelState>;
   stop(): Promise<WireGuardTunnelState>;
   state(): Promise<WireGuardTunnelState>;
+  diagnostics(): Promise<WireGuardPeerDiagnostics | null>;
 }
 
 export class WireGuardTunnelError extends Error {
@@ -51,6 +61,17 @@ export function createWireGuardTunnelController(
     },
     async state() {
       return invokeAndValidate(invokeNative, "get_wireguard_tunnel_state");
+    },
+    async diagnostics() {
+      try {
+        return await invokeNative<WireGuardPeerDiagnostics | null>(
+          "get_wireguard_peer_diagnostics",
+        );
+      } catch (error) {
+        const code =
+          typeof error === "string" ? error : "wireguard_tunnel_unavailable";
+        throw new WireGuardTunnelError(code);
+      }
     },
   };
 }
