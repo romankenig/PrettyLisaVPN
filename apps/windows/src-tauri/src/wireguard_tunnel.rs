@@ -33,7 +33,8 @@ const MAX_ALLOWED_IPS: usize = 64;
 const MAX_DNS_SERVERS: usize = 4;
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(8);
 const HANDSHAKE_POLL_INTERVAL: Duration = Duration::from_millis(100);
-const DATA_PLANE_TIMEOUT: Duration = Duration::from_secs(8);
+const DATA_PLANE_TIMEOUT: Duration = Duration::from_secs(30);
+const DATA_PLANE_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(3);
 // 1280 remains safe when PrettyLisaVPN is carried inside another VPN while still
 // satisfying the IPv6 minimum MTU. The MVP is IPv4-only, but using this floor also
 // avoids HTTPS stalls caused by an outer tunnel silently dropping oversized packets.
@@ -645,12 +646,17 @@ fn wait_for_handshake(adapter: &Adapter) -> Result<(), TunnelError> {
 }
 
 fn verify_data_plane() -> Result<(), TunnelError> {
-    TcpStream::connect_timeout(
-        &SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443),
-        DATA_PLANE_TIMEOUT,
-    )
-    .map(|_| ())
-    .map_err(|_| TunnelError::DataPlaneUnavailable)
+    let destination = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443);
+    let deadline = Instant::now() + DATA_PLANE_TIMEOUT;
+    while Instant::now() < deadline {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let attempt_timeout = remaining.min(DATA_PLANE_ATTEMPT_TIMEOUT);
+        if TcpStream::connect_timeout(&destination, attempt_timeout).is_ok() {
+            return Ok(());
+        }
+        thread::sleep(HANDSHAKE_POLL_INTERVAL);
+    }
+    Err(TunnelError::DataPlaneUnavailable)
 }
 
 #[cfg(test)]
