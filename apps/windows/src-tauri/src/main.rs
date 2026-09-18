@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod installation_id;
+mod obfuscation_transport;
 mod refresh_credentials;
 mod wireguard_keys;
 mod wireguard_tunnel;

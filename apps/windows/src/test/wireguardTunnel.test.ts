@@ -33,6 +33,9 @@ describe("native WireGuard tunnel controller", () => {
       persistentKeepalive: 25,
       txBytes: 128,
       rxBytes: 256,
+      transportMode: "PRETTYLISA_V1",
+      transportHealthy: true,
+      publicEndpoint: "204.48.17.50:443",
     };
     const invokeNative = vi.fn().mockResolvedValue(diagnostics);
     const controller = createWireGuardTunnelController(invokeNative);

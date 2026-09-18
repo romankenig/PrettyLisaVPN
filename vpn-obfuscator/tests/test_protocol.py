@@ -13,6 +13,11 @@ from prettylisavpn_obfuscator.protocol import (
 )
 
 KEY = bytes(range(32))
+COMPATIBILITY_PACKET = bytes.fromhex("010000005072657474794c6973612d7631")
+COMPATIBILITY_ENVELOPE = bytes.fromhex(
+    "01a0a1a2a3a4a5a6a7a8a9aaab0cba795f4de692dfc57b876db0938e9ab0"
+    "28e24fb2989357412e2cd8a5a754bed05f8bc4bd651e9b7b96a0"
+)
 
 
 def test_round_trip_hides_raw_wireguard_header() -> None:
@@ -25,6 +30,19 @@ def test_round_trip_hides_raw_wireguard_header() -> None:
     assert not encoded.startswith(wireguard_packet)
     assert wireguard_packet not in encoded
     assert codec.decode(encoded) == wireguard_packet
+
+
+def test_matches_stage_3ac_rust_compatibility_vector() -> None:
+    nonce = bytes(range(0xA0, 0xAC))
+    padding = bytes(range(0xF0, 0xF8))
+    codec = V1ObfuscationTransport(
+        KEY,
+        random_bytes=lambda size: nonce if size == 12 else padding,
+        random_below=lambda limit: 8,
+    )
+
+    assert codec.encode(COMPATIBILITY_PACKET) == COMPATIBILITY_ENVELOPE
+    assert codec.decode(COMPATIBILITY_ENVELOPE) == COMPATIBILITY_PACKET
 
 
 def test_random_padding_varies_envelope_size() -> None:

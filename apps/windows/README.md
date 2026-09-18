@@ -83,6 +83,18 @@ Tauri запускает Vite на `127.0.0.1:1420`, компилирует Rust
 | `VITE_BACKEND_TIMEOUT_MS`         | `5000`                          | Тайм-аут каждого запроса, от 1000 до 30000 мс. |
 | `VITE_BACKEND_HEALTH_INTERVAL_MS` | `15000`                         | Интервал проверки, от тайм-аута до 60000 мс.   |
 
+Native packet transport настраивается только в environment процесса, а не через Vite:
+
+| Переменная                      | По умолчанию | Назначение                                        |
+| ------------------------------- | ------------ | ------------------------------------------------- |
+| `PRETTYLISA_VPN_TRANSPORT_MODE` | `DIRECT`     | `DIRECT` или `PRETTYLISA_V1`.                     |
+| `PRETTYLISA_V1_SECRET`          | не задан     | Canonical Base64 32-byte Stage 3AB secret для V1. |
+| `PRETTYLISA_V1_PUBLIC_PORT`     | `443`        | Публичный UDP-порт Stage 3AB obfuscator.          |
+
+Не помещайте `PRETTYLISA_V1_SECRET` в `.env.local`: frontend build не является хранилищем
+секретов. Для ручной Stage 3AC-проверки задайте его только в elevated PowerShell, запускающем
+Tauri, и удалите из environment сразу после завершения процесса.
+
 `VITE_*` — публичные значения. Никогда не помещайте сюда пароли, ключи или токены.
 Для production требуется HTTPS; credentials, query и fragment в base URL запрещены.
 Неверная конфигурация показывает безопасное сообщение запуска без её значений.

@@ -24,6 +24,9 @@ export interface WireGuardPeerDiagnostics {
   readonly persistentKeepalive: number;
   readonly txBytes: number;
   readonly rxBytes: number;
+  readonly transportMode: "DIRECT" | "PRETTYLISA_V1";
+  readonly transportHealthy: boolean;
+  readonly publicEndpoint: string;
 }
 
 export interface WireGuardTunnelController {

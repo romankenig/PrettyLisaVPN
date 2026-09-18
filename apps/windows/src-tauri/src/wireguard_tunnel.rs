@@ -24,6 +24,7 @@ use windows_sys::Win32::{
 use wireguard_nt::{Adapter, AdapterLoggingLevel, SetInterface, SetPeer};
 use zeroize::Zeroize;
 
+use crate::obfuscation_transport::{ActivePacketTransport, TransportError, TransportMode};
 use crate::wireguard_keys::WireGuardKeyState;
 
 const ADAPTER_NAME: &str = "PrettyLisaVPN";
@@ -86,12 +87,37 @@ pub struct WireGuardPeerDiagnostics {
     persistent_keepalive: u16,
     tx_bytes: u64,
     rx_bytes: u64,
+    transport_mode: TransportMode,
+    transport_healthy: bool,
+    public_endpoint: String,
 }
 
 struct ActiveTunnel {
     adapter: Adapter,
+    transport: ActivePacketTransport,
     #[cfg(windows)]
     routes: Vec<MIB_IPFORWARD_ROW2>,
+    cleaned: bool,
+}
+
+impl ActiveTunnel {
+    fn cleanup(&mut self) -> Result<(), TunnelError> {
+        if self.cleaned {
+            return Ok(());
+        }
+        let adapter_result = self.adapter.down();
+        #[cfg(windows)]
+        remove_routes(&self.routes);
+        self.transport.stop();
+        self.cleaned = adapter_result.is_ok();
+        adapter_result.map_err(|_| TunnelError::Unavailable)
+    }
+}
+
+impl Drop for ActiveTunnel {
+    fn drop(&mut self) {
+        let _ = self.cleanup();
+    }
 }
 
 pub struct WireGuardTunnelState {
@@ -113,23 +139,23 @@ impl WireGuardTunnelState {
         let parsed = ParsedConfiguration::try_from(configuration)?;
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
         if let Some(current) = active.as_ref() {
-            return current
-                .adapter
-                .is_up()
-                .map(|up| {
-                    if up {
-                        TunnelStatus::Up
-                    } else {
-                        TunnelStatus::Down
-                    }
-                })
-                .map_err(|_| TunnelError::Unavailable);
+            if current.transport.is_healthy() && current.adapter.is_up().unwrap_or(false) {
+                return Ok(TunnelStatus::Up);
+            }
+            if let Some(mut stale) = active.take() {
+                let _ = stale.cleanup();
+            }
         }
 
         let private_key = keys
             .read_private_key()
             .map_err(|_| TunnelError::KeyUnavailable)?
             .ok_or(TunnelError::KeyMissing)?;
+        let packet_transport = ActivePacketTransport::start(parsed.public_endpoint)?;
+        if !packet_transport.is_healthy() {
+            return Err(TunnelError::TransportUnavailable);
+        }
+        let wireguard_endpoint = packet_transport.wireguard_endpoint();
         #[cfg(windows)]
         let endpoint_route = pre_tunnel_ipv4_default_route()?;
         let library_path = wireguard_library_path()?;
@@ -150,7 +176,7 @@ impl WireGuardTunnelState {
                 public_key: Some(parsed.server_public_key),
                 preshared_key: None,
                 keep_alive: Some(KEEPALIVE_SECONDS),
-                endpoint: parsed.endpoint,
+                endpoint: wireguard_endpoint,
                 allowed_ips: parsed.allowed_ips.clone(),
             }],
         };
@@ -160,9 +186,9 @@ impl WireGuardTunnelState {
             key.zeroize();
         }
         configured.map_err(|_| TunnelError::Unavailable)?;
-        let diagnostics = read_peer_diagnostics(&adapter)?;
+        let diagnostics = read_peer_diagnostics(&adapter, &packet_transport)?;
         log_peer_diagnostics("after_set_config", &diagnostics);
-        if validate_peer_readback(&diagnostics, &parsed).is_err() {
+        if validate_peer_readback(&diagnostics, &parsed, wireguard_endpoint).is_err() {
             let _ = adapter.down();
             return Err(TunnelError::ConfigurationReadbackMismatch);
         }
@@ -174,14 +200,17 @@ impl WireGuardTunnelState {
             return Err(TunnelError::Unavailable);
         }
         #[cfg(windows)]
-        let routes =
-            match configure_full_tunnel_routes(&adapter, parsed.endpoint.ip(), endpoint_route) {
-                Ok(routes) => routes,
-                Err(error) => {
-                    let _ = adapter.down();
-                    return Err(error);
-                }
-            };
+        let routes = match configure_full_tunnel_routes(
+            &adapter,
+            parsed.public_endpoint.ip(),
+            endpoint_route,
+        ) {
+            Ok(routes) => routes,
+            Err(error) => {
+                let _ = adapter.down();
+                return Err(error);
+            }
+        };
         if adapter.up().is_err() {
             #[cfg(windows)]
             remove_routes(&routes);
@@ -204,11 +233,11 @@ impl WireGuardTunnelState {
                 return Err(TunnelError::Unavailable);
             }
         }
-        if wait_for_handshake(&adapter).is_err() {
+        if let Err(error) = wait_for_handshake(&adapter, &packet_transport) {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
-            return Err(TunnelError::HandshakeTimeout);
+            return Err(error);
         }
         if verify_data_plane().is_err() {
             #[cfg(windows)]
@@ -225,45 +254,47 @@ impl WireGuardTunnelState {
 
         *active = Some(ActiveTunnel {
             adapter,
+            transport: packet_transport,
             #[cfg(windows)]
             routes,
+            cleaned: false,
         });
         Ok(TunnelStatus::Up)
     }
 
     fn stop(&self) -> Result<TunnelStatus, TunnelError> {
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
-        if let Some(tunnel) = active.as_ref() {
-            // Bringing the dedicated adapter down removes its default routes and makes
-            // its adapter-scoped DNS inactive, restoring the original Windows network path.
-            // Keep the handle on failure so a later idempotent stop can retry safely.
-            #[cfg(windows)]
-            remove_routes(&tunnel.routes);
-            tunnel
-                .adapter
-                .down()
-                .map_err(|_| TunnelError::Unavailable)?;
+        if let Some(tunnel) = active.as_mut() {
+            // Stop WireGuard first, remove its routes, then stop the local packet transport.
+            // Retain the handle after a native error so an idempotent retry can finish cleanup.
+            tunnel.cleanup()?;
         }
         *active = None;
         Ok(TunnelStatus::Down)
     }
 
     fn status(&self) -> Result<TunnelStatus, TunnelError> {
-        let active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
-        match active.as_ref() {
+        let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
+        let status = match active.as_ref() {
             None => Ok(TunnelStatus::Down),
+            Some(tunnel) if !tunnel.transport.is_healthy() => Ok(TunnelStatus::Down),
             Some(tunnel) => tunnel
                 .adapter
                 .is_up()
-                .map(|up| {
-                    if up {
+                .map_or(Err(TunnelError::Unavailable), |up| {
+                    Ok(if up {
                         TunnelStatus::Up
                     } else {
                         TunnelStatus::Down
-                    }
-                })
-                .map_err(|_| TunnelError::Unavailable),
+                    })
+                }),
+        }?;
+        if status == TunnelStatus::Down {
+            if let Some(mut tunnel) = active.take() {
+                let _ = tunnel.cleanup();
+            }
         }
+        Ok(status)
     }
 
     fn diagnostics(&self) -> Result<Option<WireGuardPeerDiagnostics>, TunnelError> {
@@ -271,13 +302,26 @@ impl WireGuardTunnelState {
         let Some(tunnel) = active.as_ref() else {
             return Ok(None);
         };
-        let diagnostics = read_peer_diagnostics(&tunnel.adapter)?;
+        let diagnostics = read_peer_diagnostics(&tunnel.adapter, &tunnel.transport)?;
         log_peer_diagnostics("runtime_snapshot", &diagnostics);
         Ok(Some(diagnostics))
     }
 }
 
-fn read_peer_diagnostics(adapter: &Adapter) -> Result<WireGuardPeerDiagnostics, TunnelError> {
+impl Drop for WireGuardTunnelState {
+    fn drop(&mut self) {
+        if let Ok(active) = self.active.get_mut() {
+            if let Some(mut tunnel) = active.take() {
+                let _ = tunnel.cleanup();
+            }
+        }
+    }
+}
+
+fn read_peer_diagnostics(
+    adapter: &Adapter,
+    transport: &ActivePacketTransport,
+) -> Result<WireGuardPeerDiagnostics, TunnelError> {
     let configuration =
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| adapter.get_config()))
             .map_err(|_| TunnelError::Unavailable)?;
@@ -292,12 +336,16 @@ fn read_peer_diagnostics(adapter: &Adapter) -> Result<WireGuardPeerDiagnostics, 
         persistent_keepalive: peer.persistent_keepalive,
         tx_bytes: peer.tx_bytes,
         rx_bytes: peer.rx_bytes,
+        transport_mode: transport.mode(),
+        transport_healthy: transport.is_healthy(),
+        public_endpoint: transport.public_endpoint().to_string(),
     })
 }
 
 fn validate_peer_readback(
     diagnostics: &WireGuardPeerDiagnostics,
     expected: &ParsedConfiguration,
+    expected_wireguard_endpoint: SocketAddr,
 ) -> Result<(), TunnelError> {
     let expected_allowed_ips = expected
         .allowed_ips
@@ -305,7 +353,7 @@ fn validate_peer_readback(
         .map(ToString::to_string)
         .collect::<Vec<_>>();
     if diagnostics.peer_public_key != STANDARD.encode(expected.server_public_key)
-        || diagnostics.endpoint != expected.endpoint.to_string()
+        || diagnostics.endpoint != expected_wireguard_endpoint.to_string()
         || diagnostics.allowed_ips != expected_allowed_ips
         || !diagnostics
             .allowed_ips
@@ -320,13 +368,16 @@ fn validate_peer_readback(
 
 fn log_peer_diagnostics(stage: &str, diagnostics: &WireGuardPeerDiagnostics) {
     eprintln!(
-        "wireguard_peer_diagnostics stage={stage} peer_public_key={} endpoint={} allowed_ips={:?} persistent_keepalive={} tx_bytes={} rx_bytes={}",
+        "wireguard_peer_diagnostics stage={stage} peer_public_key={} endpoint={} allowed_ips={:?} persistent_keepalive={} tx_bytes={} rx_bytes={} transport_mode={:?} transport_healthy={} public_endpoint={}",
         diagnostics.peer_public_key,
         diagnostics.endpoint,
         diagnostics.allowed_ips,
         diagnostics.persistent_keepalive,
         diagnostics.tx_bytes,
         diagnostics.rx_bytes,
+        diagnostics.transport_mode,
+        diagnostics.transport_healthy,
+        diagnostics.public_endpoint,
     );
 }
 
@@ -473,7 +524,7 @@ fn full_tunnel_routes_are_selected(adapter: &Adapter) -> Result<bool, TunnelErro
 }
 
 struct ParsedConfiguration {
-    endpoint: SocketAddr,
+    public_endpoint: SocketAddr,
     server_public_key: [u8; 32],
     client_address: IpNet,
     dns: Vec<IpAddr>,
@@ -537,7 +588,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
         }
 
         Ok(Self {
-            endpoint: SocketAddr::new(IpAddr::V4(endpoint_ip), value.endpoint.port),
+            public_endpoint: SocketAddr::new(IpAddr::V4(endpoint_ip), value.endpoint.port),
             server_public_key,
             client_address,
             dns,
@@ -549,6 +600,8 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
 #[derive(Debug)]
 enum TunnelError {
     InvalidConfiguration,
+    TransportConfigurationInvalid,
+    TransportUnavailable,
     ConfigurationReadbackMismatch,
     KeyMissing,
     KeyUnavailable,
@@ -563,6 +616,8 @@ impl TunnelError {
     fn code(&self) -> &'static str {
         match self {
             Self::InvalidConfiguration => "invalid_wireguard_configuration",
+            Self::TransportConfigurationInvalid => "obfuscation_transport_configuration_invalid",
+            Self::TransportUnavailable => "obfuscation_transport_unavailable",
             Self::ConfigurationReadbackMismatch => "wireguard_configuration_readback_mismatch",
             Self::KeyMissing => "wireguard_key_missing",
             Self::KeyUnavailable => "wireguard_key_storage_unavailable",
@@ -571,6 +626,15 @@ impl TunnelError {
             Self::HandshakeTimeout => "wireguard_handshake_timeout",
             Self::DataPlaneUnavailable => "wireguard_data_plane_unavailable",
             Self::Unavailable => "wireguard_tunnel_unavailable",
+        }
+    }
+}
+
+impl From<TransportError> for TunnelError {
+    fn from(error: TransportError) -> Self {
+        match error {
+            TransportError::InvalidConfiguration => Self::TransportConfigurationInvalid,
+            TransportError::Unavailable => Self::TransportUnavailable,
         }
     }
 }
@@ -712,7 +776,10 @@ fn configure_interface() -> Result<(), TunnelError> {
     Ok(())
 }
 
-fn wait_for_handshake(adapter: &Adapter) -> Result<(), TunnelError> {
+fn wait_for_handshake(
+    adapter: &Adapter,
+    transport: &ActivePacketTransport,
+) -> Result<(), TunnelError> {
     let socket = std::net::UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
         .map_err(|_| TunnelError::Unavailable)?;
     socket
@@ -721,6 +788,9 @@ fn wait_for_handshake(adapter: &Adapter) -> Result<(), TunnelError> {
 
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     while Instant::now() < deadline {
+        if !transport.is_healthy() {
+            return Err(TunnelError::TransportUnavailable);
+        }
         if adapter
             .get_config()
             .peers
@@ -768,7 +838,10 @@ mod tests {
     #[test]
     fn accepts_complete_backend_transport_configuration() {
         let parsed = ParsedConfiguration::try_from(valid_configuration()).unwrap();
-        assert_eq!(parsed.endpoint, "204.48.17.50:51820".parse().unwrap());
+        assert_eq!(
+            parsed.public_endpoint,
+            "204.48.17.50:51820".parse().unwrap()
+        );
         assert_eq!(parsed.client_address.to_string(), "10.77.0.2/16");
         assert_eq!(parsed.allowed_ips[0].to_string(), "0.0.0.0/0");
         assert_eq!(parsed.dns.len(), 2);
@@ -860,6 +933,14 @@ mod tests {
             TunnelError::ConfigurationReadbackMismatch.code(),
             "wireguard_configuration_readback_mismatch"
         );
+        assert_eq!(
+            TunnelError::TransportConfigurationInvalid.code(),
+            "obfuscation_transport_configuration_invalid"
+        );
+        assert_eq!(
+            TunnelError::TransportUnavailable.code(),
+            "obfuscation_transport_unavailable"
+        );
     }
 
     #[test]
@@ -867,14 +948,17 @@ mod tests {
         let parsed = ParsedConfiguration::try_from(valid_configuration()).unwrap();
         let diagnostics = WireGuardPeerDiagnostics {
             peer_public_key: STANDARD.encode(parsed.server_public_key),
-            endpoint: parsed.endpoint.to_string(),
+            endpoint: parsed.public_endpoint.to_string(),
             allowed_ips: vec!["0.0.0.0/0".into()],
             persistent_keepalive: KEEPALIVE_SECONDS,
             tx_bytes: 128,
             rx_bytes: 256,
+            transport_mode: TransportMode::Direct,
+            transport_healthy: true,
+            public_endpoint: parsed.public_endpoint.to_string(),
         };
 
-        assert!(validate_peer_readback(&diagnostics, &parsed).is_ok());
+        assert!(validate_peer_readback(&diagnostics, &parsed, parsed.public_endpoint).is_ok());
     }
 
     #[test]
@@ -882,15 +966,18 @@ mod tests {
         let parsed = ParsedConfiguration::try_from(valid_configuration()).unwrap();
         let diagnostics = WireGuardPeerDiagnostics {
             peer_public_key: STANDARD.encode(parsed.server_public_key),
-            endpoint: parsed.endpoint.to_string(),
+            endpoint: parsed.public_endpoint.to_string(),
             allowed_ips: vec!["10.77.0.0/16".into()],
             persistent_keepalive: KEEPALIVE_SECONDS,
             tx_bytes: 0,
             rx_bytes: 0,
+            transport_mode: TransportMode::Direct,
+            transport_healthy: true,
+            public_endpoint: parsed.public_endpoint.to_string(),
         };
 
         assert_eq!(
-            validate_peer_readback(&diagnostics, &parsed)
+            validate_peer_readback(&diagnostics, &parsed, parsed.public_endpoint)
                 .unwrap_err()
                 .code(),
             "wireguard_configuration_readback_mismatch"
