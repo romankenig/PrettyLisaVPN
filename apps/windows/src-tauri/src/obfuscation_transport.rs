@@ -2,10 +2,10 @@
 
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -14,6 +14,8 @@ use chacha20poly1305::{ChaCha20Poly1305, Nonce};
 use rand_core::{OsRng, RngCore};
 use serde::Serialize;
 use zeroize::{Zeroize, Zeroizing};
+
+use crate::debug_log;
 
 const PROTOCOL_VERSION: u8 = 1;
 const KEY_SIZE: usize = 32;
@@ -106,7 +108,23 @@ pub(crate) enum ActivePacketTransport {
 
 impl ActivePacketTransport {
     pub(crate) fn start(public_endpoint: SocketAddr) -> Result<Self, TransportError> {
-        Self::start_selected(public_endpoint, TransportSelection::from_environment()?)
+        debug_log::event(
+            "transport_selection_started",
+            format_args!("backend_endpoint={public_endpoint}"),
+        );
+        let transport =
+            Self::start_selected(public_endpoint, TransportSelection::from_environment()?)?;
+        debug_log::event(
+            "transport_ready",
+            format_args!(
+                "mode={:?} wireguard_endpoint={} public_endpoint={} healthy={}",
+                transport.mode(),
+                transport.wireguard_endpoint(),
+                transport.public_endpoint(),
+                transport.is_healthy()
+            ),
+        );
+        Ok(transport)
     }
 
     fn start_selected(
@@ -153,9 +171,62 @@ impl ActivePacketTransport {
         }
     }
 
+    pub(crate) fn snapshot(&self) -> TransportSnapshot {
+        match self {
+            Self::Direct { .. } => TransportSnapshot::default(),
+            Self::PrettyLisaV1(client) => client.counters.snapshot(),
+        }
+    }
+
     pub(crate) fn stop(&mut self) {
+        debug_log::event(
+            "transport_stop_requested",
+            format_args!("mode={:?} counters={:?}", self.mode(), self.snapshot()),
+        );
         if let Self::PrettyLisaV1(client) = self {
             client.stop();
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct TransportSnapshot {
+    pub(crate) inner_tx_packets: u64,
+    pub(crate) inner_tx_bytes: u64,
+    pub(crate) public_tx_packets: u64,
+    pub(crate) public_tx_bytes: u64,
+    pub(crate) public_rx_packets: u64,
+    pub(crate) public_rx_bytes: u64,
+    pub(crate) inner_rx_packets: u64,
+    pub(crate) inner_rx_bytes: u64,
+    pub(crate) rejected_public_packets: u64,
+}
+
+#[derive(Default)]
+struct TransportCounters {
+    inner_tx_packets: AtomicU64,
+    inner_tx_bytes: AtomicU64,
+    public_tx_packets: AtomicU64,
+    public_tx_bytes: AtomicU64,
+    public_rx_packets: AtomicU64,
+    public_rx_bytes: AtomicU64,
+    inner_rx_packets: AtomicU64,
+    inner_rx_bytes: AtomicU64,
+    rejected_public_packets: AtomicU64,
+}
+
+impl TransportCounters {
+    fn snapshot(&self) -> TransportSnapshot {
+        TransportSnapshot {
+            inner_tx_packets: self.inner_tx_packets.load(Ordering::Relaxed),
+            inner_tx_bytes: self.inner_tx_bytes.load(Ordering::Relaxed),
+            public_tx_packets: self.public_tx_packets.load(Ordering::Relaxed),
+            public_tx_bytes: self.public_tx_bytes.load(Ordering::Relaxed),
+            public_rx_packets: self.public_rx_packets.load(Ordering::Relaxed),
+            public_rx_bytes: self.public_rx_bytes.load(Ordering::Relaxed),
+            inner_rx_packets: self.inner_rx_packets.load(Ordering::Relaxed),
+            inner_rx_bytes: self.inner_rx_bytes.load(Ordering::Relaxed),
+            rejected_public_packets: self.rejected_public_packets.load(Ordering::Relaxed),
         }
     }
 }
@@ -171,6 +242,7 @@ pub(crate) struct PrettyLisaV1Client {
     public_endpoint: SocketAddr,
     stop_requested: Arc<AtomicBool>,
     healthy: Arc<AtomicBool>,
+    counters: Arc<TransportCounters>,
     worker: Option<JoinHandle<()>>,
 }
 
@@ -196,10 +268,22 @@ impl PrettyLisaV1Client {
             .set_nonblocking(true)
             .map_err(|_| TransportError::Unavailable)?;
 
+        let public_local_endpoint = public_socket
+            .local_addr()
+            .map_err(|_| TransportError::Unavailable)?;
+        debug_log::event(
+            "obfuscation_socket_bound",
+            format_args!(
+                "local_listener={local_endpoint} public_socket={public_local_endpoint} public_endpoint={public_endpoint}"
+            ),
+        );
+
         let stop_requested = Arc::new(AtomicBool::new(false));
         let healthy = Arc::new(AtomicBool::new(true));
+        let counters = Arc::new(TransportCounters::default());
         let worker_stop = Arc::clone(&stop_requested);
         let worker_health = Arc::clone(&healthy);
+        let worker_counters = Arc::clone(&counters);
         let codec = V1PacketCodec::new(key);
         let worker = thread::Builder::new()
             .name("prettylisa-obfuscation-v1".to_owned())
@@ -210,6 +294,7 @@ impl PrettyLisaV1Client {
                     codec,
                     &worker_stop,
                     &worker_health,
+                    &worker_counters,
                 );
             })
             .map_err(|_| TransportError::Unavailable)?;
@@ -219,6 +304,7 @@ impl PrettyLisaV1Client {
             public_endpoint,
             stop_requested,
             healthy,
+            counters,
             worker: Some(worker),
         })
     }
@@ -229,6 +315,10 @@ impl PrettyLisaV1Client {
             let _ = worker.join();
         }
         self.healthy.store(false, Ordering::Release);
+        debug_log::event(
+            "obfuscation_transport_stopped",
+            format_args!("counters={:?}", self.counters.snapshot()),
+        );
     }
 }
 
@@ -244,10 +334,16 @@ fn run_forwarder(
     codec: V1PacketCodec,
     stop_requested: &AtomicBool,
     healthy: &AtomicBool,
+    counters: &TransportCounters,
 ) {
     let mut local_buffer = [0_u8; MAX_PACKET_SIZE + 1];
     let mut public_buffer = [0_u8; MAX_ENVELOPE_SIZE + 1];
     let mut wireguard_endpoint: Option<SocketAddr> = None;
+    let mut last_report = Instant::now();
+    debug_log::event(
+        "obfuscation_worker_started",
+        format_args!("protocol_version=1"),
+    );
     while !stop_requested.load(Ordering::Acquire) {
         match local_socket.recv_from(&mut local_buffer) {
             Ok((size, endpoint)) => {
@@ -255,9 +351,32 @@ fn run_forwarder(
                     continue;
                 }
                 wireguard_endpoint = Some(endpoint);
+                counters.inner_tx_packets.fetch_add(1, Ordering::Relaxed);
+                counters
+                    .inner_tx_bytes
+                    .fetch_add(size as u64, Ordering::Relaxed);
                 match codec.encode(&local_buffer[..size]) {
-                    Ok(encoded) if public_socket.send(&encoded).is_ok() => {}
-                    Ok(_) | Err(_) => {
+                    Ok(encoded) => match public_socket.send(&encoded) {
+                        Ok(sent) if sent == encoded.len() => {
+                            counters.public_tx_packets.fetch_add(1, Ordering::Relaxed);
+                            counters
+                                .public_tx_bytes
+                                .fetch_add(sent as u64, Ordering::Relaxed);
+                        }
+                        Ok(_) | Err(_) => {
+                            debug_log::event(
+                                "obfuscation_public_send_failed",
+                                format_args!("counters={:?}", counters.snapshot()),
+                            );
+                            healthy.store(false, Ordering::Release);
+                            return;
+                        }
+                    },
+                    Err(_) => {
+                        debug_log::event(
+                            "obfuscation_encode_failed",
+                            format_args!("inner_size={size} counters={:?}", counters.snapshot()),
+                        );
                         healthy.store(false, Ordering::Release);
                         return;
                     }
@@ -272,13 +391,41 @@ fn run_forwarder(
 
         match public_socket.recv(&mut public_buffer) {
             Ok(size) => {
+                counters.public_rx_packets.fetch_add(1, Ordering::Relaxed);
+                counters
+                    .public_rx_bytes
+                    .fetch_add(size as u64, Ordering::Relaxed);
                 let Some(endpoint) = wireguard_endpoint else {
                     continue;
                 };
-                if let Ok(decoded) = codec.decode(&public_buffer[..size]) {
-                    if local_socket.send_to(&decoded, endpoint).is_err() {
-                        healthy.store(false, Ordering::Release);
-                        return;
+                match codec.decode(&public_buffer[..size]) {
+                    Ok(decoded) => match local_socket.send_to(&decoded, endpoint) {
+                        Ok(sent) if sent == decoded.len() => {
+                            counters.inner_rx_packets.fetch_add(1, Ordering::Relaxed);
+                            counters
+                                .inner_rx_bytes
+                                .fetch_add(sent as u64, Ordering::Relaxed);
+                        }
+                        Ok(_) | Err(_) => {
+                            debug_log::event(
+                                "obfuscation_local_reply_failed",
+                                format_args!("counters={:?}", counters.snapshot()),
+                            );
+                            healthy.store(false, Ordering::Release);
+                            return;
+                        }
+                    },
+                    Err(error) => {
+                        counters
+                            .rejected_public_packets
+                            .fetch_add(1, Ordering::Relaxed);
+                        debug_log::event(
+                            "obfuscation_decode_rejected",
+                            format_args!(
+                                "reason={error:?} envelope_size={size} counters={:?}",
+                                counters.snapshot()
+                            ),
+                        );
                     }
                 }
             }
@@ -288,9 +435,26 @@ fn run_forwarder(
                 return;
             }
         }
+        if last_report.elapsed() >= Duration::from_secs(1) {
+            let snapshot = counters.snapshot();
+            if snapshot.inner_tx_packets > 0 || snapshot.public_rx_packets > 0 {
+                debug_log::event(
+                    "obfuscation_flow_snapshot",
+                    format_args!(
+                        "healthy={} counters={snapshot:?}",
+                        healthy.load(Ordering::Acquire)
+                    ),
+                );
+            }
+            last_report = Instant::now();
+        }
         thread::sleep(IO_POLL_INTERVAL);
     }
     healthy.store(false, Ordering::Release);
+    debug_log::event(
+        "obfuscation_worker_finished",
+        format_args!("counters={:?}", counters.snapshot()),
+    );
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -492,6 +656,9 @@ mod tests {
         let codec = V1PacketCodec::new(&key);
         assert_eq!(codec.decode(&buffer[..size]).unwrap(), b"wireguard");
 
+        server
+            .send_to(b"invalid-envelope", client_endpoint)
+            .unwrap();
         let response = codec
             .encode_with(b"reply", [8_u8; NONCE_SIZE], &[2_u8; 3])
             .unwrap();
@@ -500,6 +667,12 @@ mod tests {
         assert_eq!(&buffer[..size], b"reply");
         assert_eq!(source, local_endpoint);
         assert!(client.healthy.load(Ordering::Acquire));
+        let snapshot = client.counters.snapshot();
+        assert_eq!(snapshot.inner_tx_packets, 1);
+        assert_eq!(snapshot.public_tx_packets, 1);
+        assert_eq!(snapshot.public_rx_packets, 2);
+        assert_eq!(snapshot.inner_rx_packets, 1);
+        assert_eq!(snapshot.rejected_public_packets, 1);
 
         client.stop();
         assert!(!client.healthy.load(Ordering::Acquire));

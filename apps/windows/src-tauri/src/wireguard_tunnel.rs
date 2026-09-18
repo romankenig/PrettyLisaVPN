@@ -24,6 +24,7 @@ use windows_sys::Win32::{
 use wireguard_nt::{Adapter, AdapterLoggingLevel, SetInterface, SetPeer};
 use zeroize::Zeroize;
 
+use crate::debug_log;
 use crate::obfuscation_transport::{ActivePacketTransport, TransportError, TransportMode};
 use crate::wireguard_keys::WireGuardKeyState;
 
@@ -103,13 +104,33 @@ struct ActiveTunnel {
 impl ActiveTunnel {
     fn cleanup(&mut self) -> Result<(), TunnelError> {
         if self.cleaned {
+            debug_log::event(
+                "tunnel_cleanup_skipped",
+                format_args!("reason=already_cleaned"),
+            );
             return Ok(());
         }
+        debug_log::event(
+            "tunnel_cleanup_started",
+            format_args!(
+                "transport_mode={:?} transport_counters={:?}",
+                self.transport.mode(),
+                self.transport.snapshot()
+            ),
+        );
         let adapter_result = self.adapter.down();
         #[cfg(windows)]
         remove_routes(&self.routes);
         self.transport.stop();
         self.cleaned = adapter_result.is_ok();
+        debug_log::event(
+            "tunnel_cleanup_finished",
+            format_args!(
+                "adapter_down={} cleaned={}",
+                adapter_result.is_ok(),
+                self.cleaned
+            ),
+        );
         adapter_result.map_err(|_| TunnelError::Unavailable)
     }
 }
@@ -137,11 +158,26 @@ impl WireGuardTunnelState {
         keys: &WireGuardKeyState,
     ) -> Result<TunnelStatus, TunnelError> {
         let parsed = ParsedConfiguration::try_from(configuration)?;
+        debug_log::event(
+            "tunnel_start_parsed",
+            format_args!(
+                "backend_endpoint={} client_address={} dns_servers={} allowed_ips={:?}",
+                parsed.public_endpoint,
+                parsed.client_address,
+                parsed.dns.len(),
+                parsed.allowed_ips
+            ),
+        );
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
         if let Some(current) = active.as_ref() {
             if current.transport.is_healthy() && current.adapter.is_up().unwrap_or(false) {
+                debug_log::event("tunnel_start_reused", format_args!("status=UP"));
                 return Ok(TunnelStatus::Up);
             }
+            debug_log::event(
+                "tunnel_stale_instance_detected",
+                format_args!("action=cleanup"),
+            );
             if let Some(mut stale) = active.take() {
                 let _ = stale.cleanup();
             }
@@ -151,6 +187,10 @@ impl WireGuardTunnelState {
             .read_private_key()
             .map_err(|_| TunnelError::KeyUnavailable)?
             .ok_or(TunnelError::KeyMissing)?;
+        debug_log::event(
+            "wireguard_private_key_loaded",
+            format_args!("source=credential_manager"),
+        );
         let packet_transport = ActivePacketTransport::start(parsed.public_endpoint)?;
         if !packet_transport.is_healthy() {
             return Err(TunnelError::TransportUnavailable);
@@ -158,7 +198,19 @@ impl WireGuardTunnelState {
         let wireguard_endpoint = packet_transport.wireguard_endpoint();
         #[cfg(windows)]
         let endpoint_route = pre_tunnel_ipv4_default_route()?;
+        #[cfg(windows)]
+        debug_log::event(
+            "physical_route_captured",
+            format_args!(
+                "interface_index={} route_metric={}",
+                endpoint_route.InterfaceIndex, endpoint_route.Metric
+            ),
+        );
         let library_path = wireguard_library_path()?;
+        debug_log::event(
+            "wireguard_component_found",
+            format_args!("component={}", library_path.display()),
+        );
         // SAFETY: the absolute path is fixed beside our signed executable. Release packaging
         // must supply the official signed WireGuardNT DLL and verify its pinned digest.
         let wireguard = unsafe { wireguard_nt::load_from_path(library_path) }
@@ -167,6 +219,10 @@ impl WireGuardTunnelState {
             .or_else(|_| Adapter::create(&wireguard, ADAPTER_POOL, ADAPTER_NAME, None))
             .map_err(|_| TunnelError::PrivilegesRequired)?;
         adapter.set_logging(AdapterLoggingLevel::Off);
+        debug_log::event(
+            "wireguard_adapter_ready",
+            format_args!("adapter={ADAPTER_NAME} luid={}", adapter.get_luid()),
+        );
 
         let mut interface = SetInterface {
             listen_port: None,
@@ -181,17 +237,29 @@ impl WireGuardTunnelState {
             }],
         };
 
+        debug_log::event(
+            "wireguard_set_config_started",
+            format_args!(
+                "peer_endpoint={wireguard_endpoint} allowed_ips={:?}",
+                parsed.allowed_ips
+            ),
+        );
         let configured = adapter.set_config(&interface);
         if let Some(key) = interface.private_key.as_mut() {
             key.zeroize();
         }
         configured.map_err(|_| TunnelError::Unavailable)?;
+        debug_log::event(
+            "wireguard_set_config_succeeded",
+            format_args!("peer_count=1"),
+        );
         let diagnostics = read_peer_diagnostics(&adapter, &packet_transport)?;
         log_peer_diagnostics("after_set_config", &diagnostics);
         if validate_peer_readback(&diagnostics, &parsed, wireguard_endpoint).is_err() {
             let _ = adapter.down();
             return Err(TunnelError::ConfigurationReadbackMismatch);
         }
+        debug_log::event("wireguard_readback_validated", format_args!("result=match"));
         if adapter
             .set_default_route(&[parsed.client_address], &interface)
             .is_err()
@@ -199,6 +267,10 @@ impl WireGuardTunnelState {
             let _ = adapter.down();
             return Err(TunnelError::Unavailable);
         }
+        debug_log::event(
+            "wireguard_address_configured",
+            format_args!("client_address={}", parsed.client_address),
+        );
         #[cfg(windows)]
         let routes = match configure_full_tunnel_routes(
             &adapter,
@@ -211,18 +283,25 @@ impl WireGuardTunnelState {
                 return Err(error);
             }
         };
+        #[cfg(windows)]
+        debug_log::event(
+            "full_tunnel_routes_installed",
+            format_args!("tracked_routes={}", routes.len()),
+        );
         if adapter.up().is_err() {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
             return Err(TunnelError::Unavailable);
         }
+        debug_log::event("wireguard_adapter_up", format_args!("status=UP"));
         if configure_interface().is_err() {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
             return Err(TunnelError::PrivilegesRequired);
         }
+        debug_log::event("wireguard_mtu_configured", format_args!("mtu=1280"));
 
         #[cfg(windows)]
         match full_tunnel_routes_are_selected(&adapter) {
@@ -233,24 +312,40 @@ impl WireGuardTunnelState {
                 return Err(TunnelError::Unavailable);
             }
         }
+        debug_log::event(
+            "full_tunnel_route_selection_verified",
+            format_args!("result=selected"),
+        );
         if let Err(error) = wait_for_handshake(&adapter, &packet_transport) {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
             return Err(error);
         }
+        debug_log::event(
+            "wireguard_handshake_verified",
+            format_args!("result=success"),
+        );
         if verify_data_plane().is_err() {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
             return Err(TunnelError::DataPlaneUnavailable);
         }
+        debug_log::event(
+            "wireguard_data_plane_verified",
+            format_args!("result=success"),
+        );
         if let Err(error) = configure_dns(&parsed.dns) {
             #[cfg(windows)]
             remove_routes(&routes);
             let _ = adapter.down();
             return Err(error);
         }
+        debug_log::event(
+            "wireguard_dns_configured",
+            format_args!("server_count={}", parsed.dns.len()),
+        );
 
         *active = Some(ActiveTunnel {
             adapter,
@@ -259,10 +354,15 @@ impl WireGuardTunnelState {
             routes,
             cleaned: false,
         });
+        debug_log::event("tunnel_start_completed", format_args!("status=UP"));
         Ok(TunnelStatus::Up)
     }
 
     fn stop(&self) -> Result<TunnelStatus, TunnelError> {
+        debug_log::event(
+            "tunnel_stop_requested",
+            format_args!("source=native_command"),
+        );
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
         if let Some(tunnel) = active.as_mut() {
             // Stop WireGuard first, remove its routes, then stop the local packet transport.
@@ -270,6 +370,7 @@ impl WireGuardTunnelState {
             tunnel.cleanup()?;
         }
         *active = None;
+        debug_log::event("tunnel_stop_completed", format_args!("status=DOWN"));
         Ok(TunnelStatus::Down)
     }
 
@@ -289,6 +390,14 @@ impl WireGuardTunnelState {
                     })
                 }),
         }?;
+        if let Some(tunnel) = active.as_ref() {
+            if debug_log::enabled() {
+                if let Ok(diagnostics) = read_peer_diagnostics(&tunnel.adapter, &tunnel.transport) {
+                    log_peer_diagnostics("state_poll", &diagnostics);
+                    log_transport_diagnostics("state_poll", &tunnel.transport);
+                }
+            }
+        }
         if status == TunnelStatus::Down {
             if let Some(mut tunnel) = active.take() {
                 let _ = tunnel.cleanup();
@@ -304,6 +413,7 @@ impl WireGuardTunnelState {
         };
         let diagnostics = read_peer_diagnostics(&tunnel.adapter, &tunnel.transport)?;
         log_peer_diagnostics("runtime_snapshot", &diagnostics);
+        log_transport_diagnostics("runtime_snapshot", &tunnel.transport);
         Ok(Some(diagnostics))
     }
 }
@@ -378,6 +488,20 @@ fn log_peer_diagnostics(stage: &str, diagnostics: &WireGuardPeerDiagnostics) {
         diagnostics.transport_mode,
         diagnostics.transport_healthy,
         diagnostics.public_endpoint,
+    );
+}
+
+fn log_transport_diagnostics(stage: &str, transport: &ActivePacketTransport) {
+    debug_log::event(
+        "transport_diagnostics",
+        format_args!(
+            "stage={stage} mode={:?} healthy={} wireguard_endpoint={} public_endpoint={} counters={:?}",
+            transport.mode(),
+            transport.is_healthy(),
+            transport.wireguard_endpoint(),
+            transport.public_endpoint(),
+            transport.snapshot()
+        ),
     );
 }
 
@@ -477,6 +601,13 @@ fn configure_full_tunnel_routes(
     endpoint_bypass.NextHop = existing_endpoint_route.NextHop;
     endpoint_bypass.Metric = 0;
     install_route(endpoint_bypass, &mut installed)?;
+    debug_log::event(
+        "endpoint_bypass_route_installed",
+        format_args!(
+            "endpoint={endpoint} physical_interface_index={}",
+            existing_endpoint_route.InterfaceIndex
+        ),
+    );
 
     for (network, prefix) in FULL_TUNNEL_ROUTE_PREFIXES {
         let route = route_for_interface(adapter.get_luid(), network, prefix);
@@ -484,6 +615,10 @@ fn configure_full_tunnel_routes(
             remove_routes(&installed);
             return Err(error);
         }
+        debug_log::event(
+            "full_tunnel_route_installed",
+            format_args!("prefix={network}/{prefix}"),
+        );
     }
     Ok(installed)
 }
@@ -506,9 +641,14 @@ fn install_route(
 
 #[cfg(windows)]
 fn remove_routes(routes: &[MIB_IPFORWARD_ROW2]) {
+    debug_log::event(
+        "route_cleanup_started",
+        format_args!("tracked_routes={}", routes.len()),
+    );
     for route in routes.iter().rev() {
         let _ = unsafe { DeleteIpForwardEntry2(route) };
     }
+    debug_log::event("route_cleanup_finished", format_args!("result=attempted"));
 }
 
 #[cfg(windows)]
@@ -645,9 +785,20 @@ pub fn start_wireguard_tunnel(
     tunnel: tauri::State<'_, WireGuardTunnelState>,
     keys: tauri::State<'_, WireGuardKeyState>,
 ) -> Result<TunnelStatus, &'static str> {
-    tunnel
-        .start(configuration, &keys)
-        .map_err(|error| error.code())
+    debug_log::event(
+        "native_connect_command_received",
+        format_args!("command=start"),
+    );
+    match tunnel.start(configuration, &keys) {
+        Ok(status) => Ok(status),
+        Err(error) => {
+            debug_log::event(
+                "native_connect_command_failed",
+                format_args!("error_code={}", error.code()),
+            );
+            Err(error.code())
+        }
+    }
 }
 
 #[tauri::command]
@@ -780,41 +931,102 @@ fn wait_for_handshake(
     adapter: &Adapter,
     transport: &ActivePacketTransport,
 ) -> Result<(), TunnelError> {
+    debug_log::event(
+        "wireguard_handshake_wait_started",
+        format_args!("timeout_ms={}", HANDSHAKE_TIMEOUT.as_millis()),
+    );
     let socket = std::net::UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
         .map_err(|_| TunnelError::Unavailable)?;
     socket
         .send_to(&[0], (Ipv4Addr::new(1, 1, 1, 1), 9))
         .map_err(|_| TunnelError::Unavailable)?;
 
+    let started = Instant::now();
+    let mut last_report = Instant::now() - Duration::from_secs(1);
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     while Instant::now() < deadline {
         if !transport.is_healthy() {
+            debug_log::event(
+                "wireguard_handshake_wait_failed",
+                format_args!(
+                    "reason=transport_unhealthy counters={:?}",
+                    transport.snapshot()
+                ),
+            );
             return Err(TunnelError::TransportUnavailable);
         }
-        if adapter
-            .get_config()
-            .peers
-            .iter()
-            .any(|peer| peer.last_handshake.is_some())
-        {
+        let configuration = adapter.get_config();
+        let peer = configuration.peers.first();
+        let handshake_observed = peer.is_some_and(|value| value.last_handshake.is_some());
+        if last_report.elapsed() >= Duration::from_millis(500) {
+            debug_log::event(
+                "wireguard_handshake_poll",
+                format_args!(
+                    "elapsed_ms={} handshake={} tx_bytes={} rx_bytes={} transport_counters={:?}",
+                    started.elapsed().as_millis(),
+                    handshake_observed,
+                    peer.map(|value| value.tx_bytes).unwrap_or_default(),
+                    peer.map(|value| value.rx_bytes).unwrap_or_default(),
+                    transport.snapshot()
+                ),
+            );
+            last_report = Instant::now();
+        }
+        if handshake_observed {
             return Ok(());
         }
         thread::sleep(HANDSHAKE_POLL_INTERVAL);
     }
+    debug_log::event(
+        "wireguard_handshake_wait_failed",
+        format_args!(
+            "reason=timeout elapsed_ms={} transport_counters={:?}",
+            started.elapsed().as_millis(),
+            transport.snapshot()
+        ),
+    );
     Err(TunnelError::HandshakeTimeout)
 }
 
 fn verify_data_plane() -> Result<(), TunnelError> {
     let destination = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443);
+    debug_log::event(
+        "data_plane_probe_started",
+        format_args!("timeout_ms={}", DATA_PLANE_TIMEOUT.as_millis()),
+    );
     let deadline = Instant::now() + DATA_PLANE_TIMEOUT;
+    let started = Instant::now();
+    let mut attempt = 0_u32;
     while Instant::now() < deadline {
+        attempt += 1;
         let remaining = deadline.saturating_duration_since(Instant::now());
         let attempt_timeout = remaining.min(DATA_PLANE_ATTEMPT_TIMEOUT);
         if TcpStream::connect_timeout(&destination, attempt_timeout).is_ok() {
+            debug_log::event(
+                "data_plane_probe_succeeded",
+                format_args!(
+                    "attempt={attempt} elapsed_ms={}",
+                    started.elapsed().as_millis()
+                ),
+            );
             return Ok(());
         }
+        debug_log::event(
+            "data_plane_probe_attempt_failed",
+            format_args!(
+                "attempt={attempt} elapsed_ms={}",
+                started.elapsed().as_millis()
+            ),
+        );
         thread::sleep(HANDSHAKE_POLL_INTERVAL);
     }
+    debug_log::event(
+        "data_plane_probe_failed",
+        format_args!(
+            "attempts={attempt} elapsed_ms={}",
+            started.elapsed().as_millis()
+        ),
+    );
     Err(TunnelError::DataPlaneUnavailable)
 }
 

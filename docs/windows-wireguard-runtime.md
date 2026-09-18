@@ -162,6 +162,44 @@ $secret = $null
 $secretLine = $null
 ```
 
+### Native connection trace
+
+Debug builds emit a safe stage-by-stage trace to stderr automatically. Release builds emit it only
+when `PRETTYLISA_VPN_DEBUG=1`. The trace deliberately excludes private keys, the obfuscation secret,
+packet contents, DNS queries, URLs, and browsing destinations.
+
+Capture one complete connect, traffic test, and disconnect from an elevated PowerShell window:
+
+```powershell
+$VpnDebugLog = Join-Path $env:TEMP "prettylisavpn-vpn-debug.log"
+Remove-Item -LiteralPath $VpnDebugLog -ErrorAction SilentlyContinue
+pnpm tauri dev 2>&1 | Tee-Object -FilePath $VpnDebugLog
+```
+
+While the application is connected, generate only explicit diagnostic traffic in a second window:
+
+```powershell
+ping 10.77.0.1
+ping 1.1.1.1
+curl.exe --connect-timeout 10 https://api.ipify.org
+```
+
+Interpret the aggregate relay counters as follows:
+
+| Observation | Meaning |
+| --- | --- |
+| `inner_tx_packets=0` | WireGuardNT has not sent a datagram to the localhost relay. |
+| `inner_tx_packets>0`, `public_tx_packets>0`, `public_rx_packets=0` | Encrypted envelopes leave Windows but no server reply reaches the client. Check UDP/443 firewall, server listener, and server logs. |
+| `public_rx_packets>0`, `rejected_public_packets>0` | A public reply arrived but failed version, structure, or AEAD authentication. The client/server V1 secret or codec differs. |
+| `inner_rx_packets>0`, but WireGuard `rx_bytes=0` and no handshake | The relay decoded a reply and returned it locally, but WireGuardNT did not accept it for the configured peer. |
+| Handshake succeeds, then `data_plane_probe_failed` | Encryption works; investigate server forwarding, NAT, or return routing. |
+| `data_plane_probe_succeeded` and `tunnel_start_completed` | Native transport, handshake, routes, and IPv4 data-plane probe all passed. |
+
+The most useful events are `transport_ready`, `obfuscation_socket_bound`,
+`wireguard_set_config_succeeded`, `endpoint_bypass_route_installed`,
+`wireguard_handshake_poll`, `obfuscation_flow_snapshot`, `data_plane_probe_*`, and
+`tunnel_cleanup_finished`.
+
 While connected, verify the physical `/32` bypass and local listener without showing secrets:
 
 ```powershell

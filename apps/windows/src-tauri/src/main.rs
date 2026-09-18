@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod debug_log;
 mod installation_id;
 mod obfuscation_transport;
 mod refresh_credentials;

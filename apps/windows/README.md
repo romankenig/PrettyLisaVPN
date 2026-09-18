@@ -85,15 +85,24 @@ Tauri запускает Vite на `127.0.0.1:1420`, компилирует Rust
 
 Native packet transport настраивается только в environment процесса, а не через Vite:
 
-| Переменная                      | По умолчанию | Назначение                                        |
-| ------------------------------- | ------------ | ------------------------------------------------- |
-| `PRETTYLISA_VPN_TRANSPORT_MODE` | `DIRECT`     | `DIRECT` или `PRETTYLISA_V1`.                     |
-| `PRETTYLISA_V1_SECRET`          | не задан     | Canonical Base64 32-byte Stage 3AB secret для V1. |
-| `PRETTYLISA_V1_PUBLIC_PORT`     | `443`        | Публичный UDP-порт Stage 3AB obfuscator.          |
+| Переменная                      | По умолчанию | Назначение                                                                                             |
+| ------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------ |
+| `PRETTYLISA_VPN_TRANSPORT_MODE` | `DIRECT`     | `DIRECT` или `PRETTYLISA_V1`.                                                                          |
+| `PRETTYLISA_V1_SECRET`          | не задан     | Canonical Base64 32-byte Stage 3AB secret для V1.                                                      |
+| `PRETTYLISA_V1_PUBLIC_PORT`     | `443`        | Публичный UDP-порт Stage 3AB obfuscator.                                                               |
+| `PRETTYLISA_VPN_DEBUG`          | выключен     | `1` включает безопасную native-трассировку в release-сборке; в `tauri dev` она включена автоматически. |
 
 Не помещайте `PRETTYLISA_V1_SECRET` в `.env.local`: frontend build не является хранилищем
 секретов. Для ручной Stage 3AC-проверки задайте его только в elevated PowerShell, запускающем
 Tauri, и удалите из environment сразу после завершения процесса.
+
+Чтобы сохранить debug-трассировку без packet contents, DNS-запросов, private key и obfuscation
+secret, запускайте dev-процесс через `Tee-Object`:
+
+```powershell
+$VpnDebugLog = Join-Path $env:TEMP "prettylisavpn-vpn-debug.log"
+pnpm tauri dev 2>&1 | Tee-Object -FilePath $VpnDebugLog
+```
 
 `VITE_*` — публичные значения. Никогда не помещайте сюда пароли, ключи или токены.
 Для production требуется HTTPS; credentials, query и fragment в base URL запрещены.
