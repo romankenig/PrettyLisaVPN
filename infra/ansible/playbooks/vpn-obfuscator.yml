@@ -1,0 +1,12 @@
+---
+- name: Deploy PrettyLisaVPN first-party UDP obfuscation transport
+  hosts: vpn_nodes
+  become: true
+  gather_facts: true
+  serial: 1
+  vars:
+    wireguard_expose_public_udp: false
+
+  roles:
+    - role: wireguard_node
+    - role: vpn_obfuscator

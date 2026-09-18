@@ -5,6 +5,7 @@
       - wireguard_interface is match('^[A-Za-z0-9_.-]{1,15}$')
       - wireguard_listen_port | int >= 1
       - wireguard_listen_port | int <= 65535
+      - wireguard_expose_public_udp is boolean
     fail_msg: WireGuard interface or listen port is invalid.
 
 - name: Validate WireGuard IPv4 network and gateway
@@ -157,7 +158,9 @@
     comment 'PrettyLisaVPN WireGuard IPv4'
   register: wireguard_ufw_ingress
   changed_when: "'Rule added' in wireguard_ufw_ingress.stdout"
-  when: wireguard_manage_ufw
+  when:
+    - wireguard_manage_ufw
+    - wireguard_expose_public_udp
 
 - name: Detect legacy dual-stack WireGuard ingress rule
   ansible.builtin.shell: >-

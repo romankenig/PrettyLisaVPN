@@ -11,3 +11,7 @@ wireguard_public_ipv4: null
 # The baseline must already have active UFW and working key-only SSH access.
 wireguard_manage_ufw: true
 wireguard_require_active_ufw: true
+
+# Stage 3AB transport: public UDP/443 forwards authenticated envelopes to local UDP/51820.
+vpn_obfuscator_public_port: 443
+vpn_obfuscator_wireguard_port: "{{ wireguard_listen_port }}"
