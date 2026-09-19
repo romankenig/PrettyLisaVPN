@@ -18,5 +18,13 @@ $env:PRETTYLISA_WG_OBFUSCATOR_MASKING = $Masking
 $env:PRETTYLISA_VPN_DEBUG = '1'
 Push-Location $app
 try {
-    pnpm tauri dev 2>&1 | Tee-Object -FilePath (Join-Path $env:TEMP 'prettylisavpn-wg-obfuscator-debug.log')
+    # Merge native stderr inside cmd, before Windows PowerShell 5.1 can turn it
+    # into NativeCommandError under ErrorActionPreference=Stop. Avoid pnpm.ps1.
+    $PSNativeCommandUseErrorActionPreference = $false
+    & $env:ComSpec /d /c 'pnpm.cmd tauri dev 2>&1' |
+        Tee-Object -FilePath (Join-Path $env:TEMP 'prettylisavpn-wg-obfuscator-debug.log')
+    $devExitCode = $LASTEXITCODE
+    if ($devExitCode -ne 0) {
+        throw "pnpm tauri dev exited with code $devExitCode. See the debug log for details."
+    }
 } finally { Pop-Location }

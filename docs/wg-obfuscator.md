@@ -142,6 +142,16 @@ Run PowerShell 7 from the repository root. Component/key scripts do not start VP
 ```
 
 Close any older development app first. Keep Kaspersky running while preparing.
+The development launcher also supports Windows PowerShell 5.1: native stderr is
+merged before entering the PowerShell pipeline, so pnpm progress messages are not
+mistaken for terminating errors. Nonzero process exit codes still fail the launcher.
+Regression check (no VPN or network is started):
+
+```powershell
+.\apps\windows\scripts\tests\test-dev-launcher.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\apps\windows\scripts\tests\test-dev-launcher.ps1
+```
+
 For the actual CONNECT test, **manually disconnect Kaspersky first**, then select
 the US country (not Autopilot, which could pick unmodified Netcup), then CONNECT.
 Native tunnel operation still requires the existing Windows elevation arrangement.
