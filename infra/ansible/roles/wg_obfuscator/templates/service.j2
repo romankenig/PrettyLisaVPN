@@ -1,0 +1,35 @@
+[Unit]
+Description=PrettyLisaVPN wg-obfuscator 1.6 transport
+After=network-online.target wg-quick@{{ wireguard_interface }}.service
+Requires=wg-quick@{{ wireguard_interface }}.service
+Wants=network-online.target
+Conflicts=prettylisavpn-obfuscator.service
+
+[Service]
+Type=simple
+User=plvpn-wg-obfuscator
+Group=plvpn-wg-obfuscator
+ExecStart=/opt/prettylisavpn-wg-obfuscator/1.6/wg-obfuscator/wg-obfuscator --config /etc/prettylisavpn-wg-obfuscator/key.conf --source-if {{ wireguard_ingress_ipv4 }} --source-lport {{ wg_obfuscator_port }} --target 127.0.0.1:{{ wg_obfuscator_wireguard_port }} --masking {{ wg_obfuscator_masking }} --verbose 0
+Restart=on-failure
+RestartSec=2
+LimitCORE=0
+UMask=0077
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+# Raw upstream output is intentionally suppressed: no payload/credential logging.
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

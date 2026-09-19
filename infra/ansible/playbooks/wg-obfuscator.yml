@@ -1,0 +1,10 @@
+---
+- name: Deploy pinned upstream transport with rollback to PrettyLisa V1
+  hosts: vpn_nodes
+  become: true
+  serial: 1
+  vars:
+    wireguard_expose_public_udp: false
+  roles:
+    - role: wireguard_node
+    - role: wg_obfuscator

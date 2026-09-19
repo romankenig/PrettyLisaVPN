@@ -1,0 +1,5 @@
+---
+wg_obfuscator_port: 443
+wg_obfuscator_masking: NONE
+wg_obfuscator_wireguard_port: 51820
+wg_obfuscator_activate: false

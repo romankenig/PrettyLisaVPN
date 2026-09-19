@@ -2610,6 +2610,7 @@ dependencies = [
  "ipnet",
  "rand_core 0.6.4",
  "serde",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-http",

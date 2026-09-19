@@ -38,6 +38,7 @@ const DEFAULT_TRANSPORT_PUBLIC_PORT: u16 = 443;
 pub(crate) enum TransportMode {
     Direct,
     PrettyLisaV1,
+    WgObfuscator,
 }
 
 #[derive(Debug)]
@@ -48,6 +49,7 @@ pub(crate) enum TransportError {
 
 enum TransportSelection {
     Direct,
+    WgObfuscator,
     PrettyLisaV1 {
         key: Zeroizing<[u8; KEY_SIZE]>,
         public_port: u16,
@@ -73,6 +75,7 @@ impl TransportSelection {
     ) -> Result<Self, TransportError> {
         match mode {
             "DIRECT" => Ok(Self::Direct),
+            "WG_OBFUSCATOR" => Ok(Self::WgObfuscator),
             "PRETTYLISA_V1" => {
                 let encoded = secret.ok_or(TransportError::InvalidConfiguration)?;
                 let mut decoded = STANDARD
@@ -103,6 +106,7 @@ impl TransportSelection {
 
 pub(crate) enum ActivePacketTransport {
     Direct { public_endpoint: SocketAddr },
+    WgObfuscator(crate::wg_obfuscator::Client),
     PrettyLisaV1(PrettyLisaV1Client),
 }
 
@@ -133,6 +137,9 @@ impl ActivePacketTransport {
     ) -> Result<Self, TransportError> {
         match selection {
             TransportSelection::Direct => Ok(Self::Direct { public_endpoint }),
+            TransportSelection::WgObfuscator => Ok(Self::WgObfuscator(
+                crate::wg_obfuscator::Client::start(public_endpoint)?,
+            )),
             TransportSelection::PrettyLisaV1 { key, public_port } => {
                 let public_endpoint = SocketAddr::new(public_endpoint.ip(), public_port);
                 Ok(Self::PrettyLisaV1(PrettyLisaV1Client::start(
@@ -146,6 +153,7 @@ impl ActivePacketTransport {
     pub(crate) fn wireguard_endpoint(&self) -> SocketAddr {
         match self {
             Self::Direct { public_endpoint } => *public_endpoint,
+            Self::WgObfuscator(client) => client.local_endpoint,
             Self::PrettyLisaV1(client) => client.local_endpoint,
         }
     }
@@ -153,6 +161,7 @@ impl ActivePacketTransport {
     pub(crate) fn public_endpoint(&self) -> SocketAddr {
         match self {
             Self::Direct { public_endpoint } => *public_endpoint,
+            Self::WgObfuscator(client) => client.public_endpoint,
             Self::PrettyLisaV1(client) => client.public_endpoint,
         }
     }
@@ -160,6 +169,7 @@ impl ActivePacketTransport {
     pub(crate) fn mode(&self) -> TransportMode {
         match self {
             Self::Direct { .. } => TransportMode::Direct,
+            Self::WgObfuscator(_) => TransportMode::WgObfuscator,
             Self::PrettyLisaV1(_) => TransportMode::PrettyLisaV1,
         }
     }
@@ -167,14 +177,15 @@ impl ActivePacketTransport {
     pub(crate) fn is_healthy(&self) -> bool {
         match self {
             Self::Direct { .. } => true,
+            Self::WgObfuscator(client) => client.is_healthy(),
             Self::PrettyLisaV1(client) => client.healthy.load(Ordering::Acquire),
         }
     }
 
-    pub(crate) fn snapshot(&self) -> TransportSnapshot {
+    pub(crate) fn snapshot(&self) -> Option<TransportSnapshot> {
         match self {
-            Self::Direct { .. } => TransportSnapshot::default(),
-            Self::PrettyLisaV1(client) => client.counters.snapshot(),
+            Self::Direct { .. } | Self::WgObfuscator(_) => None,
+            Self::PrettyLisaV1(client) => Some(client.counters.snapshot()),
         }
     }
 
@@ -184,6 +195,9 @@ impl ActivePacketTransport {
             format_args!("mode={:?} counters={:?}", self.mode(), self.snapshot()),
         );
         if let Self::PrettyLisaV1(client) = self {
+            client.stop();
+        }
+        if let Self::WgObfuscator(client) = self {
             client.stop();
         }
     }
@@ -667,6 +681,9 @@ mod tests {
         assert_eq!(&buffer[..size], b"reply");
         assert_eq!(source, local_endpoint);
         assert!(client.healthy.load(Ordering::Acquire));
+        // recv_from may finish before the worker updates its post-send counters.
+        // Join before taking the final snapshot instead of depending on scheduling.
+        client.stop();
         let snapshot = client.counters.snapshot();
         assert_eq!(snapshot.inner_tx_packets, 1);
         assert_eq!(snapshot.public_tx_packets, 1);

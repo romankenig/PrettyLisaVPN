@@ -1,0 +1,128 @@
+---
+- name: Validate explicit transport choices
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['architecture'] == 'x86_64'
+      - wg_obfuscator_masking in ['NONE', 'STUN']
+      - wg_obfuscator_port | int > 0
+      - wg_obfuscator_port | int < 65536
+      - wg_obfuscator_wireguard_port | int == wireguard_listen_port | int
+      - wg_obfuscator_port | int != wg_obfuscator_wireguard_port | int
+      - not wireguard_expose_public_udp | bool
+
+- name: Create restricted service account
+  ansible.builtin.user:
+    name: plvpn-wg-obfuscator
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Create installation and protected configuration directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: /opt/prettylisavpn-wg-obfuscator/1.6, group: root, mode: '0755'}
+    - {path: /etc/prettylisavpn-wg-obfuscator, group: plvpn-wg-obfuscator, mode: '0750'}
+
+- name: Download pinned Linux x64 release
+  ansible.builtin.get_url:
+    url: https://github.com/ClusterM/wg-obfuscator/releases/download/v1.6/wg-obfuscator-v1.6-linux-x64.tar.gz
+    dest: /opt/prettylisavpn-wg-obfuscator/1.6/release.tar.gz
+    checksum: sha256:af30264278c70c2e53ad3234e8050686b3bef4f6564edc9fb068ea8c885b8354
+    mode: '0644'
+
+- name: Extract verified release
+  ansible.builtin.unarchive:
+    src: /opt/prettylisavpn-wg-obfuscator/1.6/release.tar.gz
+    dest: /opt/prettylisavpn-wg-obfuscator/1.6
+    remote_src: true
+
+- name: Generate independent obfuscation key once
+  ansible.builtin.shell: |
+    set -eu
+    umask 077
+    printf 'key=' > /etc/prettylisavpn-wg-obfuscator/key.conf.tmp
+    openssl rand -hex 32 >> /etc/prettylisavpn-wg-obfuscator/key.conf.tmp
+    mv /etc/prettylisavpn-wg-obfuscator/key.conf.tmp /etc/prettylisavpn-wg-obfuscator/key.conf
+  args:
+    creates: /etc/prettylisavpn-wg-obfuscator/key.conf
+  no_log: true
+
+- name: Protect key file
+  ansible.builtin.file:
+    path: /etc/prettylisavpn-wg-obfuscator/key.conf
+    owner: root
+    group: plvpn-wg-obfuscator
+    mode: '0640'
+
+- name: Install restricted service
+  ansible.builtin.template:
+    src: service.j2
+    dest: /etc/systemd/system/prettylisavpn-wg-obfuscator.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: wg_obfuscator_unit
+
+- name: Allow only selected obfuscation ingress on public interface
+  ansible.builtin.command:
+    argv:
+      - ufw
+      - allow
+      - in
+      - 'on'
+      - "{{ wireguard_egress_interface }}"
+      - proto
+      - udp
+      - from
+      - 0.0.0.0/0
+      - to
+      - "{{ wireguard_ingress_ipv4 }}"
+      - port
+      - "{{ wg_obfuscator_port }}"
+      - comment
+      - PrettyLisaVPN obfuscated UDP IPv4
+  register: wg_obfuscator_ingress
+  changed_when: "'Rule added' in wg_obfuscator_ingress.stdout"
+
+- name: Switch transports with automatic startup rollback
+  when: wg_obfuscator_activate | bool
+  block:
+    - name: Stop original transport without removing it
+      ansible.builtin.systemd_service:
+        name: prettylisavpn-obfuscator
+        state: stopped
+        enabled: false
+
+    - name: Start upstream transport
+      ansible.builtin.systemd_service:
+        name: prettylisavpn-wg-obfuscator
+        state: "{{ 'restarted' if wg_obfuscator_unit.changed else 'started' }}"
+        enabled: true
+        daemon_reload: true
+
+    - name: Confirm new listener belongs to upstream service
+      ansible.builtin.command: "ss -H -lunp 'sport = :{{ wg_obfuscator_port }}'"
+      register: wg_obfuscator_listener
+      changed_when: false
+      until: "'wg-obfuscator' in wg_obfuscator_listener.stdout"
+      retries: 10
+      delay: 1
+  rescue:
+    - name: Stop unsuccessful upstream transport
+      ansible.builtin.systemd_service:
+        name: prettylisavpn-wg-obfuscator
+        state: stopped
+        enabled: false
+    - name: Restore original transport
+      ansible.builtin.systemd_service:
+        name: prettylisavpn-obfuscator
+        state: started
+        enabled: true
+    - name: Report failed switch
+      ansible.builtin.fail:
+        msg: Upstream startup failed; original PrettyLisa V1 service restored.
