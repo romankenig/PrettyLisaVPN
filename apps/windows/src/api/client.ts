@@ -1,3 +1,4 @@
+import type { ConnectionConfig } from "../vpn/protocol";
 import type { HttpTransport } from "../native/http";
 
 export interface BackendHealth {
@@ -113,6 +114,7 @@ export type CreateVpnSessionRequest =
     };
 
 export interface ActiveVpnSessionResponse {
+  readonly candidates?: readonly ConnectionConfig[];
   readonly session_id: string;
   readonly status: "ACTIVE";
   readonly country_code: string;
@@ -449,6 +451,7 @@ export function createApiClient(
           method: "POST",
           headers: {
             authorization: `Bearer ${accessToken}`,
+            "x-vpn-candidates": "1",
             "content-type": "application/json",
           },
           body: JSON.stringify(body),
@@ -465,7 +468,10 @@ export function createApiClient(
         "/vpn/sessions/current",
         {
           method: "GET",
-          headers: { authorization: `Bearer ${accessToken}` },
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "x-vpn-candidates": "1",
+          },
         },
         signal,
       );
@@ -506,28 +512,19 @@ function isActiveVpnSessionResponse(
       "expires_at",
       "server_time",
       "transport",
+      ...(isRecord(value) && Object.hasOwn(value, "candidates")
+        ? ["candidates"]
+        : []),
     ]) &&
+    (value.candidates === undefined ||
+      (Array.isArray(value.candidates) &&
+        value.candidates.every(isConnectionConfig))) &&
     isUuid(value.session_id) &&
     value.status === "ACTIVE" &&
     /^[A-Z]{2}$/.test(String(value.country_code)) &&
     (value.expires_at === null || isIsoDate(value.expires_at)) &&
     isIsoDate(value.server_time) &&
-    hasOnlyKeys(value.transport, [
-      "endpoint",
-      "server_public_key",
-      "client_address",
-      "dns",
-      "allowed_ips",
-    ]) &&
-    hasOnlyKeys(value.transport.endpoint, ["ipv4", "port"]) &&
-    isIpv4(value.transport.endpoint.ipv4) &&
-    isPort(value.transport.endpoint.port) &&
-    isWireGuardPublicKey(value.transport.server_public_key) &&
-    isIpv4Cidr(value.transport.client_address) &&
-    isStringArray(value.transport.dns, isIpv4) &&
-    value.transport.dns.length > 0 &&
-    isStringArray(value.transport.allowed_ips, isIpCidr) &&
-    value.transport.allowed_ips.length > 0
+    isWireGuardTransport(value.transport)
   );
 }
 
@@ -737,4 +734,58 @@ async function readErrorCode(response: Response): Promise<unknown> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+export function isWireGuardTransport(
+  value: unknown,
+): value is ActiveVpnSessionResponse["transport"] {
+  return (
+    hasOnlyKeys(value, [
+      "endpoint",
+      "server_public_key",
+      "client_address",
+      "dns",
+      "allowed_ips",
+    ]) &&
+    hasOnlyKeys(value.endpoint, ["ipv4", "port"]) &&
+    isIpv4(value.endpoint.ipv4) &&
+    isPort(value.endpoint.port) &&
+    isWireGuardPublicKey(value.server_public_key) &&
+    isIpv4Cidr(value.client_address) &&
+    isStringArray(value.dns, isIpv4) &&
+    value.dns.length > 0 &&
+    isStringArray(value.allowed_ips, isIpCidr) &&
+    value.allowed_ips.length > 0
+  );
+}
+
+function isConnectionConfig(value: unknown): value is ConnectionConfig {
+  return (
+    hasOnlyKeys(value, [
+      "country",
+      "protocol",
+      "transport",
+      "port",
+      "encryption_mode",
+      "obfuscation_mode",
+      "mtu",
+      "dns_mode",
+      "routing_mode",
+    ]) &&
+    typeof value.country === "string" &&
+    /^[A-Z]{2}$/.test(value.country) &&
+    [
+      value.protocol,
+      value.transport,
+      value.encryption_mode,
+      value.obfuscation_mode,
+      value.dns_mode,
+      value.routing_mode,
+    ].every(isNonEmptyString) &&
+    isPort(value.port) &&
+    typeof value.mtu === "number" &&
+    Number.isInteger(value.mtu) &&
+    value.mtu >= 576 &&
+    value.mtu <= 65535
+  );
 }

@@ -9,9 +9,7 @@ import { desktopAdapter } from "./native/desktop";
 import { createCredentialStorage } from "./native/credentialStorage";
 import { createHttpTransport } from "./native/http";
 import { installationIdProvider } from "./native/installationId";
-import { createWireGuardKeyManager } from "./native/wireguardKeys";
-import { createWireGuardTunnelController } from "./native/wireguardTransport";
-import { createVpnConnectionManager } from "./vpn/connection";
+import { createDefaultVpnConnection } from "./vpn/defaultConnection";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
@@ -31,11 +29,7 @@ try {
     credentialStorage,
     session,
   );
-  const vpnConnection = createVpnConnectionManager(
-    api,
-    createWireGuardKeyManager(),
-    createWireGuardTunnelController(),
-  );
+  const vpnConnection = createDefaultVpnConnection(api);
   root.render(
     <StrictMode>
       <ApplicationProvider

@@ -1,5 +1,6 @@
 """Authenticated HTTP transport for VPN targeting and country availability."""
 
+from dataclasses import asdict
 from datetime import UTC, datetime
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network
 from typing import Annotated, Literal, cast
@@ -92,6 +93,18 @@ class WireGuardTransportResponse(BaseModel):
     allowed_ips: list[IPv4Network]
 
 
+class ConnectionConfigResponse(BaseModel):
+    country: str
+    protocol: str
+    transport: str
+    port: int
+    encryption_mode: str
+    obfuscation_mode: str
+    mtu: int
+    dns_mode: str
+    routing_mode: str
+
+
 class ActiveVpnSessionResponse(BaseModel):
     session_id: UUID
     status: Literal["ACTIVE"] = "ACTIVE"
@@ -99,6 +112,7 @@ class ActiveVpnSessionResponse(BaseModel):
     expires_at: datetime | None
     server_time: datetime
     transport: WireGuardTransportResponse
+    candidates: list[ConnectionConfigResponse] = Field(default_factory=list)
 
 
 class TerminatedVpnSessionResponse(BaseModel):
@@ -110,8 +124,11 @@ class CurrentVpnSessionResponse(BaseModel):
     session: ActiveVpnSessionResponse | None
 
 
-def _active_response(transport: ActiveVpnTransport) -> ActiveVpnSessionResponse:
-    return ActiveVpnSessionResponse(
+def _active_response(
+    transport: ActiveVpnTransport, *, include_candidates: bool = False
+) -> ActiveVpnSessionResponse:
+    response = ActiveVpnSessionResponse(
+        status="ACTIVE",
         session_id=transport.session_id,
         country_code=transport.country_code,
         expires_at=transport.expires_at,
@@ -127,10 +144,20 @@ def _active_response(transport: ActiveVpnTransport) -> ActiveVpnSessionResponse:
         ),
     )
 
+    if include_candidates:
+        response.candidates = [
+            ConnectionConfigResponse.model_validate(
+                {key: value for key, value in asdict(candidate).items() if key != "node_id"}
+            )
+            for candidate in transport.candidates
+        ]
+    return response
+
 
 @router.get(
     "/sessions/current",
     response_model=CurrentVpnSessionResponse,
+    response_model_exclude_unset=True,
     responses={
         401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
         403: {"model": ErrorResponse, "description": "User or current device is blocked"},
@@ -158,7 +185,13 @@ async def current_vpn_session(
         return error_response("auth_service_unavailable", 503)
     except VpnSessionStatusUnavailableError:
         return error_response("VPN_SESSION_STATUS_UNAVAILABLE", 503)
-    return CurrentVpnSessionResponse(session=None if result is None else _active_response(result))
+    return CurrentVpnSessionResponse(
+        session=None
+        if result is None
+        else _active_response(
+            result, include_candidates=request.headers.get("X-VPN-Candidates") == "1"
+        )
+    )
 
 
 def _response(result: VpnCountryAvailability) -> VpnCountriesResponse:
@@ -213,6 +246,7 @@ async def list_vpn_countries(
 @router.post(
     "/sessions",
     response_model=ActiveVpnSessionResponse,
+    response_model_exclude_unset=True,
     responses={
         401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
         403: {"model": ErrorResponse, "description": "User or current device is blocked"},
@@ -255,7 +289,9 @@ async def create_vpn_session(
         return error_response("VPN_ADDRESS_POOL_EXHAUSTED", 503)
     except (VpnSetupFailedError, VpnSessionPersistenceUnavailableError):
         return error_response("VPN_SETUP_FAILED", 503)
-    return _active_response(result)
+    return _active_response(
+        result, include_candidates=request.headers.get("X-VPN-Candidates") == "1"
+    )
 
 
 @router.delete(

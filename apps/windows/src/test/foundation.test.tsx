@@ -306,6 +306,7 @@ describe("typed API client", () => {
         headers: {
           authorization: "Bearer access-token",
           "content-type": "application/json",
+          "x-vpn-candidates": "1",
         },
         body: JSON.stringify(body),
       }),

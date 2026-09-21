@@ -27,6 +27,7 @@ from prettylisavpn.vpn_sessions.address_allocation import (
     VpnClientAddressAllocator,
 )
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
+from prettylisavpn.vpn_sessions.protocol import ConnectionConfig
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 from prettylisavpn.vpn_sessions.service import (
     DeviceAlreadyHasLiveVpnSessionError,
@@ -61,6 +62,12 @@ class ActiveVpnTransport:
     dns: tuple[IPv4Address, ...]
     allowed_ips: tuple[IPv4Network, ...]
     expires_at: datetime | None
+    node_id: UUID | None = None
+
+    @property
+    def candidates(self) -> tuple[ConnectionConfig, ...]:
+        # Only the provisioned node is connectable. No additional peers or fallback.
+        return (ConnectionConfig(self.country_code, self.node_id, self.endpoint_port),)
 
 
 class VpnConnectionHandler(Protocol):
@@ -107,6 +114,7 @@ class VpnConnectionService:
             raise
         return ActiveVpnTransport(
             session_id=active.id,
+            node_id=node.id,
             country_code=node.country_code,
             endpoint_ipv4=node.public_ipv4,
             endpoint_port=node.wireguard_port,

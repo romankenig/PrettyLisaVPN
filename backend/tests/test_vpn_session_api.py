@@ -59,14 +59,16 @@ def api_client(service: AsyncMock) -> TestClient:
         ),
     ],
 )
+@pytest.mark.parametrize("include_candidates", [False, True])
 def test_create_session_supports_auto_and_country_without_client_node_target(
-    body: dict[str, str], expected_request: NodeSelectionRequest
+    body: dict[str, str], expected_request: NodeSelectionRequest, include_candidates: bool
 ):
     service = AsyncMock()
     expires_at = datetime.now(UTC) + timedelta(minutes=15)
     session_id = uuid4()
     service.connect.return_value = ActiveVpnTransport(
         session_id=session_id,
+        node_id=uuid4(),
         country_code="DE",
         endpoint_ipv4=IPv4Address("204.48.17.50"),
         endpoint_port=51820,
@@ -80,7 +82,10 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
     with api_client(service) as client:
         response = client.post(
             "/vpn/sessions",
-            headers={"Authorization": "Bearer access-token"},
+            headers={
+                "Authorization": "Bearer access-token",
+                **({"X-VPN-Candidates": "1"} if include_candidates else {}),
+            },
             json=body,
         )
 
@@ -88,6 +93,20 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
     response_body = response.json()
     server_time = response_body.pop("server_time")
     assert datetime.fromisoformat(server_time.replace("Z", "+00:00")).tzinfo is not None
+    if include_candidates:
+        assert response_body.pop("candidates") == [
+            {
+                "country": "DE",
+                "protocol": "WIREGUARD",
+                "transport": "NATIVE",
+                "port": 51820,
+                "encryption_mode": "WIREGUARD",
+                "obfuscation_mode": "NATIVE",
+                "mtu": 1280,
+                "dns_mode": "VPN",
+                "routing_mode": "FULL_TUNNEL",
+            }
+        ]
     assert response_body == {
         "session_id": str(session_id),
         "status": "ACTIVE",
@@ -183,12 +202,16 @@ def test_disconnect_endpoint_returns_terminal_state_and_is_transport_free():
     service.disconnect.assert_awaited_once_with("token", session_id)
 
 
-def test_current_session_supports_restart_reconciliation_without_node_identity():
+@pytest.mark.parametrize("include_candidates", [False, True])
+def test_current_session_supports_restart_reconciliation_without_node_identity(
+    include_candidates: bool,
+):
     status_service = AsyncMock()
     expires_at = datetime.now(UTC) + timedelta(minutes=15)
     session_id = uuid4()
     status_service.current.return_value = ActiveVpnTransport(
         session_id=session_id,
+        node_id=uuid4(),
         country_code="DE",
         endpoint_ipv4=IPv4Address("204.48.17.50"),
         endpoint_port=51820,
@@ -200,7 +223,13 @@ def test_current_session_supports_restart_reconciliation_without_node_identity()
     )
     with api_client(AsyncMock()) as client:
         client.app.state.vpn_session_status = status_service
-        response = client.get("/vpn/sessions/current", headers={"Authorization": "Bearer token"})
+        response = client.get(
+            "/vpn/sessions/current",
+            headers={
+                "Authorization": "Bearer token",
+                **({"X-VPN-Candidates": "1"} if include_candidates else {}),
+            },
+        )
 
     assert response.status_code == 200
     body = response.json()
@@ -210,6 +239,9 @@ def test_current_session_supports_restart_reconciliation_without_node_identity()
         datetime.fromisoformat(body["session"]["server_time"].replace("Z", "+00:00")).tzinfo
         is not None
     )
+    assert ("candidates" in body["session"]) is include_candidates
+    if include_candidates:
+        assert body["session"]["candidates"][0]["protocol"] == "WIREGUARD"
     assert "node_id" not in str(body)
     assert "provider" not in str(body)
     status_service.current.assert_awaited_once_with("token")

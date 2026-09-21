@@ -3,12 +3,13 @@ import {
   type ActiveVpnSessionResponse,
   type ApiClient,
 } from "../api/client";
-import type { WireGuardKeyManager } from "../native/wireguardKeys";
 import {
-  WireGuardTunnelError,
-  type WireGuardTunnelController,
-  type WireGuardTunnelState,
-} from "../native/wireguardTransport";
+  connectFirstCandidate,
+  ProtocolConnectionError,
+  type VpnProtocol,
+  type VpnSessionProvisioner,
+  type ProtocolStatus,
+} from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 
 export interface ConnectedVpnSession {
@@ -26,7 +27,7 @@ export type VpnConnectionState =
   | {
       readonly phase: "DISCONNECTING";
       readonly backend: "ACTIVE";
-      readonly tunnel: WireGuardTunnelState;
+      readonly tunnel: ProtocolStatus;
       readonly session?: ConnectedVpnSession;
     }
   | {
@@ -44,7 +45,7 @@ export type VpnConnectionState =
   | {
       readonly phase: "UNAVAILABLE";
       readonly backend: "ACTIVE" | "NONE" | "UNAVAILABLE";
-      readonly tunnel: WireGuardTunnelState | "UNAVAILABLE";
+      readonly tunnel: ProtocolStatus | "UNAVAILABLE";
       readonly reason:
         "BACKEND_UNAVAILABLE" | "TUNNEL_UNAVAILABLE" | "CONNECTION_FAILED";
       readonly session?: ConnectedVpnSession;
@@ -77,8 +78,8 @@ export class VpnConnectionError extends Error {
 
 export function createVpnConnectionManager(
   api: ApiClient,
-  keys: WireGuardKeyManager,
-  tunnel: WireGuardTunnelController,
+  provisioner: VpnSessionProvisioner,
+  tunnel: VpnProtocol,
   monitorIntervalMs = 3_000,
 ): VpnConnectionManager {
   let state: VpnConnectionState = {
@@ -188,7 +189,7 @@ export function createVpnConnectionManager(
     if (state.phase !== "CONNECTED") return;
     const observed = state;
     try {
-      if ((await tunnel.state()) !== "UP") {
+      if ((await tunnel.status()) !== "UP") {
         if (state === observed)
           emit({
             phase: "UNAVAILABLE",
@@ -216,7 +217,7 @@ export function createVpnConnectionManager(
       if (current.session === null) {
         desiredConnected = false;
         clearSessionTimers();
-        await tunnel.stop();
+        await tunnel.disconnect();
         if (state === observed)
           emit({ phase: "DISCONNECTED", backend: "NONE", tunnel: "DOWN" });
         return;
@@ -245,7 +246,7 @@ export function createVpnConnectionManager(
       emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       const [backendResult, tunnelResult] = await Promise.allSettled([
         api.getCurrentVpnSession(accessToken),
-        tunnel.state(),
+        tunnel.status(),
       ]);
       if (run !== generation) return;
       if (backendResult.status === "rejected") {
@@ -276,7 +277,7 @@ export function createVpnConnectionManager(
       if (backendSession === null) {
         if (tunnelResult.value === "UP") {
           try {
-            await tunnel.stop();
+            await tunnel.disconnect();
           } catch {
             emit({
               phase: "UNAVAILABLE",
@@ -319,7 +320,10 @@ export function createVpnConnectionManager(
           return;
         }
         try {
-          await startAndConfirm(tunnel, backendSession);
+          await connectFirstCandidate(
+            tunnel,
+            provisioner.candidates(backendSession),
+          );
         } catch {
           if (run === generation)
             emit({
@@ -344,19 +348,12 @@ export function createVpnConnectionManager(
       const previousTunnel = state.tunnel;
       emit({ phase: "CONNECTING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       try {
-        const publicKey = await keys.ensurePublicKey();
-        const backendSession = await api.createVpnSession(
-          accessToken,
-          selection.mode === "AUTO"
-            ? { mode: "AUTO", public_key: publicKey }
-            : {
-                mode: "COUNTRY",
-                country_code: selection.country_code,
-                public_key: publicKey,
-              },
-        );
+        const backendSession = await provisioner.create(accessToken, selection);
         try {
-          await startAndConfirm(tunnel, backendSession);
+          await connectFirstCandidate(
+            tunnel,
+            provisioner.candidates(backendSession),
+          );
         } catch (error) {
           await bestEffortLocalStop(tunnel);
           await bestEffortBackendCleanup(
@@ -365,8 +362,8 @@ export function createVpnConnectionManager(
             backendSession.session_id,
           );
           if (
-            error instanceof WireGuardTunnelError &&
-            error.code === "wireguard_data_plane_unavailable"
+            error instanceof ProtocolConnectionError &&
+            error.code === "INTERNET_UNVERIFIED"
           ) {
             throw new VpnConnectionError("VPN_TRAFFIC_INTERCEPTED");
           }
@@ -412,10 +409,10 @@ export function createVpnConnectionManager(
         });
         let stopped = false;
         try {
-          stopped = (await tunnel.stop()) === "DOWN";
+          stopped = (await tunnel.disconnect()) === "DOWN";
         } catch {
           try {
-            stopped = (await tunnel.state()) === "DOWN";
+            stopped = (await tunnel.status()) === "DOWN";
           } catch {
             stopped = false;
           }
@@ -501,20 +498,6 @@ function productSession(
           ),
   };
 }
-async function startAndConfirm(
-  tunnel: WireGuardTunnelController,
-  session: ActiveVpnSessionResponse,
-) {
-  await tunnel.start({
-    endpoint: session.transport.endpoint,
-    serverPublicKey: session.transport.server_public_key,
-    clientAddress: session.transport.client_address,
-    dns: session.transport.dns,
-    allowedIps: session.transport.allowed_ips,
-  });
-  if ((await tunnel.state()) !== "UP")
-    throw new Error("native tunnel did not reach UP");
-}
 function mapError(error: unknown) {
   if (error instanceof VpnConnectionError) return error;
   if (
@@ -530,9 +513,9 @@ function isBackendUnavailable(error: unknown) {
     ["NETWORK_ERROR", "TIMEOUT", "SERVER_ERROR"].includes(error.code)
   );
 }
-async function bestEffortLocalStop(tunnel: WireGuardTunnelController) {
+async function bestEffortLocalStop(tunnel: VpnProtocol) {
   try {
-    await tunnel.stop();
+    await tunnel.disconnect();
   } catch {
     /* Native startup also rolls back transient state. */
   }

@@ -48,6 +48,7 @@ class VpnSessionStatusService:
                     raise VpnSessionStatusUnavailableError
                 return ActiveVpnTransport(
                     session_id=vpn_session.id,
+                    node_id=node.id,
                     country_code=node.country_code,
                     endpoint_ipv4=node.public_ipv4,
                     endpoint_port=node.wireguard_port,

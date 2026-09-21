@@ -1,3 +1,7 @@
+import {
+  createWireGuardProtocol,
+  createWireGuardProvisioner,
+} from "../vpn/wireguard";
 import { describe, expect, it, vi } from "vitest";
 import {
   ApiError,
@@ -56,7 +60,12 @@ function dependencies() {
 describe("Windows VPN connection orchestration", () => {
   it("connects AUTO using only the local public key and confirms native UP", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -86,7 +95,12 @@ describe("Windows VPN connection orchestration", () => {
 
   it("preserves COUNTRY targeting without selecting a node in React", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await connection.connect("access-token", {
       mode: "COUNTRY",
@@ -108,7 +122,12 @@ describe("Windows VPN connection orchestration", () => {
     async (code, selection) => {
       const { api, keys, tunnel } = dependencies();
       vi.mocked(api.createVpnSession).mockRejectedValue(new ApiError(code));
-      const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+      const connection = createVpnConnectionManager(
+        api,
+        createWireGuardProvisioner(api, keys),
+        createWireGuardProtocol(tunnel),
+        60_000,
+      );
 
       await expect(
         connection.connect("access-token", selection),
@@ -122,7 +141,12 @@ describe("Windows VPN connection orchestration", () => {
   it("cleans up backend and local state when native startup fails", async () => {
     const { api, keys, tunnel } = dependencies();
     vi.mocked(tunnel.start).mockRejectedValue(new Error("native failure"));
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -139,7 +163,12 @@ describe("Windows VPN connection orchestration", () => {
     vi.mocked(tunnel.start).mockRejectedValue(
       new WireGuardTunnelError("wireguard_data_plane_unavailable"),
     );
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -154,7 +183,12 @@ describe("Windows VPN connection orchestration", () => {
   it("does not report success when native state confirmation is DOWN", async () => {
     const { api, keys, tunnel } = dependencies();
     vi.mocked(tunnel.state).mockResolvedValue("DOWN");
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
@@ -168,7 +202,12 @@ describe("Windows VPN connection orchestration", () => {
     vi.mocked(keys.ensurePublicKey).mockImplementation(
       () => new Promise((resolve) => (resolveKey = resolve)),
     );
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
     const first = connection.connect("access-token", { mode: "AUTO" });
 
     await expect(
@@ -187,7 +226,12 @@ describe("Windows VPN connection orchestration", () => {
     vi.mocked(tunnel.state)
       .mockResolvedValueOnce("DOWN")
       .mockResolvedValueOnce("UP");
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await connection.reconcile("access-token");
 
@@ -206,8 +250,8 @@ describe("Windows VPN connection orchestration", () => {
     );
     const backendUnavailable = createVpnConnectionManager(
       first.api,
-      first.keys,
-      first.tunnel,
+      createWireGuardProvisioner(first.api, first.keys),
+      createWireGuardProtocol(first.tunnel),
       60_000,
     );
     await backendUnavailable.reconcile("access-token");
@@ -226,8 +270,8 @@ describe("Windows VPN connection orchestration", () => {
     );
     const tunnelUnavailable = createVpnConnectionManager(
       second.api,
-      second.keys,
-      second.tunnel,
+      createWireGuardProvisioner(second.api, second.keys),
+      createWireGuardProtocol(second.tunnel),
       60_000,
     );
     await tunnelUnavailable.reconcile("access-token");
@@ -241,7 +285,12 @@ describe("Windows VPN connection orchestration", () => {
   it("detects unexpected native termination without reporting Connected", async () => {
     vi.useFakeTimers();
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      100,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
     vi.mocked(tunnel.state).mockResolvedValue("DOWN");
 
@@ -266,7 +315,12 @@ describe("Windows VPN connection orchestration", () => {
           resolveCurrent = resolve;
         }),
     );
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
     const stale = connection.reconcile("access-token");
     await connection.connect("access-token", { mode: "AUTO" });
     resolveCurrent({ session: null });
@@ -277,7 +331,12 @@ describe("Windows VPN connection orchestration", () => {
 
   it("stops the native tunnel before terminating the backend session", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
 
     await connection.disconnect("access-token");
@@ -306,7 +365,12 @@ describe("Windows VPN connection orchestration", () => {
         session_id: backendSession.session_id,
         status: "DISCONNECTED",
       });
-    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      100,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
 
     await connection.disconnect("access-token");
@@ -329,7 +393,12 @@ describe("Windows VPN connection orchestration", () => {
 
   it("does not remove the backend peer when local tunnel stop cannot be confirmed", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
     vi.mocked(tunnel.stop).mockRejectedValue(new Error("stop failed"));
     vi.mocked(tunnel.state).mockResolvedValue("UP");
@@ -348,7 +417,12 @@ describe("Windows VPN connection orchestration", () => {
 
   it("coalesces duplicate disconnect requests into one operation", async () => {
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
     let finishStop!: () => void;
     vi.mocked(tunnel.stop).mockImplementation(
@@ -372,7 +446,12 @@ describe("Windows VPN connection orchestration", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2035-01-01T00:00:00Z"));
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 2_000_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      2_000_000,
+    );
 
     await connection.connect("access-token", { mode: "AUTO" });
     expect(connection.current()).toMatchObject({
@@ -392,7 +471,12 @@ describe("Windows VPN connection orchestration", () => {
   it("stops an expired tunnel promptly after a sleep-sized timer jump without granting another session", async () => {
     vi.useFakeTimers();
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 2_000_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      2_000_000,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
 
     await vi.advanceTimersByTimeAsync(900_000);
@@ -420,7 +504,12 @@ describe("Windows VPN connection orchestration", () => {
         server_time: "2026-09-16T10:10:00Z",
       },
     });
-    const connection = createVpnConnectionManager(api, keys, tunnel, 60_000);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      60_000,
+    );
 
     await connection.reconcile("access-token");
 
@@ -433,7 +522,12 @@ describe("Windows VPN connection orchestration", () => {
   it("stops locally when backend reports that the peer session is already gone", async () => {
     vi.useFakeTimers();
     const { api, keys, tunnel } = dependencies();
-    const connection = createVpnConnectionManager(api, keys, tunnel, 100);
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      100,
+    );
     await connection.connect("access-token", { mode: "AUTO" });
     vi.mocked(api.getCurrentVpnSession).mockResolvedValue({ session: null });
 
