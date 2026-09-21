@@ -1,4 +1,5 @@
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 
@@ -41,7 +42,16 @@ class ClientProtocol(asyncio.DatagramProtocol):
 
 
 @pytest.mark.parametrize("mode", ["PRETTYLISA_V1", "NONE", "SIMPLE_PACKET_WRAPPER_V1"])
-def test_forwards_multiple_clients_and_returns_replies(mode: str) -> None:
+@pytest.mark.parametrize("monotonic_now", [10.0, 10_000.0])
+def test_forwards_multiple_clients_and_returns_replies(
+    mode: str, monotonic_now: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Replace only the server's clock, leaving asyncio's timeout clock running.
+    monkeypatch.setattr(
+        "prettylisavpn_obfuscator.server.time",
+        SimpleNamespace(monotonic=lambda: monotonic_now),
+    )
+
     async def scenario() -> None:
         loop = asyncio.get_running_loop()
         echo_transport, _ = await loop.create_datagram_endpoint(
@@ -92,8 +102,10 @@ def test_forwards_multiple_clients_and_returns_replies(mode: str) -> None:
                 server.datagram_received(b"malformed-frame", ("127.0.0.1", 12345))
                 assert server.counters.rejected_packets == 1
                 assert len(server._clients) == before
+            server.expire_idle_clients()
+            assert len(server._clients) == 2
             for session in server._clients.values():
-                session.last_seen = 0
+                session.last_seen = monotonic_now - settings.client_idle_timeout_seconds - 1
             server.expire_idle_clients()
             assert not server._clients
             reconnect_result: asyncio.Future[bytes] = loop.create_future()
