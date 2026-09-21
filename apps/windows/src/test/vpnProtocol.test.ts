@@ -27,6 +27,11 @@ const parameters = {
 const config = { ...wireGuardDefaults("DE", 51820), parameters };
 function native(): WireGuardTunnelController {
   return {
+    verify: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    }),
     start: vi.fn().mockResolvedValue("UP"),
     stop: vi.fn().mockResolvedValue("DOWN"),
     state: vi.fn().mockResolvedValue("UP"),
@@ -55,7 +60,7 @@ describe("protocol boundary", () => {
     await expect(
       connectFirstCandidate(protocol, [config, { ...config, port: 443 }]),
     ).rejects.toEqual(new ProtocolConnectionError("CONNECTION_FAILED"));
-    expect(protocol.connect).toHaveBeenCalledExactlyOnceWith(config);
+    expect(protocol.connect).toHaveBeenCalledExactlyOnceWith(config, undefined);
   });
   it("rejects empty candidate lists without invoking a protocol", async () => {
     const protocol = { connect: vi.fn() } as unknown as VpnProtocol;
@@ -112,6 +117,11 @@ describe("WireGuard protocol adapter", () => {
     expect(await protocol.status()).toBe("UP");
     expect(await protocol.health()).toMatchObject({ internet_verified: true });
     expect(await protocol.disconnect()).toBe("DOWN");
+    vi.mocked(tunnel.verify).mockResolvedValue({
+      tunnel_established: false,
+      internet_verified: false,
+      failure_code: "HANDSHAKE_FAILED",
+    });
     expect(await protocol.health()).toMatchObject({ internet_verified: false });
   });
   it.each([
@@ -146,7 +156,7 @@ describe("WireGuard protocol adapter", () => {
       new WireGuardTunnelError("private-key=secret"),
     );
     const result = await protocol.connect(config);
-    expect(result.failure_code).toBe("CONNECTION_FAILED");
+    expect(result.failure_code).toBe("UNKNOWN");
     expect(JSON.stringify(result)).not.toContain("secret");
     vi.mocked(tunnel.diagnostics).mockRejectedValue(new Error("secret-token"));
     expect(await protocol.diagnostics()).toEqual({
@@ -162,14 +172,21 @@ describe("WireGuard protocol adapter", () => {
       new WireGuardTunnelError("wireguard_data_plane_unavailable"),
     );
     expect(await createWireGuardProtocol(tunnel).connect(config)).toMatchObject(
-      { internet_verified: false, failure_code: "INTERNET_UNVERIFIED" },
+      {
+        internet_verified: false,
+        failure_code: "TUNNEL_ESTABLISHED_NO_TRAFFIC",
+      },
     );
   });
   it("loses verification when the transport becomes unhealthy", async () => {
     const tunnel = native();
     const protocol = createWireGuardProtocol(tunnel);
     await protocol.connect(config);
-    vi.mocked(tunnel.diagnostics).mockResolvedValue(null);
+    vi.mocked(tunnel.verify).mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: false,
+      failure_code: "HTTPS_CHECK_FAILED",
+    });
     expect(await protocol.health()).toMatchObject({
       tunnel_established: true,
       internet_verified: false,

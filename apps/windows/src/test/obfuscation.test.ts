@@ -24,6 +24,11 @@ describe("independent obfuscation providers", () => {
     "connects and reconnects WireGuard with %s",
     async (mode) => {
       const tunnel: WireGuardTunnelController = {
+        verify: vi.fn().mockResolvedValue({
+          tunnel_established: true,
+          internet_verified: true,
+          failure_code: null,
+        }),
         start: vi.fn().mockResolvedValue("UP"),
         stop: vi.fn().mockResolvedValue("DOWN"),
         state: vi.fn().mockResolvedValue("UP"),
@@ -61,7 +66,15 @@ describe("independent obfuscation providers", () => {
       }),
       stop: vi.fn().mockResolvedValue("DOWN"),
       status: vi.fn().mockResolvedValue("UP"),
-      health: vi.fn(),
+      health: vi.fn().mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: true,
+        verification: {
+          dns_verified: true,
+          https_verified: true,
+          route_verified: true,
+        },
+      }),
     };
     const config = {
       ...createProfileConfig("OPENVPN_TLS_TCP", "DE"),

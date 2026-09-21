@@ -18,19 +18,19 @@ opaque `parameters` payload interpreted only by the protocol adapter.
 The first adapter is WireGuard. Its provisioner obtains the local public key,
 creates the backend session, and translates the existing bootstrap response.
 Private keys remain in native storage. The adapter preserves native startup,
-including handshake and data-plane verification, and the existing packet
+including handshake and the existing packet
 transport policy. `transport=NATIVE` and `obfuscation_mode=NATIVE` mean use that
 existing local policy; they do not select a new transport. MTU remains 1280,
 with VPN DNS, full-tunnel routing, and WireGuard encryption. Unsupported settings
 fail explicitly instead of being silently ignored.
 
-`health()` combines the last successful startup verification in this adapter
-instance with current native state and transport health. It does not perform a
-fresh Internet probe. After adapter recreation, Internet verification is unknown
-(represented as false) until a successful connect. Existing restart reconciliation
-continues to use native status. Diagnostics expose only status, transport health,
-and numeric byte counters. Native messages, bootstrap payloads, endpoints, keys,
-and tokens are never copied into these diagnostics or connection results.
+`health()` now runs independent DNS and HTTPS probes over the VPN interface on
+every call. Initial connect and restart reconciliation both require successful
+verification before CONNECTED. Periodic checks support DEGRADED and recovery.
+See [Strict connection verification](connection-verification.md) for states,
+endpoint configuration, failure codes and the native route-binding mechanism.
+Diagnostics expose only status, transport health, and numeric byte counters;
+raw probe responses, keys, tokens and endpoints are never included.
 
 ## Ordered candidates and compatibility
 

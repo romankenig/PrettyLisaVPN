@@ -104,6 +104,8 @@ export function Home() {
       !locationConnectable ||
       connectionState.phase === "CONNECTED" ||
       connectionState.phase === "CONNECTING" ||
+      connectionState.phase === "TUNNEL_ESTABLISHED" ||
+      connectionState.phase === "VERIFYING_INTERNET" ||
       connectionState.phase === "RECONCILING"
     ) {
       return;
@@ -174,6 +176,8 @@ export function Home() {
           type="button"
           disabled={
             connectionState.phase === "CONNECTING" ||
+            connectionState.phase === "TUNNEL_ESTABLISHED" ||
+            connectionState.phase === "VERIFYING_INTERNET" ||
             connectionState.phase === "RECONCILING" ||
             connectionState.phase === "DISCONNECTING" ||
             (!canDisconnect(connectionState) && !locationConnectable)
@@ -186,6 +190,8 @@ export function Home() {
           {connectionState.phase === "DISCONNECTING"
             ? "DISCONNECTING"
             : connectionState.phase === "CONNECTING" ||
+                connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                connectionState.phase === "VERIFYING_INTERNET" ||
                 connectionState.phase === "RECONCILING"
               ? "CONNECTING"
               : canDisconnect(connectionState)
@@ -198,7 +204,9 @@ export function Home() {
             : "Подключение использует выбранный режим без выбора конкретного сервера."}
         </p>
         {connectionErrorMessage !== null ||
-        connectionState.phase === "UNAVAILABLE" ? (
+        ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
+          connectionState.phase,
+        ) ? (
           <p className="connection-error" role="alert">
             {connectionErrorMessage ??
               connectionUnavailableMessage(connectionState)}
@@ -307,12 +315,17 @@ function unavailableMessage(
 }
 
 function connectionUnavailableMessage(state: VpnConnectionState) {
+  if (state.phase === "FAILED" || state.phase === "DEGRADED")
+    return `Доступ в Интернет через VPN не подтверждён (${state.failure_code ?? "UNKNOWN"}).`;
   return state.phase === "UNAVAILABLE" ? unavailableMessage(state.reason) : "";
 }
 
 function canDisconnect(state: VpnConnectionState) {
   return (
     state.phase === "CONNECTED" ||
+    state.phase === "DEGRADED" ||
+    (state.phase === "FAILED" &&
+      (state.tunnel !== "DOWN" || state.backend !== "NONE")) ||
     (state.phase === "UNAVAILABLE" && state.tunnel !== "DOWN") ||
     (state.phase === "UNAVAILABLE" && state.backend === "ACTIVE")
   );
@@ -320,6 +333,10 @@ function canDisconnect(state: VpnConnectionState) {
 
 function connectionHeading(state: VpnConnectionState) {
   if (state.phase === "CONNECTED") return "Connected";
+  if (state.phase === "TUNNEL_ESTABLISHED") return "TUNNEL ESTABLISHED";
+  if (state.phase === "VERIFYING_INTERNET") return "VERIFYING INTERNET";
+  if (state.phase === "DEGRADED") return "DEGRADED";
+  if (state.phase === "FAILED") return "FAILED";
   if (state.phase === "CONNECTING" || state.phase === "RECONCILING")
     return "CONNECTING";
   if (state.phase === "DISCONNECTING" && state.tunnel === "UP")

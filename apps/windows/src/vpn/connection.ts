@@ -1,3 +1,4 @@
+import { checkHealth } from "./verification";
 import {
   ApiError,
   type ActiveVpnSessionResponse,
@@ -5,6 +6,9 @@ import {
 } from "../api/client";
 import {
   connectFirstCandidate,
+  isVerified,
+  type ProtocolFailure,
+  type VerificationPhase,
   ProtocolConnectionError,
   type VpnProtocol,
   type VpnSessionProvisioner,
@@ -43,6 +47,14 @@ export type VpnConnectionState =
       readonly session: ConnectedVpnSession;
     }
   | {
+      readonly phase:
+        "TUNNEL_ESTABLISHED" | "VERIFYING_INTERNET" | "DEGRADED" | "FAILED";
+      readonly backend: "ACTIVE" | "NONE" | "UNAVAILABLE";
+      readonly tunnel: ProtocolStatus | "UNAVAILABLE";
+      readonly session: ConnectedVpnSession;
+      readonly failure_code?: ProtocolFailure;
+    }
+  | {
       readonly phase: "UNAVAILABLE";
       readonly backend: "ACTIVE" | "NONE" | "UNAVAILABLE";
       readonly tunnel: ProtocolStatus | "UNAVAILABLE";
@@ -69,7 +81,8 @@ export class VpnConnectionError extends Error {
       | "LOCAL_TUNNEL_FAILED"
       | "VPN_TRAFFIC_INTERCEPTED"
       | "LOCAL_TUNNEL_STOP_FAILED"
-      | "CONNECTION_FAILED",
+      | "CONNECTION_FAILED"
+      | ProtocolFailure,
   ) {
     super(code);
     this.name = "VpnConnectionError";
@@ -80,7 +93,7 @@ export function createVpnConnectionManager(
   api: ApiClient,
   provisioner: VpnSessionProvisioner,
   tunnel: VpnProtocol,
-  monitorIntervalMs = 3_000,
+  monitorIntervalMs = 30_000,
 ): VpnConnectionManager {
   let state: VpnConnectionState = {
     phase: "RECONCILING",
@@ -90,6 +103,8 @@ export function createVpnConnectionManager(
   let generation = 0;
   let desiredConnected = true;
   let inFlight = false;
+  let checking = false;
+  let healthFailures = 0;
   let disconnectInFlight: Promise<void> | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
   let countdownTimer: ReturnType<typeof setInterval> | undefined;
@@ -167,7 +182,7 @@ export function createVpnConnectionManager(
       const deadline = performance.now() + session.remainingSeconds * 1_000;
       countdownTimer = setInterval(() => {
         if (
-          state.phase !== "CONNECTED" ||
+          (state.phase !== "CONNECTED" && state.phase !== "DEGRADED") ||
           state.session.sessionId !== session.sessionId
         )
           return;
@@ -185,53 +200,130 @@ export function createVpnConnectionManager(
     }
     monitor(accessToken);
   };
-  const checkConnection = async (accessToken: string) => {
-    if (state.phase !== "CONNECTED") return;
-    const observed = state;
-    try {
-      if ((await tunnel.status()) !== "UP") {
-        if (state === observed)
-          emit({
-            phase: "UNAVAILABLE",
-            backend: "ACTIVE",
-            tunnel: "DOWN",
-            reason: "TUNNEL_UNAVAILABLE",
-            session: observed.session,
-          });
-        return;
-      }
-    } catch {
-      if (state === observed)
+  const progress =
+    (run: number, session: ActiveVpnSessionResponse) =>
+    (phase: VerificationPhase) => {
+      if (run === generation)
         emit({
-          phase: "UNAVAILABLE",
+          phase,
           backend: "ACTIVE",
-          tunnel: "UNAVAILABLE",
-          reason: "TUNNEL_UNAVAILABLE",
-          session: observed.session,
+          tunnel: "UP",
+          session: productSession(session),
         });
-      return;
-    }
+    };
+  const fail = async (
+    accessToken: string,
+    session: ConnectedVpnSession,
+    code: ProtocolFailure,
+    run: number,
+  ) => {
+    if (run !== generation) return;
+    inFlight = true;
+    stopMonitor();
+    clearSessionTimers();
+    emit({
+      phase: "FAILED",
+      backend: "ACTIVE",
+      tunnel: "UP",
+      session,
+      failure_code: code,
+    });
+    let down = false;
     try {
-      const current = await api.getCurrentVpnSession(accessToken);
-      if (state !== observed) return;
-      if (current.session === null) {
-        desiredConnected = false;
-        clearSessionTimers();
-        await tunnel.disconnect();
-        if (state === observed)
-          emit({ phase: "DISCONNECTED", backend: "NONE", tunnel: "DOWN" });
+      down = (await tunnel.disconnect()) === "DOWN";
+    } catch {
+      /* Keep teardown available. */
+    }
+    let backend: "NONE" | "UNAVAILABLE" = "NONE";
+    try {
+      await api.disconnectVpnSession(accessToken, session.sessionId);
+    } catch {
+      backend = "UNAVAILABLE";
+    }
+    if (run === generation)
+      emit({
+        phase: "FAILED",
+        backend,
+        tunnel: down ? "DOWN" : "UNAVAILABLE",
+        session,
+        failure_code: code,
+      });
+    inFlight = false;
+  };
+  const verifyExisting = async (
+    run: number,
+    session: ActiveVpnSessionResponse,
+  ) => {
+    progress(run, session)("TUNNEL_ESTABLISHED");
+    progress(run, session)("VERIFYING_INTERNET");
+    const result = await checkHealth(tunnel);
+    if (!isVerified(result))
+      throw new ProtocolConnectionError(
+        result.failure_code ?? "TUNNEL_ESTABLISHED_NO_TRAFFIC",
+      );
+  };
+  const checkConnection = async (accessToken: string) => {
+    if (checking || (state.phase !== "CONNECTED" && state.phase !== "DEGRADED"))
+      return;
+    checking = true;
+    const run = generation;
+    const session = state.session;
+    try {
+      let result;
+      try {
+        result = await checkHealth(tunnel);
+      } catch {
+        result = null;
+      }
+      if (run !== generation) return;
+      if (!result || !isVerified(result)) {
+        const code = result?.failure_code ?? "UNKNOWN";
+        healthFailures += 1;
+        if (
+          healthFailures >= 3 ||
+          code === "ROUTE_LEAK_DETECTED" ||
+          code === "EGRESS_MISMATCH" ||
+          result?.tunnel_established === false
+        ) {
+          await fail(accessToken, session, code, run);
+        } else {
+          emit({
+            phase: "DEGRADED",
+            backend: "ACTIVE",
+            tunnel: "UP",
+            session,
+            failure_code: code,
+          });
+        }
         return;
       }
-      activate(current.session, accessToken);
-    } catch {
-      if (state === observed)
-        emit({
-          phase: "UNAVAILABLE",
-          backend: "UNAVAILABLE",
-          tunnel: "UP",
-          reason: "BACKEND_UNAVAILABLE",
-          session: observed.session,
-        });
+      try {
+        const current = await api.getCurrentVpnSession(accessToken);
+        if (run !== generation) return;
+        if (current.session === null) {
+          await manager.disconnect(accessToken);
+          return;
+        }
+        healthFailures = 0;
+        activate(current.session, accessToken);
+      } catch {
+        if (run !== generation) return;
+        healthFailures += 1;
+        if (healthFailures >= 3) {
+          await fail(accessToken, session, "SERVER_UNREACHABLE", run);
+          return;
+        }
+        if (run === generation)
+          emit({
+            phase: "DEGRADED",
+            backend: "UNAVAILABLE",
+            tunnel: "UP",
+            session,
+            failure_code: "SERVER_UNREACHABLE",
+          });
+      }
+    } finally {
+      checking = false;
     }
   };
 
@@ -242,7 +334,11 @@ export function createVpnConnectionManager(
       return () => listeners.delete(listener);
     },
     async reconcile(accessToken) {
+      if (inFlight) return;
+      healthFailures = 0;
       const run = ++generation;
+      stopMonitor();
+      clearSessionTimers();
       emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       const [backendResult, tunnelResult] = await Promise.allSettled([
         api.getCurrentVpnSession(accessToken),
@@ -323,19 +419,33 @@ export function createVpnConnectionManager(
           await connectFirstCandidate(
             tunnel,
             provisioner.candidates(backendSession),
+            progress(run, backendSession),
           );
-        } catch {
+        } catch (error) {
           if (run === generation)
-            emit({
-              phase: "UNAVAILABLE",
-              backend: "ACTIVE",
-              tunnel: "DOWN",
-              reason: "TUNNEL_UNAVAILABLE",
-              session: productSession(backendSession),
-            });
+            await fail(
+              accessToken,
+              productSession(backendSession),
+              error instanceof ProtocolConnectionError ? error.code : "UNKNOWN",
+              run,
+            );
+          return;
+        }
+      } else {
+        try {
+          await verifyExisting(run, backendSession);
+        } catch (error) {
+          if (run === generation)
+            await fail(
+              accessToken,
+              productSession(backendSession),
+              error instanceof ProtocolConnectionError ? error.code : "UNKNOWN",
+              run,
+            );
           return;
         }
       }
+
       if (run === generation) {
         activate(backendSession, accessToken);
       }
@@ -346,28 +456,38 @@ export function createVpnConnectionManager(
       inFlight = true;
       const run = ++generation;
       const previousTunnel = state.tunnel;
+      healthFailures = 0;
+      stopMonitor();
+      clearSessionTimers();
       emit({ phase: "CONNECTING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       try {
         const backendSession = await provisioner.create(accessToken, selection);
+        if (run !== generation) {
+          await api
+            .disconnectVpnSession(accessToken, backendSession.session_id)
+            .catch(() => undefined);
+          return;
+        }
         try {
           await connectFirstCandidate(
             tunnel,
             provisioner.candidates(backendSession),
+            progress(run, backendSession),
           );
         } catch (error) {
-          await bestEffortLocalStop(tunnel);
-          await bestEffortBackendCleanup(
-            api,
-            accessToken,
-            backendSession.session_id,
-          );
-          if (
-            error instanceof ProtocolConnectionError &&
-            error.code === "INTERNET_UNVERIFIED"
-          ) {
-            throw new VpnConnectionError("VPN_TRAFFIC_INTERCEPTED");
-          }
-          throw new VpnConnectionError("LOCAL_TUNNEL_FAILED");
+          const code =
+            error instanceof ProtocolConnectionError ? error.code : "UNKNOWN";
+          if (run === generation)
+            await fail(accessToken, productSession(backendSession), code, run);
+          throw new VpnConnectionError(code);
+        }
+
+        if (run !== generation) {
+          await tunnel.disconnect().catch(() => undefined);
+          await api
+            .disconnectVpnSession(accessToken, backendSession.session_id)
+            .catch(() => undefined);
+          return;
         }
         if (run === generation) {
           activate(backendSession, accessToken);
@@ -375,7 +495,7 @@ export function createVpnConnectionManager(
       } catch (error) {
         const mapped = mapError(error);
         const backendUnavailable = isBackendUnavailable(error);
-        if (run === generation)
+        if (run === generation && state.phase !== "FAILED")
           emit({
             phase: "UNAVAILABLE",
             backend: backendUnavailable ? "UNAVAILABLE" : "NONE",
@@ -512,22 +632,4 @@ function isBackendUnavailable(error: unknown) {
     error instanceof ApiError &&
     ["NETWORK_ERROR", "TIMEOUT", "SERVER_ERROR"].includes(error.code)
   );
-}
-async function bestEffortLocalStop(tunnel: VpnProtocol) {
-  try {
-    await tunnel.disconnect();
-  } catch {
-    /* Native startup also rolls back transient state. */
-  }
-}
-async function bestEffortBackendCleanup(
-  api: ApiClient,
-  accessToken: string,
-  sessionId: string,
-) {
-  try {
-    await api.disconnectVpnSession(accessToken, sessionId);
-  } catch {
-    /* Durable expiry is the safety net. */
-  }
 }

@@ -2,6 +2,7 @@
 
 mod debug_log;
 mod installation_id;
+mod internet_verification;
 mod obfuscation_transport;
 mod packet_obfuscation;
 mod refresh_credentials;
@@ -33,6 +34,7 @@ fn main() {
             wireguard_keys::load_wireguard_public_key,
             wireguard_keys::delete_wireguard_key,
             wireguard_tunnel::start_wireguard_tunnel,
+            wireguard_tunnel::verify_wireguard_internet,
             wireguard_tunnel::stop_wireguard_tunnel,
             wireguard_tunnel::get_wireguard_tunnel_state,
             wireguard_tunnel::get_wireguard_peer_diagnostics,

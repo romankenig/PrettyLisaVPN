@@ -1,3 +1,4 @@
+import { normalizeFailure, checkHealth } from "./verification";
 import { obfuscationProviders, type ObfuscationPlan } from "./obfuscation";
 import {
   connectionProfiles,
@@ -29,7 +30,8 @@ export interface ExternalTunnelRequest {
   readonly obfuscation?: ObfuscationPlan;
 }
 /** An implementation owns process/service lifecycle, TUN, routes, DNS and rollback.
- * A successful start must include an independent tunneled Internet probe.
+ * health must independently verify DNS, HTTPS response and the VPN route.
+ * start only establishes the tunnel; it never proves Internet access.
  * Raw output is deliberately unknown and is never returned directly to callers.
  */
 export interface ExternalTunnelRuntime {
@@ -70,17 +72,37 @@ function safeResult(raw: unknown): ConnectionResult {
     raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const up = data.tunnel_established === true;
   const failed = data.failure_code !== undefined && data.failure_code !== null;
-  const verified = up && data.internet_verified === true && !failed;
+  const evidence = data.verification as Record<string, unknown> | undefined;
+  const evidenceFailure =
+    evidence?.route_verified === false
+      ? "ROUTE_LEAK_DETECTED"
+      : evidence?.egress_matches === false
+        ? "EGRESS_MISMATCH"
+        : evidence?.dns_verified === false
+          ? "DNS_FAILED"
+          : evidence?.https_verified === false
+            ? "HTTPS_CHECK_FAILED"
+            : null;
+  const verified =
+    up &&
+    data.internet_verified === true &&
+    !failed &&
+    evidence?.dns_verified === true &&
+    evidence?.https_verified === true &&
+    evidence?.route_verified === true &&
+    evidence?.egress_matches !== false;
   return {
     tunnel_established: up,
     internet_verified: verified,
-    failure_code: failed
-      ? "CONNECTION_FAILED"
-      : verified
-        ? null
-        : up
-          ? "INTERNET_UNVERIFIED"
-          : "CONNECTION_FAILED",
+    failure_code:
+      evidenceFailure ??
+      (failed
+        ? normalizeFailure(data.failure_code)
+        : verified
+          ? null
+          : up
+            ? "TUNNEL_ESTABLISHED_NO_TRAFFIC"
+            : "HANDSHAKE_FAILED"),
     diagnostics: {
       status: up ? "UP" : "DOWN",
       transport_healthy: up,
@@ -102,12 +124,12 @@ export function createExternalProtocol(
     try {
       return safeResult(await runtime.health());
     } catch {
-      return failed("CONNECTION_FAILED");
+      return failed("UNKNOWN");
     }
   };
   return {
     capabilities: connectionProfiles[id],
-    async connect(config) {
+    async connect(config, progress) {
       if (
         !validateProfileConfig(connectionProfiles[id], config) ||
         !parameters(config.parameters)
@@ -121,25 +143,36 @@ export function createExternalProtocol(
       )
         return failed("UNSUPPORTED_CONFIGURATION");
       try {
-        const result = safeResult(
-          await runtime.start({
-            profile: id,
-            ...(plan.mode === "NONE" ? {} : { obfuscation: plan }),
-            config: createProfileConfig(id, config.country, config.port),
-            parameters: { ...config.parameters },
-            minimum_tls_version: "1.3",
-            verify_certificate: true,
-          }),
-        );
-        if (result.failure_code) await runtime.stop();
-        return result;
+        const raw = await runtime.start({
+          profile: id,
+          ...(plan.mode === "NONE" ? {} : { obfuscation: plan }),
+          config: createProfileConfig(id, config.country, config.port),
+          parameters: { ...config.parameters },
+          minimum_tls_version: "1.3",
+          verify_certificate: true,
+        });
+        const result = safeResult(raw);
+        const startupFailed =
+          raw &&
+          typeof raw === "object" &&
+          "failure_code" in raw &&
+          raw.failure_code != null;
+        if (!result.tunnel_established || startupFailed) {
+          await runtime.stop();
+          return result;
+        }
+        progress?.("TUNNEL_ESTABLISHED");
+        progress?.("VERIFYING_INTERNET");
+        const verified = await checkHealth({ health });
+        if (verified.failure_code) await runtime.stop();
+        return verified;
       } catch {
         try {
           await runtime.stop();
         } catch {
           /* Caller also confirms teardown. */
         }
-        return failed("CONNECTION_FAILED");
+        return failed("UNKNOWN");
       }
     },
     async disconnect(): Promise<ProtocolStatus> {

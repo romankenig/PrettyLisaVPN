@@ -25,18 +25,35 @@ const wireguardParameters = {
 };
 function runtime(): ExternalTunnelRuntime {
   return {
-    start: vi
-      .fn()
-      .mockResolvedValue({ tunnel_established: true, internet_verified: true }),
+    start: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      verification: {
+        dns_verified: true,
+        https_verified: true,
+        route_verified: true,
+      },
+    }),
     stop: vi.fn().mockResolvedValue("DOWN"),
     status: vi.fn().mockResolvedValue("UP"),
-    health: vi
-      .fn()
-      .mockResolvedValue({ tunnel_established: true, internet_verified: true }),
+    health: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      verification: {
+        dns_verified: true,
+        https_verified: true,
+        route_verified: true,
+      },
+    }),
   };
 }
 function wireguard(): WireGuardTunnelController {
   return {
+    verify: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    }),
     start: vi.fn().mockResolvedValue("UP"),
     stop: vi.fn().mockResolvedValue("DOWN"),
     state: vi.fn().mockResolvedValue("UP"),
@@ -181,7 +198,7 @@ describe.each(["OPENVPN_TLS_TCP", "MASQUE_QUIC"] as const)(
       });
       await expect(
         connectFirstCandidate(adapter, [config, config]),
-      ).rejects.toThrow("CONNECTION_FAILED");
+      ).rejects.toThrow("UNKNOWN");
       expect(external.start).toHaveBeenCalledOnce();
       expect(external.stop).toHaveBeenCalledOnce();
       vi.mocked(external.health).mockResolvedValue({
@@ -223,7 +240,7 @@ describe.each(["OPENVPN_TLS_TCP", "MASQUE_QUIC"] as const)(
         node_id: "internal",
       };
       expect(await adapter.connect(injected)).toMatchObject({
-        failure_code: "CONNECTION_FAILED",
+        failure_code: "UNKNOWN",
         internet_verified: false,
       });
       expect(vi.mocked(external.start).mock.calls[0][0].config).toEqual(
@@ -234,7 +251,7 @@ describe.each(["OPENVPN_TLS_TCP", "MASQUE_QUIC"] as const)(
 
     it("requires Internet verification and rolls back an unverified tunnel", async () => {
       const external = runtime();
-      vi.mocked(external.start).mockResolvedValue({
+      vi.mocked(external.health).mockResolvedValue({
         tunnel_established: true,
         internet_verified: false,
       });
@@ -243,9 +260,54 @@ describe.each(["OPENVPN_TLS_TCP", "MASQUE_QUIC"] as const)(
         masque: external,
       });
       expect(await adapter.connect(config)).toMatchObject({
-        failure_code: "INTERNET_UNVERIFIED",
+        failure_code: "TUNNEL_ESTABLISHED_NO_TRAFFIC",
       });
       expect(external.stop).toHaveBeenCalledOnce();
     });
+  },
+);
+
+it.each([
+  [undefined, "TUNNEL_ESTABLISHED_NO_TRAFFIC"],
+  [
+    { dns_verified: false, https_verified: true, route_verified: true },
+    "DNS_FAILED",
+  ],
+  [
+    { dns_verified: true, https_verified: false, route_verified: true },
+    "HTTPS_CHECK_FAILED",
+  ],
+  [
+    { dns_verified: true, https_verified: true, route_verified: false },
+    "ROUTE_LEAK_DETECTED",
+  ],
+  [
+    {
+      dns_verified: true,
+      https_verified: true,
+      route_verified: true,
+      egress_matches: false,
+    },
+    "EGRESS_MISMATCH",
+  ],
+])(
+  "external adapters require independent evidence: %j",
+  async (verification, failure_code) => {
+    const external = runtime();
+    vi.mocked(external.health).mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      verification,
+    });
+    const adapter = createProfileAdapter("OPENVPN_TLS_TCP", {
+      openvpn: external,
+    });
+    const result = await adapter.connect({
+      ...createProfileConfig("OPENVPN_TLS_TCP", "DE"),
+      parameters: secureParameters,
+    });
+    expect(result).toMatchObject({ internet_verified: false, failure_code });
+    expect(external.health).toHaveBeenCalledOnce();
+    expect(external.stop).toHaveBeenCalledOnce();
   },
 );

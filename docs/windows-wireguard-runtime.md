@@ -80,6 +80,9 @@ The native commands are:
   the adapter.
 - `stop_wireguard_tunnel`: brings down and releases the active adapter; repeated calls are safe.
 - `get_wireguard_tunnel_state`: reports `UP` or `DOWN` from the live native adapter.
+- `verify_wireguard_internet`: independently verifies VPN-bound DNS and HTTPS;
+  `UP` alone is never sufficient for the UI to display Connected. See
+  [Strict connection verification](connection-verification.md).
 - `get_wireguard_peer_diagnostics`: reports the live peer plus transport mode, transport health,
   public endpoint and byte counters, but never private keys or the obfuscation secret.
 

@@ -49,6 +49,11 @@ function dependencies() {
     delete: vi.fn(),
   };
   const tunnel: WireGuardTunnelController = {
+    verify: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    }),
     start: vi.fn().mockResolvedValue("UP"),
     stop: vi.fn().mockResolvedValue("DOWN"),
     state: vi.fn().mockResolvedValue("UP"),
@@ -150,7 +155,7 @@ describe("Windows VPN connection orchestration", () => {
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
-    ).rejects.toEqual(new VpnConnectionError("LOCAL_TUNNEL_FAILED"));
+    ).rejects.toEqual(new VpnConnectionError("UNKNOWN"));
     expect(tunnel.stop).toHaveBeenCalledOnce();
     expect(api.disconnectVpnSession).toHaveBeenCalledWith(
       "access-token",
@@ -172,7 +177,7 @@ describe("Windows VPN connection orchestration", () => {
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
-    ).rejects.toEqual(new VpnConnectionError("VPN_TRAFFIC_INTERCEPTED"));
+    ).rejects.toEqual(new VpnConnectionError("TUNNEL_ESTABLISHED_NO_TRAFFIC"));
     expect(tunnel.stop).toHaveBeenCalledOnce();
     expect(api.disconnectVpnSession).toHaveBeenCalledWith(
       "access-token",
@@ -192,7 +197,7 @@ describe("Windows VPN connection orchestration", () => {
 
     await expect(
       connection.connect("access-token", { mode: "AUTO" }),
-    ).rejects.toEqual(new VpnConnectionError("LOCAL_TUNNEL_FAILED"));
+    ).rejects.toEqual(new VpnConnectionError("HANDSHAKE_FAILED"));
     expect(api.disconnectVpnSession).toHaveBeenCalledOnce();
   });
 
@@ -292,14 +297,18 @@ describe("Windows VPN connection orchestration", () => {
       100,
     );
     await connection.connect("access-token", { mode: "AUTO" });
-    vi.mocked(tunnel.state).mockResolvedValue("DOWN");
+    vi.mocked(tunnel.verify).mockResolvedValue({
+      tunnel_established: false,
+      internet_verified: false,
+      failure_code: "HANDSHAKE_FAILED",
+    });
 
     await vi.advanceTimersByTimeAsync(100);
 
     expect(connection.current()).toMatchObject({
-      phase: "UNAVAILABLE",
-      reason: "TUNNEL_UNAVAILABLE",
-      backend: "ACTIVE",
+      phase: "FAILED",
+      failure_code: "HANDSHAKE_FAILED",
+      backend: "NONE",
       tunnel: "DOWN",
     });
     connection.dispose();
@@ -542,4 +551,320 @@ describe("Windows VPN connection orchestration", () => {
     connection.dispose();
     vi.useRealTimers();
   });
+});
+
+describe("strict Internet verification transitions", () => {
+  function setup() {
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.getCurrentVpnSession).mockResolvedValue({
+      session: backendSession,
+    });
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+      100,
+    );
+    const phases: string[] = [];
+    connection.subscribe(() => phases.push(connection.current().phase));
+    return { api, tunnel, connection, phases };
+  }
+  it("A: only verifies CONNECTED after tunnel and independent Internet verification", async () => {
+    const { tunnel, connection, phases } = setup();
+    let complete!: (value: Awaited<ReturnType<typeof tunnel.verify>>) => void;
+    vi.mocked(tunnel.verify).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    const connecting = connection.connect("token", { mode: "AUTO" });
+    await vi.waitFor(() =>
+      expect(connection.current().phase).toBe("VERIFYING_INTERNET"),
+    );
+    expect(phases).toEqual([
+      "CONNECTING",
+      "TUNNEL_ESTABLISHED",
+      "VERIFYING_INTERNET",
+    ]);
+    complete({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    });
+    await connecting;
+    expect(connection.current().phase).toBe("CONNECTED");
+    await connection.disconnect("token");
+    expect(connection.current().phase).toBe("DISCONNECTED");
+    connection.dispose();
+  });
+  it.each([
+    "DNS_FAILED",
+    "HTTPS_CHECK_FAILED",
+    "TUNNEL_ESTABLISHED_NO_TRAFFIC",
+    "ROUTE_LEAK_DETECTED",
+    "EGRESS_MISMATCH",
+    "TRANSPORT_TIMEOUT",
+    "OBFUSCATION_FAILED",
+    "SERVER_UNREACHABLE",
+    "UNKNOWN",
+  ] as const)(
+    "B/C: handshake succeeds but %s must never emit CONNECTED",
+    async (code) => {
+      const { tunnel, connection, phases } = setup();
+      vi.mocked(tunnel.verify).mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: false,
+        failure_code: code,
+      });
+      await expect(
+        connection.connect("token", { mode: "AUTO" }),
+      ).rejects.toMatchObject({ code });
+      expect(tunnel.start).toHaveResolvedWith("UP");
+      expect(phases).toContain("TUNNEL_ESTABLISHED");
+      expect(phases).not.toContain("CONNECTED");
+      expect(connection.current()).toMatchObject({
+        phase: "FAILED",
+        failure_code: code,
+        tunnel: "DOWN",
+      });
+      connection.dispose();
+    },
+  );
+  it("D: failed handshake never emits tunnel established or CONNECTED", async () => {
+    const { tunnel, connection, phases } = setup();
+    vi.mocked(tunnel.start).mockRejectedValue(
+      new WireGuardTunnelError("wireguard_handshake_timeout"),
+    );
+    await expect(
+      connection.connect("token", { mode: "AUTO" }),
+    ).rejects.toMatchObject({ code: "HANDSHAKE_FAILED" });
+    expect(phases).not.toContain("CONNECTED");
+    expect(phases).not.toContain("TUNNEL_ESTABLISHED");
+    expect(tunnel.verify).not.toHaveBeenCalled();
+    connection.dispose();
+  });
+  it("reconciles an existing UP tunnel only after a fresh probe", async () => {
+    const { tunnel, connection, phases } = setup();
+    vi.mocked(tunnel.verify).mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: false,
+      failure_code: "DNS_FAILED",
+    });
+    await connection.reconcile("token");
+    expect(tunnel.start).not.toHaveBeenCalled();
+    expect(connection.current().phase).toBe("FAILED");
+    expect(phases).not.toContain("CONNECTED");
+    connection.dispose();
+  });
+  it("CONNECTED -> DEGRADED -> CONNECTED on recovery; three consecutive failures -> FAILED", async () => {
+    vi.useFakeTimers();
+    const { tunnel, connection } = setup();
+    try {
+      await connection.connect("token", { mode: "AUTO" });
+      vi.mocked(tunnel.verify).mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: false,
+        failure_code: "HTTPS_CHECK_FAILED",
+      });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(connection.current().phase).toBe("DEGRADED");
+      vi.mocked(tunnel.verify).mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: true,
+        failure_code: null,
+      });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(connection.current().phase).toBe("CONNECTED");
+      vi.mocked(tunnel.verify).mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: false,
+        failure_code: "DNS_FAILED",
+      });
+      await vi.advanceTimersByTimeAsync(200);
+      expect(connection.current().phase).toBe("DEGRADED");
+      await vi.advanceTimersByTimeAsync(100);
+      expect(connection.current()).toMatchObject({
+        phase: "FAILED",
+        tunnel: "DOWN",
+        failure_code: "DNS_FAILED",
+      });
+      expect(tunnel.stop).toHaveBeenCalledOnce();
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+  it("fails immediately on a route leak during monitoring", async () => {
+    vi.useFakeTimers();
+    const { tunnel, connection } = setup();
+    try {
+      await connection.connect("token", { mode: "AUTO" });
+      vi.mocked(tunnel.verify).mockResolvedValue({
+        tunnel_established: true,
+        internet_verified: false,
+        failure_code: "ROUTE_LEAK_DETECTED",
+      });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(connection.current()).toMatchObject({
+        phase: "FAILED",
+        failure_code: "ROUTE_LEAK_DETECTED",
+      });
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+  it("does not overlap health calls and ignores a success arriving after disconnect", async () => {
+    vi.useFakeTimers();
+    const { tunnel, connection, phases } = setup();
+    try {
+      await connection.connect("token", { mode: "AUTO" });
+      let complete!: (value: Awaited<ReturnType<typeof tunnel.verify>>) => void;
+      vi.mocked(tunnel.verify).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            complete = resolve;
+          }),
+      );
+      await vi.advanceTimersByTimeAsync(500);
+      expect(tunnel.verify).toHaveBeenCalledTimes(2);
+      await connection.disconnect("token");
+      phases.length = 0;
+      complete({
+        tunnel_established: true,
+        internet_verified: true,
+        failure_code: null,
+      });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(connection.current().phase).toBe("DISCONNECTED");
+      expect(phases).not.toContain("CONNECTED");
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+});
+
+it("a hung Internet check times out without promoting the tunnel to CONNECTED", async () => {
+  vi.useFakeTimers();
+  const { api, keys, tunnel } = dependencies();
+  vi.mocked(tunnel.verify).mockImplementation(
+    () => new Promise(() => undefined),
+  );
+  const connection = createVpnConnectionManager(
+    api,
+    createWireGuardProvisioner(api, keys),
+    createWireGuardProtocol(tunnel),
+  );
+  const phases: string[] = [];
+  connection.subscribe(() => phases.push(connection.current().phase));
+  try {
+    const pending = connection.connect("token", { mode: "AUTO" });
+    const rejected = expect(pending).rejects.toMatchObject({
+      code: "TRANSPORT_TIMEOUT",
+    });
+    await vi.advanceTimersByTimeAsync(20_001);
+    await rejected;
+    expect(connection.current()).toMatchObject({
+      phase: "FAILED",
+      failure_code: "TRANSPORT_TIMEOUT",
+    });
+    expect(phases).not.toContain("CONNECTED");
+  } finally {
+    connection.dispose();
+    vi.useRealTimers();
+  }
+});
+
+it("session expiry still disconnects while Internet connectivity is DEGRADED", async () => {
+  vi.useFakeTimers();
+  const { api, keys, tunnel } = dependencies();
+  vi.mocked(api.createVpnSession).mockResolvedValue({
+    ...backendSession,
+    expires_at: "2026-09-16T10:00:01Z",
+  });
+  const connection = createVpnConnectionManager(
+    api,
+    createWireGuardProvisioner(api, keys),
+    createWireGuardProtocol(tunnel),
+    600,
+  );
+  try {
+    await connection.connect("token", { mode: "AUTO" });
+    vi.mocked(tunnel.verify).mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: false,
+      failure_code: "HTTPS_CHECK_FAILED",
+    });
+    await vi.advanceTimersByTimeAsync(600);
+    expect(connection.current().phase).toBe("DEGRADED");
+    await vi.advanceTimersByTimeAsync(400);
+    expect(connection.current().phase).toBe("DISCONNECTED");
+  } finally {
+    connection.dispose();
+    vi.useRealTimers();
+  }
+});
+
+it("a late initial verification cannot restore CONNECTED after user disconnect", async () => {
+  const { api, keys, tunnel } = dependencies();
+  let complete!: (value: Awaited<ReturnType<typeof tunnel.verify>>) => void;
+  vi.mocked(tunnel.verify).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  const connection = createVpnConnectionManager(
+    api,
+    createWireGuardProvisioner(api, keys),
+    createWireGuardProtocol(tunnel),
+  );
+  const phases: string[] = [];
+  connection.subscribe(() => phases.push(connection.current().phase));
+  try {
+    const pending = connection.connect("token", { mode: "AUTO" });
+    await vi.waitFor(() =>
+      expect(connection.current().phase).toBe("VERIFYING_INTERNET"),
+    );
+    await connection.disconnect("token");
+    complete({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    });
+    await pending;
+    expect(connection.current().phase).toBe("DISCONNECTED");
+    expect(phases).not.toContain("CONNECTED");
+  } finally {
+    connection.dispose();
+  }
+});
+
+it("persistent backend monitoring failure also leaves DEGRADED for FAILED", async () => {
+  vi.useFakeTimers();
+  const { api, keys, tunnel } = dependencies();
+  const connection = createVpnConnectionManager(
+    api,
+    createWireGuardProvisioner(api, keys),
+    createWireGuardProtocol(tunnel),
+    100,
+  );
+  try {
+    await connection.connect("token", { mode: "AUTO" });
+    vi.mocked(api.getCurrentVpnSession).mockRejectedValue(
+      new ApiError("NETWORK_ERROR"),
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    expect(connection.current().phase).toBe("DEGRADED");
+    await vi.advanceTimersByTimeAsync(200);
+    expect(connection.current()).toMatchObject({
+      phase: "FAILED",
+      failure_code: "SERVER_UNREACHABLE",
+    });
+  } finally {
+    connection.dispose();
+    vi.useRealTimers();
+  }
 });

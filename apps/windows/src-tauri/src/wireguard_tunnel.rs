@@ -1,4 +1,4 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
@@ -36,8 +36,6 @@ const MAX_ALLOWED_IPS: usize = 64;
 const MAX_DNS_SERVERS: usize = 4;
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(8);
 const HANDSHAKE_POLL_INTERVAL: Duration = Duration::from_millis(100);
-const DATA_PLANE_TIMEOUT: Duration = Duration::from_secs(30);
-const DATA_PLANE_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(3);
 // 1280 remains safe when PrettyLisaVPN is carried inside another VPN while still
 // satisfying the IPv6 minimum MTU. The MVP is IPv4-only, but using this floor also
 // avoids HTTPS stalls caused by an outer tunnel silently dropping oversized packets.
@@ -99,6 +97,8 @@ pub struct WireGuardPeerDiagnostics {
 }
 
 struct ActiveTunnel {
+    client_ip: IpAddr,
+    dns: Vec<IpAddr>,
     obfuscation: Option<ObfuscationConfig>,
     adapter: Adapter,
     transport: ActivePacketTransport,
@@ -335,7 +335,7 @@ impl WireGuardTunnelState {
             Ok(false) | Err(_) => {
                 remove_routes(&routes);
                 let _ = adapter.down();
-                return Err(TunnelError::Unavailable);
+                return Err(TunnelError::RouteLeakDetected);
             }
         }
         debug_log::event(
@@ -352,16 +352,6 @@ impl WireGuardTunnelState {
             "wireguard_handshake_verified",
             format_args!("result=success"),
         );
-        if verify_data_plane().is_err() {
-            #[cfg(windows)]
-            remove_routes(&routes);
-            let _ = adapter.down();
-            return Err(TunnelError::DataPlaneUnavailable);
-        }
-        debug_log::event(
-            "wireguard_data_plane_verified",
-            format_args!("result=success"),
-        );
         if let Err(error) = configure_dns(&parsed.dns) {
             #[cfg(windows)]
             remove_routes(&routes);
@@ -374,6 +364,8 @@ impl WireGuardTunnelState {
         );
 
         *active = Some(ActiveTunnel {
+            client_ip: parsed.client_address.addr(),
+            dns: parsed.dns.clone(),
             obfuscation: parsed.obfuscation.clone(),
             adapter,
             transport: packet_transport,
@@ -777,6 +769,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
 
 #[derive(Debug)]
 enum TunnelError {
+    RouteLeakDetected,
     InvalidConfiguration,
     TransportConfigurationInvalid,
     TransportUnavailable,
@@ -786,13 +779,13 @@ enum TunnelError {
     ComponentMissing,
     PrivilegesRequired,
     HandshakeTimeout,
-    DataPlaneUnavailable,
     Unavailable,
 }
 
 impl TunnelError {
     fn code(&self) -> &'static str {
         match self {
+            Self::RouteLeakDetected => "route_leak_detected",
             Self::InvalidConfiguration => "invalid_wireguard_configuration",
             Self::TransportConfigurationInvalid => "obfuscation_transport_configuration_invalid",
             Self::TransportUnavailable => "obfuscation_transport_unavailable",
@@ -802,7 +795,6 @@ impl TunnelError {
             Self::ComponentMissing => "wireguard_component_missing",
             Self::PrivilegesRequired => "administrator_privileges_required",
             Self::HandshakeTimeout => "wireguard_handshake_timeout",
-            Self::DataPlaneUnavailable => "wireguard_data_plane_unavailable",
             Self::Unavailable => "wireguard_tunnel_unavailable",
         }
     }
@@ -1026,46 +1018,58 @@ fn wait_for_handshake(
     Err(TunnelError::HandshakeTimeout)
 }
 
-fn verify_data_plane() -> Result<(), TunnelError> {
-    let destination = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443);
-    debug_log::event(
-        "data_plane_probe_started",
-        format_args!("timeout_ms={}", DATA_PLANE_TIMEOUT.as_millis()),
-    );
-    let deadline = Instant::now() + DATA_PLANE_TIMEOUT;
-    let started = Instant::now();
-    let mut attempt = 0_u32;
-    while Instant::now() < deadline {
-        attempt += 1;
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        let attempt_timeout = remaining.min(DATA_PLANE_ATTEMPT_TIMEOUT);
-        if TcpStream::connect_timeout(&destination, attempt_timeout).is_ok() {
-            debug_log::event(
-                "data_plane_probe_succeeded",
-                format_args!(
-                    "attempt={attempt} elapsed_ms={}",
-                    started.elapsed().as_millis()
-                ),
-            );
-            return Ok(());
-        }
-        debug_log::event(
-            "data_plane_probe_attempt_failed",
-            format_args!(
-                "attempt={attempt} elapsed_ms={}",
-                started.elapsed().as_millis()
-            ),
-        );
-        thread::sleep(HANDSHAKE_POLL_INTERVAL);
+#[tauri::command]
+pub async fn verify_wireguard_internet(
+    tunnel: tauri::State<'_, WireGuardTunnelState>,
+) -> Result<crate::internet_verification::Verification, &'static str> {
+    // Do not hold the adapter mutex during network I/O: disconnect must remain responsive.
+    let context = {
+        let active = tunnel.active.lock().map_err(|_| "UNKNOWN")?;
+        active.as_ref().and_then(|tunnel| {
+            (tunnel.transport.is_healthy() && tunnel.adapter.is_up().unwrap_or(false)).then(|| {
+                crate::internet_verification::PathContext {
+                    luid: tunnel.adapter.get_luid(),
+                    source: tunnel.client_ip,
+                    dns: tunnel.dns.clone(),
+                }
+            })
+        })
+    };
+    let Some(context) = context else {
+        return Ok(crate::internet_verification::Verification::failed(
+            false,
+            "HANDSHAKE_FAILED",
+        ));
+    };
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        crate::internet_verification::verify(&context)
+    })
+    .await
+    .map_err(|_| "UNKNOWN")?;
+    if tunnel.status().map_err(|_| "UNKNOWN")? != TunnelStatus::Up {
+        return Ok(crate::internet_verification::Verification::failed(
+            false,
+            "HANDSHAKE_FAILED",
+        ));
     }
-    debug_log::event(
-        "data_plane_probe_failed",
-        format_args!(
-            "attempts={attempt} elapsed_ms={}",
-            started.elapsed().as_millis()
-        ),
-    );
-    Err(TunnelError::DataPlaneUnavailable)
+    Ok(result)
+}
+
+pub(crate) fn verification_route(address: IpAddr, luid: u64) -> Result<u32, &'static str> {
+    #[cfg(windows)]
+    {
+        let route = best_ipv4_route(address).map_err(|_| "ROUTE_LEAK_DETECTED")?;
+        let actual = unsafe { std::mem::transmute::<NET_LUID_LH, u64>(route.InterfaceLuid) };
+        if actual != luid || route.InterfaceIndex == 0 {
+            return Err("ROUTE_LEAK_DETECTED");
+        }
+        Ok(route.InterfaceIndex)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (address, luid);
+        Err("ROUTE_LEAK_DETECTED")
+    }
 }
 
 #[cfg(test)]
@@ -1213,10 +1217,6 @@ mod tests {
         assert_eq!(
             TunnelError::HandshakeTimeout.code(),
             "wireguard_handshake_timeout"
-        );
-        assert_eq!(
-            TunnelError::DataPlaneUnavailable.code(),
-            "wireguard_data_plane_unavailable"
         );
         assert_eq!(
             TunnelError::ComponentMissing.code(),

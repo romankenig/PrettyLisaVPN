@@ -38,12 +38,19 @@ export interface WireGuardPeerDiagnostics {
 }
 
 export interface WireGuardTunnelController {
+  verify(): Promise<InternetVerification>;
   start(
     configuration: WireGuardTransportConfiguration,
   ): Promise<WireGuardTunnelState>;
   stop(): Promise<WireGuardTunnelState>;
   state(): Promise<WireGuardTunnelState>;
   diagnostics(): Promise<WireGuardPeerDiagnostics | null>;
+}
+
+export interface InternetVerification {
+  readonly tunnel_established: boolean;
+  readonly internet_verified: boolean;
+  readonly failure_code: import("../vpn/protocol").ProtocolFailure | null;
 }
 
 export class WireGuardTunnelError extends Error {
@@ -62,6 +69,9 @@ export function createWireGuardTunnelController(
   invokeNative: NativeInvoke = invokeTunnelCommand,
 ): WireGuardTunnelController {
   return {
+    async verify() {
+      return invokeNative<InternetVerification>("verify_wireguard_internet");
+    },
     async start(configuration) {
       return invokeAndValidate(invokeNative, "start_wireguard_tunnel", {
         configuration,

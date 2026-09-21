@@ -1,3 +1,4 @@
+import { normalizeFailure, checkHealth } from "./verification";
 import { obfuscationProviders } from "./obfuscation";
 import { connectionProfiles, validateProfileConfig } from "./profiles";
 import { isWireGuardTransport, type ApiClient } from "../api/client";
@@ -71,7 +72,6 @@ export function createWireGuardProvisioner(
 export function createWireGuardProtocol(
   tunnel: WireGuardTunnelController = createWireGuardTunnelController(),
 ): VpnProtocol {
-  let verified = false;
   const diagnostics = async (): Promise<ProtocolDiagnostics> => {
     try {
       const status = await tunnel.state();
@@ -110,10 +110,26 @@ export function createWireGuardProtocol(
       rx_bytes: 0,
     },
   });
+  const health = async (): Promise<ConnectionResult> => {
+    try {
+      const check = await tunnel.verify();
+      const established = check.tunnel_established === true;
+      const verified =
+        established &&
+        check.internet_verified === true &&
+        check.failure_code === null;
+      return result(
+        established,
+        verified,
+        verified ? null : normalizeFailure(check.failure_code),
+      );
+    } catch {
+      return result(false, false, "UNKNOWN");
+    }
+  };
   return {
     capabilities: connectionProfiles.WIREGUARD_UDP,
-    async connect(config) {
-      verified = false;
+    async connect(config, progress) {
       const defaults = wireGuardDefaults(config.country, config.port);
       if (
         (!validateProfileConfig(connectionProfiles.WIREGUARD_UDP, config) &&
@@ -152,22 +168,21 @@ export function createWireGuardProtocol(
           allowedIps: parameters.allowed_ips,
         });
         const up = (await tunnel.state()) === "UP";
-        // Native startup already verifies handshake and tunneled Internet access.
-        verified = up;
-        return result(up, up, up ? null : "CONNECTION_FAILED");
+        if (!up) return result(false, false, "HANDSHAKE_FAILED");
+        progress?.("TUNNEL_ESTABLISHED");
+        progress?.("VERIFYING_INTERNET");
+        return await checkHealth({ health });
       } catch (error) {
         return result(
           false,
           false,
-          error instanceof WireGuardTunnelError &&
-            error.code === "wireguard_data_plane_unavailable"
-            ? "INTERNET_UNVERIFIED"
-            : "CONNECTION_FAILED",
+          error instanceof WireGuardTunnelError
+            ? nativeFailure(error.code)
+            : "UNKNOWN",
         );
       }
     },
     async disconnect() {
-      verified = false;
       try {
         return await tunnel.stop();
       } catch {
@@ -181,21 +196,16 @@ export function createWireGuardProtocol(
         throw new Error("PROTOCOL_STATUS_UNAVAILABLE");
       }
     },
-    async health() {
-      const snapshot = await diagnostics();
-      const up = snapshot.status === "UP";
-      if (!up || !snapshot.transport_healthy) verified = false;
-      return {
-        tunnel_established: up,
-        internet_verified: verified,
-        failure_code: !up
-          ? "CONNECTION_FAILED"
-          : verified
-            ? null
-            : "INTERNET_UNVERIFIED",
-        diagnostics: snapshot,
-      };
-    },
+    health,
     diagnostics,
   };
+}
+
+function nativeFailure(code: string): import("./protocol").ProtocolFailure {
+  if (code === "route_leak_detected") return "ROUTE_LEAK_DETECTED";
+  if (code === "wireguard_handshake_timeout") return "HANDSHAKE_FAILED";
+  if (code === "wireguard_data_plane_unavailable")
+    return "TUNNEL_ESTABLISHED_NO_TRAFFIC";
+  if (code.startsWith("obfuscation_")) return "OBFUSCATION_FAILED";
+  return "UNKNOWN";
 }

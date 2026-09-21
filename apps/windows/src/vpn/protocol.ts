@@ -21,6 +21,16 @@ export interface ConnectionConfig {
 
 export type ProtocolStatus = "UP" | "DOWN";
 export type ProtocolFailure =
+  | "TRANSPORT_TIMEOUT"
+  | "HANDSHAKE_FAILED"
+  | "TUNNEL_ESTABLISHED_NO_TRAFFIC"
+  | "DNS_FAILED"
+  | "HTTPS_CHECK_FAILED"
+  | "EGRESS_MISMATCH"
+  | "ROUTE_LEAK_DETECTED"
+  | "SERVER_UNREACHABLE"
+  | "OBFUSCATION_FAILED"
+  | "UNKNOWN"
   | "CONNECTION_FAILED"
   | "INTERNET_UNVERIFIED"
   | "UNSUPPORTED_CONFIGURATION"
@@ -44,11 +54,22 @@ export interface ProtocolConfiguration extends ConnectionConfig {
 }
 export interface VpnProtocol {
   readonly capabilities: ConnectionProfile;
-  connect(config: ProtocolConfiguration): Promise<ConnectionResult>;
+  connect(
+    config: ProtocolConfiguration,
+    progress?: (phase: VerificationPhase) => void,
+  ): Promise<ConnectionResult>;
   disconnect(): Promise<ProtocolStatus>;
   status(): Promise<ProtocolStatus>;
   health(): Promise<ConnectionResult>;
   diagnostics(): Promise<ProtocolDiagnostics>;
+}
+export type VerificationPhase = "TUNNEL_ESTABLISHED" | "VERIFYING_INTERNET";
+export function isVerified(result: ConnectionResult): boolean {
+  return (
+    result.tunnel_established === true &&
+    result.internet_verified === true &&
+    result.failure_code === null
+  );
 }
 /** Keeps protocol-specific provisioning and credentials out of orchestration. */
 export interface VpnSessionProvisioner {
@@ -71,15 +92,12 @@ export class ProtocolConnectionError extends Error {
 export async function connectFirstCandidate(
   protocol: VpnProtocol,
   candidates: readonly ProtocolConfiguration[],
+  progress?: (phase: VerificationPhase) => void,
 ): Promise<void> {
   const first = candidates[0];
   if (!first) throw new ProtocolConnectionError("UNSUPPORTED_CONFIGURATION");
-  const result = await protocol.connect(first);
-  if (
-    result.failure_code ||
-    !result.tunnel_established ||
-    !result.internet_verified
-  )
+  const result = await protocol.connect(first, progress);
+  if (!isVerified(result))
     throw new ProtocolConnectionError(
       result.failure_code ?? "CONNECTION_FAILED",
     );
