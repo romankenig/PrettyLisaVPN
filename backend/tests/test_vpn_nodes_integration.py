@@ -19,6 +19,7 @@ from prettylisavpn.vpn_nodes.domain import (
     VpnNodeStatus,
 )
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
+from prettylisavpn.vpn_nodes.profiles import NodeConnectionProfile, ProfileId
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 
 pytestmark = [
@@ -64,6 +65,11 @@ async def test_round_trip_list_and_update_control_plane_metadata():
         provider=VpnNodeProvider.NETCUP,
         provider_region="nuremberg",
         city="Nuremberg",
+        connection_profiles=(
+            NodeConnectionProfile(profile=ProfileId.WIREGUARD_UDP, ports=(51820,)),
+            NodeConnectionProfile(profile=ProfileId.OPENVPN_TLS_TCP, ports=(443,)),
+            NodeConnectionProfile(profile=ProfileId.MASQUE_QUIC, ports=(443,)),
+        ),
         public_ipv4=IPv4Address("5.181.49.183"),
     )
     try:
@@ -83,6 +89,7 @@ async def test_round_trip_list_and_update_control_plane_metadata():
                 status=VpnNodeStatus.DRAINING,
                 health_status=VpnNodeHealthStatus.HEALTHY,
                 capacity=200,
+                connection_profiles=(),
                 is_available_for_free=True,
                 last_seen_at=node.last_seen_at + timedelta(seconds=30),
                 health_checked_at=node.updated_at + timedelta(seconds=30),

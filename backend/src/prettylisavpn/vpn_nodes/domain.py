@@ -8,6 +8,12 @@ from enum import StrEnum
 from ipaddress import IPv4Address
 from uuid import UUID
 
+from prettylisavpn.vpn_nodes.profiles import (
+    NodeConnectionProfile,
+    ProfileId,
+    validate_node_profiles,
+)
+
 
 class VpnNodeProvider(StrEnum):
     DIGITALOCEAN = "DIGITALOCEAN"
@@ -84,8 +90,30 @@ class VpnNode:
     health_status: VpnNodeHealthStatus = VpnNodeHealthStatus.UNKNOWN
     health_checked_at: datetime | None = None
     is_available_for_free: bool = False
+    connection_profiles: tuple[NodeConnectionProfile, ...] | None = None
+
+    @property
+    def supported_profiles(self) -> tuple[NodeConnectionProfile, ...]:
+        if self.connection_profiles is None:
+            return (
+                NodeConnectionProfile(
+                    profile=ProfileId.WIREGUARD_UDP, ports=(self.wireguard_port,)
+                ),
+            )
+        return self.connection_profiles
+
+    @property
+    def supports_current_session_protocol(self) -> bool:
+        return any(
+            profile.profile is ProfileId.WIREGUARD_UDP and self.wireguard_port in profile.ports
+            for profile in self.supported_profiles
+        )
 
     def __post_init__(self) -> None:
+        if self.connection_profiles is not None:
+            if not isinstance(self.connection_profiles, tuple):
+                raise ValueError("connection_profiles must be an immutable tuple")
+            validate_node_profiles(self.connection_profiles)
         object.__setattr__(self, "name", _normalize_required(self.name, "name", 255))
         object.__setattr__(
             self,

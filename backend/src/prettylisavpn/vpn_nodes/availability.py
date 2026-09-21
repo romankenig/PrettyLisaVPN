@@ -9,6 +9,7 @@ from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus, VpnNode
 
 
 class NodeUnavailabilityReason(StrEnum):
+    NO_RUNNABLE_PROFILE = "NO_RUNNABLE_PROFILE"
     ADMINISTRATIVE_STATUS = "ADMINISTRATIVE_STATUS"
     NOT_HEALTHY = "NOT_HEALTHY"
     NEVER_SEEN = "NEVER_SEEN"
@@ -46,6 +47,8 @@ class VpnNodeAvailabilityPolicy:
     def evaluate(self, node: VpnNode, now: datetime) -> NodeAvailability:
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("now must be timezone-aware")
+        if not node.supports_current_session_protocol:
+            return NodeAvailability(False, NodeUnavailabilityReason.NO_RUNNABLE_PROFILE)
         if node.status is not VpnNodeStatus.ACTIVE:
             return NodeAvailability(False, NodeUnavailabilityReason.ADMINISTRATIVE_STATUS)
         if node.health_status is not VpnNodeHealthStatus.HEALTHY:

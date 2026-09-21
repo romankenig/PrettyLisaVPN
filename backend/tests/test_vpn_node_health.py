@@ -23,6 +23,7 @@ from prettylisavpn.vpn_nodes.domain import (
     VpnNodeProvider,
     VpnNodeStatus,
 )
+from prettylisavpn.vpn_nodes.profiles import NodeConnectionProfile, ProfileId
 from prettylisavpn.vpn_nodes.service import VpnNodeRegistration, VpnNodeService
 
 PUBLIC_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -245,12 +246,19 @@ async def test_registration_starts_offline_and_preserves_lifecycle_on_reregistra
         is_available_for_free=True,
     )
 
+    profiles = (
+        NodeConnectionProfile(profile=ProfileId.WIREGUARD_UDP, ports=(51820,)),
+        NodeConnectionProfile(profile=ProfileId.MASQUE_QUIC, ports=(443,)),
+    )
+    registration = replace(registration, connection_profiles=profiles)
     created = await service.register(registration, now)
     repository.nodes[created.id] = replace(created, status=VpnNodeStatus.DRAINING)
     updated = await service.register(
-        replace(registration, capacity=200), now + timedelta(minutes=1)
+        replace(registration, capacity=200, connection_profiles=None), now + timedelta(minutes=1)
     )
 
+    assert created.supported_profiles == profiles
+    assert updated.supported_profiles == profiles
     assert created.status is VpnNodeStatus.OFFLINE
     assert created.health_status is VpnNodeHealthStatus.UNKNOWN
     assert created.is_available_for_free is True

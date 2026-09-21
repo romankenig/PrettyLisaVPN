@@ -15,7 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prettylisavpn.database import Base
@@ -29,6 +29,10 @@ def utc_now() -> datetime:
 class VpnNodeRecord(Base):
     __tablename__ = "vpn_nodes"
     __table_args__ = (
+        CheckConstraint(
+            "connection_profiles IS NULL OR jsonb_typeof(connection_profiles) = 'array'",
+            name="ck_vpn_nodes_profiles_array",
+        ),
         CheckConstraint("btrim(name) <> ''", name="ck_vpn_nodes_name_not_blank"),
         CheckConstraint(
             "btrim(provider_region) <> ''",
@@ -115,6 +119,9 @@ class VpnNodeRecord(Base):
     private_ipv4: Mapped[IPv4Address | None] = mapped_column(INET)
     wireguard_port: Mapped[int] = mapped_column(Integer)
     wireguard_public_key: Mapped[str] = mapped_column(String(44))
+    connection_profiles: Mapped[list[dict[str, object]] | None] = mapped_column(
+        JSONB(none_as_null=True)
+    )
     capacity: Mapped[int] = mapped_column(Integer)
     is_available_for_free: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"

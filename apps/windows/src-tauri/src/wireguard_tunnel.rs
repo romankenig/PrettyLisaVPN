@@ -58,6 +58,8 @@ const FULL_TUNNEL_ROUTE_PREFIXES: [(Ipv4Addr, u8); 8] = [
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TunnelConfiguration {
+    #[serde(default)]
+    direct: bool,
     endpoint: TunnelEndpoint,
     server_public_key: String,
     client_address: String,
@@ -171,6 +173,12 @@ impl WireGuardTunnelState {
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
         if let Some(current) = active.as_ref() {
             if current.transport.is_healthy() && current.adapter.is_up().unwrap_or(false) {
+                if parsed.direct
+                    && (current.transport.mode() != TransportMode::Direct
+                        || current.transport.public_endpoint() != parsed.public_endpoint)
+                {
+                    return Err(TunnelError::InvalidConfiguration);
+                }
                 debug_log::event("tunnel_start_reused", format_args!("status=UP"));
                 return Ok(TunnelStatus::Up);
             }
@@ -191,7 +199,13 @@ impl WireGuardTunnelState {
             "wireguard_private_key_loaded",
             format_args!("source=credential_manager"),
         );
-        let packet_transport = ActivePacketTransport::start(parsed.public_endpoint)?;
+        let packet_transport = if parsed.direct {
+            ActivePacketTransport::Direct {
+                public_endpoint: parsed.public_endpoint,
+            }
+        } else {
+            ActivePacketTransport::start(parsed.public_endpoint)?
+        };
         if !packet_transport.is_healthy() {
             return Err(TunnelError::TransportUnavailable);
         }
@@ -664,6 +678,7 @@ fn full_tunnel_routes_are_selected(adapter: &Adapter) -> Result<bool, TunnelErro
 }
 
 struct ParsedConfiguration {
+    direct: bool,
     public_endpoint: SocketAddr,
     server_public_key: [u8; 32],
     client_address: IpNet,
@@ -728,6 +743,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
         }
 
         Ok(Self {
+            direct: value.direct,
             public_endpoint: SocketAddr::new(IpAddr::V4(endpoint_ip), value.endpoint.port),
             server_public_key,
             client_address,
@@ -1036,6 +1052,7 @@ mod tests {
 
     fn valid_configuration() -> TunnelConfiguration {
         TunnelConfiguration {
+            direct: false,
             endpoint: TunnelEndpoint {
                 ipv4: "204.48.17.50".into(),
                 port: 51820,
@@ -1045,6 +1062,21 @@ mod tests {
             dns: vec!["1.1.1.1".into(), "1.0.0.1".into()],
             allowed_ips: vec!["0.0.0.0/0".into()],
         }
+    }
+
+    #[test]
+    fn explicit_udp_profile_preserves_direct_selection_and_configurable_port() {
+        let mut configuration = valid_configuration();
+        configuration.direct = true;
+        configuration.endpoint.port = 443;
+        let parsed = ParsedConfiguration::try_from(configuration).unwrap();
+        assert!(parsed.direct);
+        assert_eq!(parsed.public_endpoint.port(), 443);
+        assert!(
+            !ParsedConfiguration::try_from(valid_configuration())
+                .unwrap()
+                .direct
+        );
     }
 
     #[test]

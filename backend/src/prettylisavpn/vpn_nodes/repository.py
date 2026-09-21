@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prettylisavpn.vpn_nodes.availability import VpnNodeCapacitySnapshot
 from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus, normalize_country_code
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
+from prettylisavpn.vpn_nodes.profiles import NodeConnectionProfile
 from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 
@@ -29,6 +30,9 @@ class VpnNodeRepository:
             private_ipv4=node.private_ipv4,
             wireguard_port=node.wireguard_port,
             wireguard_public_key=node.wireguard_public_key,
+            connection_profiles=None
+            if node.connection_profiles is None
+            else [profile.model_dump(mode="json") for profile in node.connection_profiles],
             capacity=node.capacity,
             is_available_for_free=node.is_available_for_free,
             status=node.status,
@@ -113,6 +117,9 @@ class VpnNodeRepository:
                 private_ipv4=node.private_ipv4,
                 wireguard_port=node.wireguard_port,
                 wireguard_public_key=node.wireguard_public_key,
+                connection_profiles=None
+                if node.connection_profiles is None
+                else [profile.model_dump(mode="json") for profile in node.connection_profiles],
                 capacity=node.capacity,
                 is_available_for_free=node.is_available_for_free,
                 status=node.status,
@@ -158,6 +165,12 @@ class VpnNodeRepository:
             private_ipv4=record.private_ipv4,
             wireguard_port=record.wireguard_port,
             wireguard_public_key=record.wireguard_public_key,
+            connection_profiles=None
+            if record.connection_profiles is None
+            else tuple(
+                NodeConnectionProfile.model_validate(profile)
+                for profile in record.connection_profiles
+            ),
             capacity=record.capacity,
             is_available_for_free=record.is_available_for_free,
             status=record.status,

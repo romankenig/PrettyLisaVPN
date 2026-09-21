@@ -1,3 +1,4 @@
+import { connectionProfiles, validateProfileConfig } from "./profiles";
 import { isWireGuardTransport, type ApiClient } from "../api/client";
 import {
   createWireGuardKeyManager,
@@ -109,13 +110,15 @@ export function createWireGuardProtocol(
     },
   });
   return {
+    capabilities: connectionProfiles.WIREGUARD_UDP,
     async connect(config) {
       verified = false;
       const defaults = wireGuardDefaults(config.country, config.port);
       if (
-        Object.entries(defaults).some(
-          ([key, value]) => config[key as keyof ConnectionConfig] !== value,
-        ) ||
+        (!validateProfileConfig(connectionProfiles.WIREGUARD_UDP, config) &&
+          Object.entries(defaults).some(
+            ([key, value]) => config[key as keyof ConnectionConfig] !== value,
+          )) ||
         !isWireGuardTransport(config.parameters) ||
         config.port !== config.parameters.endpoint.port
       )
@@ -123,6 +126,7 @@ export function createWireGuardProtocol(
       const parameters = config.parameters;
       try {
         await tunnel.start({
+          ...(config.transport === "UDP" ? { direct: true } : {}),
           endpoint: parameters.endpoint,
           serverPublicKey: parameters.server_public_key,
           clientAddress: parameters.client_address,

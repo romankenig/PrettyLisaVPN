@@ -1,14 +1,12 @@
 import type { ApiClient } from "../api/client";
 import { createVpnConnectionManager } from "./connection";
-import {
-  createWireGuardProtocol,
-  createWireGuardProvisioner,
-} from "./wireguard";
+import { createWireGuardProvisioner } from "./wireguard";
+import { createProfileAdapter } from "./profileAdapter";
 
 export function createDefaultVpnConnection(api: ApiClient) {
   return createVpnConnectionManager(
     api,
     createWireGuardProvisioner(api),
-    createWireGuardProtocol(),
+    createProfileAdapter("WIREGUARD_UDP"),
   );
 }

@@ -1,5 +1,9 @@
 # VPN protocol boundary
 
+The capability catalog and multi-profile node declarations extend this boundary;
+see [Connection profiles](connection-profiles.md) for runtime availability and
+server/client requirements.
+
 The Windows UI uses `VpnConnectionManager`. The manager owns session lifecycle,
 expiry, reconciliation, cleanup, and product state. It depends on `VpnProtocol`
 and `VpnSessionProvisioner`; it neither manages WireGuard keys nor calls native
@@ -39,7 +43,7 @@ For this stage the backend returns exactly one candidate: the already provisione
 WireGuard session. Additional nodes are not provisioned. An explicit empty list
 fails; the client attempts only the first candidate and never retries another.
 The legacy `transport` payload supplies that candidate's WireGuard bootstrap data.
-No new database schema or migration is needed.
+Node profile declarations now have their own migration; see the profile guide.
 
 Each candidate describes country, protocol, transport, port, encryption mode,
 obfuscation mode, MTU, DNS mode, and routing mode. The backend's internal
@@ -48,7 +52,7 @@ Selection requests still accept only Autopilot or country plus the provisioning
 public key, and reject node targeting. React product/discovery state has no node
 or protocol settings.
 
-## Adding a second protocol in a later stage
+## Completing additional runtime integrations
 
 1. Implement the five `VpnProtocol` methods in a separate adapter. Interpret its
    payload there, map errors to stable codes, and construct allowlisted diagnostics.
@@ -59,4 +63,4 @@ or protocol settings.
    candidate's protocol and retaining the active implementation for status and
    disconnect. The manager and UI do not need protocol-specific branches.
 4. Add adapter and contract tests. Any policy for trying subsequent candidates
-   requires a separate stage; this refactor implements no fallback or new protocol.
+   requires a separate stage; profile adapters do not implement fallback.

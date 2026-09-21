@@ -8,6 +8,8 @@ export interface WireGuardEndpoint {
 }
 
 export interface WireGuardTransportConfiguration {
+  /** Explicit standard UDP profile bypasses legacy environment-selected wrappers. */
+  readonly direct?: boolean;
   readonly endpoint: WireGuardEndpoint;
   readonly serverPublicKey: string;
   readonly clientAddress: string;

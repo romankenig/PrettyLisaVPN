@@ -16,6 +16,7 @@ from prettylisavpn.vpn_nodes.domain import (
     VpnNodeProvider,
     VpnNodeStatus,
 )
+from prettylisavpn.vpn_nodes.profiles import NodeConnectionProfile
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 
 
@@ -36,6 +37,7 @@ class VpnNodeRegistration:
     wireguard_public_key: str
     capacity: int
     is_available_for_free: bool = False
+    connection_profiles: tuple[NodeConnectionProfile, ...] | None = None
 
 
 class VpnNodeService:
@@ -67,6 +69,7 @@ class VpnNodeService:
                     private_ipv4=registration.private_ipv4,
                     wireguard_port=registration.wireguard_port,
                     wireguard_public_key=registration.wireguard_public_key,
+                    connection_profiles=registration.connection_profiles,
                     capacity=registration.capacity,
                     is_available_for_free=registration.is_available_for_free,
                     status=VpnNodeStatus.OFFLINE,
@@ -86,6 +89,9 @@ class VpnNodeService:
             private_ipv4=registration.private_ipv4,
             wireguard_port=registration.wireguard_port,
             wireguard_public_key=registration.wireguard_public_key,
+            connection_profiles=existing.connection_profiles
+            if registration.connection_profiles is None
+            else registration.connection_profiles,
             capacity=registration.capacity,
             is_available_for_free=registration.is_available_for_free,
             updated_at=checked_at,
