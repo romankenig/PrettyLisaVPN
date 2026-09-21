@@ -12,6 +12,8 @@ export interface ConnectionConfig {
   readonly port: number;
   readonly encryption_mode: string;
   readonly obfuscation_mode: string;
+  readonly obfuscation_version?: number;
+  readonly transport_parameters?: Readonly<Record<string, unknown>>;
   readonly mtu: number;
   readonly dns_mode: string;
   readonly routing_mode: string;

@@ -10,6 +10,11 @@ export interface WireGuardEndpoint {
 export interface WireGuardTransportConfiguration {
   /** Explicit standard UDP profile bypasses legacy environment-selected wrappers. */
   readonly direct?: boolean;
+  readonly obfuscation?: {
+    readonly mode: string;
+    readonly version: number;
+    readonly maxDatagramSize: number;
+  };
   readonly endpoint: WireGuardEndpoint;
   readonly serverPublicKey: string;
   readonly clientAddress: string;
@@ -26,7 +31,8 @@ export interface WireGuardPeerDiagnostics {
   readonly persistentKeepalive: number;
   readonly txBytes: number;
   readonly rxBytes: number;
-  readonly transportMode: "DIRECT" | "PRETTYLISA_V1" | "WG_OBFUSCATOR";
+  readonly transportMode:
+    "DIRECT" | "PRETTYLISA_V1" | "WG_OBFUSCATOR" | "PACKET_WRAPPED";
   readonly transportHealthy: boolean;
   readonly publicEndpoint: string;
 }

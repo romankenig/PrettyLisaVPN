@@ -27,9 +27,11 @@ class ProfileCapabilities:
 
 
 PROFILES = {
-    ProfileId.WIREGUARD_UDP: ProfileCapabilities("WIREGUARD", "UDP", None, 51820, "WIREGUARD"),
+    ProfileId.WIREGUARD_UDP: ProfileCapabilities(
+        "WIREGUARD", "UDP", None, 51820, "WIREGUARD", supports_obfuscation=True
+    ),
     ProfileId.OPENVPN_TLS_TCP: ProfileCapabilities(
-        "OPENVPN", "TCP", (443,), 443, "TLS_1_3_AES_256_GCM"
+        "OPENVPN", "TCP", (443,), 443, "TLS_1_3_AES_256_GCM", supports_obfuscation=True
     ),
     ProfileId.MASQUE_QUIC: ProfileCapabilities("MASQUE", "UDP", (443,), 443, "TLS_1_3_QUIC"),
 }

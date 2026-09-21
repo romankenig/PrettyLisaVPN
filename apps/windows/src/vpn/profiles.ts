@@ -1,3 +1,4 @@
+import { validObfuscation } from "./obfuscation";
 import type { ConnectionConfig } from "./protocol";
 
 export type ProfileId = "WIREGUARD_UDP" | "OPENVPN_TLS_TCP" | "MASQUE_QUIC";
@@ -25,7 +26,7 @@ export const connectionProfiles: Readonly<
     supported_ports: "ANY",
     default_port: 51820,
     encryption: "WIREGUARD",
-    supports_obfuscation: false,
+    supports_obfuscation: true,
     supports_ipv6: false,
     supports_full_tunnel: true,
     resembles_ordinary_tls: false,
@@ -38,7 +39,7 @@ export const connectionProfiles: Readonly<
     supported_ports: Object.freeze([443]),
     default_port: 443,
     encryption: "TLS_1_3_AES_256_GCM",
-    supports_obfuscation: false,
+    supports_obfuscation: true,
     supports_ipv6: false,
     supports_full_tunnel: true,
     resembles_ordinary_tls: false,
@@ -73,7 +74,7 @@ export function validateProfileConfig(
     config.port <= 65535 &&
     (profile.supported_ports === "ANY" ||
       profile.supported_ports.includes(config.port)) &&
-    config.obfuscation_mode === "NONE" &&
+    validObfuscation(config) &&
     config.mtu === 1280 &&
     config.dns_mode === "VPN" &&
     profile.supports_full_tunnel &&

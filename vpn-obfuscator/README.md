@@ -72,3 +72,16 @@ vpn-obfuscator/.venv/bin/ruff check vpn-obfuscator
 vpn-obfuscator/.venv/bin/mypy --config-file vpn-obfuscator/pyproject.toml vpn-obfuscator/src
 vpn-obfuscator/.venv/bin/pytest vpn-obfuscator/tests -q
 ```
+
+
+## Independent packet providers
+
+The default legacy `PRETTYLISA_V1` mode is unchanged. Explicitly select `NONE`
+(version 0) or `SIMPLE_PACKET_WRAPPER_V1` (version 1) using the environment in
+[.env.example](.env.example). Neither mode needs a shared secret. The simple wrapper
+is keyless reversible framing, not encryption or integrity protection; the VPN
+protocol remains responsible for security. Do not mix its packets with legacy V1.
+
+See [provider architecture, compatibility and measured overhead](../docs/obfuscation-providers.md).
+Run `python tools/benchmark_providers.py` in this project's environment to reproduce
+the codec CPU benchmark. No deployment is automatically changed.

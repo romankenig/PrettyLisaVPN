@@ -26,6 +26,7 @@ use zeroize::Zeroize;
 
 use crate::debug_log;
 use crate::obfuscation_transport::{ActivePacketTransport, TransportError, TransportMode};
+use crate::packet_obfuscation::{self, ObfuscationConfig};
 use crate::wireguard_keys::WireGuardKeyState;
 
 const ADAPTER_NAME: &str = "PrettyLisaVPN";
@@ -58,6 +59,8 @@ const FULL_TUNNEL_ROUTE_PREFIXES: [(Ipv4Addr, u8); 8] = [
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TunnelConfiguration {
+    #[serde(default)]
+    obfuscation: Option<ObfuscationConfig>,
     #[serde(default)]
     direct: bool,
     endpoint: TunnelEndpoint,
@@ -96,6 +99,7 @@ pub struct WireGuardPeerDiagnostics {
 }
 
 struct ActiveTunnel {
+    obfuscation: Option<ObfuscationConfig>,
     adapter: Adapter,
     transport: ActivePacketTransport,
     #[cfg(windows)]
@@ -173,6 +177,12 @@ impl WireGuardTunnelState {
         let mut active = self.active.lock().map_err(|_| TunnelError::Unavailable)?;
         if let Some(current) = active.as_ref() {
             if current.transport.is_healthy() && current.adapter.is_up().unwrap_or(false) {
+                if parsed.obfuscation != current.obfuscation
+                    || (parsed.obfuscation.is_some()
+                        && current.transport.public_endpoint() != parsed.public_endpoint)
+                {
+                    return Err(TunnelError::InvalidConfiguration);
+                }
                 if parsed.direct
                     && (current.transport.mode() != TransportMode::Direct
                         || current.transport.public_endpoint() != parsed.public_endpoint)
@@ -199,7 +209,9 @@ impl WireGuardTunnelState {
             "wireguard_private_key_loaded",
             format_args!("source=credential_manager"),
         );
-        let packet_transport = if parsed.direct {
+        let packet_transport = if let Some(config) = &parsed.obfuscation {
+            ActivePacketTransport::start_configured(parsed.public_endpoint, config)?
+        } else if parsed.direct {
             ActivePacketTransport::Direct {
                 public_endpoint: parsed.public_endpoint,
             }
@@ -362,6 +374,7 @@ impl WireGuardTunnelState {
         );
 
         *active = Some(ActiveTunnel {
+            obfuscation: parsed.obfuscation.clone(),
             adapter,
             transport: packet_transport,
             #[cfg(windows)]
@@ -678,6 +691,7 @@ fn full_tunnel_routes_are_selected(adapter: &Adapter) -> Result<bool, TunnelErro
 }
 
 struct ParsedConfiguration {
+    obfuscation: Option<ObfuscationConfig>,
     direct: bool,
     public_endpoint: SocketAddr,
     server_public_key: [u8; 32],
@@ -690,6 +704,13 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
     type Error = TunnelError;
 
     fn try_from(value: TunnelConfiguration) -> Result<Self, Self::Error> {
+        if let Some(config) = &value.obfuscation {
+            packet_obfuscation::provider(config).map_err(|_| TunnelError::InvalidConfiguration)?;
+            // 1280-byte IP MTU + 32-byte WireGuard data overhead + 8-byte framing.
+            if value.direct || config.max_datagram_size < 1320 {
+                return Err(TunnelError::InvalidConfiguration);
+            }
+        }
         let endpoint_ip = value
             .endpoint
             .ipv4
@@ -743,6 +764,7 @@ impl TryFrom<TunnelConfiguration> for ParsedConfiguration {
         }
 
         Ok(Self {
+            obfuscation: value.obfuscation,
             direct: value.direct,
             public_endpoint: SocketAddr::new(IpAddr::V4(endpoint_ip), value.endpoint.port),
             server_public_key,
@@ -1052,6 +1074,7 @@ mod tests {
 
     fn valid_configuration() -> TunnelConfiguration {
         TunnelConfiguration {
+            obfuscation: None,
             direct: false,
             endpoint: TunnelEndpoint {
                 ipv4: "204.48.17.50".into(),
@@ -1062,6 +1085,32 @@ mod tests {
             dns: vec!["1.1.1.1".into(), "1.0.0.1".into()],
             allowed_ips: vec!["0.0.0.0/0".into()],
         }
+    }
+
+    #[test]
+    fn validates_obfuscation_at_native_boundary() {
+        let mut configuration = valid_configuration();
+        configuration.obfuscation = Some(ObfuscationConfig {
+            mode: "SIMPLE_PACKET_WRAPPER_V1".into(),
+            version: 1,
+            max_datagram_size: 1320,
+        });
+        assert!(ParsedConfiguration::try_from(configuration).is_ok());
+        let mut configuration = valid_configuration();
+        configuration.obfuscation = Some(ObfuscationConfig {
+            mode: "SIMPLE_PACKET_WRAPPER_V1".into(),
+            version: 1,
+            max_datagram_size: 1319,
+        });
+        assert!(ParsedConfiguration::try_from(configuration).is_err());
+        let mut configuration = valid_configuration();
+        configuration.direct = true;
+        configuration.obfuscation = Some(ObfuscationConfig {
+            mode: "SIMPLE_PACKET_WRAPPER_V1".into(),
+            version: 1,
+            max_datagram_size: 1400,
+        });
+        assert!(ParsedConfiguration::try_from(configuration).is_err());
     }
 
     #[test]

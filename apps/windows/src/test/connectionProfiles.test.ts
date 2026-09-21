@@ -126,7 +126,7 @@ describe("connection profile capabilities", () => {
         );
       }
       expect(profile.supports_ipv6).toBe(false);
-      expect(profile.supports_obfuscation).toBe(false);
+      expect(profile.supports_obfuscation).toBe(id !== "MASQUE_QUIC");
     },
   );
 });

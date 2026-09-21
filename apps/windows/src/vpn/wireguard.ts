@@ -1,3 +1,4 @@
+import { obfuscationProviders } from "./obfuscation";
 import { connectionProfiles, validateProfileConfig } from "./profiles";
 import { isWireGuardTransport, type ApiClient } from "../api/client";
 import {
@@ -116,17 +117,34 @@ export function createWireGuardProtocol(
       const defaults = wireGuardDefaults(config.country, config.port);
       if (
         (!validateProfileConfig(connectionProfiles.WIREGUARD_UDP, config) &&
-          Object.entries(defaults).some(
+          (Object.entries(defaults).some(
             ([key, value]) => config[key as keyof ConnectionConfig] !== value,
-          )) ||
+          ) ||
+            config.obfuscation_version !== undefined ||
+            config.transport_parameters !== undefined)) ||
         !isWireGuardTransport(config.parameters) ||
         config.port !== config.parameters.endpoint.port
       )
         return result(false, false, "UNSUPPORTED_CONFIGURATION");
       const parameters = config.parameters;
+      const plan =
+        config.transport === "UDP"
+          ? obfuscationProviders.prepare(config)
+          : undefined;
       try {
         await tunnel.start({
-          ...(config.transport === "UDP" ? { direct: true } : {}),
+          ...(plan?.mode === "NONE"
+            ? { direct: true }
+            : plan
+              ? {
+                  obfuscation: {
+                    mode: plan.mode,
+                    version: plan.version,
+                    maxDatagramSize:
+                      plan.transport_parameters.max_datagram_size,
+                  },
+                }
+              : {}),
           endpoint: parameters.endpoint,
           serverPublicKey: parameters.server_public_key,
           clientAddress: parameters.client_address,

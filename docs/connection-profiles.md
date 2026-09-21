@@ -1,5 +1,8 @@
 # Connection profiles
 
+See [Obfuscation providers](obfuscation-providers.md) for independent framing and
+conditional TLS-carrier capabilities.
+
 Profiles describe implementation capabilities, not UI controls. Users still choose
 Autopilot or country. Nodes and profile preferences are operational concerns. No
 automatic fallback or retry across profiles is implemented.
@@ -16,7 +19,9 @@ supported ports, encryption, obfuscation, IPv6, and full-tunnel capabilities.
 `VpnProtocol.capabilities` exposes the corresponding descriptor. Capabilities are
 the integration contract, not a claim that an external runtime is installed.
 The initial implementations request IPv4 full-tunnel routing, VPN DNS, and MTU
-1280. IPv6, obfuscation, and ordinary-TLS resemblance are conservatively false.
+1280. IPv6 and ordinary-TLS resemblance remain false. WireGuard and OpenVPN now
+declare obfuscation capability subject to the independent provider compatibility
+checks; MASQUE does not.
 
 OpenVPN has its own framing and data channel: TCP 443 and TLS 1.3 do not make it
 ordinary HTTPS. It must not be marketed as browser-identical TLS. A future adapter

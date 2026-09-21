@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from prettylisavpn.vpn_nodes.profiles import PROFILES, ProfileId
+from prettylisavpn.vpn_sessions.obfuscation import validate_obfuscation
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +20,8 @@ class ConnectionConfig:
     mtu: int = 1280
     dns_mode: str = "VPN"
     routing_mode: str = "FULL_TUNNEL"
+    obfuscation_version: int | None = None
+    transport_parameters: dict[str, int] | None = None
 
     @classmethod
     def for_profile(
@@ -36,6 +39,14 @@ class ConnectionConfig:
         )
 
     def __post_init__(self) -> None:
+        validate_obfuscation(
+            self.protocol,
+            self.transport,
+            self.obfuscation_mode,
+            self.obfuscation_version,
+            self.transport_parameters,
+            self.mtu,
+        )
         if (
             len(self.country) != 2
             or not self.country.isascii()
@@ -59,7 +70,6 @@ class ConnectionConfig:
             self.protocol == profile.protocol
             and self.transport == profile.transport
             and self.encryption_mode == profile.encryption
-            and self.obfuscation_mode == "NONE"
             and (profile.supported_ports is None or self.port in profile.supported_ports)
             for profile in PROFILES.values()
         ):

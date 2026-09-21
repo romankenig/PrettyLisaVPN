@@ -771,7 +771,29 @@ function isConnectionConfig(value: unknown): value is ConnectionConfig {
       "mtu",
       "dns_mode",
       "routing_mode",
+      ...(isRecord(value) && Object.hasOwn(value, "obfuscation_version")
+        ? ["obfuscation_version"]
+        : []),
+      ...(isRecord(value) && Object.hasOwn(value, "transport_parameters")
+        ? ["transport_parameters"]
+        : []),
     ]) &&
+    (value.obfuscation_version === undefined ||
+      (typeof value.obfuscation_version === "number" &&
+        Number.isInteger(value.obfuscation_version) &&
+        value.obfuscation_version >= 0)) &&
+    (value.transport_parameters === undefined ||
+      (isRecord(value.transport_parameters) &&
+        Object.keys(value.transport_parameters).every(
+          (key) => key === "max_datagram_size",
+        ) &&
+        Object.values(value.transport_parameters).every(
+          (item) =>
+            typeof item === "number" &&
+            Number.isInteger(item) &&
+            item >= 1320 &&
+            item <= 65507,
+        ))) &&
     typeof value.country === "string" &&
     /^[A-Z]{2}$/.test(value.country) &&
     [

@@ -3,6 +3,7 @@
 mod debug_log;
 mod installation_id;
 mod obfuscation_transport;
+mod packet_obfuscation;
 mod refresh_credentials;
 mod wg_obfuscator;
 mod wireguard_keys;

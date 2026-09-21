@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import ipaddress
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .protocol import decode_secret
+from .providers import packet_provider
 
 
 @dataclass(frozen=True)
 class Settings:
-    secret: bytes
+    secret: bytes = field(repr=False)
     bind_host: str
     bind_port: int
     wireguard_host: str
@@ -21,6 +22,9 @@ class Settings:
     max_clients: int
     client_idle_timeout_seconds: int
     status_interval_seconds: int
+    obfuscation_mode: str = "PRETTYLISA_V1"
+    obfuscation_version: int = 1
+    max_datagram_size: int = 1400
 
     @classmethod
     def from_environment(cls) -> Settings:
@@ -32,8 +36,20 @@ class Settings:
         wireguard_port = _integer("PRETTYLISA_WIREGUARD_PORT", 51_820, 1, 65_535)
         if bind_host in {"0.0.0.0", wireguard_host} and bind_port == wireguard_port:
             raise ValueError("public and local WireGuard endpoints must not overlap")
+        mode = os.getenv("PRETTYLISA_OBFUSCATION_MODE", "PRETTYLISA_V1")
+        version = _integer("PRETTYLISA_OBFUSCATION_VERSION", 0 if mode == "NONE" else 1, 0, 255)
+        maximum = _integer("PRETTYLISA_MAX_DATAGRAM_SIZE", 1400, 1320, 65507)
+        if mode != "PRETTYLISA_V1":
+            packet_provider(mode, version, maximum)
+        elif version != 1:
+            raise ValueError("unsupported legacy version")
         return cls(
-            secret=decode_secret(_required("PRETTYLISA_OBFUSCATION_SECRET")),
+            obfuscation_mode=mode,
+            obfuscation_version=version,
+            max_datagram_size=maximum,
+            secret=decode_secret(_required("PRETTYLISA_OBFUSCATION_SECRET"))
+            if mode == "PRETTYLISA_V1"
+            else b"",
             bind_host=bind_host,
             bind_port=bind_port,
             wireguard_host=wireguard_host,

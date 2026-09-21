@@ -16,6 +16,7 @@ use serde::Serialize;
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::debug_log;
+use crate::packet_obfuscation::{self, ObfuscationConfig, ObfuscationProvider, PacketError};
 
 const PROTOCOL_VERSION: u8 = 1;
 const KEY_SIZE: usize = 32;
@@ -39,6 +40,7 @@ pub(crate) enum TransportMode {
     Direct,
     PrettyLisaV1,
     WgObfuscator,
+    PacketWrapped,
 }
 
 #[derive(Debug)]
@@ -107,10 +109,26 @@ impl TransportSelection {
 pub(crate) enum ActivePacketTransport {
     Direct { public_endpoint: SocketAddr },
     WgObfuscator(crate::wg_obfuscator::Client),
-    PrettyLisaV1(PrettyLisaV1Client),
+    PrettyLisaV1(PacketRelayClient),
+    PacketWrapped(PacketRelayClient),
 }
 
 impl ActivePacketTransport {
+    pub(crate) fn start_configured(
+        public_endpoint: SocketAddr,
+        config: &ObfuscationConfig,
+    ) -> Result<Self, TransportError> {
+        let codec = packet_obfuscation::provider(config)
+            .map_err(|_| TransportError::InvalidConfiguration)?;
+        if config.mode == "NONE" {
+            return Ok(Self::Direct { public_endpoint });
+        }
+        Ok(Self::PacketWrapped(PacketRelayClient::start_with_provider(
+            public_endpoint,
+            codec,
+        )?))
+    }
+
     pub(crate) fn start(public_endpoint: SocketAddr) -> Result<Self, TransportError> {
         debug_log::event(
             "transport_selection_started",
@@ -142,7 +160,7 @@ impl ActivePacketTransport {
             )),
             TransportSelection::PrettyLisaV1 { key, public_port } => {
                 let public_endpoint = SocketAddr::new(public_endpoint.ip(), public_port);
-                Ok(Self::PrettyLisaV1(PrettyLisaV1Client::start(
+                Ok(Self::PrettyLisaV1(PacketRelayClient::start(
                     public_endpoint,
                     &key,
                 )?))
@@ -154,7 +172,7 @@ impl ActivePacketTransport {
         match self {
             Self::Direct { public_endpoint } => *public_endpoint,
             Self::WgObfuscator(client) => client.local_endpoint,
-            Self::PrettyLisaV1(client) => client.local_endpoint,
+            Self::PrettyLisaV1(client) | Self::PacketWrapped(client) => client.local_endpoint,
         }
     }
 
@@ -162,7 +180,7 @@ impl ActivePacketTransport {
         match self {
             Self::Direct { public_endpoint } => *public_endpoint,
             Self::WgObfuscator(client) => client.public_endpoint,
-            Self::PrettyLisaV1(client) => client.public_endpoint,
+            Self::PrettyLisaV1(client) | Self::PacketWrapped(client) => client.public_endpoint,
         }
     }
 
@@ -171,6 +189,7 @@ impl ActivePacketTransport {
             Self::Direct { .. } => TransportMode::Direct,
             Self::WgObfuscator(_) => TransportMode::WgObfuscator,
             Self::PrettyLisaV1(_) => TransportMode::PrettyLisaV1,
+            Self::PacketWrapped(_) => TransportMode::PacketWrapped,
         }
     }
 
@@ -178,14 +197,18 @@ impl ActivePacketTransport {
         match self {
             Self::Direct { .. } => true,
             Self::WgObfuscator(client) => client.is_healthy(),
-            Self::PrettyLisaV1(client) => client.healthy.load(Ordering::Acquire),
+            Self::PrettyLisaV1(client) | Self::PacketWrapped(client) => {
+                client.healthy.load(Ordering::Acquire)
+            }
         }
     }
 
     pub(crate) fn snapshot(&self) -> Option<TransportSnapshot> {
         match self {
             Self::Direct { .. } | Self::WgObfuscator(_) => None,
-            Self::PrettyLisaV1(client) => Some(client.counters.snapshot()),
+            Self::PrettyLisaV1(client) | Self::PacketWrapped(client) => {
+                Some(client.counters.snapshot())
+            }
         }
     }
 
@@ -194,7 +217,7 @@ impl ActivePacketTransport {
             "transport_stop_requested",
             format_args!("mode={:?} counters={:?}", self.mode(), self.snapshot()),
         );
-        if let Self::PrettyLisaV1(client) = self {
+        if let Self::PrettyLisaV1(client) | Self::PacketWrapped(client) = self {
             client.stop();
         }
         if let Self::WgObfuscator(client) = self {
@@ -251,7 +274,7 @@ impl Drop for ActivePacketTransport {
     }
 }
 
-pub(crate) struct PrettyLisaV1Client {
+pub(crate) struct PacketRelayClient {
     local_endpoint: SocketAddr,
     public_endpoint: SocketAddr,
     stop_requested: Arc<AtomicBool>,
@@ -260,8 +283,15 @@ pub(crate) struct PrettyLisaV1Client {
     worker: Option<JoinHandle<()>>,
 }
 
-impl PrettyLisaV1Client {
+impl PacketRelayClient {
     fn start(public_endpoint: SocketAddr, key: &[u8; KEY_SIZE]) -> Result<Self, TransportError> {
+        Self::start_with_provider(public_endpoint, Box::new(V1PacketCodec::new(key)))
+    }
+
+    fn start_with_provider(
+        public_endpoint: SocketAddr,
+        codec: Box<dyn ObfuscationProvider>,
+    ) -> Result<Self, TransportError> {
         if !matches!(public_endpoint.ip(), IpAddr::V4(address) if !address.is_unspecified()) {
             return Err(TransportError::InvalidConfiguration);
         }
@@ -298,7 +328,6 @@ impl PrettyLisaV1Client {
         let worker_stop = Arc::clone(&stop_requested);
         let worker_health = Arc::clone(&healthy);
         let worker_counters = Arc::clone(&counters);
-        let codec = V1PacketCodec::new(key);
         let worker = thread::Builder::new()
             .name("prettylisa-obfuscation-v1".to_owned())
             .spawn(move || {
@@ -336,7 +365,7 @@ impl PrettyLisaV1Client {
     }
 }
 
-impl Drop for PrettyLisaV1Client {
+impl Drop for PacketRelayClient {
     fn drop(&mut self) {
         self.stop();
     }
@@ -345,13 +374,13 @@ impl Drop for PrettyLisaV1Client {
 fn run_forwarder(
     local_socket: UdpSocket,
     public_socket: UdpSocket,
-    codec: V1PacketCodec,
+    codec: Box<dyn ObfuscationProvider>,
     stop_requested: &AtomicBool,
     healthy: &AtomicBool,
     counters: &TransportCounters,
 ) {
-    let mut local_buffer = [0_u8; MAX_PACKET_SIZE + 1];
-    let mut public_buffer = [0_u8; MAX_ENVELOPE_SIZE + 1];
+    let mut local_buffer = [0_u8; 65_536];
+    let mut public_buffer = [0_u8; 65_536];
     let mut wireguard_endpoint: Option<SocketAddr> = None;
     let mut last_report = Instant::now();
     debug_log::event(
@@ -361,7 +390,7 @@ fn run_forwarder(
     while !stop_requested.load(Ordering::Acquire) {
         match local_socket.recv_from(&mut local_buffer) {
             Ok((size, endpoint)) => {
-                if !endpoint.ip().is_loopback() || size == 0 || size > MAX_PACKET_SIZE {
+                if !endpoint.ip().is_loopback() || size == 0 {
                     continue;
                 }
                 wireguard_endpoint = Some(endpoint);
@@ -391,8 +420,7 @@ fn run_forwarder(
                             "obfuscation_encode_failed",
                             format_args!("inner_size={size} counters={:?}", counters.snapshot()),
                         );
-                        healthy.store(false, Ordering::Release);
-                        return;
+                        // Oversized/malformed local packets are dropped without killing the relay.
                     }
                 }
             }
@@ -481,6 +509,15 @@ enum CodecError {
 
 struct V1PacketCodec {
     cipher: ChaCha20Poly1305,
+}
+
+impl ObfuscationProvider for V1PacketCodec {
+    fn encode(&self, packet: &[u8]) -> Result<Vec<u8>, PacketError> {
+        V1PacketCodec::encode(self, packet).map_err(|_| PacketError::Malformed)
+    }
+    fn decode(&self, packet: &[u8]) -> Result<Vec<u8>, PacketError> {
+        V1PacketCodec::decode(self, packet).map_err(|_| PacketError::Malformed)
+    }
 }
 
 impl V1PacketCodec {
@@ -595,6 +632,46 @@ mod tests {
     );
 
     #[test]
+    fn wrapper_udp_loss_malformed_mtu_and_reconnect() {
+        let server = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        server
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let config = ObfuscationConfig {
+            mode: "SIMPLE_PACKET_WRAPPER_V1".into(),
+            version: 1,
+            max_datagram_size: 1400,
+        };
+        let codec = packet_obfuscation::provider(&config).unwrap();
+        for _ in 0..2 {
+            let mut client =
+                ActivePacketTransport::start_configured(server.local_addr().unwrap(), &config)
+                    .unwrap();
+            let vpn = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+            vpn.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+            let mut wire = [0u8; 65536];
+            vpn.send_to(b"lost-packet", client.wireguard_endpoint())
+                .unwrap();
+            let (_, remote) = server.recv_from(&mut wire).unwrap(); // intentionally drop
+            server.send_to(b"malformed-frame", remote).unwrap();
+            // Oversized local packets must be dropped without stopping the relay.
+            vpn.send_to(&vec![0; 1393], client.wireguard_endpoint())
+                .unwrap();
+            let packet = vec![37; 1392];
+            vpn.send_to(&packet, client.wireguard_endpoint()).unwrap();
+            let (size, remote) = server.recv_from(&mut wire).unwrap();
+            assert_eq!(size, 1400);
+            assert_eq!(codec.decode(&wire[..size]).unwrap(), packet);
+            server.send_to(&wire[..size], remote).unwrap();
+            let (size, _) = vpn.recv_from(&mut wire).unwrap();
+            assert_eq!(&wire[..size], packet.as_slice());
+            assert!(client.is_healthy());
+            client.stop();
+            assert!(!client.is_healthy());
+        }
+    }
+
+    #[test]
     fn matches_stage_3ab_python_compatibility_vector() {
         let key = std::array::from_fn(|index| index as u8);
         let nonce = std::array::from_fn(|index| 0xa0 + index as u8);
@@ -657,7 +734,7 @@ mod tests {
             .set_read_timeout(Some(Duration::from_secs(2)))
             .unwrap();
         let public_endpoint = server.local_addr().unwrap();
-        let mut client = PrettyLisaV1Client::start(public_endpoint, &key).unwrap();
+        let mut client = PacketRelayClient::start(public_endpoint, &key).unwrap();
         let local_endpoint = client.local_endpoint;
         let wireguard = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         wireguard
@@ -727,7 +804,7 @@ mod tests {
         let server = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         let endpoint = server.local_addr().unwrap();
         let local_endpoint = {
-            let client = PrettyLisaV1Client::start(endpoint, &key).unwrap();
+            let client = PacketRelayClient::start(endpoint, &key).unwrap();
             client.local_endpoint
         };
 

@@ -1,3 +1,4 @@
+import { obfuscationProviders, type ObfuscationPlan } from "./obfuscation";
 import {
   connectionProfiles,
   createProfileConfig,
@@ -25,12 +26,15 @@ export interface ExternalTunnelRequest {
   readonly parameters: ExternalTunnelParameters;
   readonly minimum_tls_version: "1.3";
   readonly verify_certificate: true;
+  readonly obfuscation?: ObfuscationPlan;
 }
 /** An implementation owns process/service lifecycle, TUN, routes, DNS and rollback.
  * A successful start must include an independent tunneled Internet probe.
  * Raw output is deliberately unknown and is never returned directly to callers.
  */
 export interface ExternalTunnelRuntime {
+  /** Opt-in to an independently supplied mature TLS carrier, not merely TLS control encryption. */
+  readonly obfuscation_modes?: readonly string[];
   start(request: ExternalTunnelRequest): Promise<unknown>;
   stop(): Promise<unknown>;
   status(): Promise<unknown>;
@@ -110,10 +114,17 @@ export function createExternalProtocol(
       )
         return failed("UNSUPPORTED_CONFIGURATION");
       if (!runtime) return failed("RUNTIME_UNAVAILABLE");
+      const plan = obfuscationProviders.prepare(config);
+      if (
+        plan.mode !== "NONE" &&
+        !runtime.obfuscation_modes?.includes(`${plan.mode}:${plan.version}`)
+      )
+        return failed("UNSUPPORTED_CONFIGURATION");
       try {
         const result = safeResult(
           await runtime.start({
             profile: id,
+            ...(plan.mode === "NONE" ? {} : { obfuscation: plan }),
             config: createProfileConfig(id, config.country, config.port),
             parameters: { ...config.parameters },
             minimum_tls_version: "1.3",

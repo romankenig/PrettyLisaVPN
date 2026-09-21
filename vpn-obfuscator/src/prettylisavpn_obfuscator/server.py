@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from .config import Settings
 from .logging import log_event
 from .protocol import ObfuscationError, V1ObfuscationTransport
+from .providers import ObfuscationProvider, packet_provider
 
 ClientAddress = tuple[str, int]
 
@@ -47,10 +48,16 @@ class ObfuscationServerProtocol(asyncio.DatagramProtocol):
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._codec = V1ObfuscationTransport(
-            settings.secret,
-            max_packet_size=settings.max_packet_size,
-            max_padding_size=settings.max_padding_size,
+        self._codec: ObfuscationProvider = (
+            V1ObfuscationTransport(
+                settings.secret,
+                max_packet_size=settings.max_packet_size,
+                max_padding_size=settings.max_padding_size,
+            )
+            if settings.obfuscation_mode == "PRETTYLISA_V1"
+            else packet_provider(
+                settings.obfuscation_mode, settings.obfuscation_version, settings.max_datagram_size
+            )
         )
         self._public_transport: asyncio.DatagramTransport | None = None
         self._clients: dict[ClientAddress, _ClientSession] = {}
@@ -71,7 +78,8 @@ class ObfuscationServerProtocol(asyncio.DatagramProtocol):
             bind_port=self._settings.bind_port,
             wireguard_host=self._settings.wireguard_host,
             wireguard_port=self._settings.wireguard_port,
-            protocol_version=1,
+            protocol_version=self._settings.obfuscation_version,
+            obfuscation_mode=self._settings.obfuscation_mode,
         )
 
     def datagram_received(self, data: bytes, addr: ClientAddress) -> None:

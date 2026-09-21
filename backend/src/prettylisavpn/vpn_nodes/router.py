@@ -103,6 +103,8 @@ class ConnectionConfigResponse(BaseModel):
     mtu: int
     dns_mode: str
     routing_mode: str
+    obfuscation_version: int | None = None
+    transport_parameters: dict[str, int] | None = None
 
 
 class ActiveVpnSessionResponse(BaseModel):
@@ -147,7 +149,11 @@ def _active_response(
     if include_candidates:
         response.candidates = [
             ConnectionConfigResponse.model_validate(
-                {key: value for key, value in asdict(candidate).items() if key != "node_id"}
+                {
+                    key: value
+                    for key, value in asdict(candidate).items()
+                    if key != "node_id" and value is not None
+                }
             )
             for candidate in transport.candidates
         ]
