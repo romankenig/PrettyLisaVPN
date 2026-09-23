@@ -97,6 +97,20 @@ class VpnNode:
     def verified_profiles(self, now: datetime) -> tuple[DeployedConnectionProfile, ...]:
         return tuple(p for p in self.deployed_profiles if p.usable(self.id, self.public_ipv4, now))
 
+    def verified_wireguard_session_profile(self, now: datetime) -> DeployedConnectionProfile | None:
+        # Session peer provisioning is still WireGuard-only. Do not advertise
+        # TLS/QUIC or a wrapper against a different endpoint through this path.
+        return next(
+            (
+                p
+                for p in self.verified_profiles(now)
+                if p.protocol == "WIREGUARD"
+                and p.obfuscation_mode == "NONE"
+                and p.port == self.wireguard_port
+            ),
+            None,
+        )
+
     @property
     def supported_profiles(self) -> tuple[NodeConnectionProfile, ...]:
         if self.connection_profiles is None:

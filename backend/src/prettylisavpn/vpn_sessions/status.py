@@ -9,7 +9,7 @@ from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
-from prettylisavpn.vpn_sessions.connection import ActiveVpnTransport
+from prettylisavpn.vpn_sessions.connection import ActiveVpnTransport, deployed_session_candidates
 from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 
@@ -57,6 +57,7 @@ class VpnSessionStatusService:
                     dns=self._dns,
                     allowed_ips=self._allowed_ips,
                     expires_at=vpn_session.expires_at,
+                    deployed_candidates=deployed_session_candidates(node, datetime.now(UTC)),
                 )
         except VpnSessionStatusUnavailableError:
             raise

@@ -1,5 +1,6 @@
 """Deployment declarations do not imply demonstrated Internet connectivity."""
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address
 from uuid import uuid4
@@ -8,12 +9,14 @@ import pytest
 from pydantic import ValidationError
 from test_vpn_nodes import make_node
 
+from prettylisavpn.vpn_nodes.availability import NodeUnavailabilityReason, VpnNodeAvailabilityPolicy
 from prettylisavpn.vpn_nodes.deployment import (
     DeployedConnectionProfile,
     ProfileEvidence,
     ProfileHealth,
 )
 from prettylisavpn.vpn_nodes.import_profiles import DeploymentImport, validate_import
+from prettylisavpn.vpn_sessions.connection import deployed_session_candidates
 
 
 def sample(node, now, **changes):
@@ -75,7 +78,6 @@ def test_all_stages_are_required(field):
         {"configuration_sha256": "b" * 64},
         {"node_id": uuid4()},
         {"egress_ip": IPv4Address("192.0.2.1")},
-        {"checked_at": datetime.now(UTC) - timedelta(days=2)},
         {"checked_at": datetime.now(UTC) + timedelta(days=2)},
     ],
 )
@@ -100,4 +102,56 @@ def test_import_and_verified_projection():
     assert node.verified_profiles(now) == ()
     updated = validate_import(node, DeploymentImport(node_id=node.id, profiles=(profile,)), now)
     assert updated.verified_profiles(now) == (profile,)
-    assert updated.verified_profiles(now + timedelta(days=2)) == ()
+    # An unchanged deployed revision retains its demonstrated capability. This
+    # does not waive live node-health or per-connection Internet verification.
+    assert updated.verified_profiles(now + timedelta(days=2)) == (profile,)
+    with pytest.raises(ValueError):
+        validate_import(
+            node, DeploymentImport(node_id=node.id, profiles=(profile,)), now + timedelta(days=2)
+        )
+
+
+def test_verified_wireguard_uses_actual_endpoint_instead_of_native_udp443():
+    now = datetime.now(UTC)
+    node = make_node(wireguard_port=51820)
+    assert deployed_session_candidates(node, now) is None
+    node = replace(node, deployed_profiles=(sample(node, now),))
+    candidates = deployed_session_candidates(node, now)
+    assert len(candidates) == 1
+    assert (candidates[0].transport, candidates[0].port, candidates[0].obfuscation_mode) == (
+        "UDP",
+        51820,
+        "NONE",
+    )
+    failed = replace(node, deployed_profiles=(sample(node, now, health_status="E2E_FAILED"),))
+    assert deployed_session_candidates(failed, now) == ()
+    assert (
+        VpnNodeAvailabilityPolicy(timedelta(minutes=5)).evaluate(failed, now).reason
+        is NodeUnavailabilityReason.NO_RUNNABLE_PROFILE
+    )
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"enabled": False},
+        {"port": 5443},
+        {
+            "protocol": "OPENVPN",
+            "transport": "TCP",
+            "port": 443,
+            "encryption_mode": "TLS_1_3_AES_256_GCM",
+        },
+        {"obfuscation_mode": "SIMPLE_PACKET_WRAPPER_V1", "port": 5443},
+    ],
+)
+def test_no_unprovisioned_or_disabled_profile_advertised_by_wireguard_session(changes):
+    now = datetime.now(UTC)
+    node = make_node()
+    node = replace(node, deployed_profiles=(sample(node, now, **changes),))
+    assert deployed_session_candidates(node, now) == ()
+
+
+def test_empty_import_cannot_restore_unverified_legacy_policy():
+    with pytest.raises(ValidationError):
+        DeploymentImport(node_id=uuid4(), profiles=())

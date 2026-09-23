@@ -15,6 +15,7 @@ from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort, NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.domain import VpnNode
+from prettylisavpn.vpn_nodes.profiles import ProfileId
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 from prettylisavpn.vpn_nodes.selection import (
     NodeSelectionMode,
@@ -51,6 +52,21 @@ class VpnSessionPersistenceUnavailableError(RuntimeError):
     pass
 
 
+def deployed_session_candidates(
+    node: VpnNode, now: datetime
+) -> tuple[ConnectionConfig, ...] | None:
+    if not node.deployed_profiles:
+        return None  # Preserve legacy nodes until explicitly migrated by an operator.
+    profile = node.verified_wireguard_session_profile(now)
+    if profile is None:
+        return ()  # Never substitute local NATIVE policy for failed/mismatched evidence.
+    return (
+        ConnectionConfig.for_profile(
+            ProfileId.WIREGUARD_UDP, node.country_code, node.id, profile.port
+        ),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class ActiveVpnTransport:
     session_id: UUID
@@ -63,10 +79,13 @@ class ActiveVpnTransport:
     allowed_ips: tuple[IPv4Network, ...]
     expires_at: datetime | None
     node_id: UUID | None = None
+    deployed_candidates: tuple[ConnectionConfig, ...] | None = None
 
     @property
     def candidates(self) -> tuple[ConnectionConfig, ...]:
         # Only the provisioned node is connectable. No additional peers or fallback.
+        if self.deployed_candidates is not None:
+            return self.deployed_candidates
         return (ConnectionConfig(self.country_code, self.node_id, self.endpoint_port),)
 
 
@@ -123,6 +142,7 @@ class VpnConnectionService:
             dns=self._dns,
             allowed_ips=self._allowed_ips,
             expires_at=active.expires_at,
+            deployed_candidates=deployed_session_candidates(node, datetime.now(UTC)),
         )
 
     async def _reserve(

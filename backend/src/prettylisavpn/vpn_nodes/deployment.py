@@ -1,6 +1,6 @@
 """Operator-imported node capabilities; declarations and unit tests confer no trust."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
 from ipaddress import IPv4Address
 from typing import Annotated, Literal
@@ -45,7 +45,10 @@ class ProfileEvidence(BaseModel):
                     self.route_verified,
                 )
             )
-            and timedelta(0) <= now - self.checked_at <= timedelta(hours=24)
+            # E2E is an observation about this exact deployed revision, not a
+            # live Internet guarantee. Import requires a fresh report; normal
+            # node health and per-connection client verification remain live.
+            and self.checked_at <= now
         )
 
 

@@ -60,9 +60,16 @@ def api_client(service: AsyncMock) -> TestClient:
     ],
 )
 @pytest.mark.parametrize("include_candidates", [False, True])
+@pytest.mark.parametrize("verified_deployment", [False, True])
 def test_create_session_supports_auto_and_country_without_client_node_target(
-    body: dict[str, str], expected_request: NodeSelectionRequest, include_candidates: bool
+    body: dict[str, str],
+    expected_request: NodeSelectionRequest,
+    include_candidates: bool,
+    verified_deployment: bool,
 ):
+    from prettylisavpn.vpn_nodes.profiles import ProfileId
+    from prettylisavpn.vpn_sessions.protocol import ConnectionConfig
+
     service = AsyncMock()
     expires_at = datetime.now(UTC) + timedelta(minutes=15)
     session_id = uuid4()
@@ -77,6 +84,11 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
         dns=(IPv4Address("1.1.1.1"), IPv4Address("1.0.0.1")),
         allowed_ips=(IPv4Network("0.0.0.0/0"),),
         expires_at=expires_at,
+        deployed_candidates=(
+            ConnectionConfig.for_profile(ProfileId.WIREGUARD_UDP, "DE", None, 51820),
+        )
+        if verified_deployment
+        else None,
     )
 
     with api_client(service) as client:
@@ -98,10 +110,10 @@ def test_create_session_supports_auto_and_country_without_client_node_target(
             {
                 "country": "DE",
                 "protocol": "WIREGUARD",
-                "transport": "NATIVE",
+                "transport": "UDP" if verified_deployment else "NATIVE",
                 "port": 51820,
                 "encryption_mode": "WIREGUARD",
-                "obfuscation_mode": "NATIVE",
+                "obfuscation_mode": "NONE" if verified_deployment else "NATIVE",
                 "mtu": 1280,
                 "dns_mode": "VPN",
                 "routing_mode": "FULL_TUNNEL",

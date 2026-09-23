@@ -59,15 +59,26 @@ silently leave obsolete services/rules behind.
 Migration `0017_profile_evidence` adds `vpn_nodes.deployed_profiles` JSONB.
 Each profile records protocol, transport, port, encryption, obfuscation, free
 availability, enabled state, health status, configuration digest and evidence.
-`verified_profiles(now)` exposes only matching successful evidence no older than
-24 hours. Failed DNS/HTTPS/routes/egress, changed revision, disabled profiles and
-missing/expired evidence exclude a profile. A socket or handshake alone is never
+`verified_profiles(now)` exposes only matching successful evidence. Imports must
+be made within 24 hours of testing. Stored evidence records the demonstrated
+configuration; it is not a live Internet guarantee or a daily expiration of the
+working service. Failed DNS/HTTPS/routes/egress, changed revision, disabled profiles
+and missing evidence exclude a profile. A socket or handshake alone is never
 enough. Legacy declarations are not automatically promoted to E2E_VERIFIED.
 
 The trusted import command accepts operator reports, not unsigned reports from
 arbitrary clients. It updates only capability metadata, preserving concurrent
 node health changes. Existing app session issuance remains WireGuard-only;
 TLS/QUIC account credential delivery and new selection policies are not added.
+Migrated nodes return an explicit verified WireGuard UDP/51820 + NONE candidate,
+so local legacy settings cannot redirect it to Netcup's MASQUE UDP/443. Mismatched
+or failed evidence makes the migrated node ineligible for new sessions. Live
+node-health eligibility and per-connection client verification still apply. Legacy
+nodes retain existing behavior. Old clients without candidate negotiation need
+upgrading or matching local configuration; Netcup clients must reconnect because
+the reset replaced its WireGuard key. This changes no node ranking or fallback.
+The imported live catalog was read back from the backend:
+[capability audit](reports/backend-capabilities-20260923.jsonl).
 
 ## G. Repeatable manual verification
 
@@ -118,12 +129,13 @@ python -m prettylisavpn.vpn_nodes.import_profiles nyc-deployment.json
 python -m prettylisavpn.vpn_nodes.import_profiles netcup-deployment.json
 ```
 
-Use fresh reports after 24 hours. Historical JSON files document an observation,
-not perpetual availability. No external-test scheduler is installed.
+To perform a new import, generate new reports if the observations are older than
+24 hours. Historical JSON files document an observation, not perpetual availability.
+Retest changes/incidents; no external-test scheduler is installed.
 
 ## H–I. Tests and actual E2E observations
 
-* Backend: 304 tests passed, 73 environment-dependent tests skipped; seven real
+* Backend: 313 tests passed, 73 environment-dependent tests skipped; seven real
   PostgreSQL node integration tests passed separately, including migration and
   JSONB round-trip/concurrent health preservation. Ruff and mypy passed.
 * Server Python: 32 tests passed, including all compatibility variants, malformed
@@ -170,5 +182,7 @@ cryptographic security. No fallback or new Autopilot work was performed.
   guard, unit dependency and private-material metadata suppression.
 * `backend/migrations/versions/0017_profile_evidence.py`;
   `backend/src/prettylisavpn/vpn_nodes/{deployment,domain,import_profiles,model,repository}.py`;
-  `backend/tests/{test_profile_deployment,test_vpn_nodes_integration}.py`.
+  `backend/src/prettylisavpn/vpn_nodes/availability.py`;
+  `backend/src/prettylisavpn/vpn_sessions/{connection,status}.py`;
+  `backend/tests/{test_profile_deployment,test_vpn_nodes_integration,test_vpn_session_api}.py`.
 * `.github/workflows/server-profiles.yaml`: Python/Go/TUN/image/Ansible checks.

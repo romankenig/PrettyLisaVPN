@@ -9,11 +9,11 @@ import argparse
 import asyncio
 import json
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from prettylisavpn.config import Settings
@@ -25,17 +25,18 @@ from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 class DeploymentImport(BaseModel):
     model_config = ConfigDict(extra="forbid")
     node_id: UUID
-    profiles: tuple[DeployedConnectionProfile, ...]
+    profiles: tuple[DeployedConnectionProfile, ...] = Field(min_length=1)
 
 
 def validate_import(node: VpnNode, payload: DeploymentImport, now: datetime) -> VpnNode:
     if payload.node_id != node.id:
         raise ValueError("node identity mismatch")
     for profile in payload.profiles:
-        if profile.health_status is ProfileHealth.E2E_VERIFIED and not profile.usable(
-            node.id, node.public_ipv4, now
-        ):
-            raise ValueError("invalid or expired E2E evidence")
+        if profile.health_status is ProfileHealth.E2E_VERIFIED:
+            if not profile.usable(node.id, node.public_ipv4, now):
+                raise ValueError("invalid E2E evidence")
+            if profile.evidence is None or now - profile.evidence.checked_at > timedelta(hours=24):
+                raise ValueError("import requires a fresh E2E observation")
     return replace(node, deployed_profiles=payload.profiles, updated_at=now)
 
 

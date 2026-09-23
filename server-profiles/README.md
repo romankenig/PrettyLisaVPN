@@ -188,17 +188,27 @@ Migration `0017_profile_evidence` adds separate `deployed_profiles` metadata.
 Legacy `connection_profiles` declarations are not backfilled as verified evidence.
 `VpnNode.verified_profiles(now)` requires enabled, E2E_VERIFIED, all successful
 transport/tunnel/DNS/HTTPS/Internet/route checks, matching node/profile/configuration
-revision and public egress, and a report no older than 24 hours. Reconfiguration,
-expired reports or failed checks invalidate this projection. A service check must
+revision and public egress. Import requires a report no older than 24 hours.
+Stored evidence records a demonstrated revision; it is not a live connectivity
+guarantee and does not silently disable working nodes the next day.
+Reconfiguration or failed checks invalidate the projection. A service check must
 only yield SERVER_READY; unit tests only UNIT_TESTED. Neither permits advertising
 new runtime capabilities. The import command exposes no public write endpoint.
 The existing session issuance path remains WireGuard-only and does not consume
 TLS/QUIC declarations. New profile consumers must use `verified_profiles(now)`,
 not legacy `connection_profiles` or the client capability catalog. No TLS/QUIC
 account credential delivery or new selection policy is introduced here.
+For explicitly migrated nodes, existing WireGuard sessions now return only the
+verified raw UDP endpoint with obfuscation NONE, preventing legacy local NATIVE
+settings from redirecting traffic to MASQUE's UDP/443. Failed/mismatched evidence
+removes eligibility; an empty candidate list never restores NATIVE policy.
+Unmigrated nodes retain their existing behavior. Older clients without candidate
+negotiation need upgrading or an explicit matching local transport configuration.
 Evidence import updates only the profile column, preserving concurrent health
-updates. Evidence is trusted operator input; refresh it with external testing
-within 24 hours. No automatic external-test scheduler is installed.
+updates. Evidence is trusted operator input: import a new test within 24 hours of
+running it. Live node-health eligibility and the client's per-connection Internet
+verification still apply. Retest after configuration changes or incidents. No
+automatic external-test scheduler is installed.
 
 ## Verification limits
 

@@ -49,6 +49,8 @@ class VpnNodeAvailabilityPolicy:
             raise ValueError("now must be timezone-aware")
         if not node.supports_current_session_protocol:
             return NodeAvailability(False, NodeUnavailabilityReason.NO_RUNNABLE_PROFILE)
+        if node.deployed_profiles and node.verified_wireguard_session_profile(now) is None:
+            return NodeAvailability(False, NodeUnavailabilityReason.NO_RUNNABLE_PROFILE)
         if node.status is not VpnNodeStatus.ACTIVE:
             return NodeAvailability(False, NodeUnavailabilityReason.ADMINISTRATIVE_STATUS)
         if node.health_status is not VpnNodeHealthStatus.HEALTHY:
