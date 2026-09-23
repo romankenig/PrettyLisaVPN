@@ -30,6 +30,9 @@ class VpnNodeRecord(Base):
     __tablename__ = "vpn_nodes"
     __table_args__ = (
         CheckConstraint(
+            "jsonb_typeof(deployed_profiles) = 'array'", name="ck_vpn_nodes_deployed_array"
+        ),
+        CheckConstraint(
             "connection_profiles IS NULL OR jsonb_typeof(connection_profiles) = 'array'",
             name="ck_vpn_nodes_profiles_array",
         ),
@@ -119,6 +122,9 @@ class VpnNodeRecord(Base):
     private_ipv4: Mapped[IPv4Address | None] = mapped_column(INET)
     wireguard_port: Mapped[int] = mapped_column(Integer)
     wireguard_public_key: Mapped[str] = mapped_column(String(44))
+    deployed_profiles: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     connection_profiles: Mapped[list[dict[str, object]] | None] = mapped_column(
         JSONB(none_as_null=True)
     )

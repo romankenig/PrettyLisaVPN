@@ -1,0 +1,108 @@
+{
+  "node_id": "ae0f02c8-598d-4fd5-ab92-3e17c4854a48",
+  "public_ipv4": "5.181.49.183",
+  "egress_interface": "eth0",
+  "ssh_port": 22,
+  "profiles": [
+    {
+      "id": "wg-direct",
+      "protocol": "WIREGUARD",
+      "transport": "UDP",
+      "port": 51820,
+      "encryption_mode": "WIREGUARD",
+      "obfuscation_mode": "NONE",
+      "free_available": false,
+      "enabled": true,
+      "interface": "wg0",
+      "subnet": "10.77.0.0/16",
+      "gateway": "10.77.0.1",
+      "mtu": 1280,
+      "dns": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "upstream_port": 51820,
+      "server_name": "netcup.vpn.prettylisavpn.com"
+    },
+    {
+      "id": "wg-simple",
+      "protocol": "WIREGUARD",
+      "transport": "UDP",
+      "port": 5443,
+      "encryption_mode": "WIREGUARD",
+      "obfuscation_mode": "SIMPLE_PACKET_WRAPPER_V1",
+      "free_available": false,
+      "enabled": true,
+      "interface": "wg0",
+      "subnet": "10.77.0.0/16",
+      "gateway": "10.77.0.1",
+      "mtu": 1280,
+      "dns": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "upstream_port": 51820,
+      "server_name": "netcup.vpn.prettylisavpn.com"
+    },
+    {
+      "id": "ovpn",
+      "protocol": "OPENVPN",
+      "transport": "TCP",
+      "port": 443,
+      "encryption_mode": "TLS_1_3_AES_256_GCM",
+      "obfuscation_mode": "NONE",
+      "free_available": false,
+      "enabled": true,
+      "interface": "plovpn",
+      "subnet": "10.78.0.0/24",
+      "gateway": "10.78.0.1",
+      "mtu": 1280,
+      "dns": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "upstream_port": 1194,
+      "server_name": "netcup.vpn.prettylisavpn.com"
+    },
+    {
+      "id": "ovpn-tls",
+      "protocol": "OPENVPN",
+      "transport": "TCP",
+      "port": 443,
+      "encryption_mode": "TLS_1_3_AES_256_GCM",
+      "obfuscation_mode": "TLS_TRANSPORT",
+      "free_available": false,
+      "enabled": false,
+      "interface": "plovpntls",
+      "subnet": "10.79.0.0/24",
+      "gateway": "10.79.0.1",
+      "mtu": 1280,
+      "dns": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "upstream_port": 1195,
+      "server_name": "netcup.vpn.prettylisavpn.com"
+    },
+    {
+      "id": "masque",
+      "protocol": "MASQUE",
+      "transport": "UDP",
+      "port": 443,
+      "encryption_mode": "TLS_1_3_QUIC",
+      "obfuscation_mode": "NONE",
+      "free_available": false,
+      "enabled": true,
+      "interface": "plmasque",
+      "subnet": "10.80.0.0/24",
+      "gateway": "10.80.0.1",
+      "mtu": 1280,
+      "dns": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "upstream_port": 443,
+      "server_name": "netcup.vpn.prettylisavpn.com"
+    }
+  ]
+}

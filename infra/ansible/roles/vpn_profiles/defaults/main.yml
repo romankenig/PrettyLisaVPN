@@ -1,0 +1,8 @@
+---
+vpn_profiles_manifest: null
+vpn_profiles_rendered_directory: null
+vpn_profiles_apply: false
+vpn_profiles_masque_binary: null
+vpn_profiles_obfuscator_wheel: null
+vpn_profiles_swap_mb: 0
+# Existing WireGuard interfaces and keys are never replaced by this role.

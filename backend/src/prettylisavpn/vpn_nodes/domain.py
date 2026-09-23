@@ -8,6 +8,7 @@ from enum import StrEnum
 from ipaddress import IPv4Address
 from uuid import UUID
 
+from prettylisavpn.vpn_nodes.deployment import DeployedConnectionProfile
 from prettylisavpn.vpn_nodes.profiles import (
     NodeConnectionProfile,
     ProfileId,
@@ -91,6 +92,10 @@ class VpnNode:
     health_checked_at: datetime | None = None
     is_available_for_free: bool = False
     connection_profiles: tuple[NodeConnectionProfile, ...] | None = None
+    deployed_profiles: tuple[DeployedConnectionProfile, ...] = ()
+
+    def verified_profiles(self, now: datetime) -> tuple[DeployedConnectionProfile, ...]:
+        return tuple(p for p in self.deployed_profiles if p.usable(self.id, self.public_ipv4, now))
 
     @property
     def supported_profiles(self) -> tuple[NodeConnectionProfile, ...]:
@@ -110,6 +115,15 @@ class VpnNode:
         )
 
     def __post_init__(self) -> None:
+        if not isinstance(self.deployed_profiles, tuple) or any(
+            not isinstance(p, DeployedConnectionProfile) for p in self.deployed_profiles
+        ):
+            raise ValueError("deployed_profiles must be validated immutable profiles")
+        if len({p.id for p in self.deployed_profiles}) != len(self.deployed_profiles):
+            raise ValueError("duplicate deployed profile identity")
+        sockets = [(p.transport, p.port) for p in self.deployed_profiles if p.enabled]
+        if len(set(sockets)) != len(sockets):
+            raise ValueError("deployed profile socket collision")
         if self.connection_profiles is not None:
             if not isinstance(self.connection_profiles, tuple):
                 raise ValueError("connection_profiles must be an immutable tuple")

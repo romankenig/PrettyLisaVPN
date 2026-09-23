@@ -7,6 +7,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.vpn_nodes.availability import VpnNodeCapacitySnapshot
+from prettylisavpn.vpn_nodes.deployment import DeployedConnectionProfile
 from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus, normalize_country_code
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.profiles import NodeConnectionProfile
@@ -30,6 +31,7 @@ class VpnNodeRepository:
             private_ipv4=node.private_ipv4,
             wireguard_port=node.wireguard_port,
             wireguard_public_key=node.wireguard_public_key,
+            deployed_profiles=[p.model_dump(mode="json") for p in node.deployed_profiles],
             connection_profiles=None
             if node.connection_profiles is None
             else [profile.model_dump(mode="json") for profile in node.connection_profiles],
@@ -117,6 +119,7 @@ class VpnNodeRepository:
                 private_ipv4=node.private_ipv4,
                 wireguard_port=node.wireguard_port,
                 wireguard_public_key=node.wireguard_public_key,
+                deployed_profiles=[p.model_dump(mode="json") for p in node.deployed_profiles],
                 connection_profiles=None
                 if node.connection_profiles is None
                 else [profile.model_dump(mode="json") for profile in node.connection_profiles],
@@ -152,6 +155,14 @@ class VpnNodeRepository:
         record = await self._session.scalar(statement)
         return self._to_domain(record) if record is not None else None
 
+    async def update_deployed_profiles(self, node: VpnNode) -> None:
+        """Do not overwrite concurrent health/session metadata during evidence import."""
+        await self._session.execute(
+            update(VpnNodeRecord)
+            .where(VpnNodeRecord.id == node.id)
+            .values(deployed_profiles=[p.model_dump(mode="json") for p in node.deployed_profiles])
+        )
+
     @staticmethod
     def _to_domain(record: VpnNodeRecord) -> VpnNode:
         return VpnNode(
@@ -165,6 +176,9 @@ class VpnNodeRepository:
             private_ipv4=record.private_ipv4,
             wireguard_port=record.wireguard_port,
             wireguard_public_key=record.wireguard_public_key,
+            deployed_profiles=tuple(
+                DeployedConnectionProfile.model_validate(p) for p in record.deployed_profiles
+            ),
             connection_profiles=None
             if record.connection_profiles is None
             else tuple(

@@ -2,7 +2,8 @@
 Description=PrettyLisaVPN VPN Node Control Agent
 After=network-online.target wg-quick@{{ wireguard_interface }}.service
 Wants=network-online.target
-Requires=wg-quick@{{ wireguard_interface }}.service
+Requires=wg-quick@{{ wireguard_interface }}.service prettylisavpn-agent-firewall.service
+After=prettylisavpn-agent-firewall.service
 
 [Service]
 Type=simple

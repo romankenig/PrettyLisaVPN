@@ -1,0 +1,204 @@
+---
+- name: Require supported node and explicit rendered deployment
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version == '24.04'
+      - vpn_profiles_manifest is mapping
+      - vpn_profiles_rendered_directory is string
+      - vpn_profiles_manifest.public_ipv4 == ansible_facts.default_ipv4.address
+      - vpn_profiles_manifest.egress_interface == ansible_facts.default_ipv4.interface
+      - vpn_profiles_manifest.ssh_port | int == ansible_port | default(22) | int
+      - (lookup('ansible.builtin.file', vpn_profiles_rendered_directory ~ '/manifest.json') | from_json) == vpn_profiles_manifest
+
+- name: Refuse physical interfaces as VPN tunnels
+  ansible.builtin.assert:
+    that:
+      - item.interface != vpn_profiles_manifest.egress_interface
+      - item.id != 'routing'
+  loop: "{{ vpn_profiles_manifest.profiles }}"
+
+- name: Show exact additive firewall and routing commands before any changes
+  ansible.builtin.debug:
+    msg: "{{ lookup('ansible.builtin.file', vpn_profiles_rendered_directory ~ '/routing.sh') }}"
+
+- name: Explain management access risk
+  ansible.builtin.debug:
+    msg: >-
+      No INPUT/FORWARD policy changes, chain flushing, UFW reload or SSH rule changes are performed.
+      Only enabled VPN listeners, tunnel forwarding, NAT and tunnel-to-node INPUT drops are added.
+      An incorrect tunnel or egress interface could disrupt traffic. Review the manifest and commands.
+      Existing UDP/443 services must not be stopped or moved by this playbook.
+      A later firewall reload requires restarting prettylisa-profile-routing.
+
+- name: Apply reviewed profile files
+  when: vpn_profiles_apply | bool
+  block:
+    - name: Inspect previously deployed manifest
+      ansible.builtin.stat:
+        path: /etc/prettylisa-profiles/manifest.json
+      register: vpn_profiles_previous
+
+    - name: Read previously deployed manifest
+      ansible.builtin.slurp:
+        src: /etc/prettylisa-profiles/manifest.json
+      register: vpn_profiles_previous_content
+      when: vpn_profiles_previous.stat.exists
+
+    - name: Require explicit cutover for changed listener or routing manifests
+      ansible.builtin.assert:
+        that: (vpn_profiles_previous_content.content | b64decode | from_json) == vpn_profiles_manifest
+        fail_msg: >-
+          A different manifest is already installed. Perform a reviewed service/firewall
+          cutover and archive the old manifest before deployment; this additive role
+          must not leave disabled services or stale firewall rules running silently.
+      when: vpn_profiles_previous.stat.exists
+
+    - name: Prepare explicitly requested swap on small nodes
+      when: vpn_profiles_swap_mb | int > 0
+      block:
+        - name: Require bounded swap allocation
+          ansible.builtin.assert:
+            that: vpn_profiles_swap_mb | int in [256, 512, 1024]
+
+        - name: Allocate a dedicated swap file without replacing existing data
+          ansible.builtin.command:
+            argv: [fallocate, -l, "{{ vpn_profiles_swap_mb }}M", /var/lib/prettylisa-profiles.swap]
+            creates: /var/lib/prettylisa-profiles.swap
+          register: vpn_profile_swap_created
+
+        - name: Restrict swap file to root
+          ansible.builtin.file:
+            path: /var/lib/prettylisa-profiles.swap
+            owner: root
+            group: root
+            mode: '0600'
+
+        - name: Initialize only the file created by this play
+          ansible.builtin.command: mkswap /var/lib/prettylisa-profiles.swap
+          when: vpn_profile_swap_created.changed
+          changed_when: true
+
+        - name: Read active swap paths
+          ansible.builtin.command: swapon --show=NAME --noheadings
+          register: vpn_profile_swap_active
+          changed_when: false
+
+        - name: Activate dedicated swap
+          ansible.builtin.command: swapon /var/lib/prettylisa-profiles.swap
+          when: "'/var/lib/prettylisa-profiles.swap' not in vpn_profile_swap_active.stdout_lines"
+          changed_when: true
+
+        - name: Persist dedicated swap
+          ansible.builtin.lineinfile:
+            path: /etc/fstab
+            line: /var/lib/prettylisa-profiles.swap none swap sw 0 0
+
+    - name: Install official Ubuntu protocol packages
+      ansible.builtin.apt:
+        name: [wireguard-tools, openvpn, stunnel4, python3-venv, iptables, iproute2, curl, openssl]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Require pre-provisioned certificates without exposing contents
+      ansible.builtin.stat:
+        path: "/etc/prettylisa-profiles/{{ item.0.id }}/{{ item.1 }}"
+      loop: "{{ vpn_profiles_manifest.profiles | selectattr('enabled') | rejectattr('protocol', 'equalto', 'WIREGUARD') | product(['ca.crt', 'server.crt', 'server.key']) | list }}"
+      register: vpn_profile_pki
+      no_log: true
+
+    - name: Create runtime directory
+      ansible.builtin.file:
+        path: /opt/prettylisa-profiles
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install reviewed MASQUE adapter
+      ansible.builtin.copy:
+        src: "{{ vpn_profiles_masque_binary }}"
+        dest: /opt/prettylisa-profiles/masque
+        owner: root
+        group: root
+        mode: '0755'
+      when: vpn_profiles_manifest.profiles | selectattr('enabled') | selectattr('protocol', 'equalto', 'MASQUE') | list | length > 0
+
+    - name: Copy obfuscator wheel
+      ansible.builtin.copy:
+        src: "{{ vpn_profiles_obfuscator_wheel }}"
+        dest: "/opt/prettylisa-profiles/{{ vpn_profiles_obfuscator_wheel | basename }}"
+        owner: root
+        group: root
+        mode: '0644'
+      when: vpn_profiles_manifest.profiles | selectattr('enabled') | selectattr('obfuscation_mode', 'equalto', 'SIMPLE_PACKET_WRAPPER_V1') | list | length > 0
+
+    - name: Install isolated packet wrapper runtime
+      ansible.builtin.pip:
+        name: "/opt/prettylisa-profiles/{{ vpn_profiles_obfuscator_wheel | basename }}"
+        virtualenv: /opt/prettylisa-profiles/obfuscator
+        virtualenv_command: python3 -m venv
+      when: vpn_profiles_manifest.profiles | selectattr('enabled') | selectattr('obfuscation_mode', 'equalto', 'SIMPLE_PACKET_WRAPPER_V1') | list | length > 0
+
+    - name: Refuse unauthenticated TLS profiles
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: Provision the profile PKI securely on the node before applying.
+      loop: "{{ vpn_profile_pki.results }}"
+      no_log: true
+
+    - name: Create restricted configuration directory
+      ansible.builtin.file:
+        path: /etc/prettylisa-profiles
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Copy explicit profile configuration
+      ansible.builtin.copy:
+        src: "{{ vpn_profiles_rendered_directory }}/"
+        dest: /etc/prettylisa-profiles/
+        owner: root
+        group: root
+        mode: '0600'
+        directory_mode: '0700'
+
+    - name: Make routing script executable
+      ansible.builtin.file:
+        path: /etc/prettylisa-profiles/routing.sh
+        mode: '0700'
+
+    - name: Install predictable systemd units
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/etc/systemd/system/{{ item | basename }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ query('ansible.builtin.fileglob', vpn_profiles_rendered_directory ~ '/*.service') }}"
+
+    - name: Persist forwarding
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/91-prettylisa-profiles.conf
+        content: "net.ipv4.ip_forward=1\n"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply additive routing before tunnel startup
+      ansible.builtin.systemd_service:
+        name: prettylisa-profile-routing
+        enabled: true
+        state: restarted
+        daemon_reload: true
+
+    - name: Enable configured profile services
+      ansible.builtin.systemd_service:
+        name: "{{ item | basename }}"
+        enabled: true
+        state: restarted
+        daemon_reload: true
+      loop: "{{ query('ansible.builtin.fileglob', vpn_profiles_rendered_directory ~ '/prettylisa-profile-*.service') }}"
+      when: item | basename != 'prettylisa-profile-routing.service'

@@ -11,6 +11,8 @@
       - vpn_node_agent_bind_ipv4 is match('^[0-9]{1,3}(\.[0-9]{1,3}){3}$')
       - vpn_node_agent_port | int >= 1
       - vpn_node_agent_port | int <= 65535
+      - vpn_node_agent_port | int != ansible_port | default(22) | int
+      - vpn_node_agent_port | int != 22
     fail_msg: >-
       Supply a wheel path, a 32+ character vaulted token, and the backend public IPv4 /32.
   no_log: true
@@ -62,6 +64,8 @@
 - name: Inspect required pre-provisioned mTLS files
   ansible.builtin.stat:
     path: "{{ item }}"
+    get_checksum: false
+  no_log: true
   register: vpn_node_agent_tls_files
   loop:
     - "{{ vpn_node_agent_tls_certificate }}"
@@ -69,6 +73,7 @@
     - "{{ vpn_node_agent_tls_client_ca }}"
 
 - name: Require all mTLS files before exposing the agent
+  no_log: true
   ansible.builtin.assert:
     that:
       - item.stat.exists
@@ -139,6 +144,36 @@
     group: root
     mode: "0644"
   notify: restart vpn node agent
+
+- name: Preview agent firewall commands and SSH safety boundary
+  ansible.builtin.debug:
+    msg: >-
+      {{ lookup('template', 'agent-firewall.sh.j2') }}
+      Only the configured agent port is affected. No SSH rules or global policies change.
+      An incorrect backend source IP blocks API control but leaves SSH available.
+
+- name: Install backend-only agent firewall script
+  ansible.builtin.template:
+    src: agent-firewall.sh.j2
+    dest: "{{ vpn_node_agent_config_root }}/agent-firewall.sh"
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Install persistent agent firewall service
+  ansible.builtin.template:
+    src: agent-firewall.service.j2
+    dest: /etc/systemd/system/prettylisavpn-agent-firewall.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restrict access before starting the agent even when UFW is inactive
+  ansible.builtin.systemd_service:
+    name: prettylisavpn-agent-firewall
+    enabled: true
+    state: restarted
+    daemon_reload: true
 
 - name: Allow node agent only from backend public IPv4
   ansible.builtin.command: >-

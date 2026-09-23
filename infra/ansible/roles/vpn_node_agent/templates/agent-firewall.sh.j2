@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+# An explicit deny also protects nodes where UFW is not enabled.
+iptables -C INPUT -d {{ vpn_node_agent_bind_ipv4 }} -p tcp --dport {{ vpn_node_agent_port }} -j DROP 2>/dev/null || iptables -I INPUT 1 -d {{ vpn_node_agent_bind_ipv4 }} -p tcp --dport {{ vpn_node_agent_port }} -j DROP
+iptables -C INPUT -s {{ vpn_node_agent_backend_ipv4_cidr }} -d {{ vpn_node_agent_bind_ipv4 }} -p tcp --dport {{ vpn_node_agent_port }} -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -s {{ vpn_node_agent_backend_ipv4_cidr }} -d {{ vpn_node_agent_bind_ipv4 }} -p tcp --dport {{ vpn_node_agent_port }} -j ACCEPT

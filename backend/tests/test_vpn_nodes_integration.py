@@ -190,3 +190,33 @@ def test_schema_has_no_private_key_or_provider_token_columns():
     assert "wireguard_private_key" not in column_names
     assert "provider_token" not in column_names
     assert "digitalocean_token" not in column_names
+
+
+async def test_deployed_profile_evidence_round_trip():
+    from test_profile_deployment import sample
+
+    postgres = Postgres(Settings())
+    node = make_node()
+    profile = sample(node, node.created_at)
+    node = replace(node, deployed_profiles=(profile,))
+    try:
+        async with postgres.session() as session:
+            repository = VpnNodeRepository(session)
+            await repository.add(node)
+            await session.commit()
+            loaded = await repository.get(node.id)
+            assert loaded is not None
+            assert loaded.verified_profiles(node.created_at) == (profile,)
+            failed = profile.model_copy(update={"enabled": False})
+            await repository.update_health(
+                node.id, VpnNodeHealthStatus.UNHEALTHY, node.created_at, None
+            )
+            await repository.update_deployed_profiles(replace(loaded, deployed_profiles=(failed,)))
+            await session.commit()
+            loaded = await repository.get(node.id)
+            assert loaded is not None
+            assert loaded.verified_profiles(node.created_at) == ()
+            assert loaded.health_status is VpnNodeHealthStatus.UNHEALTHY
+    finally:
+        await delete_nodes(postgres, node.id)
+        await postgres.close()
