@@ -69,6 +69,15 @@ certificates and a root-only bundle at `/etc/prettylisa-profiles/test-client`.
 The CA private key and server private keys are never included in that bundle.
 They are not an account credential issuance or renewal system. Move production
 CA signing off-node and implement renewal/revocation before broader enrollment.
+From a root-owned copy of this directory on the node:
+
+```sh
+python3 bootstrap_test_pki.py nodes/netcup.json
+python3 prepare_test_client.py nodes/netcup.json
+# Use nodes/nyc.json on NYC. After testing, remove only this test WireGuard peer:
+wg pubkey < /etc/prettylisa-profiles/test-client/wireguard.key | xargs -r -I peerkey wg set wg0 peer peerkey remove
+```
+
 NYC uses the optional bounded `vpn_profiles_swap_mb: 512` because package setup
 exhausted its 512 MB RAM; the default does not allocate swap.
 

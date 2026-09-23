@@ -40,6 +40,8 @@ Only enabled profile listeners receive new rules. Existing NYC policies remain.
 Netcup retains its previous host policy; TCP/8443 has an explicit backend-only
 allow followed by deny, persisted by `prettylisavpn-agent-firewall.service`.
 Agent mTLS and token authentication are both required. SSH/22 stays available.
+An actual TCP connection from NYC to Netcup:8443 timed out while backend mTLS
+requests succeeded, confirming the source restriction from a non-backend host.
 
 Per tunnel: `ip_forward=1`, source-subnet forwarding to eth0, established return
 forwarding, MASQUERADE on eth0 and INPUT denial from the tunnel to node services.
@@ -79,6 +81,8 @@ upgrading or matching local configuration; Netcup clients must reconnect because
 the reset replaced its WireGuard key. This changes no node ranking or fallback.
 The imported live catalog was read back from the backend:
 [capability audit](reports/backend-capabilities-20260923.jsonl).
+The deployed session projection was checked separately:
+[session candidate audit](reports/backend-session-candidates-20260923.jsonl).
 
 ## G. Repeatable manual verification
 
@@ -143,6 +147,7 @@ Retest changes/incidents; no external-test scheduler is installed.
   egress and successful handshake with no Internet. Ruff passed.
 * Go: race-enabled unit tests and vet passed; actual Linux TUN descriptor test
   passed in an isolated NET_ADMIN container. Local MASQUE forwarding also passed.
+* Windows client protocol/profile/WireGuard bridge regression tests: 54 passed.
 * Ansible profile and agent playbook syntax passed; real deployment completed on
   both nodes. CI separately builds the standalone test image and tests Linux TUN.
 * External records: [NYC](reports/nyc-20260923.jsonl) at 09:54 UTC and
@@ -154,6 +159,13 @@ Retest changes/incidents; no external-test scheduler is installed.
 Earlier failed attempts remain in dated reports. They were not counted as
 working; final independent retries passed after fixes. The API host's Internet
 path was never substituted for a successful VPN path.
+
+After verification, the temporary WireGuard peers and external/local test
+containers were removed, including the disposable local PKI volume. All deployed
+VPN services remained active. Root-only node test bundles are retained for
+repeatable operator tests; `prepare_test_client.py` reinstalls the temporary peer
+after checking address conflicts. No client private key remains on the API test
+host outside the removed containers.
 
 ## J. Unsupported/unverified combinations and remaining work
 
