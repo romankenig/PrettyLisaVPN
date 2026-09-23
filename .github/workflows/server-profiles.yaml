@@ -25,10 +25,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          version: "0.12.9"
           enable-cache: true
-      - run: uv sync --project backend --all-groups --locked
+          cache-dependency-glob: "backend/uv.lock"
+      - run: uv sync --project backend --all-groups --frozen
       - name: Python validation and evidence tests
         run: |
           backend/.venv/bin/ruff check server-profiles
