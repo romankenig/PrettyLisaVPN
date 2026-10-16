@@ -60,3 +60,14 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 ## Формат последующих записей
 
 Дата и commit; платформа; запрос владельца; что изменено; экраны/состояния; проверки; ссылка на скриншоты/сборку; будущая работа бэкенда; следующий шаг.
+
+## Windows UI review через GitHub Actions — 2026-10-16
+
+- Ветка: `codex/windows-ui-review`.
+- Добавлен `.github/workflows/windows-ui-review.yml`: Windows 2022, Node 24, pnpm из package.json, закреплённый Rust из rust-toolchain.toml, typecheck/lint/tests, native debug build.
+- `apps/windows/scripts/ci/mock-ui-api.py` — изолированные loopback fixtures; реальные backend/VPN не используются. Создание VPN-сессий и изменение устройств запрещены.
+- `apps/windows/scripts/ci/capture-windows-ui.cjs` — автоматизация реального WebView2 собранного Tauri-клиента через CDP. Пять экранов плюс валидация email и подтверждение отзыва устройства. Скриншоты содержимого WebView, без рамки Windows; Home снимается целиком с прокруткой.
+- Артефакт `windows-ui-review` хранится 14 дней: PNG, README с ограничениями, диагностический лог, UI review exe. Это debug-сборка с локальным API, не production VPN и не установщик. WireGuard DLL, подпись и упаковка не добавлены.
+- Проверки локально: синтаксис Node, компиляция Python, формы fixtures и запрет VPN/изменений устройств прошли. Полный сетевой self-test, frontend checks и native build должны пройти на Windows runner.
+- Результат Actions пока не подтверждён. Не считать скриншоты или exe полученными, пока артефакт не создан и не проверен.
+- UI, native product code, backend и другие платформы не изменены. Новых требований к backend нет.
