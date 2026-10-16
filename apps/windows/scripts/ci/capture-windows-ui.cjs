@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-require-imports: "off" */
-/* global console, process, setTimeout, URL, fetch, AbortSignal */
+/* global console, process, setTimeout, URL, fetch, AbortSignal, require, document */
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
@@ -25,6 +25,7 @@ fs.writeFileSync(
     "No installer or code signing is included.",
   ].join("\n") + "\n",
 );
+fs.copyFileSync("scripts/ci/mock-ui-api.py", path.join(output, "mock-ui-api.py"));
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
 const api = spawn("python", ["scripts/ci/mock-ui-api.py"], {
   stdio: ["ignore", log, log],
