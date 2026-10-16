@@ -57,11 +57,12 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 if ($handle -eq [IntPtr]::Zero) { throw "Native application window not found" }
 
 $style = [ReviewWindow]::GetWindowLong($handle, -16)
-# Tao can retain invisible caption/frame bits for shadow and hit testing.
-# The absence of a maximize action and the fixed min/max constraints are intentional.
+# Shadow is disabled so the fixed custom canvas has no residual native border.
 Write-Output ("Native window style: 0x{0:X8}" -f $style)
-if (($style -band 0x00010000) -ne 0) {
-    throw "Fixed window must not expose a maximize control"
+if (($style -band 0x00C00000) -ne 0 -or
+    ($style -band 0x00010000) -ne 0 -or
+    ($style -band 0x00040000) -ne 0) {
+    throw "Custom window must not retain native caption, maximize or resize chrome"
 }
 $region = [ReviewWindow]::CreateRectRgn(0, 0, 0, 0)
 try {
