@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-require-imports: "off" */
-/* global console, process, setTimeout, URL, fetch, AbortSignal, require, document */
+/* global console, process, setTimeout, URL, fetch, AbortSignal, require, document, window */
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
@@ -16,8 +16,8 @@ fs.writeFileSync(
     "Commit: " + (process.env.GITHUB_SHA || "local"),
     "Debug Tauri executable; captured through its real WebView2 on Windows.",
     "Account, devices and countries are loopback-only synthetic fixtures.",
-    "Screenshots capture WebView content, without the Windows title bar.",
-    "Home uses full-page capture so content below the window is visible.",
+    "Primary PNGs capture the real native window, including the Windows title bar.",
+    "Extra *-content.png files capture complete scrollable WebView content.",
     "No VPN connection was started or verified.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
@@ -48,9 +48,24 @@ async function waitForUrl(url) {
   throw new Error("Timed out waiting for " + url);
 }
 
+function nativeWindow(action, name) {
+  const result = spawnSync("pwsh", [
+    "-NoProfile", "-File", path.resolve("scripts/ci/capture-native-window.ps1"),
+    "-AppProcessId", String(app.pid),
+    "-OutputPath", path.join(output, name + ".png"),
+    "-Action", action,
+  ], { encoding: "utf8", timeout: 20000 });
+  if (result.error || result.status !== 0) {
+    throw new Error("Native window " + action + " failed: " + (result.stderr || result.error));
+  }
+}
+
 async function screenshot(name) {
   await page.evaluate(() => document.fonts.ready);
-  await page.screenshot({ path: path.join(output, name + ".png"), fullPage: true });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await delay(300);
+  nativeWindow("Capture", name);
+  await page.screenshot({ path: path.join(output, name + "-content.png"), fullPage: true });
 }
 
 async function main() {
@@ -58,7 +73,7 @@ async function main() {
   app = spawn(executable, [], {
     env: {
       ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222",
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222 --disable-gpu",
       WEBVIEW2_USER_DATA_FOLDER: path.join(output, "temporary-webview-profile"),
     },
     stdio: ["ignore", log, log],
@@ -111,9 +126,20 @@ async function main() {
   await page.getByRole("heading", { name: "о приложении", exact: true }).waitFor();
   await page.getByText("0.1.0", { exact: true }).waitFor();
   await screenshot("07-about");
+  nativeWindow("Maximize", "08-about-maximized");
+  nativeWindow("Restore", "09-about-restored");
+  nativeWindow("Minimize", "unused");
+  nativeWindow("Restore", "10-about-after-minimize");
+  nativeWindow("Close", "unused");
+  for (let attempt = 0; attempt < 50 && app.exitCode === null; attempt++) {
+    await delay(100);
+  }
+  if (app.exitCode === null) throw new Error("Native Close did not exit the app");
   fs.writeFileSync(path.join(output, "capture-result.json"), JSON.stringify({
     status: "passed",
     nativeWindows: true,
+    nativeWindowChrome: true,
+    windowControlsVerified: ["minimize", "maximize", "restore", "close"],
     syntheticApi: true,
     vpnTested: false,
     screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")),
