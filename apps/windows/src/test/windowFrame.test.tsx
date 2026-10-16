@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { WindowFrame } from "../ui/WindowFrame";
+import lockIcon from "../assets/lock.svg";
 
 const controls = vi.hoisted(() => ({
   minimize: vi.fn<() => Promise<void>>(),
@@ -48,6 +49,6 @@ it("places the original lock and product name in the top header", () => {
   const brand = screen.getByText("PrettyLisaVPN");
   expect(brand.closest("header")).not.toBeNull();
   const image = brand.parentElement?.querySelector("img");
-  expect(image).toHaveAttribute("src", expect.stringContaining("lock.svg"));
+  expect(image).toHaveAttribute("src", lockIcon);
   expect(image).toHaveAttribute("alt", "");
 });
