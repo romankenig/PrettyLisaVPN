@@ -2,12 +2,16 @@
 /* global console, process, setTimeout, URL, fetch, AbortSignal, require, document, window, getComputedStyle */
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 const { spawn, spawnSync } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
 const frontendVersion = JSON.parse(
   fs.readFileSync("package.json", "utf8"),
 ).version;
+const webviewProfile = fs.mkdtempSync(
+  path.join(os.tmpdir(), "prettylisavpn-ui-"),
+);
 const output = path.resolve("artifacts/ui-review");
 fs.mkdirSync(output, { recursive: true });
 const executable = path.resolve(
@@ -146,7 +150,7 @@ async function main() {
       ...process.env,
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
         "--remote-debugging-port=9222 --disable-gpu",
-      WEBVIEW2_USER_DATA_FOLDER: path.join(output, "temporary-webview-profile"),
+      WEBVIEW2_USER_DATA_FOLDER: webviewProfile,
     },
     stdio: ["ignore", log, log],
   });
@@ -408,9 +412,16 @@ main()
         });
     }
     fs.closeSync(log);
-    fs.rmSync(path.join(output, "temporary-webview-profile"), {
-      recursive: true,
-      force: true,
-      maxRetries: 3,
-    });
+    try {
+      fs.rmSync(webviewProfile, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 500,
+      });
+    } catch {
+      // Windows may retain a WebView2 handle after the application exits.
+      // This isolated temporary directory is never part of the artifact.
+      console.warn("Temporary WebView2 profile cleanup deferred to the runner.");
+    }
   });
