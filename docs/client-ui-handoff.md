@@ -144,3 +144,14 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Windows capture проверяет загрузку Rubik весов 400/600/700 и применение к тексту, заголовкам, кнопкам, полям и навигации на каждом из семи состояний; существующие проверки canvas overflow и оконных действий сохранены.
 - Локальный git/network недоступен из-за соединения с proxy:8080; изменение передано через GitHub connector. Полную Windows-сборку, frontend checks и новые снимки должен подтвердить новый Actions run. До его успеха не считать Rubik проверенным в native Windows.
 - Бэкенд, VPN-логика и другие платформы не менялись.
+
+### Подтверждённый результат Rubik
+
+- Проверенный commit: `131c2e937851ae05a14142e74a7e2e024be7403e`.
+- Успешный Windows run: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38917998130.
+- TypeScript, ESLint, все 199 frontend-тестов, Prettier/rustfmt, native Rust/Tauri build, loopback self-test и Windows capture прошли.
+- Rubik 400/600/700 загружается из сборки и применяется к текстовым элементам на семи экранах/состояниях. Из проверки font-family исключены native radio/checkbox: у них нет текста и используется системный стиль контрола. Первый прогон остановился на такой радиокнопке; проверка исправлена без изменения продуктового UI.
+- Пройдены проверки переполнения общего canvas, округлой native region и custom minimize/restore/close. Получены девять PNG полного окна и семь снимков WebView.
+- Визуально просмотрены login, OTP, Home, devices, подтверждение отзыва и About; обрезанного содержимого не обнаружено.
+- Актуальные скриншоты, debug UI exe и локальные fixtures: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38917998130/artifacts/12052444795 (до 2026-10-30).
+- Пункт 4 завершён. PR #1 остаётся открытым; следующая UI-задача определяется владельцем. Сборка предназначена для проверки интерфейса с синтетическими данными; настоящее VPN-подключение этим прогоном не проверялось.
