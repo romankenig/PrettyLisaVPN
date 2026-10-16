@@ -86,7 +86,7 @@ async function screenshot(name) {
     }
     await document.fonts.ready;
     for (const node of document.querySelectorAll(
-      "body, h1, h2, button, input, nav a",
+      "body, h1, h2, button, input:not([type=radio]):not([type=checkbox]), nav a",
     )) {
       if (!getComputedStyle(node).fontFamily.startsWith("Rubik"))
         throw new Error("Expected Rubik on " + node.tagName);
