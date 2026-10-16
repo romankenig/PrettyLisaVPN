@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-require-imports: "off" */
 /* global console, process, setTimeout, URL, fetch, AbortSignal */
 const fs = require("node:fs");
 const path = require("node:path");
