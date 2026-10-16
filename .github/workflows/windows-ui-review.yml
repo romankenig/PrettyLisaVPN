@@ -24,6 +24,7 @@ jobs:
         working-directory: apps/windows
         shell: pwsh
     env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
     steps:
@@ -49,7 +50,7 @@ jobs:
         run: rustup show
       - name: Check changed source formatting
         run: |
-          $formatSources = @("src/main.tsx", "src/ui/App.tsx", "src/ui/NavigationIcon.tsx", "src/ui/Settings.tsx", "src/ui/useVersions.ts", "src/test/home.test.tsx", "src/test/foundation.test.tsx", "src/test/otpVerification.test.tsx", "src/ui/WindowFrame.tsx", "src/ui/Home.tsx", "src/ui/styles.css", "src/test/windowFrame.test.tsx", "src-tauri/tauri.conf.json", "src-tauri/capabilities/main.json", "scripts/ci/capture-windows-ui.cjs")
+          $formatSources = @("src/main.tsx", "src/ui/App.tsx", "src/ui/NavigationIcon.tsx", "src/ui/Settings.tsx", "src/ui/useVersions.ts", "src/test/home.test.tsx", "src/ui/Login.tsx", "src/test/login.test.tsx", "src/test/foundation.test.tsx", "src/test/otpVerification.test.tsx", "src/ui/WindowFrame.tsx", "src/ui/Home.tsx", "src/ui/styles.css", "src/test/windowFrame.test.tsx", "src-tauri/tauri.conf.json", "src-tauri/capabilities/main.json", "scripts/ci/capture-windows-ui.cjs")
           pnpm exec prettier --check --end-of-line auto @formatSources
           if ($LASTEXITCODE -ne 0) {
             pnpm exec prettier --write --end-of-line auto @formatSources
@@ -62,7 +63,10 @@ jobs:
         with:
           workspaces: apps/windows/src-tauri
       - name: Build native UI review executable
-        run: pnpm tauri build --debug --no-bundle
+        run: |
+          cargo metadata --locked --offline --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm tauri build --debug --no-bundle
       - name: Install screenshot tooling separately
         run: |
           $tools = Join-Path $env:RUNNER_TEMP "windows-ui-tools"

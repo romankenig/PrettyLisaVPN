@@ -49,11 +49,8 @@ export function Login() {
   const submitting = state.phase === "submitting";
   return (
     <section className="auth-page" aria-labelledby="login-title">
-      <p className="eyebrow">без пароля</p>
       <h1 id="login-title">войти по email</h1>
-      <p className="auth-intro">
-        Если на этот адрес можно доставить письмо, мы отправим одноразовый код.
-      </p>
+      <p className="auth-intro">отправим одноразовый код</p>
       <form
         className="auth-card"
         onSubmit={(event) => void submit(event)}
@@ -64,6 +61,7 @@ export function Login() {
           id="login-email"
           name="email"
           type="email"
+          placeholder="example@email.com"
           inputMode="email"
           autoComplete="email"
           spellCheck={false}

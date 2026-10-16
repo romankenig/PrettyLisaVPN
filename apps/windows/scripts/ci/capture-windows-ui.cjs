@@ -5,6 +5,7 @@ const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
+const frontendVersion = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
 const output = path.resolve("artifacts/ui-review");
 fs.mkdirSync(output, { recursive: true });
 const executable = path.resolve(
@@ -16,6 +17,11 @@ fs.writeFileSync(
   [
     "PrettyLisaVPN native Windows UI review",
     "Commit: " + (process.env.GITHUB_SHA || "local"),
+    "Source head: " + (process.env.PR_HEAD_SHA || "local"),
+    "Frontend version: " + frontendVersion,
+    "Channel: preview",
+    "Run: " + (process.env.GITHUB_RUN_ID || "local"),
+    "Attempt: " + (process.env.GITHUB_RUN_ATTEMPT || "local"),
     "Debug Tauri executable; captured through its real WebView2 on Windows.",
     "Account, devices and countries are loopback-only synthetic fixtures.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
@@ -158,7 +164,7 @@ async function main() {
   await page.getByRole("heading", { name: "войти по email" }).waitFor();
   await page
     .locator(".sidebar-versions")
-    .getByText("0.1.0", { exact: true })
+    .getByText(frontendVersion, { exact: true })
     .waitFor();
   await page
     .locator(".sidebar-versions")
@@ -184,7 +190,45 @@ async function main() {
   await logo.waitFor();
   if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
     throw new Error("Original lock icon did not load");
+  const navItems = page.getByRole("navigation").getByRole("link");
+  for (const item of await navItems.all()) {
+    if ((await item.getAttribute("aria-disabled")) !== "true" ||
+        (await item.getAttribute("href")) !== null)
+      throw new Error("Authentication navigation must be disabled");
+    await item.click({ force: true });
+  }
+  await page.getByRole("heading", { name: "войти по email" }).waitFor();
+  await page.getByText("отправим одноразовый код", { exact: true }).waitFor();
+  if (await page.getByText("без пароля", { exact: true }).count())
+    throw new Error("Passwordless eyebrow must be removed");
+  const emailField = page.getByPlaceholder("example@email.com");
+  const appearance = await page.evaluate(() => {
+    const input = document.querySelector("#login-email");
+    const icon = document.querySelector(".window-titlebar img");
+    const version = document.querySelector(".sidebar-versions dt");
+    const alpha = (color) => {
+      return color.startsWith("rgba(")
+        ? Number(color.slice(color.lastIndexOf(",") + 1, -1))
+        : 1;
+    };
+    return {
+      placeholderAlpha: alpha(getComputedStyle(input, "::placeholder").color),
+      inputAlpha: alpha(getComputedStyle(input).color),
+      iconBackgroundAlpha: alpha(getComputedStyle(icon).backgroundColor),
+      versionAlpha: alpha(getComputedStyle(version).color),
+      lowercase: getComputedStyle(document.body).textTransform === "lowercase",
+    };
+  });
+  if (appearance.placeholderAlpha > 0.3 || appearance.inputAlpha !== 1 ||
+      appearance.iconBackgroundAlpha !== 0 || appearance.versionAlpha >= 1 ||
+      !appearance.lowercase)
+    throw new Error("Unexpected login appearance: " + JSON.stringify(appearance));
   await screenshot("01-login");
+  await emailField.fill("User@Example.COM");
+  if ((await emailField.inputValue()) !== "User@Example.COM")
+    throw new Error("Input must preserve the entered value");
+  await screenshot("01b-login-filled");
+  await emailField.fill("");
 
   await page.getByRole("button", { name: "продолжить", exact: true }).click();
   await page.getByText("Введите корректный email.", { exact: true }).waitFor();
@@ -208,6 +252,11 @@ async function main() {
   await page
     .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
+  for (const item of await page.getByRole("navigation").getByRole("link").all()) {
+    if (!(await item.getAttribute("href")) ||
+        (await item.getAttribute("aria-disabled")) === "true")
+      throw new Error("Authenticated navigation must be enabled");
+  }
   await screenshot("04-home");
 
   await page
@@ -243,7 +292,7 @@ async function main() {
   await page
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
-  await page.locator("main").getByText("0.1.0", { exact: true }).waitFor();
+  await page.locator("main").getByText(frontendVersion, { exact: true }).waitFor();
   await screenshot("08-about");
   await page
     .getByRole("navigation")
@@ -277,6 +326,8 @@ async function main() {
           "fixed size",
           "native rounded region",
         ],
+        loginAppearanceVerified: true,
+        authNavigationDisabledVerified: true,
         iconNavigationVerified: true,
         settingsDevicesAndLogoutVerified: true,
         backendVersionFallbackVerified: true,

@@ -27,6 +27,7 @@
 }
 body {
   margin: 0;
+  text-transform: lowercase;
   background: var(--color-mercury);
 }
 .shell {
@@ -587,9 +588,6 @@ body,
 .window-titlebar__drag img {
   width: 36px;
   height: 36px;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--color-mercury);
 }
 .window-titlebar__drag img,
 .window-titlebar__drag span {
@@ -656,12 +654,17 @@ nav {
   justify-items: center;
   gap: 14px;
 }
-.sidebar nav a {
+.sidebar nav a,
+.sidebar nav .nav-disabled {
   display: grid;
   place-items: center;
   width: 52px;
   height: 52px;
   padding: 0;
+}
+.sidebar .nav-disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 .sidebar-versions {
   display: grid;
@@ -672,14 +675,14 @@ nav {
 }
 .sidebar-versions dt {
   margin: 0 0 2px;
-  color: var(--color-mercury);
+  color: rgb(228 228 228 / 60%);
 }
 .sidebar-versions dd {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-mercury);
+  color: rgb(228 228 228 / 60%);
 }
 main {
   min-width: 0;
@@ -955,4 +958,18 @@ h1 {
 .settings-devices > .devices-page {
   flex: 1;
   height: auto;
+}
+
+/* Preserve entered and server-supplied data while the surrounding UI is lowercase. */
+input,
+.verified-email,
+.account-summary strong[title],
+.device-card h2,
+.sidebar-versions dd,
+main dd {
+  text-transform: none;
+}
+.auth-card input::placeholder {
+  color: rgb(1 1 1 / 24%);
+  opacity: 1;
 }

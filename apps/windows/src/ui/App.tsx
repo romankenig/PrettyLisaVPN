@@ -1,4 +1,10 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import {
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import { useApplication } from "../state/application";
 import { Home } from "./Home";
 import { Login } from "./Login";
@@ -25,19 +31,41 @@ function About({ version }: { readonly version: string }) {
 
 export function App() {
   const versions = useVersions();
+  const { pathname } = useLocation();
+  const authenticating = pathname === "/login" || pathname === "/auth/verify-otp";
+  const items = [
+    { to: "/", label: "главная", icon: "home" },
+    { to: "/settings", label: "настройки", icon: "settings" },
+    { to: "/about", label: "о приложении", icon: "about" },
+  ] as const;
   return (
     <div className="shell">
       <aside className="sidebar">
         <nav aria-label="основная навигация">
-          <NavLink to="/" end aria-label="главная" title="главная">
-            <NavigationIcon name="home" />
-          </NavLink>
-          <NavLink to="/settings" aria-label="настройки" title="настройки">
-            <NavigationIcon name="settings" />
-          </NavLink>
-          <NavLink to="/about" aria-label="о приложении" title="о приложении">
-            <NavigationIcon name="about" />
-          </NavLink>
+          {items.map((item) =>
+            authenticating ? (
+              <span
+                key={item.to}
+                className="nav-disabled"
+                role="link"
+                aria-disabled="true"
+                aria-label={item.label}
+                title={item.label}
+              >
+                <NavigationIcon name={item.icon} />
+              </span>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                aria-label={item.label}
+                title={item.label}
+              >
+                <NavigationIcon name={item.icon} />
+              </NavLink>
+            ),
+          )}
         </nav>
         <dl className="sidebar-versions" aria-label="версии приложения">
           <div>
