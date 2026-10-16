@@ -79,7 +79,7 @@ function nativeWindow(action, name) {
       "-Action",
       action,
     ],
-    { encoding: "utf8", timeout: 20000 },
+    { encoding: "utf8", timeout: 60000 },
   );
   if (result.error || result.status !== 0) {
     throw new Error(

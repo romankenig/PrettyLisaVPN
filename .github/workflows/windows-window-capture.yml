@@ -5,6 +5,7 @@ on:
     branches: [codex/windows-ui-review]
     paths:
       - ".github/workflows/windows-window-capture.yml"
+      - ".github/workflows/windows-ui-review.yml"
   workflow_dispatch:
 
 permissions:

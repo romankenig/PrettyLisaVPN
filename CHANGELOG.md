@@ -35,6 +35,8 @@
 - Fixed: Windows window capture больше не запускает сценарий нового интерфейса
   на старом exe из фиксированного run; сборка и capture используют общий workflow
   текущего commit.
+- Fixed: ограниченный native PowerShell timeout увеличен с 20 до 60 секунд;
+  повторный запуск workflow может перезаписать одноимённый артефакт.
 - Added: обязательная проверка всех Actions events и финальных jobs последнего
   remote HEAD, включая проверки после docs commit.
 

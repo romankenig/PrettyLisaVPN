@@ -221,3 +221,5 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Windows 0.2.0 и backend 0.1.0 source version unchanged: изменения только CI/документации, нового функционала приложения нет.
 - Локальная проверка: синтаксис YAML, reusable linkage, отсутствие stale artifact, сохранение обязательных frontend/native/capture/upload шагов.
 - Итоговые run IDs/ссылки и статусы фиксируются в описании PR и финальном ответе после завершения всех запусков последнего commit; дополнительный docs push ради этих ссылок не выполняется.
+
+- Полная проверка первого исправленного HEAD выявила дополнительный timeout PowerShell native helper в основном Windows run 38942299970. Лимит поднят с 20 до 60 секунд без ослабления native assertions. upload-artifact overwrite=true обеспечивает повторяемость попыток. Вспомогательный workflow проверяется также при изменении общего workflow-файла.

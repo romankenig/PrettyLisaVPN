@@ -84,6 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-ui-review
+          overwrite: true
           path: |
             apps/windows/artifacts/ui-review/
           if-no-files-found: warn
