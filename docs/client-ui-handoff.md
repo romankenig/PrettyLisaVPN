@@ -166,3 +166,14 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Будущая интеграция backend: проверить доступность GET /version в реальном развёртывании и корректность application_version для текущего релиза (контракт уже есть в клиенте). До этого показывается «недоступна», без выдуманной версии. В loopback fixture endpoint намеренно не добавлен: Windows capture проверяет этот fallback. Сам backend в этой задаче не меняется.
 - Добавлены проверки порядка иконок, вложенной навигации, версий при успехе/ошибке и выхода из настроек. Native capture проходит настройки → устройства → подтверждение → About → выход → окно входа и оконные действия.
 - Результат новой Windows-сборки и скриншотов ещё нужно подтвердить. До успеха нового Actions run не считать эти изменения проверенными на Windows.
+
+### Подтверждённый результат панелей и настроек
+
+- Проверенный product/test commit: `629e73aabddca8b13409150155121ade6f596ce5`.
+- Успешный Windows run: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38925995304.
+- TypeScript, ESLint, 204 frontend-теста, Prettier/rustfmt, Rust/Tauri build, loopback self-test и native capture прошли.
+- Подтверждены загрузка исходного замка, порядок иконок Home/Settings/About без видимого текста, aria-current настроек внутри устройств, fallback версии backend, переход в устройства и выход с возвратом на экран входа.
+- Пройдены Rubik 400/600/700, проверки общего canvas overflow, fixed-size/native rounded region, custom minimize/restore/close. Получены 11 PNG полного окна и 9 WebView PNG.
+- Визуально просмотрены login, Home, настройки, устройства, подтверждение отзыва, About и экран после выхода; обрезанного содержимого не обнаружено.
+- Актуальный архив: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38925995304/artifacts/12056339196 (до 2026-10-30). Включает скриншоты, debug UI exe и loopback fixtures, без проверки реального VPN.
+- Следующий шаг определяется владельцем. Будущая backend-задача сохраняется: подтвердить доступность и актуальность application_version из GET /version в реальном развёртывании. На тестовых снимках backend недоступен намеренно; реальная версия не подставляется.
