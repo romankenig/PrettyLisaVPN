@@ -112,3 +112,16 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Новый шрифт НЕ подбирать и НЕ менять до отдельного запроса разрешения и явного согласия владельца.
 - Бэкенд и VPN-логика не меняются.
 - Проверка: тесты WindowFrame, frontend typecheck/lint/tests, native build и Windows capture с реальными кликами новых кнопок, проверкой native region и отсутствия переполнения. Результат нового Actions run ещё нужно подтвердить; предыдущие артефакты не показывают новый UI.
+
+### Подтверждённый итог пунктов 1–3
+
+- Проверенный product commit: `254c8eb2a9af6e0820ce0590ce641bb3cda3e554`.
+- Успешный run: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38907339688.
+- TypeScript, ESLint, 199 frontend-тестов, Prettier и rustfmt для изменённых исходников, native Rust/Tauri debug build и Windows capture прошли.
+- Визуально просмотрены финальные login, Home и devices. Системная кромка удалена отключением shadow: тень Tao добавляла скрытые native insets и лишние пиксели вокруг custom canvas.
+- PNG окна имеют размер 960 × 640. Общая прокрутка отсутствует; списки стран и устройств имеют отдельные ограниченные области прокрутки.
+- Проверены реальная округлая HWND region, отсутствие maximize/resize styles, custom minimize, restore и custom close.
+- Получены девять PNG полного окна, включая валидацию входа, OTP, подтверждение отзыва устройства и окно после восстановления. Дополнительно сохранены семь снимков WebView.
+- Актуальный архив со скриншотами, debug UI exe и локальными fixtures: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38907339688/artifacts/12048398645 (до 2026-10-30).
+- Это UI review с синтетическими данными; реальное VPN-подключение данным прогоном не проверяется.
+- Пункт 4 НЕ начат: текущие font-family сохранены. Следующее действие — запросить у владельца отдельное разрешение на подбор шрифта по логотипу.
