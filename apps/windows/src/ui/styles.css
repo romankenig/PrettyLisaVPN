@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Rubik";
+  src: url("/fonts/rubik/Rubik.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+}
+
 :root {
   --color-black: #010101;
   --color-mercury: #e4e4e4;
@@ -9,7 +17,7 @@
   --color-viking: #51d6ca;
   --color-heliotrope: #ac73ff;
   --color-persian-red: #c82b28;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Rubik", "Segoe UI", sans-serif;
   color: var(--color-black);
   background: var(--color-purple-heart);
   font-synthesis: none;
@@ -264,7 +272,8 @@ dd {
 }
 .otp-input {
   max-width: 230px;
-  font-family: "Cascadia Mono", "Consolas", monospace !important;
+  font-family: inherit !important;
+  font-variant-numeric: tabular-nums;
   font-size: 24px !important;
   letter-spacing: 8px;
 }

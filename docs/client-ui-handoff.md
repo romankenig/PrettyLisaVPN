@@ -135,3 +135,12 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Источники: `google/fonts/ofl/nunito/Nunito[wght].ttf`, `google/fonts/ofl/rubik/Rubik[wght].ttf`, `google/fonts/ofl/manrope/Manrope[wght].ttf`.
 - Исходные blob SHA: Nunito `2ec1f4b0676c83ef33049db87b311171699e9192`, Rubik `a59aeb632df494345a542697c357f608875481b0`, Manrope `75274da58537d6123b14f2cd0c355ad4681fc2b3`.
 - Сравнение показано владельцу прямо в чате. Приложение пока использует прежние шрифты; следующий шаг — выбор владельцем варианта 1/2/3, затем локальное включение выбранного шрифта и проверка всех экранов Windows на переполнение.
+
+## Выбран Rubik — 2026-10-16
+
+- Владелец выбрал Rubik (вариант 2). Подключён локальный variable TTF 300–900 для Windows UI, включая поле OTP; логотип не меняется.
+- Файл взят без изменений из `google/fonts/ofl/rubik/Rubik[wght].ttf`, blob `a59aeb632df494345a542697c357f608875481b0`. Лицензия SIL OFL 1.1 включена рядом в `public/fonts/rubik/OFL.txt` и попадает в сборку.
+- Локально проверены cmap полного русского алфавита, Ё/ё и цифр, ось wght 300–900. Сетевой запрос к Google Fonts приложению не нужен.
+- Windows capture проверяет загрузку Rubik весов 400/600/700 и применение к тексту, заголовкам, кнопкам, полям и навигации на каждом из семи состояний; существующие проверки canvas overflow и оконных действий сохранены.
+- Локальный git/network недоступен из-за соединения с proxy:8080; изменение передано через GitHub connector. Полную Windows-сборку, frontend checks и новые снимки должен подтвердить новый Actions run. До его успеха не считать Rubik проверенным в native Windows.
+- Бэкенд, VPN-логика и другие платформы не менялись.

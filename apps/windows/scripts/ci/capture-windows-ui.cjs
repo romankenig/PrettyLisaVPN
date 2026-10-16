@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-require-imports: "off" */
-/* global console, process, setTimeout, URL, fetch, AbortSignal, require, document, window */
+/* global console, process, setTimeout, URL, fetch, AbortSignal, require, document, window, getComputedStyle */
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
@@ -77,7 +77,21 @@ function nativeWindow(action, name) {
 }
 
 async function screenshot(name) {
-  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(async () => {
+    const sample = "Съешь ещё этих мягких французских булок 0123456789";
+    for (const weight of [400, 600, 700]) {
+      const faces = await document.fonts.load(weight + ' 16px "Rubik"', sample);
+      if (!faces.length || faces.some((face) => face.status !== "loaded"))
+        throw new Error("Bundled Rubik failed to load at weight " + weight);
+    }
+    await document.fonts.ready;
+    for (const node of document.querySelectorAll(
+      "body, h1, h2, button, input, nav a",
+    )) {
+      if (!getComputedStyle(node).fontFamily.startsWith("Rubik"))
+        throw new Error("Expected Rubik on " + node.tagName);
+    }
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
   await delay(300);
   const layout = await page.evaluate(() => {
@@ -218,6 +232,8 @@ async function main() {
           "fixed size",
           "native rounded region",
         ],
+        fontFamily: "Rubik",
+        fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
         screenshots: fs
