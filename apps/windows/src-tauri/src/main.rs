@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod window_frame;
 mod debug_log;
 mod installation_id;
 mod internet_verification;
@@ -16,6 +17,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
+            window_frame::configure(app)?;
             let app_config_dir = app.path().app_config_dir()?;
             let installation_id = installation_id::InstallationIdState::load(&app_config_dir)?;
             app.manage(installation_id);

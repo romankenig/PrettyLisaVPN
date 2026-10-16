@@ -148,6 +148,7 @@ export function Home() {
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
 
+      <div className="home-workspace">
       <ConnectionLocationSelector
         selection={locationSelection}
         onSelectionChange={setLocationSelection}
@@ -221,6 +222,7 @@ export function Home() {
         ) : null}
       </div>
 
+      </div>
       <div className="home-actions">
         <Link className="secondary-link" to="/devices">
           устройства

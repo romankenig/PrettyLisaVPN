@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][int]$AppProcessId,
     [Parameter(Mandatory = $true)][string]$OutputPath,
-    [ValidateSet("Capture", "Maximize", "Restore", "Minimize", "Close")]
+    [ValidateSet("Capture", "VerifyFixed", "Restore", "Minimize", "Close", "VerifyMinimized")]
     [string]$Action = "Capture"
 )
 
@@ -13,6 +13,9 @@ using System.Runtime.InteropServices;
 public static class ReviewWindow {
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
+    [DllImport("gdi32.dll")] public static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
+    [DllImport("user32.dll")] public static extern int GetWindowRgn(IntPtr hwnd, IntPtr region);
+    [DllImport("gdi32.dll")] public static extern bool DeleteObject(IntPtr handle);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr dc, uint flags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int command);
@@ -54,17 +57,27 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 if ($handle -eq [IntPtr]::Zero) { throw "Native application window not found" }
 
 $style = [ReviewWindow]::GetWindowLong($handle, -16)
-if (($style -band 0x00020000) -eq 0 -or
-    ($style -band 0x00010000) -eq 0 -or
-    ($style -band 0x00080000) -eq 0) {
-    throw "Expected native minimize, maximize and system menu controls"
+if (($style -band 0x00C00000) -ne 0 -or
+    ($style -band 0x00010000) -ne 0 -or
+    ($style -band 0x00040000) -ne 0) {
+    throw "Expected undecorated fixed-size window without maximize or resize styles"
+}
+$region = [ReviewWindow]::CreateRectRgn(0, 0, 0, 0)
+try {
+    if ([ReviewWindow]::GetWindowRgn($handle, $region) -le 1) {
+        throw "Expected a native rounded window region"
+    }
+} finally {
+    [ReviewWindow]::DeleteObject($region) | Out-Null
 }
 
 switch ($Action) {
-    "Maximize" {
-        [ReviewWindow]::ShowWindow($handle, 3) | Out-Null
-        Start-Sleep -Milliseconds 300
-        if (-not [ReviewWindow]::IsZoomed($handle)) { throw "Maximize failed" }
+    "VerifyFixed" {
+        if ([ReviewWindow]::IsZoomed($handle)) { throw "Fixed window was maximized" }
+    }
+    "VerifyMinimized" {
+        if (-not [ReviewWindow]::IsIconic($handle)) { throw "Custom minimize did not minimize window" }
+        return
     }
     "Restore" {
         [ReviewWindow]::ShowWindow($handle, 9) | Out-Null

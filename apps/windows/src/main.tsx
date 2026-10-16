@@ -13,6 +13,7 @@ import { createDefaultVpnConnection } from "./vpn/defaultConnection";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
+import { WindowFrame } from "./ui/WindowFrame";
 import "./ui/styles.css";
 const root = createRoot(document.getElementById("root")!);
 try {
@@ -44,21 +45,23 @@ try {
         }}
       >
         <HashRouter>
+          <WindowFrame>
           <SessionRestorationGate
             restoration={sessionRestoration}
             session={session}
           >
             <App />
           </SessionRestorationGate>
+          </WindowFrame>
         </HashRouter>
       </ApplicationProvider>
     </StrictMode>,
   );
 } catch {
   root.render(
-    <main role="alert">
+    <WindowFrame><main role="alert">
       <h1>не удалось запустить PrettyLisaVPN</h1>
       <p>проверьте конфигурацию приложения.</p>
-    </main>,
+    </main></WindowFrame>,
   );
 }

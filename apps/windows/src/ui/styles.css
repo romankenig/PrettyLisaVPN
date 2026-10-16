@@ -544,19 +544,128 @@ dd {
 .devices-empty {
   margin-top: 28px;
 }
-@media (max-width: 760px) {
-  aside {
-    width: 180px;
-  }
-  main {
-    padding: 52px 28px;
-  }
-  .account-summary {
-    grid-template-columns: 1fr;
-  }
-  .device-card__heading,
-  .device-card__footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+
+/* A single fixed desktop canvas; only bounded collections may scroll. */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
+.window-frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(172 115 255 / 45%);
+  border-radius: 12px;
+  background: var(--color-christalle);
+}
+.window-titlebar {
+  display: flex;
+  flex: 0 0 42px;
+  align-items: center;
+  color: var(--color-mercury);
+  background: var(--color-christalle);
+  user-select: none;
+}
+.window-titlebar__drag {
+  flex: 1;
+  align-self: stretch;
+  padding: 11px 20px;
+  font-size: 13px;
+}
+.window-controls { display: flex; gap: 6px; padding-right: 9px; }
+.window-controls button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgb(172 115 255 / 40%);
+  border-radius: 7px;
+  color: var(--color-mercury);
+  background: rgb(172 115 255 / 14%);
+}
+.window-controls button:hover { background: var(--color-purple-heart); }
+.window-controls button:last-child:hover { background: var(--color-persian-red); }
+.window-controls svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.window-content { flex: 1; min-height: 0; overflow: hidden; }
+.window-error { position: absolute; top: 42px; right: 16px; z-index: 20;
+  max-width: 400px; padding: 12px; background: var(--color-persian-red); color: white; }
+.shell { height: 100%; min-height: 0; }
+aside { width: 196px; flex: 0 0 196px; padding: 24px 16px; }
+.brand { font-size: 21px; }
+nav { margin-top: 30px; }
+main { min-width: 0; min-height: 0; padding: 24px; overflow: hidden; }
+.eyebrow { margin: 0 0 6px; }
+h1 { margin: 0 0 14px; font-size: 30px; }
+.auth-page { max-width: 500px; margin: 24px auto 0; }
+.auth-intro { margin: 12px 0; }
+.auth-card { margin-top: 18px; padding: 22px; }
+.startup-status { height: 100%; min-height: 0; }
+.account-home { width: 100%; height: 100%; display: flex; flex-direction: column; }
+.account-home h1 { margin-bottom: 10px; }
+.account-summary { flex-shrink: 0; margin-top: 0; border-radius: 12px; }
+.account-summary div { padding: 8px 12px; gap: 3px; }
+.account-summary strong { font-size: 14px; }
+.home-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  gap: 14px;
+  margin-top: 14px;
+}
+.location-selector, .connection-card {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+}
+.location-selector { display: flex; flex-direction: column; }
+.location-selector__heading { gap: 8px; }
+.location-selector__heading h2 { margin: 4px 0 0; font-size: 18px; }
+.location-selector__heading button { padding: 6px 8px; font-size: 12px; }
+.connection-card__label { margin: 0; }
+.location-options {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin: 12px 0 0;
+  padding: 3px;
+  align-content: start;
+  gap: 8px;
+}
+.location-option { padding: 10px; gap: 8px; }
+.location-option__name { min-width: 0; overflow-wrap: anywhere; }
+.location-option__quality { min-width: 24px; font-size: 17px; }
+.connection-card { display: flex; flex-direction: column; }
+.connection-card h2 { font-size: 22px; overflow-wrap: anywhere; }
+.connection-card p { margin: 8px 0; font-size: 13px; line-height: 1.4; }
+.connection-card > button { margin-top: auto; flex-shrink: 0; }
+.connection-card .field-help { font-size: 12px; }
+.home-actions { flex-shrink: 0; margin-top: 14px; gap: 12px; }
+.home-actions button, .secondary-link { padding: 8px 14px; font-size: 14px; }
+.account-home > .logout-error { margin: 8px 0 0; font-size: 13px; }
+.availability-warning { font-size: 13px; margin-top: 8px; }
+.devices-page { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.devices-limit { margin: 0; font-size: 14px; line-height: 1.45; }
+.device-list {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-gutter: stable; align-content: start; margin-top: 16px; gap: 10px; padding: 3px;
+}
+.device-card { padding: 14px; box-shadow: none; border-radius: 12px; }
+.device-card__heading > div { min-width: 0; }
+.device-card h2 { font-size: 17px; overflow-wrap: anywhere; }
+.device-card__footer { margin-top: 10px; padding-top: 10px; }
+.revoke-button { padding: 7px 12px; font-size: 13px; }
+.revoke-confirmation {
+  position: absolute; z-index: 2; top: 50%; left: 50%; width: min(440px, 95%);
+  transform: translate(-50%, -50%); margin: 0;
+  box-shadow: 0 0 0 100vmax rgb(1 1 1 / 55%);
+}
+.device-notice { margin: 8px 0 0; font-size: 13px; }

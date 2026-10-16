@@ -2,12 +2,24 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
   "description": "Application version, installation identity, secure credential commands, and configured Backend HTTP access for the main window.",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:app:allow-version",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://**" }, { "url": "http://127.0.0.1:8000/**" }]
+      "allow": [
+        {
+          "url": "https://**"
+        },
+        {
+          "url": "http://127.0.0.1:8000/**"
+        }
+      ]
     }
   ]
 }
