@@ -144,6 +144,14 @@ async function main() {
     vpnTested: false,
     screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")),
   }, null, 2));
+  // Transport only synthetic fixture screenshots through the GitHub connector.
+  for (const name of fs.readdirSync(output).filter((file) =>
+    file.endsWith(".png") && !file.endsWith("-content.png"))) {
+    console.log("UI_SCREENSHOT " + JSON.stringify({
+      name,
+      base64: fs.readFileSync(path.join(output, name)).toString("base64"),
+    }));
+  }
 }
 
 main().catch(async (error) => {
