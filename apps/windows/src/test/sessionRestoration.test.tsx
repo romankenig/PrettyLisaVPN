@@ -199,7 +199,12 @@ describe("authentication session restoration", () => {
     );
     const storage = mockStorage();
     const session = createAuthenticationSession(storage);
-    const restoration = createSessionRestoration(api, storage, session);
+    const restoration = createSessionRestoration(
+      api,
+      storage,
+      session,
+      () => Date.parse("2026-09-09T00:00:00Z"),
+    );
 
     const first = restoration.restore();
     const second = restoration.restore();
