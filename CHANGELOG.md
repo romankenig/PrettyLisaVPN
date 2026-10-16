@@ -30,6 +30,14 @@
   [Windows run](https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941095884).
   Это UI review с synthetic fixtures, не подтверждение production VPN.
 
+### CI — без повышения версии приложения
+
+- Fixed: Windows window capture больше не запускает сценарий нового интерфейса
+  на старом exe из фиксированного run; сборка и capture используют общий workflow
+  текущего commit.
+- Added: обязательная проверка всех Actions events и финальных jobs последнего
+  remote HEAD, включая проверки после docs commit.
+
 ### Документация — без повышения версии приложения
 
 - Added: независимый SemVer, правила build identity, changelog и дальнейших задач,

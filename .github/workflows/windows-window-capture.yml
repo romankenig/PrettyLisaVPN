@@ -5,17 +5,10 @@ on:
     branches: [codex/windows-ui-review]
     paths:
       - ".github/workflows/windows-window-capture.yml"
-      - "apps/windows/scripts/ci/**"
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: Run containing a successfully built UI review exe
-        required: true
-        default: "38885090336"
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: windows-window-capture-${{ github.ref }}
@@ -23,45 +16,5 @@ concurrency:
 
 jobs:
   capture:
-    runs-on: windows-2022
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: apps/windows
-        shell: pwsh
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - uses: actions/download-artifact@v4
-        with:
-          name: windows-ui-review
-          path: previous-ui-build
-          github-token: ${{ github.token }}
-          run-id: ${{ inputs.run_id || '38885090336' }}
-      - name: Reuse verified native executable
-        run: |
-          New-Item -ItemType Directory -Force src-tauri/target/debug | Out-Null
-          Copy-Item ../../previous-ui-build/PrettyLisaVPN-UI-review.exe src-tauri/target/debug/prettylisavpn-windows.exe
-      - name: Install capture tooling
-        run: |
-          $tools = Join-Path $env:RUNNER_TEMP "windows-ui-tools"
-          New-Item -ItemType Directory -Force $tools | Out-Null
-          Copy-Item scripts/ci/capture-windows-ui.cjs $tools
-          npm install --prefix $tools --no-audit --no-fund playwright-core@1.56.1
-      - name: Capture full Windows windows and verify controls
-        run: |
-          node --check scripts/ci/capture-windows-ui.cjs
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/ci/mock-ui-api.py --self-test
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node (Join-Path $env:RUNNER_TEMP "windows-ui-tools/capture-windows-ui.cjs")
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          "Binary reused from Actions run ${{ inputs.run_id || '38885090336' }}; product code unchanged." | Add-Content artifacts/ui-review/README.txt
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: windows-ui-review
-          path: apps/windows/artifacts/ui-review/
-          retention-days: 14
+    name: Build current sources and capture Windows UI
+    uses: ./.github/workflows/windows-ui-review.yml

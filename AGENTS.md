@@ -107,3 +107,13 @@ For every coding task:
    - architecture decisions;
    - tests and checks run;
    - remaining risks or follow-up work.
+
+## Полное завершение CI
+
+- Перед итоговым «готово» проверить ВСЕ запуски последнего remote HEAD: pull_request, push, workflow_dispatch и вызываемые/reusable workflow. Проверки только одного Windows workflow или только PR-triggered списка недостаточно.
+- Получать общий список Actions runs по repository/branch/head_sha с пагинацией, а не полагаться только на fetch_commit_workflow_runs: этот connector фильтрует события pull_request. Дополнительно сверять check-runs/check suites и commit statuses; пустой список statuses не означает успешный CI.
+- Для каждого ожидаемого запуска дождаться status=completed и conclusion=success; затем проверить все jobs. Skipped допустим только при объяснимом условии (например, deploy-development вне develop). Failure, timed_out, action_required, неожиданно missing или cancelled для текущего HEAD не считать успехом.
+- Старый cancelled допустим только как superseded-run прежнего commit; он не заменяет проверку текущего HEAD. Не скрывать ошибки отключением нужной проверки, continue-on-error или удалением истории запусков.
+- После ЛЮБОГО последнего push, включая docs/handoff commit, снова проверить remote HEAD и все автоматически запущенные workflow. Не завершать задачу, пока они pending/in_progress. Итоговые ссылки и результаты можно обновлять в описании PR без нового commit, чтобы не создавать бесконечные повторные прогоны документацией.
+- Источник бинарного артефакта обязан соответствовать проверяемым исходникам. Не скачивать фиксированный исторический exe для нового UI/capture-сценария. Windows window capture теперь вызывает общий Windows UI review через workflow_call и собирает текущий commit; обычные UI/script-изменения автоматически проверяет основной PR workflow.
+- В итоговом отчёте указывать проверенный HEAD, названия всех workflow, конечные статусы и ссылки. Если полноценный обзор Actions недоступен, явно сообщить ограничение и не утверждать, что все проверки прошли.

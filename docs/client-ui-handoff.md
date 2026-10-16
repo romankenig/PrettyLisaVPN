@@ -212,3 +212,12 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Промежуточный прогон прошёл UI-проверки, но выявил Windows EPERM при удалении временного WebView2-профиля. Профиль вынесен из каталога артефакта в отдельный временный каталог; очистка имеет повторы и допускает отложенное удаление runner. Ошибки собственно capture по-прежнему завершают прогон с ошибкой.
 - Backend quality/tests/migrations/image также прошли: run https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941096560; deploy-development skipped. Код и версия backend не менялись.
 - Теги и стабильный выпуск не создавались, production/VPN-подключение не проверялось. Следующая самостоятельная Windows-задача версионируется от 0.2.0.
+
+## Полный контроль CI и исправление повторной Windows-съёмки — 2026-10-16
+
+- По замечанию владельца проверен общий список Actions, включая push, а не только PR-triggered выборку. Вспомогательный Windows window capture продолжал брать exe из run 38885090336; новый capture ждал версию 0.2.0 и новый UI, что приводило к timeout. Проверка только основного Windows UI review пропускала эту ошибку.
+- Windows window capture переведён на вызов общего Windows UI review через workflow_call: каждый такой запуск собирает собственные текущие исходники, исторический exe/run_id не используется. Автоматический основной PR workflow по-прежнему проверяет UI/scripts.
+- В AGENTS.md и docs/ci-verification.md закреплены all-events Actions listing с пагинацией, Checks API, ожидание completed/success всех jobs, контроль последнего remote HEAD после docs push и объяснение допустимых skipped/superseded.
+- Windows 0.2.0 и backend 0.1.0 source version unchanged: изменения только CI/документации, нового функционала приложения нет.
+- Локальная проверка: синтаксис YAML, reusable linkage, отсутствие stale artifact, сохранение обязательных frontend/native/capture/upload шагов.
+- Итоговые run IDs/ссылки и статусы фиксируются в описании PR и финальном ответе после завершения всех запусков последнего commit; дополнительный docs push ради этих ссылок не выполняется.

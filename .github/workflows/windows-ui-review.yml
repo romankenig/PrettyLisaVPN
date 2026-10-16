@@ -7,6 +7,7 @@ on:
       - "apps/windows/**"
       - ".github/workflows/windows-ui-review.yml"
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: windows-ui-review-${{ github.ref }}
