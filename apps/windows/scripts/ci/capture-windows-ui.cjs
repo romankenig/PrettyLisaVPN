@@ -1,4 +1,4 @@
-/* global console, process, setTimeout, URL */
+/* global console, process, setTimeout, URL, fetch, AbortSignal */
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
