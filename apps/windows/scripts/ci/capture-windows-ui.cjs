@@ -422,6 +422,8 @@ main()
     } catch {
       // Windows may retain a WebView2 handle after the application exits.
       // This isolated temporary directory is never part of the artifact.
-      console.warn("Temporary WebView2 profile cleanup deferred to the runner.");
+      console.warn(
+        "Temporary WebView2 profile cleanup deferred to the runner.",
+      );
     }
   });
