@@ -159,6 +159,7 @@ h1 {
   overflow-wrap: anywhere;
 }
 button {
+  text-transform: lowercase;
   margin-top: 18px;
   padding: 9px 18px;
   color: var(--color-black);

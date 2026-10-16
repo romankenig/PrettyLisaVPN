@@ -100,6 +100,12 @@ async function screenshot(name) {
         throw new Error("Expected Rubik on " + node.tagName);
     }
   });
+  await page.evaluate(() => {
+    for (const button of document.querySelectorAll("button")) {
+      if (getComputedStyle(button).textTransform !== "lowercase")
+        throw new Error("Buttons must use lowercase text");
+    }
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
   await delay(300);
   const layout = await page.evaluate(() => {
