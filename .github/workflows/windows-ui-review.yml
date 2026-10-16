@@ -1,0 +1,69 @@
+name: Windows UI review
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - "apps/windows/**"
+      - ".github/workflows/windows-ui-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apps/windows
+        shell: pwsh
+    env:
+      VITE_APP_ENVIRONMENT: test
+      VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/windows/package.json
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: apps/windows/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check frontend
+        run: |
+          pnpm typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm test
+          exit $LASTEXITCODE
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Build native UI review executable
+        run: pnpm tauri build --debug --no-bundle
+      - name: Install screenshot tooling separately
+        run: |
+          $tools = Join-Path $env:RUNNER_TEMP "windows-ui-tools"
+          New-Item -ItemType Directory -Force $tools | Out-Null
+          Copy-Item scripts/ci/capture-windows-ui.cjs $tools
+          npm install --prefix $tools --no-audit --no-fund playwright-core@1.56.1
+      - name: Capture native Windows WebView2 screens
+        run: |
+          python scripts/ci/mock-ui-api.py --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node (Join-Path $env:RUNNER_TEMP "windows-ui-tools/capture-windows-ui.cjs")
+      - name: Upload screenshots and review executable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-ui-review
+          path: |
+            apps/windows/artifacts/ui-review/
+          if-no-files-found: warn
+          retention-days: 14
