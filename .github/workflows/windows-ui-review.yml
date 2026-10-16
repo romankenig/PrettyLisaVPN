@@ -8,6 +8,10 @@ on:
       - ".github/workflows/windows-ui-review.yml"
   workflow_dispatch:
 
+concurrency:
+  group: windows-ui-review-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
