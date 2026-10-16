@@ -71,3 +71,15 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Проверки локально: синтаксис Node, компиляция Python, формы fixtures и запрет VPN/изменений устройств прошли. Полный сетевой self-test, frontend checks и native build должны пройти на Windows runner.
 - Результат Actions пока не подтверждён. Не считать скриншоты или exe полученными, пока артефакт не создан и не проверен.
 - UI, native product code, backend и другие платформы не изменены. Новых требований к backend нет.
+
+## Подтверждённый результат Windows review — 2026-10-16
+
+- PR: https://github.com/romankenig/PrettyLisaVPN/pull/1 (не слит).
+- Успешный native run: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38881749289.
+- Проверенный commit: `518b1b088fade2b770760dac6b749ef475617232`.
+- TypeScript, ESLint, все 197 frontend-тестов, Rust/Tauri debug build, loopback self-test и съёмка WebView2 прошли.
+- Исправлен только тест `sessionRestoration.test.tsx`: в тест дедупликации переданы фиксированные часы, поскольку дата его fixture истекла 9 октября. Продуктовый код сессий не менялся.
+- Получены и визуально проверены семь PNG: login, login validation, OTP, Home, devices, device revocation confirmation, about. Home и другие длинные экраны сняты с прокруткой. Это содержимое настоящего WebView2 нативной Windows-сборки, без оконной рамки; данные синтетические.
+- Архив со скриншотами, тестовым exe и локальным mock-ui-api.py: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38881749289/artifacts/12037378794. Артефакт истекает 2026-10-30.
+- Дополнительный read-only workflow `export-ui-screenshots.yml` позволяет получить PNG из приватного Actions-артефакта через текстовые логи интеграции, когда терминал не имеет сети. Он не исполняет код из артефакта и экспортирует только PNG.
+- UI по-прежнему не изменён; текущие снимки — исходная точка для ТЗ владельца. Бэкенд и остальные платформы не менялись. Следующий шаг: получить ТЗ на Windows UI.
