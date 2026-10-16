@@ -91,3 +91,14 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Добавлен `capture-native-window.ps1`: захват настоящего окна через Win32 PrintWindow, проверка системных стилей и действий minimize/maximize/restore/close. Пустой снимок считается ошибкой; нарисованная рамка не подставляется.
 - `capture-windows-ui.cjs` сохраняет основные PNG вместе с рамкой и отдельные `*-content.png` с полной прокруткой. Для съёмки используется software rendering только в CI.
 - Продуктовый UI, бэкенд и остальные платформы не изменены. Новый прогон Windows ещё нужно проверить.
+
+### Результат проверки полного окна
+
+- Нативная сборка и все 197 frontend-тестов прошли в run 38885090336; съёмка пяти экранов с рамкой также прошла, но последующая проверка Restore после Minimize выявила ошибку выбора окна в тестовом сценарии.
+- Поиск исправлен: EnumWindows + PID + точный заголовок PrettyLisaVPN, включая свёрнутое окно; MainWindowHandle больше не используется.
+- Успешный повторный прогон съёмки и системных действий: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38886159748.
+- `windows-window-capture.yml` повторно использует уже собранный exe из указанного Actions run. Это utility для изменений сценария съёмки без изменения product code; при изменении UI нужен новый build из основного windows-ui-review workflow.
+- Получены 10 PNG настоящего окна: семь основных состояний и три проверки оконных состояний. Дополнительно в артефакте есть семь full-page `*-content.png`.
+- Системные стили окна, maximize, restore, minimize и close проверены успешно; login, Home и maximized About визуально просмотрены.
+- Артефакт: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38886159748/artifacts/12039383325 (до 2026-10-30).
+- Кнопки управления уже были стандартными кнопками Tauri/Windows; исправлен захват окна, продуктовый код не менялся. Дальнейшие скриншоты должны включать системную рамку.
