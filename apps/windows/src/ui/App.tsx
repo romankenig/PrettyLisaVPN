@@ -32,7 +32,8 @@ function About({ version }: { readonly version: string }) {
 export function App() {
   const versions = useVersions();
   const { pathname } = useLocation();
-  const authenticating = pathname === "/login" || pathname === "/auth/verify-otp";
+  const authenticating =
+    pathname === "/login" || pathname === "/auth/verify-otp";
   const items = [
     { to: "/", label: "главная", icon: "home" },
     { to: "/settings", label: "настройки", icon: "settings" },

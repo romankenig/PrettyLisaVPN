@@ -5,7 +5,9 @@ const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
-const frontendVersion = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
+const frontendVersion = JSON.parse(
+  fs.readFileSync("package.json", "utf8"),
+).version;
 const output = path.resolve("artifacts/ui-review");
 fs.mkdirSync(output, { recursive: true });
 const executable = path.resolve(
@@ -192,8 +194,10 @@ async function main() {
     throw new Error("Original lock icon did not load");
   const navItems = page.getByRole("navigation").getByRole("link");
   for (const item of await navItems.all()) {
-    if ((await item.getAttribute("aria-disabled")) !== "true" ||
-        (await item.getAttribute("href")) !== null)
+    if (
+      (await item.getAttribute("aria-disabled")) !== "true" ||
+      (await item.getAttribute("href")) !== null
+    )
       throw new Error("Authentication navigation must be disabled");
     await item.click({ force: true });
   }
@@ -219,10 +223,16 @@ async function main() {
       lowercase: getComputedStyle(document.body).textTransform === "lowercase",
     };
   });
-  if (appearance.placeholderAlpha > 0.3 || appearance.inputAlpha !== 1 ||
-      appearance.iconBackgroundAlpha !== 0 || appearance.versionAlpha >= 1 ||
-      !appearance.lowercase)
-    throw new Error("Unexpected login appearance: " + JSON.stringify(appearance));
+  if (
+    appearance.placeholderAlpha > 0.3 ||
+    appearance.inputAlpha !== 1 ||
+    appearance.iconBackgroundAlpha !== 0 ||
+    appearance.versionAlpha >= 1 ||
+    !appearance.lowercase
+  )
+    throw new Error(
+      "Unexpected login appearance: " + JSON.stringify(appearance),
+    );
   await screenshot("01-login");
   await emailField.fill("User@Example.COM");
   if ((await emailField.inputValue()) !== "User@Example.COM")
@@ -252,9 +262,14 @@ async function main() {
   await page
     .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
-  for (const item of await page.getByRole("navigation").getByRole("link").all()) {
-    if (!(await item.getAttribute("href")) ||
-        (await item.getAttribute("aria-disabled")) === "true")
+  for (const item of await page
+    .getByRole("navigation")
+    .getByRole("link")
+    .all()) {
+    if (
+      !(await item.getAttribute("href")) ||
+      (await item.getAttribute("aria-disabled")) === "true"
+    )
       throw new Error("Authenticated navigation must be enabled");
   }
   await screenshot("04-home");
@@ -292,7 +307,10 @@ async function main() {
   await page
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
-  await page.locator("main").getByText(frontendVersion, { exact: true }).waitFor();
+  await page
+    .locator("main")
+    .getByText(frontendVersion, { exact: true })
+    .waitFor();
   await screenshot("08-about");
   await page
     .getByRole("navigation")
