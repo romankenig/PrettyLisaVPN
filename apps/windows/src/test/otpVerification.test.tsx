@@ -267,22 +267,23 @@ describe("OTP verification component", () => {
 
 describe("OTP login integration", () => {
   it("sends device context and hands credentials to the in-memory session layer", async () => {
-    const transport = vi.fn<HttpTransport>(async (input) =>
-      new Response(
-        JSON.stringify(
-          String(input).endsWith("/version")
-            ? {
-                application_name: "PrettyLisaVPN",
-                application_version: "0.2.0",
-                environment: "test",
-              }
-            : verifiedSession,
+    const transport = vi.fn<HttpTransport>(
+      async (input) =>
+        new Response(
+          JSON.stringify(
+            String(input).endsWith("/version")
+              ? {
+                  application_name: "PrettyLisaVPN",
+                  application_version: "0.2.0",
+                  environment: "test",
+                }
+              : verifiedSession,
+          ),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
         ),
-        {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        },
-      ),
     );
     const api = createApiClient("https://api.example.invalid", transport, 5000);
     const credentialStorage = createTestCredentialStorage();
@@ -297,9 +298,11 @@ describe("OTP login integration", () => {
     ).toBeInTheDocument();
     const request = JSON.parse(
       String(
-        vi.mocked(transport).mock.calls.find(
-          ([input]) => String(input).endsWith("/auth/verify-otp"),
-        )?.[1]?.body,
+        vi
+          .mocked(transport)
+          .mock.calls.find(([input]) =>
+            String(input).endsWith("/auth/verify-otp"),
+          )?.[1]?.body,
       ),
     );
     expect(request).toEqual({

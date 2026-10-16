@@ -156,20 +156,30 @@ async function main() {
   if (!page) throw new Error("Native Tauri WebView page not found");
   page.setDefaultTimeout(15000);
   await page.getByRole("heading", { name: "войти по email" }).waitFor();
-  await page.locator(".sidebar-versions").getByText("0.1.0", { exact: true }).waitFor();
-  await page.locator(".sidebar-versions").getByText("недоступна", { exact: true }).waitFor();
-  const navigation = await page.getByRole("navigation").getByRole("link").evaluateAll(
-    (links) => links.map((link) => ({
-      label: link.getAttribute("aria-label"),
-      text: link.textContent,
-      icon: Boolean(link.querySelector("svg")),
-    })),
-  );
+  await page
+    .locator(".sidebar-versions")
+    .getByText("0.1.0", { exact: true })
+    .waitFor();
+  await page
+    .locator(".sidebar-versions")
+    .getByText("недоступна", { exact: true })
+    .waitFor();
+  const navigation = await page
+    .getByRole("navigation")
+    .getByRole("link")
+    .evaluateAll((links) =>
+      links.map((link) => ({
+        label: link.getAttribute("aria-label"),
+        text: link.textContent,
+        icon: Boolean(link.querySelector("svg")),
+      })),
+    );
   if (
     JSON.stringify(navigation.map((link) => link.label)) !==
       JSON.stringify(["главная", "настройки", "о приложении"]) ||
     navigation.some((link) => link.text.trim() || !link.icon)
-  ) throw new Error("Expected ordered icon-only navigation");
+  )
+    throw new Error("Expected ordered icon-only navigation");
   const logo = page.locator(".window-titlebar img");
   await logo.waitFor();
   if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
@@ -207,7 +217,9 @@ async function main() {
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await screenshot("05-settings");
   await page.getByRole("link", { name: /устройства/ }).click();
-  const settingsNav = page.getByRole("navigation").getByRole("link", { name: "настройки", exact: true });
+  const settingsNav = page
+    .getByRole("navigation")
+    .getByRole("link", { name: "настройки", exact: true });
   if ((await settingsNav.getAttribute("aria-current")) !== "page")
     throw new Error("Settings must stay active on devices");
   await page
@@ -233,7 +245,10 @@ async function main() {
     .waitFor();
   await page.locator("main").getByText("0.1.0", { exact: true }).waitFor();
   await screenshot("08-about");
-  await page.getByRole("navigation").getByRole("link", { name: "настройки", exact: true }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "настройки", exact: true })
+    .click();
   await page.getByRole("button", { name: /выйти/ }).click();
   await page.getByRole("heading", { name: "войти по email" }).waitFor();
   await screenshot("09-after-logout");

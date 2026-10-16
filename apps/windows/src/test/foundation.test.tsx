@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, createApiClient } from "../api/client";
@@ -612,5 +618,9 @@ it("keeps native functionality behind the desktop adapter", async () => {
   renderApplication(transport);
 
   fireEvent.click(screen.getByRole("link", { name: "о приложении" }));
-  await waitFor(() => expect(within(screen.getByRole("main")).getByText("0.1.0")).toBeInTheDocument());
+  await waitFor(() =>
+    expect(
+      within(screen.getByRole("main")).getByText("0.1.0"),
+    ).toBeInTheDocument(),
+  );
 });

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiClient, type MeResponse } from "../api/client";
@@ -385,10 +391,14 @@ it("uses icon navigation in Home, Settings, About order and keeps Settings activ
     expect(link).toHaveAttribute("title", link.getAttribute("aria-label"));
   }
   expect(screen.queryByText("windows desktop")).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /выйти/ })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /выйти/ }),
+  ).not.toBeInTheDocument();
   fireEvent.click(links[1]);
   fireEvent.click(screen.getByRole("link", { name: /устройства/ }));
-  expect(await screen.findByRole("heading", { name: "устройства" })).toBeVisible();
+  expect(
+    await screen.findByRole("heading", { name: "устройства" }),
+  ).toBeVisible();
   expect(links[1]).toHaveAttribute("aria-current", "page");
   fireEvent.click(screen.getByRole("link", { name: "← настройки" }));
   expect(screen.getByRole("heading", { name: "настройки" })).toBeVisible();
