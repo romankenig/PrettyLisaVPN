@@ -47,6 +47,9 @@ jobs:
           exit $LASTEXITCODE
       - name: Install pinned Rust toolchain
         run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/windows/src-tauri
       - name: Build native UI review executable
         run: pnpm tauri build --debug --no-bundle
       - name: Install screenshot tooling separately
@@ -60,6 +63,11 @@ jobs:
           python scripts/ci/mock-ui-api.py --self-test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node (Join-Path $env:RUNNER_TEMP "windows-ui-tools/capture-windows-ui.cjs")
+      - name: Export changed source formatting for review
+        if: always()
+        run: |
+          rustfmt --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs
+          node scripts/ci/export-window-format.mjs
       - name: Upload screenshots and review executable
         if: always()
         uses: actions/upload-artifact@v4

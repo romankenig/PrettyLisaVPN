@@ -669,3 +669,6 @@ h1 { margin: 0 0 14px; font-size: 30px; }
   box-shadow: 0 0 0 100vmax rgb(1 1 1 / 55%);
 }
 .device-notice { margin: 8px 0 0; font-size: 13px; }
+
+.account-summary { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); }
+.account-summary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -162,7 +162,7 @@ export function Home() {
           <p>
             {connectionState.phase === "CONNECTED"
               ? `Локация: ${countryName(connectionState.session.countryCode)}`
-              : "Выберите локацию и установите защищённое соединение."}
+              : "Выберите локацию для подключения."}
           </p>
           {profile?.plan === "FREE" &&
           connectionState.phase === "CONNECTED" &&
@@ -202,7 +202,7 @@ export function Home() {
         <p id="connection-unavailable" className="field-help">
           {!locationConnectable
             ? "Сейчас подключение недоступно."
-            : "Подключение использует выбранный режим без выбора конкретного сервера."}
+            : "Готово к подключению."}
         </p>
         {connectionErrorMessage !== null ||
         ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
@@ -250,7 +250,7 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
     <div className="account-summary">
       <div>
         <span>email</span>
-        <strong>{profile.email}</strong>
+        <strong title={profile.email}>{profile.email}</strong>
       </div>
       <div>
         <span>план</span>

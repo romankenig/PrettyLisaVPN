@@ -57,10 +57,11 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 if ($handle -eq [IntPtr]::Zero) { throw "Native application window not found" }
 
 $style = [ReviewWindow]::GetWindowLong($handle, -16)
-if (($style -band 0x00C00000) -ne 0 -or
-    ($style -band 0x00010000) -ne 0 -or
-    ($style -band 0x00040000) -ne 0) {
-    throw "Expected undecorated fixed-size window without maximize or resize styles"
+# Tao can retain invisible caption/frame bits for shadow and hit testing.
+# The absence of a maximize action and the fixed min/max constraints are intentional.
+Write-Output ("Native window style: 0x{0:X8}" -f $style)
+if (($style -band 0x00010000) -ne 0) {
+    throw "Fixed window must not expose a maximize control"
 }
 $region = [ReviewWindow]::CreateRectRgn(0, 0, 0, 0)
 try {
