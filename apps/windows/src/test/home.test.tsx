@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiClient, type MeResponse } from "../api/client";
@@ -164,7 +164,8 @@ describe("authenticated Home", () => {
     storage.delete = vi.fn(storage.delete);
     const { session } = renderRestored(api, storage);
 
-    fireEvent.click(screen.getByRole("button", { name: "выйти" }));
+    fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+    fireEvent.click(screen.getByRole("button", { name: /выйти/ }));
 
     await waitFor(() =>
       expect(api.logout).toHaveBeenCalledWith("access-token"),
@@ -178,7 +179,8 @@ describe("authenticated Home", () => {
     vi.mocked(api.logout).mockRejectedValue(new ApiError("NETWORK_ERROR"));
     const { session } = renderRestored(api);
 
-    fireEvent.click(screen.getByRole("button", { name: "выйти" }));
+    fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+    fireEvent.click(screen.getByRole("button", { name: /выйти/ }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Не удалось завершить сессию",
@@ -189,7 +191,8 @@ describe("authenticated Home", () => {
   it("navigates to the Devices section", async () => {
     renderRestored();
 
-    fireEvent.click(screen.getAllByRole("link", { name: "устройства" })[0]);
+    fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+    fireEvent.click(screen.getByRole("link", { name: /устройства/ }));
 
     expect(
       await screen.findByRole("heading", { name: "устройства" }),
@@ -365,4 +368,74 @@ it("UI never shows Connected when WireGuard handshake succeeds but Internet does
   } finally {
     connection.dispose();
   }
+});
+
+it("uses icon navigation in Home, Settings, About order and keeps Settings active for devices", async () => {
+  renderRestored();
+  const nav = screen.getByRole("navigation", { name: "основная навигация" });
+  const links = within(nav).getAllByRole("link");
+  expect(links.map((link) => link.getAttribute("aria-label"))).toEqual([
+    "главная",
+    "настройки",
+    "о приложении",
+  ]);
+  for (const link of links) {
+    expect(link.textContent).toBe("");
+    expect(link.querySelector("svg")).not.toBeNull();
+    expect(link).toHaveAttribute("title", link.getAttribute("aria-label"));
+  }
+  expect(screen.queryByText("windows desktop")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /выйти/ })).not.toBeInTheDocument();
+  fireEvent.click(links[1]);
+  fireEvent.click(screen.getByRole("link", { name: /устройства/ }));
+  expect(await screen.findByRole("heading", { name: "устройства" })).toBeVisible();
+  expect(links[1]).toHaveAttribute("aria-current", "page");
+  fireEvent.click(screen.getByRole("link", { name: "← настройки" }));
+  expect(screen.getByRole("heading", { name: "настройки" })).toBeVisible();
+});
+
+it("shows the backend version from /version without refetching on navigation", async () => {
+  const api = mockApi();
+  vi.mocked(api.getVersion).mockResolvedValue({
+    application_name: "PrettyLisaVPN",
+    application_version: "2.3.4",
+    environment: "test",
+  });
+  renderRestored(api);
+  expect(await screen.findByText("2.3.4")).toBeVisible();
+  expect(await screen.findByText("0.1.0")).toBeVisible();
+  expect(api.getVersion).toHaveBeenCalledWith(expect.any(AbortSignal));
+  fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+  expect(screen.getByText("2.3.4")).toBeVisible();
+  expect(api.getVersion).toHaveBeenCalledOnce();
+});
+
+it("keeps navigation usable when the backend version is unavailable", async () => {
+  const api = mockApi();
+  vi.mocked(api.getVersion).mockRejectedValue(new ApiError("NETWORK_ERROR"));
+  renderRestored(api);
+  expect(await screen.findByText("недоступна")).toBeVisible();
+  fireEvent.click(screen.getByRole("link", { name: "о приложении" }));
+  expect(screen.getByRole("heading", { name: "о приложении" })).toBeVisible();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("does not submit logout twice while the request is pending", async () => {
+  const api = mockApi();
+  let finish!: (value: { status: "logged_out" }) => void;
+  vi.mocked(api.logout).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { session } = renderRestored(api);
+  fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+  const button = screen.getByRole("button", { name: /выйти/ });
+  fireEvent.click(button);
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(api.logout).toHaveBeenCalledOnce();
+  finish({ status: "logged_out" });
+  await waitFor(() => expect(session.current()).toBeNull());
 });

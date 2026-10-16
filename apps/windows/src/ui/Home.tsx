@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { ApiError, type MeResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import {
@@ -26,10 +25,6 @@ export function Home() {
     activeSession?.profile ? { phase: "ready" } : { phase: "loading" },
   );
   const [profileAttempt, setProfileAttempt] = useState(0);
-  const [logoutState, setLogoutState] = useState<
-    "idle" | "submitting" | "error"
-  >("idle");
-  const logoutInFlight = useRef(false);
   const [locationSelection, setLocationSelection] =
     useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
   const [locationConnectable, setLocationConnectable] = useState(false);
@@ -76,28 +71,6 @@ export function Home() {
   if (activeSession === null) return null;
   const profile = activeSession.profile;
   const accessToken = activeSession.accessToken;
-
-  async function logout() {
-    if (logoutInFlight.current || activeSession === null) return;
-    logoutInFlight.current = true;
-    setLogoutState("submitting");
-    try {
-      await api.logout(accessToken);
-      await session.clear();
-    } catch (error) {
-      if (isInvalidSession(error)) {
-        try {
-          await session.clear();
-          return;
-        } catch {
-          // The generic state below does not expose native storage details.
-        }
-      }
-      setLogoutState("error");
-    } finally {
-      logoutInFlight.current = false;
-    }
-  }
 
   async function connect() {
     if (
@@ -222,24 +195,6 @@ export function Home() {
           ) : null}
         </div>
       </div>
-      <div className="home-actions">
-        <Link className="secondary-link" to="/devices">
-          устройства
-        </Link>
-        <button
-          className="logout-button"
-          type="button"
-          disabled={logoutState === "submitting"}
-          onClick={() => void logout()}
-        >
-          {logoutState === "submitting" ? "выходим…" : "выйти"}
-        </button>
-      </div>
-      {logoutState === "error" ? (
-        <p className="logout-error" role="alert">
-          Не удалось завершить сессию. Проверьте сеть и попробуйте снова.
-        </p>
-      ) : null}
     </section>
   );
 }

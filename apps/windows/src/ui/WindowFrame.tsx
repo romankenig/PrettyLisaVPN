@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import lockIcon from "../assets/lock.svg";
 
 export function WindowFrame({ children }: { readonly children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +17,8 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
     <div className="window-frame">
       <header className="window-titlebar">
         <div className="window-titlebar__drag" data-tauri-drag-region>
-          PrettyLisaVPN
+          <img src={lockIcon} alt="" draggable={false} />
+          <span>PrettyLisaVPN</span>
         </div>
         <div className="window-controls">
           <button

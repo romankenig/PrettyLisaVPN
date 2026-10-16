@@ -38,3 +38,16 @@ it("reports a failed native action without removing the screen", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось");
   expect(screen.getByText("screen content")).toBeVisible();
 });
+
+it("places the original lock and product name in the top header", () => {
+  render(
+    <WindowFrame>
+      <p>screen content</p>
+    </WindowFrame>,
+  );
+  const brand = screen.getByText("PrettyLisaVPN");
+  expect(brand.closest("header")).not.toBeNull();
+  const image = brand.parentElement?.querySelector("img");
+  expect(image).toHaveAttribute("src", expect.stringContaining("lock.svg"));
+  expect(image).toHaveAttribute("alt", "");
+});

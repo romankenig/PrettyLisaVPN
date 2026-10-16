@@ -49,7 +49,7 @@ jobs:
         run: rustup show
       - name: Check changed source formatting
         run: |
-          pnpm exec prettier --check --end-of-line auto src/main.tsx src/ui/WindowFrame.tsx src/ui/Home.tsx src/ui/styles.css src/test/windowFrame.test.tsx src-tauri/tauri.conf.json src-tauri/capabilities/main.json scripts/ci/capture-windows-ui.cjs
+          pnpm exec prettier --check --end-of-line auto src/main.tsx src/ui/App.tsx src/ui/NavigationIcon.tsx src/ui/Settings.tsx src/ui/useVersions.ts src/test/home.test.tsx src/ui/WindowFrame.tsx src/ui/Home.tsx src/ui/styles.css src/test/windowFrame.test.tsx src-tauri/tauri.conf.json src-tauri/capabilities/main.json scripts/ci/capture-windows-ui.cjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs
           exit $LASTEXITCODE
