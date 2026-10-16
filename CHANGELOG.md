@@ -24,9 +24,10 @@
   ошибка получения не блокирует интерфейс.
 - Compatibility: backend API/VPN-логика не менялись; /devices перенаправляется
   в /settings/devices. Проверка версии реального backend остаётся в handoff.
-- Validation: 204 теста и native Windows UI capture прошли для product commit
-  `629e73aabddca8b13409150155121ade6f596ce5`:
-  [Windows run](https://github.com/romankenig/PrettyLisaVPN/actions/runs/38925995304).
+- Validation: 206 тестов, native Windows build 0.2.0 и UI capture прошли для
+  PR head `b0f559dda4f7aa14d1e55dddbc0822e46fbce4c1`, фактический build SHA
+  `cabd1b49f1766c64bc1a54fae754e9ce805c537c`:
+  [Windows run](https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941095884).
   Это UI review с synthetic fixtures, не подтверждение production VPN.
 
 ### Документация — без повышения версии приложения

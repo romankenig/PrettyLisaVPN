@@ -198,3 +198,17 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Добавлены тесты неизменности введённого email и отключённой навигации. Native capture дополнительно проверяет alpha placeholder/input/фона иконки/версий, навигацию до/после входа и сохраняет заполненный input отдельным снимком.
 - В артефакт записываются версия frontend, channel, SHA фактической сборки, PR head SHA, run ID и attempt; backend-контракты не меняются.
 - Новый Windows run ещё нужно подтвердить; до этого не считать сборку 0.2.0 проверенной.
+
+### Подтверждённый итог полировки Windows 0.2.0
+
+- Продуктовый commit с финальным строчным стилем кнопок: `8b17011de3239450ad15619cc0bfa2afffd96a09`.
+- Проверенный PR head (включая CI-очистку профиля): `b0f559dda4f7aa14d1e55dddbc0822e46fbce4c1`.
+- Фактический checkout/build SHA (PR merge commit): `cabd1b49f1766c64bc1a54fae754e9ce805c537c`.
+- Windows run https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941095884, attempt 1 — success.
+- TypeScript, ESLint, 206 frontend-тестов, Prettier/rustfmt, cargo metadata --locked --offline, native build, loopback self-test и съёмка прошли.
+- Проверены отсутствие фона у замка, alpha 24% placeholder при непрозрачном input, alpha 60% версий, неактивная навигация login/OTP и её включение после входа. Строчный стиль кнопок проверяется явно на каждом экране.
+- Получены 12 native PNG и 10 WebView PNG. Визуально просмотрены финальные пустой/заполненный login, Home и настройки; строка User@Example.COM сохраняет написание и обычный цвет. Переполнений не обнаружено.
+- Артефакт: https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941095884/artifacts/12063122565 (до 2026-10-30), содержит UI review exe 0.2.0, screenshots и synthetic loopback fixtures.
+- Промежуточный прогон прошёл UI-проверки, но выявил Windows EPERM при удалении временного WebView2-профиля. Профиль вынесен из каталога артефакта в отдельный временный каталог; очистка имеет повторы и допускает отложенное удаление runner. Ошибки собственно capture по-прежнему завершают прогон с ошибкой.
+- Backend quality/tests/migrations/image также прошли: run https://github.com/romankenig/PrettyLisaVPN/actions/runs/38941096560; deploy-development skipped. Код и версия backend не менялись.
+- Теги и стабильный выпуск не создавались, production/VPN-подключение не проверялось. Следующая самостоятельная Windows-задача версионируется от 0.2.0.
