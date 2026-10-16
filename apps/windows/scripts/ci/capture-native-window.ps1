@@ -21,14 +21,33 @@ public static class ReviewWindow {
     [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr hwnd, int index);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd, uint message, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+    private delegate bool EnumCallback(IntPtr hwnd, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumCallback callback, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, System.Text.StringBuilder text, int count);
+    public static IntPtr FindApplicationWindow(int processId) {
+        IntPtr result = IntPtr.Zero;
+        EnumWindows((hwnd, parameter) => {
+            uint owner;
+            GetWindowThreadProcessId(hwnd, out owner);
+            if (owner == processId) {
+                var text = new System.Text.StringBuilder(256);
+                GetWindowText(hwnd, text, text.Capacity);
+                if (text.ToString() == "PrettyLisaVPN") {
+                    result = hwnd;
+                    return false;
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
 }
 '@
 [ReviewWindow]::SetProcessDPIAware() | Out-Null
 $handle = [IntPtr]::Zero
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
-    $app = Get-Process -Id $AppProcessId
-    $app.Refresh()
-    $handle = $app.MainWindowHandle
+    $handle = [ReviewWindow]::FindApplicationWindow($AppProcessId)
     if ($handle -ne [IntPtr]::Zero) { break }
     Start-Sleep -Milliseconds 100
 }
