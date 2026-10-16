@@ -15,7 +15,11 @@ beforeEach(() => {
   controls.close.mockReset().mockResolvedValue(undefined);
 });
 it("keeps only minimize and close available alongside the screen content", async () => {
-  render(<WindowFrame><p>screen content</p></WindowFrame>);
+  render(
+    <WindowFrame>
+      <p>screen content</p>
+    </WindowFrame>,
+  );
   expect(screen.getByText("screen content")).toBeVisible();
   expect(screen.getAllByRole("button")).toHaveLength(2);
   fireEvent.click(screen.getByRole("button", { name: "Свернуть" }));
@@ -25,7 +29,11 @@ it("keeps only minimize and close available alongside the screen content", async
 });
 it("reports a failed native action without removing the screen", async () => {
   controls.minimize.mockRejectedValueOnce(new Error("native detail"));
-  render(<WindowFrame><p>screen content</p></WindowFrame>);
+  render(
+    <WindowFrame>
+      <p>screen content</p>
+    </WindowFrame>,
+  );
   fireEvent.click(screen.getByRole("button", { name: "Свернуть" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось");
   expect(screen.getByText("screen content")).toBeVisible();

@@ -46,12 +46,12 @@ try {
       >
         <HashRouter>
           <WindowFrame>
-          <SessionRestorationGate
-            restoration={sessionRestoration}
-            session={session}
-          >
-            <App />
-          </SessionRestorationGate>
+            <SessionRestorationGate
+              restoration={sessionRestoration}
+              session={session}
+            >
+              <App />
+            </SessionRestorationGate>
           </WindowFrame>
         </HashRouter>
       </ApplicationProvider>
@@ -59,9 +59,11 @@ try {
   );
 } catch {
   root.render(
-    <WindowFrame><main role="alert">
-      <h1>не удалось запустить PrettyLisaVPN</h1>
-      <p>проверьте конфигурацию приложения.</p>
-    </main></WindowFrame>,
+    <WindowFrame>
+      <main role="alert">
+        <h1>не удалось запустить PrettyLisaVPN</h1>
+        <p>проверьте конфигурацию приложения.</p>
+      </main>
+    </WindowFrame>,
   );
 }

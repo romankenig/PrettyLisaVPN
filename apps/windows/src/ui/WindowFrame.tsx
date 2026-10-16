@@ -19,21 +19,33 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
           PrettyLisaVPN
         </div>
         <div className="window-controls">
-          <button type="button" aria-label="Свернуть" title="Свернуть"
-            onClick={() => void control("minimize")}>
+          <button
+            type="button"
+            aria-label="Свернуть"
+            title="Свернуть"
+            onClick={() => void control("minimize")}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M3 8h10" />
             </svg>
           </button>
-          <button type="button" aria-label="Закрыть" title="Закрыть"
-            onClick={() => void control("close")}>
+          <button
+            type="button"
+            aria-label="Закрыть"
+            title="Закрыть"
+            onClick={() => void control("close")}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
               <path d="m4 4 8 8M12 4l-8 8" />
             </svg>
           </button>
         </div>
       </header>
-      {error ? <p className="window-error" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="window-error" role="alert">
+          {error}
+        </p>
+      ) : null}
       <div className="window-content">{children}</div>
     </div>
   );

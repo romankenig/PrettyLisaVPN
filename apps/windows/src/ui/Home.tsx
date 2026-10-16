@@ -149,79 +149,78 @@ export function Home() {
       {profile ? <AccountSummary profile={profile} /> : null}
 
       <div className="home-workspace">
-      <ConnectionLocationSelector
-        selection={locationSelection}
-        onSelectionChange={setLocationSelection}
-        onConnectabilityChange={setLocationConnectable}
-      />
+        <ConnectionLocationSelector
+          selection={locationSelection}
+          onSelectionChange={setLocationSelection}
+          onConnectabilityChange={setLocationConnectable}
+        />
 
-      <div className="connection-card">
-        <div>
-          <p className="connection-card__label">VPN</p>
-          <h2>{connectionHeading(connectionState)}</h2>
-          <p>
-            {connectionState.phase === "CONNECTED"
-              ? `Локация: ${countryName(connectionState.session.countryCode)}`
-              : "Выберите локацию для подключения."}
+        <div className="connection-card">
+          <div>
+            <p className="connection-card__label">VPN</p>
+            <h2>{connectionHeading(connectionState)}</h2>
+            <p>
+              {connectionState.phase === "CONNECTED"
+                ? `Локация: ${countryName(connectionState.session.countryCode)}`
+                : "Выберите локацию для подключения."}
+            </p>
+            {profile?.plan === "FREE" &&
+            connectionState.phase === "CONNECTED" &&
+            connectionState.session.remainingSeconds !== null ? (
+              <p role="timer">
+                Осталось:{" "}
+                {formatRemaining(connectionState.session.remainingSeconds)}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            disabled={
+              connectionState.phase === "CONNECTING" ||
+              connectionState.phase === "TUNNEL_ESTABLISHED" ||
+              connectionState.phase === "VERIFYING_INTERNET" ||
+              connectionState.phase === "RECONCILING" ||
+              connectionState.phase === "DISCONNECTING" ||
+              (!canDisconnect(connectionState) && !locationConnectable)
+            }
+            aria-describedby="connection-unavailable"
+            onClick={() =>
+              void (canDisconnect(connectionState) ? disconnect() : connect())
+            }
+          >
+            {connectionState.phase === "DISCONNECTING"
+              ? "DISCONNECTING"
+              : connectionState.phase === "CONNECTING" ||
+                  connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                  connectionState.phase === "VERIFYING_INTERNET" ||
+                  connectionState.phase === "RECONCILING"
+                ? "CONNECTING"
+                : canDisconnect(connectionState)
+                  ? "DISCONNECT"
+                  : "CONNECT"}
+          </button>
+          <p id="connection-unavailable" className="field-help">
+            {!locationConnectable
+              ? "Сейчас подключение недоступно."
+              : "Готово к подключению."}
           </p>
-          {profile?.plan === "FREE" &&
-          connectionState.phase === "CONNECTED" &&
-          connectionState.session.remainingSeconds !== null ? (
-            <p role="timer">
-              Осталось:{" "}
-              {formatRemaining(connectionState.session.remainingSeconds)}
+          {connectionErrorMessage !== null ||
+          ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
+            connectionState.phase,
+          ) ? (
+            <p className="connection-error" role="alert">
+              {connectionErrorMessage ??
+                connectionUnavailableMessage(connectionState)}
+            </p>
+          ) : null}
+          {connectionState.phase === "DISCONNECTED" &&
+          connectionState.backend === "UNAVAILABLE" ? (
+            <p className="connection-error" role="status">
+              VPN на компьютере остановлен. Сервер завершит сессию после
+              восстановления связи.
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          disabled={
-            connectionState.phase === "CONNECTING" ||
-            connectionState.phase === "TUNNEL_ESTABLISHED" ||
-            connectionState.phase === "VERIFYING_INTERNET" ||
-            connectionState.phase === "RECONCILING" ||
-            connectionState.phase === "DISCONNECTING" ||
-            (!canDisconnect(connectionState) && !locationConnectable)
-          }
-          aria-describedby="connection-unavailable"
-          onClick={() =>
-            void (canDisconnect(connectionState) ? disconnect() : connect())
-          }
-        >
-          {connectionState.phase === "DISCONNECTING"
-            ? "DISCONNECTING"
-            : connectionState.phase === "CONNECTING" ||
-                connectionState.phase === "TUNNEL_ESTABLISHED" ||
-                connectionState.phase === "VERIFYING_INTERNET" ||
-                connectionState.phase === "RECONCILING"
-              ? "CONNECTING"
-              : canDisconnect(connectionState)
-                ? "DISCONNECT"
-                : "CONNECT"}
-        </button>
-        <p id="connection-unavailable" className="field-help">
-          {!locationConnectable
-            ? "Сейчас подключение недоступно."
-            : "Готово к подключению."}
-        </p>
-        {connectionErrorMessage !== null ||
-        ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
-          connectionState.phase,
-        ) ? (
-          <p className="connection-error" role="alert">
-            {connectionErrorMessage ??
-              connectionUnavailableMessage(connectionState)}
-          </p>
-        ) : null}
-        {connectionState.phase === "DISCONNECTED" &&
-        connectionState.backend === "UNAVAILABLE" ? (
-          <p className="connection-error" role="status">
-            VPN на компьютере остановлен. Сервер завершит сессию после
-            восстановления связи.
-          </p>
-        ) : null}
-      </div>
-
       </div>
       <div className="home-actions">
         <Link className="secondary-link" to="/devices">

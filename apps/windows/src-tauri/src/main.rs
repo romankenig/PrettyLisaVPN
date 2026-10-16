@@ -1,6 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod window_frame;
 mod debug_log;
 mod installation_id;
 mod internet_verification;
@@ -8,6 +7,7 @@ mod obfuscation_transport;
 mod packet_obfuscation;
 mod refresh_credentials;
 mod wg_obfuscator;
+mod window_frame;
 mod wireguard_keys;
 mod wireguard_tunnel;
 
