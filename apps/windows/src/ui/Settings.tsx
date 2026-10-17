@@ -10,6 +10,17 @@ export function Settings() {
     <Routes>
       <Route index element={<SettingsOverview />} />
       <Route
+        path="subscription"
+        element={
+          <section className="settings-page" aria-labelledby="subscription-title">
+            <Link className="settings-back" to="/settings">
+              ← настройки
+            </Link>
+            <h1 id="subscription-title">подписка</h1>
+          </section>
+        }
+      />
+      <Route
         path="devices"
         element={
           <div className="settings-devices">
@@ -72,6 +83,14 @@ function SettingsOverview() {
           <span>
             <strong>устройства</strong>
             <small>Управление доступом к аккаунту</small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+        <Link className="settings-option" to="/settings/subscription">
+          <NavigationIcon name="subscription" />
+          <span>
+            <strong>подписка</strong>
+            <small>управление подпиской</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
