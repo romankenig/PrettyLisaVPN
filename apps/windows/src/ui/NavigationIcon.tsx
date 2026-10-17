@@ -2,12 +2,7 @@ export function NavigationIcon({
   name,
 }: {
   readonly name:
-    | "home"
-    | "settings"
-    | "about"
-    | "devices"
-    | "subscription"
-    | "logout";
+    "home" | "settings" | "about" | "devices" | "subscription" | "logout";
 }) {
   const paths = {
     home: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z",
