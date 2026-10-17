@@ -173,11 +173,12 @@ describe("about and support", () => {
 describe("support diagnostics and attachments", () => {
   it("uses an explicit whitelist instead of serializing credentials or connection config", () => {
     const { session, vpn } = setup();
-    const result = supportDiagnostics("0.7.0", "недоступна", session.current(), {
+    const rawState = {
       ...vpn.current(),
       private_key: "never-include-key",
       endpoint: "never-include-ip",
-    } as ReturnType<typeof vpn.current>);
+    };
+    const result = supportDiagnostics("0.7.0", "недоступна", session.current(), rawState);
     expect(result.backend_version).toBeNull();
     expect(result.auth_session_id).toBe(session.current()?.sessionId);
     expect(JSON.stringify(result)).not.toMatch(/never-include|private-user-id|reply@example/);
