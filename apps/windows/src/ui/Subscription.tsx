@@ -206,8 +206,8 @@ function SubscriptionContent() {
 }
 
 function OfferPrices({ offer, currency }: { readonly offer: Offer; readonly currency: Currency }) {
-  const secondary = currency === "RUB" ? "USD" : "RUB";
-  return <div className="billing-prices">{[currency, secondary].map((code, i) => <div key={code} className={i === 0 ? "billing-price-primary" : "billing-price-secondary"} aria-label={code === "RUB" ? "цена в рублях" : "цена в долларах"}>{offer.prices[code].original_amount_minor !== null ? <del>{formatPrice(offer.prices[code].original_amount_minor!, code)}</del> : null}<strong>{formatPrice(offer.prices[code].amount_minor, code)}</strong><span>/ месяц</span></div>)}</div>;
+  const secondary: Currency = currency === "RUB" ? "USD" : "RUB";
+  return <div className="billing-prices">{([currency, secondary] as const).map((code, i) => <div key={code} className={i === 0 ? "billing-price-primary" : "billing-price-secondary"} aria-label={code === "RUB" ? "цена в рублях" : "цена в долларах"}>{offer.prices[code].original_amount_minor !== null ? <del>{formatPrice(offer.prices[code].original_amount_minor!, code)}</del> : null}<strong>{formatPrice(offer.prices[code].amount_minor, code)}</strong><span>/ месяц</span></div>)}</div>;
 }
 function planName(plan: string) {
   return plan === "PREMIUM" ? "premium ⭐" : plan === "PLATINUM" ? "platinum 💎" : plan.toLowerCase();

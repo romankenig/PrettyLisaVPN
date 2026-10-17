@@ -30,7 +30,7 @@ function setup(scenario: "free" | "active" | "canceled" = "free", country?: () =
   const session = createTestAuthenticationSession();
   session.activateRestored({ accessToken: "token", accessTokenExpiresIn: 900,
     sessionId: "123e4567-e89b-42d3-a456-426614174005", userId: "user",
-    plan: "FREE", profile: null });
+    plan: "FREE", profile: { id: "user", email: "user@example.com", plan: "FREE", active_device_count: 1 } });
   const view = render(<ApplicationProvider value={{
     config: loadConfig({}), api: createApiClient("https://api.example.test", vi.fn(), 1000),
     billing, paymentBrowser: { open }, desktop: { getVersion: async () => "0.5.0" },
@@ -50,9 +50,9 @@ describe("subscription screen", () => {
     expect(screen.getByRole("button", { name: "₽" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("цена в рублях").querySelector("del")).toHaveTextContent("299");
     expect(screen.getByLabelText("цена в долларах").querySelector("strong")).toHaveTextContent("2,99");
-    fireEvent.click(screen.getByRole("button", { name: "$", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "$" }));
     rememberHomeCountry("RU");
-    expect(screen.getByRole("button", { name: "$", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "$" })).toHaveAttribute("aria-pressed", "true");
     expect(preferredCurrency("user")).toBe("USD");
   });
   it("requires cancellation confirmation and keeps access until the backend confirms the result", async () => {
