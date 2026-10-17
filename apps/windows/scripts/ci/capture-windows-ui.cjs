@@ -296,11 +296,20 @@ async function main() {
   const combo = page.getByRole("combobox");
   await combo.click();
   await page.getByRole("listbox").waitFor();
-  if ((await page.getByRole("group", { name: "топ", exact: true }).getByRole("option").count()) !== 3)
+  if (
+    (await page
+      .getByRole("group", { name: "топ", exact: true })
+      .getByRole("option")
+      .count()) !== 3
+  )
     throw new Error("Expected top three countries");
   await screenshot("04a-home-dropdown");
-  await page.getByRole("group", { name: "все страны", exact: true }).getByRole("option", { name: /Германия/ }).click();
-  if (!(await combo.textContent()).includes("Германия")) throw new Error("Country choice failed");
+  await page
+    .getByRole("group", { name: "все страны", exact: true })
+    .getByRole("option", { name: /Германия/ })
+    .click();
+  if (!(await combo.textContent()).includes("Германия"))
+    throw new Error("Country choice failed");
   await screenshot("04b-home-country");
 
   await page
@@ -311,7 +320,11 @@ async function main() {
   await screenshot("05-settings");
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await page.getByRole("combobox").waitFor();
-  await page.waitForFunction(() => document.querySelector('[role="combobox"]')?.textContent.includes("Германия"));
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[role="combobox"]')
+      ?.textContent.includes("Германия"),
+  );
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /устройства/ }).click();
   const settingsNav = page

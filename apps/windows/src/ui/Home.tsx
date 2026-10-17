@@ -139,58 +139,77 @@ export function Home() {
               saveLocationSelection(activeSession.userId, selection);
             }}
             onConnectabilityChange={setLocationConnectable}
-            disabled={canDisconnect(connectionState) || ["CONNECTING", "RECONCILING", "TUNNEL_ESTABLISHED", "VERIFYING_INTERNET", "DISCONNECTING"].includes(connectionState.phase)}
+            disabled={
+              canDisconnect(connectionState) ||
+              [
+                "CONNECTING",
+                "RECONCILING",
+                "TUNNEL_ESTABLISHED",
+                "VERIFYING_INTERNET",
+                "DISCONNECTING",
+              ].includes(connectionState.phase)
+            }
           />
           <div className="connection-card">
-          <button
-            type="button"
-            disabled={
-              connectionState.phase === "CONNECTING" ||
-              connectionState.phase === "TUNNEL_ESTABLISHED" ||
-              connectionState.phase === "VERIFYING_INTERNET" ||
-              connectionState.phase === "RECONCILING" ||
-              connectionState.phase === "DISCONNECTING" ||
-              (!canDisconnect(connectionState) && !locationConnectable)
-            }
-            aria-describedby="connection-unavailable"
-            onClick={() =>
-              void (canDisconnect(connectionState) ? disconnect() : connect())
-            }
-          >
-            {connectionState.phase === "DISCONNECTING"
-              ? "DISCONNECTING"
-              : connectionState.phase === "CONNECTING" ||
-                  connectionState.phase === "TUNNEL_ESTABLISHED" ||
-                  connectionState.phase === "VERIFYING_INTERNET" ||
-                  connectionState.phase === "RECONCILING"
-                ? "CONNECTING"
-                : canDisconnect(connectionState)
-                  ? "DISCONNECT"
-                  : "CONNECT"}
-          </button>
-          <h2 className="connection-status" aria-live="polite">{connectionHeading(connectionState)}</h2>
-          {profile?.plan === "FREE" && connectionState.phase === "CONNECTED" && connectionState.session.remainingSeconds !== null ? (
-            <p role="timer">Осталось: {formatRemaining(connectionState.session.remainingSeconds)}</p>
-          ) : null}
-          <p id="connection-unavailable" className="field-help">
-            {connectionState.phase === "DISCONNECTED" && (!locationConnectable ? "Сейчас подключение недоступно." : "Готово к подключению.")}
-          </p>
-          {connectionErrorMessage !== null ||
-          ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
-            connectionState.phase,
-          ) ? (
-            <p className="connection-error" role="alert">
-              {connectionErrorMessage ??
-                connectionUnavailableMessage(connectionState)}
+            <button
+              type="button"
+              disabled={
+                connectionState.phase === "CONNECTING" ||
+                connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                connectionState.phase === "VERIFYING_INTERNET" ||
+                connectionState.phase === "RECONCILING" ||
+                connectionState.phase === "DISCONNECTING" ||
+                (!canDisconnect(connectionState) && !locationConnectable)
+              }
+              aria-describedby="connection-unavailable"
+              onClick={() =>
+                void (canDisconnect(connectionState) ? disconnect() : connect())
+              }
+            >
+              {connectionState.phase === "DISCONNECTING"
+                ? "DISCONNECTING"
+                : connectionState.phase === "CONNECTING" ||
+                    connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                    connectionState.phase === "VERIFYING_INTERNET" ||
+                    connectionState.phase === "RECONCILING"
+                  ? "CONNECTING"
+                  : canDisconnect(connectionState)
+                    ? "DISCONNECT"
+                    : "CONNECT"}
+            </button>
+            <h2 className="connection-status" aria-live="polite">
+              {connectionHeading(connectionState)}
+            </h2>
+            {profile?.plan === "FREE" &&
+            connectionState.phase === "CONNECTED" &&
+            connectionState.session.remainingSeconds !== null ? (
+              <p role="timer">
+                Осталось:{" "}
+                {formatRemaining(connectionState.session.remainingSeconds)}
+              </p>
+            ) : null}
+            <p id="connection-unavailable" className="field-help">
+              {connectionState.phase === "DISCONNECTED" &&
+                (!locationConnectable
+                  ? "Сейчас подключение недоступно."
+                  : "Готово к подключению.")}
             </p>
-          ) : null}
-          {connectionState.phase === "DISCONNECTED" &&
-          connectionState.backend === "UNAVAILABLE" ? (
-            <p className="connection-error" role="status">
-              VPN на компьютере остановлен. Сервер завершит сессию после
-              восстановления связи.
-            </p>
-          ) : null}
+            {connectionErrorMessage !== null ||
+            ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
+              connectionState.phase,
+            ) ? (
+              <p className="connection-error" role="alert">
+                {connectionErrorMessage ??
+                  connectionUnavailableMessage(connectionState)}
+              </p>
+            ) : null}
+            {connectionState.phase === "DISCONNECTED" &&
+            connectionState.backend === "UNAVAILABLE" ? (
+              <p className="connection-error" role="status">
+                VPN на компьютере остановлен. Сервер завершит сессию после
+                восстановления связи.
+              </p>
+            ) : null}
           </div>
           <CurrentLocation connection={connectionState} />
         </div>
@@ -209,7 +228,14 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
       </div>
       <div>
         <span>план</span>
-        <strong>{profile.plan}{profile.plan === "PREMIUM" ? " ⭐" : profile.plan === "PLATINUM" ? " 💎" : ""}</strong>
+        <strong>
+          {profile.plan}
+          {profile.plan === "PREMIUM"
+            ? " ⭐"
+            : profile.plan === "PLATINUM"
+              ? " 💎"
+              : ""}
+        </strong>
       </div>
       <div>
         <span>активные устройства</span>

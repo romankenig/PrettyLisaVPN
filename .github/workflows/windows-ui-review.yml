@@ -28,6 +28,7 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
+      # Native review uses the loopback fixture, never an external IP service.
       VITE_PUBLIC_LOCATION_URL: http://127.0.0.1:8000/public-location
     steps:
       - uses: actions/checkout@v4

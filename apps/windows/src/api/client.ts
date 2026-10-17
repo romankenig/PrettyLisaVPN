@@ -642,7 +642,9 @@ function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {
     !isUuid(value.device.installation_id) ||
     !["ACTIVE", "REVOKED"].includes(String(value.device.status)) ||
     !isRecord(value.subscription) ||
-    !["FREE", "PREMIUM", "PLATINUM"].includes(String(value.subscription.plan)) ||
+    !["FREE", "PREMIUM", "PLATINUM"].includes(
+      String(value.subscription.plan),
+    ) ||
     !["ACTIVE", "CANCELED", "EXPIRED"].includes(
       String(value.subscription.status),
     )

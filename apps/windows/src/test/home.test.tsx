@@ -114,7 +114,11 @@ async function renderFresh(api: ApiClient) {
 beforeEach(() => localStorage.clear());
 
 describe("authenticated Home", () => {
-  it.each([["FREE", "FREE"], ["PREMIUM", "PREMIUM ⭐"], ["PLATINUM", "PLATINUM 💎"]] as const)("shows the %s plan decoration", async (plan, label) => {
+  it.each([
+    ["FREE", "FREE"],
+    ["PREMIUM", "PREMIUM ⭐"],
+    ["PLATINUM", "PLATINUM 💎"],
+  ] as const)("shows the %s plan decoration", async (plan, label) => {
     const api = mockApi();
     vi.mocked(api.me).mockResolvedValue({ ...profile, plan });
     await renderFresh(api);
@@ -123,9 +127,17 @@ describe("authenticated Home", () => {
 
   it("keeps controls on the left and an empty right panel", async () => {
     renderRestored();
-    await waitFor(() => expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled());
-    expect(screen.getByRole("button", { name: "CONNECT" }).closest(".home-connect-panel")).not.toBeNull();
-    expect(document.querySelector(".home-reserved-panel")).toBeEmptyDOMElement();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled(),
+    );
+    expect(
+      screen
+        .getByRole("button", { name: "CONNECT" })
+        .closest(".home-connect-panel"),
+    ).not.toBeNull();
+    expect(
+      document.querySelector(".home-reserved-panel"),
+    ).toBeEmptyDOMElement();
     expect(screen.queryByText("локация")).not.toBeInTheDocument();
   });
 

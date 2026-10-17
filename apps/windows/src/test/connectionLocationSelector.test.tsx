@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { fireEvent, render, screen, waitFor, within, act } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+  act,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -47,7 +54,11 @@ function mockApi(): ApiClient {
   };
 }
 
-function renderSelector(api = mockApi(), plan: "FREE" | "PREMIUM" = "FREE", initial: VpnLocationSelection = DEFAULT_VPN_LOCATION_SELECTION) {
+function renderSelector(
+  api = mockApi(),
+  plan: "FREE" | "PREMIUM" = "FREE",
+  initial: VpnLocationSelection = DEFAULT_VPN_LOCATION_SELECTION,
+) {
   const session = createTestAuthenticationSession();
   session.activateRestored({
     accessToken: "access-token",
@@ -64,9 +75,7 @@ function renderSelector(api = mockApi(), plan: "FREE" | "PREMIUM" = "FREE", init
   });
 
   function Harness() {
-    const [selection, setSelection] = useState<VpnLocationSelection>(
-      initial,
-    );
+    const [selection, setSelection] = useState<VpnLocationSelection>(initial);
     return (
       <>
         <ConnectionLocationSelector
@@ -105,50 +114,101 @@ function renderSelector(api = mockApi(), plan: "FREE" | "PREMIUM" = "FREE", init
 afterEach(() => vi.useRealTimers());
 
 describe("connection location dropdown", () => {
-  it.each(["FREE", "PREMIUM"] as const)("defaults %s users to Autopilot and selects an available country", async (plan) => {
-    const api = renderSelector(mockApi(), plan);
-    expect(screen.getByRole("combobox")).toBeDisabled();
-    await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
-    expect(screen.getByRole("combobox")).toHaveTextContent("автопилот");
-    fireEvent.click(screen.getByRole("combobox"));
-    const list = screen.getByRole("listbox");
-    expect(within(list).getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["автопилот", "топ", "все страны"]);
-    expect(within(list).queryByRole("option", { name: /США/ })).not.toBeInTheDocument();
-    fireEvent.click(within(within(list).getByRole("group", { name: "все страны" })).getByRole("option", { name: /Германия/ }));
-    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toHaveTextContent("Германия");
-    expect(screen.getByText(/"mode":"COUNTRY"/)).toHaveTextContent('"country_code":"DE"');
-    expect(api.listVpnCountries).toHaveBeenCalledWith("access-token", expect.any(AbortSignal));
-  });
+  it.each(["FREE", "PREMIUM"] as const)(
+    "defaults %s users to Autopilot and selects an available country",
+    async (plan) => {
+      const api = renderSelector(mockApi(), plan);
+      expect(screen.getByRole("combobox")).toBeDisabled();
+      await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
+      expect(screen.getByRole("combobox")).toHaveTextContent("автопилот");
+      fireEvent.click(screen.getByRole("combobox"));
+      const list = screen.getByRole("listbox");
+      expect(
+        within(list)
+          .getAllByRole("group")
+          .map((g) => g.getAttribute("aria-label")),
+      ).toEqual(["автопилот", "топ", "все страны"]);
+      expect(
+        within(list).queryByRole("option", { name: /США/ }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(
+        within(
+          within(list).getByRole("group", { name: "все страны" }),
+        ).getByRole("option", { name: /Германия/ }),
+      );
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+      expect(screen.getByRole("combobox")).toHaveTextContent("Германия");
+      expect(screen.getByText(/"mode":"COUNTRY"/)).toHaveTextContent(
+        '"country_code":"DE"',
+      );
+      expect(api.listVpnCountries).toHaveBeenCalledWith(
+        "access-token",
+        expect.any(AbortSignal),
+      );
+    },
+  );
 
   it("ranks the top three by availability and sorts all available countries in Russian", async () => {
     const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockResolvedValue({ autopilot: availability.autopilot, countries: [
-      { country_code: "US", quality: 93, available: true },
-      { country_code: "FR", quality: 90, available: true },
-      { country_code: "DE", quality: 95, available: true },
-      { country_code: "NL", quality: 94, available: true },
-      { country_code: "GB", quality: 100, available: false },
-    ] });
+    vi.mocked(api.listVpnCountries).mockResolvedValue({
+      autopilot: availability.autopilot,
+      countries: [
+        { country_code: "US", quality: 93, available: true },
+        { country_code: "FR", quality: 90, available: true },
+        { country_code: "DE", quality: 95, available: true },
+        { country_code: "NL", quality: 94, available: true },
+        { country_code: "GB", quality: 100, available: false },
+      ],
+    });
     renderSelector(api);
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
     fireEvent.click(screen.getByRole("combobox"));
-    const names = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("option").map((o) => o.querySelector(".location-option__name")?.textContent);
-    expect(names("топ")).toEqual(["Германия", "Нидерланды", "Соединенные Штаты"]);
-    expect(names("все страны")).toEqual(["Германия", "Нидерланды", "Соединенные Штаты", "Франция"]);
-    expect(screen.getAllByRole("option").every((o) => o.querySelector("svg") && o.querySelector(".location-option__quality"))).toBe(true);
+    const names = (group: string) =>
+      within(screen.getByRole("group", { name: group }))
+        .getAllByRole("option")
+        .map((o) => o.querySelector(".location-option__name")?.textContent);
+    expect(names("топ")).toEqual([
+      "Германия",
+      "Нидерланды",
+      "Соединенные Штаты",
+    ]);
+    expect(names("все страны")).toEqual([
+      "Германия",
+      "Нидерланды",
+      "Соединенные Штаты",
+      "Франция",
+    ]);
+    expect(
+      screen
+        .getAllByRole("option")
+        .every(
+          (o) =>
+            o.querySelector("svg") &&
+            o.querySelector(".location-option__quality"),
+        ),
+    ).toBe(true);
   });
 
   it("restores a country and falls back to Autopilot when it is unavailable", async () => {
-    renderSelector(mockApi(), "PREMIUM", { mode: "COUNTRY", country_code: "US" });
+    renderSelector(mockApi(), "PREMIUM", {
+      mode: "COUNTRY",
+      country_code: "US",
+    });
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
-    await waitFor(() => expect(screen.getByText(/"mode":"AUTO"/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/"mode":"AUTO"/)).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole("combobox"));
-    expect(within(screen.getByRole("group", { name: "топ" })).getAllByRole("option")).toHaveLength(1);
+    expect(
+      within(screen.getByRole("group", { name: "топ" })).getAllByRole("option"),
+    ).toHaveLength(1);
   });
 
   it("preserves a valid previous country and supports keyboard selection and Escape", async () => {
-    renderSelector(mockApi(), "PREMIUM", { mode: "COUNTRY", country_code: "DE" });
+    renderSelector(mockApi(), "PREMIUM", {
+      mode: "COUNTRY",
+      country_code: "DE",
+    });
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
     const combo = screen.getByRole("combobox");
     expect(combo).toHaveTextContent("Германия");
@@ -163,11 +223,16 @@ describe("connection location dropdown", () => {
 
   it("disables stale data after refresh failure and recovers", async () => {
     const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockResolvedValueOnce(availability).mockRejectedValueOnce(new ApiError("NETWORK_ERROR")).mockResolvedValueOnce(availability);
+    vi.mocked(api.listVpnCountries)
+      .mockResolvedValueOnce(availability)
+      .mockRejectedValueOnce(new ApiError("NETWORK_ERROR"))
+      .mockResolvedValueOnce(availability);
     renderSelector(api);
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "обновить страны" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Проверьте сеть");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Проверьте сеть",
+    );
     expect(screen.getByRole("combobox")).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
@@ -175,7 +240,10 @@ describe("connection location dropdown", () => {
 
   it("handles an empty list and unavailable Autopilot without selectable countries", async () => {
     const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockResolvedValue({ autopilot: { quality: 0, available: false }, countries: [] });
+    vi.mocked(api.listVpnCountries).mockResolvedValue({
+      autopilot: { quality: 0, available: false },
+      countries: [],
+    });
     renderSelector(api);
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
     fireEvent.click(screen.getByRole("combobox"));
@@ -185,9 +253,13 @@ describe("connection location dropdown", () => {
 
   it("retries an initial backend error", async () => {
     const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockRejectedValueOnce(new ApiError("SERVER_ERROR")).mockResolvedValueOnce(availability);
+    vi.mocked(api.listVpnCountries)
+      .mockRejectedValueOnce(new ApiError("SERVER_ERROR"))
+      .mockResolvedValueOnce(availability);
     renderSelector(api);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Попробуйте позже");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Попробуйте позже",
+    );
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
   });
@@ -195,10 +267,13 @@ describe("connection location dropdown", () => {
   it("refreshes availability automatically after a minute", async () => {
     vi.useFakeTimers();
     const api = renderSelector();
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(api.listVpnCountries).toHaveBeenCalledTimes(1);
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
     expect(api.listVpnCountries).toHaveBeenCalledTimes(2);
   });
 });
-
