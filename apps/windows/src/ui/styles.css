@@ -1244,7 +1244,7 @@ main dd {
 }
 .billing-card {
   min-width: 0;
-  padding: 24px;
+  padding: 20px;
   border-radius: 18px;
   background: var(--color-mercury);
   color: var(--color-black);
@@ -1264,11 +1264,6 @@ main dd {
 }
 .billing-current {
   margin: 8px 0;
-  color: var(--color-scorpion);
-  font-size: 12px;
-}
-.billing-intro {
-  margin: 8px 0 20px;
   color: var(--color-scorpion);
   font-size: 12px;
 }
@@ -1333,7 +1328,7 @@ main dd {
 .billing-prices {
   display: grid;
   gap: 8px;
-  margin: 16px 0 20px;
+  margin: 12px 0 16px;
 }
 .billing-price-primary,
 .billing-price-secondary {

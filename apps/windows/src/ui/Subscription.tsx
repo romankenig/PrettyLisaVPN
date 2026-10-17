@@ -100,6 +100,7 @@ function SubscriptionContent() {
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
+        setNotice(null);
         if (err instanceof ApiError && err.code === "AUTH_INVALID") {
           void session
             .clear()
@@ -263,7 +264,7 @@ function SubscriptionContent() {
           .catch(() => setError("не удалось завершить сессию"));
       else
         setError(
-          "не удалось подтвердить действие. повторная попытка не создаст новый платёж",
+          "не удалось подтвердить действие. обновите данные и попробуйте снова",
         );
     } finally {
       requests.current.delete(controller);
@@ -342,11 +343,7 @@ function SubscriptionContent() {
                     ? "автопродление включено"
                     : "автопродление отключено"}
                 </p>
-              ) : (
-                <p className="billing-intro">
-                  без рекламы и ограничений по времени
-                </p>
-              )}
+              ) : null}
               {offers.length > 1 ? (
                 <label className="billing-offer-select">
                   тариф на месяц
@@ -449,11 +446,7 @@ function SubscriptionContent() {
                 в браузере
               </p>
               {paid && !data.auto_renew ? (
-                <p className="billing-no-renew">
-                  {data.payment_method
-                    ? "автоматических списаний нет"
-                    : "способ оплаты не привязан. автоматических списаний нет"}
-                </p>
+                <p className="billing-no-renew">автоматических списаний нет</p>
               ) : null}
               {can("CANCEL") ? (
                 <div className="billing-cancel-area">
@@ -473,7 +466,7 @@ function SubscriptionContent() {
         ) : null}
         {pending ? (
           <div className="billing-pending" role="status">
-            <span>ожидаем подтверждения. после оплаты обновим подписку</span>
+            <span>ожидаем подтверждения платёжного сервиса</span>
             {operation.redirect_url ? (
               <button
                 type="button"
@@ -544,11 +537,12 @@ function planName(plan: string) {
       : plan.toLowerCase();
 }
 function dateLabel(date: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
+  const formatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(date));
+  });
+  return formatter.format(new Date(date)).replace(/\s?г\.$/, "");
 }
 function CancelConfirmation({
   until,

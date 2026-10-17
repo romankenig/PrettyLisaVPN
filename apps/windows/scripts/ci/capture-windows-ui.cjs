@@ -128,7 +128,7 @@ async function screenshot(name) {
       document.body,
       main,
       ...document.querySelectorAll(
-        ".connection-card, .home-workspace, .sidebar, .settings-devices",
+        ".connection-card, .home-workspace, .sidebar, .settings-devices, .subscription-scroll",
       ),
     ]) {
       if (
@@ -417,9 +417,7 @@ async function main() {
     () => document.documentElement.dataset.paymentReviewUrl === "opened",
   );
   await page
-    .getByText("ожидаем подтверждения. после оплаты обновим подписку", {
-      exact: true,
-    })
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
     .waitFor();
   if (
     !(await page
@@ -434,9 +432,7 @@ async function main() {
     .getByRole("button", { name: "изменить способ оплаты", exact: true })
     .click();
   await page
-    .getByText("ожидаем подтверждения. после оплаты обновим подписку", {
-      exact: true,
-    })
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
     .waitFor();
   await confirmBilling();
   await page
