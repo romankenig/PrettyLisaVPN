@@ -13,6 +13,9 @@ import { createDefaultVpnConnection } from "./vpn/defaultConnection";
 import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
+import { WindowFrame } from "./ui/WindowFrame";
+import { createPublicLocationProvider } from "./location/publicLocation";
+import { createReviewVpnConnection } from "./review/vpnFixture";
 import "./ui/styles.css";
 const root = createRoot(document.getElementById("root")!);
 try {
@@ -29,7 +32,12 @@ try {
     credentialStorage,
     session,
   );
-  const vpnConnection = createDefaultVpnConnection(api);
+  const reviewVpn =
+    config.environment === "test" && import.meta.env.VITE_UI_REVIEW_VPN === "1";
+  const vpnConnection = reviewVpn
+    ? createReviewVpnConnection(api)
+    : createDefaultVpnConnection(api);
+  if (reviewVpn) document.documentElement.dataset.vpnReview = "synthetic";
   root.render(
     <StrictMode>
       <ApplicationProvider
@@ -41,24 +49,36 @@ try {
           session,
           sessionRestoration,
           vpnConnection,
+          publicLocation: createPublicLocationProvider(
+            createHttpTransport(),
+            import.meta.env.VITE_PUBLIC_LOCATION_URL,
+            config.environment === "test",
+          ),
         }}
       >
         <HashRouter>
-          <SessionRestorationGate
-            restoration={sessionRestoration}
-            session={session}
-          >
-            <App />
-          </SessionRestorationGate>
+          <WindowFrame>
+            <SessionRestorationGate
+              restoration={sessionRestoration}
+              session={session}
+            >
+              <App />
+            </SessionRestorationGate>
+          </WindowFrame>
         </HashRouter>
       </ApplicationProvider>
     </StrictMode>,
   );
 } catch {
   root.render(
-    <main role="alert">
-      <h1>не удалось запустить PrettyLisaVPN</h1>
-      <p>проверьте конфигурацию приложения.</p>
-    </main>,
+    <WindowFrame>
+      <main role="alert">
+        <h1>
+          не удалось запустить{" "}
+          <span className="product-name">PrettyLisaVPN</span>
+        </h1>
+        <p>проверьте конфигурацию приложения.</p>
+      </main>
+    </WindowFrame>,
   );
 }

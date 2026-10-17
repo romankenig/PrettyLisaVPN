@@ -1,0 +1,42 @@
+name: Export UI screenshots
+
+on:
+  push:
+    branches: [codex/windows-ui-review]
+    paths: [".github/workflows/export-ui-screenshots.yml"]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Windows UI review workflow run ID
+        required: true
+        default: "38881749289"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-ui-review
+          path: screenshots-source
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id || '38881749289' }}
+      - name: Export synthetic UI PNGs as text for inspection
+        shell: python
+        run: |
+          import base64
+          import json
+          from pathlib import Path
+          for path in sorted(Path("screenshots-source").glob("*.png")):
+              data = path.read_bytes()
+              if not data.startswith(b"\x89PNG\r\n\x1a\n") or len(data) > 5_000_000:
+                  raise ValueError("Invalid screenshot")
+              print("UI_SCREENSHOT " + json.dumps({
+                  "name": path.name,
+                  "base64": base64.b64encode(data).decode("ascii"),
+              }))

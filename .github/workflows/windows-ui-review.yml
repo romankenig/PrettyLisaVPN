@@ -1,0 +1,94 @@
+name: Windows UI review
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - "apps/windows/**"
+      - ".github/workflows/windows-ui-review.yml"
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: windows-ui-review-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apps/windows
+        shell: pwsh
+    env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      VITE_APP_ENVIRONMENT: test
+      VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
+      # Explicit synthetic tunnel dependencies are shared by both native UI runs.
+      VITE_PUBLIC_LOCATION_URL: http://127.0.0.1:8000/public-location
+      VITE_UI_REVIEW_VPN: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/windows/package.json
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check frontend
+        run: |
+          pnpm typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm test
+          exit $LASTEXITCODE
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Check changed source formatting
+        run: |
+          $formatSources = @("src/review/vpnFixture.ts", "src/ui/TrafficMode.tsx", "src/ui/ConnectionInfo.tsx", "src/vpn/connectionDetails.ts", "src/vpn/protocol.ts", "src/vpn/connection.ts", "src/vpn/wireguard.ts", "src/test/connectionDetails.test.ts", "src/ui/ConnectionLocationSelector.tsx", "src/ui/CurrentLocation.tsx", "src/ui/CountryIcon.tsx", "src/location/publicLocation.ts", "src/vpn/selection.ts", "src/api/client.ts", "src/auth/session.ts", "src/state/application.tsx", "src/test/connectionLocationSelector.test.tsx", "src/test/currentLocation.test.tsx", "src/test/locationSelection.test.ts", "src/test/publicLocation.test.ts", "src/main.tsx", "src/ui/App.tsx", "src/ui/NavigationIcon.tsx", "src/ui/Settings.tsx", "src/ui/useVersions.ts", "src/test/home.test.tsx", "src/ui/Login.tsx", "src/test/login.test.tsx", "src/test/foundation.test.tsx", "src/test/otpVerification.test.tsx", "src/ui/WindowFrame.tsx", "src/ui/Home.tsx", "src/ui/styles.css", "src/test/windowFrame.test.tsx", "src-tauri/tauri.conf.json", "src-tauri/capabilities/main.json", "scripts/ci/capture-windows-ui.cjs")
+          pnpm exec prettier --check --end-of-line auto @formatSources
+          if ($LASTEXITCODE -ne 0) {
+            pnpm exec prettier --write --end-of-line auto @formatSources
+            git diff -- @formatSources
+            exit 1
+          }
+          rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs
+          exit $LASTEXITCODE
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/windows/src-tauri
+      - name: Build native UI review executable
+        run: |
+          cargo metadata --locked --offline --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm tauri build --debug --no-bundle
+      - name: Install screenshot tooling separately
+        run: |
+          $tools = Join-Path $env:RUNNER_TEMP "windows-ui-tools"
+          New-Item -ItemType Directory -Force $tools | Out-Null
+          Copy-Item scripts/ci/capture-windows-ui.cjs $tools
+          npm install --prefix $tools --no-audit --no-fund playwright-core@1.56.1
+      - name: Capture native Windows WebView2 screens
+        run: |
+          python scripts/ci/mock-ui-api.py --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node (Join-Path $env:RUNNER_TEMP "windows-ui-tools/capture-windows-ui.cjs")
+      - name: Upload screenshots and review executable
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-ui-review
+          overwrite: true
+          path: |
+            apps/windows/artifacts/ui-review/
+          if-no-files-found: warn
+          retention-days: 14

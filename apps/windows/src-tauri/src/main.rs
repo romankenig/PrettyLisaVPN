@@ -7,6 +7,7 @@ mod obfuscation_transport;
 mod packet_obfuscation;
 mod refresh_credentials;
 mod wg_obfuscator;
+mod window_frame;
 mod wireguard_keys;
 mod wireguard_tunnel;
 
@@ -16,6 +17,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
+            window_frame::configure(app)?;
             let app_config_dir = app.path().app_config_dir()?;
             let installation_id = installation_id::InstallationIdState::load(&app_config_dir)?;
             app.manage(installation_id);

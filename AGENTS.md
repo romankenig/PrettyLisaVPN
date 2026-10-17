@@ -68,6 +68,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Preserve backwards compatibility unless the task explicitly requires a breaking change.
 - Reuse existing tooling and dependencies when they already solve the requirement.
 - For client UI work, follow the shared logo and color rules in `docs/design-system.md`.
+- Always write the product name exactly as `PrettyLisaVPN`, including rendered UI and error messages. Preserve this casing when applying lowercase typography.
 - Every database schema change requires an Alembic migration.
 - Every new endpoint requires tests.
 - Every business rule requires unit tests.
@@ -75,6 +76,21 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - External providers must be mockable in tests.
 - Run the relevant formatting, linting, type-checking, and test commands before finishing.
 - After completing and verifying changes, commit them and push the current branch to `origin` so the remote repository stays synchronized, unless the user explicitly says not to push.
+
+## Версии и дальнейшие изменения
+
+- Следовать [docs/versioning.md](docs/versioning.md); это основной документ о версиях, сборках и выпуске. История поставляемых изменений — [CHANGELOG.md](CHANGELOG.md).
+- Версии клиентов по платформам и backend независимы: `MAJOR.MINOR.PATCH`. В Windows одна версия охватывает React, Rust/native и упаковку.
+- Исправления/небольшие визуальные правки и внутренние изменения поставляемого кода — PATCH; новые возможности/существенный UI — MINOR; несовместимые изменения после 1.0 — MAJOR. До 1.0 несовместимые изменения повышают MINOR и требуют BREAKING-записи с планом перехода.
+- Повышать версию один раз на логическую продуктовую задачу, не на каждый commit/CI run. Следующая самостоятельная задача получает следующий номер, даже в том же PR. Только docs/tests/CI без изменения поставляемого приложения — без bump.
+- До реализации назвать затронутые компоненты, исходную/целевую версии и основание повышения либо `version unchanged`. Менять версии только затронутых компонентов.
+- Windows: основной источник `apps/windows/package.json`; синхронно сверять `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, собственную запись `src-tauri/Cargo.lock`. Backend: основной источник `backend/pyproject.toml`; согласовать локальный default в `backend/src/prettylisavpn/config.py` и примеры окружения.
+- Backend UI-версия берётся только из фактического GET /version; при недоступности — «недоступна». Не считать равенство frontend/backend номеров признаком API-совместимости.
+- Текущий backend CI использует legacy `dev-<SHA>`. Целевой SemVer runtime-формат из документа не считать внедрённым до отдельного изменения и проверки deploy/rollback.
+- Для каждой продуктовой задачи обновлять CHANGELOG под Unreleased и handoff: версии до/после, совместимость, проверенный product SHA, реальный build SHA/run/attempt, артефакты и backend follow-up. Не заявлять проверку нового кода по старой сборке; различать PR head и временный merge SHA.
+- Для Windows UI обязательны соответствующие проверки и реальные native-скриншоты. Для docs-only проверять ссылки, согласованность правил и diff; нативную сборку из-за текста не повторять.
+- После проверок выполнять commit и push, если владелец не запретил, и обновлять PR. Merge, release-теги/публикация и production deploy — отдельные действия, требующие соответствующего поручения; учитывать существующий автоматический development-deploy.
+- Переход Windows на 0.2.0 применён в задаче полировки UI от 2026-10-16; backend остаётся 0.1.0 в исходных манифестах. Правки названия и экрана входа от 2026-10-17 повышают Windows до 0.2.1. Домашний экран переработан в 0.3.0 (2026-10-17); см. docs/home-screen.md. Блок режимов трафика и сведения о соединении добавлены в 0.4.0; выборочная маршрутизация отложена по решению владельца. Удаление двух подписей правого блока повышает Windows до 0.4.1. Следующую самостоятельную продуктовую задачу Windows версионировать от 0.4.1 по docs/versioning.md; повторные исправления/CI текущей задачи номер не повышают.
 
 ## Task Workflow
 
@@ -92,3 +108,13 @@ For every coding task:
    - architecture decisions;
    - tests and checks run;
    - remaining risks or follow-up work.
+
+## Полное завершение CI
+
+- Перед итоговым «готово» проверить ВСЕ запуски последнего remote HEAD: pull_request, push, workflow_dispatch и вызываемые/reusable workflow. Проверки только одного Windows workflow или только PR-triggered списка недостаточно.
+- Получать общий список Actions runs по repository/branch/head_sha с пагинацией, а не полагаться только на fetch_commit_workflow_runs: этот connector фильтрует события pull_request. Дополнительно сверять check-runs/check suites и commit statuses; пустой список statuses не означает успешный CI.
+- Для каждого ожидаемого запуска дождаться status=completed и conclusion=success; затем проверить все jobs. Skipped допустим только при объяснимом условии (например, deploy-development вне develop). Failure, timed_out, action_required, неожиданно missing или cancelled для текущего HEAD не считать успехом.
+- Старый cancelled допустим только как superseded-run прежнего commit; он не заменяет проверку текущего HEAD. Не скрывать ошибки отключением нужной проверки, continue-on-error или удалением истории запусков.
+- После ЛЮБОГО последнего push, включая docs/handoff commit, снова проверить remote HEAD и все автоматически запущенные workflow. Не завершать задачу, пока они pending/in_progress. Итоговые ссылки и результаты можно обновлять в описании PR без нового commit, чтобы не создавать бесконечные повторные прогоны документацией.
+- Источник бинарного артефакта обязан соответствовать проверяемым исходникам. Не скачивать фиксированный исторический exe для нового UI/capture-сценария. Windows window capture теперь вызывает общий Windows UI review через workflow_call и собирает текущий commit; обычные UI/script-изменения автоматически проверяет основной PR workflow.
+- В итоговом отчёте указывать проверенный HEAD, названия всех workflow, конечные статусы и ссылки. Если полноценный обзор Actions недоступен, явно сообщить ограничение и не утверждать, что все проверки прошли.

@@ -1,13 +1,20 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Link } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ApiError, type MeResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import {
-  DEFAULT_VPN_LOCATION_SELECTION,
+  readLocationSelection,
+  saveLocationSelection,
   type VpnLocationSelection,
 } from "../vpn/selection";
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
-import { countryName } from "./ConnectionLocationSelector";
+import { CurrentLocation } from "./CurrentLocation";
+import { ConnectionInfo } from "./ConnectionInfo";
+import { TrafficMode } from "./TrafficMode";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 
 type ProfileState =
@@ -26,21 +33,18 @@ export function Home() {
     activeSession?.profile ? { phase: "ready" } : { phase: "loading" },
   );
   const [profileAttempt, setProfileAttempt] = useState(0);
-  const [logoutState, setLogoutState] = useState<
-    "idle" | "submitting" | "error"
-  >("idle");
-  const logoutInFlight = useRef(false);
   const [locationSelection, setLocationSelection] =
-    useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
+    useState<VpnLocationSelection>(() =>
+      readLocationSelection(activeSession?.userId ?? ""),
+    );
   const [locationConnectable, setLocationConnectable] = useState(false);
   const connectionState = useSyncExternalStore(
     vpnConnection.subscribe,
     vpnConnection.current,
     vpnConnection.current,
   );
-  const [connectionErrorMessage, setConnectionErrorMessage] = useState<
-    string | null
-  >(null);
+  const [connectionErrorMessage, setConnectionErrorMessage] =
+    useState<ReactNode>(null);
 
   useEffect(() => {
     if (activeSession === null) return;
@@ -77,28 +81,6 @@ export function Home() {
   const profile = activeSession.profile;
   const accessToken = activeSession.accessToken;
 
-  async function logout() {
-    if (logoutInFlight.current || activeSession === null) return;
-    logoutInFlight.current = true;
-    setLogoutState("submitting");
-    try {
-      await api.logout(accessToken);
-      await session.clear();
-    } catch (error) {
-      if (isInvalidSession(error)) {
-        try {
-          await session.clear();
-          return;
-        } catch {
-          // The generic state below does not expose native storage details.
-        }
-      }
-      setLogoutState("error");
-    } finally {
-      logoutInFlight.current = false;
-    }
-  }
-
   async function connect() {
     if (
       !locationConnectable ||
@@ -129,8 +111,10 @@ export function Home() {
 
   return (
     <section className="account-home" aria-labelledby="home-title">
-      <p className="eyebrow">аккаунт</p>
-      <h1 id="home-title">PrettyLisaVPN</h1>
+      <p className="eyebrow">home</p>
+      <h1 id="home-title" className="product-name">
+        PrettyLisaVPN
+      </h1>
 
       {profileState.phase === "loading" ? (
         <p role="status">загружаем данные аккаунта…</p>
@@ -148,97 +132,94 @@ export function Home() {
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
 
-      <ConnectionLocationSelector
-        selection={locationSelection}
-        onSelectionChange={setLocationSelection}
-        onConnectabilityChange={setLocationConnectable}
-      />
-
-      <div className="connection-card">
-        <div>
-          <p className="connection-card__label">VPN</p>
-          <h2>{connectionHeading(connectionState)}</h2>
-          <p>
-            {connectionState.phase === "CONNECTED"
-              ? `Локация: ${countryName(connectionState.session.countryCode)}`
-              : "Выберите локацию и установите защищённое соединение."}
-          </p>
-          {profile?.plan === "FREE" &&
-          connectionState.phase === "CONNECTED" &&
-          connectionState.session.remainingSeconds !== null ? (
-            <p role="timer">
-              Осталось:{" "}
-              {formatRemaining(connectionState.session.remainingSeconds)}
-            </p>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          disabled={
-            connectionState.phase === "CONNECTING" ||
-            connectionState.phase === "TUNNEL_ESTABLISHED" ||
-            connectionState.phase === "VERIFYING_INTERNET" ||
-            connectionState.phase === "RECONCILING" ||
-            connectionState.phase === "DISCONNECTING" ||
-            (!canDisconnect(connectionState) && !locationConnectable)
-          }
-          aria-describedby="connection-unavailable"
-          onClick={() =>
-            void (canDisconnect(connectionState) ? disconnect() : connect())
-          }
-        >
-          {connectionState.phase === "DISCONNECTING"
-            ? "DISCONNECTING"
-            : connectionState.phase === "CONNECTING" ||
+      <div className="home-workspace">
+        <div className="home-connect-panel">
+          <ConnectionLocationSelector
+            selection={locationSelection}
+            onSelectionChange={(selection) => {
+              setLocationSelection(selection);
+              saveLocationSelection(activeSession.userId, selection);
+            }}
+            onConnectabilityChange={setLocationConnectable}
+            disabled={
+              canDisconnect(connectionState) ||
+              [
+                "CONNECTING",
+                "RECONCILING",
+                "TUNNEL_ESTABLISHED",
+                "VERIFYING_INTERNET",
+                "DISCONNECTING",
+              ].includes(connectionState.phase)
+            }
+          />
+          <div className="connection-card">
+            <button
+              type="button"
+              disabled={
+                connectionState.phase === "CONNECTING" ||
                 connectionState.phase === "TUNNEL_ESTABLISHED" ||
                 connectionState.phase === "VERIFYING_INTERNET" ||
-                connectionState.phase === "RECONCILING"
-              ? "CONNECTING"
-              : canDisconnect(connectionState)
-                ? "DISCONNECT"
-                : "CONNECT"}
-        </button>
-        <p id="connection-unavailable" className="field-help">
-          {!locationConnectable
-            ? "Сейчас подключение недоступно."
-            : "Подключение использует выбранный режим без выбора конкретного сервера."}
-        </p>
-        {connectionErrorMessage !== null ||
-        ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
-          connectionState.phase,
-        ) ? (
-          <p className="connection-error" role="alert">
-            {connectionErrorMessage ??
-              connectionUnavailableMessage(connectionState)}
-          </p>
-        ) : null}
-        {connectionState.phase === "DISCONNECTED" &&
-        connectionState.backend === "UNAVAILABLE" ? (
-          <p className="connection-error" role="status">
-            VPN на компьютере остановлен. Сервер завершит сессию после
-            восстановления связи.
-          </p>
-        ) : null}
+                connectionState.phase === "RECONCILING" ||
+                connectionState.phase === "DISCONNECTING" ||
+                (!canDisconnect(connectionState) && !locationConnectable)
+              }
+              aria-describedby="connection-unavailable"
+              onClick={() =>
+                void (canDisconnect(connectionState) ? disconnect() : connect())
+              }
+            >
+              {connectionState.phase === "DISCONNECTING"
+                ? "DISCONNECTING"
+                : connectionState.phase === "CONNECTING" ||
+                    connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                    connectionState.phase === "VERIFYING_INTERNET" ||
+                    connectionState.phase === "RECONCILING"
+                  ? "CONNECTING"
+                  : canDisconnect(connectionState)
+                    ? "DISCONNECT"
+                    : "CONNECT"}
+            </button>
+            <h2 className="connection-status" aria-live="polite">
+              {connectionHeading(connectionState)}
+            </h2>
+            {connectionState.phase === "CONNECTED" ? (
+              <ConnectionInfo sessionId={connectionState.session.sessionId} />
+            ) : null}
+            {profile?.plan === "FREE" &&
+            connectionState.phase === "CONNECTED" &&
+            connectionState.session.remainingSeconds !== null ? (
+              <p role="timer">
+                Осталось:{" "}
+                {formatRemaining(connectionState.session.remainingSeconds)}
+              </p>
+            ) : null}
+            <p id="connection-unavailable" className="field-help">
+              {connectionState.phase === "DISCONNECTED" &&
+                (!locationConnectable
+                  ? "Сейчас подключение недоступно."
+                  : "Готово к подключению.")}
+            </p>
+            {connectionErrorMessage !== null ||
+            ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
+              connectionState.phase,
+            ) ? (
+              <p className="connection-error" role="alert">
+                {connectionErrorMessage ??
+                  connectionUnavailableMessage(connectionState)}
+              </p>
+            ) : null}
+            {connectionState.phase === "DISCONNECTED" &&
+            connectionState.backend === "UNAVAILABLE" ? (
+              <p className="connection-error" role="status">
+                VPN на компьютере остановлен. Сервер завершит сессию после
+                восстановления связи.
+              </p>
+            ) : null}
+          </div>
+          <CurrentLocation connection={connectionState} />
+        </div>
+        <TrafficMode />
       </div>
-
-      <div className="home-actions">
-        <Link className="secondary-link" to="/devices">
-          устройства
-        </Link>
-        <button
-          className="logout-button"
-          type="button"
-          disabled={logoutState === "submitting"}
-          onClick={() => void logout()}
-        >
-          {logoutState === "submitting" ? "выходим…" : "выйти"}
-        </button>
-      </div>
-      {logoutState === "error" ? (
-        <p className="logout-error" role="alert">
-          Не удалось завершить сессию. Проверьте сеть и попробуйте снова.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -247,20 +228,23 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
   return (
     <div className="account-summary">
       <div>
-        <span>email</span>
-        <strong>{profile.email}</strong>
+        <span>аккаунт</span>
+        <strong title={profile.email}>{profile.email}</strong>
       </div>
       <div>
         <span>план</span>
-        <strong>{profile.plan}</strong>
+        <strong>
+          {profile.plan}
+          {profile.plan === "PREMIUM"
+            ? " ⭐"
+            : profile.plan === "PLATINUM"
+              ? " 💎"
+              : ""}
+        </strong>
       </div>
       <div>
         <span>активные устройства</span>
         <strong>{profile.active_device_count}</strong>
-      </div>
-      <div>
-        <span>статус</span>
-        <strong className="account-status">активен</strong>
       </div>
     </div>
   );
@@ -295,7 +279,13 @@ function connectionError(error: unknown) {
       return "Не удалось запустить VPN на этом компьютере. Подключение отменено.";
     }
     if (error.code === "VPN_TRAFFIC_INTERCEPTED") {
-      return "Другой VPN или сетевой фильтр не пропускает интернет через PrettyLisaVPN. Отключите другой VPN и повторите подключение.";
+      return (
+        <>
+          Другой VPN или сетевой фильтр не пропускает интернет через{" "}
+          <span className="product-name">PrettyLisaVPN</span>. Отключите другой
+          VPN и повторите подключение.
+        </>
+      );
     }
     if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
       return "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.";

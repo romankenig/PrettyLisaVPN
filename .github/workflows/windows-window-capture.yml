@@ -1,0 +1,21 @@
+name: Windows window capture
+
+on:
+  push:
+    branches: [codex/windows-ui-review]
+    paths:
+      - ".github/workflows/windows-window-capture.yml"
+      - ".github/workflows/windows-ui-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-window-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Build current sources and capture Windows UI
+    uses: ./.github/workflows/windows-ui-review.yml

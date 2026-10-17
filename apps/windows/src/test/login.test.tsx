@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -182,8 +188,41 @@ describe("email login", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "войти по email" }),
+        screen.getByRole("heading", { name: "вход по email" }),
       ).toBeInTheDocument(),
     );
   });
+});
+
+it("keeps the example address separate from the entered email", () => {
+  renderLogin(vi.fn<RequestOtp>());
+  expect(screen.queryByText("без пароля")).not.toBeInTheDocument();
+  expect(screen.getByText("отправим одноразовый код")).toBeVisible();
+  const input = screen.getByPlaceholderText("example@email.com");
+  expect(input).toHaveValue("");
+  fireEvent.change(input, { target: { value: "User@Example.COM" } });
+  expect(input).toHaveValue("User@Example.COM");
+  fireEvent.change(input, { target: { value: "" } });
+  expect(input).toHaveValue("");
+  expect(input).toHaveAttribute("placeholder", "example@email.com");
+});
+
+it("disables navigation on both login and OTP without disabling the form", async () => {
+  renderLogin(vi.fn<RequestOtp>().mockResolvedValue({ status: "accepted" }));
+  function checkDisabledNavigation() {
+    const nav = screen.getByRole("navigation");
+    for (const item of within(nav).getAllByRole("link")) {
+      expect(item).toHaveAttribute("aria-disabled", "true");
+      expect(item).not.toHaveAttribute("href");
+      expect(item).not.toHaveAttribute("tabindex");
+      fireEvent.click(item);
+    }
+  }
+  checkDisabledNavigation();
+  expect(screen.getByRole("heading", { name: "вход по email" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "продолжить" })).toBeEnabled();
+  enterEmail("user@example.com");
+  await screen.findByRole("heading", { name: "введите код" });
+  checkDisabledNavigation();
+  expect(screen.getByRole("heading", { name: "введите код" })).toBeVisible();
 });
