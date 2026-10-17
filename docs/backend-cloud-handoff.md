@@ -1,5 +1,18 @@
 # Backend: продолжение работы из Cloud — 2026-10-17
 
+Уточнение владельца: development VPS — `95.140.152.42`, SSH `root`, порт `22`.
+Предоставлен ED25519 known_hosts, fingerprint
+`SHA256:BrayNvgVNXSzO6xAJ08FwnebiUA8/VlQNgI+ctes96U`.
+Приватный ключ не передан и в Cloud не настроен. Это не подтверждение SSH-входа.
+
+Для проверки двух названных кандидатов (`dev-api.prettylisavpn.com` и
+`api.prettylisavpn.com`) добавлен `Development API probe`: выполняет только
+публичные GET `/health`, `/ready`, `/version` из GitHub runner, с проверкой TLS,
+без redirects, SSH и secrets. Результат сохраняется в JSON artifact и run summary.
+Успех job означает завершение сбора наблюдений; фактическую доступность определяют
+HTTP-результаты. Они не подтверждают сеть самого Cloud. Актуальные результаты,
+SHA/run/attempt и вывод о development-домене фиксируются в описании PR.
+
 ## Область и версии
 
 Исходная ветка `develop`: `694ec52f5a29a7c7174c09ab340d6e436f2c9328`.
