@@ -932,7 +932,7 @@ main dd {
   left: 0;
   right: 0;
   z-index: 10;
-  max-height: 260px;
+  max-height: 240px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
