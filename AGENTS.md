@@ -68,6 +68,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Preserve backwards compatibility unless the task explicitly requires a breaking change.
 - Reuse existing tooling and dependencies when they already solve the requirement.
 - For client UI work, follow the shared logo and color rules in `docs/design-system.md`.
+- При изменении экранов, popup, маршрутов, auth guard и внешних переходов обновлять `docs/windows-navigation.md`; различать реализованные UI-переходы и ожидающую backend интеграцию.
 - Always write the product name exactly as `PrettyLisaVPN`, including rendered UI and error messages. Preserve this casing when applying lowercase typography.
 - Every database schema change requires an Alembic migration.
 - Every new endpoint requires tests.
