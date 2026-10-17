@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
 from threading import Thread
 
 USER_ID = "11111111-1111-4111-8111-111111111111"
@@ -20,10 +21,48 @@ SIMULATE_VPN = False
 DEMO_SESSION = None
 DEMO_VPN_ID = "66666666-6666-4666-8666-666666666666"
 DEMO_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+SIMULATE_MESSAGES = False
+MESSAGE_RECEIPTS = set()
+MESSAGE_ACK_ATTEMPTS = 0
+MESSAGE_FIXTURES = [
+    {
+        "id": "88888888-8888-4888-8888-888888888888", "revision": 1,
+        "kind": "update", "title": "стало удобнее",
+        "blocks": [
+            {"type": "paragraph", "text": "демонстрационное сообщение из тестового API PrettyLisaVPN."},
+            {"type": "list", "items": ["новости и обновления прямо в приложении", "подтверждения синхронизируются через аккаунт"]},
+        ],
+        "fallback_text": "демонстрационное сообщение из тестового API PrettyLisaVPN.",
+        "primary_action": None, "dismiss_label": "понятно", "expires_at": None,
+    },
+    {
+        "id": "99999999-9999-4999-8999-999999999999", "revision": 1,
+        "kind": "promotion", "title": "специальное предложение",
+        "blocks": [{"type": "paragraph", "text": "здесь появятся условия акции от сервера. это демонстрационный пример, не настоящая акция."}],
+        "fallback_text": "демонстрационный пример акции.",
+        "primary_action": {"type": "OPEN_SUBSCRIPTION", "label": "посмотреть подписку"},
+        "dismiss_label": "понятно", "expires_at": None,
+    },
+]
 
 
 def fixture(method, path, body):
     global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
+    global MESSAGE_ACK_ATTEMPTS
+    path = urlsplit(path).path
+    if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
+        return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
+    if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):
+        message_id = path.split("/")[2]
+        if not any(item["id"] == message_id and item["revision"] == body.get("revision") for item in MESSAGE_FIXTURES):
+            return 404, {"error": {"code": "MESSAGE_NOT_FOUND"}}
+        MESSAGE_ACK_ATTEMPTS += 1
+        if MESSAGE_ACK_ATTEMPTS == 1:
+            return 503, {"error": {"code": "MESSAGE_ACK_UNAVAILABLE"}}
+        MESSAGE_RECEIPTS.add((message_id, body["revision"]))
+        return 200, {"id": message_id, "revision": body["revision"], "acknowledged": True}
+    if SIMULATE_MESSAGES and method == "GET" and path == "/ui-review/message-receipts":
+        return 200, {"acknowledged": len(MESSAGE_RECEIPTS), "attempts": MESSAGE_ACK_ATTEMPTS}
     if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-scenario":
         scenario = body.get("scenario")
         if scenario not in (*BILLING_FIXTURES, "error"):
@@ -189,8 +228,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--simulate-vpn", action="store_true", help="Synthetic session data only; requires mocked native IPC")
+    parser.add_argument("--simulate-messages", action="store_true", help="Synthetic announcements and account receipts; never a real backend")
     args = parser.parse_args()
     SIMULATE_VPN = args.simulate_vpn
+    SIMULATE_MESSAGES = args.simulate_messages
     if args.self_test:
         self_test()
     else:

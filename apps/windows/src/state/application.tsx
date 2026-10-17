@@ -10,7 +10,9 @@ import type { PublicLocationProvider } from "../location/publicLocation";
 import type { BillingClient } from "../billing/model";
 import type { PaymentBrowser } from "../native/paymentBrowser";
 import type { SupportSender } from "../support/model";
+import type { MessagesClient } from "../messages/model";
 export interface ApplicationState {
+  messages?: MessagesClient;
   support?: SupportSender;
   billing?: BillingClient;
   paymentBrowser?: PaymentBrowser;

@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { About } from "./About";
+import { AccountMessages } from "./AccountMessages";
 import { Home } from "./Home";
 import { HomeCountryObserver } from "./HomeCountryObserver";
 import { Login } from "./Login";
@@ -27,6 +28,7 @@ export function App() {
   return (
     <div className="shell">
       <HomeCountryObserver />
+      <AccountMessages version={versions.frontend} />
       <aside className="sidebar">
         <nav aria-label="основная навигация">
           {items.map((item) =>

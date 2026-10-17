@@ -1811,3 +1811,88 @@ main dd {
   font-size: 14px;
   overflow-wrap: anywhere;
 }
+
+.account-message {
+  width: min(500px, 92vw);
+  max-height: calc(100vh - 40px);
+  padding: 26px;
+  border: 0;
+  border-radius: 18px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+}
+.account-message::backdrop {
+  background: rgb(44 1 109 / 65%);
+}
+.account-message-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--color-purple-heart);
+  font-size: 12px;
+}
+.account-message .account-message-close {
+  margin: 0;
+  padding: 0 5px;
+  font-size: 23px;
+  color: var(--color-scorpion);
+  background: transparent;
+}
+.account-message h2 {
+  margin: 0 0 16px;
+  font-size: 26px;
+  line-height: 1.2;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.account-message-content {
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--color-scorpion);
+  font-size: 14px;
+  line-height: 1.6;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.account-message-content p {
+  margin: 0 0 12px;
+}
+.account-message-content ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.account-message-content li + li {
+  margin-top: 6px;
+}
+.account-message-error {
+  margin: 12px 0 0;
+  color: var(--color-persian-red);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.account-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+.account-message-actions button {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.account-message-actions .account-message-later {
+  margin-right: auto;
+  color: var(--color-purple-heart);
+  background: transparent;
+}
+.account-message-actions .account-message-primary {
+  color: white;
+  background: var(--color-purple-heart);
+}
