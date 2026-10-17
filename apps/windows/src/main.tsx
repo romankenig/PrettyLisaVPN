@@ -50,7 +50,10 @@ try {
         value={{
           config,
           api,
-          messages: createMessagesClient(config.backendBaseUrl, createHttpTransport()),
+          messages: createMessagesClient(
+            config.backendBaseUrl,
+            createHttpTransport(),
+          ),
           billing: createBillingClient(
             config.backendBaseUrl,
             createHttpTransport(),

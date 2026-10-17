@@ -49,9 +49,13 @@ fs.copyFileSync(
   path.join(output, "billing-fixtures.json"),
 );
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
-const api = spawn("python", ["scripts/ci/mock-ui-api.py", "--simulate-vpn", "--simulate-messages"], {
-  stdio: ["ignore", log, log],
-});
+const api = spawn(
+  "python",
+  ["scripts/ci/mock-ui-api.py", "--simulate-vpn", "--simulate-messages"],
+  {
+    stdio: ["ignore", log, log],
+  },
+);
 let app;
 let browser;
 let page;
@@ -284,9 +288,14 @@ async function main() {
 
   await page.getByLabel("Шестизначный код", { exact: true }).fill("123456");
   await page.getByRole("button", { name: "подтвердить", exact: true }).click();
-  const update = page.getByRole("dialog", { name: "стало удобнее", exact: true });
+  const update = page.getByRole("dialog", {
+    name: "стало удобнее",
+    exact: true,
+  });
   await update.waitFor();
-  const beforeRead = await (await fetch("http://127.0.0.1:8000/ui-review/message-receipts")).json();
+  const beforeRead = await (
+    await fetch("http://127.0.0.1:8000/ui-review/message-receipts")
+  ).json();
   if (beforeRead.acknowledged !== 0 || beforeRead.attempts !== 0)
     throw new Error("Showing a message must not acknowledge it");
   await screenshot("03a-account-message");
@@ -294,16 +303,28 @@ async function main() {
   await update.getByRole("alert").waitFor();
   await screenshot("03b-message-confirmation-error");
   await update.getByRole("button", { name: "понятно", exact: true }).click();
-  const promotion = page.getByRole("dialog", { name: "специальное предложение", exact: true });
+  const promotion = page.getByRole("dialog", {
+    name: "специальное предложение",
+    exact: true,
+  });
   await promotion.waitFor();
   await screenshot("03c-account-promotion");
-  await promotion.getByRole("button", { name: "посмотреть подписку", exact: true }).click();
+  await promotion
+    .getByRole("button", { name: "посмотреть подписку", exact: true })
+    .click();
   await promotion.waitFor({ state: "detached" });
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
-  const afterRead = await (await fetch("http://127.0.0.1:8000/ui-review/message-receipts")).json();
+  const afterRead = await (
+    await fetch("http://127.0.0.1:8000/ui-review/message-receipts")
+  ).json();
   if (afterRead.acknowledged !== 2 || afterRead.attempts !== 3)
-    throw new Error("Message acknowledgements must be confirmed before navigation");
-  await page.getByRole("navigation").getByRole("link", { name: "главная", exact: true }).click();
+    throw new Error(
+      "Message acknowledgements must be confirmed before navigation",
+    );
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "главная", exact: true })
+    .click();
   await page
     .getByRole("heading", { name: "PrettyLisaVPN", exact: true })
     .waitFor();
