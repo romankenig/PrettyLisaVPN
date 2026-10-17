@@ -719,6 +719,16 @@ h1 {
   font-size: 17px;
   overflow-wrap: anywhere;
 }
+.device-card .device-identity,
+.revoke-confirmation .device-identity {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.device-card .device-dates {
+  font-size: 12px;
+  line-height: 1.5;
+}
 .device-card__footer {
   margin-top: 10px;
   padding-top: 10px;

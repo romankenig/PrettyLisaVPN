@@ -550,6 +550,18 @@ async function main() {
   await page
     .getByRole("heading", { name: "Android phone", exact: true })
     .waitFor();
+  const devicesPage = page.locator(".devices-page");
+  if ((await devicesPage.locator(".eyebrow").count()) !== 0)
+    throw new Error("Devices must not have an account eyebrow");
+  if ((await devicesPage.locator(".devices-limit br").count()) !== 1)
+    throw new Error("Device instructions must have a sentence break");
+  if ((await devicesPage.locator(".device-identity").count()) !== 2)
+    throw new Error("Each device needs a stable identifier");
+  if ((await devicesPage.locator(".device-dates time").count()) !== 3)
+    throw new Error("Registration and optional login timestamps must be separate");
+  await devicesPage
+    .getByText("последний вход: нет данных", { exact: false })
+    .waitFor();
   await screenshot("06-devices");
   await page
     .getByRole("button", { name: "отозвать доступ", exact: true })

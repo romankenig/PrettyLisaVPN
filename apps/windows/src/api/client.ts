@@ -83,6 +83,8 @@ export interface DeviceResponse {
   readonly platform: DevicePlatform;
   readonly status: "ACTIVE" | "REVOKED";
   readonly created_at: string;
+  // Optional until the backend provides the last successful sign-in timestamp.
+  readonly last_login_at?: string | null;
   readonly updated_at: string;
   readonly revoked_at: string | null;
   readonly is_current: boolean;
@@ -597,6 +599,9 @@ function isDeviceResponse(value: unknown): value is DeviceResponse {
     ["ACTIVE", "REVOKED"].includes(String(value.status)) &&
     isIsoDate(value.created_at) &&
     isIsoDate(value.updated_at) &&
+    (value.last_login_at === undefined ||
+      value.last_login_at === null ||
+      isIsoDate(value.last_login_at)) &&
     (value.revoked_at === null || isIsoDate(value.revoked_at)) &&
     typeof value.is_current === "boolean"
   );
