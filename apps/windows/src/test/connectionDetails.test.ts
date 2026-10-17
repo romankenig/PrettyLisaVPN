@@ -18,28 +18,24 @@ function controller(): WireGuardTunnelController {
     start: vi.fn().mockResolvedValue("UP"),
     stop: vi.fn().mockResolvedValue("DOWN"),
     state: vi.fn().mockResolvedValue("UP"),
-    verify: vi
-      .fn()
-      .mockResolvedValue({
-        tunnel_established: true,
-        internet_verified: true,
-        failure_code: null,
-      }),
-    diagnostics: vi
-      .fn()
-      .mockResolvedValue({
-        peerPublicKey: key,
-        endpoint: "127.0.0.1:12345",
-        publicEndpoint: "192.0.2.20:51820",
-        allowedIps: ["0.0.0.0/0"],
-        persistentKeepalive: 25,
-        txBytes: 100,
-        rxBytes: 200,
-        transportMode: "WG_OBFUSCATOR",
-        transportHealthy: true,
-        private_key: "must-never-escape",
-        token: "must-never-escape",
-      }),
+    verify: vi.fn().mockResolvedValue({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    }),
+    diagnostics: vi.fn().mockResolvedValue({
+      peerPublicKey: key,
+      endpoint: "127.0.0.1:12345",
+      publicEndpoint: "192.0.2.20:51820",
+      allowedIps: ["0.0.0.0/0"],
+      persistentKeepalive: 25,
+      txBytes: 100,
+      rxBytes: 200,
+      transportMode: "WG_OBFUSCATOR",
+      transportHealthy: true,
+      private_key: "must-never-escape",
+      token: "must-never-escape",
+    }),
   };
 }
 

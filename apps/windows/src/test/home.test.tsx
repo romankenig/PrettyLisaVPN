@@ -129,18 +129,16 @@ describe("authenticated Home", () => {
     const vpnConnection: VpnConnectionManager = {
       ...createTestVpnConnection(),
       current: () => connectedState,
-      connectionDetails: vi
-        .fn()
-        .mockResolvedValue({
-          protocol: "WireGuard",
-          transport: "UDP",
-          server: "192.0.2.20:51820",
-          encryption: "ChaCha20-Poly1305",
-          obfuscation: "без маскировки",
-          mtu: 1280,
-          dns: ["1.1.1.1"],
-          serverPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        }),
+      connectionDetails: vi.fn().mockResolvedValue({
+        protocol: "WireGuard",
+        transport: "UDP",
+        server: "192.0.2.20:51820",
+        encryption: "ChaCha20-Poly1305",
+        obfuscation: "без маскировки",
+        mtu: 1280,
+        dns: ["1.1.1.1"],
+        serverPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      }),
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
     const info = await screen.findByLabelText("способ подключения");
