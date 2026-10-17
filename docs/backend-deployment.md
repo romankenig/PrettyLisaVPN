@@ -1,8 +1,8 @@
 # Развёртывание Backend на Ubuntu VPS
 
 Правила новых версий описаны в [системе версионирования](versioning.md).
-Текущие команды deploy/rollback ниже сохраняют действующие идентификаторы SHA/dev-SHA.
-Переход на целевой SemVer runtime-формат выполняется отдельной проверяемой задачей.
+Новый CI формирует SemVer runtime-идентификатор из backend/pyproject.toml.
+Статус внедрения и фактически выполненные проверки: [Cloud handoff](backend-cloud-handoff.md).
 
 Эта инструкция запускает Backend и Caddy на одном VPS с Ubuntu LTS. VPS — виртуальный сервер, к которому вы подключаетесь по SSH. PostgreSQL и Valkey размещаются отдельно, как управляемые сервисы: их установкой и обслуживанием занимается облачный провайдер.
 
@@ -19,7 +19,7 @@ Caddy принимает публичные HTTP/HTTPS-соединения, п�
 
 Workflow `Backend` автоматически развёртывает только development-среду после успешного job `Quality, tests, migrations, and image`. Deployment запускается только для push в ветку `develop` и только когда repository variable `DEV_DEPLOY_ENABLED` равна `true`. Pull request, другая ветка или неуспешный CI deployment не запускают. Production этим workflow не затрагивается.
 
-Каждая поставка получает образ `prettylisavpn-backend:<полный Git SHA>` и версию `dev-<полный Git SHA>`. CI собирает образ повторно после проверок, передаёт его и три открытых deployment-файла на VPS по SSH, запускает Alembic, пересоздаёт контейнеры и проверяет `/health`, `/ready` и точное значение `/version`. Образ не публикуется в реестр, а секретные значения не добавляются в артефакты GitHub и репозиторий.
+Каждая новая поставка получает образ `prettylisavpn-backend:<SHA>-run-<run>-attempt-<attempt>` и версию `<base>-dev.<run>+g<полный SHA>`. Base читается из `backend/pyproject.toml`; повторная попытка сохраняет runtime-версию, но получает отдельный образ и каталог. CI собирает образ повторно после проверок, передаёт его и открытые deployment-файлы на VPS по SSH, запускает Alembic, пересоздаёт контейнеры и проверяет `/health`, `/ready` и точное значение `/version`. Образ не публикуется в реестр, а секретные значения не добавляются в артефакты GitHub и репозиторий.
 
 ### Однократная подготовка пользователя VPS
 
@@ -80,16 +80,17 @@ ssh-keygen -lf dev-known-hosts
 | `DEV_OTP_HMAC_SECRET` | Отдельный случайный HMAC-секрет OTP длиной не менее 32 символов. |
 | `DEV_EMAIL_SMTP_PASSWORD` | Пароль ящика `auth@prettylisavpn.com`; обязателен для отправки OTP. |
 
-Значения URL должны быть однострочными, а специальные символы реквизитов — URL-кодированными. Workflow не выводит значения secrets: он проверяет только наличие, создаёт env-файл с правами `0600` во временном каталоге runner и передаёт его по SSH. Постоянный `/etc/prettylisavpn/development.env` заменяется с правами `0600` только после успешных миграций и проверок нового релиза.
+Значения URL должны быть однострочными, а специальные символы реквизитов — URL-кодированными. Workflow не выводит значения secrets: он проверяет только наличие, создаёт env-файл с правами `0600` во временном каталоге runner и передаёт его по SSH. Постоянный `/opt/prettylisavpn/secrets/deployment.env` заменяется с правами `0600` только после успешных миграций и проверок нового релиза.
 
 После настройки сервера и всех secrets создайте repository variable `DEV_DEPLOY_ENABLED` со значением `true`. Именно repository variable, а не environment variable, используется для запуска job до загрузки Environment. До этого момента обычный CI работает, а deployment-job отображается как skipped.
 
 ### Проверка автоматического deployment
 
-Отправьте коммит в `develop`. Версия меняется при каждом коммите автоматически. После зелёного job `Deploy development` проверьте:
+После согласованного merge в `develop` проверьте автоматический deployment. Runtime-строка содержит CI run и фактический SHA; продуктовая версия меняется по правилам versioning.md. Ручной workflow_dispatch выполняет только проверки, deployment остаётся push-only. После зелёного job `Deploy development` проверьте:
 
 ```bash
-expected_version="dev-$(git rev-parse HEAD)"
+identity=/opt/prettylisavpn/current/runtime-identity.json
+expected_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["application_version"])' "$identity")
 curl --fail --show-error https://DEV_API_DOMAIN/health
 curl --fail --show-error https://DEV_API_DOMAIN/ready
 curl --fail --show-error https://DEV_API_DOMAIN/version
@@ -100,32 +101,48 @@ printf 'Ожидаемая версия: %s\n' "$expected_version"
 
 ### Ручной откат development
 
-CI сохраняет каталоги релизов и загруженные образы по Git SHA. Найдите предыдущий успешный SHA в GitHub Actions и подключитесь к VPS deployment-пользователем. Убедитесь, что каталог и образ ещё существуют:
+CI сохраняет закрытый каталог `/opt/prettylisavpn/releases/<SHA>-run-<run>-attempt-<attempt>`:
+`deployment.env` (0600), прежний `previous.env` (если был deploy), `runtime-identity.json`,
+`image-id` и Compose/deploy-файлы. Не удаляйте каталог и образ в период отката.
+Секретные env остаются только на VPS и никогда не загружаются в Actions artifacts.
+
+Перед откатом установите совместимость старого приложения с текущей схемой БД.
+Данная задача не меняет схему. Откат приложения сохраняет схему и данные;
+несовместимый schema rollback требует отдельного плана и проверенной резервной копии.
+Остановите параллельные deployments на время ручного отката.
+
+Для нового сохранённого релиза выполните на VPS:
 
 ```bash
-previous_sha=REPLACE_PREVIOUS_SUCCESSFUL_SHA
-test -x "/opt/prettylisavpn/releases/${previous_sha}/deploy.sh"
-docker image inspect "prettylisavpn-backend:${previous_sha}" >/dev/null
+set -euo pipefail
+root=/opt/prettylisavpn
+previous_release=REPLACE_PREVIOUS_SUCCESSFUL_SHA_RUN_ATTEMPT
+release="$root/releases/$previous_release"
+test -f "$release/deployment.env"
+image=$(sed -n "s/^BACKEND_IMAGE='\(.*\)'$/\1/p" "$release/deployment.env")
+test -n "$image"
+test "$(docker image inspect --format '{{.Id}}' "$image")" = "$(cat "$release/image-id")"
+bash "$release/deploy.sh" "$release/deployment.env" rollback
+install -m 0600 "$release/deployment.env" "$root/secrets/deployment.env"
+ln -sfn "$release" "$root/current.next"
+mv -Tf "$root/current.next" "$root/current"
 ```
 
-Измените только несекретные строки текущего env-файла, затем запустите сохранённую конфигурацию релиза:
+Сначала проверяется image ID, затем выполняются health/readiness/version checks.
+Только после успеха меняются canonical env и current. Режим rollback не выполняет
+pull/build, `alembic upgrade` или downgrade. Не пересчитывайте старую версию из SHA:
+восстановите точную сохранённую строку вместе с образом.
 
-```bash
-environment_file=/etc/prettylisavpn/development.env
-sed -i \
-  "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE='prettylisavpn-backend:${previous_sha}'|" \
-  "$environment_file"
-sed -i \
-  "s|^APPLICATION_VERSION=.*|APPLICATION_VERSION='dev-${previous_sha}'|" \
-  "$environment_file"
-SKIP_BACKEND_PULL=1 \
-  "/opt/prettylisavpn/releases/${previous_sha}/deploy.sh" "$environment_file"
-ln -sfn "/opt/prettylisavpn/releases/${previous_sha}" \
-  /opt/prettylisavpn/current.next
-mv -Tf /opt/prettylisavpn/current.next /opt/prettylisavpn/current
-```
+Для первого отката с новой схемы к legacy `dev-SHA` используйте `previous.env`
+из нового каталога и **новый** deploy.sh с аргументом `rollback`; старый deploy.sh
+такого режима не знает. Перед запуском проверьте прежний image ID и наличие
+старого Compose-каталога, сохраните canonical env и current отдельно. Для legacy
+релиза image ID из старого CI не сохранён: его необходимо зафиксировать на VPS
+до перехода. Не заявляйте проверенный rollback legacy без этого шага.
 
-Скрипт снова применит доступные миграции и выполнит health/readiness/version checks. Он не делает автоматический downgrade PostgreSQL: перед откатом на версию, несовместимую с новой схемой, восстановите базу по согласованному плану миграции. Не удаляйте старые образы и каталоги релизов до окончания периода отката.
+Ошибка smoke check завершает deploy ненулевым кодом и не продвигает current,
+но контейнеры могли уже смениться. Автоматического восстановления старого приложения
+нет: выполните описанный откат и повторите проверки.
 
 ## 1. Подготовьте доступы и адреса
 
@@ -328,7 +345,7 @@ curl --fail --show-error https://api.example.com/ready
 curl --fail --show-error https://api.example.com/version
 ```
 
-Ожидается HTTP 200 у всех методов. `/ready` подтверждает доступность **обеих** баз; `/version` должен показать ожидаемую версию и окружение. В автоматическом development deployment версия вычисляется как `dev-<полный Git SHA>`. Caddy использует `/health` для проверки upstream и не блокирует трафик автоматически при последующей ошибке readiness.
+Ожидается HTTP 200 у всех методов. `/ready` подтверждает доступность **обеих** баз; `/version` должен показать ожидаемую версию и окружение. В новом автоматическом development deployment версия вычисляется как `<base>-dev.<run>+g<полный SHA>`. Caddy использует `/health` для проверки upstream и не блокирует трафик автоматически при последующей ошибке readiness.
 
 Посмотрите контейнеры и последние сообщения:
 
@@ -346,3 +363,4 @@ sudo docker compose -p prettylisavpn --env-file /etc/prettylisavpn/deployment.en
 Для [обновления, обычного перезапуска, диагностики и отката](vps-maintenance.md) используйте отдельную инструкцию. Не удаляйте тома Caddy при штатных обновлениях. Автоматическое продление сертификата не заменяет резервные копии и проверку восстановления PostgreSQL.
 
 Дополнительные источники: [установка Compose](https://docs.docker.com/compose/install/linux/) и [автоматический HTTPS Caddy](https://caddyserver.com/docs/automatic-https).
+

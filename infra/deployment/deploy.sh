@@ -3,6 +3,11 @@ set -Eeuo pipefail
 
 deployment_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 environment_file="${1:-/etc/prettylisavpn/deployment.env}"
+deploy_mode="${2:-deploy}"
+if [[ "$deploy_mode" != "deploy" && "$deploy_mode" != "rollback" ]]; then
+    printf 'Usage: deploy.sh [env-file] [deploy|rollback]\n' >&2
+    exit 1
+fi
 
 if [[ ! -f "$environment_file" ]]; then
     printf 'Environment file does not exist: %s\n' "$environment_file" >&2
@@ -16,7 +21,7 @@ if [[ "$environment_mode" != "600" ]]; then
     exit 1
 fi
 
-for command_name in docker curl getent grep sed; do
+for command_name in docker curl getent sed python3; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         printf 'Required command is missing: %s\n' "$command_name" >&2
         exit 1
@@ -72,17 +77,24 @@ if [[ -n "$node_agent_token" ]]; then
 fi
 
 "${compose[@]}" config --quiet
-if [[ "${SKIP_BACKEND_PULL:-0}" == "1" ]]; then
+if [[ "$deploy_mode" == "rollback" ]]; then
+    # A rollback must use an already retained artifact and must not rebuild or pull.
+    docker image inspect "$backend_image" >/dev/null
+elif [[ "${SKIP_BACKEND_PULL:-0}" == "1" ]]; then
     "${compose[@]}" pull caddy
 else
     "${compose[@]}" pull
 fi
 
-printf 'Applying database migrations...\n'
-"${compose[@]}" run --rm --no-deps --no-tty backend alembic upgrade head </dev/null
+if [[ "$deploy_mode" == "deploy" ]]; then
+    printf 'Applying database migrations...\n'
+    "${compose[@]}" run --rm --no-deps --no-tty backend alembic upgrade head </dev/null
+else
+    printf 'Application rollback: keeping the database schema unchanged.\n'
+fi
 
 printf 'Recreating application containers...\n'
-"${compose[@]}" up --detach --remove-orphans --wait --wait-timeout 120
+"${compose[@]}" up --detach --remove-orphans --pull never --wait --wait-timeout 120
 
 curl --fail --silent --show-error --retry 12 --retry-delay 5 \
     --retry-connrefused --max-time 10 "https://${api_domain}/health" >/dev/null
@@ -91,9 +103,18 @@ curl --fail --silent --show-error --retry 12 --retry-delay 5 \
 
 version_response="$(curl --fail --silent --show-error --retry 12 --retry-delay 5 \
     --retry-connrefused --max-time 10 "https://${api_domain}/version")"
-if ! grep -Fq "\"application_version\":\"${application_version}\"" <<<"$version_response"; then
+if ! python3 -c '
+import json, sys
+try:
+    value = json.load(sys.stdin)
+    valid = value["application_version"] == sys.argv[1]
+except (ValueError, KeyError, TypeError):
+    valid = False
+sys.exit(0 if valid else 1)
+' "$application_version" <<<"$version_response"; then
     printf 'Version check failed: deployed application did not report the expected version.\n' >&2
     exit 1
 fi
 
 printf 'Deployment passed health, readiness, and version checks.\n'
+

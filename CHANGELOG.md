@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Backend infrastructure — version unchanged (0.1.0)
+
+- Changed: runtime-версия CI из pyproject: `<base>-dev.<run>+g<полный SHA>`;
+  отдельные теги/каталоги SHA/run/attempt и сохранённые runtime metadata/image ID.
+- Fixed: rollback использует сохранённый env/образ без pull, rebuild и миграций;
+  точное JSON-сравнение `/version` допускает пробелы, отвергает неверную версию.
+- Validation: offline contract tests и реальные ограничения Cloud, исторический
+  CI/deploy и необходимые доступы описаны в docs/backend-cloud-handoff.md.
+- Compatibility: версия пакета, схема БД и HTTP API не изменены;
+  реализация CI не означает, что новый runtime уже развёрнут на стенде.
+
 ### Windows — 0.8.0
 
 - Added: сообщения аккаунту после входа/восстановления сессии: JSON-заголовок,
@@ -175,3 +186,4 @@
 
 Windows и backend объявляют 0.1.0 в исходных манифестах. Предыдущая история
 релизов здесь не реконструируется и стабильный выпуск задним числом не объявляется.
+
