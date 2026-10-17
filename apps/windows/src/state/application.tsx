@@ -9,7 +9,9 @@ import type { VpnConnectionManager } from "../vpn/connection";
 import type { PublicLocationProvider } from "../location/publicLocation";
 import type { BillingClient } from "../billing/model";
 import type { PaymentBrowser } from "../native/paymentBrowser";
+import type { SupportSender } from "../support/model";
 export interface ApplicationState {
+  support?: SupportSender;
   billing?: BillingClient;
   paymentBrowser?: PaymentBrowser;
   config: AppConfig;
