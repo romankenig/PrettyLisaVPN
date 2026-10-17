@@ -5,7 +5,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { useApplication } from "../state/application";
+import { About } from "./About";
 import { Home } from "./Home";
 import { HomeCountryObserver } from "./HomeCountryObserver";
 import { Login } from "./Login";
@@ -13,22 +13,6 @@ import { NavigationIcon } from "./NavigationIcon";
 import { OtpVerification } from "./OtpVerification";
 import { Settings } from "./Settings";
 import { useVersions } from "./useVersions";
-
-function About({ version }: { readonly version: string }) {
-  const { config } = useApplication();
-  return (
-    <section>
-      <p className="eyebrow">приложение</p>
-      <h1>о приложении</h1>
-      <dl>
-        <dt>версия клиента</dt>
-        <dd>{version}</dd>
-        <dt>окружение</dt>
-        <dd>{config.environment}</dd>
-      </dl>
-    </section>
-  );
-}
 
 export function App() {
   const versions = useVersions();
@@ -86,7 +70,9 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route
             path="/about"
-            element={<About version={versions.frontend} />}
+            element={
+              <About frontend={versions.frontend} backend={versions.backend} />
+            }
           />
           <Route path="/settings/*" element={<Settings />} />
           <Route

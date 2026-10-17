@@ -584,6 +584,60 @@ async function main() {
     .getByText(frontendVersion, { exact: true })
     .waitFor();
   await screenshot("08-about");
+  const about = page.locator(".about-page");
+  if ((await about.locator(".eyebrow").count()) !== 0)
+    throw new Error("About must not have an application eyebrow");
+  if ((await about.getByText("окружение", { exact: true }).count()) !== 0)
+    throw new Error("About must not expose the environment");
+  await about.getByText("frontend", { exact: true }).waitFor();
+  await about.getByText("backend", { exact: true }).waitFor();
+  await about.getByRole("heading", { name: "faq", exact: true }).waitFor();
+  await about
+    .getByText("inspired by love of my life, Lisa", { exact: true })
+    .waitFor();
+  await about.getByRole("button", { name: "написать в поддержку" }).click();
+  const support = page.getByRole("dialog", { name: "помощь и поддержка" });
+  await support.waitFor();
+  await screenshot("08a-support-empty");
+  await support
+    .getByRole("textbox", { name: "тема", exact: true })
+    .fill("не удаётся подключиться");
+  await support
+    .getByRole("textbox", { name: "описание проблемы", exact: true })
+    .fill("после выбора страны подключение прерывается. помогите разобраться.");
+  await support
+    .getByRole("textbox", { name: "email для ответа", exact: true })
+    .fill("ui-review@example.com");
+  await support
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(output, "08-about.png"));
+  await support.getByText("08-about.png", { exact: true }).waitFor();
+  if (
+    !(await support
+      .getByRole("button", { name: "отправить", exact: true })
+      .isDisabled())
+  )
+    throw new Error("Unconfigured support must not offer a fake send");
+  await screenshot("08b-support-filled");
+  await support.getByText("что будет приложено", { exact: true }).click();
+  const technical = await support.locator("pre").innerText();
+  if (
+    !technical.includes('"frontend_version"') ||
+    technical.includes('"accessToken"') ||
+    technical.includes('"private_key"')
+  )
+    throw new Error("Support diagnostics must use a safe whitelist");
+  await screenshot("08c-support-diagnostics");
+  await page.keyboard.press("Escape");
+  await support.waitFor({ state: "detached" });
+  await about.getByRole("button", { name: "написать в поддержку" }).click();
+  if (
+    (await support
+      .getByRole("textbox", { name: "тема", exact: true })
+      .inputValue()) !== ""
+  )
+    throw new Error("Support draft must not survive closing");
+  await support.getByRole("button", { name: "закрыть обращение" }).click();
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "настройки", exact: true })
@@ -622,6 +676,8 @@ async function main() {
         settingsDevicesAndLogoutVerified: true,
         subscriptionBillingUiVerified: true,
         paymentChoiceVerified: true,
+        aboutSupportUiVerified: true,
+        supportEmailDeliveryTested: false,
         realPaymentsTested: false,
         backendVersionFallbackVerified: true,
         fontFamily: "Rubik",

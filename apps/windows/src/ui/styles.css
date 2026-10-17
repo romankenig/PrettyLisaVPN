@@ -1576,3 +1576,238 @@ main dd {
   grid-template-columns: 110px 1fr;
   gap: 12px;
 }
+
+.about-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.about-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 480px;
+  margin: 16px 0 24px;
+}
+.about-versions dt {
+  margin: 0;
+  font-size: 13px;
+}
+.about-versions dd {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.about-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.about-card {
+  min-height: 154px;
+  padding: 22px;
+  border-radius: 14px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+}
+.about-card h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.about-card p {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--color-scorpion);
+}
+.about-card button {
+  margin-top: 18px;
+  font-size: 13px;
+}
+.about-dedication {
+  margin: auto 0 0;
+  padding-top: 18px;
+  font-size: 12px;
+  color: rgb(228 228 228 / 55%);
+  text-transform: none;
+}
+.support-dialog {
+  width: min(580px, 92vw);
+  max-height: calc(100vh - 40px);
+  padding: 22px;
+  border: 0;
+  border-radius: 16px;
+  overflow-y: auto;
+  color: var(--color-black);
+  background: var(--color-mercury);
+}
+.support-dialog::backdrop {
+  background: rgb(44 1 109 / 65%);
+}
+.support-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.support-dialog h2 {
+  margin: 0;
+  font-size: 21px;
+}
+.support-dialog button {
+  margin: 0;
+  font-size: 13px;
+}
+.support-dialog .support-close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 22px;
+  color: var(--color-scorpion);
+  background: transparent;
+}
+.support-dialog form,
+.support-fields {
+  display: grid;
+  gap: 12px;
+}
+.support-fields label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-scorpion);
+}
+.support-fields input,
+.support-fields textarea {
+  width: 100%;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-black);
+  background: white;
+  border: 1px solid rgb(156 156 156 / 60%);
+  border-radius: 8px;
+  text-transform: none;
+}
+.support-dialog input {
+  font-family: inherit;
+}
+.support-fields textarea {
+  height: 68px;
+  resize: none;
+}
+.support-fields input::placeholder,
+.support-fields textarea::placeholder {
+  color: rgb(91 91 91 / 40%);
+}
+.support-fields input:focus-visible,
+.support-fields textarea:focus-visible {
+  outline: 2px solid var(--color-heliotrope);
+  outline-offset: 1px;
+}
+.support-attachments {
+  display: grid;
+  gap: 6px;
+}
+.support-file-label {
+  width: fit-content;
+  color: var(--color-purple-heart);
+  font-size: 13px;
+  cursor: pointer;
+}
+.support-file-label:has(input:focus-visible) {
+  outline: 2px solid var(--color-heliotrope);
+  outline-offset: 3px;
+}
+.support-attachments > span {
+  font-size: 11px;
+  color: var(--color-scorpion);
+}
+.support-attachments ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.support-attachments li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgb(81 214 202 / 20%);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.support-attachments li span {
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+.support-attachments li button {
+  padding: 0 6px;
+  font-size: 18px;
+  background: transparent;
+}
+.support-diagnostics {
+  font-size: 12px;
+  color: var(--color-scorpion);
+}
+.support-diagnostics label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.support-diagnostics input {
+  accent-color: var(--color-purple-heart);
+}
+.support-diagnostics details {
+  margin-top: 5px;
+}
+.support-diagnostics summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--color-purple-heart);
+}
+.support-diagnostics pre {
+  max-height: 110px;
+  padding: 10px;
+  overflow: auto;
+  background: white;
+  border-radius: 8px;
+  font-size: 11px;
+  text-transform: none;
+  user-select: text;
+}
+.support-unavailable,
+.support-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.support-unavailable {
+  color: var(--color-scorpion);
+}
+.support-error {
+  color: var(--color-persian-red);
+}
+.support-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.support-actions button[type="submit"] {
+  color: white;
+  background: var(--color-purple-heart);
+}
+.support-dialog .support-cancel {
+  color: var(--color-purple-heart);
+  background: transparent;
+}
+.support-dialog button:disabled {
+  cursor: default;
+}
+.support-receipt {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
