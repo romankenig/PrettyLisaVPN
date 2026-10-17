@@ -558,7 +558,9 @@ async function main() {
   if ((await devicesPage.locator(".device-identity").count()) !== 2)
     throw new Error("Each device needs a stable identifier");
   if ((await devicesPage.locator(".device-dates time").count()) !== 3)
-    throw new Error("Registration and optional login timestamps must be separate");
+    throw new Error(
+      "Registration and optional login timestamps must be separate",
+    );
   await devicesPage
     .getByText("последний вход: нет данных", { exact: false })
     .waitFor();

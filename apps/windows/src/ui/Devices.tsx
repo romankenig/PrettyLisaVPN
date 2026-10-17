@@ -112,7 +112,8 @@ export function Devices() {
                     <p className="device-dates">
                       добавлено: <DeviceTime value={device.created_at} />
                       <br />
-                      последний вход: <DeviceTime value={device.last_login_at} />
+                      последний вход:{" "}
+                      <DeviceTime value={device.last_login_at} />
                     </p>
                   </div>
                   {device.is_current ? (
