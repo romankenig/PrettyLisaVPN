@@ -78,22 +78,21 @@ function SettingsOverview() {
   if (activeSession === null) return null;
   return (
     <section className="settings-page" aria-labelledby="settings-title">
-      <p className="eyebrow">приложение</p>
       <h1 id="settings-title">настройки</h1>
       <div className="settings-options">
+        <Link className="settings-option" to="/settings/subscription">
+          <NavigationIcon name="subscription" />
+          <span>
+            <strong>подписка</strong>
+            <small>управление подпиской и картой</small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
         <Link className="settings-option" to="/settings/devices">
           <NavigationIcon name="devices" />
           <span>
             <strong>устройства</strong>
             <small>Управление доступом к аккаунту</small>
-          </span>
-          <span aria-hidden="true">→</span>
-        </Link>
-        <Link className="settings-option" to="/settings/subscription">
-          <NavigationIcon name="subscription" />
-          <span>
-            <strong>подписка</strong>
-            <small>управление подпиской</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
