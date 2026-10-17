@@ -236,3 +236,21 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
   будут записаны в описание PR после завершения CI, без дополнительного docs push.
 - Backend follow-up прежний: проверка /version реального сервера и отдельная миграция
   legacy dev-SHA runtime version; production VPN здесь не проверяется.
+
+## Домашний экран — 2026-10-17
+
+- Windows 0.2.1 → 0.3.0 (MINOR), backend 0.1.0 без изменений.
+- Реализованы dropdown с тремя группами, локальные круговые флаги, сохранение
+  выбора аккаунта, ⭐/💎 тарифы, перенос connection controls в левую панель.
+- Правая панель пуста. Статичный «статус: активен» сохранён до решения владельца.
+- Текущая локация наблюдается через PublicLocationProvider (ipwho.is по умолчанию),
+  отмена старых запросов при смене сети, 60-секундное обновление, 8-секундный timeout.
+- Контракт, UX и ограничения: [home-screen.md](home-screen.md).
+- Синхронизированы все 4 Windows-манифеста; Cargo.lock меняет только собственный
+  пакет, CI проверяет cargo metadata --locked --offline.
+- Локально проверены YAML, SVG ID/лицензия, версии и синтаксис capture. Shell-сеть
+  и loopback sockets в этом окружении недоступны, frontend/native проверки
+  выполняются в Windows CI. Итоговые product/build SHA, run/attempt и артефакты
+  записываются в описание PR после завершения всех workflow.
+- Backend follow-up: реальный /version, отдельно введение platinum бизнес-правил;
+  внешний IP до/после реального VPN требует проверки на Windows вне fixtures.

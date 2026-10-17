@@ -7,11 +7,12 @@ import {
 import { ApiError, type MeResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import {
-  DEFAULT_VPN_LOCATION_SELECTION,
+  readLocationSelection,
+  saveLocationSelection,
   type VpnLocationSelection,
 } from "../vpn/selection";
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
-import { countryName } from "./ConnectionLocationSelector";
+import { CurrentLocation } from "./CurrentLocation";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 
 type ProfileState =
@@ -31,7 +32,9 @@ export function Home() {
   );
   const [profileAttempt, setProfileAttempt] = useState(0);
   const [locationSelection, setLocationSelection] =
-    useState<VpnLocationSelection>(DEFAULT_VPN_LOCATION_SELECTION);
+    useState<VpnLocationSelection>(() =>
+      readLocationSelection(activeSession?.userId ?? ""),
+    );
   const [locationConnectable, setLocationConnectable] = useState(false);
   const connectionState = useSyncExternalStore(
     vpnConnection.subscribe,
@@ -128,30 +131,17 @@ export function Home() {
       {profile ? <AccountSummary profile={profile} /> : null}
 
       <div className="home-workspace">
-        <ConnectionLocationSelector
-          selection={locationSelection}
-          onSelectionChange={setLocationSelection}
-          onConnectabilityChange={setLocationConnectable}
-        />
-
-        <div className="connection-card">
-          <div>
-            <p className="connection-card__label">VPN</p>
-            <h2>{connectionHeading(connectionState)}</h2>
-            <p>
-              {connectionState.phase === "CONNECTED"
-                ? `Локация: ${countryName(connectionState.session.countryCode)}`
-                : "Выберите локацию для подключения."}
-            </p>
-            {profile?.plan === "FREE" &&
-            connectionState.phase === "CONNECTED" &&
-            connectionState.session.remainingSeconds !== null ? (
-              <p role="timer">
-                Осталось:{" "}
-                {formatRemaining(connectionState.session.remainingSeconds)}
-              </p>
-            ) : null}
-          </div>
+        <div className="home-connect-panel">
+          <ConnectionLocationSelector
+            selection={locationSelection}
+            onSelectionChange={(selection) => {
+              setLocationSelection(selection);
+              saveLocationSelection(activeSession.userId, selection);
+            }}
+            onConnectabilityChange={setLocationConnectable}
+            disabled={canDisconnect(connectionState) || ["CONNECTING", "RECONCILING", "TUNNEL_ESTABLISHED", "VERIFYING_INTERNET", "DISCONNECTING"].includes(connectionState.phase)}
+          />
+          <div className="connection-card">
           <button
             type="button"
             disabled={
@@ -178,10 +168,12 @@ export function Home() {
                   ? "DISCONNECT"
                   : "CONNECT"}
           </button>
+          <h2 className="connection-status" aria-live="polite">{connectionHeading(connectionState)}</h2>
+          {profile?.plan === "FREE" && connectionState.phase === "CONNECTED" && connectionState.session.remainingSeconds !== null ? (
+            <p role="timer">Осталось: {formatRemaining(connectionState.session.remainingSeconds)}</p>
+          ) : null}
           <p id="connection-unavailable" className="field-help">
-            {!locationConnectable
-              ? "Сейчас подключение недоступно."
-              : "Готово к подключению."}
+            {connectionState.phase === "DISCONNECTED" && (!locationConnectable ? "Сейчас подключение недоступно." : "Готово к подключению.")}
           </p>
           {connectionErrorMessage !== null ||
           ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
@@ -199,7 +191,10 @@ export function Home() {
               восстановления связи.
             </p>
           ) : null}
+          </div>
+          <CurrentLocation connection={connectionState} />
         </div>
+        <div className="home-reserved-panel" aria-hidden="true" />
       </div>
     </section>
   );
@@ -214,7 +209,7 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
       </div>
       <div>
         <span>план</span>
-        <strong>{profile.plan}</strong>
+        <strong>{profile.plan}{profile.plan === "PREMIUM" ? " ⭐" : profile.plan === "PLATINUM" ? " 💎" : ""}</strong>
       </div>
       <div>
         <span>активные устройства</span>

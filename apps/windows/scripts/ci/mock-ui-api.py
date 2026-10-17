@@ -31,6 +31,8 @@ def fixture(method, path, body):
             },
             "subscription": {"plan": "PREMIUM", "status": "ACTIVE"},
         }
+    if method == "GET" and path == "/public-location":
+        return 200, {"success": True, "ip": "203.0.113.42", "country_code": "RU", "city": "Москва"}
     if method == "GET" and path == "/me":
         return 200, {
             "id": USER_ID, "email": "ui-review@example.com",
@@ -55,6 +57,8 @@ def fixture(method, path, body):
             "countries": [
                 {"country_code": "DE", "quality": 90, "available": True},
                 {"country_code": "US", "quality": 75, "available": True},
+                {"country_code": "NL", "quality": 93, "available": True},
+                {"country_code": "FR", "quality": 84, "available": True},
             ],
         }
     if method == "GET" and path == "/vpn/sessions/current":

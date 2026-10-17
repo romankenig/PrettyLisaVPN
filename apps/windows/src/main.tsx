@@ -14,6 +14,7 @@ import { ApplicationProvider } from "./state/application";
 import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
 import { WindowFrame } from "./ui/WindowFrame";
+import { createPublicLocationProvider } from "./location/publicLocation";
 import "./ui/styles.css";
 const root = createRoot(document.getElementById("root")!);
 try {
@@ -42,6 +43,11 @@ try {
           session,
           sessionRestoration,
           vpnConnection,
+          publicLocation: createPublicLocationProvider(
+            createHttpTransport(),
+            import.meta.env.VITE_PUBLIC_LOCATION_URL,
+            config.environment === "test",
+          ),
         }}
       >
         <HashRouter>

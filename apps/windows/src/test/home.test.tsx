@@ -6,7 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiClient, type MeResponse } from "../api/client";
 import { createAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
@@ -111,7 +111,24 @@ async function renderFresh(api: ApiClient) {
   return renderWithSession(api, storage, session);
 }
 
+beforeEach(() => localStorage.clear());
+
 describe("authenticated Home", () => {
+  it.each([["FREE", "FREE"], ["PREMIUM", "PREMIUM ⭐"], ["PLATINUM", "PLATINUM 💎"]] as const)("shows the %s plan decoration", async (plan, label) => {
+    const api = mockApi();
+    vi.mocked(api.me).mockResolvedValue({ ...profile, plan });
+    await renderFresh(api);
+    expect(await screen.findByText(label)).toBeVisible();
+  });
+
+  it("keeps controls on the left and an empty right panel", async () => {
+    renderRestored();
+    await waitFor(() => expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled());
+    expect(screen.getByRole("button", { name: "CONNECT" }).closest(".home-connect-panel")).not.toBeNull();
+    expect(document.querySelector(".home-reserved-panel")).toBeEmptyDOMElement();
+    expect(screen.queryByText("локация")).not.toBeInTheDocument();
+  });
+
   it("loads real /me data after a fresh login", async () => {
     let resolveProfile!: (value: MeResponse) => void;
     const api = mockApi();
@@ -126,7 +143,7 @@ describe("authenticated Home", () => {
     resolveProfile(profile);
 
     expect(await screen.findByText(profile.email)).toBeInTheDocument();
-    expect(screen.getByText("PREMIUM")).toBeInTheDocument();
+    expect(screen.getByText("PREMIUM ⭐")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("активен")).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledWith(
@@ -292,7 +309,7 @@ describe("authenticated Home", () => {
     expect(
       await screen.findByRole("heading", { name: "Connected" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Локация: Германия")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeDisabled();
     expect(screen.getByRole("timer")).toHaveTextContent("Осталось: 10:15");
 
     fireEvent.click(screen.getByRole("button", { name: "DISCONNECT" }));

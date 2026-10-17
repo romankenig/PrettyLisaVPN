@@ -273,7 +273,7 @@ async function main() {
     .getByRole("heading", { name: "PrettyLisaVPN", exact: true })
     .waitFor();
   await page
-    .getByRole("heading", { name: "Куда подключиться", exact: true })
+    .getByRole("heading", { name: "куда подключиться", exact: true })
     .waitFor();
   await page
     .getByRole("heading", { name: "Not connected", exact: true })
@@ -288,7 +288,20 @@ async function main() {
     )
       throw new Error("Authenticated navigation must be enabled");
   }
+  await page.getByText("203.0.113.42", { exact: true }).waitFor();
+  await page.getByText("PREMIUM ⭐", { exact: true }).waitFor();
+  if ((await page.locator(".home-reserved-panel").textContent()).trim())
+    throw new Error("Right home panel must be empty");
   await screenshot("04-home");
+  const combo = page.getByRole("combobox");
+  await combo.click();
+  await page.getByRole("listbox").waitFor();
+  if ((await page.getByRole("group", { name: "топ", exact: true }).getByRole("option").count()) !== 3)
+    throw new Error("Expected top three countries");
+  await screenshot("04a-home-dropdown");
+  await page.getByRole("group", { name: "все страны", exact: true }).getByRole("option", { name: /Германия/ }).click();
+  if (!(await combo.textContent()).includes("Германия")) throw new Error("Country choice failed");
+  await screenshot("04b-home-country");
 
   await page
     .getByRole("navigation")
@@ -296,6 +309,10 @@ async function main() {
     .click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await screenshot("05-settings");
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page.getByRole("combobox").waitFor();
+  await page.waitForFunction(() => document.querySelector('[role="combobox"]')?.textContent.includes("Германия"));
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /устройства/ }).click();
   const settingsNav = page
     .getByRole("navigation")

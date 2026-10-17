@@ -6,6 +6,7 @@ import type { SessionRestoration } from "../auth/restoration";
 import type { DesktopAdapter } from "../native/desktop";
 import type { InstallationIdProvider } from "../native/installationId";
 import type { VpnConnectionManager } from "../vpn/connection";
+import type { PublicLocationProvider } from "../location/publicLocation";
 export interface ApplicationState {
   config: AppConfig;
   api: ReturnType<typeof createApiClient>;
@@ -14,6 +15,7 @@ export interface ApplicationState {
   session: AuthenticationSession;
   sessionRestoration: SessionRestoration;
   vpnConnection: VpnConnectionManager;
+  publicLocation?: PublicLocationProvider;
 }
 const ApplicationContext = createContext<ApplicationState | null>(null);
 export function ApplicationProvider({

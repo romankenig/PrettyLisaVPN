@@ -37,7 +37,7 @@ export interface VerifyOtpResponse {
     readonly status: "ACTIVE" | "REVOKED";
   };
   readonly subscription: {
-    readonly plan: "FREE" | "PREMIUM";
+    readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
     readonly status: "ACTIVE" | "CANCELED" | "EXPIRED";
   };
 }
@@ -59,7 +59,7 @@ export interface RefreshResponse {
 export interface MeResponse {
   readonly id: string;
   readonly email: string;
-  readonly plan: "FREE" | "PREMIUM";
+  readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
   readonly active_device_count: number;
 }
 
@@ -619,7 +619,7 @@ function isMeResponse(value: unknown): value is MeResponse {
     isRecord(value) &&
     isUuid(value.id) &&
     isNonEmptyString(value.email) &&
-    ["FREE", "PREMIUM"].includes(String(value.plan)) &&
+    ["FREE", "PREMIUM", "PLATINUM"].includes(String(value.plan)) &&
     typeof value.active_device_count === "number" &&
     Number.isInteger(value.active_device_count) &&
     value.active_device_count >= 0
@@ -642,7 +642,7 @@ function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {
     !isUuid(value.device.installation_id) ||
     !["ACTIVE", "REVOKED"].includes(String(value.device.status)) ||
     !isRecord(value.subscription) ||
-    !["FREE", "PREMIUM"].includes(String(value.subscription.plan)) ||
+    !["FREE", "PREMIUM", "PLATINUM"].includes(String(value.subscription.plan)) ||
     !["ACTIVE", "CANCELED", "EXPIRED"].includes(
       String(value.subscription.status),
     )
