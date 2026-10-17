@@ -146,7 +146,7 @@ describe("post-authentication messages", () => {
   it("closes later without acknowledgement and offers it again on the next login", async () => {
     const { client, session } = setup();
     await screen.findByRole("dialog", { name: "новости" });
-    fireEvent.click(screen.getByRole("button", { name: "позже", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "позже" }));
     expect(client.acknowledge).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     act(() => activate(session, "new-login"));
