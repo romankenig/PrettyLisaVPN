@@ -113,6 +113,8 @@ def fixture(method, path, body):
                 "id": device_id, "installation_id": INSTALLATION_ID,
                 "device_name": name, "platform": platform,
                 "status": "ACTIVE", "created_at": DATE, "updated_at": DATE,
+                # Synthetic future-contract field; the other device has no login data.
+                "last_login_at": "2026-10-17T09:30:00Z" if current else None,
                 "revoked_at": None, "is_current": current,
             }
             for device_id, name, platform, current in [

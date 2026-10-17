@@ -75,11 +75,11 @@ export function Devices() {
 
   return (
     <section className="devices-page" aria-labelledby="devices-title">
-      <p className="eyebrow">аккаунт</p>
       <h1 id="devices-title">устройства</h1>
       <p className="devices-limit">
-        В аккаунте может быть не более 5 активных устройств. Отзовите доступ
-        ненужного устройства, чтобы освободить место для нового.
+        в аккаунте может быть не более 5 активных устройств.
+        <br />
+        отзовите доступ ненужного устройства, чтобы освободить место для нового.
       </p>
 
       {listState.phase === "loading" ? (
@@ -106,7 +106,15 @@ export function Devices() {
                 <div className="device-card__heading">
                   <div>
                     <h2>{device.device_name}</h2>
-                    <p>{platformLabel(device.platform)}</p>
+                    <p className="device-identity" title={device.id}>
+                      id: {deviceIdentifier(device, listState.devices)}
+                    </p>
+                    <p className="device-dates">
+                      добавлено: <DeviceTime value={device.created_at} />
+                      <br />
+                      последний вход:{" "}
+                      <DeviceTime value={device.last_login_at} />
+                    </p>
                   </div>
                   {device.is_current ? (
                     <span className="current-device">текущее устройство</span>
@@ -151,6 +159,7 @@ export function Devices() {
             Устройство «{confirmation.device_name}» выйдет из аккаунта, а все
             его активные сессии будут завершены.
           </p>
+          <p className="device-identity">id: {confirmation.id}</p>
           <div className="confirmation-actions">
             <button
               className="revoke-button"
@@ -229,15 +238,26 @@ function revokeError(error: unknown) {
   return "Не удалось отозвать доступ устройства. Попробуйте позже.";
 }
 
-function platformLabel(platform: DeviceResponse["platform"]) {
-  const labels: Record<DeviceResponse["platform"], string> = {
-    WINDOWS: "Windows",
-    MACOS: "macOS",
-    LINUX: "Linux",
-    ANDROID: "Android",
-    IOS: "iOS",
-    ANDROID_TV: "Android TV",
-    CHROME_EXTENSION: "Chrome Extension",
-  };
-  return labels[platform];
+function deviceIdentifier(device: DeviceResponse, devices: DeviceResponse[]) {
+  const suffix = device.id.slice(-12);
+  return devices.some(
+    (other) => other.id !== device.id && other.id.endsWith(suffix),
+  )
+    ? device.id
+    : suffix;
+}
+
+function DeviceTime({ value }: { readonly value?: string | null }) {
+  if (!value || !Number.isFinite(Date.parse(value))) return <>нет данных</>;
+  return (
+    <time dateTime={value} title="по времени этого устройства">
+      {new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value))}
+    </time>
+  );
 }

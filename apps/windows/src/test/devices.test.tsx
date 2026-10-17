@@ -106,9 +106,11 @@ describe("Devices screen", () => {
       "загружаем устройства",
     );
     expect(await screen.findByText("Этот компьютер")).toBeInTheDocument();
-    expect(screen.getByText("Windows")).toBeInTheDocument();
+    expect(screen.getByText("id: 426614174001")).toBeInTheDocument();
     expect(screen.getByText("Pixel")).toBeInTheDocument();
-    expect(screen.getByText("Android")).toBeInTheDocument();
+    expect(screen.getByText("id: 426614174003")).toBeInTheDocument();
+    expect(screen.queryByText("Windows")).not.toBeInTheDocument();
+    expect(screen.queryByText("Android")).not.toBeInTheDocument();
     expect(screen.getByText("текущее устройство")).toBeInTheDocument();
     expect(screen.getAllByText("активно")).toHaveLength(2);
     expect(
@@ -121,6 +123,65 @@ describe("Devices screen", () => {
     expect(
       screen.getAllByRole("button", { name: "отозвать доступ" }),
     ).toHaveLength(1);
+  });
+
+  it("distinguishes identical names and never treats updated_at as a login", async () => {
+    const api = mockApi();
+    vi.mocked(api.listDevices).mockResolvedValue([
+      {
+        ...currentDevice,
+        device_name: "ноутбук",
+        updated_at: "2026-10-16T19:20:00Z",
+      },
+      { ...otherDevice, device_name: "ноутбук", platform: "WINDOWS" },
+    ]);
+    const { container } = renderDevices(api);
+    expect(await screen.findAllByText("ноутбук")).toHaveLength(2);
+    expect(screen.getByText("id: 426614174001")).toBeInTheDocument();
+    expect(screen.getByText("id: 426614174003")).toBeInTheDocument();
+    expect(screen.getAllByText(/последний вход: нет данных/)).toHaveLength(2);
+    const dates = Array.from(container.querySelectorAll("time")).map(
+      (time) => time.dateTime,
+    );
+    expect(dates).toEqual([currentDevice.created_at, otherDevice.created_at]);
+  });
+
+  it("shows the backend login date separately from registration in local time", async () => {
+    const api = mockApi();
+    const lastLogin = "2026-10-17T09:30:00Z";
+    vi.mocked(api.listDevices).mockResolvedValue([
+      { ...currentDevice, last_login_at: lastLogin },
+      { ...otherDevice, last_login_at: null },
+    ]);
+    const { container } = renderDevices(api);
+    await screen.findByText("Pixel");
+    const time = container.querySelector(`time[datetime="${lastLogin}"]`);
+    expect(time).toHaveTextContent(
+      new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(lastLogin)),
+    );
+    expect(screen.getAllByText(/последний вход: нет данных/)).toHaveLength(1);
+  });
+
+  it("expands colliding ID suffixes and identifies the device in confirmation", async () => {
+    const api = mockApi();
+    const collision = {
+      ...otherDevice,
+      id: "99999999-e89b-42d3-a456-426614174001",
+    };
+    vi.mocked(api.listDevices).mockResolvedValue([currentDevice, collision]);
+    renderDevices(api);
+    await screen.findByText("Pixel");
+    expect(screen.getByText(`id: ${currentDevice.id}`)).toBeInTheDocument();
+    expect(screen.getByText(`id: ${collision.id}`)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "отозвать доступ" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(collision.id);
+    expect(api.revokeDevice).not.toHaveBeenCalled();
   });
 
   it("requires confirmation, revokes another device, and refreshes the list", async () => {
