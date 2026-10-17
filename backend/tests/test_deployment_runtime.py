@@ -103,8 +103,8 @@ class DeploymentScriptTests(unittest.TestCase):
         for response in (
             '{"application_version":"wrong"}',
             '{"application_version":"0.1.0-dev.1+g' + "a" * 40 + '-extra"}',
-            'not json',
-            '[]',
+            "not json",
+            "[]",
         ):
             self.environment["VERSION_JSON"] = response
             self.assertNotEqual(self.run_deployment("rollback").returncode, 0)
