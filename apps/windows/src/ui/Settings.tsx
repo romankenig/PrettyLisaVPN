@@ -84,7 +84,7 @@ function SettingsOverview() {
           <NavigationIcon name="subscription" />
           <span>
             <strong>подписка</strong>
-            <small>управление подпиской и картой</small>
+            <small>управление подпиской и платежами</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
@@ -107,7 +107,7 @@ function SettingsOverview() {
             <strong>
               {logoutState === "submitting" ? "выходим…" : "выйти"}
             </strong>
-            <small>Завершить сессию на этом компьютере</small>
+            <small>Завершить сессию на этом устройстве</small>
           </span>
         </button>
       </div>
