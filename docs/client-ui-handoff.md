@@ -315,3 +315,29 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Проверки и native capture выполняются существующим Windows CI; финальные
   product/build SHA, run/attempt и артефакты записываются в PR после всех запусков.
 - Backend follow-up прежний: реальный /version и переход с legacy dev-SHA отдельно.
+
+## Подписки и симметричная шестерёнка — 2026-10-17
+
+- Windows 0.4.4 → 0.5.0 MINOR; четыре манифеста согласованы.
+- Владелец выбрал страну до VPN для основной валюты и отдельно подтвердил:
+  сейчас Windows UI и API-контракт, backend и провайдер позже.
+- Новые клиентские состояния: free/expired, active с платёжным способом,
+  canceled с сохранением срока, pending, ошибка/недоступность. Цены и возможности
+  берутся из backend snapshot, а не из локальных тарифов или плана OTP.
+- Две светлые карточки: тариф/цены и платёжный способ/действия. Шестерёнка
+  симметрична по 8 осям. Исходные логотип/палитра/Rubik сохранены.
+- Backend-контракт, отмена, операции, allowlist редиректов и ограничения:
+  [subscriptions-ui.md](subscriptions-ui.md).
+- Backend source остаётся 0.1.0; endpoint-ов billing и реального провайдера пока
+  нет. Старая domain.is_active не сохраняет доступ для CANCELED: до реальной
+  отмены нужно реализовать корректные entitlements до paid_until и подтвердить
+  прекращение списаний/отвязку у провайдера. UI сам этого не обещает при ошибке.
+- Реальный браузер использует native ShellExecuteW для разрешённых HTTPS-хостов;
+  VITE_PAYMENT_ALLOWED_HOSTS по умолчанию пуст. Review явно подменяет только
+  открытие браузера в test+VITE_UI_REVIEW_VPN=1, без реального платежа/провайдера.
+- Frontend тестирует backend-данные, скидки, отмену, идемпотентность, редиректы,
+  валюту и отбрасывание локации при смене VPN. Native capture снимает free,
+  active, pending, canceled, подтверждение и unavailable.
+- Финальные product/build SHA, run/attempt и артефакты фиксируются в PR после CI.
+- Backend follow-up: billing API/провайдер/вебхуки, права до оплаченной даты,
+  реальный /version и отдельно переход legacy dev-SHA.

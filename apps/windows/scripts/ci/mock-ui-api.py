@@ -1,6 +1,7 @@
 """Loopback-only UI fixtures. Never connects to production or creates VPN tunnels."""
 import argparse
 import json
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
 from threading import Thread
@@ -10,6 +11,10 @@ DEVICE_ID = "22222222-2222-4222-8222-222222222222"
 INSTALLATION_ID = "33333333-3333-4333-8333-333333333333"
 SESSION_ID = "44444444-4444-4444-8444-444444444444"
 DATE = "2026-10-16T00:00:00Z"
+BILLING_FIXTURES = json.loads(Path(__file__).with_name("billing-fixtures.json").read_text(encoding="utf-8"))
+BILLING_SCENARIO = "active"
+BILLING_OPERATION = None
+BILLING_REQUESTS = {}
 SIMULATE_VPN = False
 DEMO_SESSION = None
 DEMO_VPN_ID = "66666666-6666-4666-8666-666666666666"
@@ -17,7 +22,45 @@ DEMO_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 
 def fixture(method, path, body):
-    global DEMO_SESSION
+    global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION
+    if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-scenario":
+        scenario = body.get("scenario")
+        if scenario not in (*BILLING_FIXTURES, "error"):
+            return 400, {"error": {"code": "INVALID_SCENARIO"}}
+        BILLING_SCENARIO = scenario
+        BILLING_OPERATION = None
+        BILLING_REQUESTS.clear()
+        return 200, {"status": "ok"}
+    if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-confirm":
+        if BILLING_OPERATION:
+            BILLING_OPERATION["status"] = "SUCCEEDED"
+            BILLING_OPERATION["redirect_url"] = None
+            BILLING_SCENARIO = "active"
+        return 200, {"status": "ok"}
+    if method == "GET" and path == "/billing/overview":
+        if BILLING_SCENARIO == "error":
+            return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
+        return 200, {**BILLING_FIXTURES[BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
+    if SIMULATE_VPN and method == "POST" and path == "/billing/operations":
+        request_id = body.get("request_id")
+        if request_id in BILLING_REQUESTS:
+            return 200, BILLING_REQUESTS[request_id]
+        if BILLING_SCENARIO == "error":
+            return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
+        overview = BILLING_FIXTURES[BILLING_SCENARIO]
+        if body.get("expected_revision") != overview["revision"] or body.get("action") not in overview["actions"]:
+            return 409, {"error": {"code": "BILLING_CONFLICT"}}
+        BILLING_OPERATION = {
+            "id": "billing-review-operation", "status": "PENDING",
+            "redirect_url": None if body["action"] == "CANCEL" else "https://payments.example.test/confirm",
+        }
+        if body["action"] == "CANCEL":
+            BILLING_SCENARIO = "canceled"
+            BILLING_OPERATION["status"] = "SUCCEEDED"
+        BILLING_REQUESTS[request_id] = BILLING_OPERATION
+        return 200, BILLING_OPERATION
+    if method == "GET" and path == "/billing/operations/billing-review-operation" and BILLING_OPERATION:
+        return 200, BILLING_OPERATION
     if SIMULATE_VPN and method == "POST" and path == "/vpn/sessions":
         DEMO_SESSION = {
             "session_id": DEMO_VPN_ID, "status": "ACTIVE", "country_code": "DE",

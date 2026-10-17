@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
+import { createBillingClient } from "./billing/client";
+import { createPaymentBrowser, validatePaymentUrl } from "./native/paymentBrowser";
 import { createAuthenticationSession } from "./auth/session";
 import { createSessionRestoration } from "./auth/restoration";
 import { desktopAdapter } from "./native/desktop";
@@ -44,6 +46,13 @@ try {
         value={{
           config,
           api,
+          billing: createBillingClient(config.backendBaseUrl, createHttpTransport(), config.backendTimeoutMs),
+          paymentBrowser: reviewVpn ? {
+            async open(url) {
+              validatePaymentUrl(url, ["payments.example.test"]);
+              document.documentElement.dataset.paymentReviewUrl = "opened";
+            },
+          } : createPaymentBrowser(String(import.meta.env.VITE_PAYMENT_ALLOWED_HOSTS ?? "").split(",").map(host => host.trim()).filter(Boolean)),
           desktop: desktopAdapter,
           installationId: installationIdProvider,
           session,
