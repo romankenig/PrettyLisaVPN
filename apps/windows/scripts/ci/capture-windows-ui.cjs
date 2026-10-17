@@ -592,28 +592,50 @@ async function main() {
   await about.getByText("frontend", { exact: true }).waitFor();
   await about.getByText("backend", { exact: true }).waitFor();
   await about.getByRole("heading", { name: "faq", exact: true }).waitFor();
-  await about.getByText("inspired by love of my life, Lisa", { exact: true }).waitFor();
+  await about
+    .getByText("inspired by love of my life, Lisa", { exact: true })
+    .waitFor();
   await about.getByRole("button", { name: "написать в поддержку" }).click();
   const support = page.getByRole("dialog", { name: "помощь и поддержка" });
   await support.waitFor();
   await screenshot("08a-support-empty");
-  await support.getByRole("textbox", { name: "тема", exact: true }).fill("не удаётся подключиться");
-  await support.getByRole("textbox", { name: "описание проблемы", exact: true }).fill("после выбора страны подключение прерывается. помогите разобраться.");
-  await support.getByRole("textbox", { name: "email для ответа", exact: true }).fill("ui-review@example.com");
-  await support.locator('input[type="file"]').setInputFiles(path.join(output, "08-about.png"));
+  await support
+    .getByRole("textbox", { name: "тема", exact: true })
+    .fill("не удаётся подключиться");
+  await support
+    .getByRole("textbox", { name: "описание проблемы", exact: true })
+    .fill("после выбора страны подключение прерывается. помогите разобраться.");
+  await support
+    .getByRole("textbox", { name: "email для ответа", exact: true })
+    .fill("ui-review@example.com");
+  await support
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(output, "08-about.png"));
   await support.getByText("08-about.png", { exact: true }).waitFor();
-  if (!(await support.getByRole("button", { name: "отправить", exact: true }).isDisabled()))
+  if (
+    !(await support
+      .getByRole("button", { name: "отправить", exact: true })
+      .isDisabled())
+  )
     throw new Error("Unconfigured support must not offer a fake send");
   await screenshot("08b-support-filled");
   await support.getByText("что будет приложено", { exact: true }).click();
   const technical = await support.locator("pre").innerText();
-  if (!technical.includes('"frontend_version"') || technical.includes('"accessToken"') || technical.includes('"private_key"'))
+  if (
+    !technical.includes('"frontend_version"') ||
+    technical.includes('"accessToken"') ||
+    technical.includes('"private_key"')
+  )
     throw new Error("Support diagnostics must use a safe whitelist");
   await screenshot("08c-support-diagnostics");
   await page.keyboard.press("Escape");
   await support.waitFor({ state: "detached" });
   await about.getByRole("button", { name: "написать в поддержку" }).click();
-  if ((await support.getByRole("textbox", { name: "тема", exact: true }).inputValue()) !== "")
+  if (
+    (await support
+      .getByRole("textbox", { name: "тема", exact: true })
+      .inputValue()) !== ""
+  )
     throw new Error("Support draft must not survive closing");
   await support.getByRole("button", { name: "закрыть обращение" }).click();
   await page

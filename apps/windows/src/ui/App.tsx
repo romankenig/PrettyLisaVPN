@@ -70,7 +70,9 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route
             path="/about"
-            element={<About frontend={versions.frontend} backend={versions.backend} />}
+            element={
+              <About frontend={versions.frontend} backend={versions.backend} />
+            }
           />
           <Route path="/settings/*" element={<Settings />} />
           <Route

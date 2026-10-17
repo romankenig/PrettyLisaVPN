@@ -60,8 +60,8 @@ export function supportDiagnostics(
       phase: vpn.phase,
       backend: vpn.backend,
       tunnel: vpn.tunnel,
-      session_id: "session" in vpn ? vpn.session?.sessionId ?? null : null,
-      failure_code: "failure_code" in vpn ? vpn.failure_code ?? null : null,
+      session_id: "session" in vpn ? (vpn.session?.sessionId ?? null) : null,
+      failure_code: "failure_code" in vpn ? (vpn.failure_code ?? null) : null,
     },
   };
 }
@@ -77,24 +77,32 @@ export async function validateScreenshots(files: readonly File[]) {
     return "можно приложить не более 3 скриншотов";
   if (files.some((file) => file.size > screenshotLimits.fileBytes))
     return "каждый скриншот должен быть не больше 5 МБ";
-  if (files.reduce((total, file) => total + file.size, 0) > screenshotLimits.totalBytes)
+  if (
+    files.reduce((total, file) => total + file.size, 0) >
+    screenshotLimits.totalBytes
+  )
     return "общий размер скриншотов — не больше 10 МБ";
   for (const file of files) {
-    const header = new Uint8Array(await new Promise<ArrayBuffer>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(new Error("SCREENSHOT_READ_FAILED"));
-      reader.readAsArrayBuffer(file.slice(0, 12));
-    }));
+    const header = new Uint8Array(
+      await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(new Error("SCREENSHOT_READ_FAILED"));
+        reader.readAsArrayBuffer(file.slice(0, 12));
+      }),
+    );
     const png = [137, 80, 78, 71, 13, 10, 26, 10].every(
       (byte, index) => header[index] === byte,
     );
     const jpeg = header[0] === 255 && header[1] === 216 && header[2] === 255;
-    const webp = String.fromCharCode(...header.slice(0, 4)) === "RIFF" &&
+    const webp =
+      String.fromCharCode(...header.slice(0, 4)) === "RIFF" &&
       String.fromCharCode(...header.slice(8, 12)) === "WEBP";
-    if (!((file.type === "image/png" && png) ||
+    if (!(
+      (file.type === "image/png" && png) ||
       (file.type === "image/jpeg" && jpeg) ||
-      (file.type === "image/webp" && webp)))
+      (file.type === "image/webp" && webp)
+    ))
       return "поддерживаются скриншоты PNG, JPEG и WebP";
   }
   return null;

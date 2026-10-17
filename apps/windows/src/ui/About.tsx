@@ -13,8 +13,14 @@ export function About({
     <section className="about-page" aria-labelledby="about-title">
       <h1 id="about-title">о приложении</h1>
       <dl className="about-versions" aria-label="версии компонентов">
-        <div><dt>frontend</dt><dd>{frontend}</dd></div>
-        <div><dt>backend</dt><dd>{backend}</dd></div>
+        <div>
+          <dt>frontend</dt>
+          <dd>{frontend}</dd>
+        </div>
+        <div>
+          <dt>backend</dt>
+          <dd>{backend}</dd>
+        </div>
       </dl>
       <div className="about-sections">
         <section className="about-card" aria-labelledby="faq-title">
