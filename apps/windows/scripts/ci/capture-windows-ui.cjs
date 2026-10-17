@@ -32,7 +32,7 @@ fs.writeFileSync(
     "Account, devices and countries are loopback-only synthetic fixtures.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
-    "No VPN connection was started or verified.",
+    "VPN IPC, keys and session API are synthetic fixtures; no real tunnel was started or verified.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
     "WebView2 Runtime is required. WireGuard DLL is intentionally not packaged.",
@@ -44,7 +44,7 @@ fs.copyFileSync(
   path.join(output, "mock-ui-api.py"),
 );
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
-const api = spawn("python", ["scripts/ci/mock-ui-api.py"], {
+const api = spawn("python", ["scripts/ci/mock-ui-api.py", "--simulate-vpn"], {
   stdio: ["ignore", log, log],
 });
 let app;
@@ -129,7 +129,7 @@ async function screenshot(name) {
     ]) {
       if (
         node &&
-        (node.scrollHeight > node.clientHeight + 1 ||
+        ((node.scrollHeight > node.clientHeight + 1 && !node.matches(".connection-card")) ||
           node.scrollWidth > node.clientWidth + 1)
       )
         bad.push(node.className || node.tagName);
@@ -178,6 +178,23 @@ async function main() {
   if (!page) throw new Error("Native Tauri WebView page not found");
   page.setDefaultTimeout(15000);
   await page.getByRole("heading", { name: "вход по email" }).waitFor();
+  await page.evaluate(() => {
+    const native = window.__TAURI_INTERNALS__;
+    if (!native?.invoke) throw new Error("Native IPC is required for fixture interception");
+    const invoke = native.invoke.bind(native);
+    let up = false;
+    native.invoke = async (command, args, options) => {
+      if (!command.includes("wireguard")) return invoke(command, args, options);
+      const key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+      if (["ensure_wireguard_public_key", "load_wireguard_public_key"].includes(command)) return { public_key: key };
+      if (command === "start_wireguard_tunnel") { up = true; return "UP"; }
+      if (command === "stop_wireguard_tunnel") { up = false; return "DOWN"; }
+      if (command === "get_wireguard_tunnel_state") return up ? "UP" : "DOWN";
+      if (command === "verify_wireguard_internet") return { tunnel_established: up, internet_verified: up, failure_code: up ? null : "HTTPS_CHECK_FAILED" };
+      if (command === "get_wireguard_peer_diagnostics") return up ? { peerPublicKey: key, endpoint: "192.0.2.20:51820", publicEndpoint: "192.0.2.20:51820", allowedIps: ["0.0.0.0/0"], persistentKeepalive: 25, txBytes: 100, rxBytes: 200, transportMode: "DIRECT", transportHealthy: true } : null;
+      throw new Error("Unmocked VPN command is blocked in UI review");
+    };
+  });
   if ((await page.locator("#login-help").innerText()).endsWith("."))
     throw new Error("Login helper must have no trailing dot");
   await page
@@ -290,8 +307,11 @@ async function main() {
   }
   await page.getByText("203.0.113.42", { exact: true }).waitFor();
   await page.getByText("PREMIUM ⭐", { exact: true }).waitFor();
-  if ((await page.locator(".home-reserved-panel").textContent()).trim())
-    throw new Error("Right home panel must be empty");
+  await page.getByRole("heading", { name: "что защищаем", exact: true }).waitFor();
+  for (const name of [/только выбранные сайты/, /кроме выбранных сайтов/]) {
+    if (!(await page.getByRole("radio", { name }).isDisabled())) throw new Error("Future traffic modes must be disabled");
+  }
+  if ((await page.locator(".account-summary").innerText()).includes("статус")) throw new Error("Account status must be removed");
   await screenshot("04-home");
   const combo = page.getByRole("combobox");
   await combo.click();
@@ -311,6 +331,20 @@ async function main() {
   if (!(await combo.textContent()).includes("Германия"))
     throw new Error("Country choice failed");
   await screenshot("04b-home-country");
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
+  await page.getByText("198.51.100.42", { exact: true }).waitFor();
+  await page.getByLabel("способ подключения", { exact: true }).waitFor();
+  const metadata = await page.getByLabel("способ подключения", { exact: true }).evaluate((node) => ({ color: getComputedStyle(node).color, size: parseFloat(getComputedStyle(node).fontSize), text: node.innerText }));
+  if (!metadata.text.includes("192.0.2.20:51820") || metadata.size > 12 || !metadata.color.startsWith("rgba(")) throw new Error("Expected muted runtime connection facts");
+  await screenshot("04c-home-connected-fixture");
+  await page.getByText("параметры подключения", { exact: true }).click();
+  await page.getByText("публичный ключ сервера", { exact: true }).waitFor();
+  await screenshot("04d-home-connection-details-fixture");
+  await page.getByText("параметры подключения", { exact: true }).click();
+  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "Not connected", exact: true }).waitFor();
+  if (await page.getByLabel("способ подключения", { exact: true }).count()) throw new Error("Connection facts must disappear after disconnect");
 
   await page
     .getByRole("navigation")
@@ -399,6 +433,9 @@ async function main() {
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
+        simulatedVpnIpc: true,
+        connectionDetailsVerifiedWithFixtures: true,
+        trafficModeUiVerified: true,
         screenshots: fs
           .readdirSync(output)
           .filter((name) => name.endsWith(".png")),

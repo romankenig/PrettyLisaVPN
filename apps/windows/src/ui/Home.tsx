@@ -13,6 +13,8 @@ import {
 } from "../vpn/selection";
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
 import { CurrentLocation } from "./CurrentLocation";
+import { ConnectionInfo } from "./ConnectionInfo";
+import { TrafficMode } from "./TrafficMode";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 
 type ProfileState =
@@ -109,7 +111,7 @@ export function Home() {
 
   return (
     <section className="account-home" aria-labelledby="home-title">
-      <p className="eyebrow">аккаунт</p>
+      <p className="eyebrow">home</p>
       <h1 id="home-title" className="product-name">
         PrettyLisaVPN
       </h1>
@@ -180,6 +182,7 @@ export function Home() {
             <h2 className="connection-status" aria-live="polite">
               {connectionHeading(connectionState)}
             </h2>
+            {connectionState.phase === "CONNECTED" ? <ConnectionInfo sessionId={connectionState.session.sessionId} /> : null}
             {profile?.plan === "FREE" &&
             connectionState.phase === "CONNECTED" &&
             connectionState.session.remainingSeconds !== null ? (
@@ -213,7 +216,7 @@ export function Home() {
           </div>
           <CurrentLocation connection={connectionState} />
         </div>
-        <div className="home-reserved-panel" aria-hidden="true" />
+        <TrafficMode />
       </div>
     </section>
   );
@@ -223,7 +226,7 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
   return (
     <div className="account-summary">
       <div>
-        <span>email</span>
+        <span>аккаунт</span>
         <strong title={profile.email}>{profile.email}</strong>
       </div>
       <div>
@@ -240,10 +243,6 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
       <div>
         <span>активные устройства</span>
         <strong>{profile.active_device_count}</strong>
-      </div>
-      <div>
-        <span>статус</span>
-        <strong className="account-status">активен</strong>
       </div>
     </div>
   );

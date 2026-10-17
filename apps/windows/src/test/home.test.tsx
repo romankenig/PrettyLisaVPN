@@ -114,6 +114,19 @@ async function renderFresh(api: ApiClient) {
 beforeEach(() => localStorage.clear());
 
 describe("authenticated Home", () => {
+  it("shows public connection details only after confirmation", async () => {
+    const vpnConnection: VpnConnectionManager = { ...createTestVpnConnection(),
+      current: () => ({ phase: "CONNECTED", backend: "ACTIVE", tunnel: "UP", session: { sessionId: "demo-session", countryCode: "DE", expiresAt: null, remainingSeconds: null } }),
+      connectionDetails: vi.fn().mockResolvedValue({ protocol: "WireGuard", transport: "UDP", server: "192.0.2.20:51820", encryption: "ChaCha20-Poly1305", obfuscation: "без маскировки", mtu: 1280, dns: ["1.1.1.1"], serverPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }) };
+    renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
+    const info = await screen.findByLabelText("способ подключения");
+    expect(info).toHaveTextContent("WireGuard · UDP · 192.0.2.20:51820");
+    expect(info).toHaveTextContent("ChaCha20-Poly1305 · mtu 1280");
+    fireEvent.click(within(info).getByText("параметры подключения"));
+    expect(info).toHaveTextContent("публичный ключ сервера");
+    expect(info).not.toHaveTextContent("access-token");
+  });
+
   it.each([
     ["FREE", "FREE"],
     ["PREMIUM", "PREMIUM ⭐"],
@@ -125,7 +138,7 @@ describe("authenticated Home", () => {
     expect(await screen.findByText(label)).toBeVisible();
   });
 
-  it("keeps controls on the left and an empty right panel", async () => {
+  it("keeps controls on the left and shows traffic modes on the right", async () => {
     renderRestored();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled(),
@@ -157,7 +170,9 @@ describe("authenticated Home", () => {
     expect(await screen.findByText(profile.email)).toBeInTheDocument();
     expect(screen.getByText("PREMIUM ⭐")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
-    expect(screen.getByText("активен")).toBeInTheDocument();
+    expect(screen.queryByText("активен")).not.toBeInTheDocument();
+    expect(screen.getByText("home")).toBeInTheDocument();
+    expect(screen.getByText("аккаунт")).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledWith(
       "access-token",
       expect.any(AbortSignal),

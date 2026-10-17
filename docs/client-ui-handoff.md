@@ -254,3 +254,19 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
   записываются в описание PR после завершения всех workflow.
 - Backend follow-up: реальный /version, отдельно введение platinum бизнес-правил;
   внешний IP до/после реального VPN требует проверки на Windows вне fixtures.
+
+## Home: режимы и параметры подключения — 2026-10-17
+
+- Windows 0.3.0 → 0.4.0 MINOR; backend 0.1.0 без изменений.
+- home / аккаунт, удалён статичный статус, справа три карточки «что защищаем».
+- Владелец явно выбрал UI сейчас, выборочную маршрутизацию позже: include/exclude
+  отключены с пометкой «скоро». FULL_TUNNEL остаётся единственным действующим режимом.
+- Подтверждённое соединение получает optional ConnectionDetails через адаптер;
+  WireGuard metadata читает actual native transport и public endpoint.
+- Приватные ключи/токены не включены; ручная настройка требует отдельного профиля.
+- Synthetic connected capture перехватывает WireGuard IPC, production туннеля нет;
+  дефолтный mock API сохраняет запрет создания session без --simulate-vpn.
+- Локальные проверки: YAML/версии/синтаксис, default/simulated fixture lifecycle.
+  Shell-сеть недоступна; полный frontend/native CI и скриншоты проверяются после push.
+- Финальные source/build SHA, run/attempt, артефакты и результаты записываются в PR;
+  ограничения/источники и deferred routing описаны в docs/home-screen.md.

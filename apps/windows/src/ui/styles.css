@@ -1056,3 +1056,146 @@ main dd {
   right: 0;
   bottom: 4px;
 }
+
+.account-summary {
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+}
+.traffic-mode {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 18px;
+  border-radius: 12px;
+  color: var(--color-black);
+  background: var(--color-mercury);
+}
+.traffic-mode__eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-scorpion);
+  font-size: 11px;
+}
+.traffic-mode h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+.traffic-mode__options {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow-y: auto;
+}
+.traffic-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px 12px;
+  border: 1px solid rgb(95 34 217 / 20%);
+  border-radius: 12px;
+  background: white;
+  font-size: 13px;
+}
+.traffic-choice--active {
+  border-color: var(--color-purple-heart);
+  background: rgb(81 214 202 / 18%);
+}
+.traffic-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.traffic-choice:has(input:focus-visible) {
+  outline: 2px solid var(--color-purple-heart);
+  outline-offset: 2px;
+}
+.traffic-choice__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  color: var(--color-purple-heart);
+  font-size: 24px;
+}
+.traffic-choice > span:nth-of-type(2) {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.traffic-choice strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.traffic-choice small {
+  color: var(--color-scorpion);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.traffic-choice em {
+  justify-self: start;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgb(95 34 217 / 8%);
+  color: var(--color-scorpion);
+  font-size: 10px;
+  font-style: normal;
+}
+.traffic-choice--future {
+  background: rgb(255 255 255 / 55%);
+  cursor: not-allowed;
+}
+.traffic-choice--future .traffic-choice__icon {
+  color: var(--color-scorpion);
+}
+.traffic-choice__check {
+  margin-left: auto;
+  color: var(--color-christalle);
+  font-size: 18px;
+}
+.traffic-mode__footnote {
+  margin: auto 0 0;
+  padding-top: 12px;
+  color: var(--color-scorpion);
+  font-size: 11px;
+}
+.home-connect-panel .connection-info,
+.home-connect-panel .connection-info p,
+.connection-info summary,
+.connection-info dl {
+  color: rgb(1 1 1 / 58%);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.connection-info {
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+.home-connect-panel .connection-info p {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
+}
+.connection-info summary {
+  margin-top: 6px;
+  cursor: pointer;
+}
+.connection-info dl {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+}
+.connection-info dt {
+  font-weight: 600;
+}
+.connection-info dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  text-transform: none;
+  user-select: text;
+}

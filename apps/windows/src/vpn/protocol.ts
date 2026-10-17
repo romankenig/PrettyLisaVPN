@@ -1,6 +1,7 @@
 import type { ConnectionProfile } from "./profiles";
 import type { ActiveVpnSessionResponse } from "../api/client";
 import type { VpnLocationSelection } from "./selection";
+import type { ConnectionDetails } from "./connectionDetails";
 
 /** Operational configuration. Never expose this through product/UI models. */
 export interface ConnectionConfig {
@@ -53,6 +54,7 @@ export interface ProtocolConfiguration extends ConnectionConfig {
   readonly parameters: unknown;
 }
 export interface VpnProtocol {
+  connectionDetails?(): Promise<ConnectionDetails | null>;
   readonly capabilities: ConnectionProfile;
   connect(
     config: ProtocolConfiguration,

@@ -10,9 +10,26 @@ DEVICE_ID = "22222222-2222-4222-8222-222222222222"
 INSTALLATION_ID = "33333333-3333-4333-8333-333333333333"
 SESSION_ID = "44444444-4444-4444-8444-444444444444"
 DATE = "2026-10-16T00:00:00Z"
+SIMULATE_VPN = False
+DEMO_SESSION = None
+DEMO_VPN_ID = "66666666-6666-4666-8666-666666666666"
+DEMO_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 
 def fixture(method, path, body):
+    global DEMO_SESSION
+    if SIMULATE_VPN and method == "POST" and path == "/vpn/sessions":
+        DEMO_SESSION = {
+            "session_id": DEMO_VPN_ID, "status": "ACTIVE", "country_code": "DE",
+            "expires_at": None, "server_time": DATE,
+            "transport": {"endpoint": {"ipv4": "192.0.2.20", "port": 51820},
+                          "server_public_key": DEMO_KEY, "client_address": "10.77.0.2/32",
+                          "dns": ["1.1.1.1"], "allowed_ips": ["0.0.0.0/0"]},
+        }
+        return 200, DEMO_SESSION
+    if SIMULATE_VPN and method == "DELETE" and path == "/vpn/sessions/" + DEMO_VPN_ID:
+        DEMO_SESSION = None
+        return 200, {"session_id": DEMO_VPN_ID, "status": "DISCONNECTED"}
     if method == "POST" and path == "/auth/request-otp":
         return 200, {"status": "accepted"}
     if method == "POST" and path == "/auth/verify-otp":
@@ -32,6 +49,8 @@ def fixture(method, path, body):
             "subscription": {"plan": "PREMIUM", "status": "ACTIVE"},
         }
     if method == "GET" and path == "/public-location":
+        if SIMULATE_VPN and DEMO_SESSION:
+            return 200, {"success": True, "ip": "198.51.100.42", "country_code": "DE", "city": "Berlin"}
         return 200, {"success": True, "ip": "203.0.113.42", "country_code": "RU", "city": "Москва"}
     if method == "GET" and path == "/me":
         return 200, {
@@ -62,7 +81,7 @@ def fixture(method, path, body):
             ],
         }
     if method == "GET" and path == "/vpn/sessions/current":
-        return 200, {"session": None}
+        return 200, {"session": DEMO_SESSION if SIMULATE_VPN else None}
     if method == "POST" and path == "/auth/logout":
         return 200, {"status": "logged_out"}
     # Fail closed: no VPN session creation or device mutation.
@@ -117,7 +136,9 @@ def self_test():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--simulate-vpn", action="store_true", help="Synthetic session data only; requires mocked native IPC")
     args = parser.parse_args()
+    SIMULATE_VPN = args.simulate_vpn
     if args.self_test:
         self_test()
     else:

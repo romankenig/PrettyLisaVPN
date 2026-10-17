@@ -15,6 +15,7 @@ import {
   type ProtocolStatus,
 } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
+import type { ConnectionDetails } from "./connectionDetails";
 
 export interface ConnectedVpnSession {
   readonly sessionId: string;
@@ -64,6 +65,7 @@ export type VpnConnectionState =
     };
 
 export interface VpnConnectionManager {
+  connectionDetails?(): Promise<ConnectionDetails | null>;
   readonly current: () => VpnConnectionState;
   readonly subscribe: (listener: () => void) => () => void;
   reconcile(accessToken: string): Promise<void>;
@@ -328,6 +330,14 @@ export function createVpnConnectionManager(
   };
 
   const manager: VpnConnectionManager = {
+    async connectionDetails() {
+      if (state.phase !== "CONNECTED" || !tunnel.connectionDetails) return null;
+      const sessionId = state.session.sessionId;
+      try {
+        const details = await tunnel.connectionDetails();
+        return state.phase === "CONNECTED" && state.session.sessionId === sessionId ? details : null;
+      } catch { return null; }
+    },
     current: () => state,
     subscribe(listener) {
       listeners.add(listener);
