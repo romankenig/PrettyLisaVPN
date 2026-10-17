@@ -39,7 +39,13 @@ export function requestId(
   route: PaymentRoute | null = null,
 ): string {
   const key = `prettylisavpn:billing-request:${user}`;
-  const fingerprint = JSON.stringify([revision, action, offer, currency, route]);
+  const fingerprint = JSON.stringify([
+    revision,
+    action,
+    offer,
+    currency,
+    route,
+  ]);
   const cached = readSession(key) ?? memoryRequests.get(key);
   if (cached?.fingerprint === fingerprint && typeof cached.id === "string")
     return cached.id;
