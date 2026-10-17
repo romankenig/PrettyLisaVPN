@@ -15,6 +15,7 @@ import { App } from "./ui/App";
 import { SessionRestorationGate } from "./ui/SessionRestorationGate";
 import { WindowFrame } from "./ui/WindowFrame";
 import { createPublicLocationProvider } from "./location/publicLocation";
+import { createReviewVpnConnection } from "./review/vpnFixture";
 import "./ui/styles.css";
 const root = createRoot(document.getElementById("root")!);
 try {
@@ -31,7 +32,12 @@ try {
     credentialStorage,
     session,
   );
-  const vpnConnection = createDefaultVpnConnection(api);
+  const reviewVpn =
+    config.environment === "test" && import.meta.env.VITE_UI_REVIEW_VPN === "1";
+  const vpnConnection = reviewVpn
+    ? createReviewVpnConnection(api)
+    : createDefaultVpnConnection(api);
+  if (reviewVpn) document.documentElement.dataset.vpnReview = "synthetic";
   root.render(
     <StrictMode>
       <ApplicationProvider

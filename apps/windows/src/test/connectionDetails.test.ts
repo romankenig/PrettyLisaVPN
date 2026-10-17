@@ -4,6 +4,7 @@ import { createVpnConnectionManager } from "../vpn/connection";
 import type { WireGuardTunnelController } from "../native/wireguardTransport";
 import type { ApiClient } from "../api/client";
 import type { VpnProtocol } from "../vpn/protocol";
+import { createReviewVpnConnection } from "../review/vpnFixture";
 
 const key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 const parameters = {
@@ -40,6 +41,36 @@ function controller(): WireGuardTunnelController {
 }
 
 describe("public connection facts", () => {
+  it("runs the explicit review connection without native tunnel/key dependencies", async () => {
+    const response = {
+      session_id: "66666666-6666-4666-8666-666666666666",
+      status: "ACTIVE" as const,
+      country_code: "DE",
+      expires_at: null,
+      server_time: "2026-10-17T00:00:00Z",
+      transport: parameters,
+    };
+    const api = {
+      createVpnSession: async () => response,
+      getCurrentVpnSession: async () => ({ session: response }),
+      disconnectVpnSession: async () => ({}),
+    } as unknown as ApiClient;
+    const connection = createReviewVpnConnection(api);
+    try {
+      await connection.connect("fixture", { mode: "AUTO" });
+      expect(connection.current().phase).toBe("CONNECTED");
+      expect(await connection.connectionDetails!()).toMatchObject({
+        protocol: "WireGuard",
+        server: "192.0.2.20:51820",
+        obfuscation: "без маскировки",
+      });
+      await connection.disconnect("fixture");
+      expect(await connection.connectionDetails!()).toBeNull();
+    } finally {
+      connection.dispose();
+    }
+  });
+
   it("uses runtime transport and public endpoint, not the backend's preferred mode or local proxy", async () => {
     const tunnel = controller();
     const protocol = createWireGuardProtocol(tunnel);

@@ -264,7 +264,8 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Подтверждённое соединение получает optional ConnectionDetails через адаптер;
   WireGuard metadata читает actual native transport и public endpoint.
 - Приватные ключи/токены не включены; ручная настройка требует отдельного профиля.
-- Synthetic connected capture перехватывает WireGuard IPC, production туннеля нет;
+- Synthetic connected capture использует явно внедрённые tunnel/key dependencies
+  только в test+VITE_UI_REVIEW_VPN=1 сборке; native VPN IPC не вызывается;
   дефолтный mock API сохраняет запрет создания session без --simulate-vpn.
 - Локальные проверки: YAML/версии/синтаксис, default/simulated fixture lifecycle.
   Shell-сеть недоступна; полный frontend/native CI и скриншоты проверяются после push.

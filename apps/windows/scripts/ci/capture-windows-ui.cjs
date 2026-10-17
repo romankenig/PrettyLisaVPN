@@ -32,7 +32,7 @@ fs.writeFileSync(
     "Account, devices and countries are loopback-only synthetic fixtures.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
-    "VPN IPC, keys and session API are synthetic fixtures; no real tunnel was started or verified.",
+    "Tunnel dependencies, keys and session API are synthetic fixtures; no real tunnel was started or verified.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
     "WebView2 Runtime is required. WireGuard DLL is intentionally not packaged.",
@@ -179,53 +179,8 @@ async function main() {
   if (!page) throw new Error("Native Tauri WebView page not found");
   page.setDefaultTimeout(15000);
   await page.getByRole("heading", { name: "вход по email" }).waitFor();
-  await page.evaluate(() => {
-    const native = window.__TAURI_INTERNALS__;
-    if (!native?.invoke)
-      throw new Error("Native IPC is required for fixture interception");
-    const invoke = native.invoke.bind(native);
-    let up = false;
-    native.invoke = async (command, args, options) => {
-      if (!command.includes("wireguard")) return invoke(command, args, options);
-      const key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-      if (
-        ["ensure_wireguard_public_key", "load_wireguard_public_key"].includes(
-          command,
-        )
-      )
-        return { public_key: key };
-      if (command === "start_wireguard_tunnel") {
-        up = true;
-        return "UP";
-      }
-      if (command === "stop_wireguard_tunnel") {
-        up = false;
-        return "DOWN";
-      }
-      if (command === "get_wireguard_tunnel_state") return up ? "UP" : "DOWN";
-      if (command === "verify_wireguard_internet")
-        return {
-          tunnel_established: up,
-          internet_verified: up,
-          failure_code: up ? null : "HTTPS_CHECK_FAILED",
-        };
-      if (command === "get_wireguard_peer_diagnostics")
-        return up
-          ? {
-              peerPublicKey: key,
-              endpoint: "192.0.2.20:51820",
-              publicEndpoint: "192.0.2.20:51820",
-              allowedIps: ["0.0.0.0/0"],
-              persistentKeepalive: 25,
-              txBytes: 100,
-              rxBytes: 200,
-              transportMode: "DIRECT",
-              transportHealthy: true,
-            }
-          : null;
-      throw new Error("Unmocked VPN command is blocked in UI review");
-    };
-  });
+  const syntheticVpn = await page.evaluate(() => document.documentElement.dataset.vpnReview);
+  if (syntheticVpn !== "synthetic") throw new Error("Review tunnel dependencies must be injected before any VPN action");
   if ((await page.locator("#login-help").innerText()).endsWith("."))
     throw new Error("Login helper must have no trailing dot");
   await page
@@ -482,7 +437,7 @@ async function main() {
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
-        simulatedVpnIpc: true,
+        injectedVpnFixture: true,
         connectionDetailsVerifiedWithFixtures: true,
         trafficModeUiVerified: true,
         screenshots: fs
@@ -513,6 +468,7 @@ main()
   .catch(async (error) => {
     console.error(error);
     if (page) {
+      console.error("SYNTHETIC_UI_FAILURE " + (await page.locator("body").innerText().catch(() => "unavailable")));
       await screenshot("failure").catch(() => {});
       fs.writeFileSync(
         path.join(output, "failure-page.txt"),
