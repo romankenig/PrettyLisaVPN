@@ -137,7 +137,9 @@ async function screenshot(name) {
           !node.matches(".connection-card")) ||
           node.scrollWidth > node.clientWidth + 1)
       )
-        bad.push(node.className || node.tagName);
+        bad.push(
+          `${node.className || node.tagName} (${node.scrollHeight}/${node.clientHeight}, ${node.scrollWidth}/${node.clientWidth})`,
+        );
     }
     return bad;
   });

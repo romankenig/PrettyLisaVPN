@@ -1269,7 +1269,7 @@ main dd {
 }
 .billing-renewal {
   display: inline-block;
-  margin: 4px 0 18px;
+  margin: 4px 0 12px;
   padding: 5px 8px;
   border-radius: 7px;
   background: rgb(81 214 202 / 28%);
@@ -1327,8 +1327,8 @@ main dd {
 }
 .billing-prices {
   display: grid;
-  gap: 8px;
-  margin: 12px 0 16px;
+  gap: 6px;
+  margin: 10px 0 12px;
 }
 .billing-price-primary,
 .billing-price-secondary {
@@ -1446,6 +1446,7 @@ main dd {
   font-size: 12px;
 }
 .billing-notice {
+  margin: 8px 0 0;
   color: var(--color-mercury);
   font-size: 12px;
 }
