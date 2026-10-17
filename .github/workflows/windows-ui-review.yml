@@ -28,7 +28,7 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
-      # Use loopback fixtures for both native review workflows.
+      # Native window review uses synthetic API and VPN IPC fixtures.
       VITE_PUBLIC_LOCATION_URL: http://127.0.0.1:8000/public-location
     steps:
       - uses: actions/checkout@v4

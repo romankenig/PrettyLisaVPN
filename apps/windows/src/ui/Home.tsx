@@ -182,7 +182,9 @@ export function Home() {
             <h2 className="connection-status" aria-live="polite">
               {connectionHeading(connectionState)}
             </h2>
-            {connectionState.phase === "CONNECTED" ? <ConnectionInfo sessionId={connectionState.session.sessionId} /> : null}
+            {connectionState.phase === "CONNECTED" ? (
+              <ConnectionInfo sessionId={connectionState.session.sessionId} />
+            ) : null}
             {profile?.plan === "FREE" &&
             connectionState.phase === "CONNECTED" &&
             connectionState.session.remainingSeconds !== null ? (

@@ -134,25 +134,77 @@ export function createWireGuardProtocol(
     async connectionDetails() {
       if ((await tunnel.state()) !== "UP") return null;
       const peer = await tunnel.diagnostics();
-      if (!peer || !peer.transportHealthy || !["DIRECT", "PRETTYLISA_V1", "WG_OBFUSCATOR", "PACKET_WRAPPED"].includes(peer.transportMode)) return null;
-      const match = /^(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})$/.exec(peer.publicEndpoint);
-      if (!match || match[1].split(".").some((part) => Number(part) > 255) || Number(match[2]) < 1 || Number(match[2]) > 65535) return null;
+      if (
+        !peer ||
+        !peer.transportHealthy ||
+        ![
+          "DIRECT",
+          "PRETTYLISA_V1",
+          "WG_OBFUSCATOR",
+          "PACKET_WRAPPED",
+        ].includes(peer.transportMode)
+      )
+        return null;
+      const match = /^(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})$/.exec(
+        peer.publicEndpoint,
+      );
+      if (
+        !match ||
+        match[1].split(".").some((part) => Number(part) > 255) ||
+        Number(match[2]) < 1 ||
+        Number(match[2]) > 65535
+      )
+        return null;
       const config = activeConfig;
-      const parameters = config && isWireGuardTransport(config.parameters) ? config.parameters : null;
-      const matches = parameters && parameters.server_public_key === peer.peerPublicKey && `${parameters.endpoint.ipv4}:${parameters.endpoint.port}` === peer.publicEndpoint;
+      const parameters =
+        config && isWireGuardTransport(config.parameters)
+          ? config.parameters
+          : null;
+      const matches =
+        parameters &&
+        parameters.server_public_key === peer.peerPublicKey &&
+        `${parameters.endpoint.ipv4}:${parameters.endpoint.port}` ===
+          peer.publicEndpoint;
       const maxDatagramSize = config?.transport_parameters?.max_datagram_size;
       return {
         protocol: "WireGuard",
         transport: "UDP",
         server: peer.publicEndpoint,
         encryption: "ChaCha20-Poly1305",
-        obfuscation: peer.transportMode === "DIRECT" ? "без маскировки" : peer.transportMode === "PRETTYLISA_V1" ? "PrettyLisa v1" : peer.transportMode === "WG_OBFUSCATOR" ? "wg-obfuscator" : "simple packet wrapper v1",
+        obfuscation:
+          peer.transportMode === "DIRECT"
+            ? "без маскировки"
+            : peer.transportMode === "PRETTYLISA_V1"
+              ? "PrettyLisa v1"
+              : peer.transportMode === "WG_OBFUSCATOR"
+                ? "wg-obfuscator"
+                : "simple packet wrapper v1",
         mtu: 1280,
-        ...(matches ? { dns: [...parameters.dns], clientAddress: parameters.client_address } : {}),
-        ...(Array.isArray(peer.allowedIps) && peer.allowedIps.every((ip) => typeof ip === "string" && /^[0-9a-fA-F:./]+$/.test(ip)) ? { allowedIps: [...peer.allowedIps] } : {}),
-        ...(/^[A-Za-z0-9+/]{43}=$/.test(peer.peerPublicKey) ? { serverPublicKey: peer.peerPublicKey } : {}),
-        ...(Number.isInteger(peer.persistentKeepalive) && peer.persistentKeepalive >= 0 && peer.persistentKeepalive <= 65535 ? { keepalive: peer.persistentKeepalive } : {}),
-        ...(matches && peer.transportMode === "PACKET_WRAPPED" && typeof maxDatagramSize === "number" ? { maxDatagramSize } : {}),
+        ...(matches
+          ? {
+              dns: [...parameters.dns],
+              clientAddress: parameters.client_address,
+            }
+          : {}),
+        ...(Array.isArray(peer.allowedIps) &&
+        peer.allowedIps.every(
+          (ip) => typeof ip === "string" && /^[0-9a-fA-F:./]+$/.test(ip),
+        )
+          ? { allowedIps: [...peer.allowedIps] }
+          : {}),
+        ...(/^[A-Za-z0-9+/]{43}=$/.test(peer.peerPublicKey)
+          ? { serverPublicKey: peer.peerPublicKey }
+          : {}),
+        ...(Number.isInteger(peer.persistentKeepalive) &&
+        peer.persistentKeepalive >= 0 &&
+        peer.persistentKeepalive <= 65535
+          ? { keepalive: peer.persistentKeepalive }
+          : {}),
+        ...(matches &&
+        peer.transportMode === "PACKET_WRAPPED" &&
+        typeof maxDatagramSize === "number"
+          ? { maxDatagramSize }
+          : {}),
       };
     },
     async connect(config, progress) {
@@ -199,7 +251,8 @@ export function createWireGuardProtocol(
         progress?.("TUNNEL_ESTABLISHED");
         progress?.("VERIFYING_INTERNET");
         const verified = await checkHealth({ health });
-        if (verified.internet_verified && verified.failure_code === null) activeConfig = config;
+        if (verified.internet_verified && verified.failure_code === null)
+          activeConfig = config;
         return verified;
       } catch (error) {
         return result(

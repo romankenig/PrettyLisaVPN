@@ -335,8 +335,13 @@ export function createVpnConnectionManager(
       const sessionId = state.session.sessionId;
       try {
         const details = await tunnel.connectionDetails();
-        return state.phase === "CONNECTED" && state.session.sessionId === sessionId ? details : null;
-      } catch { return null; }
+        return state.phase === "CONNECTED" &&
+          state.session.sessionId === sessionId
+          ? details
+          : null;
+      } catch {
+        return null;
+      }
     },
     current: () => state,
     subscribe(listener) {

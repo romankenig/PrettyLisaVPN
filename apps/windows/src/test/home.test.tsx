@@ -115,10 +115,33 @@ beforeEach(() => localStorage.clear());
 
 describe("authenticated Home", () => {
   it("shows public connection details only after confirmation", async () => {
-    const connectedState: ReturnType<VpnConnectionManager["current"]> = { phase: "CONNECTED", backend: "ACTIVE", tunnel: "UP", session: { sessionId: "demo-session", countryCode: "DE", expiresAt: null, remainingSeconds: null } };
-    const vpnConnection: VpnConnectionManager = { ...createTestVpnConnection(),
+    const connectedState: ReturnType<VpnConnectionManager["current"]> = {
+      phase: "CONNECTED",
+      backend: "ACTIVE",
+      tunnel: "UP",
+      session: {
+        sessionId: "demo-session",
+        countryCode: "DE",
+        expiresAt: null,
+        remainingSeconds: null,
+      },
+    };
+    const vpnConnection: VpnConnectionManager = {
+      ...createTestVpnConnection(),
       current: () => connectedState,
-      connectionDetails: vi.fn().mockResolvedValue({ protocol: "WireGuard", transport: "UDP", server: "192.0.2.20:51820", encryption: "ChaCha20-Poly1305", obfuscation: "без маскировки", mtu: 1280, dns: ["1.1.1.1"], serverPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }) };
+      connectionDetails: vi
+        .fn()
+        .mockResolvedValue({
+          protocol: "WireGuard",
+          transport: "UDP",
+          server: "192.0.2.20:51820",
+          encryption: "ChaCha20-Poly1305",
+          obfuscation: "без маскировки",
+          mtu: 1280,
+          dns: ["1.1.1.1"],
+          serverPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        }),
+    };
     renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
     const info = await screen.findByLabelText("способ подключения");
     expect(info).toHaveTextContent("WireGuard · UDP · 192.0.2.20:51820");
@@ -151,8 +174,12 @@ describe("authenticated Home", () => {
     ).not.toBeNull();
     expect(screen.getByRole("heading", { name: "что защищаем" })).toBeVisible();
     expect(screen.getByRole("radio", { name: /весь трафик/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /только выбранные сайты/ })).toBeDisabled();
-    expect(screen.getByRole("radio", { name: /кроме выбранных сайтов/ })).toBeDisabled();
+    expect(
+      screen.getByRole("radio", { name: /только выбранные сайты/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("radio", { name: /кроме выбранных сайтов/ }),
+    ).toBeDisabled();
     expect(screen.queryByText("локация")).not.toBeInTheDocument();
   });
 
