@@ -346,6 +346,7 @@ async function main() {
   await screenshot("04c-home-connected-fixture");
   await page.getByText("параметры подключения", { exact: true }).click();
   await page.getByText("публичный ключ сервера", { exact: true }).waitFor();
+  await page.locator(".connection-info dd").first().scrollIntoViewIfNeeded();
   await screenshot("04d-home-connection-details-fixture");
   await page.getByText("параметры подключения", { exact: true }).click();
   await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();

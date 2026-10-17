@@ -28,7 +28,7 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
-      # Both native review workflows use explicit synthetic tunnel dependencies.
+      # Explicit synthetic tunnel dependencies are shared by both native UI runs.
       VITE_PUBLIC_LOCATION_URL: http://127.0.0.1:8000/public-location
       VITE_UI_REVIEW_VPN: "1"
     steps:
