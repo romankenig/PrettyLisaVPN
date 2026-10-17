@@ -260,8 +260,8 @@ function connectionError(error: unknown) {
       return (
         <>
           Другой VPN или сетевой фильтр не пропускает интернет через{" "}
-          <span className="product-name">PrettyLisaVPN</span>. Отключите другой VPN и
-          повторите подключение.
+          <span className="product-name">PrettyLisaVPN</span>. Отключите другой
+          VPN и повторите подключение.
         </>
       );
     }
