@@ -190,7 +190,7 @@ describe("subscription screen", () => {
     const dialog = await openPaymentChoice();
     const options = within(dialog).getAllByRole("radio");
     expect(options).toHaveLength(4);
-    expect(options[0]).toHaveValue("MIR");
+    expect(options[0]).toHaveAttribute("value", "MIR");
     expect(options[0]).toBeChecked();
     expect(dialog.querySelectorAll("svg")).toHaveLength(4);
     expect(dialog).toHaveTextContent(
@@ -207,7 +207,7 @@ describe("subscription screen", () => {
     const { billing } = setup("active");
     await openPaymentChoice("продлить подписку");
     const options = screen.getAllByRole("radio");
-    expect(options[0]).toHaveValue("BANK_CARD");
+    expect(options[0]).toHaveAttribute("value", "BANK_CARD");
     expect(options[0]).toBeChecked();
     expect(billing.start).not.toHaveBeenCalled();
     fireEvent.click(screen.getByDisplayValue("ALIPAY_WECHAT"));
