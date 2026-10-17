@@ -1,0 +1,95 @@
+{
+  "free": {
+    "revision": "fixture-free-1",
+    "plan": "FREE",
+    "status": "FREE",
+    "paid_until": null,
+    "auto_renew": false,
+    "current_price": null,
+    "payment_method": null,
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 19900,
+            "original_amount_minor": 29900
+          },
+          "USD": {
+            "amount_minor": 299,
+            "original_amount_minor": 399
+          }
+        }
+      }
+    ],
+    "actions": ["SUBSCRIBE"],
+    "pending_operation_id": null
+  },
+  "active": {
+    "revision": "fixture-active-1",
+    "plan": "PREMIUM",
+    "status": "ACTIVE",
+    "paid_until": "2099-11-17T20:59:59Z",
+    "auto_renew": true,
+    "current_price": {
+      "amount_minor": 29900,
+      "currency": "RUB"
+    },
+    "payment_method": {
+      "provider": "платёжный сервис",
+      "label": "тестовый способ •••• 4242"
+    },
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 29900,
+            "original_amount_minor": null
+          },
+          "USD": {
+            "amount_minor": 399,
+            "original_amount_minor": null
+          }
+        }
+      }
+    ],
+    "actions": ["RENEW", "CHANGE_METHOD", "CANCEL"],
+    "pending_operation_id": null
+  },
+  "canceled": {
+    "revision": "fixture-canceled-2",
+    "plan": "PREMIUM",
+    "status": "CANCELED",
+    "paid_until": "2099-11-17T20:59:59Z",
+    "auto_renew": false,
+    "current_price": {
+      "amount_minor": 29900,
+      "currency": "RUB"
+    },
+    "payment_method": null,
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 29900,
+            "original_amount_minor": null
+          },
+          "USD": {
+            "amount_minor": 399,
+            "original_amount_minor": null
+          }
+        }
+      }
+    ],
+    "actions": ["RENEW", "CHANGE_METHOD"],
+    "pending_operation_id": null
+  }
+}

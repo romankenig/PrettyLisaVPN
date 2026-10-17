@@ -43,6 +43,10 @@ fs.copyFileSync(
   "scripts/ci/mock-ui-api.py",
   path.join(output, "mock-ui-api.py"),
 );
+fs.copyFileSync(
+  "scripts/ci/billing-fixtures.json",
+  path.join(output, "billing-fixtures.json"),
+);
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
 const api = spawn("python", ["scripts/ci/mock-ui-api.py", "--simulate-vpn"], {
   stdio: ["ignore", log, log],
@@ -124,7 +128,7 @@ async function screenshot(name) {
       document.body,
       main,
       ...document.querySelectorAll(
-        ".connection-card, .home-workspace, .sidebar, .settings-devices",
+        ".connection-card, .home-workspace, .sidebar, .settings-devices, .subscription-scroll, .payment-choice",
       ),
     ]) {
       if (
@@ -133,7 +137,9 @@ async function screenshot(name) {
           !node.matches(".connection-card")) ||
           node.scrollWidth > node.clientWidth + 1)
       )
-        bad.push(node.className || node.tagName);
+        bad.push(
+          `${node.className || node.tagName} (${node.scrollHeight}/${node.clientHeight}, ${node.scrollWidth}/${node.clientWidth})`,
+        );
     }
     return bad;
   });
@@ -362,6 +368,168 @@ async function main() {
     .click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await screenshot("05-settings");
+  async function billingScenario(scenario) {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/billing-scenario",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ scenario }),
+      },
+    );
+    if (!response.ok) throw new Error("Billing fixture scenario failed");
+  }
+  async function confirmBilling() {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/billing-confirm",
+      { method: "POST" },
+    );
+    if (!response.ok) throw new Error("Billing fixture confirmation failed");
+    await page.getByRole("button", { name: "обновить", exact: true }).click();
+    await page.getByText("автопродление включено", { exact: true }).waitFor();
+    await page
+      .getByRole("button", { name: "отменить подписку", exact: true })
+      .waitFor();
+  }
+  async function lastBillingCommand() {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/billing-last-command",
+    );
+    if (!response.ok) throw new Error("Billing command fixture failed");
+    return response.json();
+  }
+  await billingScenario("free");
+  await page.getByRole("link", { name: /подписка/ }).click();
+  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .waitFor();
+  if (
+    (await page
+      .getByRole("link", { name: "настройки", exact: true })
+      .getAttribute("aria-current")) !== "page"
+  )
+    throw new Error("Settings must stay active on subscription");
+  if (
+    (await page
+      .getByRole("button", { name: "₽", exact: true })
+      .getAttribute("aria-pressed")) !== "true"
+  )
+    throw new Error("Russia before VPN must prefer RUB");
+  if ((await page.getByLabel("цена в рублях").locator("del").count()) !== 1)
+    throw new Error("Backend discount must be shown");
+  await screenshot("05a-subscription-free");
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  const paymentOptions = page.getByRole("dialog").getByRole("radio");
+  if (
+    (await paymentOptions.count()) !== 4 ||
+    (await paymentOptions.first().inputValue()) !== "MIR" ||
+    !(await paymentOptions.first().isChecked())
+  )
+    throw new Error("RUB must prefer MIR in the four-option payment choice");
+  if ((await page.getByRole("dialog").locator("svg").count()) !== 4)
+    throw new Error("Every payment option must have an icon");
+  if (await lastBillingCommand())
+    throw new Error("Opening payment choice must not create an operation");
+  await screenshot("05aa-payment-choice-rub");
+  await page.getByRole("button", { name: "назад", exact: true }).click();
+  await page.getByRole("button", { name: "$", exact: true }).click();
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  if (
+    (await paymentOptions.first().inputValue()) !== "BANK_CARD" ||
+    !(await paymentOptions.first().isChecked())
+  )
+    throw new Error("USD must prefer bank cards");
+  await screenshot("05ab-payment-choice-usd");
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog").waitFor({ state: "hidden" });
+  await page.getByRole("button", { name: "₽", exact: true }).click();
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "перейти к оплате", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.documentElement.dataset.paymentReviewUrl === "opened",
+  );
+  await page
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
+    .waitFor();
+  if (
+    !(await page
+      .getByRole("button", { name: "оформить подписку", exact: true })
+      .isDisabled())
+  )
+    throw new Error("Pending operation must block duplicate checkout");
+  await screenshot("05b-subscription-pending");
+  await confirmBilling();
+  await screenshot("05c-subscription-active");
+  const checkoutCommand = await lastBillingCommand();
+  if (
+    checkoutCommand.action !== "SUBSCRIBE" ||
+    checkoutCommand.payment_route !== "MIR"
+  )
+    throw new Error("Checkout must submit the explicitly confirmed MIR route");
+  await page
+    .getByRole("button", { name: "продлить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  await page
+    .getByRole("radio", { name: "банковская карта", exact: true })
+    .locator("..")
+    .click();
+  await page
+    .getByRole("button", { name: "перейти к оплате", exact: true })
+    .click();
+  await page
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
+    .waitFor();
+  const renewalCommand = await lastBillingCommand();
+  if (
+    renewalCommand.action !== "RENEW" ||
+    renewalCommand.payment_route !== "BANK_CARD"
+  )
+    throw new Error("Renewal must submit its own confirmed payment route");
+  await confirmBilling();
+  await page
+    .getByRole("button", { name: "изменить способ оплаты", exact: true })
+    .click();
+  await page
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
+    .waitFor();
+  await confirmBilling();
+  await page
+    .getByRole("button", { name: "отменить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  await screenshot("05d-subscription-cancel-confirmation");
+  await page.getByRole("button", { name: "да, отменить", exact: true }).click();
+  await page.getByText("автопродление отключено", { exact: true }).waitFor();
+  if (
+    await page.getByText("тестовый способ •••• 4242", { exact: true }).count()
+  )
+    throw new Error("Canceled subscription must detach payment method");
+  await page
+    .getByRole("button", { name: "продлить подписку", exact: true })
+    .waitFor();
+  await screenshot("05e-subscription-canceled");
+  await billingScenario("error");
+  await page.getByRole("button", { name: "обновить", exact: true }).click();
+  await page.getByRole("alert").waitFor();
+  if (await page.getByLabel("цена в рублях").count())
+    throw new Error(
+      "Unavailable backend must not show stale or invented prices",
+    );
+  await screenshot("05f-subscription-unavailable");
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+  await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await page.getByRole("combobox").waitFor();
   await page.waitForFunction(() =>
@@ -438,6 +606,9 @@ async function main() {
         authNavigationDisabledVerified: true,
         iconNavigationVerified: true,
         settingsDevicesAndLogoutVerified: true,
+        subscriptionBillingUiVerified: true,
+        paymentChoiceVerified: true,
+        realPaymentsTested: false,
         backendVersionFallbackVerified: true,
         fontFamily: "Rubik",
         fontWeightsVerified: [400, 600, 700],

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { useApplication } from "../state/application";
 import { Home } from "./Home";
+import { HomeCountryObserver } from "./HomeCountryObserver";
 import { Login } from "./Login";
 import { NavigationIcon } from "./NavigationIcon";
 import { OtpVerification } from "./OtpVerification";
@@ -41,6 +42,7 @@ export function App() {
   ] as const;
   return (
     <div className="shell">
+      <HomeCountryObserver />
       <aside className="sidebar">
         <nav aria-label="основная навигация">
           {items.map((item) =>

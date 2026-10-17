@@ -3,12 +3,14 @@ import { Link, Route, Routes } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useApplication } from "../state/application";
 import { Devices } from "./Devices";
+import { Subscription } from "./Subscription";
 import { NavigationIcon } from "./NavigationIcon";
 
 export function Settings() {
   return (
     <Routes>
       <Route index element={<SettingsOverview />} />
+      <Route path="subscription" element={<Subscription />} />
       <Route
         path="devices"
         element={
@@ -64,9 +66,16 @@ function SettingsOverview() {
   if (activeSession === null) return null;
   return (
     <section className="settings-page" aria-labelledby="settings-title">
-      <p className="eyebrow">приложение</p>
       <h1 id="settings-title">настройки</h1>
       <div className="settings-options">
+        <Link className="settings-option" to="/settings/subscription">
+          <NavigationIcon name="subscription" />
+          <span>
+            <strong>подписка</strong>
+            <small>управление подпиской и платежами</small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
         <Link className="settings-option" to="/settings/devices">
           <NavigationIcon name="devices" />
           <span>
@@ -86,7 +95,7 @@ function SettingsOverview() {
             <strong>
               {logoutState === "submitting" ? "выходим…" : "выйти"}
             </strong>
-            <small>Завершить сессию на этом компьютере</small>
+            <small>Завершить сессию на этом устройстве</small>
           </span>
         </button>
       </div>
