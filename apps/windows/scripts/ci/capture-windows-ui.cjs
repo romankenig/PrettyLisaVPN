@@ -179,8 +179,13 @@ async function main() {
   if (!page) throw new Error("Native Tauri WebView page not found");
   page.setDefaultTimeout(15000);
   await page.getByRole("heading", { name: "вход по email" }).waitFor();
-  const syntheticVpn = await page.evaluate(() => document.documentElement.dataset.vpnReview);
-  if (syntheticVpn !== "synthetic") throw new Error("Review tunnel dependencies must be injected before any VPN action");
+  const syntheticVpn = await page.evaluate(
+    () => document.documentElement.dataset.vpnReview,
+  );
+  if (syntheticVpn !== "synthetic")
+    throw new Error(
+      "Review tunnel dependencies must be injected before any VPN action",
+    );
   if ((await page.locator("#login-help").innerText()).endsWith("."))
     throw new Error("Login helper must have no trailing dot");
   await page
@@ -468,7 +473,13 @@ main()
   .catch(async (error) => {
     console.error(error);
     if (page) {
-      console.error("SYNTHETIC_UI_FAILURE " + (await page.locator("body").innerText().catch(() => "unavailable")));
+      console.error(
+        "SYNTHETIC_UI_FAILURE " +
+          (await page
+            .locator("body")
+            .innerText()
+            .catch(() => "unavailable")),
+      );
       await screenshot("failure").catch(() => {});
       fs.writeFileSync(
         path.join(output, "failure-page.txt"),
