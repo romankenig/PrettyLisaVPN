@@ -114,7 +114,7 @@ describe("authentication session restoration", () => {
     renderStartup(api, mockStorage(null));
 
     expect(
-      await screen.findByRole("heading", { name: "войти по email" }),
+      await screen.findByRole("heading", { name: "вход по email" }),
     ).toBeInTheDocument();
     expect(api.refresh).not.toHaveBeenCalled();
   });
@@ -155,7 +155,7 @@ describe("authentication session restoration", () => {
     renderStartup(api, storage);
 
     expect(
-      await screen.findByRole("heading", { name: "войти по email" }),
+      await screen.findByRole("heading", { name: "вход по email" }),
     ).toBeInTheDocument();
     expect(storage.delete).toHaveBeenCalledOnce();
     expect(api.refresh).not.toHaveBeenCalled();
@@ -168,7 +168,7 @@ describe("authentication session restoration", () => {
     renderStartup(api, storage);
 
     expect(
-      await screen.findByRole("heading", { name: "войти по email" }),
+      await screen.findByRole("heading", { name: "вход по email" }),
     ).toBeInTheDocument();
     expect(storage.delete).toHaveBeenCalledOnce();
   });

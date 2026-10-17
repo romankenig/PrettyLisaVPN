@@ -18,7 +18,7 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
       <header className="window-titlebar">
         <div className="window-titlebar__drag" data-tauri-drag-region>
           <img src={lockIcon} alt="" draggable={false} />
-          <span>PrettyLisaVPN</span>
+          <span className="product-name">PrettyLisaVPN</span>
         </div>
         <div className="window-controls">
           <button

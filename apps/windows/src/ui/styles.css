@@ -961,7 +961,8 @@ h1 {
   height: auto;
 }
 
-/* Preserve entered and server-supplied data while the surrounding UI is lowercase. */
+/* Preserve the brand, entered and server-supplied data in the lowercase UI. */
+.product-name,
 input,
 .verified-email,
 .account-summary strong[title],

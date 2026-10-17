@@ -105,6 +105,10 @@ async function screenshot(name) {
     }
   });
   await page.evaluate(() => {
+    for (const brand of document.querySelectorAll(".product-name")) {
+      if (brand.innerText !== "PrettyLisaVPN")
+        throw new Error("Product name must preserve PrettyLisaVPN casing");
+    }
     for (const button of document.querySelectorAll("button")) {
       if (getComputedStyle(button).textTransform !== "lowercase")
         throw new Error("Buttons must use lowercase text");
@@ -173,7 +177,9 @@ async function main() {
   }
   if (!page) throw new Error("Native Tauri WebView page not found");
   page.setDefaultTimeout(15000);
-  await page.getByRole("heading", { name: "войти по email" }).waitFor();
+  await page.getByRole("heading", { name: "вход по email" }).waitFor();
+  if ((await page.locator("#login-help").innerText()).endsWith("."))
+    throw new Error("Login helper must have no trailing dot");
   await page
     .locator(".sidebar-versions")
     .getByText(frontendVersion, { exact: true })
@@ -211,7 +217,7 @@ async function main() {
       throw new Error("Authentication navigation must be disabled");
     await item.click({ force: true });
   }
-  await page.getByRole("heading", { name: "войти по email" }).waitFor();
+  await page.getByRole("heading", { name: "вход по email" }).waitFor();
   await page.getByText("отправим одноразовый код", { exact: true }).waitFor();
   if (await page.getByText("без пароля", { exact: true }).count())
     throw new Error("Passwordless eyebrow must be removed");
@@ -327,7 +333,7 @@ async function main() {
     .getByRole("link", { name: "настройки", exact: true })
     .click();
   await page.getByRole("button", { name: /выйти/ }).click();
-  await page.getByRole("heading", { name: "войти по email" }).waitFor();
+  await page.getByRole("heading", { name: "вход по email" }).waitFor();
   await screenshot("09-after-logout");
   nativeWindow("VerifyFixed", "10-login-fixed");
   await page.getByRole("button", { name: "Свернуть", exact: true }).click();

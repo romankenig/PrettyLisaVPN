@@ -1,4 +1,9 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ApiError, type MeResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import {
@@ -33,9 +38,8 @@ export function Home() {
     vpnConnection.current,
     vpnConnection.current,
   );
-  const [connectionErrorMessage, setConnectionErrorMessage] = useState<
-    string | null
-  >(null);
+  const [connectionErrorMessage, setConnectionErrorMessage] =
+    useState<ReactNode>(null);
 
   useEffect(() => {
     if (activeSession === null) return;
@@ -103,7 +107,9 @@ export function Home() {
   return (
     <section className="account-home" aria-labelledby="home-title">
       <p className="eyebrow">аккаунт</p>
-      <h1 id="home-title">PrettyLisaVPN</h1>
+      <h1 id="home-title" className="product-name">
+        PrettyLisaVPN
+      </h1>
 
       {profileState.phase === "loading" ? (
         <p role="status">загружаем данные аккаунта…</p>
@@ -251,7 +257,13 @@ function connectionError(error: unknown) {
       return "Не удалось запустить VPN на этом компьютере. Подключение отменено.";
     }
     if (error.code === "VPN_TRAFFIC_INTERCEPTED") {
-      return "Другой VPN или сетевой фильтр не пропускает интернет через PrettyLisaVPN. Отключите другой VPN и повторите подключение.";
+      return (
+        <>
+          Другой VPN или сетевой фильтр не пропускает интернет через{" "}
+          <span className="product-name">PrettyLisaVPN</span>. Отключите другой VPN и
+          повторите подключение.
+        </>
+      );
     }
     if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
       return "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.";

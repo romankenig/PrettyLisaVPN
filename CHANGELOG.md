@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Windows — 0.2.1
+
+- Fixed: PrettyLisaVPN сохраняет точное написание в заголовках и сообщениях об ошибках.
+- Changed: заголовок входа — «вход по email», подсказка над «продолжить» без точки.
+- Compatibility: API, backend 0.1.0 и VPN-поведение не менялись.
+- Validation: финальные SHA, workflow и native screenshots фиксируются в описании PR
+  после завершения всех проверок; отдельный docs commit для результатов не создаётся.
+
 ### Windows — 0.2.0
 
 Переход на 0.2.0 применён к package.json, Cargo.toml, tauri.conf.json

@@ -188,7 +188,7 @@ describe("email login", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "войти по email" }),
+        screen.getByRole("heading", { name: "вход по email" }),
       ).toBeInTheDocument(),
     );
   });
@@ -219,7 +219,7 @@ it("disables navigation on both login and OTP without disabling the form", async
     }
   }
   checkDisabledNavigation();
-  expect(screen.getByRole("heading", { name: "войти по email" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "вход по email" })).toBeVisible();
   expect(screen.getByRole("button", { name: "продолжить" })).toBeEnabled();
   enterEmail("user@example.com");
   await screen.findByRole("heading", { name: "введите код" });

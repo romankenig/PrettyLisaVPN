@@ -68,6 +68,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Preserve backwards compatibility unless the task explicitly requires a breaking change.
 - Reuse existing tooling and dependencies when they already solve the requirement.
 - For client UI work, follow the shared logo and color rules in `docs/design-system.md`.
+- Always write the product name exactly as `PrettyLisaVPN`, including rendered UI and error messages. Preserve this casing when applying lowercase typography.
 - Every database schema change requires an Alembic migration.
 - Every new endpoint requires tests.
 - Every business rule requires unit tests.
@@ -89,7 +90,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Для каждой продуктовой задачи обновлять CHANGELOG под Unreleased и handoff: версии до/после, совместимость, проверенный product SHA, реальный build SHA/run/attempt, артефакты и backend follow-up. Не заявлять проверку нового кода по старой сборке; различать PR head и временный merge SHA.
 - Для Windows UI обязательны соответствующие проверки и реальные native-скриншоты. Для docs-only проверять ссылки, согласованность правил и diff; нативную сборку из-за текста не повторять.
 - После проверок выполнять commit и push, если владелец не запретил, и обновлять PR. Merge, release-теги/публикация и production deploy — отдельные действия, требующие соответствующего поручения; учитывать существующий автоматический development-deploy.
-- Переход Windows на 0.2.0 применён в задаче полировки UI от 2026-10-16; backend остаётся 0.1.0 в исходных манифестах. Следующую самостоятельную продуктовую задачу Windows версионировать от 0.2.0 по docs/versioning.md; повторные исправления/CI текущей задачи номер не повышают.
+- Переход Windows на 0.2.0 применён в задаче полировки UI от 2026-10-16; backend остаётся 0.1.0 в исходных манифестах. Правки названия и экрана входа от 2026-10-17 повышают Windows до 0.2.1. Следующую самостоятельную продуктовую задачу Windows версионировать от 0.2.1 по docs/versioning.md; повторные исправления/CI текущей задачи номер не повышают.
 
 ## Task Workflow
 

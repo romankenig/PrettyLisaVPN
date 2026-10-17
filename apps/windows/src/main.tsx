@@ -61,7 +61,9 @@ try {
   root.render(
     <WindowFrame>
       <main role="alert">
-        <h1>не удалось запустить PrettyLisaVPN</h1>
+        <h1>
+          не удалось запустить <span className="product-name">PrettyLisaVPN</span>
+        </h1>
         <p>проверьте конфигурацию приложения.</p>
       </main>
     </WindowFrame>,

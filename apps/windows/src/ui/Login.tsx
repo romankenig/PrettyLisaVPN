@@ -49,7 +49,7 @@ export function Login() {
   const submitting = state.phase === "submitting";
   return (
     <section className="auth-page" aria-labelledby="login-title">
-      <h1 id="login-title">войти по email</h1>
+      <h1 id="login-title">вход по email</h1>
       <p className="auth-intro">отправим одноразовый код</p>
       <form
         className="auth-card"
@@ -77,7 +77,7 @@ export function Login() {
           }}
         />
         <p id="login-help" className="field-help">
-          Используйте адрес, к которому у вас есть доступ.
+          Используйте адрес, к которому у вас есть доступ
         </p>
         {state.phase === "error" ? (
           <p id="login-error" className="form-error" role="alert">
