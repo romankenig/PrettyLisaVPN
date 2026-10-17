@@ -12,7 +12,10 @@ export function Settings() {
       <Route
         path="subscription"
         element={
-          <section className="settings-page" aria-labelledby="subscription-title">
+          <section
+            className="settings-page"
+            aria-labelledby="subscription-title"
+          >
             <Link className="settings-back" to="/settings">
               ← настройки
             </Link>

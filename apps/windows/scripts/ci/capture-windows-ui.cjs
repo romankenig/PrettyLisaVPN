@@ -371,13 +371,18 @@ async function main() {
       .getAttribute("aria-current")) !== "page"
   )
     throw new Error("Settings must stay active on subscription");
-  const subscription = page.getByRole("region", { name: "подписка", exact: true });
+  const subscription = page.getByRole("region", {
+    name: "подписка",
+    exact: true,
+  });
   if ((await subscription.locator(":scope > *").count()) !== 2)
     throw new Error(
       "Subscription must remain an empty screen with heading and back link",
     );
   await screenshot("05a-subscription");
-  await subscription.getByRole("link", { name: "← настройки", exact: true }).click();
+  await subscription
+    .getByRole("link", { name: "← настройки", exact: true })
+    .click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await page.getByRole("combobox").waitFor();
