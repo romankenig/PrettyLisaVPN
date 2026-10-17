@@ -24,9 +24,7 @@
         }
       }
     ],
-    "actions": [
-      "SUBSCRIBE"
-    ],
+    "actions": ["SUBSCRIBE"],
     "pending_operation_id": null
   },
   "active": {
@@ -60,11 +58,7 @@
         }
       }
     ],
-    "actions": [
-      "RENEW",
-      "CHANGE_METHOD",
-      "CANCEL"
-    ],
+    "actions": ["RENEW", "CHANGE_METHOD", "CANCEL"],
     "pending_operation_id": null
   },
   "canceled": {
@@ -95,10 +89,7 @@
         }
       }
     ],
-    "actions": [
-      "RENEW",
-      "CHANGE_METHOD"
-    ],
+    "actions": ["RENEW", "CHANGE_METHOD"],
     "pending_operation_id": null
   }
 }
