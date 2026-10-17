@@ -128,7 +128,7 @@ async function screenshot(name) {
       document.body,
       main,
       ...document.querySelectorAll(
-        ".connection-card, .home-workspace, .sidebar, .settings-devices, .subscription-scroll",
+        ".connection-card, .home-workspace, .sidebar, .settings-devices, .subscription-scroll, .payment-choice",
       ),
     ]) {
       if (
@@ -391,6 +391,13 @@ async function main() {
       .getByRole("button", { name: "отменить подписку", exact: true })
       .waitFor();
   }
+  async function lastBillingCommand() {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/billing-last-command",
+    );
+    if (!response.ok) throw new Error("Billing command fixture failed");
+    return response.json();
+  }
   await billingScenario("free");
   await page.getByRole("link", { name: /подписка/ }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
@@ -415,6 +422,40 @@ async function main() {
   await page
     .getByRole("button", { name: "оформить подписку", exact: true })
     .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  const paymentOptions = page.getByRole("dialog").getByRole("radio");
+  if (
+    (await paymentOptions.count()) !== 4 ||
+    (await paymentOptions.first().inputValue()) !== "MIR" ||
+    !(await paymentOptions.first().isChecked())
+  )
+    throw new Error("RUB must prefer MIR in the four-option payment choice");
+  if ((await page.getByRole("dialog").locator("svg").count()) !== 4)
+    throw new Error("Every payment option must have an icon");
+  if (await lastBillingCommand())
+    throw new Error("Opening payment choice must not create an operation");
+  await screenshot("05aa-payment-choice-rub");
+  await page.getByRole("button", { name: "назад", exact: true }).click();
+  await page.getByRole("button", { name: "$", exact: true }).click();
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  if (
+    (await paymentOptions.first().inputValue()) !== "BANK_CARD" ||
+    !(await paymentOptions.first().isChecked())
+  )
+    throw new Error("USD must prefer bank cards");
+  await screenshot("05ab-payment-choice-usd");
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog").waitFor({ state: "hidden" });
+  await page.getByRole("button", { name: "₽", exact: true }).click();
+  await page
+    .getByRole("button", { name: "оформить подписку", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "перейти к оплате", exact: true })
+    .click();
   await page.waitForFunction(
     () => document.documentElement.dataset.paymentReviewUrl === "opened",
   );
@@ -430,6 +471,33 @@ async function main() {
   await screenshot("05b-subscription-pending");
   await confirmBilling();
   await screenshot("05c-subscription-active");
+  const checkoutCommand = await lastBillingCommand();
+  if (
+    checkoutCommand.action !== "SUBSCRIBE" ||
+    checkoutCommand.payment_route !== "MIR"
+  )
+    throw new Error("Checkout must submit the explicitly confirmed MIR route");
+  await page
+    .getByRole("button", { name: "продлить подписку", exact: true })
+    .click();
+  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
+  await page
+    .getByRole("radio", { name: "банковская карта", exact: true })
+    .locator("..")
+    .click();
+  await page
+    .getByRole("button", { name: "перейти к оплате", exact: true })
+    .click();
+  await page
+    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
+    .waitFor();
+  const renewalCommand = await lastBillingCommand();
+  if (
+    renewalCommand.action !== "RENEW" ||
+    renewalCommand.payment_route !== "BANK_CARD"
+  )
+    throw new Error("Renewal must submit its own confirmed payment route");
+  await confirmBilling();
   await page
     .getByRole("button", { name: "изменить способ оплаты", exact: true })
     .click();
@@ -539,6 +607,7 @@ async function main() {
         iconNavigationVerified: true,
         settingsDevicesAndLogoutVerified: true,
         subscriptionBillingUiVerified: true,
+        paymentChoiceVerified: true,
         realPaymentsTested: false,
         backendVersionFallbackVerified: true,
         fontFamily: "Rubik",

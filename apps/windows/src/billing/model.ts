@@ -1,4 +1,5 @@
 export type Currency = "RUB" | "USD";
+export type PaymentRoute = "MIR" | "BANK_CARD" | "ALIPAY_WECHAT" | "CRYPTO";
 export type BillingAction = "SUBSCRIBE" | "RENEW" | "CHANGE_METHOD" | "CANCEL";
 export interface Price {
   readonly amount_minor: number;
@@ -29,6 +30,7 @@ export interface BillingOverview {
   readonly actions: readonly BillingAction[];
 }
 export interface BillingCommand {
+  readonly payment_route: PaymentRoute | null;
   readonly action: BillingAction;
   readonly request_id: string;
   readonly expected_revision: string;

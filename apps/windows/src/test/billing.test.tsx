@@ -77,7 +77,7 @@ function setup(
         api: createApiClient("https://api.example.test", vi.fn(), 1000),
         billing,
         paymentBrowser: { open },
-        desktop: { getVersion: async () => "0.5.0" },
+        desktop: { getVersion: async () => "0.6.0" },
         installationId: { getInstallationId: vi.fn() },
         session,
         sessionRestoration: createTestSessionRestoration(),
@@ -92,6 +92,11 @@ function setup(
     </ApplicationProvider>,
   );
   return { billing, open, session, vpnConnection, ...view };
+}
+
+async function openPaymentChoice(name = "оформить подписку") {
+  fireEvent.click(await screen.findByRole("button", { name }));
+  return screen.getByRole("dialog");
 }
 
 describe("subscription screen", () => {
@@ -159,7 +164,10 @@ describe("subscription screen", () => {
       name: "оформить подписку",
     });
     fireEvent.click(button);
-    fireEvent.click(button);
+    expect(billing.start).not.toHaveBeenCalled();
+    const confirm = screen.getByRole("button", { name: "перейти к оплате" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
     await waitFor(() =>
       expect(open).toHaveBeenCalledWith(pending.redirect_url),
     );
@@ -173,6 +181,93 @@ describe("subscription screen", () => {
     expect(
       screen.queryByText("автопродление включено"),
     ).not.toBeInTheDocument();
+  });
+
+  it("preselects MIR for RUB and can go back without a request", async () => {
+    rememberHomeCountry("RU");
+    const { billing, open } = setup();
+    const dialog = await openPaymentChoice();
+    const options = within(dialog).getAllByRole("radio");
+    expect(options).toHaveLength(4);
+    expect(options[0]).toHaveValue("MIR");
+    expect(options[0]).toBeChecked();
+    expect(dialog.querySelectorAll("svg")).toHaveLength(4);
+    expect(dialog).toHaveTextContent(
+      "Visa · Mastercard · UnionPay · American Express",
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "назад" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(billing.start).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+  });
+  it("prefers bank cards for manually selected USD even in Russia", async () => {
+    rememberHomeCountry("RU");
+    saveCurrency("user", "USD");
+    const { billing } = setup("active");
+    await openPaymentChoice("продлить подписку");
+    const options = screen.getAllByRole("radio");
+    expect(options[0]).toHaveValue("BANK_CARD");
+    expect(options[0]).toBeChecked();
+    expect(billing.start).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByDisplayValue("ALIPAY_WECHAT"));
+    fireEvent.click(screen.getByRole("button", { name: "перейти к оплате" }));
+    await waitFor(() =>
+      expect(billing.start).toHaveBeenCalledWith(
+        "token",
+        expect.objectContaining({
+          action: "RENEW",
+          payment_route: "ALIPAY_WECHAT",
+          currency: "USD",
+        }),
+        expect.any(AbortSignal),
+      ),
+    );
+  });
+  const routes = ["MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"] as const;
+  for (const route of routes) {
+    it(`submits ${route} only after explicit confirmation`, async () => {
+      const { billing, open } = setup();
+      await openPaymentChoice();
+      fireEvent.click(screen.getByDisplayValue(route));
+      expect(billing.start).not.toHaveBeenCalled();
+      expect(open).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "перейти к оплате" }));
+      await waitFor(() =>
+        expect(billing.start).toHaveBeenCalledWith(
+          "token",
+          expect.objectContaining({
+            action: "SUBSCRIBE",
+            payment_route: route,
+          }),
+          expect.any(AbortSignal),
+        ),
+      );
+    });
+  }
+  it("preserves the quoted currency while the choice is open", async () => {
+    const { billing } = setup();
+    await openPaymentChoice();
+    act(() => rememberHomeCountry("RU"));
+    fireEvent.click(screen.getByRole("button", { name: "перейти к оплате" }));
+    await waitFor(() =>
+      expect(billing.start).toHaveBeenCalledWith(
+        "token",
+        expect.objectContaining({
+          currency: "USD",
+          payment_route: "BANK_CARD",
+        }),
+        expect.any(AbortSignal),
+      ),
+    );
+  });
+  it("includes the payment route in the idempotent request fingerprint", () => {
+    const a = requestId("user", "revision", "SUBSCRIBE", "offer", "RUB", "MIR");
+    expect(
+      requestId("user", "revision", "SUBSCRIBE", "offer", "RUB", "MIR"),
+    ).toBe(a);
+    expect(
+      requestId("user", "revision", "SUBSCRIBE", "offer", "RUB", "CRYPTO"),
+    ).not.toBe(a);
   });
   it("shows unavailable data rather than invented prices after a backend failure", async () => {
     const { billing } = setup();

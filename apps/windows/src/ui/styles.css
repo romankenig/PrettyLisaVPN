@@ -1484,3 +1484,85 @@ main dd {
   display: flex;
   gap: 12px;
 }
+
+.payment-choice {
+  width: min(520px, 90vw);
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+}
+.payment-choice .payment-choice-summary {
+  margin: 0 0 16px;
+  font-size: 12px;
+}
+.payment-choice-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.payment-choice-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgb(95 34 217 / 20%);
+  border-radius: 11px;
+  cursor: pointer;
+}
+.payment-choice-option--selected {
+  border-color: var(--color-purple-heart);
+  background: rgb(81 214 202 / 18%);
+}
+.payment-choice-option input {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.payment-choice-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-purple-heart);
+  outline-offset: 2px;
+}
+.payment-choice-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  color: var(--color-purple-heart);
+}
+.payment-choice-label {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+.payment-choice-label strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.payment-choice-label small {
+  color: var(--color-scorpion);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.payment-choice-check {
+  flex: 0 0 16px;
+  color: var(--color-christalle);
+  font-size: 18px;
+}
+.payment-choice .payment-choice-hint {
+  margin: 12px 0 16px;
+  font-size: 11px;
+}
+.payment-choice > .payment-choice-actions {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+}

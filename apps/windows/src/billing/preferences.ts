@@ -1,4 +1,4 @@
-import type { Currency } from "./model";
+import type { Currency, PaymentRoute } from "./model";
 
 const COUNTRY_KEY = "prettylisavpn:country-before-vpn";
 const memoryRequests = new Map<string, { fingerprint: string; id: string }>();
@@ -36,9 +36,10 @@ export function requestId(
   action: string,
   offer: string | null,
   currency: Currency,
+  route: PaymentRoute | null = null,
 ): string {
   const key = `prettylisavpn:billing-request:${user}`;
-  const fingerprint = JSON.stringify([revision, action, offer, currency]);
+  const fingerprint = JSON.stringify([revision, action, offer, currency, route]);
   const cached = readSession(key) ?? memoryRequests.get(key);
   if (cached?.fingerprint === fingerprint && typeof cached.id === "string")
     return cached.id;

@@ -9,6 +9,7 @@ import {
   type BillingOverview,
   type Currency,
   type Offer,
+  type PaymentRoute,
 } from "../billing/model";
 import {
   clearRequestId,
@@ -20,6 +21,14 @@ import {
   savePendingOperation,
 } from "../billing/preferences";
 import { NavigationIcon } from "./NavigationIcon";
+import { PaymentChoice } from "./PaymentChoice";
+
+type CheckoutSelection = {
+  readonly action: "SUBSCRIBE" | "RENEW";
+  readonly currency: Currency;
+  readonly offer: Offer;
+  readonly revision: string;
+};
 
 export function Subscription() {
   const { session } = useApplication();
@@ -50,6 +59,7 @@ function SubscriptionContent() {
   const [operation, setOperation] = useState<BillingOperation | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [checkout, setCheckout] = useState<CheckoutSelection | null>(null);
   const inFlight = useRef(false);
   const current = useRef(active);
   current.current = active;
@@ -203,7 +213,16 @@ function SubscriptionContent() {
         setError("не удалось открыть платёжный сервис. попробуйте ещё раз");
     }
   }
-  async function start(action: BillingAction) {
+  function choosePayment(action: CheckoutSelection["action"]) {
+    if (!data || !offer || disabled || !can(action)) return;
+    setCheckout({ action, offer, currency, revision: data.revision });
+  }
+
+  async function start(
+    action: BillingAction,
+    route: PaymentRoute | null = null,
+    selection?: CheckoutSelection,
+  ) {
     if (
       !active ||
       !billing ||
@@ -213,16 +232,20 @@ function SubscriptionContent() {
       !can(action)
     )
       return;
-    if ((action === "SUBSCRIBE" || action === "RENEW") && !offer) return;
+    const checkoutAction = action === "SUBSCRIBE" || action === "RENEW";
+    const selectedOffer = selection?.offer ?? offer;
+    if (checkoutAction && (!selectedOffer || route === null)) return;
+    const selectedCurrency = selection?.currency ?? currency;
+    const revision = selection?.revision ?? data.revision;
     inFlight.current = true;
     setBusy(true);
     setError(null);
     setNotice(null);
     setConfirm(false);
+    setCheckout(null);
     const controller = new AbortController();
     requests.current.add(controller);
-    const offer_id =
-      action === "SUBSCRIBE" || action === "RENEW" ? offer.id : null;
+    const offer_id = checkoutAction ? selectedOffer.id : null;
     try {
       const value = await billing.start(
         active.accessToken,
@@ -230,14 +253,16 @@ function SubscriptionContent() {
           action,
           request_id: requestId(
             active.userId,
-            data.revision,
+            revision,
             action,
             offer_id,
-            currency,
+            selectedCurrency,
+            route,
           ),
-          expected_revision: data.revision,
+          expected_revision: revision,
           offer_id,
-          currency,
+          currency: selectedCurrency,
+          payment_route: route,
         },
         controller.signal,
       );
@@ -399,7 +424,7 @@ function SubscriptionContent() {
                 disabled={
                   disabled || !offer || !can(paid ? "RENEW" : "SUBSCRIBE")
                 }
-                onClick={() => void start(paid ? "RENEW" : "SUBSCRIBE")}
+                onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
               >
                 {busy
                   ? "подождите…"
@@ -488,6 +513,14 @@ function SubscriptionContent() {
           </p>
         ) : null}
       </div>
+      {checkout ? (
+        <PaymentChoice
+          currency={checkout.currency}
+          offer={checkout.offer}
+          onClose={() => setCheckout(null)}
+          onConfirm={(route) => void start(checkout.action, route, checkout)}
+        />
+      ) : null}
       {confirm && data?.paid_until ? (
         <CancelConfirmation
           until={dateLabel(data.paid_until)}

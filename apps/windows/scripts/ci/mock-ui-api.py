@@ -14,6 +14,7 @@ DATE = "2026-10-16T00:00:00Z"
 BILLING_FIXTURES = json.loads(Path(__file__).with_name("billing-fixtures.json").read_text(encoding="utf-8"))
 BILLING_SCENARIO = "active"
 BILLING_OPERATION = None
+BILLING_LAST_COMMAND = None
 BILLING_REQUESTS = {}
 SIMULATE_VPN = False
 DEMO_SESSION = None
@@ -22,13 +23,14 @@ DEMO_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 
 def fixture(method, path, body):
-    global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION
+    global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-scenario":
         scenario = body.get("scenario")
         if scenario not in (*BILLING_FIXTURES, "error"):
             return 400, {"error": {"code": "INVALID_SCENARIO"}}
         BILLING_SCENARIO = scenario
         BILLING_OPERATION = None
+        BILLING_LAST_COMMAND = None
         BILLING_REQUESTS.clear()
         return 200, {"status": "ok"}
     if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-confirm":
@@ -37,6 +39,8 @@ def fixture(method, path, body):
             BILLING_OPERATION["redirect_url"] = None
             BILLING_SCENARIO = "active"
         return 200, {"status": "ok"}
+    if SIMULATE_VPN and method == "GET" and path == "/ui-review/billing-last-command":
+        return 200, BILLING_LAST_COMMAND
     if method == "GET" and path == "/billing/overview":
         if BILLING_SCENARIO == "error":
             return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
@@ -50,6 +54,9 @@ def fixture(method, path, body):
         overview = BILLING_FIXTURES[BILLING_SCENARIO]
         if body.get("expected_revision") != overview["revision"] or body.get("action") not in overview["actions"]:
             return 409, {"error": {"code": "BILLING_CONFLICT"}}
+        if body.get("action") in ("SUBSCRIBE", "RENEW") and body.get("payment_route") not in ("MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"):
+            return 400, {"error": {"code": "PAYMENT_ROUTE_REQUIRED"}}
+        BILLING_LAST_COMMAND = body.copy()
         BILLING_OPERATION = {
             "id": "billing-review-operation", "status": "PENDING",
             "redirect_url": None if body["action"] == "CANCEL" else "https://payments.example.test/confirm",
