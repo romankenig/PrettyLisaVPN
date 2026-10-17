@@ -1,7 +1,6 @@
 export function TrafficMode() {
   return (
     <section className="traffic-mode" aria-labelledby="traffic-mode-title">
-      <p className="traffic-mode__eyebrow">подключение</p>
       <h2 id="traffic-mode-title">что защищаем</h2>
       <fieldset className="traffic-mode__options">
         <legend className="sr-only">режим трафика</legend>
@@ -58,7 +57,6 @@ export function TrafficMode() {
           </span>
         </label>
       </fieldset>
-      <p className="traffic-mode__footnote">выбор сайтов появится позже</p>
     </section>
   );
 }
