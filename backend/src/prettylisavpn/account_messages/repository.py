@@ -2,7 +2,6 @@
 
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import cast
 from uuid import UUID
 
 from sqlalchemy import or_, select
@@ -27,10 +26,10 @@ class MessageRepository:
             await self.session.execute(
                 insert(MessageRecord).values(id=message_id).on_conflict_do_nothing()
             )
-        record = await self.session.scalar(
+        record: MessageRecord | None = await self.session.scalar(
             select(MessageRecord).where(MessageRecord.id == message_id).with_for_update()
         )
-        return cast(MessageRecord | None, record)
+        return record
 
     async def revision(self, message_id: UUID, revision: int) -> MessageRevisionRecord | None:
         return await self.session.get(MessageRevisionRecord, (message_id, revision))
@@ -38,7 +37,7 @@ class MessageRepository:
     async def receipt(
         self, user_id: UUID, message_id: UUID, revision: int
     ) -> MessageReceiptRecord | None:
-        record = await self.session.scalar(
+        record: MessageReceiptRecord | None = await self.session.scalar(
             select(MessageReceiptRecord)
             .where(
                 MessageReceiptRecord.user_id == user_id,
@@ -47,7 +46,7 @@ class MessageRepository:
             )
             .with_for_update()
         )
-        return cast(MessageReceiptRecord | None, record)
+        return record
 
     async def delivered(self, user_id: UUID, message_id: UUID, revision: int) -> None:
         await self.session.execute(
