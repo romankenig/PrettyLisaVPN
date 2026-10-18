@@ -90,13 +90,14 @@ async function connect() {
   if (!page) throw new Error("Native page unavailable");
   page.setDefaultTimeout(20000);
 }
-async function waitForOtp() {
+async function waitForManualInput(kind) {
   const key = fs.readFileSync(process.env.ACCEPTANCE_OTP_PRIVATE_KEY, "utf8");
   const scope = JSON.parse(
     fs.readFileSync(process.env.ACCEPTANCE_OTP_PUBLIC_KEY, "utf8"),
   );
   const url = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/acceptance-otp.json?ref=acceptance-otp-${process.env.GITHUB_RUN_ID}`;
-  for (let i = 0; i < 300; i++) {
+  const deadline = Date.now() + (kind === "ready" ? 600000 : 300000);
+  while (Date.now() < deadline) {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${process.env.GH_ACCEPTANCE_READ_TOKEN}`,
@@ -118,19 +119,16 @@ async function waitForOtp() {
           Buffer.from(envelope.ciphertext, "base64"),
         ).toString("utf8"),
       );
-      if (
-        value.run !== scope.run ||
-        value.nonce !== scope.nonce ||
-        !/^\d{6}$/.test(value.code)
-      )
-        throw new Error("Invalid OTP envelope scope");
-      return value.code;
+      if (value.run === scope.run && value.nonce === scope.nonce) {
+        if (kind === "ready" && value.ready === true) return;
+        if (kind === "code" && /^\d{6}$/.test(value.code)) return value.code;
+      }
     }
-    if (response.status !== 404)
+    if (response.status !== 404 && response.status !== 200)
       throw new Error("OTP envelope transport unavailable");
     await delay(2000);
   }
-  throw new Error("Manual OTP not received within acceptance window");
+  throw new Error("Manual input not received within acceptance window");
 }
 async function main() {
   await get("/health", false);
@@ -298,10 +296,11 @@ async function main() {
   );
   await capture("06-development-logout");
   report.phase = "real email OTP";
+  await waitForManualInput("ready");
   await page.locator("#login-email").fill(process.env.ACCEPTANCE_OTP_EMAIL);
   await page.getByRole("button", { name: /продолжить/i }).click();
   await page.locator("#otp-code").waitFor();
-  const code = await waitForOtp();
+  const code = await waitForManualInput("code");
   await page.locator("#otp-code").fill(code);
   await page.getByRole("button", { name: /подтвердить/i }).click();
   await page

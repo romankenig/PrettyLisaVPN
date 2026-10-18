@@ -84,6 +84,14 @@ jobs:
           "ACCEPTANCE_CREDENTIAL_PATH=$credentialPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ACCEPTANCE_OTP_PRIVATE_KEY=$(Join-Path $env:RUNNER_TEMP 'acceptance-otp-private.pem')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ACCEPTANCE_OTP_PUBLIC_KEY=$(Join-Path $env:RUNNER_TEMP 'acceptance-otp-public.json')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Clean up the interrupted prior acceptance scope
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: ./scripts/ci/development-account.ps1 cleanup -AccountScope 39129115946-1
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
