@@ -1,7 +1,7 @@
 """Authenticated JSON v1 transport; private responses are never cacheable."""
 
-from collections.abc import Awaitable, Callable
-from typing import Annotated, cast
+from collections.abc import Callable, Coroutine
+from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -32,7 +32,7 @@ from prettylisavpn.main_errors import error_response
 
 
 class PrivateRoute(APIRoute):
-    def get_route_handler(self) -> Callable[[Request], Awaitable[Response]]:
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
         handler = super().get_route_handler()
 
         async def private(request: Request) -> Response:
