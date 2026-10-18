@@ -62,7 +62,7 @@ class MessageRepository:
 
     async def candidates(
         self, user_id: UUID, context: MessageContext, plan: SubscriptionPlan, now: datetime
-    ) -> AsyncGenerator[MessageRevisionRecord, None]:
+    ) -> AsyncGenerator[MessageRevisionRecord]:
         rev, receipt = MessageRevisionRecord, MessageReceiptRecord
         read = (
             select(receipt.message_id)
