@@ -37,7 +37,8 @@ class SupportService:
     def __init__(self, postgres: Postgres, auth: AuthenticatedSessionHandler) -> None:
         self.postgres = postgres
         self.auth = auth
-        self.upload_slots = asyncio.Semaphore(2)
+        # One upload fits the 16 MiB deployment tmpfs and bounds decoded pixel memory.
+        self.upload_slots = asyncio.Semaphore(1)
 
     async def get(self, identity: AccessIdentity, request_id: UUID) -> Receipt:
         try:
