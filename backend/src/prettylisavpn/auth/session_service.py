@@ -22,10 +22,12 @@ from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import Device, DeviceStatus
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.product_events.domain import ProductEventName
-from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
+from prettylisavpn.subscriptions.entitlements import free_quota_resets_at
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import User, UserStatus
 from prettylisavpn.users.repository import UserRepository
+from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 
 
 class InvalidSessionError(Exception):
@@ -63,6 +65,9 @@ class MeSummary:
     email: str
     plan: SubscriptionPlan
     active_device_count: int
+    subscription: Subscription | None = None
+    free_seconds_remaining: int | None = None
+    free_quota_resets_at: datetime | None = None
 
 
 class AuthenticatedSessionHandler(Protocol):
@@ -177,8 +182,16 @@ class AuthenticatedSessionService:
                 if subscription is None:
                     raise AuthServiceUnavailableError("Subscription state is unavailable")
                 now = datetime.now(UTC)
-                plan = subscription.plan if subscription.is_active(now) else SubscriptionPlan.FREE
+                plan = subscription.effective_plan(now)
                 active_device_count = await DeviceRepository(session).count_active(user.id)
+                remaining = None
+                resets_at = None
+                if plan is SubscriptionPlan.FREE:
+                    remaining = await VpnSessionRepository(session).remaining_free_seconds(
+                        user.id, now
+                    )
+                    resets_at = free_quota_resets_at(now)
+                await session.commit()
         except (
             InvalidSessionError,
             BlockedUserError,
@@ -194,6 +207,9 @@ class AuthenticatedSessionService:
             email=user.email,
             plan=plan,
             active_device_count=active_device_count,
+            subscription=subscription,
+            free_seconds_remaining=remaining,
+            free_quota_resets_at=resets_at,
         )
 
     def _decode_identity(self, access_token: str) -> AccessIdentity:

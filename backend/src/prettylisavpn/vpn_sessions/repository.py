@@ -1,15 +1,21 @@
 """Async persistence operations for VPN session state and address ownership."""
 
 import hashlib
-from datetime import datetime
+import math
+from dataclasses import replace
+from datetime import UTC, datetime
 from ipaddress import IPv4Address
 from uuid import UUID
 
-from sqlalchemy import or_, select, text, update
+from sqlalchemy import case, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.entitlements import FREE_ENTITLEMENTS
+from prettylisavpn.subscriptions.model import SubscriptionRecord
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
-from prettylisavpn.vpn_sessions.model import VpnSessionRecord
+from prettylisavpn.vpn_sessions.model import FreeVpnUsageRecord, VpnSessionRecord
 
 
 class VpnSessionRepository:
@@ -17,6 +23,83 @@ class VpnSessionRepository:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def settle_free_usage(self, user_id: UUID | None = None) -> None:
+        """Return unused budget only after the node acknowledges peer removal."""
+        ended = (
+            select(func.least(VpnSessionRecord.peer_removed_at, VpnSessionRecord.expires_at))
+            .where(
+                VpnSessionRecord.id == FreeVpnUsageRecord.session_id,
+                VpnSessionRecord.peer_removed_at.is_not(None),
+                VpnSessionRecord.status.in_(
+                    (
+                        VpnSessionStatus.EXPIRED,
+                        VpnSessionStatus.DISCONNECTED,
+                        VpnSessionStatus.FAILED,
+                    )
+                ),
+            )
+            .scalar_subquery()
+        )
+        conditions = [] if user_id is None else [FreeVpnUsageRecord.user_id == user_id]
+        await self._session.execute(
+            update(FreeVpnUsageRecord)
+            .where(*conditions, FreeVpnUsageRecord.released_at.is_(None), ended.is_not(None))
+            .values(released_at=ended)
+        )
+
+    async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
+        """Caller locks the account before checking and reserving its UTC budget."""
+        if at.tzinfo is None or at.utcoffset() is None:
+            raise ValueError("at must be timezone-aware")
+        await self.settle_free_usage(user_id)
+        row = FreeVpnUsageRecord
+        seconds = case(
+            (
+                row.released_at.is_(None),
+                func.extract("epoch", row.reserved_until - row.reserved_from),
+            ),
+            (row.activated_at.is_(None), 0),
+            else_=func.greatest(
+                0,
+                func.extract(
+                    "epoch",
+                    func.least(row.released_at, row.reserved_until)
+                    - func.greatest(row.activated_at, row.reserved_from),
+                ),
+            ),
+        )
+        consumed = await self._session.scalar(
+            select(func.coalesce(func.sum(seconds), 0)).where(
+                row.user_id == user_id, row.day == at.astimezone(UTC).date()
+            )
+        )
+        limit = FREE_ENTITLEMENTS.daily_vpn_limit_seconds
+        assert limit is not None
+        return max(0, math.floor(limit - float(consumed or 0)))
+
+    async def reserve_free_usage(self, vpn_session: VpnSession) -> None:
+        assert vpn_session.expires_at is not None
+        self._session.add(
+            FreeVpnUsageRecord(
+                session_id=vpn_session.id,
+                user_id=vpn_session.user_id,
+                day=vpn_session.started_at.date(),
+                reserved_from=vpn_session.started_at,
+                reserved_until=vpn_session.expires_at,
+            )
+        )
+        await self._session.flush()
+
+    async def activate_free_usage(self, session_id: UUID, at: datetime) -> None:
+        await self._session.execute(
+            update(FreeVpnUsageRecord)
+            .where(
+                FreeVpnUsageRecord.session_id == session_id,
+                FreeVpnUsageRecord.activated_at.is_(None),
+            )
+            .values(activated_at=at)
+        )
 
     async def add(self, vpn_session: VpnSession) -> VpnSession:
         record = VpnSessionRecord(
@@ -82,6 +165,7 @@ class VpnSessionRepository:
             )
             .values(status=VpnSessionStatus.DISCONNECTED, disconnected_at=at, updated_at=at)
         )
+        await self.settle_free_usage(user_id)
 
     async def list_device_cleanup(self, user_id: UUID, device_id: UUID) -> list[VpnSession]:
         records = await self._session.scalars(
@@ -118,10 +202,56 @@ class VpnSessionRepository:
             {"lock_id": self._ADDRESS_ALLOCATION_LOCK_ID},
         )
 
-    async def expire_allocations(self, at: datetime) -> None:
+    async def reconcile_paid_access(self, at: datetime, user_id: UUID | None = None) -> None:
+        """Refresh paid deadlines from source of truth, including legacy unbounded peers.
+
+        Lock only session rows, in a stable order. Terminal rows are never resurrected.
+        Renewal committed before this check extends a live session's deadline.
+        """
+        statement = (
+            select(VpnSessionRecord, SubscriptionRecord)
+            .outerjoin(SubscriptionRecord, SubscriptionRecord.user_id == VpnSessionRecord.user_id)
+            .where(
+                VpnSessionRecord.plan_snapshot != SubscriptionPlan.FREE,
+                VpnSessionRecord.status.in_((VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE)),
+            )
+            .order_by(VpnSessionRecord.id)
+            .with_for_update(of=VpnSessionRecord)
+        )
+        if user_id is not None:
+            statement = statement.where(VpnSessionRecord.user_id == user_id)
+        for record, subscription_record in await self._session.execute(statement):
+            current = self._to_domain(record)
+            subscription = (
+                SubscriptionRepository._to_domain(subscription_record)
+                if subscription_record is not None
+                else None
+            )
+            if (
+                subscription is not None
+                and subscription.effective_plan(at) is not SubscriptionPlan.FREE
+            ):
+                if current.expires_at != subscription.current_period_end:
+                    await self.update(
+                        replace(current, expires_at=subscription.current_period_end, updated_at=at)
+                    )
+                continue
+            deadline = subscription.current_period_end if subscription is not None else None
+            if deadline is not None and current.started_at < deadline <= at:
+                terminal = replace(
+                    current, status=VpnSessionStatus.EXPIRED, expires_at=deadline, updated_at=at
+                )
+            else:
+                terminal = replace(current, status=VpnSessionStatus.FAILED, updated_at=at)
+            await self.update(terminal)
+
+    async def expire_allocations(self, at: datetime, user_id: UUID | None = None) -> None:
+        conditions = [] if user_id is None else [VpnSessionRecord.user_id == user_id]
         await self._session.execute(
             update(VpnSessionRecord)
             .where(
+                *conditions,
+                VpnSessionRecord.plan_snapshot == SubscriptionPlan.FREE,
                 VpnSessionRecord.status.in_((VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE)),
                 VpnSessionRecord.expires_at.is_not(None),
                 VpnSessionRecord.expires_at <= at,
@@ -161,6 +291,8 @@ class VpnSessionRepository:
                 updated_at=vpn_session.updated_at,
             )
         )
+        if not vpn_session.is_live():
+            await self.settle_free_usage(vpn_session.user_id)
         return vpn_session
 
     async def get_owned_for_update(

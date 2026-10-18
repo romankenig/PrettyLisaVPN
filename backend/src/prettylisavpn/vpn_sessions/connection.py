@@ -13,6 +13,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.entitlements import free_session_duration
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort, NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.domain import VpnNode
@@ -51,6 +52,10 @@ class VpnSetupFailedError(RuntimeError):
 
 
 class VpnSessionPersistenceUnavailableError(RuntimeError):
+    pass
+
+
+class FreeDailyLimitReachedError(RuntimeError):
     pass
 
 
@@ -152,10 +157,18 @@ class VpnConnectionService:
         try:
             async with self._postgres.session() as database_session:
                 async with database_session.begin():
+                    if not await DeviceRepository(database_session).lock_user(user_id):
+                        raise VpnSetupFailedError
                     device = await DeviceRepository(database_session).get_for_update(device_id)
                     if device is None or device.user_id != user_id or not device.is_active():
                         raise VpnSetupFailedError
                     sessions = VpnSessionRepository(database_session)
+                    # Allocation may expire other rows. Take its global lock before
+                    # session locks so parallel connects cannot invert this order.
+                    await sessions.acquire_address_allocation_lock()
+                    now = datetime.now(UTC)
+                    await sessions.reconcile_paid_access(now, user_id)
+                    await sessions.expire_allocations(now, user_id)
                     if await sessions.get_live_for_device(device_id, now) is not None:
                         raise DeviceAlreadyHasLiveVpnSessionError
                     await sessions.acquire_peer_lock(public_key)
@@ -165,15 +178,20 @@ class VpnConnectionService:
                     subscription = await subscriptions.get_by_user_id(user_id)
                     if subscription is None:
                         raise VpnSessionPersistenceUnavailableError
-                    plan = (
-                        subscription.plan if subscription.is_active(now) else SubscriptionPlan.FREE
-                    )
+                    plan = subscription.effective_plan(now)
+                    free_limit = None
+                    if plan is SubscriptionPlan.FREE:
+                        remaining = await sessions.remaining_free_seconds(user_id, now)
+                        if remaining <= 0:
+                            raise FreeDailyLimitReachedError
+                        free_limit = free_session_duration(now, remaining)
                     sessions = VpnSessionRepository(database_session)
                     nodes = VpnNodeRepository(database_session)
                     pending = await VpnSessionService(
                         sessions,
                         VpnNodeSelectionService(nodes, self._stale_timeout),
                         VpnClientAddressAllocator(sessions, self._subnet, self._reserved),
+                        free_session_limit=free_limit,
                     ).create(
                         user_id=user_id,
                         device_id=device_id,
@@ -185,6 +203,12 @@ class VpnConnectionService:
                     node = await nodes.get(pending.vpn_node_id)
                     if node is None:
                         raise VpnSessionPersistenceUnavailableError
+                    if plan is not SubscriptionPlan.FREE:
+                        pending = await sessions.update(
+                            replace(pending, expires_at=subscription.current_period_end)
+                        )
+                    else:
+                        await sessions.reserve_free_usage(pending)
                     return pending, node
         except NoEligibleVpnNodeError:
             if request.mode is NodeSelectionMode.COUNTRY:
@@ -217,6 +241,19 @@ class VpnConnectionService:
                     current = await repository.get_for_update(pending.id)
                     if current is None or current.status is not VpnSessionStatus.PENDING:
                         raise VpnSetupFailedError
+                    now = datetime.now(UTC)
+                    if current.plan_snapshot is not SubscriptionPlan.FREE:
+                        subscription = await SubscriptionRepository(
+                            database_session
+                        ).get_by_user_id(current.user_id)
+                        if (
+                            subscription is None
+                            or subscription.effective_plan(now) is SubscriptionPlan.FREE
+                        ):
+                            raise VpnSetupFailedError
+                        current = replace(current, expires_at=subscription.current_period_end)
+                    elif current.expires_at is not None and current.expires_at <= now:
+                        raise VpnSetupFailedError
                     await repository.acquire_peer_lock(current.client_wireguard_public_key)
                     try:
                         await self._agent.add_peer(
@@ -224,6 +261,11 @@ class VpnConnectionService:
                         )
                     except NodeAgentUnavailableError:
                         raise VpnSetupFailedError from None
+                    # Provisioning can cross the paid deadline. Compensation persists
+                    # cleanup intent and removes a peer even if the agent later fails.
+                    if current.expires_at is not None and current.expires_at <= datetime.now(UTC):
+                        raise VpnSetupFailedError
+                    await repository.activate_free_usage(current.id, datetime.now(UTC))
                     return await repository.update(
                         replace(
                             current, status=VpnSessionStatus.ACTIVE, updated_at=datetime.now(UTC)

@@ -19,9 +19,9 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 ## Product Requirements
 
 - Authentication is passwordless and uses email OTPs.
-- Free users receive 15-minute Autopilot VPN sessions.
-- After a free session expires, the user must complete a rewarded-ad flow before starting another 15-minute session.
-- Premium users have no ads and no 15-minute session limit.
+- Free users receive one account-wide hour per UTC day, without ads; AUTO/country selection uses free-only nodes.
+- Free sessions may use the remaining daily hour and end at UTC midnight; unused time returns after confirmed peer removal.
+- Premium users have no ads or daily/session time cap within their paid period. Manually assigned Platinum has exactly the same capabilities.
 - Premium users can explicitly select a VPN server country.
 - Split tunneling must eventually support both whitelist and blacklist modes. Do not implement this future capability unless the current task requires it.
 - Each account may have up to five active devices.
@@ -133,3 +133,8 @@ Support task: backend 0.4.0, Windows 0.9.0, migration 0020. Connected private
 POST/status API, account-scoped idempotency, app-helper SMTP, fixed help recipient,
 durable retries and 30-day content retention. See docs/support-ui.md and task PR
 for real evidence. Next independent task starts from these component versions.
+
+Subscription access task: backend 0.5.0, migrations 0021/0022; Windows stays 0.9.0.
+Free may select AUTO/country among free nodes (README clarification). Canceled
+renewal preserves paid access through the exclusive paid deadline. Read
+docs/subscription-entitlements.md before changing plans; Platinum is manual with Premium parity; Free is now one hour/day UTC with no ads.

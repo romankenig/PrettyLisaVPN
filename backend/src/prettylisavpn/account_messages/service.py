@@ -57,11 +57,7 @@ class AccountMessagesService:
                 subscription = await SubscriptionRepository(session).get_by_user_id(
                     identity.user_id
                 )
-                plan = (
-                    subscription.plan
-                    if subscription and subscription.is_active(now)
-                    else SubscriptionPlan.FREE
-                )
+                plan = subscription.effective_plan(now) if subscription else SubscriptionPlan.FREE
                 repository = MessageRepository(session)
                 async with aclosing(
                     repository.candidates(identity.user_id, context, plan, now)
