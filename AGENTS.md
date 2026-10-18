@@ -123,3 +123,8 @@ For every coding task:
 - После ЛЮБОГО последнего push, включая docs/handoff commit, снова проверить remote HEAD и все автоматически запущенные workflow. Не завершать задачу, пока они pending/in_progress. Итоговые ссылки и результаты можно обновлять в описании PR без нового commit, чтобы не создавать бесконечные повторные прогоны документацией.
 - Источник бинарного артефакта обязан соответствовать проверяемым исходникам. Не скачивать фиксированный исторический exe для нового UI/capture-сценария. Windows window capture теперь вызывает общий Windows UI review через workflow_call и собирает текущий commit; обычные UI/script-изменения автоматически проверяет основной PR workflow.
 - В итоговом отчёте указывать проверенный HEAD, названия всех workflow, конечные статусы и ссылки. Если полноценный обзор Actions недоступен, явно сообщить ограничение и не утверждать, что все проверки прошли.
+
+Backend account messages task: source 0.3.0, migration 0019, shared JSON v1 GET/ACK
+and closed server-only publication CLI. Read receipts belong to the account and
+revision, not the device. Windows stays 0.8.0; Android/other clients require their
+own contract adapter/UI. See docs/account-messages.md and the task PR for evidence.

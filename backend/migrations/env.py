@@ -7,6 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from prettylisavpn.account_messages import model as account_messages_model  # noqa: F401
 from prettylisavpn.auth_sessions import model as auth_sessions_model  # noqa: F401
 from prettylisavpn.config import Settings
 from prettylisavpn.database import Base
