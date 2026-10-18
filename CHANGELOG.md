@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Backend — 0.4.0 / Windows — 0.9.0
+
+- Added: private support POST/status API, transactional requests, sanitized images,
+  account-scoped idempotency and PostgreSQL delivery outbox (migration 0020).
+- Added: app-helper@prettylisavpn.com → help@prettylisavpn.com mail with a separate
+  Timeweb credential, fixed envelope, validated Reply-To and durable retries.
+- Added: Windows SupportSender, stable retry UUID/snapshot, receipt/status UI and
+  current-source native capture of recovery after a lost acceptance response.
+- Privacy: strict diagnostic whitelist, ownership-checked session IDs, image
+  metadata removal, quotas and 30-day content retention with deduplication tombstones.
+- Compatibility: additive API/schema. SMTP acceptance differs from inbox delivery;
+  exact checks, builds, deployment and remaining limitations are in the task PR.
+
+
 ### Backend — 0.3.0
 
 - Added: authenticated JSON v1 account messages, immutable localized revisions,

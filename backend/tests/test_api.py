@@ -102,7 +102,8 @@ def test_health_with_real_clients_does_not_connect(monkeypatch):
     cache_connect = AsyncMock(side_effect=AssertionError("Unexpected Valkey access"))
     monkeypatch.setattr("asyncpg.connect", pg_connect)
     monkeypatch.setattr("redis.asyncio.connection.Connection.connect", cache_connect)
-    with TestClient(create_app(settings())) as client:
+    # Isolate liveness handlers from the independently scheduled support worker.
+    with TestClient(create_app(settings(), support_worker=AsyncMock())) as client:
         assert client.get("/health").status_code == 200
         assert client.get("/version").status_code == 200
     pg_connect.assert_not_awaited()

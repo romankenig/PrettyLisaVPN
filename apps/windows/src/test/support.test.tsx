@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { SupportError } from "../support/client";
 import { createApiClient } from "../api/client";
 import { loadConfig } from "../config/config";
 import { ApplicationProvider } from "../state/application";
@@ -230,6 +231,92 @@ describe("about and support", () => {
     );
     expect(screen.queryByText("обращение принято")).not.toBeInTheDocument();
     expect(screen.queryByText("secret server details")).not.toBeInTheDocument();
+  });
+
+  it("preserves UUID and complete snapshot for retry after network failure", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("network"))
+        .mockResolvedValueOnce({ request_id: "ticket-retry" }),
+    };
+    const { vpn } = setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("alert");
+    await act(async () => vpn.reconcile("token"));
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("status");
+    expect(sender.send.mock.calls[1][0]).toBe(sender.send.mock.calls[0][0]);
+  });
+
+  it("locks the snapshot after uncertainty even if a later POST is rejected", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("lost response"))
+        .mockRejectedValueOnce(new SupportError("ATTACHMENT_REJECTED", true)),
+    };
+    setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("alert");
+    expect(screen.getByRole("textbox", { name: "тема" })).toBeDisabled();
+    expect(screen.getByLabelText("прикрепить скриншоты")).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: "приложить технические данные" }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await waitFor(() => expect(sender.send).toHaveBeenCalledTimes(2));
+    await screen.findByRole("alert");
+    expect(sender.send.mock.calls[1][0]).toBe(sender.send.mock.calls[0][0]);
+    expect(screen.getByRole("textbox", { name: "тема" })).toBeDisabled();
+  });
+
+  it("allows correction after an explicit rejection with no earlier uncertainty", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockRejectedValueOnce(new SupportError("ATTACHMENT_REJECTED", true))
+        .mockResolvedValueOnce({ request_id: "corrected-ticket" }),
+    };
+    setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByText(
+      "скриншот не принят: проверьте формат, размер и разрешение изображения",
+    );
+    expect(screen.getByRole("textbox", { name: "тема" })).not.toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "тема" }), {
+      target: { value: "исправленное обращение" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("status");
+    expect(sender.send.mock.calls[1][0].request_id).not.toBe(
+      sender.send.mock.calls[0][0].request_id,
+    );
+  });
+
+  it("shows delivery status only after backend confirmation", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockResolvedValue({ request_id: "ticket-status", status: "ACCEPTED" }),
+      getStatus: vi
+        .fn()
+        .mockResolvedValue({ request_id: "ticket-status", status: "SENT" }),
+    };
+    setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByText("обращение сохранено и ожидает отправки письма");
+    fireEvent.click(screen.getByRole("button", { name: "проверить статус" }));
+    await screen.findByText("почтовый сервер принял письмо");
+    expect(sender.getStatus.mock.calls[0][0]).toBe("ticket-status");
   });
 
   it("discards a popup on account change", async () => {

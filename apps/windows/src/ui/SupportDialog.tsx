@@ -7,7 +7,13 @@ import {
   type FormEvent,
 } from "react";
 import { useApplication } from "../state/application";
-import { supportDiagnostics, validateScreenshots } from "../support/model";
+import { SupportError } from "../support/client";
+import {
+  type SupportSubmission,
+  type SupportReceipt,
+  supportDiagnostics,
+  validateScreenshots,
+} from "../support/model";
 
 export function SupportDialog({
   frontend,
@@ -40,8 +46,11 @@ export function SupportDialog({
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [frozen, setFrozen] = useState(false);
   const [checkingFiles, setCheckingFiles] = useState(false);
-  const [receipt, setReceipt] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<SupportReceipt | null>(null);
+  const attempt = useRef<SupportSubmission | null>(null);
+  const uncertain = useRef(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
   const alive = useRef(true);
@@ -63,7 +72,7 @@ export function SupportDialog({
   }, []);
 
   async function addFiles(files: File[]) {
-    if (selecting.current || inFlight.current) return;
+    if (selecting.current || inFlight.current || frozen) return;
     selecting.current = true;
     setCheckingFiles(true);
     setError(null);
@@ -98,15 +107,21 @@ export function SupportDialog({
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const result = await support.send(
-        {
+      // An uncertain result locks the complete snapshot. Editing cannot silently
+      // create a new ticket while an earlier POST may already be committed.
+      if (!attempt.current) {
+        attempt.current = {
           request_id: crypto.randomUUID(),
           subject: subject.trim(),
           description: description.trim(),
           reply_email: email.trim(),
           diagnostics: includeDiagnostics ? diagnostics : null,
           screenshots,
-        },
+        };
+      }
+      setFrozen(true);
+      const result = await support.send(
+        attempt.current!,
         active.accessToken,
         abort.signal,
       );
@@ -117,13 +132,33 @@ export function SupportDialog({
       )
         return;
       if (!result.request_id.trim()) throw new Error("INVALID_SUPPORT_RECEIPT");
-      setReceipt(result.request_id);
+      setReceipt(result);
+      setFrozen(false);
       setScreenshots([]);
-    } catch {
-      if (alive.current && !abort.signal.aborted)
+    } catch (failure) {
+      if (alive.current && !abort.signal.aborted) {
+        const rejected =
+          failure instanceof SupportError &&
+          failure.definitive &&
+          !uncertain.current;
+        if (rejected) {
+          attempt.current = null;
+          setFrozen(false);
+        } else {
+          uncertain.current = true;
+        }
+        const messages: Record<string, string> = {
+          ATTACHMENT_REJECTED:
+            "скриншот не принят: проверьте формат, размер и разрешение изображения",
+          INVALID_REQUEST: "обращение не принято: проверьте поля формы",
+          RATE_LIMITED: "слишком много обращений. попробуйте позже",
+          AUTH_INVALID: "войдите в аккаунт, чтобы отправить обращение",
+        };
         setError(
-          "не удалось подтвердить отправку. обращение не отмечено как отправленное",
+          (rejected && messages[failure.code]) ||
+            "не удалось подтвердить отправку. обращение не отмечено как отправленное",
         );
+      }
     } finally {
       inFlight.current = false;
       if (alive.current) setPending(false);
@@ -154,8 +189,54 @@ export function SupportDialog({
       {receipt ? (
         <div className="support-receipt" role="status">
           <h3>обращение принято</h3>
-          <p>ответ придёт на {email}</p>
-          <p>номер: {receipt}</p>
+          <p>адрес для ответа: {email}</p>
+          <p>номер: {receipt.request_id}</p>
+          <p>
+            {
+              {
+                ACCEPTED: "обращение сохранено и ожидает отправки письма",
+                RETRYING: "отправка письма будет повторена",
+                SENT: "почтовый сервер принял письмо",
+                FAILED: "письмо пока не отправлено; обращение сохранено",
+                EXPIRED: "срок хранения содержимого истёк",
+              }[receipt.status ?? "ACCEPTED"]
+            }
+          </p>
+          {support?.getStatus ? (
+            <button
+              type="button"
+              disabled={pending || frozen}
+              onClick={() => {
+                if (!active || !support.getStatus) return;
+                setPending(true);
+                setError(null);
+                const abort = new AbortController();
+                controller.current = abort;
+                void support
+                  .getStatus(
+                    receipt.request_id,
+                    active.accessToken,
+                    abort.signal,
+                  )
+                  .then((value) => {
+                    if (alive.current && !abort.signal.aborted) {
+                      if (value) setReceipt(value);
+                      else setError("не удалось получить статус обращения");
+                    }
+                  })
+                  .catch(() => {
+                    if (alive.current && !abort.signal.aborted)
+                      setError("не удалось получить статус обращения");
+                  })
+                  .finally(() => {
+                    if (alive.current) setPending(false);
+                  });
+              }}
+            >
+              проверить статус
+            </button>
+          ) : null}
+          {error ? <p role="alert">{error}</p> : null}
           <button type="button" onClick={onClose}>
             готово
           </button>
@@ -171,7 +252,7 @@ export function SupportDialog({
                 maxLength={120}
                 required
                 value={subject}
-                disabled={pending}
+                disabled={pending || frozen}
                 onChange={(event) => setSubject(event.target.value)}
                 placeholder="кратко о проблеме"
               />
@@ -183,7 +264,7 @@ export function SupportDialog({
                 maxLength={4000}
                 required
                 value={description}
-                disabled={pending}
+                disabled={pending || frozen}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="что произошло и что вы ожидали"
               />
@@ -196,7 +277,7 @@ export function SupportDialog({
                 maxLength={254}
                 required
                 value={email}
-                disabled={pending}
+                disabled={pending || frozen}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="example@email.com"
               />
@@ -211,7 +292,7 @@ export function SupportDialog({
                 aria-label="прикрепить скриншоты"
                 accept="image/png,image/jpeg,image/webp"
                 multiple
-                disabled={pending || checkingFiles}
+                disabled={pending || frozen || checkingFiles}
                 onChange={(event) => {
                   const files = Array.from(event.target.files ?? []);
                   event.target.value = "";
@@ -229,7 +310,7 @@ export function SupportDialog({
                     <span>{file.name}</span>
                     <button
                       type="button"
-                      disabled={pending || checkingFiles}
+                      disabled={pending || frozen || checkingFiles}
                       aria-label={`убрать ${file.name}`}
                       onClick={() =>
                         setScreenshots(
@@ -251,7 +332,7 @@ export function SupportDialog({
               <input
                 type="checkbox"
                 checked={includeDiagnostics}
-                disabled={pending}
+                disabled={pending || frozen}
                 onChange={(event) =>
                   setIncludeDiagnostics(event.target.checked)
                 }
@@ -261,7 +342,13 @@ export function SupportDialog({
             {includeDiagnostics ? (
               <details>
                 <summary>что будет приложено</summary>
-                <pre>{JSON.stringify(diagnostics, null, 2)}</pre>
+                <pre>
+                  {JSON.stringify(
+                    frozen ? attempt.current?.diagnostics : diagnostics,
+                    null,
+                    2,
+                  )}
+                </pre>
               </details>
             ) : null}
           </div>
@@ -278,6 +365,13 @@ export function SupportDialog({
               {error}
             </p>
           ) : null}
+          {frozen && !pending ? (
+            <p>
+              результат неизвестен. повтор проверит исходное обращение; поля
+              временно заблокированы
+            </p>
+          ) : null}
+          <p>закрытие окна не отменяет уже принятое обращение</p>
           <footer className="support-actions">
             <button type="button" className="support-cancel" onClick={onClose}>
               отмена

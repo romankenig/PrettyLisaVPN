@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.3.0", min_length=1)
+    application_version: str = Field(default="0.4.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     postgres_url: SecretStr = SecretStr(
@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     otp_max_verification_attempts: int = Field(default=5, ge=1, le=20)
     access_token_ttl_seconds: int = Field(default=900, ge=60, le=3600)
     refresh_token_ttl_seconds: int = Field(default=2592000, ge=3600, le=31536000)
+    support_smtp_password: SecretStr | None = None
     email_provider: Literal["timeweb"] = "timeweb"
     email_smtp_host: str = Field(default="smtp.timeweb.ru", min_length=1)
     email_smtp_port: int = Field(default=465, ge=1, le=65535)

@@ -158,3 +158,18 @@ source/build SHA, run/attempt, metadata, локальный image ID и точн
 runtime-строку, вернуть новый релиз и снова проверить. Зафиксировать реальные
 HTTP-ответы, время, образ и результаты миграций. До этого live rollback остаётся
 открытой проверкой. Не выполнять downgrade БД ради проверки rollback приложения.
+
+
+## Support — backend 0.3.0 → 0.4.0 / Windows 0.8.0 → 0.9.0
+
+Migration 0020 is additive; requests/attachments/outbox share a PostgreSQL
+transaction. Application rollback leaves these tables and queued requests.
+Separate DEV_SUPPORT_SMTP_PASSWORD is required; SMTP sender app-helper and sole
+recipient help@prettylisavpn.com are configured only on the server.
+
+Cloud has no bound secrets/outbound identities; dependency installation and
+loopback socket creation are blocked in this executor. Verification uses Actions.
+Source/build/run/attempt, every workflow, native screenshots, real development
+deploy and SMTP evidence are recorded in the task PR. Native support screenshots
+use a synthetic loopback API; inbox delivery and mailbox/backup retention need
+separate operator evidence.

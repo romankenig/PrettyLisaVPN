@@ -29,13 +29,23 @@ export interface SupportSubmission {
   readonly screenshots: readonly File[];
 }
 
-// A future backend adapter supplies this port. No recipient or SMTP secrets in UI.
+export interface SupportReceipt {
+  readonly request_id: string;
+  readonly status?: "ACCEPTED" | "RETRYING" | "SENT" | "FAILED" | "EXPIRED";
+}
+
+// No recipient or SMTP credentials in the application payload.
 export interface SupportSender {
   send(
     submission: SupportSubmission,
     accessToken: string,
     signal: AbortSignal,
-  ): Promise<{ readonly request_id: string }>;
+  ): Promise<SupportReceipt>;
+  getStatus?(
+    requestId: string,
+    accessToken: string,
+    signal: AbortSignal,
+  ): Promise<SupportReceipt | null>;
 }
 
 export function supportDiagnostics(
