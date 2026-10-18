@@ -40,16 +40,20 @@ def smtp_observations(config):
             result[name] = "not configured"
             continue
         try:
-            client = (
-                smtplib.SMTP_SSL if config.email_smtp_tls_mode == "implicit_tls" else smtplib.SMTP
-            )
-            with client(config.email_smtp_host, config.email_smtp_port, timeout=5) as smtp:
+            options = {"timeout": 5}
+            client = smtplib.SMTP
+            if config.email_smtp_tls_mode == "implicit_tls":
+                client = smtplib.SMTP_SSL
+                options["context"] = ssl.create_default_context()
+            with client(config.email_smtp_host, config.email_smtp_port, **options) as smtp:
                 if config.email_smtp_tls_mode == "starttls":
                     smtp.starttls(context=ssl.create_default_context())
                 smtp.login(username, password.get_secret_value())
             result[name] = "authenticated; no message sent"
         except smtplib.SMTPAuthenticationError:
             result[name] = "authentication failed"
+        except UnicodeError:
+            result[name] = "credential encoding failed"
         except (OSError, smtplib.SMTPException):
             result[name] = "unavailable"
     return result
