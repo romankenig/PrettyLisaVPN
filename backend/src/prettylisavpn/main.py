@@ -14,6 +14,8 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from prettylisavpn.account_messages.router import router as messages_router
+from prettylisavpn.account_messages.service import AccountMessagesService
 from prettylisavpn.auth.events import DatabaseProductEventSink
 from prettylisavpn.auth.router import account_router
 from prettylisavpn.auth.router import router as auth_router
@@ -168,6 +170,10 @@ def create_app(
                         config,
                     )
                 )
+                app.state.account_messages = AccountMessagesService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                )
                 app.state.vpn_country_availability = (
                     vpn_country_availability
                     if vpn_country_availability is not None
@@ -273,6 +279,7 @@ def create_app(
     app.include_router(account_router)
     app.include_router(devices_router)
     app.include_router(vpn_router)
+    app.include_router(messages_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
