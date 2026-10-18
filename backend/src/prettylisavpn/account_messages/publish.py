@@ -20,7 +20,9 @@ from prettylisavpn.connections import Postgres
 MAX_IMPORT_BYTES = 1048576
 
 
-async def execute(command: str, payload: Publication | None, actor: str, message_id: UUID | None) -> None:
+async def execute(
+    command: str, payload: Publication | None, actor: str, message_id: UUID | None
+) -> None:
     postgres = Postgres(Settings())
     try:
         service = MessagePublicationService(postgres)
@@ -54,17 +56,21 @@ def main() -> None:
             if len(data) > MAX_IMPORT_BYTES:
                 raise ValueError("Import limit exceeded")
             payload = Publication.model_validate_json(data)
-        asyncio.run(execute(
-            args.command, payload, getattr(args, "actor", ""), getattr(args, "id", None)
-        ))
+        asyncio.run(
+            execute(args.command, payload, getattr(args, "actor", ""), getattr(args, "id", None))
+        )
     except Exception:
         print(json.dumps({"event": "message_publication_failed"}), file=sys.stderr)
         raise SystemExit(1) from None
-    print(json.dumps({
-        "event": "message_published" if payload else "message_withdrawn",
-        "id": str(payload.id if payload else args.id),
-        **({"revision": payload.revision} if payload else {}),
-    }))
+    print(
+        json.dumps(
+            {
+                "event": "message_published" if payload else "message_withdrawn",
+                "id": str(payload.id if payload else args.id),
+                **({"revision": payload.revision} if payload else {}),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

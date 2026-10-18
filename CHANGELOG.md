@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.3.0
+
+- Added: authenticated JSON v1 account messages, immutable localized revisions,
+  schedules, priorities and audiences by account/plan/platform/SemVer range.
+- Added: durable account-wide, idempotent acknowledgement; an ACK on Windows
+  removes that revision from subsequent Android/other-device requests.
+- Added: trusted server-only publish/withdraw CLI with explicit redisplay policy;
+  no public admin endpoint, arbitrary URL, HTML or executable content fields.
+- Compatibility: migration 0019 is additive; Windows stays 0.8.0. Other platforms
+  receive messages after implementing the common contract in their own clients.
+- Validation and actual deployment status: task PR; docs/account-messages.md.
+
 ### Documentation — карта Windows 0.8.0
 
 - Added: сводная схема экранов/popup, таблица маршрутов, auth/возвраты/ошибки,

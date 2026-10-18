@@ -18,12 +18,19 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), primary_key=True),
         sa.Column("current_revision", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.CheckConstraint("current_revision >= 0", name="ck_account_messages_revision"),
     )
     op.create_table(
         "account_message_revisions",
-        sa.Column("message_id", sa.Uuid(), sa.ForeignKey("account_messages.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "message_id",
+            sa.Uuid(),
+            sa.ForeignKey("account_messages.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
         sa.Column("revision", sa.Integer(), primary_key=True),
         sa.Column("acknowledgement_floor", sa.Integer(), nullable=False),
         sa.Column("schema_version", sa.Integer(), nullable=False),
@@ -35,20 +42,41 @@ def upgrade() -> None:
         sa.Column("platforms", postgresql.JSONB(), nullable=False),
         sa.Column("payload", postgresql.JSONB(), nullable=False),
         sa.Column("publisher", sa.String(120), nullable=False),
-        sa.Column("published_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "published_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.CheckConstraint("revision > 0", name="ck_account_message_revisions_positive"),
-        sa.CheckConstraint("acknowledgement_floor > 0 AND acknowledgement_floor <= revision", name="ck_account_message_revisions_ack_floor"),
-        sa.CheckConstraint("expires_at IS NULL OR starts_at IS NULL OR expires_at > starts_at", name="ck_account_message_revisions_interval"),
+        sa.CheckConstraint(
+            "acknowledgement_floor > 0 AND acknowledgement_floor <= revision",
+            name="ck_account_message_revisions_ack_floor",
+        ),
+        sa.CheckConstraint(
+            "expires_at IS NULL OR starts_at IS NULL OR expires_at > starts_at",
+            name="ck_account_message_revisions_interval",
+        ),
     )
-    op.create_index("ix_account_message_revisions_priority", "account_message_revisions", ["priority", "message_id"])
+    op.create_index(
+        "ix_account_message_revisions_priority",
+        "account_message_revisions",
+        ["priority", "message_id"],
+    )
     op.create_table(
         "account_message_receipts",
-        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "user_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        ),
         sa.Column("message_id", sa.Uuid(), primary_key=True),
         sa.Column("revision", sa.Integer(), primary_key=True),
-        sa.Column("delivered_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "delivered_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("acknowledged_at", sa.DateTime(timezone=True)),
-        sa.ForeignKeyConstraint(["message_id", "revision"], ["account_message_revisions.message_id", "account_message_revisions.revision"], ondelete="CASCADE", name="fk_account_message_receipts_revision"),
+        sa.ForeignKeyConstraint(
+            ["message_id", "revision"],
+            ["account_message_revisions.message_id", "account_message_revisions.revision"],
+            ondelete="CASCADE",
+            name="fk_account_message_receipts_revision",
+        ),
     )
 
 

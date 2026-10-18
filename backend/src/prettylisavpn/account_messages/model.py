@@ -5,8 +5,16 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint,
-    Index, Integer, String, func, text,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -53,7 +61,9 @@ class MessageRevisionRecord(Base):
     platforms: Mapped[dict[str, Any]] = mapped_column(JSONB)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
     publisher: Mapped[str] = mapped_column(String(120))
-    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class MessageReceiptRecord(Base):
@@ -62,7 +72,8 @@ class MessageReceiptRecord(Base):
         ForeignKeyConstraint(
             ["message_id", "revision"],
             ["account_message_revisions.message_id", "account_message_revisions.revision"],
-            ondelete="CASCADE", name="fk_account_message_receipts_revision",
+            ondelete="CASCADE",
+            name="fk_account_message_receipts_revision",
         ),
     )
     user_id: Mapped[UUID] = mapped_column(
@@ -70,5 +81,7 @@ class MessageReceiptRecord(Base):
     )
     message_id: Mapped[UUID] = mapped_column(primary_key=True)
     revision: Mapped[int] = mapped_column(Integer, primary_key=True)
-    delivered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    delivered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

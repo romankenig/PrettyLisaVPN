@@ -8,7 +8,13 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from prettylisavpn.account_messages.domain import (
-    MAX_RESPONSE_BYTES, MessageContext, MessagesResponse, Publication, PublicationReceipt, Receipt, encoded_size,
+    MAX_RESPONSE_BYTES,
+    MessageContext,
+    MessagesResponse,
+    Publication,
+    PublicationReceipt,
+    Receipt,
+    encoded_size,
 )
 from prettylisavpn.account_messages.repository import MessageRepository
 from prettylisavpn.account_messages.version import Version
@@ -48,16 +54,23 @@ class AccountMessagesService:
                 device = await DeviceRepository(session).get(identity.device_id)
                 if device is None or device.platform is not context.platform:
                     return result
-                subscription = await SubscriptionRepository(session).get_by_user_id(identity.user_id)
+                subscription = await SubscriptionRepository(session).get_by_user_id(
+                    identity.user_id
+                )
                 plan = (
-                    subscription.plan if subscription and subscription.is_active(now)
+                    subscription.plan
+                    if subscription and subscription.is_active(now)
                     else SubscriptionPlan.FREE
                 )
                 repository = MessageRepository(session)
-                async with aclosing(repository.candidates(identity.user_id, context, plan, now)) as rows:
+                async with aclosing(
+                    repository.candidates(identity.user_id, context, plan, now)
+                ) as rows:
                     async for row in rows:
                         publication = Publication.model_validate(row.payload)
-                        if not publication.platforms[context.platform].contains(context.app_version):
+                        if not publication.platforms[context.platform].contains(
+                            context.app_version
+                        ):
                             continue
                         message = publication.localized(context.locale)
                         candidate = MessagesResponse(messages=[*result.messages, message])
@@ -123,7 +136,8 @@ class MessagePublicationService:
                 raise PublicationConflictError("Revision must advance by one")
             previous = await repository.revision(payload.id, message.current_revision)
             floor = (
-                payload.revision if payload.redisplay_after_ack or previous is None
+                payload.revision
+                if payload.redisplay_after_ack or previous is None
                 else previous.acknowledgement_floor
             )
             await repository.store_revision(payload, floor, publisher)

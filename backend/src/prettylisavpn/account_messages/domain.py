@@ -7,7 +7,13 @@ from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
 from pydantic import (
-    BaseModel, ConfigDict, Field, StrictBool, ValidationInfo, field_validator, model_validator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    ValidationInfo,
+    field_validator,
+    model_validator,
 )
 
 from prettylisavpn.account_messages.version import Version
@@ -119,8 +125,7 @@ class VersionRange(StrictModel):
     def contains(self, value: str) -> bool:
         parsed = Version.parse(value)
         return parsed >= Version.parse(self.min_version) and (
-            self.max_version_exclusive is None
-            or parsed < Version.parse(self.max_version_exclusive)
+            self.max_version_exclusive is None or parsed < Version.parse(self.max_version_exclusive)
         )
 
 
@@ -151,7 +156,7 @@ class MessageContext(StrictModel):
 class Publication(StrictModel):
     id: UUID
     revision: int = Field(strict=True, gt=0, le=2147483647)
-    schema_version: Literal[1] = 1
+    schema_version: int = Field(default=1, strict=True, ge=1, le=1)
     kind: Literal["announcement", "update", "promotion"] = "announcement"
     redisplay_after_ack: StrictBool
     priority: int = Field(default=0, strict=True, ge=-10000, le=10000)
@@ -200,20 +205,31 @@ class Publication(StrictModel):
 
     def response(self, content: Content) -> MessageResponse:
         return MessageResponse(
-            **content.model_dump(), id=self.id, revision=self.revision,
-            kind=self.kind, expires_at=self.expires_at,
+            **content.model_dump(),
+            id=self.id,
+            revision=self.revision,
+            kind=self.kind,
+            expires_at=self.expires_at,
         )
 
     def localized(self, locale: str) -> MessageResponse:
         key = next(
-            (key for key in (locale, locale.split("-")[0], self.default_locale)
-             if key in self.localizations), self.default_locale,
+            (
+                key
+                for key in (locale, locale.split("-")[0], self.default_locale)
+                if key in self.localizations
+            ),
+            self.default_locale,
         )
         return self.response(self.localizations[key])
 
 
 def encoded_size(value: BaseModel) -> int:
-    return len(json.dumps(
-        value.model_dump(mode="json"), ensure_ascii=False, allow_nan=False,
-        separators=(",", ":"),
-    ).encode("utf-8"))
+    return len(
+        json.dumps(
+            value.model_dump(mode="json"),
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )

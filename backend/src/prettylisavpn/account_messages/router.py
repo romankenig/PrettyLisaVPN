@@ -10,15 +10,22 @@ from fastapi.routing import APIRoute
 from starlette.responses import JSONResponse, Response
 
 from prettylisavpn.account_messages.domain import (
-    Acknowledgement, MessageContext, MessagesResponse, Receipt,
+    Acknowledgement,
+    MessageContext,
+    MessagesResponse,
+    Receipt,
 )
 from prettylisavpn.account_messages.service import (
-    AccountMessagesService, MessageNotFoundError, MessagesUnavailableError,
+    AccountMessagesService,
+    MessageNotFoundError,
+    MessagesUnavailableError,
 )
 from prettylisavpn.auth.router import bearer_token
 from prettylisavpn.auth.service import BlockedUserError
 from prettylisavpn.auth.session_service import (
-    AuthServiceUnavailableError, InvalidSessionError, RevokedDeviceError,
+    AuthServiceUnavailableError,
+    InvalidSessionError,
+    RevokedDeviceError,
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.main_errors import error_response
@@ -66,7 +73,9 @@ async def messages(
 
 @router.post("/{message_id}/acknowledgements", response_model=Receipt)
 async def acknowledge(
-    message_id: UUID, body: Acknowledgement, request: Request,
+    message_id: UUID,
+    body: Acknowledgement,
+    request: Request,
     token: Annotated[str | None, Depends(bearer_token)],
 ) -> Response:
     if token is None:
