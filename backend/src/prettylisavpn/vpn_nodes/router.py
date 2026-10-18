@@ -29,6 +29,7 @@ from prettylisavpn.vpn_sessions.address_allocation import AddressPoolExhaustedEr
 from prettylisavpn.vpn_sessions.connection import (
     ActiveVpnTransport,
     CountryUnavailableError,
+    FreeDailyLimitReachedError,
     VpnConnectionHandler,
     VpnSessionPersistenceUnavailableError,
     VpnSetupFailedError,
@@ -289,6 +290,8 @@ async def create_vpn_session(
         return error_response("COUNTRY_UNAVAILABLE", 409)
     except VpnUnavailableError:
         return error_response("VPN_UNAVAILABLE", 409)
+    except FreeDailyLimitReachedError:
+        return error_response("FREE_DAILY_LIMIT_REACHED", 403)
     except DeviceAlreadyHasLiveVpnSessionError:
         return error_response("VPN_SESSION_ALREADY_ACTIVE", 409)
     except AddressPoolExhaustedError:
@@ -335,3 +338,4 @@ async def disconnect_vpn_session(
     except VpnTerminationUnavailableError:
         return error_response("VPN_TERMINATION_UNAVAILABLE", 503)
     return TerminatedVpnSessionResponse(session_id=result.session_id, status=result.status)
+

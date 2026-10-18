@@ -1,0 +1,65 @@
+name: Subscription preparation
+on:
+  push:
+    branches: [cloud/prepare-subscriptions]
+    paths: [.github/workflows/prepare-subscriptions.yaml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-otp-hmac-secret-at-least-32-characters
+      RUN_INTEGRATION_TESTS: '1'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prettylisa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: prettylisa
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: '0.12.9'
+      - name: Format and install
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run ruff format .
+          uv run ruff check --fix .
+      - name: Types
+        working-directory: backend
+        run: uv run mypy
+      - name: Units
+        working-directory: backend
+        run: uv run pytest -m 'not integration and not docker' -q
+      - name: Migrations
+        working-directory: backend
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Integrations
+        working-directory: backend
+        run: uv run pytest -m integration -q
+      - name: Return formatting corrections
+        if: always()
+        run: |
+          python - <<'PY'
+          import subprocess, pathlib, base64, json
+          for path in subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines():
+              if path.startswith('backend/') and pathlib.Path(path).is_file():
+                  print('SUBSCRIPTION_PREP_FILE ' + json.dumps({'path': path, 'content': base64.b64encode(pathlib.Path(path).read_bytes()).decode()}))
+          PY

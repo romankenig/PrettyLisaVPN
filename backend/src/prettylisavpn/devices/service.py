@@ -13,8 +13,9 @@ from prettylisavpn.devices.domain import (
     normalize_device_name,
 )
 from prettylisavpn.devices.repository import DeviceRepository
+from prettylisavpn.subscriptions.entitlements import FREE_ENTITLEMENTS
 
-MAX_ACTIVE_DEVICES = 5
+MAX_ACTIVE_DEVICES = FREE_ENTITLEMENTS.active_device_limit
 
 
 class DeviceService:

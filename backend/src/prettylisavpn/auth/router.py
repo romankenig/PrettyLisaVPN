@@ -32,6 +32,7 @@ from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.devices.domain import DeviceLimitReachedError, DevicePlatform, DeviceStatus
 from prettylisavpn.emailing.domain import EmailProvider
 from prettylisavpn.main_errors import error_response
+from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
 from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -113,11 +114,31 @@ class RefreshResponse(BaseModel):
     session_id: UUID
 
 
+class SubscriptionAccessResponse(BaseModel):
+    plan: SubscriptionPlan
+    status: str
+    auto_renew: bool
+    paid_until: datetime | None
+
+
+class EntitlementsResponse(BaseModel):
+    vpn_session_limit_seconds: int | None
+    rewarded_ad_required: bool
+    country_selection_allowed: bool
+    free_nodes_only: bool
+    active_device_limit: int
+    daily_vpn_limit_seconds: int | None
+    free_seconds_remaining: int | None
+    free_quota_resets_at: datetime | None
+
+
 class MeResponse(BaseModel):
     id: UUID
     email: EmailStr
     plan: SubscriptionPlan
     active_device_count: int
+    subscription: SubscriptionAccessResponse | None = None
+    entitlements: EntitlementsResponse | None = None
 
 
 class LogoutResponse(BaseModel):
@@ -299,9 +320,27 @@ async def me(
         return error_response("device_revoked", 403)
     except AuthServiceUnavailableError:
         return error_response("auth_service_unavailable", 503)
+    rights = entitlements_for_plan(result.plan)
     return MeResponse(
         id=result.user_id,
         email=result.email,
         plan=result.plan,
         active_device_count=result.active_device_count,
+        subscription=None if result.subscription is None else SubscriptionAccessResponse(
+            plan=result.subscription.plan,
+            status=result.subscription.status,
+            auto_renew=result.subscription.auto_renew,
+            paid_until=(result.subscription.current_period_end
+                        if result.subscription.plan is not SubscriptionPlan.FREE else None),
+        ),
+        entitlements=EntitlementsResponse(
+            vpn_session_limit_seconds=(int(rights.vpn_session_limit.total_seconds()) if rights.vpn_session_limit else None),
+            rewarded_ad_required=rights.rewarded_ad_required,
+            country_selection_allowed=rights.country_selection_allowed,
+            free_nodes_only=rights.free_nodes_only,
+            active_device_limit=rights.active_device_limit,
+            daily_vpn_limit_seconds=rights.daily_vpn_limit_seconds,
+            free_seconds_remaining=result.free_seconds_remaining,
+            free_quota_resets_at=result.free_quota_resets_at,
+        ),
     )

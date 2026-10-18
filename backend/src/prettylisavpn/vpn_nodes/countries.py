@@ -1,7 +1,7 @@
 """Authenticated, product-safe VPN country availability application service."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
@@ -80,8 +80,11 @@ class VpnCountryAvailabilityService:
     async def list_countries(self, access_token: str) -> VpnCountryAvailability:
         principal = await self._authenticated_sessions.me(access_token)
         countries = tuple(await self._catalog.list_countries(principal.plan, self._clock()))
+        if principal.plan is SubscriptionPlan.FREE and principal.free_seconds_remaining == 0:
+            countries = tuple(replace(country, available=False, quality=0) for country in countries)
         best_quality = max((country.quality for country in countries), default=0)
         return VpnCountryAvailability(
             autopilot=AutopilotEligibility(best_quality > 0, best_quality),
             countries=countries,
         )
+

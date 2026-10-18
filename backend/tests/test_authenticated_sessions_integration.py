@@ -238,6 +238,8 @@ async def test_me_returns_identity_plan_and_active_device_count():
             "email": email,
             "plan": "FREE",
             "active_device_count": 3,
+            "subscription": {"plan": "FREE", "status": "ACTIVE", "auto_renew": False, "paid_until": None},
+            "entitlements": {"vpn_session_limit_seconds": 3600, "rewarded_ad_required": False, "country_selection_allowed": True, "free_nodes_only": True, "active_device_limit": 5, "daily_vpn_limit_seconds": 3600, "free_seconds_remaining": 3600, "free_quota_resets_at": (datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)).isoformat().replace("+00:00", "Z")},
         }
         await cleanup_user(postgres, email)
 
@@ -279,3 +281,4 @@ async def test_session_endpoints_reject_blocked_user_or_revoked_device(principal
         assert me.status_code == refresh.status_code == 403
         assert me.json() == refresh.json() == {"error": {"code": expected}}
         await cleanup_user(postgres, email)
+

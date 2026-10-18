@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
 from prettylisavpn.vpn_nodes.domain import VpnNode, VpnNodeHealthStatus, VpnNodeStatus
 
 
@@ -77,8 +78,9 @@ class VpnNodeEligibilityPolicy:
         operational = self._availability.evaluate(snapshot.node, now)
         if not operational.available:
             return operational
-        if plan is SubscriptionPlan.FREE and not snapshot.node.is_available_for_free:
+        if entitlements_for_plan(plan).free_nodes_only and not snapshot.node.is_available_for_free:
             return NodeAvailability(False, NodeUnavailabilityReason.PLAN_RESTRICTED)
         if snapshot.remaining_capacity == 0:
             return NodeAvailability(False, NodeUnavailabilityReason.CAPACITY_EXHAUSTED)
         return NodeAvailability(True, None)
+

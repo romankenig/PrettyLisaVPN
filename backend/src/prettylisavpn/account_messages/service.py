@@ -58,8 +58,8 @@ class AccountMessagesService:
                     identity.user_id
                 )
                 plan = (
-                    subscription.plan
-                    if subscription and subscription.is_active(now)
+                    subscription.effective_plan(now)
+                    if subscription
                     else SubscriptionPlan.FREE
                 )
                 repository = MessageRepository(session)

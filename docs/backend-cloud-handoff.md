@@ -173,3 +173,13 @@ Source/build/run/attempt, every workflow, native screenshots, real development
 deploy and SMTP evidence are recorded in the task PR. Native support screenshots
 use a synthetic loopback API; inbox delivery and mailbox/backup retention need
 separate operator evidence.
+
+## Подписки: backend 0.4.0 → 0.5.0
+
+Единый effective_plan для /me, VPN и messages; миграция 0021 сохраняет оплаченные
+даты при CANCELED. Окончание подписки обрабатывается и для открытых платных peers.
+Windows 0.9.0 без изменений. Free: час/сутки UTC без рекламы, миграция 0022 с durable учётом; Platinum ручной с правами Premium.
+Платёжный провайдер не добавлен.
+Контракт, продуктовые решения и ограничения: [subscription-entitlements.md](subscription-entitlements.md).
+Текущая задача ещё проходит проверки; реальные SHA/run/attempt и deploy будут
+зафиксированы в PR, прежние артефакты не подтверждают эту версию.
