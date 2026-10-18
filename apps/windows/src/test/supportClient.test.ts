@@ -109,6 +109,38 @@ describe("support HTTP adapter", () => {
     ).rejects.toThrow("INVALID_RESPONSE");
   });
 
+  it("marks only an explicit POST rejection as safe to edit", async () => {
+    const transport = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: { code: "ATTACHMENT_REJECTED", message: "private details" },
+          },
+          { status: 422 },
+        ),
+      );
+    const sender = createSupportSender("https://api.example.com", transport);
+    await expect(
+      sender.send(draft, "token", new AbortController().signal),
+    ).rejects.toMatchObject({ code: "ATTACHMENT_REJECTED", definitive: true });
+    const unavailable = createSupportSender(
+      "https://api.example.com",
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { error: { code: "INVALID_REQUEST" } },
+            { status: 422 },
+          ),
+        ),
+    );
+    await expect(
+      unavailable.send(draft, "token", new AbortController().signal),
+    ).rejects.toMatchObject({ definitive: false });
+  });
+
   it("propagates cancellation and hides raw transport errors", async () => {
     const transport = vi.fn(
       (_input, init) =>

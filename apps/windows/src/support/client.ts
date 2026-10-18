@@ -2,7 +2,10 @@ import type { HttpTransport } from "../native/http";
 import type { SupportReceipt, SupportSender, SupportSubmission } from "./model";
 
 export class SupportError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly definitive = false,
+  ) {
     super(code);
     this.name = "SupportError";
   }
@@ -52,10 +55,26 @@ export function createSupportSender(
       );
       if (!submission && response.status === 404) return null;
       if (response.status === 401 || response.status === 403)
-        throw new SupportError("AUTH_INVALID");
+        throw new SupportError("AUTH_INVALID", !!submission);
       if (response.status === 409)
         throw new SupportError("IDEMPOTENCY_CONFLICT");
       if (response.status === 429) throw new SupportError("RATE_LIMITED");
+      if (response.status === 413)
+        throw new SupportError("ATTACHMENT_REJECTED", !!submission);
+      if (response.status === 422) {
+        let code = "INVALID_REQUEST";
+        try {
+          const raw = await response.text();
+          if (
+            raw.length <= 2048 &&
+            JSON.parse(raw)?.error?.code === "ATTACHMENT_REJECTED"
+          )
+            code = "ATTACHMENT_REJECTED";
+        } catch {
+          /* Never expose server text. */
+        }
+        throw new SupportError(code, !!submission);
+      }
       if (!response.ok) throw new SupportError("SUPPORT_UNAVAILABLE");
       if (!response.headers.get("content-type")?.includes("application/json"))
         throw new SupportError("INVALID_RESPONSE");
