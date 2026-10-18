@@ -8,13 +8,13 @@ from typing import Literal, Self
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import Field, StrictInt, model_validator
+from pydantic import Field, StrictBool, StrictInt, model_validator
 
+from prettylisavpn.billing.domain import Currency as Currency
+from prettylisavpn.billing.domain import PaymentRoute as PaymentRoute
 from prettylisavpn.billing.domain import StrictModel
 
 Action = Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]
-Currency = Literal["RUB", "USD"]
-PaymentRoute = Literal["MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"]
 OperationStatus = Literal["PENDING", "SUCCEEDED", "FAILED", "CANCELED"]
 
 
@@ -57,6 +57,7 @@ class ProviderMandate(StrictModel):
 
 
 class ProviderRequest(StrictModel):
+    recurring_supported: StrictBool | None = None
     operation_id: UUID
     account_id: UUID
     action: Action

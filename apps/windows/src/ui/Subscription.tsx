@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { useApplication } from "../state/application";
 import {
   formatPrice,
+  paymentsEnabled,
   type BillingAction,
   type BillingOperation,
   type BillingOverview,
@@ -48,6 +49,8 @@ function SubscriptionContent() {
     session.current,
   );
   const [data, setData] = useState<BillingOverview | null>(null);
+  const latestData = useRef(data);
+  latestData.current = data;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -217,12 +220,23 @@ function SubscriptionContent() {
   const pending = operation?.status === "PENDING";
   const disabled = busy || pending || loading;
   const can = (action: BillingAction) =>
-    data?.payment_operations_available !== false &&
-    (data?.actions.includes(action) ?? false);
-  const readOnly = data?.payment_operations_available === false;
+    paymentsEnabled(data) &&
+    (data?.actions.includes(action) ?? false) &&
+    (action !== "CHANGE_METHOD" ||
+      (data?.payment_routes.some((cap) =>
+        cap.recurring_currencies.includes(
+          data?.current_price?.currency ?? currency,
+        ),
+      ) ??
+        false));
+  const readOnly = !paymentsEnabled(data);
+  const currencyAvailable =
+    data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ??
+    false;
   const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
 
   async function openProvider(url: string) {
+    if (!paymentsEnabled(latestData.current)) return;
     try {
       if (!paymentBrowser) throw new Error("PAYMENT_BROWSER_UNAVAILABLE");
       await paymentBrowser.open(url);
@@ -232,7 +246,8 @@ function SubscriptionContent() {
     }
   }
   function choosePayment(action: CheckoutSelection["action"]) {
-    if (!data || !offer || disabled || !can(action)) return;
+    if (!data || !offer || disabled || !can(action) || !currencyAvailable)
+      return;
     setCheckout({ action, offer, currency, revision: data.revision });
   }
 
@@ -255,6 +270,18 @@ function SubscriptionContent() {
     if (checkoutAction && (!selectedOffer || route === null)) return;
     const selectedCurrency = selection?.currency ?? currency;
     const revision = selection?.revision ?? data.revision;
+    if (
+      revision !== data.revision ||
+      (checkoutAction &&
+        !data.payment_routes.some(
+          (cap) =>
+            cap.id === route && cap.currencies.includes(selectedCurrency),
+        ))
+    ) {
+      setCheckout(null);
+      setError("условия оплаты изменились. выберите способ оплаты заново");
+      return;
+    }
     inFlight.current = true;
     setBusy(true);
     setError(null);
@@ -459,7 +486,10 @@ function SubscriptionContent() {
                     className="billing-primary"
                     type="button"
                     disabled={
-                      disabled || !offer || !can(paid ? "RENEW" : "SUBSCRIBE")
+                      disabled ||
+                      !offer ||
+                      !currencyAvailable ||
+                      !can(paid ? "RENEW" : "SUBSCRIBE")
                     }
                     onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
                   >
@@ -469,6 +499,11 @@ function SubscriptionContent() {
                         ? "продлить подписку"
                         : "оформить подписку"}
                   </button>
+                  {!readOnly && !currencyAvailable ? (
+                    <p className="billing-footnote">
+                      в этой валюте оплата недоступна. выберите другую валюту
+                    </p>
+                  ) : null}
                   <p className="billing-footnote">
                     {readOnly
                       ? paid && data.current_price
@@ -540,7 +575,7 @@ function SubscriptionContent() {
         {pending ? (
           <div className="billing-pending" role="status">
             <span>ожидаем подтверждения платёжного сервиса</span>
-            {operation.redirect_url ? (
+            {operation.redirect_url && !readOnly ? (
               <button
                 type="button"
                 className="billing-refresh"
@@ -561,15 +596,16 @@ function SubscriptionContent() {
           </p>
         ) : null}
       </div>
-      {checkout ? (
+      {checkout && !readOnly && checkout.revision === data?.revision ? (
         <PaymentChoice
           currency={checkout.currency}
           offer={checkout.offer}
+          capabilities={data?.payment_routes ?? []}
           onClose={() => setCheckout(null)}
           onConfirm={(route) => void start(checkout.action, route, checkout)}
         />
       ) : null}
-      {confirm && data?.paid_until ? (
+      {confirm && !readOnly && data?.paid_until ? (
         <CancelConfirmation
           until={dateLabel(data.paid_until)}
           onClose={() => setConfirm(false)}

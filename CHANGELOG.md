@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Backend — 0.10.0 / Windows — 0.11.0
+
+- Added: server-declared capabilities for MIR, BANK_CARD, ALIPAY_WECHAT and CRYPTO,
+  including available currencies, recurring currencies and explicit provider mode.
+- Backend enforces the matrix at admission and freezes accepted recurring terms;
+  capability changes invalidate stale revisions.
+- Windows displays unsupported routes disabled, describes recurring/one-time terms,
+  and permits mutation/browser checkout only for explicit LIVE capabilities.
+- Disabled, sandbox and legacy responses remain read-only. No real provider,
+  charge or binding configured. Database schema unchanged (0026).
+
 ### Backend — 0.9.0 (Windows unchanged: 0.10.0)
 
 - Added: persistent simulated mandate lifecycle (migration 0026), including recovery

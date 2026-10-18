@@ -4,6 +4,7 @@ import {
   type Currency,
   type Offer,
   type PaymentRoute,
+  type RouteCapability,
 } from "../billing/model";
 
 const routes = {
@@ -22,11 +23,13 @@ const routes = {
 export function PaymentChoice({
   currency,
   offer,
+  capabilities,
   onConfirm,
   onClose,
 }: {
   readonly currency: Currency;
   readonly offer: Offer;
+  readonly capabilities: readonly RouteCapability[];
   readonly onConfirm: (route: PaymentRoute) => void;
   readonly onClose: () => void;
 }) {
@@ -39,6 +42,18 @@ export function PaymentChoice({
     "ALIPAY_WECHAT",
     "CRYPTO",
   ];
+  const available = order.filter((route) =>
+    capabilities.some(
+      (cap) => cap.id === route && cap.currencies.includes(currency),
+    ),
+  );
+  const selectedRoute = available.includes(selected)
+    ? selected
+    : (available[0] ?? null);
+  const recurring =
+    capabilities
+      .find((cap) => cap.id === selectedRoute)
+      ?.recurring_currencies.includes(currency) ?? false;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -65,14 +80,17 @@ export function PaymentChoice({
         {order.map((route) => (
           <label
             key={route}
-            className={`payment-choice-option ${selected === route ? "payment-choice-option--selected" : ""}`}
+            className={`payment-choice-option ${selectedRoute === route ? "payment-choice-option--selected" : ""} ${!available.includes(route) ? "payment-choice-option--disabled" : ""}`}
           >
             <input
               type="radio"
               name="payment-route"
               value={route}
-              checked={selected === route}
-              onChange={() => setSelected(route)}
+              checked={selectedRoute === route}
+              disabled={!available.includes(route)}
+              onChange={() => {
+                if (available.includes(route)) setSelected(route);
+              }}
               aria-label={routes[route].title}
               aria-describedby={`payment-route-description-${route}`}
             />
@@ -83,16 +101,28 @@ export function PaymentChoice({
               <strong>{routes[route].title}</strong>
               <small id={`payment-route-description-${route}`}>
                 {routes[route].description}
+                <br />
+                {!available.includes(route)
+                  ? `недоступно в ${currency}`
+                  : capabilities
+                        .find((cap) => cap.id === route)
+                        ?.recurring_currencies.includes(currency)
+                    ? "поддерживает автопродление"
+                    : "без автопродления"}
               </small>
             </span>
             <span className="payment-choice-check" aria-hidden="true">
-              {selected === route ? "✓" : ""}
+              {selectedRoute === route ? "✓" : ""}
             </span>
           </label>
         ))}
       </fieldset>
       <p className="payment-choice-hint">
-        подтверждение откроется на сайте платёжного сервиса
+        {selectedRoute === null
+          ? "в этой валюте нет доступных способов оплаты"
+          : recurring
+            ? "автопродление включится только после подтверждения платёжного сервиса"
+            : "разовая оплата. автоматических списаний не будет"}
       </p>
       <div className="payment-choice-actions">
         <button className="billing-secondary" type="button" onClick={onClose}>
@@ -101,7 +131,10 @@ export function PaymentChoice({
         <button
           className="billing-primary"
           type="button"
-          onClick={() => onConfirm(selected)}
+          disabled={selectedRoute === null}
+          onClick={() => {
+            if (selectedRoute !== null) onConfirm(selectedRoute);
+          }}
         >
           перейти к оплате
         </button>

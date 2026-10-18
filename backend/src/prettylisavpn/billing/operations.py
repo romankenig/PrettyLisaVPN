@@ -105,8 +105,20 @@ class BillingOperationsService:
                         or overview.current_price.currency != command.currency
                     ):
                         raise BillingConflictError("BILLING_CURRENCY_LOCKED")
+                    if purchase and not any(
+                        cap.id == command.payment_route and command.currency in cap.currencies
+                        for cap in overview.payment_routes
+                    ):
+                        raise BillingConflictError("BILLING_ROUTE_UNAVAILABLE")
                     now = datetime.now(UTC)
                     quote = {
+                        "recurring_supported": any(
+                            cap.id == command.payment_route
+                            and command.currency in cap.recurring_currencies
+                            for cap in overview.payment_routes
+                        )
+                        if purchase
+                        else command.action == "CHANGE_METHOD",
                         "subscription_id": str(subscription.id),
                         "subscription_updated_at": subscription.updated_at.isoformat(),
                         "group_id": str(

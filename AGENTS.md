@@ -163,3 +163,8 @@ Subscription lifecycle task: backend 0.9.0, migration 0026; Windows unchanged 0.
 Sandbox authority state is durable. Renewals retain active authorities; replacements
 revoke the previous one. Preserve both paid dates for CHANGE_METHOD/CANCEL and
 apply RENEW once per operation. Partial/contradictory external outcomes stay PENDING.
+
+Route capabilities task: backend 0.10.0 / Windows 0.11.0, schema unchanged (0026).
+Overview owns route currencies/recurring currencies and provider mode. Windows
+requires explicit LIVE plus operations availability/actions; sandbox/legacy responses
+stay read-only. Sandbox API tests remain isolated. Freeze accepted recurring terms.

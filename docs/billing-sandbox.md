@@ -1,6 +1,6 @@
-# Тестовый платёжный адаптер — backend 0.9.0
+# Тестовый платёжный адаптер — backend 0.10.0
 
-Windows остаётся 0.10.0. Публичный billing-контракт совместим с backend 0.7.0;
+Windows 0.11.0 остаётся read-only для SANDBOX. Публичный billing-контракт совместим с backend 0.7.0;
 новых HTTP endpoint нет. Никакой банковский сервис, SDK или credentials не нужны.
 Адаптер имитирует результат, включая тестовый mandate, и никогда не списывает деньги.
 Подтверждение в sandbox выдаёт настоящие локальные Premium-права: используйте
@@ -102,3 +102,12 @@ event UUID. Запись receipt коммитится независимо от 
 Точные SHA, CI run/attempt и артефакты фиксируются в PR. Наличие тестов не означает
 успешный прогон или deploy. Настоящий provider, webhooks, банковские mandate,
 возвраты, production deploy и native Windows интеграция остаются отдельными задачами.
+
+## Возможности маршрутов — 0.10.0
+
+GET overview возвращает provider_mode=SANDBOX и server route/currency/recurring
+матрицу. MIR: RUB recurring; BANK_CARD: RUB/USD recurring; ALIPAY_WECHAT/CRYPTO:
+USD, разовая оплата. Эти тестовые ограничения не описывают реальный банк.
+Изменение возможностей меняет revision; принятые recurring terms сохраняются
+для восстановления. Windows требует LIVE и остаётся заблокированным в SANDBOX.
+Для проверки адаптера используйте изолированные API/CLI сценарии выше.

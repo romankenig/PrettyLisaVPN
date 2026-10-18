@@ -15,6 +15,7 @@ from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from prettylisavpn.billing.domain import RouteCapability
 from prettylisavpn.billing.model import (
     BillingOperationRecord,
     SandboxMandateRecord,
@@ -36,12 +37,15 @@ from prettylisavpn.connections import Postgres
 TerminalStatus = Literal["SUCCEEDED", "FAILED", "CANCELED"]
 
 
-def simulated_result(request: ProviderRequest, status: OperationStatus) -> ProviderResult:
+def simulated_result(
+    request: ProviderRequest, status: OperationStatus, *, recurring: bool = True
+) -> ProviderResult:
     """Derive amounts from the accepted request, never from notification input."""
     succeeded = status == "SUCCEEDED"
     mandate = None
     if (
         succeeded
+        and recurring
         and request.action != "CANCEL"
         and request.payment_route not in ("CRYPTO", "ALIPAY_WECHAT")
     ):
@@ -77,6 +81,14 @@ class SandboxBillingProvider:
     sandbox = True
     routes: frozenset[PaymentRoute] = frozenset({"MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"})
     redirect_hosts: frozenset[str] = frozenset()
+    capabilities: tuple[RouteCapability, ...] = (
+        RouteCapability(id="MIR", currencies=("RUB",), recurring_currencies=("RUB",)),
+        RouteCapability(
+            id="BANK_CARD", currencies=("RUB", "USD"), recurring_currencies=("RUB", "USD")
+        ),
+        RouteCapability(id="ALIPAY_WECHAT", currencies=("USD",)),
+        RouteCapability(id="CRYPTO", currencies=("USD",)),
+    )
 
     def __init__(self, postgres: Postgres, settings: Settings) -> None:
         if settings.environment not in ("development", "test"):
@@ -84,12 +96,19 @@ class SandboxBillingProvider:
         self.postgres = postgres
 
     def supports(self, action: Action, route: PaymentRoute | None, currency: Currency) -> bool:
-        return currency in ("RUB", "USD") and (
-            route in self.routes if action in ("SUBSCRIBE", "RENEW") else route is None
-        )
+        if action in ("SUBSCRIBE", "RENEW"):
+            return any(cap.id == route and currency in cap.currencies for cap in self.capabilities)
+        if action == "CHANGE_METHOD":
+            return route is None and any(
+                currency in cap.recurring_currencies for cap in self.capabilities
+            )
+        return route is None
 
     async def reconcile(self, request: ProviderRequest) -> ProviderResult:
         document = request.model_dump(mode="json")
+        if request.recurring_supported is None:
+            # Preserve request identity for receipts accepted before capability snapshots.
+            document.pop("recurring_supported")
         async with self.postgres.session() as session, session.begin():
             await session.execute(
                 insert(SandboxPaymentRecord)
@@ -138,7 +157,16 @@ class SandboxBillingProvider:
                 raise ValueError("Sandbox notification identity conflict")
             if result.status == "PENDING":
                 request = ProviderRequest.model_validate(row.request)
-                result = simulated_result(request, status)
+                recurring = (
+                    request.recurring_supported
+                    if request.recurring_supported is not None
+                    else (
+                        request.payment_route in ("MIR", "BANK_CARD")
+                        if request.action in ("SUBSCRIBE", "RENEW")
+                        else True
+                    )
+                )
+                result = simulated_result(request, status, recurring=recurring)
                 if status == "SUCCEEDED":
                     await self._apply_mandate(session, request, result)
                 row.result = result.model_dump(mode="json")

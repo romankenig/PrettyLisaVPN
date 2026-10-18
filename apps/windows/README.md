@@ -318,3 +318,10 @@ Release manifest требует UAC elevation для управления сет
 активного устройства. После успешного действия оно должно исчезнуть из списка или отобразиться
 отозванным согласно следующему ответу Backend. При ответе `401/403` приложение должно очистить
 защищённую сессию и вернуть пользователя к Email login.
+
+## Payment route capabilities — backend 0.10.0 / Windows 0.11.0
+
+Overview owns route currencies/recurring support and provider mode. Windows requires
+explicit LIVE, operations availability and account actions; sandbox/legacy responses
+stay read-only. No real provider is configured. See docs/subscriptions-ui.md and
+docs/windows-navigation.md (repository root) for API/UI and native validation rules.

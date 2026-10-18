@@ -1,6 +1,6 @@
 # Подписки: серверный обзор и Windows UI
 
-Windows 0.10.0 / backend 0.9.0: GET /billing/overview, POST /billing/operations и
+Windows 0.11.0 / backend 0.10.0: GET /billing/overview, POST /billing/operations и
 GET /billing/operations/{id} реализованы. Операции и идемпотентность хранятся в
 PostgreSQL. Заменяемый provider port проверен на изолированном тестовом провайдере.
 В работающем development backend adapter не подключён: новые операции отвечают
@@ -18,6 +18,27 @@ PostgreSQL. Заменяемый provider port проверен на изоли�
 
 
 ## Реализованный серверный обзор — 0.6.0
+
+### Возможности маршрутов — 0.10.0
+
+Overview дополнен `provider_mode` (DISABLED/SANDBOX/LIVE) и `payment_routes`:
+четыре объекта `{id,currencies,recurring_currencies}` для MIR, BANK_CARD,
+ALIPAY_WECHAT и CRYPTO. Recurring currencies — подмножество доступных валют;
+wallets/crypto не получают recurring mandate. Возможности задаёт адаптер,
+а не Windows. Без адаптера коллекции валют пусты. При продлении они ограничены
+валютой договора. Матрица включена в revision; смена требует нового согласия.
+
+Тестовый адаптер: MIR — RUB с автопродлением; BANK_CARD — RUB/USD с автопродлением;
+ALIPAY_WECHAT/CRYPTO — USD, разовая оплата. Это синтетическая конфигурация,
+не обещание возможностей реального провайдера/merchant account. Backend проверяет
+матрицу, а accepted quote сохраняет recurring terms для последующего восстановления.
+Старые provider requests читаются без нового необязательного поля.
+
+Windows разрешает POST-действия/внешний переход только при явном LIVE,
+operations_available и account actions. Live adapter пока отсутствует; guard
+принимает только sandbox, поэтому реальные платежи недоступны. Sandbox API/CLI
+остаётся для изолированных тестов, Windows SANDBOX read-only. Старый backend без
+полей возможностей также read-only; противоречивые матрицы отклоняются.
 
 GET `/billing/overview` требует действующую Bearer-сессию и берёт account ID только
 из неё. Запрос не принимает доверенные group/user/price/date параметры. Ответы,
