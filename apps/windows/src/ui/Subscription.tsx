@@ -222,9 +222,17 @@ function SubscriptionContent() {
   const can = (action: BillingAction) =>
     paymentsEnabled(data) &&
     (data?.actions.includes(action) ?? false) &&
-    (action !== "CHANGE_METHOD" || (data?.payment_routes.some((cap) => cap.recurring_currencies.includes(data?.current_price?.currency ?? currency)) ?? false));
+    (action !== "CHANGE_METHOD" ||
+      (data?.payment_routes.some((cap) =>
+        cap.recurring_currencies.includes(
+          data?.current_price?.currency ?? currency,
+        ),
+      ) ??
+        false));
   const readOnly = !paymentsEnabled(data);
-  const currencyAvailable = data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ?? false;
+  const currencyAvailable =
+    data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ??
+    false;
   const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
 
   async function openProvider(url: string) {
@@ -238,7 +246,8 @@ function SubscriptionContent() {
     }
   }
   function choosePayment(action: CheckoutSelection["action"]) {
-    if (!data || !offer || disabled || !can(action) || !currencyAvailable) return;
+    if (!data || !offer || disabled || !can(action) || !currencyAvailable)
+      return;
     setCheckout({ action, offer, currency, revision: data.revision });
   }
 
@@ -261,7 +270,14 @@ function SubscriptionContent() {
     if (checkoutAction && (!selectedOffer || route === null)) return;
     const selectedCurrency = selection?.currency ?? currency;
     const revision = selection?.revision ?? data.revision;
-    if (revision !== data.revision || (checkoutAction && !data.payment_routes.some((cap) => cap.id === route && cap.currencies.includes(selectedCurrency)))) {
+    if (
+      revision !== data.revision ||
+      (checkoutAction &&
+        !data.payment_routes.some(
+          (cap) =>
+            cap.id === route && cap.currencies.includes(selectedCurrency),
+        ))
+    ) {
       setCheckout(null);
       setError("условия оплаты изменились. выберите способ оплаты заново");
       return;
@@ -470,7 +486,10 @@ function SubscriptionContent() {
                     className="billing-primary"
                     type="button"
                     disabled={
-                      disabled || !offer || !currencyAvailable || !can(paid ? "RENEW" : "SUBSCRIBE")
+                      disabled ||
+                      !offer ||
+                      !currencyAvailable ||
+                      !can(paid ? "RENEW" : "SUBSCRIBE")
                     }
                     onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
                   >
@@ -480,7 +499,11 @@ function SubscriptionContent() {
                         ? "продлить подписку"
                         : "оформить подписку"}
                   </button>
-                  {!readOnly && !currencyAvailable ? <p className="billing-footnote">в этой валюте оплата недоступна. выберите другую валюту</p> : null}
+                  {!readOnly && !currencyAvailable ? (
+                    <p className="billing-footnote">
+                      в этой валюте оплата недоступна. выберите другую валюту
+                    </p>
+                  ) : null}
                   <p className="billing-footnote">
                     {readOnly
                       ? paid && data.current_price

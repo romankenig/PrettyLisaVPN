@@ -27,7 +27,9 @@ class RouteCapability(StrictModel):
 
     @model_validator(mode="after")
     def consistent(self) -> Self:
-        if len(set(self.currencies)) != len(self.currencies) or len(set(self.recurring_currencies)) != len(self.recurring_currencies):
+        if len(set(self.currencies)) != len(self.currencies) or len(
+            set(self.recurring_currencies)
+        ) != len(self.recurring_currencies):
             raise ValueError("Duplicate route currency")
         if not set(self.recurring_currencies) <= set(self.currencies):
             raise ValueError("Recurring requires an available currency")
@@ -121,7 +123,9 @@ class PaymentMethod(StrictModel):
 
 class Overview(StrictModel):
     provider_mode: Literal["DISABLED", "SANDBOX", "LIVE"] = "DISABLED"
-    payment_routes: list[RouteCapability] = Field(default_factory=lambda: [RouteCapability(id=route) for route in PAYMENT_ROUTES])
+    payment_routes: list[RouteCapability] = Field(
+        default_factory=lambda: [RouteCapability(id=route) for route in PAYMENT_ROUTES]
+    )
     revision: str
     pending_operation_id: UUID | None = None
     plan: SubscriptionPlan
@@ -171,7 +175,9 @@ def overview_for(
         offers = catalog.offers_for(group_id, at)
     snapshot = Overview(
         provider_mode=provider_mode,
-        payment_routes=payment_routes if payment_routes is not None else [RouteCapability(id=route) for route in PAYMENT_ROUTES],
+        payment_routes=payment_routes
+        if payment_routes is not None
+        else [RouteCapability(id=route) for route in PAYMENT_ROUTES],
         revision="pending",
         pending_operation_id=pending_id,
         actions=actions or [],

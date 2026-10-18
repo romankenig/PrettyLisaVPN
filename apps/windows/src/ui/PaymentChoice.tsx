@@ -42,9 +42,18 @@ export function PaymentChoice({
     "ALIPAY_WECHAT",
     "CRYPTO",
   ];
-  const available = order.filter((route) => capabilities.some((cap) => cap.id === route && cap.currencies.includes(currency)));
-  const selectedRoute = available.includes(selected) ? selected : available[0] ?? null;
-  const recurring = capabilities.find((cap) => cap.id === selectedRoute)?.recurring_currencies.includes(currency) ?? false;
+  const available = order.filter((route) =>
+    capabilities.some(
+      (cap) => cap.id === route && cap.currencies.includes(currency),
+    ),
+  );
+  const selectedRoute = available.includes(selected)
+    ? selected
+    : (available[0] ?? null);
+  const recurring =
+    capabilities
+      .find((cap) => cap.id === selectedRoute)
+      ?.recurring_currencies.includes(currency) ?? false;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -79,7 +88,9 @@ export function PaymentChoice({
               value={route}
               checked={selectedRoute === route}
               disabled={!available.includes(route)}
-              onChange={() => { if (available.includes(route)) setSelected(route); }}
+              onChange={() => {
+                if (available.includes(route)) setSelected(route);
+              }}
               aria-label={routes[route].title}
               aria-describedby={`payment-route-description-${route}`}
             />
@@ -91,7 +102,13 @@ export function PaymentChoice({
               <small id={`payment-route-description-${route}`}>
                 {routes[route].description}
                 <br />
-                {!available.includes(route) ? `недоступно в ${currency}` : capabilities.find((cap) => cap.id === route)?.recurring_currencies.includes(currency) ? "поддерживает автопродление" : "без автопродления"}
+                {!available.includes(route)
+                  ? `недоступно в ${currency}`
+                  : capabilities
+                        .find((cap) => cap.id === route)
+                        ?.recurring_currencies.includes(currency)
+                    ? "поддерживает автопродление"
+                    : "без автопродления"}
               </small>
             </span>
             <span className="payment-choice-check" aria-hidden="true">
@@ -101,7 +118,11 @@ export function PaymentChoice({
         ))}
       </fieldset>
       <p className="payment-choice-hint">
-        {selectedRoute === null ? "в этой валюте нет доступных способов оплаты" : recurring ? "автопродление включится только после подтверждения платёжного сервиса" : "разовая оплата. автоматических списаний не будет"}
+        {selectedRoute === null
+          ? "в этой валюте нет доступных способов оплаты"
+          : recurring
+            ? "автопродление включится только после подтверждения платёжного сервиса"
+            : "разовая оплата. автоматических списаний не будет"}
       </p>
       <div className="payment-choice-actions">
         <button className="billing-secondary" type="button" onClick={onClose}>
@@ -111,7 +132,9 @@ export function PaymentChoice({
           className="billing-primary"
           type="button"
           disabled={selectedRoute === null}
-          onClick={() => { if (selectedRoute !== null) onConfirm(selectedRoute); }}
+          onClick={() => {
+            if (selectedRoute !== null) onConfirm(selectedRoute);
+          }}
         >
           перейти к оплате
         </button>

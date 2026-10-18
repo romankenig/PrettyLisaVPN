@@ -24,45 +24,29 @@
         }
       }
     ],
-    "actions": [
-      "SUBSCRIBE"
-    ],
+    "actions": ["SUBSCRIBE"],
     "pending_operation_id": null,
     "provider_mode": "LIVE",
     "payment_operations_available": true,
     "payment_routes": [
       {
         "id": "MIR",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "BANK_CARD",
-        "currencies": [
-          "RUB",
-          "USD"
-        ],
-        "recurring_currencies": [
-          "RUB",
-          "USD"
-        ]
+        "currencies": ["RUB", "USD"],
+        "recurring_currencies": ["RUB", "USD"]
       },
       {
         "id": "ALIPAY_WECHAT",
-        "currencies": [
-          "USD"
-        ],
+        "currencies": ["USD"],
         "recurring_currencies": []
       },
       {
         "id": "CRYPTO",
-        "currencies": [
-          "USD"
-        ],
+        "currencies": ["USD"],
         "recurring_currencies": []
       }
     ]
@@ -98,32 +82,20 @@
         }
       }
     ],
-    "actions": [
-      "RENEW",
-      "CHANGE_METHOD",
-      "CANCEL"
-    ],
+    "actions": ["RENEW", "CHANGE_METHOD", "CANCEL"],
     "pending_operation_id": null,
     "provider_mode": "LIVE",
     "payment_operations_available": true,
     "payment_routes": [
       {
         "id": "MIR",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "BANK_CARD",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "ALIPAY_WECHAT",
@@ -165,31 +137,20 @@
         }
       }
     ],
-    "actions": [
-      "RENEW",
-      "CHANGE_METHOD"
-    ],
+    "actions": ["RENEW", "CHANGE_METHOD"],
     "pending_operation_id": null,
     "provider_mode": "LIVE",
     "payment_operations_available": true,
     "payment_routes": [
       {
         "id": "MIR",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "BANK_CARD",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "ALIPAY_WECHAT",
@@ -228,45 +189,29 @@
         }
       }
     ],
-    "actions": [
-      "SUBSCRIBE"
-    ],
+    "actions": ["SUBSCRIBE"],
     "pending_operation_id": null,
     "provider_mode": "SANDBOX",
     "payment_operations_available": true,
     "payment_routes": [
       {
         "id": "MIR",
-        "currencies": [
-          "RUB"
-        ],
-        "recurring_currencies": [
-          "RUB"
-        ]
+        "currencies": ["RUB"],
+        "recurring_currencies": ["RUB"]
       },
       {
         "id": "BANK_CARD",
-        "currencies": [
-          "RUB",
-          "USD"
-        ],
-        "recurring_currencies": [
-          "RUB",
-          "USD"
-        ]
+        "currencies": ["RUB", "USD"],
+        "recurring_currencies": ["RUB", "USD"]
       },
       {
         "id": "ALIPAY_WECHAT",
-        "currencies": [
-          "USD"
-        ],
+        "currencies": ["USD"],
         "recurring_currencies": []
       },
       {
         "id": "CRYPTO",
-        "currencies": [
-          "USD"
-        ],
+        "currencies": ["USD"],
         "recurring_currencies": []
       }
     ]

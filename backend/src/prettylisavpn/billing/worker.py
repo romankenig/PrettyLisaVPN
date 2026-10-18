@@ -82,7 +82,11 @@ class BillingWorker:
             if result.operation_id != row.id:
                 raise ValueError("Receipt identity mismatch")
             self._validate_outcome(request, result)
-            if result.status == "SUCCEEDED" and result.mandate is not None and request.recurring_supported is False:
+            if (
+                result.status == "SUCCEEDED"
+                and result.mandate is not None
+                and request.recurring_supported is False
+            ):
                 raise ValueError("Recurring was not accepted for this operation")
             async with self.postgres.session() as session, session.begin():
                 subscription = await session.scalar(

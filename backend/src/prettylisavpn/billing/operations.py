@@ -113,9 +113,12 @@ class BillingOperationsService:
                     now = datetime.now(UTC)
                     quote = {
                         "recurring_supported": any(
-                            cap.id == command.payment_route and command.currency in cap.recurring_currencies
+                            cap.id == command.payment_route
+                            and command.currency in cap.recurring_currencies
                             for cap in overview.payment_routes
-                        ) if purchase else command.action == "CHANGE_METHOD",
+                        )
+                        if purchase
+                        else command.action == "CHANGE_METHOD",
                         "subscription_id": str(subscription.id),
                         "subscription_updated_at": subscription.updated_at.isoformat(),
                         "group_id": str(

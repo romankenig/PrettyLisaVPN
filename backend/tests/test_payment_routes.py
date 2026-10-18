@@ -13,12 +13,15 @@ from prettylisavpn.config import Settings
 
 
 @pytest.mark.parametrize("action", ["SUBSCRIBE", "RENEW"])
-@pytest.mark.parametrize("route,currencies,recurring", [
-    ("MIR", ("RUB",), ("RUB",)),
-    ("BANK_CARD", ("RUB", "USD"), ("RUB", "USD")),
-    ("ALIPAY_WECHAT", ("USD",), ()),
-    ("CRYPTO", ("USD",), ()),
-])
+@pytest.mark.parametrize(
+    "route,currencies,recurring",
+    [
+        ("MIR", ("RUB",), ("RUB",)),
+        ("BANK_CARD", ("RUB", "USD"), ("RUB", "USD")),
+        ("ALIPAY_WECHAT", ("USD",), ()),
+        ("CRYPTO", ("USD",), ()),
+    ],
+)
 def test_sandbox_matrix_is_exposed_and_enforced(action, route, currencies, recurring):
     provider = SandboxBillingProvider(AsyncMock(), Settings(_env_file=None))
     caps = route_capabilities(provider, action)
@@ -44,13 +47,17 @@ def test_dynamic_provider_support_and_contract_currency_filter_metadata():
     assert all("USD" not in cap.currencies for cap in locked)
 
 
-@pytest.mark.parametrize("changes", [
-    {"currencies": ("RUB", "RUB")},
-    {"recurring_currencies": ("RUB", "RUB")},
-    {"currencies": ("RUB",), "recurring_currencies": ("USD",)},
-    {"id": "CRYPTO", "currencies": ("USD",), "recurring_currencies": ("USD",)},
-    {"id": "UNKNOWN"}, {"currencies": ("EUR",)},
-])
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"currencies": ("RUB", "RUB")},
+        {"recurring_currencies": ("RUB", "RUB")},
+        {"currencies": ("RUB",), "recurring_currencies": ("USD",)},
+        {"id": "CRYPTO", "currencies": ("USD",), "recurring_currencies": ("USD",)},
+        {"id": "UNKNOWN"},
+        {"currencies": ("EUR",)},
+    ],
+)
 def test_inconsistent_capabilities_are_rejected(changes):
     with pytest.raises(ValidationError):
         RouteCapability.model_validate({"id": "BANK_CARD", **changes})

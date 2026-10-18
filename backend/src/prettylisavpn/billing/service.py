@@ -113,7 +113,9 @@ async def read_context(
     catalog = Catalog.model_validate(catalog_record.document) if catalog_record else Catalog()
     effective = subscription.effective_plan(at)
     purchase_action: Action = "RENEW" if effective is SubscriptionPlan.PREMIUM else "SUBSCRIBE"
-    locked_currency = cast(Currency, price.currency) if purchase_action == "RENEW" and price else None
+    locked_currency = (
+        cast(Currency, price.currency) if purchase_action == "RENEW" and price else None
+    )
     routes = route_capabilities(provider, purchase_action, locked_currency)
     method_currency: Currency = cast(Currency, price.currency) if price else "RUB"
     ours = bool(
@@ -174,7 +176,11 @@ async def read_context(
         actions=actions,
         payment_method=method,
         operations_available=provider is not None or pending is not None,
-        provider_mode="SANDBOX" if provider is not None and provider.sandbox else "LIVE" if provider is not None else "DISABLED",
+        provider_mode="SANDBOX"
+        if provider is not None and provider.sandbox
+        else "LIVE"
+        if provider is not None
+        else "DISABLED",
         payment_routes=routes,
     )
     return OverviewContext(

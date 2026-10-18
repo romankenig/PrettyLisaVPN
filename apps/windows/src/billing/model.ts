@@ -1,7 +1,12 @@
 export type Currency = "RUB" | "USD";
 export type PaymentRoute = "MIR" | "BANK_CARD" | "ALIPAY_WECHAT" | "CRYPTO";
 export type BillingAction = "SUBSCRIBE" | "RENEW" | "CHANGE_METHOD" | "CANCEL";
-export const paymentRoutes: readonly PaymentRoute[] = ["MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"];
+export const paymentRoutes: readonly PaymentRoute[] = [
+  "MIR",
+  "BANK_CARD",
+  "ALIPAY_WECHAT",
+  "CRYPTO",
+];
 export interface RouteCapability {
   readonly id: PaymentRoute;
   readonly currencies: readonly Currency[];
@@ -75,32 +80,55 @@ export function formatPrice(amount: number, currency: Currency): string {
 }
 
 export function paymentsEnabled(value: BillingOverview | null): boolean {
-  return value?.provider_mode === "LIVE" && value.payment_operations_available === true && value.payment_routes.length === 4;
+  return (
+    value?.provider_mode === "LIVE" &&
+    value.payment_operations_available === true &&
+    value.payment_routes.length === 4
+  );
 }
 
 function parseRoutes(value: unknown): readonly RouteCapability[] {
   if (value === undefined) return [];
-  if (!Array.isArray(value) || value.length !== paymentRoutes.length) throw new Error("INVALID_BILLING_RESPONSE");
+  if (!Array.isArray(value) || value.length !== paymentRoutes.length)
+    throw new Error("INVALID_BILLING_RESPONSE");
   const routes = value.map((raw) => {
     const cap = record(raw);
-    if (!paymentRoutes.includes(cap.id as PaymentRoute) ||
-        !Array.isArray(cap.currencies) || !cap.currencies.every(currency) ||
-        !Array.isArray(cap.recurring_currencies) || !cap.recurring_currencies.every(currency) ||
-        new Set(cap.currencies).size !== cap.currencies.length ||
-        new Set(cap.recurring_currencies).size !== cap.recurring_currencies.length ||
-        !cap.recurring_currencies.every((code) => cap.currencies instanceof Array && cap.currencies.includes(code)) ||
-        (["CRYPTO", "ALIPAY_WECHAT"].includes(String(cap.id)) && cap.recurring_currencies.length !== 0))
+    if (
+      !paymentRoutes.includes(cap.id as PaymentRoute) ||
+      !Array.isArray(cap.currencies) ||
+      !cap.currencies.every(currency) ||
+      !Array.isArray(cap.recurring_currencies) ||
+      !cap.recurring_currencies.every(currency) ||
+      new Set(cap.currencies).size !== cap.currencies.length ||
+      new Set(cap.recurring_currencies).size !==
+        cap.recurring_currencies.length ||
+      !cap.recurring_currencies.every(
+        (code) =>
+          cap.currencies instanceof Array && cap.currencies.includes(code),
+      ) ||
+      (["CRYPTO", "ALIPAY_WECHAT"].includes(String(cap.id)) &&
+        cap.recurring_currencies.length !== 0)
+    )
       throw new Error("INVALID_BILLING_RESPONSE");
-    return { id: cap.id as PaymentRoute, currencies: cap.currencies as Currency[], recurring_currencies: cap.recurring_currencies as Currency[] };
+    return {
+      id: cap.id as PaymentRoute,
+      currencies: cap.currencies as Currency[],
+      recurring_currencies: cap.recurring_currencies as Currency[],
+    };
   });
-  if (new Set(routes.map((cap) => cap.id)).size !== paymentRoutes.length) throw new Error("INVALID_BILLING_RESPONSE");
+  if (new Set(routes.map((cap) => cap.id)).size !== paymentRoutes.length)
+    throw new Error("INVALID_BILLING_RESPONSE");
   return routes;
 }
 
 export function parseOverview(value: unknown): BillingOverview {
   const v = record(value);
   const mode = v.provider_mode === undefined ? "DISABLED" : v.provider_mode;
-  if (typeof mode !== "string" || !["DISABLED", "SANDBOX", "LIVE"].includes(mode)) throw new Error("INVALID_BILLING_RESPONSE");
+  if (
+    typeof mode !== "string" ||
+    !["DISABLED", "SANDBOX", "LIVE"].includes(mode)
+  )
+    throw new Error("INVALID_BILLING_RESPONSE");
   const capabilities = parseRoutes(v.payment_routes);
   const date = (value: unknown) =>
     typeof value === "string" &&

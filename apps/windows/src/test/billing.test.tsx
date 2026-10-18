@@ -214,7 +214,9 @@ describe("subscription screen", () => {
       payment_routes: fixtures.free.payment_routes.map((cap) => ({
         ...cap,
         currencies: cap.currencies.filter((code) => code === "USD"),
-        recurring_currencies: cap.recurring_currencies.filter((code) => code === "USD"),
+        recurring_currencies: cap.recurring_currencies.filter(
+          (code) => code === "USD",
+        ),
       })),
     });
     await openPaymentChoice("продлить подписку");
@@ -466,23 +468,42 @@ describe("read-only server billing", () => {
 });
 
 describe("server payment route capabilities", () => {
-  it.each(["SANDBOX", "DISABLED"])("blocks all mutation and browser actions for %s even with advertised actions", async (mode) => {
-    const { billing, open } = setup("active", undefined, { ...fixtures.active, provider_mode: mode });
-    await screen.findByText(/оплата пока недоступна/);
-    fireEvent.click(screen.getByRole("button", { name: "продлить подписку" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "отменить подписку" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "изменить способ оплаты" })).not.toBeInTheDocument();
-    expect(billing.start).not.toHaveBeenCalled();
-    expect(open).not.toHaveBeenCalled();
-  });
+  it.each(["SANDBOX", "DISABLED"])(
+    "blocks all mutation and browser actions for %s even with advertised actions",
+    async (mode) => {
+      const { billing, open } = setup("active", undefined, {
+        ...fixtures.active,
+        provider_mode: mode,
+      });
+      await screen.findByText(/оплата пока недоступна/);
+      fireEvent.click(
+        screen.getByRole("button", { name: "продлить подписку" }),
+      );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "отменить подписку" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "изменить способ оплаты" }),
+      ).not.toBeInTheDocument();
+      expect(billing.start).not.toHaveBeenCalled();
+      expect(open).not.toHaveBeenCalled();
+    },
+  );
   it("treats a legacy response without capability fields as read-only", async () => {
-    const { provider_mode: _mode, payment_routes: _routes, ...legacy } = fixtures.free;
-    void _mode; void _routes;
+    const {
+      provider_mode: _mode,
+      payment_routes: _routes,
+      ...legacy
+    } = fixtures.free;
+    void _mode;
+    void _routes;
     expect(paymentsEnabled(parseOverview(legacy))).toBe(false);
     const { billing, open } = setup("free", undefined, legacy);
     await screen.findByText(/оплата пока недоступна/);
-    expect(screen.getByRole("button", { name: "оформить подписку" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "оформить подписку" }),
+    ).toBeDisabled();
     expect(billing.start).not.toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
   });
@@ -495,36 +516,70 @@ describe("server payment route capabilities", () => {
     fireEvent.click(screen.getByDisplayValue("MIR"));
     expect(screen.getByDisplayValue("BANK_CARD")).toBeChecked();
     fireEvent.click(screen.getByDisplayValue("CRYPTO"));
-    expect(dialog).toHaveTextContent("разовая оплата. автоматических списаний не будет");
+    expect(dialog).toHaveTextContent(
+      "разовая оплата. автоматических списаний не будет",
+    );
     expect(billing.start).not.toHaveBeenCalled();
   });
   it("uses the first available server route when the preferred route is disabled", async () => {
-    setup("free", undefined, { ...fixtures.free, payment_routes: fixtures.free.payment_routes.map((cap) => cap.id === "BANK_CARD" ? { ...cap, currencies: [], recurring_currencies: [] } : cap) });
+    setup("free", undefined, {
+      ...fixtures.free,
+      payment_routes: fixtures.free.payment_routes.map((cap) =>
+        cap.id === "BANK_CARD"
+          ? { ...cap, currencies: [], recurring_currencies: [] }
+          : cap,
+      ),
+    });
     await openPaymentChoice();
     expect(screen.getByDisplayValue("BANK_CARD")).toBeDisabled();
     expect(screen.getByDisplayValue("ALIPAY_WECHAT")).toBeChecked();
   });
   it("blocks checkout when no route supports the selected currency and keeps prices visible", async () => {
-    setup("free", undefined, { ...fixtures.free, payment_routes: fixtures.free.payment_routes.map((cap) => ({ ...cap, currencies: cap.currencies.filter((code) => code === "RUB"), recurring_currencies: cap.recurring_currencies.filter((code) => code === "RUB") })) });
+    setup("free", undefined, {
+      ...fixtures.free,
+      payment_routes: fixtures.free.payment_routes.map((cap) => ({
+        ...cap,
+        currencies: cap.currencies.filter((code) => code === "RUB"),
+        recurring_currencies: cap.recurring_currencies.filter(
+          (code) => code === "RUB",
+        ),
+      })),
+    });
     await screen.findByText(/в этой валюте оплата недоступна/);
-    expect(screen.getByRole("button", { name: "оформить подписку" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "оформить подписку" }),
+    ).toBeDisabled();
     expect(screen.getByLabelText("цена в долларах")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "₽" }));
-    expect(screen.getByRole("button", { name: "оформить подписку" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "оформить подписку" }),
+    ).toBeEnabled();
   });
   it("closes a stale quote when capabilities change on refresh", async () => {
     const { billing } = setup();
     await openPaymentChoice();
-    vi.mocked(billing.overview).mockResolvedValue(parseOverview({ ...fixtures.free, revision: "changed", provider_mode: "DISABLED" }));
+    vi.mocked(billing.overview).mockResolvedValue(
+      parseOverview({
+        ...fixtures.free,
+        revision: "changed",
+        provider_mode: "DISABLED",
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "обновить" }));
     await screen.findByText(/оплата пока недоступна/);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(billing.start).not.toHaveBeenCalled();
   });
   it("can read a pending sandbox operation but never opens its payment URL", async () => {
-    const { billing, open } = setup("free", undefined, { ...fixtures.free, provider_mode: "SANDBOX", pending_operation_id: pending.id });
+    const { billing, open } = setup("free", undefined, {
+      ...fixtures.free,
+      provider_mode: "SANDBOX",
+      pending_operation_id: pending.id,
+    });
     await waitFor(() => expect(billing.operation).toHaveBeenCalled());
-    expect(screen.queryByRole("button", { name: "открыть платёжный сервис" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "открыть платёжный сервис" }),
+    ).not.toBeInTheDocument();
     expect(billing.start).not.toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
   });
@@ -532,11 +587,37 @@ describe("server payment route capabilities", () => {
     { provider_mode: "UNKNOWN" },
     { provider_mode: ["LIVE"] },
     { payment_routes: [] },
-    { payment_routes: [...fixtures.free.payment_routes, fixtures.free.payment_routes[0]] },
-    { payment_routes: fixtures.free.payment_routes.map((cap) => ({ ...cap, id: "MIR" })) },
-    { payment_routes: fixtures.free.payment_routes.map((cap) => ({ ...cap, currencies: ["EUR"] })) },
-    { payment_routes: fixtures.free.payment_routes.map((cap) => ({ ...cap, currencies: ["RUB"], recurring_currencies: ["USD"] })) },
-    { payment_routes: fixtures.free.payment_routes.map((cap) => ({ ...cap, recurring_currencies: ["USD"] })) },
+    {
+      payment_routes: [
+        ...fixtures.free.payment_routes,
+        fixtures.free.payment_routes[0],
+      ],
+    },
+    {
+      payment_routes: fixtures.free.payment_routes.map((cap) => ({
+        ...cap,
+        id: "MIR",
+      })),
+    },
+    {
+      payment_routes: fixtures.free.payment_routes.map((cap) => ({
+        ...cap,
+        currencies: ["EUR"],
+      })),
+    },
+    {
+      payment_routes: fixtures.free.payment_routes.map((cap) => ({
+        ...cap,
+        currencies: ["RUB"],
+        recurring_currencies: ["USD"],
+      })),
+    },
+    {
+      payment_routes: fixtures.free.payment_routes.map((cap) => ({
+        ...cap,
+        recurring_currencies: ["USD"],
+      })),
+    },
   ])("rejects malformed or contradictory capability metadata %#", (change) => {
     expect(() => parseOverview({ ...fixtures.free, ...change })).toThrow();
   });

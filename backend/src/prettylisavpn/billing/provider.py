@@ -12,7 +12,6 @@ Only explicitly injected sandbox adapters are accepted in this release.
 from typing import Protocol
 
 from prettylisavpn.billing.domain import PAYMENT_ROUTES, RouteCapability
-
 from prettylisavpn.billing.operations_domain import (
     Action,
     Currency,
@@ -53,12 +52,20 @@ def route_capabilities(
     for route in PAYMENT_ROUTES:
         cap = declared.get(route, RouteCapability(id=route))
         currencies = tuple(
-            code for code in cap.currencies
-            if provider and route in provider.routes and provider.supports(action, route, code)
+            code
+            for code in cap.currencies
+            if provider
+            and route in provider.routes
+            and provider.supports(action, route, code)
             and (currency is None or currency == code)
         )
-        result.append(RouteCapability(
-            id=route, currencies=currencies,
-            recurring_currencies=tuple(code for code in cap.recurring_currencies if code in currencies),
-        ))
+        result.append(
+            RouteCapability(
+                id=route,
+                currencies=currencies,
+                recurring_currencies=tuple(
+                    code for code in cap.recurring_currencies if code in currencies
+                ),
+            )
+        )
     return result
