@@ -1,0 +1,106 @@
+name: Verify approved development rollback
+
+on:
+  push:
+    branches: [cloud/verify-runtime-rollback]
+    paths:
+      - ".github/workflows/verify-development-rollback.yaml"
+      - "infra/verification/**"
+
+permissions:
+  contents: read
+
+# Serialize with the existing Backend workflow's develop concurrency group.
+concurrency:
+  group: backend-Backend-refs/heads/develop
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify deployed runtime, rollback and restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: development
+    steps:
+      - name: Check out verification source
+        uses: actions/checkout@v7
+
+      - name: Check recovery logic
+        run: python3 -m unittest discover -s infra/verification/tests -v
+
+      - name: Verify the approved development deployment over SSH
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+          EXPECTED_DEPLOY_SHA: 35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1
+        run: |
+          set -Eeuo pipefail
+          for key in DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY DEV_SSH_KNOWN_HOSTS; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing development secret: $key"
+              exit 1
+            fi
+          done
+          [[ "$DEV_VPS_PORT" == "22" ]]
+          [[ "$DEV_VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          python3 - <<'PYTHON'
+          import os
+          import re
+          import socket
+          host = os.environ["DEV_VPS_HOST"]
+          if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
+              raise SystemExit("Configured host is not a plain hostname")
+          addresses = {r[4][0] for r in socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)}
+          if addresses != {"95.140.152.42"}:
+              raise SystemExit("Target does not match the approved development VPS")
+          PYTHON
+          umask 077
+          ssh_directory="$(mktemp -d)"
+          trap 'rm -rf "$ssh_directory"' EXIT
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$ssh_directory/key"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+          chmod 600 "$ssh_directory/key" "$ssh_directory/known_hosts"
+          ssh-keygen -y -f "$ssh_directory/key" >/dev/null
+          ssh-keygen -lf "$ssh_directory/known_hosts" \
+            | grep -Fq 'SHA256:BrayNvgVNXSzO6xAJ08FwnebiUA8/VlQNgI+ctes96U'
+          options=(
+            -i "$ssh_directory/key" -o BatchMode=yes -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519
+            -o "UserKnownHostsFile=$ssh_directory/known_hosts"
+            -o ConnectTimeout=10 -o ServerAliveInterval=10 -o ServerAliveCountMax=6
+            -o LogLevel=ERROR
+          )
+          remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
+          directory="/opt/prettylisavpn/verification/${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
+          ssh "${options[@]}" -p "$DEV_VPS_PORT" "$remote" \
+            "install -d -m 0700 '$directory'"
+          scp "${options[@]}" -P "$DEV_VPS_PORT" \
+            infra/verification/runtime_rollback.py "${remote}:${directory}/runtime_rollback.py"
+          set +e
+          ssh "${options[@]}" -p "$DEV_VPS_PORT" "$remote" \
+            "python3 '${directory}/runtime_rollback.py' --expected-sha '$EXPECTED_DEPLOY_SHA' --run '$GITHUB_RUN_ID' --attempt '$GITHUB_RUN_ATTEMPT'" \
+            > development-rollback-verification.json
+          verification_status=$?
+          set -e
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("development-rollback-verification.json").read_text())
+          print(json.dumps(report))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Approved development rollback and restore\n\n```json\n")
+              summary.write(json.dumps(report, indent=2) + "\n```\n")
+          PYTHON
+          exit "$verification_status"
+
+      - name: Retain rollback and restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-rollback-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: development-rollback-verification.json
+          if-no-files-found: warn
