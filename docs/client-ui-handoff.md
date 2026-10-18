@@ -434,7 +434,6 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
   фиксируются в описании PR по завершении, без docs push ради результатов.
   Предыдущие 0.7.0 артефакты не подтверждают эту задачу. Merge/release/deploy отдельно.
 
-
 ## Merge PR #5 и карта навигации — 2026-10-17
 
 - По поручению владельца PR #5 слит squash в develop, commit
@@ -452,3 +451,15 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
   AGENTS/CHANGELOG, исходники приложения и workflow не меняются. Новый native
   build не нужен; проверяются ссылки, покрытие маршрутов и схемы, diff, затем
   все Actions/checks/statuses docs HEAD. Документация идёт отдельной веткой/PR.
+
+## Актуализация карты после backend 0.2.0 — 2026-10-18
+
+- PR #6 синхронизирован с develop после merge PR #8:
+  `1b17f56f3b93408bba2c02ffb6a147d31a70eec7`.
+- В карте обновлены backend version и статус `last_login_at`: поле уже реализовано,
+  старые устройства без успешного OTP-входа отображают «нет данных».
+- Сохранены все новые записи CHANGELOG и правила AGENTS из develop.
+- Version unchanged: Windows 0.8.0, backend 0.2.0. Только пять docs/root файлов;
+  исходники приложения и workflow не меняются, новый build/deploy не требуется.
+- Ссылки, покрытие маршрутов, неизменность Mermaid-схем и docs-only diff проверены.
+  Фактические статусы последнего docs HEAD и merge фиксируются в PR #6.

@@ -168,16 +168,6 @@ def create_app(
                         config,
                     )
                 )
-                app.state.device_management = (
-                    device_management
-                    if device_management is not None
-                    else DeviceManagementService(
-                        cast(Postgres, pg),
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                        cast(ProductEventSink, app.state.product_events),
-                        config,
-                    )
-                )
                 app.state.vpn_country_availability = (
                     vpn_country_availability
                     if vpn_country_availability is not None
@@ -196,6 +186,17 @@ def create_app(
                 if active_agent is None and config.vpn_node_agent_is_configured():
                     agent_client = HttpNodeAgentClient.from_settings(config)
                     active_agent = agent_client
+                app.state.device_management = (
+                    device_management
+                    if device_management is not None
+                    else DeviceManagementService(
+                        cast(Postgres, pg),
+                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                        cast(ProductEventSink, app.state.product_events),
+                        config,
+                        active_agent,
+                    )
+                )
                 if monitor is None and active_agent is not None:
                     monitor = VpnNodeHealthMonitor(cast(Postgres, pg), active_agent, config)
                 app.state.vpn_connection = (

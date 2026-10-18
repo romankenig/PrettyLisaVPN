@@ -6,6 +6,11 @@ const os = require("node:os");
 const { spawn, spawnSync } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
+const evidencePath = process.env.DEVICE_BACKEND_EVIDENCE_PATH;
+const deviceEvidence = evidencePath
+  ? JSON.parse(fs.readFileSync(evidencePath, "utf8"))
+  : null;
+const accountEmail = deviceEvidence?.account_email || "ui-review@example.com";
 const frontendVersion = JSON.parse(
   fs.readFileSync("package.json", "utf8"),
 ).version;
@@ -14,6 +19,8 @@ const webviewProfile = fs.mkdtempSync(
 );
 const output = path.resolve("artifacts/ui-review");
 fs.mkdirSync(output, { recursive: true });
+if (deviceEvidence)
+  fs.copyFileSync(evidencePath, path.join(output, "device-response.json"));
 const executable = path.resolve(
   "src-tauri/target/debug/prettylisavpn-windows.exe",
 );
@@ -29,7 +36,9 @@ fs.writeFileSync(
     "Run: " + (process.env.GITHUB_RUN_ID || "local"),
     "Attempt: " + (process.env.GITHUB_RUN_ATTEMPT || "local"),
     "Debug Tauri executable; captured through its real WebView2 on Windows.",
-    "Account, devices and countries are loopback-only synthetic fixtures.",
+    deviceEvidence
+      ? "Devices replay actual backend HTTP responses from disposable CI PostgreSQL; auth and node agent are simulated. No live account was accessed."
+      : "Account, devices and countries are loopback-only synthetic fixtures.",
     "Announcements and acknowledgements use --simulate-messages; real cross-device delivery is not tested.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
@@ -205,7 +214,9 @@ async function main() {
     .waitFor();
   await page
     .locator(".sidebar-versions")
-    .getByText("недоступна", { exact: true })
+    .getByText(deviceEvidence?.version.application_version || "недоступна", {
+      exact: true,
+    })
     .waitFor();
   const navigation = await page
     .getByRole("navigation")
@@ -279,7 +290,7 @@ async function main() {
   await page.getByText("Введите корректный email.", { exact: true }).waitFor();
   await screenshot("02-login-validation");
 
-  await page.getByLabel("Email", { exact: true }).fill("ui-review@example.com");
+  await page.getByLabel("Email", { exact: true }).fill(accountEmail);
   await page.getByRole("button", { name: "продолжить", exact: true }).click();
   await page
     .getByRole("heading", { name: "введите код", exact: true })
@@ -612,7 +623,15 @@ async function main() {
     .click();
   await page.getByRole("alertdialog").waitFor();
   await screenshot("07-device-confirmation");
-  await page.getByRole("button", { name: "отмена", exact: true }).click();
+  if (deviceEvidence) {
+    await page
+      .getByRole("button", { name: "да, отозвать", exact: true })
+      .click();
+    await devicesPage.getByText("отозвано", { exact: true }).waitFor();
+    await screenshot("07b-device-revoked");
+  } else {
+    await page.getByRole("button", { name: "отмена", exact: true }).click();
+  }
 
   await page
     .getByRole("navigation")
@@ -649,7 +668,7 @@ async function main() {
     .fill("после выбора страны подключение прерывается. помогите разобраться.");
   await support
     .getByRole("textbox", { name: "email для ответа", exact: true })
-    .fill("ui-review@example.com");
+    .fill(accountEmail);
   await support
     .locator('input[type="file"]')
     .setInputFiles(path.join(output, "08-about.png"));
@@ -723,7 +742,9 @@ async function main() {
         realAccountMessageSyncTested: false,
         supportEmailDeliveryTested: false,
         realPaymentsTested: false,
-        backendVersionFallbackVerified: true,
+        backendVersionFallbackVerified: !deviceEvidence,
+        recordedDeviceBackendEvidence: deviceEvidence,
+        liveAccountAccessed: false,
         fontFamily: "Rubik",
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,

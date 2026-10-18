@@ -162,6 +162,7 @@ def test_verify_endpoint_returns_tokens_and_login_context():
             "id": str(result.device.id),
             "installation_id": str(result.device.installation_id),
             "status": "ACTIVE",
+            "last_login_at": None,
         },
         "subscription": {"plan": "FREE", "status": "ACTIVE"},
     }

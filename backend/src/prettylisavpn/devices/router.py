@@ -37,6 +37,7 @@ class DeviceResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     revoked_at: datetime | None
+    last_login_at: datetime | None
     is_current: bool
 
 
@@ -56,6 +57,7 @@ def _response(managed: ManagedDevice) -> DeviceResponse:
         created_at=device.created_at,
         updated_at=device.updated_at,
         revoked_at=device.revoked_at,
+        last_login_at=device.last_login_at,
         is_current=managed.is_current,
     )
 

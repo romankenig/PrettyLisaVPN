@@ -55,3 +55,4 @@ class DeviceRecord(Base):
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, server_default=func.now()
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort, NodeAgentUnavailableError
@@ -34,6 +35,7 @@ from prettylisavpn.vpn_sessions.service import (
     DeviceAlreadyHasLiveVpnSessionError,
     VpnSessionService,
 )
+from prettylisavpn.vpn_sessions.termination import remove_and_record_peer
 
 
 class CountryUnavailableError(LookupError):
@@ -121,15 +123,9 @@ class VpnConnectionService:
             identity.user_id, identity.device_id, request, public_key, now
         )
         try:
-            await self._agent.add_peer(node, public_key, pending.allocated_client_ipv4)
-        except NodeAgentUnavailableError:
-            await self._compensate(node, pending, remove_peer=True)
-            raise VpnSetupFailedError from None
-
-        try:
-            active = await self._set_status(pending.id, VpnSessionStatus.ACTIVE)
-        except VpnSessionPersistenceUnavailableError:
-            await self._compensate(node, pending, remove_peer=True)
+            active = await self._activate(pending, node)
+        except (VpnSetupFailedError, VpnSessionPersistenceUnavailableError):
+            await self._compensate(node, pending)
             raise
         return ActiveVpnTransport(
             session_id=active.id,
@@ -156,6 +152,15 @@ class VpnConnectionService:
         try:
             async with self._postgres.session() as database_session:
                 async with database_session.begin():
+                    device = await DeviceRepository(database_session).get_for_update(device_id)
+                    if device is None or device.user_id != user_id or not device.is_active():
+                        raise VpnSetupFailedError
+                    sessions = VpnSessionRepository(database_session)
+                    if await sessions.get_live_for_device(device_id, now) is not None:
+                        raise DeviceAlreadyHasLiveVpnSessionError
+                    await sessions.acquire_peer_lock(public_key)
+                    if await sessions.has_unremoved_public_key(public_key):
+                        raise VpnUnavailableError
                     subscriptions = SubscriptionRepository(database_session)
                     subscription = await subscriptions.get_by_user_id(user_id)
                     if subscription is None:
@@ -196,45 +201,55 @@ class VpnConnectionService:
         except SQLAlchemyError:
             raise VpnSessionPersistenceUnavailableError from None
 
-    async def _set_status(
-        self,
-        session_id: UUID,
-        status: VpnSessionStatus,
-        peer_removed_at: datetime | None = None,
-    ) -> VpnSession:
+    async def _activate(self, pending: VpnSession, node: VpnNode) -> VpnSession:
         try:
             async with self._postgres.session() as database_session:
                 async with database_session.begin():
-                    repository = VpnSessionRepository(database_session)
-                    current = await repository.get_for_update(session_id)
-                    if current is None:
-                        raise VpnSessionPersistenceUnavailableError
-                    updated = replace(
-                        current,
-                        status=status,
-                        peer_removed_at=peer_removed_at,
-                        updated_at=datetime.now(UTC),
+                    # Same device -> session lock order as revoke. Keep the bounded
+                    # node operation inside this lock so revoke cannot acknowledge
+                    # deletion before an in-flight provisioning call finishes.
+                    device = await DeviceRepository(database_session).get_for_update(
+                        pending.device_id
                     )
-                    return await repository.update(updated)
-        except VpnSessionPersistenceUnavailableError:
-            raise
+                    if device is None or not device.is_active():
+                        raise VpnSetupFailedError
+                    repository = VpnSessionRepository(database_session)
+                    current = await repository.get_for_update(pending.id)
+                    if current is None or current.status is not VpnSessionStatus.PENDING:
+                        raise VpnSetupFailedError
+                    await repository.acquire_peer_lock(current.client_wireguard_public_key)
+                    try:
+                        await self._agent.add_peer(
+                            node, current.client_wireguard_public_key, current.allocated_client_ipv4
+                        )
+                    except NodeAgentUnavailableError:
+                        raise VpnSetupFailedError from None
+                    return await repository.update(
+                        replace(
+                            current, status=VpnSessionStatus.ACTIVE, updated_at=datetime.now(UTC)
+                        )
+                    )
         except SQLAlchemyError:
             raise VpnSessionPersistenceUnavailableError from None
 
-    async def _compensate(self, node: VpnNode, pending: VpnSession, *, remove_peer: bool) -> None:
-        peer_removed_at: datetime | None = None
-        if remove_peer:
-            try:
-                await self._agent.remove_peer(node, pending.client_wireguard_public_key)
-                peer_removed_at = datetime.now(UTC)
-            except NodeAgentUnavailableError:
-                pass
+    async def _compensate(self, node: VpnNode, pending: VpnSession) -> None:
         try:
-            await self._set_status(
-                pending.id, VpnSessionStatus.FAILED, peer_removed_at=peer_removed_at
-            )
-        except VpnSessionPersistenceUnavailableError:
-            pass
+            async with self._postgres.session() as database_session:
+                async with database_session.begin():
+                    await DeviceRepository(database_session).get_for_update(pending.device_id)
+                    repository = VpnSessionRepository(database_session)
+                    current = await repository.get_for_update(pending.id)
+                    if current is None or current.peer_removed_at is not None:
+                        return
+                    if current.status in (VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE):
+                        current = replace(
+                            current, status=VpnSessionStatus.FAILED, updated_at=datetime.now(UTC)
+                        )
+                        await repository.update(current)
+            # Persist terminal cleanup intent before contacting the node.
+            await remove_and_record_peer(self._postgres, self._agent, current, node)
+        except SQLAlchemyError:
+            pass  # Revocation can still persist cleanup when storage recovers.
 
 
 class UnavailableVpnConnectionService:
