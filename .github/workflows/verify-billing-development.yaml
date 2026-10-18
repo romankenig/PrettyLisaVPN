@@ -1,0 +1,226 @@
+name: Verify billing development
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [cloud/verify-billing-development]
+    paths: [".github/workflows/verify-billing-development.yaml"]
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Verify deployed image, migration and public API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: development
+    steps:
+      - name: Verify development metadata, billing HTTP and billing entitlement checks over SSH
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          for key in DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY DEV_SSH_KNOWN_HOSTS; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing development secret: $key"
+              exit 1
+            fi
+          done
+          [[ "$DEV_VPS_PORT" == "22" ]]
+          [[ "$DEV_VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          python3 - <<'PYTHON'
+          import os
+          import re
+          import socket
+          host = os.environ["DEV_VPS_HOST"]
+          if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
+              raise SystemExit("Configured host is not a plain DNS hostname or IPv4 address")
+          addresses = {r[4][0] for r in socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)}
+          if addresses != {"95.140.152.42"}:
+              print("target_matches_confirmed_development_vps=false")
+              raise SystemExit("Configured target resolves outside the confirmed development VPS")
+          print("target_matches_confirmed_development_vps=true")
+          PYTHON
+          umask 077
+          ssh_directory="$(mktemp -d)"
+          trap 'rm -rf "$ssh_directory"' EXIT
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$ssh_directory/id_ed25519"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+          chmod 600 "$ssh_directory/id_ed25519" "$ssh_directory/known_hosts"
+          ssh-keygen -y -f "$ssh_directory/id_ed25519" >/dev/null
+          ssh-keygen -lf "$ssh_directory/known_hosts" \
+            | grep -Fq 'SHA256:BrayNvgVNXSzO6xAJ08FwnebiUA8/VlQNgI+ctes96U'
+          timeout 240 ssh \
+            -i "$ssh_directory/id_ed25519" \
+            -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 \
+            -o "UserKnownHostsFile=$ssh_directory/known_hosts" \
+            -o ConnectTimeout=10 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            -o LogLevel=ERROR -p "$DEV_VPS_PORT" \
+            "${DEV_VPS_USER}@${DEV_VPS_HOST}" 'python3 -' \
+            > billing-development-verification.json <<'REMOTE'
+          import json
+          import re
+          import stat
+          import sys
+          import subprocess
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def command(args):
+              return subprocess.run(args, capture_output=True, text=True, timeout=20)
+
+          def required(args):
+              result = command(args)
+              if result.returncode:
+                  raise SystemExit("Read-only command failed: " + args[0])
+              return result.stdout.strip()
+
+          def environment_metadata(path):
+              result = {"path": str(path), "exists": path.is_file()}
+              if path.is_file():
+                  result["mode"] = oct(stat.S_IMODE(path.stat().st_mode))
+                  # Only known public deployment identity fields can enter the report.
+                  allowed = {"BACKEND_IMAGE", "APPLICATION_VERSION", "ENVIRONMENT", "COMPOSE_PROJECT_NAME", "API_DOMAIN"}
+                  for line in path.read_text().splitlines():
+                      key, separator, value = line.partition("=")
+                      if separator and key in allowed:
+                          result[key] = value.strip().strip("'\"")
+              return result
+
+          print("ssh_authentication=success; target_host_key=verified", file=sys.stderr)
+          root = Path("/opt/prettylisavpn")
+          report = {"checked_at_utc": datetime.now(timezone.utc).isoformat(), "ssh": "authenticated", "mutations": "none"}
+          containers = required(["docker", "ps", "--filter", "label=com.docker.compose.project=prettylisavpn-development", "--filter", "label=com.docker.compose.service=backend", "--format", "{{.ID}}"] ).splitlines()
+          if len(containers) != 1:
+              raise SystemExit("Expected exactly one running development backend")
+          container = containers[0]
+          report["container_id"] = container
+          report["image_id"] = required(["docker", "inspect", "--format", "{{.Image}}", container])
+          report["container_health"] = required(["docker", "inspect", "--format", "{{.State.Health.Status}}", container])
+          labels = json.loads(required(["docker", "inspect", "--format", "{{json .Config.Labels}}", container]))
+          report["compose_directory"] = labels.get("com.docker.compose.project.working_dir")
+          report["compose_config_files"] = labels.get("com.docker.compose.project.config_files")
+          public_env_code = "import os,json; print(json.dumps({k:os.environ.get(k) for k in ('APPLICATION_NAME','APPLICATION_VERSION','ENVIRONMENT')}))"
+          report["runtime"] = json.loads(required(["docker", "exec", container, "python", "-c", public_env_code]))
+          if report["runtime"].get("ENVIRONMENT") != "development":
+              raise SystemExit("Runtime environment is not development")
+          for name in ("current", "secrets/deployment.env"):
+              path = root / name
+              report[name] = {"exists": path.exists(), "resolved": str(path.resolve())}
+          report["canonical_env"] = environment_metadata(root / "secrets/deployment.env")
+          image = report["canonical_env"].get("BACKEND_IMAGE")
+          if image:
+              retained = command(["docker", "image", "inspect", "--format", "{{.Id}}", image])
+              report["canonical_image_retained"] = retained.returncode == 0
+              report["canonical_image_matches_running"] = retained.returncode == 0 and retained.stdout.strip() == report["image_id"]
+          report["retained_images"] = required(["docker", "image", "ls", "--filter", "reference=prettylisavpn-backend", "--format", "{{.Repository}}:{{.Tag}} {{.ID}}"] ).splitlines()[:30]
+          releases = root / "releases"
+          report["releases"] = []
+          if releases.is_dir():
+              for release in sorted(releases.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[:10]:
+                  if release.is_dir():
+                      report["releases"].append({"id": release.name, "compose": (release / "compose.yaml").is_file(), "deploy": (release / "deploy.sh").is_file(), "env": (release / "deployment.env").is_file(), "image_id": (release / "image-id").is_file()})
+          for verb in ("current", "heads"):
+              result = command(["docker", "exec", container, "alembic", verb])
+              report["alembic_" + verb] = {"exit_code": result.returncode, "revisions": re.findall(r"(?m)^([0-9]{4}_[a-z0-9_]+)", result.stdout)}
+          report["public"] = {}
+          for endpoint in ("health", "ready", "version"):
+              with urllib.request.urlopen("https://api.prettylisavpn.com/" + endpoint, timeout=10) as response:
+                  payload = json.loads(response.read(16385))
+                  allowed = {"status", "dependencies"} if endpoint != "version" else {"application_name", "application_version", "environment"}
+                  report["public"][endpoint] = {"http_status": response.status, "response": {k: v for k, v in payload.items() if k in allowed}}
+          # Verify the exact approved runtime before creating private temporary fixtures.
+          expected = "0.6.0-dev.39104210229+gc2aad45953230d065e797dfce26e9c0c731d0aeb"
+          assert report["runtime"]["APPLICATION_VERSION"] == expected
+          assert report["container_health"] == "healthy"
+          assert report["canonical_image_matches_running"] is True
+          assert report["alembic_current"] == {"exit_code": 0, "revisions": ["0023_billing_catalog"]}
+          import base64
+          fixture_source = base64.b64decode("IiIiSXNvbGF0ZWQgZGV2ZWxvcG1lbnQgSFRUUCBjaGVja3MuIE5vIHByb3ZpZGVyLCBleGlzdGluZyBhY2NvdW50IG9yIGNhdGFsb2d1ZSBtdXRhdGlvbi4iIiIKaW1wb3J0IGFzeW5jaW8KaW1wb3J0IGpzb24KZnJvbSBkYXRldGltZSBpbXBvcnQgVVRDLCBkYXRldGltZSwgdGltZWRlbHRhCmZyb20gdXVpZCBpbXBvcnQgdXVpZDQKCmltcG9ydCBodHRweApmcm9tIHNxbGFsY2hlbXkgaW1wb3J0IGRlbGV0ZSwgc2VsZWN0LCB1cGRhdGUKCmZyb20gcHJldHR5bGlzYXZwbi5hdXRoLnRva2VucyBpbXBvcnQgQWNjZXNzVG9rZW5TZXJ2aWNlCmZyb20gcHJldHR5bGlzYXZwbi5hdXRoX3Nlc3Npb25zLnJlcG9zaXRvcnkgaW1wb3J0IEF1dGhTZXNzaW9uUmVwb3NpdG9yeQpmcm9tIHByZXR0eWxpc2F2cG4uYXV0aF9zZXNzaW9ucy5zZXJ2aWNlIGltcG9ydCBBdXRoU2Vzc2lvblNlcnZpY2UKZnJvbSBwcmV0dHlsaXNhdnBuLmJpbGxpbmcuZG9tYWluIGltcG9ydCBDYXRhbG9nLCBERUZBVUxUX0dST1VQX0lECmZyb20gcHJldHR5bGlzYXZwbi5iaWxsaW5nLm1vZGVsIGltcG9ydCBCaWxsaW5nQ2F0YWxvZ1JlY29yZCwgQ2xpZW50R3JvdXBSZWNvcmQsIENsaWVudEdyb3VwTWVtYmVyc2hpcFJlY29yZCwgU3Vic2NyaXB0aW9uUHJpY2VSZWNvcmQKZnJvbSBwcmV0dHlsaXNhdnBuLmJpbGxpbmcucHJpY2luZyBpbXBvcnQgbG9ja19jb250cmFjdF9wcmljZQpmcm9tIHByZXR0eWxpc2F2cG4uY29uZmlnIGltcG9ydCBTZXR0aW5ncwpmcm9tIHByZXR0eWxpc2F2cG4uY29ubmVjdGlvbnMgaW1wb3J0IFBvc3RncmVzCmZyb20gcHJldHR5bGlzYXZwbi5kZXZpY2VzLmRvbWFpbiBpbXBvcnQgRGV2aWNlUGxhdGZvcm0KZnJvbSBwcmV0dHlsaXNhdnBuLmRldmljZXMucmVwb3NpdG9yeSBpbXBvcnQgRGV2aWNlUmVwb3NpdG9yeQpmcm9tIHByZXR0eWxpc2F2cG4uZGV2aWNlcy5zZXJ2aWNlIGltcG9ydCBEZXZpY2VTZXJ2aWNlCmZyb20gcHJldHR5bGlzYXZwbi5zdWJzY3JpcHRpb25zLmRvbWFpbiBpbXBvcnQgU3Vic2NyaXB0aW9uUGxhbiwgU3Vic2NyaXB0aW9uU3RhdHVzCmZyb20gcHJldHR5bGlzYXZwbi5zdWJzY3JpcHRpb25zLm1vZGVsIGltcG9ydCBTdWJzY3JpcHRpb25SZWNvcmQKZnJvbSBwcmV0dHlsaXNhdnBuLnN1YnNjcmlwdGlvbnMucmVwb3NpdG9yeSBpbXBvcnQgU3Vic2NyaXB0aW9uUmVwb3NpdG9yeQpmcm9tIHByZXR0eWxpc2F2cG4udXNlcnMubW9kZWwgaW1wb3J0IFVzZXJSZWNvcmQKZnJvbSBwcmV0dHlsaXNhdnBuLnVzZXJzLnJlcG9zaXRvcnkgaW1wb3J0IFVzZXJSZXBvc2l0b3J5CmZyb20gcHJldHR5bGlzYXZwbi51c2Vycy5zZXJ2aWNlIGltcG9ydCBVc2VyU2VydmljZQoKCmFzeW5jIGRlZiBtYWluKCk6CiAgICBjb25maWcgPSBTZXR0aW5ncyhfZW52X2ZpbGU9Tm9uZSkKICAgIGFzc2VydCBjb25maWcuZW52aXJvbm1lbnQgPT0gJ2RldmVsb3BtZW50JwogICAgcG9zdGdyZXMgPSBQb3N0Z3Jlcyhjb25maWcpCiAgICB1c2VycywgdG9rZW5zLCBzdWJzY3JpcHRpb25zID0gW10sIFtdLCBbXQogICAgZ3JvdXBfaWQgPSB1dWlkNCgpCiAgICByZXBvcnQgPSB7J2F1dGgnOiAnSldUcyBmb3IgaXNvbGF0ZWQgdGVtcG9yYXJ5IGFjY291bnRzOyBPVFAgbm90IGV4ZXJjaXNlZCcsCiAgICAgICAgICAgICAgJ2V4aXN0aW5nX2FjY291bnRzX21vZGlmaWVkJzogRmFsc2UsICdjYXRhbG9ndWVfbW9kaWZpZWQnOiBGYWxzZSwKICAgICAgICAgICAgICAncGF5bWVudHNfc3RhcnRlZCc6IEZhbHNlLCAnc25hcHNob3RzJzoge319CiAgICB0cnk6CiAgICAgICAgYXN5bmMgd2l0aCBwb3N0Z3Jlcy5zZXNzaW9uKCkgYXMgc2Vzc2lvbiwgc2Vzc2lvbi5iZWdpbigpOgogICAgICAgICAgICBmb3IgYWNjb3VudF9udW1iZXIgaW4gcmFuZ2UoMik6CiAgICAgICAgICAgICAgICB1c2VyID0gYXdhaXQgVXNlclNlcnZpY2UoVXNlclJlcG9zaXRvcnkoc2Vzc2lvbiksIFN1YnNjcmlwdGlvblJlcG9zaXRvcnkoc2Vzc2lvbikpLmNyZWF0ZSgnYmlsbGluZy12ZXJpZmljYXRpb24tJyArIHV1aWQ0KCkuaGV4ICsgJ0BleGFtcGxlLmNvbScpCiAgICAgICAgICAgICAgICB1c2Vycy5hcHBlbmQodXNlci5pZCkKICAgICAgICAgICAgICAgIGFjY291bnRfdG9rZW5zID0gW10KICAgICAgICAgICAgICAgIGZvciBkZXZpY2VfbnVtYmVyIGluIHJhbmdlKDIpOgogICAgICAgICAgICAgICAgICAgIGRldmljZSA9IGF3YWl0IERldmljZVNlcnZpY2UoRGV2aWNlUmVwb3NpdG9yeShzZXNzaW9uKSkucmVnaXN0ZXIodXNlci5pZCwgdXVpZDQoKSwgRGV2aWNlUGxhdGZvcm0uV0lORE9XUywgJ1RlbXBvcmFyeSBiaWxsaW5nIHZlcmlmaWNhdGlvbicpCiAgICAgICAgICAgICAgICAgICAgYXV0aCA9IGF3YWl0IEF1dGhTZXNzaW9uU2VydmljZShBdXRoU2Vzc2lvblJlcG9zaXRvcnkoc2Vzc2lvbiksIHRpbWVkZWx0YShtaW51dGVzPTEwKSkuaXNzdWUodXNlci5pZCwgZGV2aWNlLmlkKQogICAgICAgICAgICAgICAgICAgIGFjY291bnRfdG9rZW5zLmFwcGVuZChBY2Nlc3NUb2tlblNlcnZpY2UoY29uZmlnKS5pc3N1ZSh1c2VyLmlkLCBkZXZpY2UuaWQsIGF1dGguc2Vzc2lvbi5pZCkudG9rZW4pCiAgICAgICAgICAgICAgICB0b2tlbnMuYXBwZW5kKGFjY291bnRfdG9rZW5zKQogICAgICAgICAgICAgICAgc3Vic2NyaXB0aW9ucy5hcHBlbmQoKGF3YWl0IHNlc3Npb24uc2NhbGFyKHNlbGVjdChTdWJzY3JpcHRpb25SZWNvcmQpLndoZXJlKFN1YnNjcmlwdGlvblJlY29yZC51c2VyX2lkID09IHVzZXIuaWQpKSkuaWQpCiAgICAgICAgYXN5bmMgd2l0aCBodHRweC5Bc3luY0NsaWVudChiYXNlX3VybD0naHR0cDovLzEyNy4wLjAuMTo4MDAwJywgdHJ1c3RfZW52PUZhbHNlLCB0aW1lb3V0PTIwKSBhcyBjbGllbnQ6CiAgICAgICAgICAgIGFzeW5jIGRlZiBvdmVydmlldyhhY2NvdW50PTAsIGRldmljZT0wKToKICAgICAgICAgICAgICAgIHJlc3BvbnNlID0gYXdhaXQgY2xpZW50LmdldCgnL2JpbGxpbmcvb3ZlcnZpZXcnLCBoZWFkZXJzPXsnQXV0aG9yaXphdGlvbic6ICdCZWFyZXIgJyArIHRva2Vuc1thY2NvdW50XVtkZXZpY2VdfSkKICAgICAgICAgICAgICAgIGFzc2VydCByZXNwb25zZS5zdGF0dXNfY29kZSA9PSAyMDAKICAgICAgICAgICAgICAgIGFzc2VydCByZXNwb25zZS5oZWFkZXJzWydDYWNoZS1Db250cm9sJ10gPT0gJ25vLXN0b3JlJwogICAgICAgICAgICAgICAgYXNzZXJ0IHJlc3BvbnNlLmhlYWRlcnNbJ1ZhcnknXSA9PSAnQXV0aG9yaXphdGlvbicKICAgICAgICAgICAgICAgIGJvZHkgPSByZXNwb25zZS5qc29uKCkKICAgICAgICAgICAgICAgIGFzc2VydCBib2R5WydhY3Rpb25zJ10gPT0gW10gYW5kIGJvZHlbJ3BheW1lbnRfb3BlcmF0aW9uc19hdmFpbGFibGUnXSBpcyBGYWxzZQogICAgICAgICAgICAgICAgYXNzZXJ0IGJvZHlbJ3BlbmRpbmdfb3BlcmF0aW9uX2lkJ10gaXMgYm9keVsncGF5bWVudF9tZXRob2QnXSBpcyBOb25lCiAgICAgICAgICAgICAgICBtZSA9IGF3YWl0IGNsaWVudC5nZXQoJy9tZScsIGhlYWRlcnM9eydBdXRob3JpemF0aW9uJzogJ0JlYXJlciAnICsgdG9rZW5zW2FjY291bnRdW2RldmljZV19KQogICAgICAgICAgICAgICAgYXNzZXJ0IG1lLnN0YXR1c19jb2RlID09IDIwMCBhbmQgbWUuanNvbigpWydwbGFuJ10gPT0gYm9keVsncGxhbiddCiAgICAgICAgICAgICAgICByZXR1cm4gYm9keQogICAgICAgICAgICBhc3luYyBkZWYgc2V0X3BhaWQocGxhbj0nUFJFTUlVTScsIHN0YXR1cz0nQUNUSVZFJywgYXV0bz1UcnVlLCBleHBpcmVkPUZhbHNlKToKICAgICAgICAgICAgICAgIGFzeW5jIHdpdGggcG9zdGdyZXMuc2Vzc2lvbigpIGFzIHNlc3Npb24sIHNlc3Npb24uYmVnaW4oKToKICAgICAgICAgICAgICAgICAgICBhd2FpdCBzZXNzaW9uLmV4ZWN1dGUodXBkYXRlKFN1YnNjcmlwdGlvblJlY29yZCkud2hlcmUoU3Vic2NyaXB0aW9uUmVjb3JkLmlkID09IHN1YnNjcmlwdGlvbnNbMF0pLnZhbHVlcygKICAgICAgICAgICAgICAgICAgICAgICAgcGxhbj1TdWJzY3JpcHRpb25QbGFuKHBsYW4pLCBzdGF0dXM9U3Vic2NyaXB0aW9uU3RhdHVzKHN0YXR1cyksIGF1dG9fcmVuZXc9YXV0bywKICAgICAgICAgICAgICAgICAgICAgICAgY3VycmVudF9wZXJpb2Rfc3RhcnQ9ZGF0ZXRpbWUubm93KFVUQyktdGltZWRlbHRhKGRheXM9MSksCiAgICAgICAgICAgICAgICAgICAgICAgIGN1cnJlbnRfcGVyaW9kX2VuZD1kYXRldGltZS5ub3coVVRDKSsodGltZWRlbHRhKHNlY29uZHM9LTEpIGlmIGV4cGlyZWQgZWxzZSB0aW1lZGVsdGEoZGF5cz0yMCkpKSkKICAgICAgICAgICAgZnJlZSA9IGF3YWl0IG92ZXJ2aWV3KCkKICAgICAgICAgICAgYXNzZXJ0IGZyZWUgPT0gYXdhaXQgb3ZlcnZpZXcoZGV2aWNlPTEpCiAgICAgICAgICAgIGFzc2VydCBmcmVlWydwbGFuJ10gPT0gZnJlZVsnc3RhdHVzJ10gPT0gJ0ZSRUUnIGFuZCBmcmVlWydjdXJyZW50X3ByaWNlJ10gaXMgTm9uZQogICAgICAgICAgICBwcmljZXMgPSBmcmVlWydvZmZlcnMnXVswXVsncHJpY2VzJ10KICAgICAgICAgICAgYXNzZXJ0IHByaWNlcyA9PSB7J1JVQic6IHsnYW1vdW50X21pbm9yJzoxOTkwMCwnb3JpZ2luYWxfYW1vdW50X21pbm9yJzoyOTkwMH0sICdVU0QnOiB7J2Ftb3VudF9taW5vcic6Mjk5LCdvcmlnaW5hbF9hbW91bnRfbWlub3InOjM5OX19CiAgICAgICAgICAgIHB1YmxpYyA9IGF3YWl0IGNsaWVudC5nZXQoJ2h0dHBzOi8vYXBpLnByZXR0eWxpc2F2cG4uY29tL2JpbGxpbmcvb3ZlcnZpZXcnLCBoZWFkZXJzPXsnQXV0aG9yaXphdGlvbic6J0JlYXJlciAnICsgdG9rZW5zWzBdWzBdfSkKICAgICAgICAgICAgYXNzZXJ0IHB1YmxpYy5zdGF0dXNfY29kZSA9PSAyMDAgYW5kIHB1YmxpYy5qc29uKCkgPT0gZnJlZQogICAgICAgICAgICByZXBvcnRbJ3B1YmxpY19hdXRoZW50aWNhdGVkX292ZXJ2aWV3J10gPSAnSFRUUFMgMjAwOyBzYW1lIHByaXZhdGUgYWNjb3VudCBzbmFwc2hvdCBhcyBkaXJlY3QgYmFja2VuZCBIVFRQJwogICAgICAgICAgICByZXBvcnRbJ3NuYXBzaG90cyddWydmcmVlJ10gPSBmcmVlCiAgICAgICAgICAgIGFzc2VydCAoYXdhaXQgY2xpZW50LmdldCgnL2JpbGxpbmcvb3ZlcnZpZXcnKSkuc3RhdHVzX2NvZGUgPT0gNDAxCiAgICAgICAgICAgIGhlYWRlcnMgPSB7J0F1dGhvcml6YXRpb24nOiAnQmVhcmVyICcgKyB0b2tlbnNbMF1bMF19CiAgICAgICAgICAgIGFzc2VydCAoYXdhaXQgY2xpZW50LnBvc3QoJy9iaWxsaW5nL29wZXJhdGlvbnMnLCBoZWFkZXJzPWhlYWRlcnMsIGpzb249eydhY3Rpb24nOidTVUJTQ1JJQkUnfSkpLnN0YXR1c19jb2RlID09IDQwNAogICAgICAgICAgICBhc3NlcnQgKGF3YWl0IGNsaWVudC5nZXQoJy9iaWxsaW5nL29wZXJhdGlvbnMvJyArIHN0cih1dWlkNCgpKSwgaGVhZGVycz1oZWFkZXJzKSkuc3RhdHVzX2NvZGUgPT0gNDA0CiAgICAgICAgICAgIGF3YWl0IHNldF9wYWlkKCkKICAgICAgICAgICAgdW5rbm93biA9IGF3YWl0IG92ZXJ2aWV3KCkKICAgICAgICAgICAgYXNzZXJ0IHVua25vd25bJ2N1cnJlbnRfcHJpY2UnXSBpcyBOb25lIGFuZCB1bmtub3duWydvZmZlcnMnXSA9PSBbXQogICAgICAgICAgICByZXBvcnRbJ3NuYXBzaG90cyddWydhY3RpdmVfdW5rbm93bl9wcmljZSddID0gdW5rbm93bgogICAgICAgICAgICBhc3luYyB3aXRoIHBvc3RncmVzLnNlc3Npb24oKSBhcyBzZXNzaW9uLCBzZXNzaW9uLmJlZ2luKCk6CiAgICAgICAgICAgICAgICBjYXRhbG9nID0gYXdhaXQgc2Vzc2lvbi5nZXQoQmlsbGluZ0NhdGFsb2dSZWNvcmQsIDEpCiAgICAgICAgICAgICAgICBvZmZlcl9pZCA9IENhdGFsb2cubW9kZWxfdmFsaWRhdGUoY2F0YWxvZy5kb2N1bWVudCkub2ZmZXJzX2ZvcihERUZBVUxUX0dST1VQX0lELCBkYXRldGltZS5ub3coVVRDKSlbMF0uaWQKICAgICAgICAgICAgICAgIGxvY2tlZCA9IGF3YWl0IGxvY2tfY29udHJhY3RfcHJpY2Uoc2Vzc2lvbiwgc3Vic2NyaXB0aW9uc1swXSwgb2ZmZXJfaWQsICdSVUInLCBjYXRhbG9nLnJldmlzaW9uLCBkYXRldGltZS5ub3coVVRDKSkKICAgICAgICAgICAgYWN0aXZlID0gYXdhaXQgb3ZlcnZpZXcoKQogICAgICAgICAgICBhc3NlcnQgYWN0aXZlWydzdGF0dXMnXSA9PSAnQUNUSVZFJyBhbmQgYWN0aXZlWydhdXRvX3JlbmV3J10KICAgICAgICAgICAgYXNzZXJ0IGFjdGl2ZVsnY3VycmVudF9wcmljZSddID09IGxvY2tlZC5tb2RlbF9kdW1wKCkKICAgICAgICAgICAgYXNzZXJ0IGFjdGl2ZVsnb2ZmZXJzJ11bMF1bJ3ByaWNlcyddID09IHByaWNlcwogICAgICAgICAgICByZXBvcnRbJ3NuYXBzaG90cyddWydhY3RpdmVfZml4ZWRfcHJpY2UnXSA9IGFjdGl2ZQogICAgICAgICAgICBhc3luYyB3aXRoIHBvc3RncmVzLnNlc3Npb24oKSBhcyBzZXNzaW9uLCBzZXNzaW9uLmJlZ2luKCk6CiAgICAgICAgICAgICAgICBzZXNzaW9uLmFkZChDbGllbnRHcm91cFJlY29yZChpZD1ncm91cF9pZCwgbmFtZT0nVGVtcG9yYXJ5IGJpbGxpbmcgdmVyaWZpY2F0aW9uJykpCiAgICAgICAgICAgICAgICBhd2FpdCBzZXNzaW9uLmZsdXNoKCkKICAgICAgICAgICAgICAgIGZvciB1c2VyX2lkIGluIHVzZXJzOgogICAgICAgICAgICAgICAgICAgIHNlc3Npb24uYWRkKENsaWVudEdyb3VwTWVtYmVyc2hpcFJlY29yZCh1c2VyX2lkPXVzZXJfaWQsIGdyb3VwX2lkPWdyb3VwX2lkKSkKICAgICAgICAgICAgZ3JvdXBlZCA9IGF3YWl0IG92ZXJ2aWV3KCkKICAgICAgICAgICAgYXNzZXJ0IGdyb3VwZWRbJ2N1cnJlbnRfcHJpY2UnXSA9PSBhY3RpdmVbJ2N1cnJlbnRfcHJpY2UnXSBhbmQgZ3JvdXBlZFsnb2ZmZXJzJ10gPT0gYWN0aXZlWydvZmZlcnMnXQogICAgICAgICAgICBhc3NlcnQgZ3JvdXBlZFsncmV2aXNpb24nXSAhPSBhY3RpdmVbJ3JldmlzaW9uJ10KICAgICAgICAgICAgb3RoZXIgPSBhd2FpdCBvdmVydmlldyhhY2NvdW50PTEpCiAgICAgICAgICAgIGFzc2VydCBvdGhlclsnb2ZmZXJzJ10gPT0gW10gYW5kIG90aGVyWydwbGFuJ10gPT0gJ0ZSRUUnIGFuZCBvdGhlclsnY3VycmVudF9wcmljZSddIGlzIE5vbmUKICAgICAgICAgICAgYXNzZXJ0IG90aGVyWydyZXZpc2lvbiddICE9IGdyb3VwZWRbJ3JldmlzaW9uJ10KICAgICAgICAgICAgcmVwb3J0WydhY2NvdW50X2dyb3VwX2lzb2xhdGlvbiddID0gJ2ZvcmVpZ24gYWNjb3VudCBjYW5ub3QgcmVhZCBsb2NrZWQgcHJpY2U7IGdyb3VwIHdpdGhvdXQgb2ZmZXJzIGhhcyBubyBkZWZhdWx0IGZhbGxiYWNrJwogICAgICAgICAgICBhd2FpdCBzZXRfcGFpZChzdGF0dXM9J0NBTkNFTEVEJywgYXV0bz1GYWxzZSkKICAgICAgICAgICAgY2FuY2VsZWQgPSBhd2FpdCBvdmVydmlldygpCiAgICAgICAgICAgIGFzc2VydCBjYW5jZWxlZFsnc3RhdHVzJ10gPT0gJ0NBTkNFTEVEJyBhbmQgY2FuY2VsZWRbJ3BsYW4nXSA9PSAnUFJFTUlVTScKICAgICAgICAgICAgYXNzZXJ0IGNhbmNlbGVkWydjdXJyZW50X3ByaWNlJ10gPT0gYWN0aXZlWydjdXJyZW50X3ByaWNlJ10gYW5kIGNhbmNlbGVkWydvZmZlcnMnXSA9PSBhY3RpdmVbJ29mZmVycyddCiAgICAgICAgICAgIHJlcG9ydFsnc25hcHNob3RzJ11bJ2NhbmNlbGVkJ10gPSBjYW5jZWxlZAogICAgICAgICAgICBhd2FpdCBzZXRfcGFpZChzdGF0dXM9J0NBTkNFTEVEJywgYXV0bz1GYWxzZSwgZXhwaXJlZD1UcnVlKQogICAgICAgICAgICBleHBpcmVkID0gYXdhaXQgb3ZlcnZpZXcoKQogICAgICAgICAgICBhc3NlcnQgZXhwaXJlZFsnc3RhdHVzJ10gPT0gJ0VYUElSRUQnIGFuZCBleHBpcmVkWydwbGFuJ10gPT0gJ0ZSRUUnIGFuZCBleHBpcmVkWydvZmZlcnMnXSA9PSBbXQogICAgICAgICAgICByZXBvcnRbJ3NuYXBzaG90cyddWydleHBpcmVkJ10gPSBleHBpcmVkCiAgICAgICAgICAgIGF3YWl0IHNldF9wYWlkKHBsYW49J1BMQVRJTlVNJywgYXV0bz1GYWxzZSkKICAgICAgICAgICAgcGxhdGludW0gPSBhd2FpdCBvdmVydmlldygpCiAgICAgICAgICAgIGFzc2VydCBwbGF0aW51bVsncGxhbiddID09ICdQTEFUSU5VTScgYW5kIHBsYXRpbnVtWydvZmZlcnMnXSA9PSBbXQogICAgICAgICAgICByZXBvcnRbJ3NuYXBzaG90cyddWydtYW51YWxfcGxhdGludW0nXSA9IHBsYXRpbnVtCiAgICAgICAgICAgIHJlcG9ydFsnY3Jvc3NfZGV2aWNlX3JldmlzaW9uX3N0YWJsZSddID0gVHJ1ZQogICAgZmluYWxseToKICAgICAgICBhc3luYyB3aXRoIHBvc3RncmVzLnNlc3Npb24oKSBhcyBzZXNzaW9uLCBzZXNzaW9uLmJlZ2luKCk6CiAgICAgICAgICAgIGlmIHVzZXJzOgogICAgICAgICAgICAgICAgYXdhaXQgc2Vzc2lvbi5leGVjdXRlKGRlbGV0ZShVc2VyUmVjb3JkKS53aGVyZShVc2VyUmVjb3JkLmlkLmluXyh1c2VycykpKQogICAgICAgICAgICBhd2FpdCBzZXNzaW9uLmV4ZWN1dGUoZGVsZXRlKENsaWVudEdyb3VwUmVjb3JkKS53aGVyZShDbGllbnRHcm91cFJlY29yZC5pZCA9PSBncm91cF9pZCkpCiAgICAgICAgYXN5bmMgd2l0aCBwb3N0Z3Jlcy5zZXNzaW9uKCkgYXMgc2Vzc2lvbjoKICAgICAgICAgICAgYXNzZXJ0IGF3YWl0IHNlc3Npb24uc2NhbGFyKHNlbGVjdChVc2VyUmVjb3JkLmlkKS53aGVyZShVc2VyUmVjb3JkLmlkLmluXyh1c2VycykpKSBpcyBOb25lCiAgICAgICAgICAgIGFzc2VydCBhd2FpdCBzZXNzaW9uLnNjYWxhcihzZWxlY3QoU3Vic2NyaXB0aW9uUHJpY2VSZWNvcmQuc3Vic2NyaXB0aW9uX2lkKS53aGVyZShTdWJzY3JpcHRpb25QcmljZVJlY29yZC5zdWJzY3JpcHRpb25faWQuaW5fKHN1YnNjcmlwdGlvbnMpKSkgaXMgTm9uZQogICAgICAgICAgICByZXBvcnRbJ2VwaGVtZXJhbF9maXh0dXJlX2NsZWFudXAnXSA9ICdjb25maXJtZWQnCiAgICAgICAgYXdhaXQgcG9zdGdyZXMuY2xvc2UoKQogICAgcHJpbnQoanNvbi5kdW1wcyhyZXBvcnQpKQoKYXN5bmNpby5ydW4obWFpbigpKQo=").decode()
+          acceptance = subprocess.run(
+              ["docker", "exec", "-i", container, "python", "-"],
+              input=fixture_source, capture_output=True, text=True, timeout=120,
+          )
+          if acceptance.returncode:
+              raise SystemExit("Live billing acceptance or temporary fixture cleanup failed")
+          report["live_billing_acceptance"] = json.loads(acceptance.stdout)
+          assert report["live_billing_acceptance"]["ephemeral_fixture_cleanup"] == "confirmed"
+          report["mutations"] = "isolated temporary billing accounts, groups and contract prices removed"
+          print(json.dumps(report, indent=2))
+          REMOTE
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("billing-development-verification.json").read_text())
+          expected_sha = "c2aad45953230d065e797dfce26e9c0c731d0aeb"
+          expected_version = "0.6.0-dev.39104210229+g" + expected_sha
+          assert report["runtime"]["APPLICATION_VERSION"] == expected_version
+          assert report["container_health"] == "healthy"
+          assert report["canonical_image_matches_running"] is True
+          assert report["canonical_env"]["APPLICATION_VERSION"] == expected_version
+          release_id = expected_sha + "-run-39104210229-attempt-1"
+          assert report["canonical_env"]["BACKEND_IMAGE"] == "prettylisavpn-backend:" + release_id
+          assert report["current"]["resolved"] == "/opt/prettylisavpn/releases/" + release_id
+          for verb in ("current", "heads"):
+              assert report["alembic_" + verb] == {
+                  "exit_code": 0, "revisions": ["0023_billing_catalog"]
+              }
+          assert report["public"]["version"]["response"]["application_version"] == expected_version
+          assert report["public"]["ready"]["response"]["status"] == "ready"
+          assert report["public"]["ready"]["response"]["dependencies"] == {"postgresql": True, "valkey": True}
+          # Independent public requests originate from GitHub, after the VPS inspection.
+          import urllib.request
+          report["github_runner_public"] = {}
+          for endpoint in ("health", "ready", "version"):
+              with urllib.request.urlopen("https://api.prettylisavpn.com/" + endpoint, timeout=10) as response:
+                  assert response.status == 200
+                  report["github_runner_public"][endpoint] = json.loads(response.read(16385))
+          assert report["github_runner_public"]["version"]["application_version"] == expected_version
+          assert report["github_runner_public"]["version"]["environment"] == "development"
+          assert report["github_runner_public"]["ready"]["status"] == "ready"
+          assert report["github_runner_public"]["ready"]["dependencies"] == {"postgresql": True, "valkey": True}
+          with urllib.request.urlopen("https://api.prettylisavpn.com/openapi.json", timeout=10) as response:
+              api = json.loads(response.read())
+          assert "PLATINUM" in api["components"]["schemas"]["SubscriptionPlan"]["enum"]
+          assert "/billing/overview" in api["paths"]
+          assert "/billing/operations" not in api["paths"]
+          report["deployed_billing_schema"] = "Read-only overview, account groups and immutable contract prices"
+          import urllib.error
+          try:
+              urllib.request.urlopen("https://api.prettylisavpn.com/me", timeout=10)
+          except urllib.error.HTTPError as error:
+              assert error.code == 401
+              report["unauthenticated_me"] = 401
+          else:
+              raise AssertionError("Account must require authentication")
+          try:
+              urllib.request.urlopen("https://api.prettylisavpn.com/billing/overview", timeout=10)
+          except urllib.error.HTTPError as error:
+              assert error.code == 401
+              assert error.headers["Cache-Control"] == "no-store"
+              report["unauthenticated_public_billing"] = 401
+          else:
+              raise AssertionError("Billing must require authentication")
+          report["deployed_product_sha"] = expected_sha
+          report["verification_source_sha"] = os.environ["GITHUB_SHA"]
+          Path("billing-development-verification.json").write_text(json.dumps(report, indent=2) + "\n")
+          print(json.dumps(report))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Post-deploy verification: billing backend 0.6.0\n\n```json\n")
+              summary.write(json.dumps(report, indent=2) + "\n```\n")
+          PYTHON
+
+      - name: Retain non-secret preflight report
+        uses: actions/upload-artifact@v4
+        with:
+          name: billing-development-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: billing-development-verification.json
+          if-no-files-found: error
