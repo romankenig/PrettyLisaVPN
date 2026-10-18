@@ -221,7 +221,7 @@ async function main() {
   await page.getByText(account.email, { exact: true }).waitFor();
   await page.getByRole("combobox").waitFor();
   await page.waitForFunction(() => {
-    const location = document.querySelector(".current-location");
+    const location = window.document.querySelector(".current-location");
     return location && !location.textContent.includes("определяем…");
   });
   report.native_location = (await page
@@ -246,7 +246,7 @@ async function main() {
       const response = await invoke("plugin:http|fetch_send", { rid });
       responseRid = response.rid;
       let body = "";
-      const decoder = new TextDecoder();
+      const decoder = new window.TextDecoder();
       for (let i = 0; i < 100; i++) {
         const buffer = await invoke("plugin:http|fetch_read_body", {
           rid: responseRid,
