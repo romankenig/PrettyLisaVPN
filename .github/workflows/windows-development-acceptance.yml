@@ -2,6 +2,11 @@ name: Windows development acceptance
 
 on:
   workflow_dispatch:
+    inputs:
+      manual_otp:
+        description: "Include owner-assisted email OTP (coordinate mailbox availability first)"
+        type: boolean
+        default: false
   push:
     branches: [feature/windows-development-acceptance]
     paths:
@@ -76,6 +81,7 @@ jobs:
     env:
       VITE_APP_ENVIRONMENT: development
       VITE_BACKEND_BASE_URL: https://api.prettylisavpn.com
+      ACCEPTANCE_MANUAL_OTP: ${{ inputs.manual_otp && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Set private acceptance credential location
@@ -152,9 +158,11 @@ jobs:
           DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
         run: ./scripts/ci/development-account.ps1 create
       - name: Generate an ephemeral encryption key for manual OTP handoff
+        if: inputs.manual_otp
         run: |
           node -e "const fs=require('node:fs'),c=require('node:crypto'),p=c.generateKeyPairSync('rsa',{modulusLength:2048});fs.writeFileSync(process.env.ACCEPTANCE_OTP_PRIVATE_KEY,p.privateKey.export({type:'pkcs8',format:'pem'}));fs.writeFileSync(process.env.ACCEPTANCE_OTP_PUBLIC_KEY,JSON.stringify({run:process.env.GITHUB_RUN_ID,nonce:c.randomBytes(16).toString('hex'),public_key:p.publicKey.export({type:'spki',format:'pem'})}));"
       - name: Publish public encryption key only
+        if: inputs.manual_otp
         uses: actions/upload-artifact@v4
         with:
           name: manual-otp-public-key

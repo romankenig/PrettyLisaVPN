@@ -220,9 +220,76 @@ async function main() {
   await page.reload();
   await page.getByText(account.email, { exact: true }).waitFor();
   await page.getByRole("combobox").waitFor();
-  report.native_location_error_visible = await page
-    .getByText("не удалось определить", { exact: true })
-    .isVisible();
+  await page.waitForFunction(() => {
+    const location = document.querySelector(".current-location");
+    return location && !location.textContent.includes("определяем…");
+  });
+  report.native_location = (await page
+    .locator(".current-location__details")
+    .isVisible())
+    ? "available"
+    : "unavailable";
+  // Observe the same native HTTP plugin without recording an IP or response body.
+  report.native_location_probe = await page.evaluate(async () => {
+    const invoke = window.__TAURI_INTERNALS__.invoke;
+    let responseRid;
+    try {
+      const rid = await invoke("plugin:http|fetch", {
+        clientConfig: {
+          method: "GET",
+          url: "https://ipwho.is/",
+          headers: [],
+          data: null,
+          connectTimeout: 8000,
+        },
+      });
+      const response = await invoke("plugin:http|fetch_send", { rid });
+      responseRid = response.rid;
+      let body = "";
+      const decoder = new TextDecoder();
+      for (let i = 0; i < 100; i++) {
+        const buffer = await invoke("plugin:http|fetch_read_body", {
+          rid: responseRid,
+        });
+        const chunk = new Uint8Array(buffer);
+        if (chunk[chunk.length - 1] === 1) break;
+        body += decoder.decode(chunk.slice(0, -1), { stream: true });
+        if (body.length > 65536) throw new Error("body size exceeded");
+      }
+      const data = JSON.parse(body);
+      return {
+        http_status: response.status,
+        provider_success: data.success === true,
+        valid_ip_present: typeof data.ip === "string",
+        rejection_category:
+          data.success === true
+            ? null
+            : /cors/i.test(String(data.message))
+              ? "cors"
+              : /limit|quota/i.test(String(data.message))
+                ? "rate_limit"
+                : "other",
+      };
+    } catch (error) {
+      const message = String(error);
+      return {
+        error_category: /cert|tls|ssl/i.test(message)
+          ? "tls"
+          : /scope|allow|denied/i.test(message)
+            ? "permission"
+            : /dns|resolve/i.test(message)
+              ? "dns"
+              : /timeout|timed out/i.test(message)
+                ? "timeout"
+                : "other",
+      };
+    } finally {
+      if (responseRid !== undefined)
+        await invoke("plugin:http|fetch_cancel_body", {
+          rid: responseRid,
+        }).catch(() => {});
+    }
+  });
   report.checks.push(
     "native credential store → real HTTPS refresh → me → Home",
   );
@@ -320,6 +387,11 @@ async function main() {
     "real logout; native credential removed; restart stays logged out",
   );
   await capture("06-development-logout");
+  if (process.env.ACCEPTANCE_MANUAL_OTP !== "1") {
+    report.manual_otp = "deferred by owner; not requested or verified";
+    report.status = "passed";
+    return;
+  }
   report.phase = "real email OTP";
   await waitForManualInput("ready");
   await page.locator("#login-email").fill(process.env.ACCEPTANCE_OTP_EMAIL);
