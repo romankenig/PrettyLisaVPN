@@ -137,7 +137,9 @@ class SandboxBillingProvider:
         return result
 
 
-async def deliver(settings: Settings, operation_id: UUID, event_id: UUID, status: TerminalStatus) -> None:
+async def deliver(
+    settings: Settings, operation_id: UUID, event_id: UUID, status: TerminalStatus
+) -> None:
     if settings.billing_provider != "sandbox":
         raise ValueError("Set BILLING_PROVIDER=sandbox explicitly before delivering test events")
     postgres = Postgres(settings)

@@ -70,9 +70,7 @@ async def test_subscription_delayed_confirmation_and_duplicate_notifications(sta
     assert (await overview(state))["plan"] == "FREE"
     assert (await get(state, operation_id)).json()["status"] == "PENDING"
     event_id = uuid4()
-    await asyncio.gather(
-        *(state[4].notify(operation_id, event_id, "SUCCEEDED") for _ in range(6))
-    )
+    await asyncio.gather(*(state[4].notify(operation_id, event_id, "SUCCEEDED") for _ in range(6)))
     assert (await get(state, operation_id)).json()["status"] == "SUCCEEDED"
     paid = await overview(state)
     assert paid["plan"] == "PREMIUM" and paid["auto_renew"]
@@ -82,11 +80,14 @@ async def test_subscription_delayed_confirmation_and_duplicate_notifications(sta
         assert (await post(state, data)).json()["status"] == "SUCCEEDED"
     assert (await overview(state))["paid_until"] == paid["paid_until"]
     async with state[0].session() as session:
-        assert await session.scalar(
-            select(func.count()).select_from(SandboxPaymentRecord).where(
-                SandboxPaymentRecord.operation_id == operation_id
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(SandboxPaymentRecord)
+                .where(SandboxPaymentRecord.operation_id == operation_id)
             )
-        ) == 1
+            == 1
+        )
         assert await session.get(BillingContractRecord, operation_id) is not None
         assert await session.get(SandboxNotificationRecord, event_id) is not None
 
@@ -168,9 +169,9 @@ async def test_notification_cannot_steal_worker_lease_and_recovery_waits_for_exp
     claim = uuid4()
     async with state[0].session() as session, session.begin():
         await session.execute(
-            update(BillingOperationRecord).where(BillingOperationRecord.id == operation_id).values(
-                claim_token=claim, lease_until=datetime.now(UTC) + timedelta(minutes=1)
-            )
+            update(BillingOperationRecord)
+            .where(BillingOperationRecord.id == operation_id)
+            .values(claim_token=claim, lease_until=datetime.now(UTC) + timedelta(minutes=1))
         )
     await state[4].notify(operation_id, uuid4(), "SUCCEEDED")
     worker = BillingWorker(state[0], state[4])
@@ -216,11 +217,14 @@ async def test_conflicting_events_are_atomic_and_original_request_is_pinned(stat
         receipt = await session.get(SandboxPaymentRecord, operation_id)
         accepted = ProviderRequest.model_validate(receipt.request)
         saved = receipt.result
-        assert await session.scalar(
-            select(func.count()).select_from(SandboxNotificationRecord).where(
-                SandboxNotificationRecord.operation_id == operation_id
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(SandboxNotificationRecord)
+                .where(SandboxNotificationRecord.operation_id == operation_id)
             )
-        ) == 1
+            == 1
+        )
     with pytest.raises(ValueError, match="identity"):
         await provider.reconcile(accepted.model_copy(update={"amount_minor": 1}))
     assert (await provider.reconcile(accepted)).model_dump(mode="json") == saved
