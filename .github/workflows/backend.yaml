@@ -168,13 +168,14 @@ jobs:
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
           DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
           DEV_EMAIL_SMTP_PASSWORD: ${{ secrets.DEV_EMAIL_SMTP_PASSWORD }}
+          DEV_SUPPORT_SMTP_PASSWORD: ${{ secrets.DEV_SUPPORT_SMTP_PASSWORD }}
         run: |
           missing=0
           for secret_name in \
             DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY \
             DEV_SSH_KNOWN_HOSTS DEV_API_DOMAIN DEV_ACME_EMAIL \
             DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET \
-            DEV_EMAIL_SMTP_PASSWORD
+            DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
           do
             if [[ -z "${!secret_name:-}" ]]; then
               echo "::error::Required development secret ${secret_name} is not configured"
@@ -196,6 +197,7 @@ jobs:
           DEV_VALKEY_URL: ${{ secrets.DEV_VALKEY_URL }}
           DEV_OTP_HMAC_SECRET: ${{ secrets.DEV_OTP_HMAC_SECRET }}
           DEV_EMAIL_SMTP_PASSWORD: ${{ secrets.DEV_EMAIL_SMTP_PASSWORD }}
+          DEV_SUPPORT_SMTP_PASSWORD: ${{ secrets.DEV_SUPPORT_SMTP_PASSWORD }}
         run: |
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
@@ -204,7 +206,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD
+          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -227,6 +229,7 @@ jobs:
             printf "OTP_HMAC_SECRET='%s'\n" "$DEV_OTP_HMAC_SECRET"
             printf "ACCESS_TOKEN_TTL_SECONDS='900'\n"
             printf "REFRESH_TOKEN_TTL_SECONDS='2592000'\n"
+            printf "SUPPORT_SMTP_PASSWORD='%s'\n" "$DEV_SUPPORT_SMTP_PASSWORD"
             printf "EMAIL_PROVIDER='timeweb'\n"
             printf "EMAIL_SMTP_HOST='smtp.timeweb.ru'\n"
             printf "EMAIL_SMTP_PORT='465'\n"

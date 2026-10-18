@@ -232,6 +232,43 @@ describe("about and support", () => {
     expect(screen.queryByText("secret server details")).not.toBeInTheDocument();
   });
 
+  it("preserves UUID and complete snapshot for retry after network failure", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("network"))
+        .mockResolvedValueOnce({ request_id: "ticket-retry" }),
+    };
+    const { vpn } = setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("alert");
+    await act(async () => vpn.reconcile("token"));
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByRole("status");
+    expect(sender.send.mock.calls[1][0]).toBe(sender.send.mock.calls[0][0]);
+  });
+
+  it("shows delivery status only after backend confirmation", async () => {
+    const sender = {
+      send: vi
+        .fn()
+        .mockResolvedValue({ request_id: "ticket-status", status: "ACCEPTED" }),
+      getStatus: vi
+        .fn()
+        .mockResolvedValue({ request_id: "ticket-status", status: "SENT" }),
+    };
+    setup(sender);
+    openForm();
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "отправить" }));
+    await screen.findByText("обращение сохранено и ожидает отправки письма");
+    fireEvent.click(screen.getByRole("button", { name: "проверить статус" }));
+    await screen.findByText("почтовый сервер принял письмо");
+    expect(sender.getStatus.mock.calls[0][0]).toBe("ticket-status");
+  });
+
   it("discards a popup on account change", async () => {
     const { session } = setup();
     openForm();

@@ -39,6 +39,14 @@ from prettylisavpn.emailing.timeweb import TimewebEmailProvider
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
+from prettylisavpn.support.delivery import (
+    SupportMailPort,
+    SupportSmtpMailer,
+    SupportWorker,
+    SupportWorkerPort,
+)
+from prettylisavpn.support.router import router as support_router
+from prettylisavpn.support.service import SupportService
 from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient, NodeAgentPort
 from prettylisavpn.vpn_nodes.countries import (
     DatabaseVpnCountryCatalog,
@@ -123,6 +131,8 @@ def create_app(
     node_agent: NodeAgentPort | None = None,
     vpn_termination: VpnTerminationHandler | None = None,
     vpn_session_reconciler: VpnSessionReconcilerPort | None = None,
+    support_mailer: SupportMailPort | None = None,
+    support_worker: SupportWorkerPort | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -174,6 +184,14 @@ def create_app(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                 )
+                app.state.support = SupportService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                )
+                active_support_worker = support_worker or SupportWorker(
+                    cast(Postgres, pg), support_mailer or SupportSmtpMailer.from_settings(config)
+                )
+                app.state.support_worker = active_support_worker
                 app.state.vpn_country_availability = (
                     vpn_country_availability
                     if vpn_country_availability is not None
@@ -253,10 +271,18 @@ def create_app(
                     if reconciler is not None
                     else None
                 )
+                support_task = (
+                    asyncio.create_task(active_support_worker.run(monitor_stop))
+                    if isinstance(pg, Postgres)
+                    else None
+                )
                 logger.info("application_started")
                 try:
                     yield
                 finally:
+                    monitor_stop.set()
+                    if support_task is not None:
+                        await support_task
                     if monitor_task is not None:
                         monitor_stop.set()
                         await monitor_task
@@ -280,6 +306,7 @@ def create_app(
     app.include_router(devices_router)
     app.include_router(vpn_router)
     app.include_router(messages_router)
+    app.include_router(support_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

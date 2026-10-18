@@ -674,11 +674,11 @@ async function main() {
     .setInputFiles(path.join(output, "08-about.png"));
   await support.getByText("08-about.png", { exact: true }).waitFor();
   if (
-    !(await support
+    await support
       .getByRole("button", { name: "отправить", exact: true })
-      .isDisabled())
+      .isDisabled()
   )
-    throw new Error("Unconfigured support must not offer a fake send");
+    throw new Error("Configured support sender must allow submission");
   await screenshot("08b-support-filled");
   await support.getByText("что будет приложено", { exact: true }).click();
   const technical = await support.locator("pre").innerText();
@@ -689,6 +689,29 @@ async function main() {
   )
     throw new Error("Support diagnostics must use a safe whitelist");
   await screenshot("08c-support-diagnostics");
+  await support.getByText("что будет приложено", { exact: true }).click();
+  await support.getByRole("button", { name: "отправить", exact: true }).click();
+  await support.getByRole("alert").waitFor();
+  await screenshot("08d-support-network-retry");
+  await support.getByRole("button", { name: "отправить", exact: true }).click();
+  await support
+    .getByRole("heading", { name: "обращение принято", exact: true })
+    .waitFor();
+  await screenshot("08e-support-accepted");
+  await support
+    .getByRole("button", { name: "проверить статус", exact: true })
+    .click();
+  await support
+    .getByText("почтовый сервер принял письмо", { exact: true })
+    .waitFor();
+  await screenshot("08f-support-status");
+  const supportEvidence = await (
+    await fetch("http://127.0.0.1:8000/ui-review/support-evidence")
+  ).json();
+  if (supportEvidence.requests !== 1 || supportEvidence.post_attempts !== 1)
+    throw new Error(
+      "Lost support response must recover without another ticket",
+    );
   await page.keyboard.press("Escape");
   await support.waitFor({ state: "detached" });
   await about.getByRole("button", { name: "написать в поддержку" }).click();

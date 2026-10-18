@@ -7,7 +7,12 @@ import {
   type FormEvent,
 } from "react";
 import { useApplication } from "../state/application";
-import { supportDiagnostics, validateScreenshots } from "../support/model";
+import {
+  type SupportSubmission,
+  type SupportReceipt,
+  supportDiagnostics,
+  validateScreenshots,
+} from "../support/model";
 
 export function SupportDialog({
   frontend,
@@ -41,7 +46,8 @@ export function SupportDialog({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [checkingFiles, setCheckingFiles] = useState(false);
-  const [receipt, setReceipt] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<SupportReceipt | null>(null);
+  const attempt = useRef<SupportSubmission | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
   const alive = useRef(true);
@@ -98,15 +104,29 @@ export function SupportDialog({
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const result = await support.send(
-        {
+      // Keep the complete snapshot, including collected_at, stable after an
+      // uncertain network result. Editing the draft explicitly starts a new report.
+      const previous = attempt.current;
+      if (
+        !previous ||
+        previous.subject !== subject.trim() ||
+        previous.description !== description.trim() ||
+        previous.reply_email !== email.trim() ||
+        (previous.diagnostics !== null) !== includeDiagnostics ||
+        previous.screenshots.length !== screenshots.length ||
+        previous.screenshots.some((file, index) => file !== screenshots[index])
+      ) {
+        attempt.current = {
           request_id: crypto.randomUUID(),
           subject: subject.trim(),
           description: description.trim(),
           reply_email: email.trim(),
           diagnostics: includeDiagnostics ? diagnostics : null,
           screenshots,
-        },
+        };
+      }
+      const result = await support.send(
+        attempt.current!,
         active.accessToken,
         abort.signal,
       );
@@ -117,7 +137,7 @@ export function SupportDialog({
       )
         return;
       if (!result.request_id.trim()) throw new Error("INVALID_SUPPORT_RECEIPT");
-      setReceipt(result.request_id);
+      setReceipt(result);
       setScreenshots([]);
     } catch {
       if (alive.current && !abort.signal.aborted)
@@ -154,8 +174,54 @@ export function SupportDialog({
       {receipt ? (
         <div className="support-receipt" role="status">
           <h3>обращение принято</h3>
-          <p>ответ придёт на {email}</p>
-          <p>номер: {receipt}</p>
+          <p>адрес для ответа: {email}</p>
+          <p>номер: {receipt.request_id}</p>
+          <p>
+            {
+              {
+                ACCEPTED: "обращение сохранено и ожидает отправки письма",
+                RETRYING: "отправка письма будет повторена",
+                SENT: "почтовый сервер принял письмо",
+                FAILED: "письмо пока не отправлено; обращение сохранено",
+                EXPIRED: "срок хранения содержимого истёк",
+              }[receipt.status ?? "ACCEPTED"]
+            }
+          </p>
+          {support?.getStatus ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                if (!active || !support.getStatus) return;
+                setPending(true);
+                setError(null);
+                const abort = new AbortController();
+                controller.current = abort;
+                void support
+                  .getStatus(
+                    receipt.request_id,
+                    active.accessToken,
+                    abort.signal,
+                  )
+                  .then((value) => {
+                    if (alive.current && !abort.signal.aborted) {
+                      if (value) setReceipt(value);
+                      else setError("не удалось получить статус обращения");
+                    }
+                  })
+                  .catch(() => {
+                    if (alive.current && !abort.signal.aborted)
+                      setError("не удалось получить статус обращения");
+                  })
+                  .finally(() => {
+                    if (alive.current) setPending(false);
+                  });
+              }}
+            >
+              проверить статус
+            </button>
+          ) : null}
+          {error ? <p role="alert">{error}</p> : null}
           <button type="button" onClick={onClose}>
             готово
           </button>
@@ -278,6 +344,7 @@ export function SupportDialog({
               {error}
             </p>
           ) : null}
+          <p>закрытие окна не отменяет уже принятое обращение</p>
           <footer className="support-actions">
             <button type="button" className="support-cancel" onClick={onClose}>
               отмена

@@ -128,3 +128,8 @@ Backend account messages task: source 0.3.0, migration 0019, shared JSON v1 GET/
 and closed server-only publication CLI. Read receipts belong to the account and
 revision, not the device. Windows stays 0.8.0; Android/other clients require their
 own contract adapter/UI. See docs/account-messages.md and the task PR for evidence.
+
+Support task: backend 0.4.0, Windows 0.9.0, migration 0020. Connected private
+POST/status API, account-scoped idempotency, app-helper SMTP, fixed help recipient,
+durable retries and 30-day content retention. See docs/support-ui.md and task PR
+for real evidence. Next independent task starts from these component versions.

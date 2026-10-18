@@ -6,6 +6,11 @@
 {$API_DOMAIN} {
 	encode zstd gzip
 
+	@support path /support/requests
+	request_body @support {
+		max_size 11MB
+	}
+
 	reverse_proxy backend:8000 {
 		health_uri /health
 		health_interval 30s
@@ -17,3 +22,4 @@
 		format json
 	}
 }
+

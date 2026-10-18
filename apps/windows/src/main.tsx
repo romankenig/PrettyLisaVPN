@@ -4,6 +4,7 @@ import { HashRouter } from "react-router-dom";
 import { loadConfig } from "./config/config";
 import { createApiClient } from "./api/client";
 import { createBillingClient } from "./billing/client";
+import { createSupportSender } from "./support/client";
 import { createMessagesClient } from "./messages/client";
 import {
   createPaymentBrowser,
@@ -50,6 +51,10 @@ try {
         value={{
           config,
           api,
+          support: createSupportSender(
+            config.backendBaseUrl,
+            createHttpTransport(),
+          ),
           messages: createMessagesClient(
             config.backendBaseUrl,
             createHttpTransport(),

@@ -29,13 +29,23 @@ export interface SupportSubmission {
   readonly screenshots: readonly File[];
 }
 
-// A future backend adapter supplies this port. No recipient or SMTP secrets in UI.
+export interface SupportReceipt {
+  readonly request_id: string;
+  readonly status?: "ACCEPTED" | "RETRYING" | "SENT" | "FAILED" | "EXPIRED";
+}
+
+// No recipient or SMTP credentials in the application payload.
 export interface SupportSender {
   send(
     submission: SupportSubmission,
     accessToken: string,
     signal: AbortSignal,
-  ): Promise<{ readonly request_id: string }>;
+  ): Promise<SupportReceipt>;
+  getStatus?(
+    requestId: string,
+    accessToken: string,
+    signal: AbortSignal,
+  ): Promise<SupportReceipt | null>;
 }
 
 export function supportDiagnostics(
@@ -98,11 +108,13 @@ export async function validateScreenshots(files: readonly File[]) {
     const webp =
       String.fromCharCode(...header.slice(0, 4)) === "RIFF" &&
       String.fromCharCode(...header.slice(8, 12)) === "WEBP";
-    if (!(
-      (file.type === "image/png" && png) ||
-      (file.type === "image/jpeg" && jpeg) ||
-      (file.type === "image/webp" && webp)
-    ))
+    if (
+      !(
+        (file.type === "image/png" && png) ||
+        (file.type === "image/jpeg" && jpeg) ||
+        (file.type === "image/webp" && webp)
+      )
+    )
       return "поддерживаются скриншоты PNG, JPEG и WebP";
   }
   return null;

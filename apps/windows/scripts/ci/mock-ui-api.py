@@ -1,5 +1,7 @@
 """Loopback-only UI fixtures. Never connects to production or creates VPN tunnels."""
 import argparse
+from email.parser import BytesParser
+from email.policy import default
 import json
 import os
 from pathlib import Path
@@ -14,6 +16,9 @@ INSTALLATION_ID = "33333333-3333-4333-8333-333333333333"
 EVIDENCE_PATH = os.getenv("DEVICE_BACKEND_EVIDENCE_PATH")
 DEVICE_EVIDENCE = json.loads(Path(EVIDENCE_PATH).read_text(encoding="utf-8")) if EVIDENCE_PATH else None
 DEVICE_REVOKED = False
+SUPPORT_REQUESTS = {}
+SUPPORT_ATTEMPTS = 0
+SUPPORT_DROP_FIRST = True
 ACCOUNT_EMAIL = DEVICE_EVIDENCE["account_email"] if DEVICE_EVIDENCE else "ui-review@example.com"
 if DEVICE_EVIDENCE:
     current = next(item for item in DEVICE_EVIDENCE["devices"] if item["is_current"])
@@ -204,8 +209,37 @@ class Handler(BaseHTTPRequestHandler):
 
     def respond(self):
         length = int(self.headers.get("Content-Length", "0"))
-        body = json.loads(self.rfile.read(length)) if length else {}
-        status, data = fixture(self.command, self.path, body)
+        raw = self.rfile.read(length) if length else b""
+        content_type = self.headers.get("Content-Type", "")
+        if self.path.startswith("/support/requests"):
+            global SUPPORT_ATTEMPTS
+            request_id = self.path.rsplit("/", 1)[-1]
+            if self.command == "POST":
+                multipart = BytesParser(policy=default).parsebytes(
+                    ("Content-Type: " + content_type + "\r\nMIME-Version: 1.0\r\n\r\n").encode() + raw)
+                parts = list(multipart.iter_parts())
+                report = next(part for part in parts if part.get_param("name", header="content-disposition") == "report")
+                payload = json.loads(report.get_payload(decode=True))
+                request_id = payload["request_id"]
+                SUPPORT_ATTEMPTS += 1
+                SUPPORT_REQUESTS.setdefault(request_id, {"request_id": request_id, "status": "ACCEPTED"})
+                # Simulate acceptance followed by a lost HTTP response. This fixture sends no email.
+                if SUPPORT_DROP_FIRST and SUPPORT_ATTEMPTS == 1:
+                    self.connection.shutdown(2)
+                    self.connection.close()
+                    return
+                status, data = 202, SUPPORT_REQUESTS[request_id]
+            else:
+                data = SUPPORT_REQUESTS.get(request_id)
+                status = 200 if data else 404
+                data = data or {"error": {"code": "SUPPORT_NOT_FOUND"}}
+                if status == 200:
+                    data = {**data, "status": "SENT"}
+        elif self.path == "/ui-review/support-evidence":
+            status, data = 200, {"requests": len(SUPPORT_REQUESTS), "post_attempts": SUPPORT_ATTEMPTS, "email_delivery_tested": False}
+        else:
+            body = json.loads(raw) if raw else {}
+            status, data = fixture(self.command, self.path, body)
         encoded = json.dumps(data).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
