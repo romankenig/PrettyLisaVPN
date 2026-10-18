@@ -35,13 +35,16 @@ jobs:
           [[ "$DEV_VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           python3 - <<'PYTHON'
           import os
+          import re
           import socket
           host = os.environ["DEV_VPS_HOST"]
-          if host not in {"95.140.152.42", "api.prettylisavpn.com"}:
-              raise SystemExit("Configured target is not the owner-confirmed development VPS")
+          if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
+              raise SystemExit("Configured host is not a plain DNS hostname or IPv4 address")
           addresses = {r[4][0] for r in socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)}
           if addresses != {"95.140.152.42"}:
+              print("target_matches_confirmed_development_vps=false")
               raise SystemExit("Configured target resolves outside the confirmed development VPS")
+          print("target_matches_confirmed_development_vps=true")
           PYTHON
           umask 077
           ssh_directory="$(mktemp -d)"
@@ -55,7 +58,7 @@ jobs:
           timeout 120 ssh \
             -i "$ssh_directory/id_ed25519" \
             -o BatchMode=yes -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
+            -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 \
             -o "UserKnownHostsFile=$ssh_directory/known_hosts" \
             -o ConnectTimeout=10 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             -o LogLevel=ERROR -p "$DEV_VPS_PORT" \
