@@ -207,3 +207,16 @@ async def test_owned_auth_id_preserved_and_bad_attachment_never_written(support_
     async with postgres.session() as session:
         row = await session.get(SupportRequestRecord, (own.user.id, UUID(data["request_id"])))
         assert row.payload["diagnostics"]["auth_session_id"] == str(own.sessions[0].session.id)
+
+
+async def test_daily_quota_survives_hour_window(support_state):
+    postgres, own, _, _, client = support_state
+    for _ in range(20):
+        data = report()
+        assert (await submit(client, own.access_token, data, False)).status_code == 202
+        async with postgres.session() as session, session.begin():
+            row = await session.get(SupportRequestRecord, (own.user.id, UUID(data["request_id"])))
+            row.created_at = datetime.now(UTC) - timedelta(hours=2)
+    denied = await submit(client, own.access_token, report(), False)
+    assert denied.status_code == 429
+    assert denied.json()["error"]["code"] == "RATE_LIMITED"
