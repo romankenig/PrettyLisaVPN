@@ -45,9 +45,9 @@ async def publish_catalog(postgres: Postgres, catalog: Catalog, expected_revisio
 
 
 async def publish_file(path: Path, expected_revision: UUID | None) -> UUID:
-    if path.stat().st_size > 65536:
+    if (await asyncio.to_thread(path.stat)).st_size > 65536:
         raise ValueError("Catalogue exceeds 64 KiB")
-    catalog = Catalog.model_validate_json(path.read_bytes())
+    catalog = Catalog.model_validate_json(await asyncio.to_thread(path.read_bytes))
     postgres = Postgres(Settings())
     try:
         return await publish_catalog(postgres, catalog, expected_revision)

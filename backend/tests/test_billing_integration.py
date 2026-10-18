@@ -18,8 +18,13 @@ from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.billing.catalog import CatalogConflictError, publish_catalog
-from prettylisavpn.billing.domain import DEFAULT_GROUP_ID, Catalog
-from prettylisavpn.billing.model import BillingCatalogRecord, ClientGroupMembershipRecord, ClientGroupRecord, SubscriptionPriceRecord
+from prettylisavpn.billing.domain import Catalog
+from prettylisavpn.billing.model import (
+    BillingCatalogRecord,
+    ClientGroupMembershipRecord,
+    ClientGroupRecord,
+    SubscriptionPriceRecord,
+)
 from prettylisavpn.billing.pricing import PriceConfirmationError, lock_contract_price
 from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.devices.repository import DeviceRepository
@@ -38,7 +43,7 @@ async def billing_state(access_state):
         row = await session.get(BillingCatalogRecord, 1)
         original = (row.document, row.revision, row.updated_at)
     app = create_app(config, postgres=postgres, valkey=AsyncMock(), product_events=AsyncMock(), support_worker=AsyncMock())
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with app.router.lifespan_context(app), AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         try:
             yield postgres, user_id, token, client, config
         finally:
@@ -80,7 +85,7 @@ async def test_auth_account_scope_cross_device_and_no_payment_side_effects(billi
     assert await overview(client, token) == first
     # A newly constructed application uses PostgreSQL, not process-local fixtures/cache.
     restarted = create_app(config, postgres=postgres, valkey=AsyncMock(), product_events=AsyncMock(), support_worker=AsyncMock())
-    async with AsyncClient(transport=ASGITransport(app=restarted), base_url="http://test") as another:
+    async with restarted.router.lifespan_context(restarted), AsyncClient(transport=ASGITransport(app=restarted), base_url="http://test") as another:
         assert await overview(another, token) == first
 
 
@@ -187,5 +192,5 @@ async def test_record_billing_api_evidence(billing_state):
     assert me.status_code == 200 and me.json()["plan"] == snapshots["platinum"]["plan"]
     if path:
         output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps({"source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")), "provenance": "Actual HTTP responses with real PostgreSQL/auth in disposable CI; no live account or payment provider", "snapshots": snapshots}, indent=2), encoding="utf-8")
+        await asyncio.to_thread(output.parent.mkdir, parents=True, exist_ok=True)
+        await asyncio.to_thread(output.write_text, json.dumps({"source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")), "provenance": "Actual HTTP responses with real PostgreSQL/auth in disposable CI; no live account or payment provider", "snapshots": snapshots}, indent=2), encoding="utf-8")

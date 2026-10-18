@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, AwareDatetime, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 

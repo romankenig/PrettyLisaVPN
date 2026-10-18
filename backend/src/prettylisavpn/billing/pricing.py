@@ -12,10 +12,14 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.billing.domain import DEFAULT_GROUP_ID, Catalog, CurrentPrice
-from prettylisavpn.billing.model import BillingCatalogRecord, ClientGroupMembershipRecord, SubscriptionPriceRecord
+from prettylisavpn.billing.model import (
+    BillingCatalogRecord,
+    ClientGroupMembershipRecord,
+    SubscriptionPriceRecord,
+)
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.model import SubscriptionRecord
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
-from prettylisavpn.subscriptions.domain import SubscriptionPlan
 
 
 class PriceConfirmationError(ValueError):

@@ -9,7 +9,11 @@ from starlette.responses import Response
 
 from prettylisavpn.auth.router import bearer_token
 from prettylisavpn.auth.service import BlockedUserError
-from prettylisavpn.auth.session_service import AuthServiceUnavailableError, InvalidSessionError, RevokedDeviceError
+from prettylisavpn.auth.session_service import (
+    AuthServiceUnavailableError,
+    InvalidSessionError,
+    RevokedDeviceError,
+)
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.billing.domain import Overview
 from prettylisavpn.billing.service import BillingOverviewPort, BillingUnavailableError

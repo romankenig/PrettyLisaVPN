@@ -8,8 +8,18 @@ from sqlalchemy import literal, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
-from prettylisavpn.billing.domain import Catalog, CurrentPrice, DEFAULT_GROUP_ID, Overview, overview_for
-from prettylisavpn.billing.model import BillingCatalogRecord, ClientGroupMembershipRecord, SubscriptionPriceRecord
+from prettylisavpn.billing.domain import (
+    DEFAULT_GROUP_ID,
+    Catalog,
+    CurrentPrice,
+    Overview,
+    overview_for,
+)
+from prettylisavpn.billing.model import (
+    BillingCatalogRecord,
+    ClientGroupMembershipRecord,
+    SubscriptionPriceRecord,
+)
 from prettylisavpn.connections import Postgres
 from prettylisavpn.subscriptions.model import SubscriptionRecord
 from prettylisavpn.subscriptions.repository import SubscriptionRepository

@@ -87,9 +87,15 @@ export function parseOverview(value: unknown): BillingOverview {
   ) {
     throw new Error("INVALID_BILLING_RESPONSE");
   }
-  if (!(v.payment_operations_available === undefined || typeof v.payment_operations_available === "boolean"))
+  if (!(
+    v.payment_operations_available === undefined ||
+    typeof v.payment_operations_available === "boolean"
+  ))
     throw new Error("INVALID_BILLING_RESPONSE");
-  if (v.payment_operations_available === false && (v.actions.length !== 0 || v.pending_operation_id !== null))
+  if (
+    v.payment_operations_available === false &&
+    (v.actions.length !== 0 || v.pending_operation_id !== null)
+  )
     throw new Error("INVALID_BILLING_RESPONSE");
   if (
     (v.status === "ACTIVE" || v.status === "CANCELED") &&
@@ -129,7 +135,8 @@ export function parseOverview(value: unknown): BillingOverview {
   if (new Set(offers.map((o) => o.id)).size !== offers.length)
     throw new Error("INVALID_BILLING_RESPONSE");
   return {
-    payment_operations_available: v.payment_operations_available as boolean | undefined,
+    payment_operations_available: v.payment_operations_available as
+      boolean | undefined,
     revision: v.revision,
     pending_operation_id: v.pending_operation_id as string | null,
     plan: v.plan,

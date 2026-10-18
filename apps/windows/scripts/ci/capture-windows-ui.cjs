@@ -11,7 +11,9 @@ const deviceEvidence = evidencePath
   ? JSON.parse(fs.readFileSync(evidencePath, "utf8"))
   : null;
 const billingEvidencePath = process.env.BILLING_BACKEND_EVIDENCE_PATH;
-const billingEvidence = billingEvidencePath ? JSON.parse(fs.readFileSync(billingEvidencePath, "utf8")) : null;
+const billingEvidence = billingEvidencePath
+  ? JSON.parse(fs.readFileSync(billingEvidencePath, "utf8"))
+  : null;
 const accountEmail = deviceEvidence?.account_email || "ui-review@example.com";
 const frontendVersion = JSON.parse(
   fs.readFileSync("package.json", "utf8"),
@@ -23,7 +25,11 @@ const output = path.resolve("artifacts/ui-review");
 fs.mkdirSync(output, { recursive: true });
 if (deviceEvidence)
   fs.copyFileSync(evidencePath, path.join(output, "device-response.json"));
-if (billingEvidence) fs.copyFileSync(billingEvidencePath, path.join(output, "billing-response.json"));
+if (billingEvidence)
+  fs.copyFileSync(
+    billingEvidencePath,
+    path.join(output, "billing-response.json"),
+  );
 const executable = path.resolve(
   "src-tauri/target/debug/prettylisavpn-windows.exe",
 );
@@ -585,33 +591,75 @@ async function main() {
     );
   await screenshot("05f-subscription-unavailable");
   if (billingEvidence) {
-    for (const [scenario, overview] of Object.entries(billingEvidence.snapshots)) {
+    for (const [scenario, overview] of Object.entries(
+      billingEvidence.snapshots,
+    )) {
       await billingScenario(`server-${scenario}`);
       await page.getByRole("button", { name: "обновить", exact: true }).click();
-      await page.getByText("оплата пока недоступна. данные подписки доступны для просмотра.", { exact: true }).waitFor();
+      await page
+        .getByText(
+          "оплата пока недоступна. данные подписки доступны для просмотра.",
+          { exact: true },
+        )
+        .waitFor();
       const offer = overview.offers[0];
       if (offer) {
-        for (const [code, label] of [["RUB", "цена в рублях"], ["USD", "цена в долларах"]]) {
+        for (const [code, label] of [
+          ["RUB", "цена в рублях"],
+          ["USD", "цена в долларах"],
+        ]) {
           const amount = offer.prices[code].amount_minor;
-          const formatted = new Intl.NumberFormat("ru-RU", { style: "currency", currency: code, minimumFractionDigits: amount % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 }).format(amount / 100);
-          const actual = await page.getByLabel(label).locator("strong").textContent();
-          if (actual.replace(/\s/g, "") !== formatted.replace(/\s/g, "")) throw new Error("Native price differs from recorded backend");
+          const formatted = new Intl.NumberFormat("ru-RU", {
+            style: "currency",
+            currency: code,
+            minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
+            maximumFractionDigits: 2,
+          }).format(amount / 100);
+          const actual = await page
+            .getByLabel(label)
+            .locator("strong")
+            .textContent();
+          if (actual.replace(/\s/g, "") !== formatted.replace(/\s/g, ""))
+            throw new Error("Native price differs from recorded backend");
         }
       }
       if (scenario === "platinum") {
-        await page.getByText("тариф назначен вручную. продление через оплату недоступно.", { exact: true }).waitFor();
-        if (await page.getByLabel("цена в рублях").count()) throw new Error("Manual Platinum must not be sold");
+        await page
+          .getByText(
+            "тариф назначен вручную. продление через оплату недоступно.",
+            { exact: true },
+          )
+          .waitFor();
+        if (await page.getByLabel("цена в рублях").count())
+          throw new Error("Manual Platinum must not be sold");
       } else {
-        const action = page.getByRole("button", { name: overview.plan === "FREE" ? "оформить подписку" : "продлить подписку", exact: true });
-        if (!(await action.isDisabled())) throw new Error("Read-only payment action is enabled");
+        const action = page.getByRole("button", {
+          name:
+            overview.plan === "FREE"
+              ? "оформить подписку"
+              : "продлить подписку",
+          exact: true,
+        });
+        if (!(await action.isDisabled()))
+          throw new Error("Read-only payment action is enabled");
       }
-      if (scenario === "active-unknown") await page.getByText("стоимость подписки: сведения недоступны", { exact: true }).waitFor();
-      if (scenario === "expired") await page.getByText("платный доступ не активен", { exact: true }).waitFor();
-      if (await page.getByRole("dialog").count()) throw new Error("Read-only overview opened checkout");
+      if (scenario === "active-unknown")
+        await page
+          .getByText("стоимость подписки: сведения недоступны", { exact: true })
+          .waitFor();
+      if (scenario === "expired")
+        await page
+          .getByText("платный доступ не активен", { exact: true })
+          .waitFor();
+      if (await page.getByRole("dialog").count())
+        throw new Error("Read-only overview opened checkout");
       await screenshot(`05g-billing-backend-${scenario}`);
     }
-    const evidence = await (await fetch("http://127.0.0.1:8000/ui-review/billing-readonly-evidence")).json();
-    if (evidence.operation_attempts !== 0) throw new Error("Read-only overview attempted a payment operation");
+    const evidence = await (
+      await fetch("http://127.0.0.1:8000/ui-review/billing-readonly-evidence")
+    ).json();
+    if (evidence.operation_attempts !== 0)
+      throw new Error("Read-only overview attempted a payment operation");
   }
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();

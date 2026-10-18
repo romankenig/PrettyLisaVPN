@@ -30,9 +30,9 @@ from prettylisavpn.auth.session_service import (
     AuthenticatedSessionHandler,
     AuthenticatedSessionService,
 )
-from prettylisavpn.config import Settings
 from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
+from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
 from prettylisavpn.devices.router import router as devices_router

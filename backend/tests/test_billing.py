@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from prettylisavpn.auth.session_service import InvalidSessionError
-from prettylisavpn.billing.domain import Catalog, Price, DEFAULT_GROUP_ID, overview_for
+from prettylisavpn.billing.domain import DEFAULT_GROUP_ID, Catalog, Price, overview_for
 from prettylisavpn.billing.service import BillingUnavailableError
 from prettylisavpn.config import Settings
 from prettylisavpn.main import create_app
