@@ -175,7 +175,9 @@ class SandboxMandateRecord(Base):
 
     __tablename__ = "billing_sandbox_mandates"
     __table_args__ = (
-        CheckConstraint("status IN ('ACTIVE', 'REVOKED')", name="ck_billing_sandbox_mandates_status"),
+        CheckConstraint(
+            "status IN ('ACTIVE', 'REVOKED')", name="ck_billing_sandbox_mandates_status"
+        ),
     )
     reference: Mapped[str] = mapped_column(String(200), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(

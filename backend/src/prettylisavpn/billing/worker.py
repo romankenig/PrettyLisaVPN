@@ -151,8 +151,7 @@ class BillingWorker:
         ):
             raise ValueError("Cancellation not confirmed")
         if request.action == "CHANGE_METHOD" and (
-            result.mandate is None
-            or result.mandate.reference == request.previous_mandate_reference
+            result.mandate is None or result.mandate.reference == request.previous_mandate_reference
         ):
             raise ValueError("New mandate not confirmed")
         if (

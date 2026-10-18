@@ -68,7 +68,9 @@ async def test_parallel_renewal_applies_exactly_one_calendar_month_without_rebin
     await subscribe(state)
     async with state[0].session() as session, session.begin():
         await session.execute(
-            update(SubscriptionRecord).where(SubscriptionRecord.user_id == state[1]).values(
+            update(SubscriptionRecord)
+            .where(SubscriptionRecord.user_id == state[1])
+            .values(
                 current_period_end=datetime.fromisoformat(paid_until).replace(tzinfo=UTC),
                 updated_at=datetime.now(UTC),
             )
@@ -81,7 +83,9 @@ async def test_parallel_renewal_applies_exactly_one_calendar_month_without_rebin
     assert len(ids) == 1 and await projection(state) == before
     operation_id, event_id = UUID(ids.pop()), uuid4()
     await asyncio.gather(*(state[4].notify(operation_id, event_id, "SUCCEEDED") for _ in range(3)))
-    await asyncio.gather(*(BillingWorker(state[0], state[4]).process(operation_id) for _ in range(3)))
+    await asyncio.gather(
+        *(BillingWorker(state[0], state[4]).process(operation_id) for _ in range(3))
+    )
     after = await projection(state)
     assert after["end"] == datetime.fromisoformat(expected).replace(tzinfo=UTC)
     assert after["start"] == before["start"] and after["contract"] == before["contract"]
@@ -93,7 +97,9 @@ async def test_parallel_renewal_applies_exactly_one_calendar_month_without_rebin
     assert await projection(state) == after
 
 
-async def test_change_method_and_cancel_preserve_paid_dates_and_revoke_only_the_old_authority(state):
+async def test_change_method_and_cancel_preserve_paid_dates_and_revoke_only_the_old_authority(
+    state,
+):
     await subscribe(state)
     before = await projection(state)
     command = await body(state, "CHANGE_METHOD")
@@ -103,7 +109,8 @@ async def test_change_method_and_cancel_preserve_paid_dates_and_revoke_only_the_
     # Provider result commits before local projection, so the old UI state remains until settlement.
     assert await projection(state) == before
     assert await authorities(state) == {
-        before["mandate"]: "REVOKED", "sandbox-" + str(operation_id): "ACTIVE"
+        before["mandate"]: "REVOKED",
+        "sandbox-" + str(operation_id): "ACTIVE",
     }
     assert (await get(state, operation_id)).json()["status"] == "SUCCEEDED"
     changed = await projection(state)
@@ -234,12 +241,17 @@ async def test_sandbox_does_not_acknowledge_unknown_foreign_or_revoked_authority
     if invalid == "revoked":
         async with state[0].session() as session, session.begin():
             await session.execute(
-                update(SandboxMandateRecord).where(SandboxMandateRecord.reference == reference)
+                update(SandboxMandateRecord)
+                .where(SandboxMandateRecord.reference == reference)
                 .values(status="REVOKED")
             )
     request = ProviderRequest(
-        operation_id=uuid4(), account_id=uuid4() if invalid == "foreign" else state[1],
-        action="CHANGE_METHOD", payment_route=None, amount_minor=None, currency="RUB",
+        operation_id=uuid4(),
+        account_id=uuid4() if invalid == "foreign" else state[1],
+        action="CHANGE_METHOD",
+        payment_route=None,
+        amount_minor=None,
+        currency="RUB",
         previous_mandate_reference="missing" if invalid == "unknown" else reference,
     )
     with pytest.raises(ValueError, match="unknown, foreign or revoked"):

@@ -173,9 +173,7 @@ class SandboxBillingProvider:
         replacement = result.mandate.reference if result.mandate else None
         if previous is not None and previous.reference != replacement:
             previous.status = "REVOKED"
-        if result.mandate is not None and (
-            previous is None or previous.reference != replacement
-        ):
+        if result.mandate is not None and (previous is None or previous.reference != replacement):
             session.add(
                 SandboxMandateRecord(
                     reference=result.mandate.reference,

@@ -61,7 +61,9 @@ def test_renewal_preserves_authority_and_method_change_replaces_it():
     assert not renewed.previous_mandate_revoked and not renewed.recurring_stopped
     BillingWorker._validate_confirmation(renew, renewed)
     changed = request(
-        action="CHANGE_METHOD", payment_route=None, amount_minor=None,
+        action="CHANGE_METHOD",
+        payment_route=None,
+        amount_minor=None,
         previous_mandate_reference="sandbox-existing",
     )
     receipt = simulated_result(changed, "SUCCEEDED")
@@ -86,9 +88,7 @@ def test_unsuccessful_lifecycle_results_do_not_claim_money_or_mandate_changes(ac
 
 @pytest.mark.parametrize("route", ["CRYPTO", "ALIPAY_WECHAT"])
 def test_nonrecurring_renewal_confirms_previous_authority_revocation(route):
-    accepted = request(
-        action="RENEW", payment_route=route, previous_mandate_reference="old"
-    )
+    accepted = request(action="RENEW", payment_route=route, previous_mandate_reference="old")
     result = simulated_result(accepted, "SUCCEEDED")
     assert result.mandate is None and result.recurring_stopped and result.previous_mandate_revoked
     BillingWorker._validate_confirmation(accepted, result)

@@ -35,9 +35,13 @@ async def test_upgrade_reconstructs_active_revoked_and_unsettled_authorities():
 
     async def migrate(*args):
         process = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "alembic", *args,
+            sys.executable,
+            "-m",
+            "alembic",
+            *args,
             env={**os.environ, "POSTGRES_URL": target},
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         try:
             await asyncio.wait_for(process.communicate(), timeout=45)
@@ -66,21 +70,33 @@ async def test_upgrade_reconstructs_active_revoked_and_unsettled_authorities():
                 (users[2], None, "foreign-provider", "SUCCEEDED", "other-provider"),
             ]:
                 operation_id = uuid4()
-                session.add(BillingOperationRecord(
-                    id=operation_id, user_id=user, request_id=uuid4(), fingerprint="0" * 64,
-                    command={}, quote={}, provider_name=provider, status=local_status,
-                    next_attempt_at=datetime.now(UTC), attempts=1, created_at=datetime.now(UTC),
-                ))
+                session.add(
+                    BillingOperationRecord(
+                        id=operation_id,
+                        user_id=user,
+                        request_id=uuid4(),
+                        fingerprint="0" * 64,
+                        command={},
+                        quote={},
+                        provider_name=provider,
+                        status=local_status,
+                        next_attempt_at=datetime.now(UTC),
+                        attempts=1,
+                        created_at=datetime.now(UTC),
+                    )
+                )
                 await session.flush()
-                session.add(SandboxPaymentRecord(
-                    operation_id=operation_id,
-                    request={"previous_mandate_reference": previous},
-                    result={
-                        "status": "SUCCEEDED",
-                        "mandate": {"reference": replacement} if replacement else None,
-                        "previous_mandate_revoked": previous is not None,
-                    },
-                ))
+                session.add(
+                    SandboxPaymentRecord(
+                        operation_id=operation_id,
+                        request={"previous_mandate_reference": previous},
+                        result={
+                            "status": "SUCCEEDED",
+                            "mandate": {"reference": replacement} if replacement else None,
+                            "previous_mandate_revoked": previous is not None,
+                        },
+                    )
+                )
         await postgres.close()
         for _ in range(2):
             await migrate("upgrade", "head")
@@ -88,7 +104,9 @@ async def test_upgrade_reconstructs_active_revoked_and_unsettled_authorities():
             async with postgres.session() as session:
                 rows = list(await session.scalars(select(SandboxMandateRecord)))
                 assert {row.reference: row.status for row in rows} == {
-                    "old": "REVOKED", "new": "REVOKED", "awaiting-local-settlement": "ACTIVE",
+                    "old": "REVOKED",
+                    "new": "REVOKED",
+                    "awaiting-local-settlement": "ACTIVE",
                 }
                 assert next(row.user_id for row in rows if row.status == "ACTIVE") == users[1]
             await postgres.close()
@@ -96,5 +114,7 @@ async def test_upgrade_reconstructs_active_revoked_and_unsettled_authorities():
     finally:
         await postgres.close()
         async with admin.connect() as connection:
-            await connection.execute(text('DROP DATABASE IF EXISTS "' + database + '" WITH (FORCE)'))
+            await connection.execute(
+                text('DROP DATABASE IF EXISTS "' + database + '" WITH (FORCE)')
+            )
         await admin.dispose()
