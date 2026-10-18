@@ -167,8 +167,9 @@ async def test_record_device_api_evidence_with_simulated_otp(state):
             assert after.status_code == version.status_code == 200
             if evidence_path:
                 path = Path(evidence_path)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(
+                await asyncio.to_thread(path.parent.mkdir, parents=True, exist_ok=True)
+                await asyncio.to_thread(
+                    path.write_text,
                     json.dumps(
                         {
                             "source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")),
