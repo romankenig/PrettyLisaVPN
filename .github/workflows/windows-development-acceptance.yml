@@ -101,9 +101,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pnpm exec prettier --check scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
+          pnpm exec prettier --check --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
           if ($LASTEXITCODE -ne 0) {
-            pnpm exec prettier --write scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
+            pnpm exec prettier --write --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
             git diff -- scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
             exit 1
           }
