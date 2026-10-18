@@ -6,7 +6,10 @@ Development base SHA `4347935f2c5c20cabc523ff94acc12a2f1bd3c21`, runtime
 `0.10.0-dev.39126998534+g4347935f2c5c20cabc523ff94acc12a2f1bd3c21`, schema 0026.
 Native acceptance connects directly through HTTPS. Disposable identities are
 created through server services and removed in cleanup; separate manual OTP
-acceptance uses the owner-approved mailbox. Payment checks use isolated CI
+acceptance is paused by the owner and requires explicit workflow_dispatch opt-in.
+Public location now uses a fixed native HTTPS command: generic plugin Origin
+caused provider HTTP 403. No general HTTP header/TLS restrictions were relaxed.
+Payment checks use isolated CI
 PostgreSQL/sandbox; deployed billing remains disabled. Home refresh is fixed in
 Windows 0.11.1; backend source is unchanged. Actual SHA/run/attempt and observations
 are recorded in PR #17 and [acceptance runbook](windows-development-acceptance.md).

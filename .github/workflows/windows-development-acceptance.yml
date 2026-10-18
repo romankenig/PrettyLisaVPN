@@ -13,6 +13,7 @@ on:
       - ".github/workflows/windows-development-acceptance.yml"
       - "apps/windows/scripts/ci/*development*"
       - "apps/windows/src/**"
+      - "apps/windows/src-tauri/**"
 
 permissions:
   contents: read
@@ -115,10 +116,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pnpm exec prettier --check --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
+          pnpm exec prettier --check --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx src/native/publicLocation.ts src/test/nativePublicLocation.test.ts
           if ($LASTEXITCODE -ne 0) {
-            pnpm exec prettier --write --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
-            git diff -- scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
+            pnpm exec prettier --write --end-of-line auto scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx src/native/publicLocation.ts src/test/nativePublicLocation.test.ts
+            git diff -- scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx src/native/publicLocation.ts src/test/nativePublicLocation.test.ts
             exit 1
           }
       - name: Install pinned Rust toolchain
@@ -132,7 +133,7 @@ jobs:
             git diff -- @formatSources
             exit 1
           }
-          rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs src-tauri/src/payment_browser.rs
+          rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs src-tauri/src/payment_browser.rs src-tauri/src/public_location.rs
           exit $LASTEXITCODE
       - uses: Swatinem/rust-cache@v2
         with:
@@ -142,6 +143,8 @@ jobs:
           cargo metadata --locked --offline --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | Out-Null
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm tauri build --debug --no-bundle
+      - name: Test fixed native location boundary
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml public_location::tests
       - name: Install capture tooling
         run: |
           $tools = Join-Path $env:RUNNER_TEMP "development-capture-tools"

@@ -290,6 +290,11 @@ async function main() {
         }).catch(() => {});
     }
   });
+  if (report.native_location !== "available")
+    throw new Error("Native public location unavailable");
+  report.checks.push(
+    "real public location displayed through fixed native request",
+  );
   report.checks.push(
     "native credential store → real HTTPS refresh → me → Home",
   );

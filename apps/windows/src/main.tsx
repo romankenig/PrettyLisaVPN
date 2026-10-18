@@ -15,6 +15,7 @@ import { createSessionRestoration } from "./auth/restoration";
 import { desktopAdapter } from "./native/desktop";
 import { createCredentialStorage } from "./native/credentialStorage";
 import { createHttpTransport } from "./native/http";
+import { createPublicLocationTransport } from "./native/publicLocation";
 import { installationIdProvider } from "./native/installationId";
 import { createDefaultVpnConnection } from "./vpn/defaultConnection";
 import { ApplicationProvider } from "./state/application";
@@ -83,7 +84,7 @@ try {
           sessionRestoration,
           vpnConnection,
           publicLocation: createPublicLocationProvider(
-            createHttpTransport(),
+            createPublicLocationTransport(),
             import.meta.env.VITE_PUBLIC_LOCATION_URL,
             config.environment === "test",
           ),
