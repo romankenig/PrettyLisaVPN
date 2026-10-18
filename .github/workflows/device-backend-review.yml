@@ -1,0 +1,89 @@
+name: Device backend review
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - "backend/**"
+      - "apps/windows/scripts/ci/**"
+      - ".github/workflows/device-backend-review.yml"
+      - ".github/workflows/windows-ui-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: Record device API evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-otp-hmac-secret-at-least-32-characters
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prettylisa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: prettylisa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prettylisa -d prettylisa"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv and dependency cache
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.9"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Validate Alembic migrations
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
+      - name: Run integration tests
+        run: uv run pytest tests/test_device_login_cleanup_integration.py -k record_device_api_evidence
+        env:
+          RUN_INTEGRATION_TESTS: "1"
+          DEVICE_BACKEND_EVIDENCE_PATH: artifacts/device-response.json
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Upload non-secret HTTP evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-backend-responses
+          path: backend/artifacts/device-response.json
+          if-no-files-found: error
+
+  native-review:
+    needs: record
+    uses: ./.github/workflows/windows-ui-review.yml
+    with:
+      device_evidence_artifact: device-backend-responses

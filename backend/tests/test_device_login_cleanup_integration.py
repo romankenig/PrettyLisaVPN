@@ -1,12 +1,15 @@
 """Device login timestamps and revocation/peer races against real PostgreSQL."""
 
 import asyncio
+import json
 import os
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from test_vpn_sessions_integration import clean_up, create_dependencies, public_key
@@ -22,7 +25,9 @@ from prettylisavpn.devices.domain import DevicePlatform, DeviceStatus
 from prettylisavpn.devices.management import DeviceManagementService, DeviceNotFoundError
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import DeviceService
+from prettylisavpn.main import create_app
 from prettylisavpn.product_events.domain import ProductEventName
+from prettylisavpn.users.model import UserRecord
 from prettylisavpn.vpn_nodes.agent import NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest
 from prettylisavpn.vpn_sessions.connection import (
@@ -87,6 +92,71 @@ async def connect_target(state, key=71):
 async def persisted(postgres, session_id):
     async with postgres.session() as session:
         return await VpnSessionRepository(session).get(session_id)
+
+
+async def test_record_device_api_evidence_with_simulated_otp(state):
+    """Capture actual HTTP responses; only the CI runner may export the test email."""
+    postgres, config, user_id, current_id, _, target, _, agent, _, _ = state
+    evidence_path = os.getenv("DEVICE_BACKEND_EVIDENCE_PATH")
+    if evidence_path:
+        assert os.getenv("GITHUB_ACTIONS") == "true"
+        assert "127.0.0.1" in config.postgres_url.get_secret_value()
+    email = "kenromka@yandex.com" if evidence_path else f"evidence-{uuid4()}@example.com"
+    async with postgres.session() as session:
+        user = await session.get(UserRecord, user_id)
+        user.email = email
+        devices = DeviceService(DeviceRepository(session))
+        current = await DeviceRepository(session).get(current_id)
+        await devices.register(user_id, target.installation_id, target.platform, "Android phone")
+        await session.commit()
+    _, vpn = await connect_target(state, 79)
+    otp = AsyncMock()
+    otp.verify.return_value = True
+    cache = AsyncMock()
+    app = create_app(
+        config, postgres=postgres, valkey=cache, otp_service=otp,
+        product_events=AsyncMock(), node_agent=agent,
+        node_health_monitor=AsyncMock(), vpn_session_reconciler=AsyncMock(),
+    )
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            body = {
+                "email": email, "code": "123456",
+                "installation_id": str(current.installation_id),
+                "platform": "WINDOWS", "device_name": "Windows device",
+            }
+            first = await client.post("/auth/verify-otp", json=body)
+            second = await client.post("/auth/verify-otp", json=body)
+            assert first.status_code == second.status_code == 200
+            assert second.json()["device"]["last_login_at"] > first.json()["device"]["last_login_at"]
+            headers = {"Authorization": "Bearer " + second.json()["access_token"]}
+            before = await client.get("/devices", headers=headers)
+            assert before.status_code == 200
+            rows = before.json()
+            assert next(row for row in rows if row["is_current"])["last_login_at"] is not None
+            assert next(row for row in rows if not row["is_current"])["last_login_at"] is None
+            revoked = await client.delete(f"/devices/{target.id}", headers=headers)
+            repeat = await client.delete(f"/devices/{target.id}", headers=headers)
+            assert revoked.status_code == repeat.status_code == 200
+            assert revoked.json() == repeat.json()
+            row = await persisted(postgres, vpn.session_id)
+            assert row.status is VpnSessionStatus.DISCONNECTED and row.peer_removed_at is not None
+            after = await client.get("/devices", headers=headers)
+            version = await client.get("/version")
+            assert after.status_code == version.status_code == 200
+            if evidence_path:
+                path = Path(evidence_path)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({
+                    "source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")),
+                    "provenance": "Actual ASGI HTTP responses and PostgreSQL in disposable CI database",
+                    "auth_simulated": True, "node_agent_simulated": True,
+                    "live_account_accessed": False, "account_email": email,
+                    "user_id": str(user_id), "devices": rows,
+                    "revoked_response": revoked.json(), "after_revoke": after.json(),
+                    "vpn_disconnected": True, "peer_removal_acknowledged": True,
+                    "version": version.json(),
+                }, indent=2), encoding="utf-8")
 
 
 async def test_successful_otp_is_the_only_login_timestamp_update(state):
@@ -214,7 +284,16 @@ async def test_foreign_or_unknown_device_never_changes_vpn_or_calls_node(state):
     postgres, _, _, _, _, target, auth, agent, _, management = state
     _, transport = await connect_target(state)
     agent.remove_peer.reset_mock()
-    other_user, other_device, other_node = await create_dependencies(postgres)
+    from prettylisavpn.subscriptions.repository import SubscriptionRepository
+    from prettylisavpn.users.repository import UserRepository
+    from prettylisavpn.users.service import UserService
+
+    async with postgres.session() as session:
+        other = await UserService(
+            UserRepository(session), SubscriptionRepository(session)
+        ).create(f"foreign-{uuid4()}@example.com")
+        other_user, other_device, other_node = other.id, uuid4(), uuid4()
+        await session.commit()
     auth.authenticate.return_value = AccessIdentity(other_user, other_device, uuid4())
     try:
         for device_id in (target.id, uuid4()):
