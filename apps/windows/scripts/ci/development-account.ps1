@@ -16,6 +16,11 @@ try {
   $scope = "$($env:GITHUB_RUN_ID)-$($env:GITHUB_RUN_ATTEMPT)"
   $script = Get-Content -Raw scripts/ci/development-account.py
   $remote = 'container=$(docker ps --filter label=com.docker.compose.project=prettylisavpn-development --filter label=com.docker.compose.service=backend --format "{{.ID}}"); test $(echo "$container" | wc -w) -eq 1 && docker exec -i "$container" python - ' + $Mode + ' ' + $scope
+  $installationPath = $env:ACCEPTANCE_CREDENTIAL_PATH + '.installation'
+  if ($Mode -eq 'cleanup' -and (Test-Path $installationPath)) {
+    $installation = [Guid]::Parse((Get-Content -Raw $installationPath).Trim()).ToString()
+    $remote += ' ' + $installation
+  }
   $result = $script | ssh -i $key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ConnectTimeout=10 -o LogLevel=ERROR -p $targetPort "$($env:DEV_VPS_USER)@$targetHost" $remote
   if ($LASTEXITCODE -ne 0) { throw 'Development account operation failed' }
   $value = ($result -join "`n") | ConvertFrom-Json
@@ -27,6 +32,7 @@ try {
   } else {
     $value | ConvertTo-Json -Compress
     if (Test-Path $env:ACCEPTANCE_CREDENTIAL_PATH) { Remove-Item $env:ACCEPTANCE_CREDENTIAL_PATH -Force }
+    if (Test-Path $installationPath) { Remove-Item $installationPath -Force }
   }
 } finally {
   Remove-Item $sshRoot -Recurse -Force -ErrorAction SilentlyContinue

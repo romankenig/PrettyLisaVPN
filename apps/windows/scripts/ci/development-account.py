@@ -8,10 +8,10 @@ import asyncio
 import json
 import re
 import sys
-from datetime import timedelta
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository
@@ -19,6 +19,7 @@ from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform
+from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import DeviceService
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
@@ -28,7 +29,8 @@ from prettylisavpn.users.service import UserService
 
 
 async def main():
-    mode, run = sys.argv[1:]
+    mode, run = sys.argv[1:3]
+    installation = UUID(sys.argv[3]) if len(sys.argv) == 4 else None
     if mode not in ("create", "cleanup") or not re.fullmatch(r"[0-9]+-[0-9]+", run):
         raise SystemExit("Invalid acceptance scope")
     config = Settings()
@@ -41,6 +43,19 @@ async def main():
             if mode == "cleanup":
                 result = await session.execute(delete(UserRecord).where(UserRecord.email == email))
                 output = {"cleanup": "passed", "deleted_accounts": result.rowcount}
+                if installation is not None:
+                    device = await session.scalar(
+                        select(DeviceRecord)
+                        .join(UserRecord, UserRecord.id == DeviceRecord.user_id)
+                        .where(DeviceRecord.installation_id == installation)
+                        .where(UserRecord.email == "kenromka@yandex.com")
+                    )
+                    if device is not None:
+                        await DeviceService(DeviceRepository(session)).revoke(device.id)
+                        await AuthSessionRepository(session).revoke_for_device(
+                            device.id, datetime.now(UTC)
+                        )
+                    output["otp_runner_device_revoked"] = device is not None
             else:
                 user = await UserService(
                     UserRepository(session), SubscriptionRepository(session)

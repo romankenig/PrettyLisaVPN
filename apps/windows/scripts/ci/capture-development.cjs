@@ -79,6 +79,8 @@ async function main() {
   if (billing.provider_mode !== "DISABLED" || billing.actions.length || billing.payment_routes.length !== 4 || billing.payment_routes.some((r) => r.currencies.length || r.recurring_currencies.length)) throw new Error("Disabled provider contract mismatch");
   app = spawn(path.resolve("src-tauri/target/debug/prettylisavpn-windows.exe"), [], { env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=9222 --disable-gpu", WEBVIEW2_USER_DATA_FOLDER: fs.mkdtempSync(path.join(os.tmpdir(), "prettylisa-live-")) }, stdio: "ignore" });
   await connect();
+  const installation = await page.evaluate(() => window.__TAURI_INTERNALS__.invoke("get_installation_id"));
+  fs.writeFileSync(process.env.ACCEPTANCE_CREDENTIAL_PATH + ".installation", installation);
   await page.locator("#login-email").waitFor();
   await page.evaluate(async (credential) => { await window.__TAURI_INTERNALS__.invoke("save_refresh_credential", { credential }); }, account.credential);
   await page.reload();

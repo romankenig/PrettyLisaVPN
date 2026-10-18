@@ -223,9 +223,9 @@ describe("authenticated Home", () => {
     const api = mockApi();
     renderRestored(api);
     await waitFor(() => expect(api.me).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("link", { name: "настройки", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "настройки" }));
     vi.mocked(api.me).mockResolvedValue({ ...profile, plan: "FREE", active_device_count: 1 });
-    fireEvent.click(screen.getByRole("link", { name: "главная", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "главная" }));
     expect(await screen.findByText("FREE")).toBeVisible();
     expect(screen.getByText("1")).toBeVisible();
     expect(screen.queryByText("PREMIUM ⭐")).not.toBeInTheDocument();
