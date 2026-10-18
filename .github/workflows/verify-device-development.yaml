@@ -1,0 +1,193 @@
+name: Verify devices development deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [cloud/verify-device-development]
+    paths: [".github/workflows/verify-device-development.yaml"]
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Verify deployed image, migration and public API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: development
+    steps:
+      - name: Read development metadata over verified SSH
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          for key in DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY DEV_SSH_KNOWN_HOSTS; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing development secret: $key"
+              exit 1
+            fi
+          done
+          [[ "$DEV_VPS_PORT" == "22" ]]
+          [[ "$DEV_VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          python3 - <<'PYTHON'
+          import os
+          import re
+          import socket
+          host = os.environ["DEV_VPS_HOST"]
+          if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
+              raise SystemExit("Configured host is not a plain DNS hostname or IPv4 address")
+          addresses = {r[4][0] for r in socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)}
+          if addresses != {"95.140.152.42"}:
+              print("target_matches_confirmed_development_vps=false")
+              raise SystemExit("Configured target resolves outside the confirmed development VPS")
+          print("target_matches_confirmed_development_vps=true")
+          PYTHON
+          umask 077
+          ssh_directory="$(mktemp -d)"
+          trap 'rm -rf "$ssh_directory"' EXIT
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$ssh_directory/id_ed25519"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+          chmod 600 "$ssh_directory/id_ed25519" "$ssh_directory/known_hosts"
+          ssh-keygen -y -f "$ssh_directory/id_ed25519" >/dev/null
+          ssh-keygen -lf "$ssh_directory/known_hosts" \
+            | grep -Fq 'SHA256:BrayNvgVNXSzO6xAJ08FwnebiUA8/VlQNgI+ctes96U'
+          timeout 120 ssh \
+            -i "$ssh_directory/id_ed25519" \
+            -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 \
+            -o "UserKnownHostsFile=$ssh_directory/known_hosts" \
+            -o ConnectTimeout=10 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            -o LogLevel=ERROR -p "$DEV_VPS_PORT" \
+            "${DEV_VPS_USER}@${DEV_VPS_HOST}" 'python3 -' \
+            > development-ssh-preflight.json <<'REMOTE'
+          import json
+          import re
+          import stat
+          import sys
+          import subprocess
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def command(args):
+              return subprocess.run(args, capture_output=True, text=True, timeout=20)
+
+          def required(args):
+              result = command(args)
+              if result.returncode:
+                  raise SystemExit("Read-only command failed: " + args[0])
+              return result.stdout.strip()
+
+          def environment_metadata(path):
+              result = {"path": str(path), "exists": path.is_file()}
+              if path.is_file():
+                  result["mode"] = oct(stat.S_IMODE(path.stat().st_mode))
+                  # Only known public deployment identity fields can enter the report.
+                  allowed = {"BACKEND_IMAGE", "APPLICATION_VERSION", "ENVIRONMENT", "COMPOSE_PROJECT_NAME", "API_DOMAIN"}
+                  for line in path.read_text().splitlines():
+                      key, separator, value = line.partition("=")
+                      if separator and key in allowed:
+                          result[key] = value.strip().strip("'\"")
+              return result
+
+          print("ssh_authentication=success; target_host_key=verified", file=sys.stderr)
+          root = Path("/opt/prettylisavpn")
+          report = {"checked_at_utc": datetime.now(timezone.utc).isoformat(), "ssh": "authenticated", "mutations": "none"}
+          containers = required(["docker", "ps", "--filter", "label=com.docker.compose.project=prettylisavpn-development", "--filter", "label=com.docker.compose.service=backend", "--format", "{{.ID}}"] ).splitlines()
+          if len(containers) != 1:
+              raise SystemExit("Expected exactly one running development backend")
+          container = containers[0]
+          report["container_id"] = container
+          report["image_id"] = required(["docker", "inspect", "--format", "{{.Image}}", container])
+          report["container_health"] = required(["docker", "inspect", "--format", "{{.State.Health.Status}}", container])
+          labels = json.loads(required(["docker", "inspect", "--format", "{{json .Config.Labels}}", container]))
+          report["compose_directory"] = labels.get("com.docker.compose.project.working_dir")
+          report["compose_config_files"] = labels.get("com.docker.compose.project.config_files")
+          public_env_code = "import os,json; print(json.dumps({k:os.environ.get(k) for k in ('APPLICATION_NAME','APPLICATION_VERSION','ENVIRONMENT')}))"
+          report["runtime"] = json.loads(required(["docker", "exec", container, "python", "-c", public_env_code]))
+          if report["runtime"].get("ENVIRONMENT") != "development":
+              raise SystemExit("Runtime environment is not development")
+          for name in ("current", "secrets/deployment.env"):
+              path = root / name
+              report[name] = {"exists": path.exists(), "resolved": str(path.resolve())}
+          report["canonical_env"] = environment_metadata(root / "secrets/deployment.env")
+          image = report["canonical_env"].get("BACKEND_IMAGE")
+          if image:
+              retained = command(["docker", "image", "inspect", "--format", "{{.Id}}", image])
+              report["canonical_image_retained"] = retained.returncode == 0
+              report["canonical_image_matches_running"] = retained.returncode == 0 and retained.stdout.strip() == report["image_id"]
+          report["retained_images"] = required(["docker", "image", "ls", "--filter", "reference=prettylisavpn-backend", "--format", "{{.Repository}}:{{.Tag}} {{.ID}}"] ).splitlines()[:30]
+          releases = root / "releases"
+          report["releases"] = []
+          if releases.is_dir():
+              for release in sorted(releases.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[:10]:
+                  if release.is_dir():
+                      report["releases"].append({"id": release.name, "compose": (release / "compose.yaml").is_file(), "deploy": (release / "deploy.sh").is_file(), "env": (release / "deployment.env").is_file(), "image_id": (release / "image-id").is_file()})
+          for verb in ("current", "heads"):
+              result = command(["docker", "exec", container, "alembic", verb])
+              report["alembic_" + verb] = {"exit_code": result.returncode, "revisions": re.findall(r"(?m)^([0-9]{4}_[a-z0-9_]+)", result.stdout)}
+          report["public"] = {}
+          for endpoint in ("health", "ready", "version"):
+              with urllib.request.urlopen("https://api.prettylisavpn.com/" + endpoint, timeout=10) as response:
+                  payload = json.loads(response.read(16385))
+                  allowed = {"status", "dependencies"} if endpoint != "version" else {"application_name", "application_version", "environment"}
+                  report["public"][endpoint] = {"http_status": response.status, "response": {k: v for k, v in payload.items() if k in allowed}}
+          print(json.dumps(report, indent=2))
+          REMOTE
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("development-ssh-preflight.json").read_text())
+          expected_sha = "1b17f56f3b93408bba2c02ffb6a147d31a70eec7"
+          expected_version = "0.2.0-dev.39087117151+g" + expected_sha
+          assert report["runtime"]["APPLICATION_VERSION"] == expected_version
+          assert report["container_health"] == "healthy"
+          assert report["canonical_image_matches_running"] is True
+          assert report["canonical_env"]["APPLICATION_VERSION"] == expected_version
+          release_id = expected_sha + "-run-39087117151-attempt-1"
+          assert report["canonical_env"]["BACKEND_IMAGE"] == "prettylisavpn-backend:" + release_id
+          assert report["current"]["resolved"] == "/opt/prettylisavpn/releases/" + release_id
+          for verb in ("current", "heads"):
+              assert report["alembic_" + verb] == {
+                  "exit_code": 0, "revisions": ["0018_device_last_login"]
+              }
+          assert report["public"]["version"]["response"]["application_version"] == expected_version
+          assert report["public"]["ready"]["response"]["status"] == "ready"
+          assert report["public"]["ready"]["response"]["dependencies"] == {"postgresql": True, "valkey": True}
+          # Independent public requests originate from GitHub, after the VPS inspection.
+          import urllib.request
+          report["github_runner_public"] = {}
+          for endpoint in ("health", "ready", "version"):
+              with urllib.request.urlopen("https://api.prettylisavpn.com/" + endpoint, timeout=10) as response:
+                  assert response.status == 200
+                  report["github_runner_public"][endpoint] = json.loads(response.read(16385))
+          assert report["github_runner_public"]["version"]["application_version"] == expected_version
+          assert report["github_runner_public"]["version"]["environment"] == "development"
+          assert report["github_runner_public"]["ready"]["status"] == "ready"
+          assert report["github_runner_public"]["ready"]["dependencies"] == {"postgresql": True, "valkey": True}
+          with urllib.request.urlopen("https://api.prettylisavpn.com/openapi.json", timeout=10) as response:
+              api = json.loads(response.read())
+          field = api["components"]["schemas"]["DeviceResponse"]["properties"]["last_login_at"]
+          assert {"type": "string", "format": "date-time"} in field["anyOf"]
+          assert {"type": "null"} in field["anyOf"]
+          report["deployed_last_login_at_schema"] = field
+          report["deployed_product_sha"] = expected_sha
+          report["verification_source_sha"] = os.environ["GITHUB_SHA"]
+          Path("development-ssh-preflight.json").write_text(json.dumps(report, indent=2) + "\n")
+          print(json.dumps(report))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Post-deploy verification: devices backend 0.2.0\n\n```json\n")
+              summary.write(json.dumps(report, indent=2) + "\n```\n")
+          PYTHON
+
+      - name: Retain non-secret preflight report
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-ssh-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: development-ssh-preflight.json
+          if-no-files-found: error
