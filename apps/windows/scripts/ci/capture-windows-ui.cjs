@@ -214,7 +214,9 @@ async function main() {
     .waitFor();
   await page
     .locator(".sidebar-versions")
-    .getByText(deviceEvidence?.version.application_version || "недоступна", { exact: true })
+    .getByText(deviceEvidence?.version.application_version || "недоступна", {
+      exact: true,
+    })
     .waitFor();
   const navigation = await page
     .getByRole("navigation")
@@ -622,7 +624,9 @@ async function main() {
   await page.getByRole("alertdialog").waitFor();
   await screenshot("07-device-confirmation");
   if (deviceEvidence) {
-    await page.getByRole("button", { name: "да, отозвать", exact: true }).click();
+    await page
+      .getByRole("button", { name: "да, отозвать", exact: true })
+      .click();
     await devicesPage.getByText("отозвано", { exact: true }).waitFor();
     await screenshot("07b-device-revoked");
   } else {

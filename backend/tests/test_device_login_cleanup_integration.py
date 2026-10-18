@@ -114,21 +114,30 @@ async def test_record_device_api_evidence_with_simulated_otp(state):
     otp.verify.return_value = True
     cache = AsyncMock()
     app = create_app(
-        config, postgres=postgres, valkey=cache, otp_service=otp,
-        product_events=AsyncMock(), node_agent=agent,
-        node_health_monitor=AsyncMock(), vpn_session_reconciler=AsyncMock(),
+        config,
+        postgres=postgres,
+        valkey=cache,
+        otp_service=otp,
+        product_events=AsyncMock(),
+        node_agent=agent,
+        node_health_monitor=AsyncMock(),
+        vpn_session_reconciler=AsyncMock(),
     )
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             body = {
-                "email": email, "code": "123456",
+                "email": email,
+                "code": "123456",
                 "installation_id": str(current.installation_id),
-                "platform": "WINDOWS", "device_name": "Windows device",
+                "platform": "WINDOWS",
+                "device_name": "Windows device",
             }
             first = await client.post("/auth/verify-otp", json=body)
             second = await client.post("/auth/verify-otp", json=body)
             assert first.status_code == second.status_code == 200
-            assert second.json()["device"]["last_login_at"] > first.json()["device"]["last_login_at"]
+            assert (
+                second.json()["device"]["last_login_at"] > first.json()["device"]["last_login_at"]
+            )
             headers = {"Authorization": "Bearer " + second.json()["access_token"]}
             before = await client.get("/devices", headers=headers)
             assert before.status_code == 200
@@ -147,16 +156,30 @@ async def test_record_device_api_evidence_with_simulated_otp(state):
             if evidence_path:
                 path = Path(evidence_path)
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps({
-                    "source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")),
-                    "provenance": "Actual ASGI HTTP responses and PostgreSQL in disposable CI database",
-                    "auth_simulated": True, "node_agent_simulated": True,
-                    "live_account_accessed": False, "account_email": email,
-                    "user_id": str(user_id), "devices": rows,
-                    "revoked_response": revoked.json(), "after_revoke": after.json(),
-                    "vpn_disconnected": True, "peer_removal_acknowledged": True,
-                    "version": version.json(),
-                }, indent=2), encoding="utf-8")
+                path.write_text(
+                    json.dumps(
+                        {
+                            "source_sha": os.getenv("PR_HEAD_SHA", os.getenv("GITHUB_SHA")),
+                            "provenance": (
+                                "Actual ASGI HTTP responses and PostgreSQL "
+                                "in disposable CI database"
+                            ),
+                            "auth_simulated": True,
+                            "node_agent_simulated": True,
+                            "live_account_accessed": False,
+                            "account_email": email,
+                            "user_id": str(user_id),
+                            "devices": rows,
+                            "revoked_response": revoked.json(),
+                            "after_revoke": after.json(),
+                            "vpn_disconnected": True,
+                            "peer_removal_acknowledged": True,
+                            "version": version.json(),
+                        },
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
 
 
 async def test_successful_otp_is_the_only_login_timestamp_update(state):
@@ -289,9 +312,9 @@ async def test_foreign_or_unknown_device_never_changes_vpn_or_calls_node(state):
     from prettylisavpn.users.service import UserService
 
     async with postgres.session() as session:
-        other = await UserService(
-            UserRepository(session), SubscriptionRepository(session)
-        ).create(f"foreign-{uuid4()}@example.com")
+        other = await UserService(UserRepository(session), SubscriptionRepository(session)).create(
+            f"foreign-{uuid4()}@example.com"
+        )
         other_user, other_device, other_node = other.id, uuid4(), uuid4()
         await session.commit()
     auth.authenticate.return_value = AccessIdentity(other_user, other_device, uuid4())
