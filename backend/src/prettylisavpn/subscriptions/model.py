@@ -71,4 +71,3 @@ class SubscriptionRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, server_default=func.now()
     )
-

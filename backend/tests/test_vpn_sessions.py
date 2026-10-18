@@ -135,4 +135,3 @@ def test_peer_cleanup_completion_is_valid_only_for_terminal_sessions():
         updated_at=removed_at,
     )
     assert disconnected.peer_removed_at == removed_at
-

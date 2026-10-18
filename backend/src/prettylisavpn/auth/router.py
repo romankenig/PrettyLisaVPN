@@ -32,8 +32,8 @@ from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.devices.domain import DeviceLimitReachedError, DevicePlatform, DeviceStatus
 from prettylisavpn.emailing.domain import EmailProvider
 from prettylisavpn.main_errors import error_response
-from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
 from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
+from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 account_router = APIRouter(tags=["account"])
@@ -326,15 +326,22 @@ async def me(
         email=result.email,
         plan=result.plan,
         active_device_count=result.active_device_count,
-        subscription=None if result.subscription is None else SubscriptionAccessResponse(
+        subscription=None
+        if result.subscription is None
+        else SubscriptionAccessResponse(
             plan=result.subscription.plan,
             status=result.subscription.status,
             auto_renew=result.subscription.auto_renew,
-            paid_until=(result.subscription.current_period_end
-                        if result.subscription.plan is not SubscriptionPlan.FREE else None),
+            paid_until=(
+                result.subscription.current_period_end
+                if result.subscription.plan is not SubscriptionPlan.FREE
+                else None
+            ),
         ),
         entitlements=EntitlementsResponse(
-            vpn_session_limit_seconds=(int(rights.vpn_session_limit.total_seconds()) if rights.vpn_session_limit else None),
+            vpn_session_limit_seconds=(
+                int(rights.vpn_session_limit.total_seconds()) if rights.vpn_session_limit else None
+            ),
             rewarded_ad_required=rights.rewarded_ad_required,
             country_selection_allowed=rights.country_selection_allowed,
             free_nodes_only=rights.free_nodes_only,

@@ -338,4 +338,3 @@ async def disconnect_vpn_session(
     except VpnTerminationUnavailableError:
         return error_response("VPN_TERMINATION_UNAVAILABLE", 503)
     return TerminatedVpnSessionResponse(session_id=result.session_id, status=result.status)
-

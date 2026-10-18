@@ -53,4 +53,3 @@ def free_session_duration(at: datetime, remaining_seconds: int) -> timedelta:
     if not 0 < remaining_seconds <= 3600:
         raise ValueError("remaining_seconds must be within the daily budget")
     return min(timedelta(seconds=remaining_seconds), free_quota_resets_at(at) - at)
-

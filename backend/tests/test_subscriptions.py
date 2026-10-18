@@ -12,8 +12,8 @@ from prettylisavpn.subscriptions.entitlements import (
     FREE_ENTITLEMENTS,
     PREMIUM_ENTITLEMENTS,
     entitlements_for,
-    free_session_duration,
     free_quota_resets_at,
+    free_session_duration,
 )
 
 
@@ -108,13 +108,17 @@ def test_paid_access_uses_exclusive_paid_deadline_independent_of_renewal(status,
     paid = subscription(plan=SubscriptionPlan.PREMIUM, status=status, period_end=end)
     at = end + timedelta(microseconds=offset)
     assert paid.is_active(at) is expected
-    assert paid.effective_plan(at) is (SubscriptionPlan.PREMIUM if expected else SubscriptionPlan.FREE)
+    assert paid.effective_plan(at) is (
+        SubscriptionPlan.PREMIUM if expected else SubscriptionPlan.FREE
+    )
     assert entitlements_for(paid, at) == (PREMIUM_ENTITLEMENTS if expected else FREE_ENTITLEMENTS)
 
 
 def test_cancel_renewal_is_idempotent_and_preserves_paid_dates():
     now = datetime.now(UTC)
-    paid = subscription(plan=SubscriptionPlan.PREMIUM, period_end=now + timedelta(days=10), auto_renew=True)
+    paid = subscription(
+        plan=SubscriptionPlan.PREMIUM, period_end=now + timedelta(days=10), auto_renew=True
+    )
     canceled = paid.cancel_auto_renew(now)
     assert canceled.status is SubscriptionStatus.CANCELED
     assert not canceled.auto_renew
@@ -126,18 +130,29 @@ def test_cancel_renewal_is_idempotent_and_preserves_paid_dates():
 
 def test_missing_paid_deadline_and_explicit_expiration_do_not_grant_premium():
     now = datetime.now(UTC)
-    for paid in [subscription(plan=SubscriptionPlan.PREMIUM), subscription(plan=SubscriptionPlan.PREMIUM, status=SubscriptionStatus.EXPIRED, period_end=now + timedelta(days=1))]:
+    for paid in [
+        subscription(plan=SubscriptionPlan.PREMIUM),
+        subscription(
+            plan=SubscriptionPlan.PREMIUM,
+            status=SubscriptionStatus.EXPIRED,
+            period_end=now + timedelta(days=1),
+        ),
+    ]:
         assert paid.effective_plan(now) is SubscriptionPlan.FREE
 
 
 def test_future_paid_period_does_not_grant_access_early():
-    paid = subscription(plan=SubscriptionPlan.PREMIUM, period_end=datetime.now(UTC) + timedelta(days=10))
+    paid = subscription(
+        plan=SubscriptionPlan.PREMIUM, period_end=datetime.now(UTC) + timedelta(days=10)
+    )
     assert not paid.is_active(paid.current_period_start - timedelta(microseconds=1))
 
 
 def test_canceled_subscription_cannot_claim_auto_renew():
     with pytest.raises(ValueError, match="CANCELED subscriptions cannot auto-renew"):
-        subscription(plan=SubscriptionPlan.PREMIUM, status=SubscriptionStatus.CANCELED, auto_renew=True)
+        subscription(
+            plan=SubscriptionPlan.PREMIUM, status=SubscriptionStatus.CANCELED, auto_renew=True
+        )
 
 
 def test_manual_platinum_has_exact_premium_capabilities():
@@ -160,4 +175,3 @@ def test_free_duration_uses_remaining_budget_and_utc_midnight():
 def test_free_duration_rejects_invalid_budget(remaining):
     with pytest.raises(ValueError, match="daily budget"):
         free_session_duration(datetime.now(UTC), remaining)
-

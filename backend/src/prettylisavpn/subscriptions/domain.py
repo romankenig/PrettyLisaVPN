@@ -92,7 +92,4 @@ class Subscription:
             raise ValueError("at must be timezone-aware")
         if not self.auto_renew:
             return self
-        return replace(
-            self, auto_renew=False, status=SubscriptionStatus.CANCELED, updated_at=at
-        )
-
+        return replace(self, auto_renew=False, status=SubscriptionStatus.CANCELED, updated_at=at)

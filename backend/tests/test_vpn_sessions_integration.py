@@ -519,4 +519,3 @@ async def test_reconciler_releases_active_session_when_agent_peer_is_missing():
     finally:
         await clean_up(postgres, user_id, node_id)
         await postgres.close()
-

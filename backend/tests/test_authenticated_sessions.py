@@ -128,7 +128,16 @@ def test_me_returns_identity_plan_and_active_device_count():
         "plan": "PREMIUM",
         "active_device_count": 3,
         "subscription": None,
-        "entitlements": {"vpn_session_limit_seconds": None, "rewarded_ad_required": False, "country_selection_allowed": True, "free_nodes_only": False, "active_device_limit": 5, "daily_vpn_limit_seconds": None, "free_seconds_remaining": None, "free_quota_resets_at": None},
+        "entitlements": {
+            "vpn_session_limit_seconds": None,
+            "rewarded_ad_required": False,
+            "country_selection_allowed": True,
+            "free_nodes_only": False,
+            "active_device_limit": 5,
+            "daily_vpn_limit_seconds": None,
+            "free_seconds_remaining": None,
+            "free_quota_resets_at": None,
+        },
     }
 
 
@@ -171,4 +180,3 @@ async def test_invalid_access_token_is_rejected_before_database_access():
         await service.me("not-a-jwt")
 
     postgres.session.assert_not_called()
-

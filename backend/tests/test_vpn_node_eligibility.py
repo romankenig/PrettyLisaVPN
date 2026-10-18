@@ -348,4 +348,3 @@ async def test_session_creation_uses_same_free_auto_eligibility_and_keeps_node_i
     assert vpn_session.plan_snapshot is SubscriptionPlan.FREE
     assert vpn_session.expires_at == NOW + timedelta(hours=1)
     assert capacity_repository.lock_requests == 1
-

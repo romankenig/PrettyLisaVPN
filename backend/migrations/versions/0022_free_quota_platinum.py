@@ -33,7 +33,12 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("session_id", "day"),
     )
     op.create_index("ix_free_vpn_usage_user_day", "free_vpn_usage", ["user_id", "day"])
-    op.create_index("ix_free_vpn_usage_unsettled_user", "free_vpn_usage", ["user_id"], postgresql_where=sa.text("released_at IS NULL"))
+    op.create_index(
+        "ix_free_vpn_usage_unsettled_user",
+        "free_vpn_usage",
+        ["user_id"],
+        postgresql_where=sa.text("released_at IS NULL"),
+    )
     # Retain usage already made before deployment; split UTC midnight crossings.
     op.execute("""
         INSERT INTO free_vpn_usage

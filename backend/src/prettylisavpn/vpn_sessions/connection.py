@@ -178,9 +178,7 @@ class VpnConnectionService:
                     subscription = await subscriptions.get_by_user_id(user_id)
                     if subscription is None:
                         raise VpnSessionPersistenceUnavailableError
-                    plan = (
-                        subscription.effective_plan(now)
-                    )
+                    plan = subscription.effective_plan(now)
                     free_limit = None
                     if plan is SubscriptionPlan.FREE:
                         remaining = await sessions.remaining_free_seconds(user_id, now)
@@ -245,8 +243,13 @@ class VpnConnectionService:
                         raise VpnSetupFailedError
                     now = datetime.now(UTC)
                     if current.plan_snapshot is not SubscriptionPlan.FREE:
-                        subscription = await SubscriptionRepository(database_session).get_by_user_id(current.user_id)
-                        if subscription is None or subscription.effective_plan(now) is SubscriptionPlan.FREE:
+                        subscription = await SubscriptionRepository(
+                            database_session
+                        ).get_by_user_id(current.user_id)
+                        if (
+                            subscription is None
+                            or subscription.effective_plan(now) is SubscriptionPlan.FREE
+                        ):
                             raise VpnSetupFailedError
                         current = replace(current, expires_at=subscription.current_period_end)
                     elif current.expires_at is not None and current.expires_at <= now:

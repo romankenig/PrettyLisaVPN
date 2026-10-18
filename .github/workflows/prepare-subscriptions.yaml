@@ -1,5 +1,5 @@
 name: Subscription preparation
-# Revision 3: final quota semantics and additional boundary tests
+# Revision 4: final quota semantics and additional boundary tests
 on:
   push:
     branches: [cloud/prepare-subscriptions]

@@ -70,4 +70,3 @@ class VpnSessionStatusService:
             raise
         except SQLAlchemyError:
             raise VpnSessionStatusUnavailableError from None
-

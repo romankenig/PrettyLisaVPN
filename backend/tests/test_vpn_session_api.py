@@ -186,7 +186,11 @@ def test_exhausted_free_quota_has_stable_code():
     service = AsyncMock()
     service.connect.side_effect = FreeDailyLimitReachedError
     with api_client(service) as client:
-        response = client.post("/vpn/sessions", headers={"Authorization": "Bearer token"}, json={"mode": "AUTO", "public_key": PUBLIC_KEY})
+        response = client.post(
+            "/vpn/sessions",
+            headers={"Authorization": "Bearer token"},
+            json={"mode": "AUTO", "public_key": PUBLIC_KEY},
+        )
     assert response.status_code == 403
     assert response.json() == {"error": {"code": "FREE_DAILY_LIMIT_REACHED"}}
 
@@ -290,4 +294,3 @@ def test_disconnect_enforces_owned_session_lookup():
 
     assert response.status_code == 404
     assert response.json() == {"error": {"code": "VPN_SESSION_NOT_FOUND"}}
-

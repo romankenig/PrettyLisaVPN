@@ -83,4 +83,3 @@ class VpnNodeEligibilityPolicy:
         if snapshot.remaining_capacity == 0:
             return NodeAvailability(False, NodeUnavailabilityReason.CAPACITY_EXHAUSTED)
         return NodeAvailability(True, None)
-

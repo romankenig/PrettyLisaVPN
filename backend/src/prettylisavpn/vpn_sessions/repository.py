@@ -28,47 +28,78 @@ class VpnSessionRepository:
         """Return unused budget only after the node acknowledges peer removal."""
         ended = (
             select(func.least(VpnSessionRecord.peer_removed_at, VpnSessionRecord.expires_at))
-            .where(VpnSessionRecord.id == FreeVpnUsageRecord.session_id,
-                   VpnSessionRecord.peer_removed_at.is_not(None),
-                   VpnSessionRecord.status.in_((VpnSessionStatus.EXPIRED, VpnSessionStatus.DISCONNECTED, VpnSessionStatus.FAILED)))
+            .where(
+                VpnSessionRecord.id == FreeVpnUsageRecord.session_id,
+                VpnSessionRecord.peer_removed_at.is_not(None),
+                VpnSessionRecord.status.in_(
+                    (
+                        VpnSessionStatus.EXPIRED,
+                        VpnSessionStatus.DISCONNECTED,
+                        VpnSessionStatus.FAILED,
+                    )
+                ),
+            )
             .scalar_subquery()
         )
         conditions = [] if user_id is None else [FreeVpnUsageRecord.user_id == user_id]
-        await self._session.execute(update(FreeVpnUsageRecord).where(
-            *conditions,
-            FreeVpnUsageRecord.released_at.is_(None), ended.is_not(None)
-        ).values(released_at=ended))
+        await self._session.execute(
+            update(FreeVpnUsageRecord)
+            .where(*conditions, FreeVpnUsageRecord.released_at.is_(None), ended.is_not(None))
+            .values(released_at=ended)
+        )
 
     async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
         """Caller locks the account before checking and reserving its UTC budget."""
+        if at.tzinfo is None or at.utcoffset() is None:
+            raise ValueError("at must be timezone-aware")
         await self.settle_free_usage(user_id)
         row = FreeVpnUsageRecord
         seconds = case(
-            (row.released_at.is_(None), func.extract('epoch', row.reserved_until - row.reserved_from)),
+            (
+                row.released_at.is_(None),
+                func.extract("epoch", row.reserved_until - row.reserved_from),
+            ),
             (row.activated_at.is_(None), 0),
-            else_=func.greatest(0, func.extract('epoch', func.least(row.released_at, row.reserved_until) - func.greatest(row.activated_at, row.reserved_from))),
+            else_=func.greatest(
+                0,
+                func.extract(
+                    "epoch",
+                    func.least(row.released_at, row.reserved_until)
+                    - func.greatest(row.activated_at, row.reserved_from),
+                ),
+            ),
         )
-        consumed = await self._session.scalar(select(func.coalesce(func.sum(seconds), 0)).where(
-            row.user_id == user_id, row.day == at.astimezone(UTC).date()
-        ))
+        consumed = await self._session.scalar(
+            select(func.coalesce(func.sum(seconds), 0)).where(
+                row.user_id == user_id, row.day == at.astimezone(UTC).date()
+            )
+        )
         limit = FREE_ENTITLEMENTS.daily_vpn_limit_seconds
         assert limit is not None
         return max(0, math.floor(limit - float(consumed or 0)))
 
     async def reserve_free_usage(self, vpn_session: VpnSession) -> None:
         assert vpn_session.expires_at is not None
-        self._session.add(FreeVpnUsageRecord(
-            session_id=vpn_session.id, user_id=vpn_session.user_id,
-            day=vpn_session.started_at.date(), reserved_from=vpn_session.started_at,
-            reserved_until=vpn_session.expires_at,
-        ))
+        self._session.add(
+            FreeVpnUsageRecord(
+                session_id=vpn_session.id,
+                user_id=vpn_session.user_id,
+                day=vpn_session.started_at.date(),
+                reserved_from=vpn_session.started_at,
+                reserved_until=vpn_session.expires_at,
+            )
+        )
         await self._session.flush()
 
     async def activate_free_usage(self, session_id: UUID, at: datetime) -> None:
-        await self._session.execute(update(FreeVpnUsageRecord).where(
-            FreeVpnUsageRecord.session_id == session_id,
-            FreeVpnUsageRecord.activated_at.is_(None),
-        ).values(activated_at=at))
+        await self._session.execute(
+            update(FreeVpnUsageRecord)
+            .where(
+                FreeVpnUsageRecord.session_id == session_id,
+                FreeVpnUsageRecord.activated_at.is_(None),
+            )
+            .values(activated_at=at)
+        )
 
     async def add(self, vpn_session: VpnSession) -> VpnSession:
         record = VpnSessionRecord(
@@ -193,15 +224,23 @@ class VpnSessionRepository:
             current = self._to_domain(record)
             subscription = (
                 SubscriptionRepository._to_domain(subscription_record)
-                if subscription_record is not None else None
+                if subscription_record is not None
+                else None
             )
-            if subscription is not None and subscription.effective_plan(at) is not SubscriptionPlan.FREE:
+            if (
+                subscription is not None
+                and subscription.effective_plan(at) is not SubscriptionPlan.FREE
+            ):
                 if current.expires_at != subscription.current_period_end:
-                    await self.update(replace(current, expires_at=subscription.current_period_end, updated_at=at))
+                    await self.update(
+                        replace(current, expires_at=subscription.current_period_end, updated_at=at)
+                    )
                 continue
             deadline = subscription.current_period_end if subscription is not None else None
             if deadline is not None and current.started_at < deadline <= at:
-                terminal = replace(current, status=VpnSessionStatus.EXPIRED, expires_at=deadline, updated_at=at)
+                terminal = replace(
+                    current, status=VpnSessionStatus.EXPIRED, expires_at=deadline, updated_at=at
+                )
             else:
                 terminal = replace(current, status=VpnSessionStatus.FAILED, updated_at=at)
             await self.update(terminal)

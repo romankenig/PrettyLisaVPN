@@ -87,4 +87,3 @@ class VpnCountryAvailabilityService:
             autopilot=AutopilotEligibility(best_quality > 0, best_quality),
             countries=countries,
         )
-
