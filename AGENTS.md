@@ -138,3 +138,10 @@ Subscription access task: backend 0.5.0, migrations 0021/0022; Windows stays 0.9
 Free may select AUTO/country among free nodes (README clarification). Canceled
 renewal preserves paid access through the exclusive paid deadline. Read
 docs/subscription-entitlements.md before changing plans; Platinum is manual with Premium parity; Free is now one hour/day UTC with no ads.
+
+
+Billing overview task: backend 0.6.0, Windows 0.10.0, migration 0023. Read
+`docs/subscriptions-ui.md` before changing commercial pricing. Groups and scheduled
+RUB/USD offers are PostgreSQL-owned; confirmed contract prices are immutable and
+never backfilled from current offers. GET is implemented; provider/payment operations
+remain disabled (actions=[]). Temporary prices were explicitly authorized by owner.
