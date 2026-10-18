@@ -46,7 +46,9 @@ pub async fn get_public_location() -> Result<Observation, &'static str> {
     let (client, request) = request()?;
     let mut response = client.execute(request).await.map_err(|_| UNAVAILABLE)?;
     if !response.status().is_success()
-        || response.content_length().is_some_and(|size| size > MAX_BODY as u64)
+        || response
+            .content_length()
+            .is_some_and(|size| size > MAX_BODY as u64)
     {
         return Err(UNAVAILABLE);
     }

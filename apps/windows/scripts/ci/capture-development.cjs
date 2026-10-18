@@ -161,6 +161,16 @@ async function main() {
   } catch {
     report.public_location_probe = { status: "unavailable" };
   }
+  try {
+    const response = await fetch("https://ipwho.is/", {
+      headers: { Origin: "http://tauri.localhost" },
+      signal: AbortSignal.timeout(10000),
+    });
+    report.public_location_with_origin = { http_status: response.status };
+    await response.body?.cancel();
+  } catch {
+    report.public_location_with_origin = { status: "unavailable" };
+  }
   const me = await get("/me");
   if (
     me.email !== account.email ||
