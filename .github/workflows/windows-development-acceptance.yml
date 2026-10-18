@@ -1,0 +1,157 @@
+name: Windows development acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/windows-development-acceptance]
+    paths:
+      - ".github/workflows/windows-development-acceptance.yml"
+      - "apps/windows/scripts/ci/*development*"
+      - "apps/windows/src/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-development-acceptance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sandbox:
+    name: Isolated sandbox payment acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-acceptance-secret-at-least-32-characters
+      RUN_INTEGRATION_TESTS: "1"
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prettylisa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: prettylisa
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U prettylisa -d prettylisa" --health-interval 5s --health-timeout 3s --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports: ["6379:6379"]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "0.12.9"
+      - run: uv sync --frozen
+      - name: Validate disposable account tooling
+        run: |
+          uv run ruff format --diff ../apps/windows/scripts/ci/development-account.py
+          uv run ruff check ../apps/windows/scripts/ci/development-account.py
+      - run: uv run alembic upgrade head
+      - name: Exercise payment admission, receipts, lifecycle, races and restart recovery
+        run: uv run pytest tests/test_billing_operations_integration.py tests/test_billing_sandbox_integration.py tests/test_billing_lifecycle_integration.py tests/test_payment_routes_integration.py --junitxml=artifacts/sandbox-acceptance.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sandbox-payment-acceptance
+          path: backend/artifacts/sandbox-acceptance.xml
+          if-no-files-found: error
+
+  windows:
+    name: Native Windows against development HTTPS
+    runs-on: windows-2022
+    timeout-minutes: 45
+    environment: development
+    defaults:
+      run:
+        working-directory: apps/windows
+        shell: pwsh
+    env:
+      VITE_APP_ENVIRONMENT: development
+      VITE_BACKEND_BASE_URL: https://api.prettylisavpn.com
+      ACCEPTANCE_CREDENTIAL_PATH: ${{ runner.temp }}/acceptance-credential.json
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/windows/package.json
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check frontend
+        run: |
+          pnpm typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm exec prettier --check scripts/ci/capture-development.cjs
+          if ($LASTEXITCODE -ne 0) {
+            pnpm exec prettier --write scripts/ci/capture-development.cjs
+            git diff -- scripts/ci/capture-development.cjs
+            exit 1
+          }
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Check changed source formatting
+        run: |
+          $formatSources = @("src/support/client.ts", "src/test/supportClient.test.ts", "src/messages/model.ts", "src/messages/client.ts", "src/ui/AccountMessages.tsx", "src/test/messages.test.tsx", "src/ui/About.tsx", "src/ui/SupportDialog.tsx", "src/support/model.ts", "src/test/support.test.tsx", "src/ui/Devices.tsx", "src/test/devices.test.tsx", "src/ui/PaymentChoice.tsx", "src/billing/model.ts", "src/billing/client.ts", "src/billing/preferences.ts", "src/ui/Subscription.tsx", "src/ui/HomeCountryObserver.tsx", "src/native/paymentBrowser.ts", "src/test/billing.test.tsx", "scripts/ci/billing-fixtures.json", "src/review/vpnFixture.ts", "src/ui/TrafficMode.tsx", "src/ui/ConnectionInfo.tsx", "src/vpn/connectionDetails.ts", "src/vpn/protocol.ts", "src/vpn/connection.ts", "src/vpn/wireguard.ts", "src/test/connectionDetails.test.ts", "src/ui/ConnectionLocationSelector.tsx", "src/ui/CurrentLocation.tsx", "src/ui/CountryIcon.tsx", "src/location/publicLocation.ts", "src/vpn/selection.ts", "src/api/client.ts", "src/auth/session.ts", "src/state/application.tsx", "src/test/connectionLocationSelector.test.tsx", "src/test/currentLocation.test.tsx", "src/test/locationSelection.test.ts", "src/test/publicLocation.test.ts", "src/main.tsx", "src/ui/App.tsx", "src/ui/NavigationIcon.tsx", "src/ui/Settings.tsx", "src/ui/useVersions.ts", "src/test/home.test.tsx", "src/ui/Login.tsx", "src/test/login.test.tsx", "src/test/foundation.test.tsx", "src/test/otpVerification.test.tsx", "src/ui/WindowFrame.tsx", "src/ui/Home.tsx", "src/ui/styles.css", "src/test/windowFrame.test.tsx", "src-tauri/tauri.conf.json", "src-tauri/capabilities/main.json", "scripts/ci/capture-windows-ui.cjs")
+          pnpm exec prettier --check --end-of-line auto @formatSources
+          if ($LASTEXITCODE -ne 0) {
+            pnpm exec prettier --write --end-of-line auto @formatSources
+            git diff -- @formatSources
+            exit 1
+          }
+          rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs src-tauri/src/payment_browser.rs
+          exit $LASTEXITCODE
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/windows/src-tauri
+      - name: Build native UI review executable
+        run: |
+          cargo metadata --locked --offline --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm tauri build --debug --no-bundle
+      - name: Install capture tooling
+        run: |
+          $tools = Join-Path $env:RUNNER_TEMP "development-capture-tools"
+          New-Item -ItemType Directory -Force $tools | Out-Null
+          Copy-Item scripts/ci/capture-development.cjs $tools
+          npm install --prefix $tools --no-audit --no-fund playwright-core@1.56.1
+          exit $LASTEXITCODE
+      - name: Create isolated temporary acceptance identity over verified SSH
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: ./scripts/ci/development-account.ps1 create
+      - name: Exercise native UI through real development HTTPS
+        run: node (Join-Path $env:RUNNER_TEMP "development-capture-tools/capture-development.cjs")
+      - name: Remove only this run's acceptance account and private credential
+        if: always()
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: ./scripts/ci/development-account.ps1 cleanup
+      - name: Retain sanitized results and native screenshots only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-development-acceptance
+          path: apps/windows/artifacts/development-acceptance
+          if-no-files-found: warn
