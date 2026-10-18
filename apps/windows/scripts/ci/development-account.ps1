@@ -36,4 +36,7 @@ try {
   }
 } finally {
   Remove-Item $sshRoot -Recurse -Force -ErrorAction SilentlyContinue
+  if ($Mode -eq 'cleanup' -and $env:ACCEPTANCE_OTP_PRIVATE_KEY) {
+    Remove-Item $env:ACCEPTANCE_OTP_PRIVATE_KEY -Force -ErrorAction SilentlyContinue
+  }
 }

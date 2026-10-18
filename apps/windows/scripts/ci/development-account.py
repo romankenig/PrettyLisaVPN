@@ -41,9 +41,7 @@ def smtp_observations(config):
             continue
         try:
             client = (
-                smtplib.SMTP_SSL
-                if config.email_smtp_tls_mode == "implicit_tls"
-                else smtplib.SMTP
+                smtplib.SMTP_SSL if config.email_smtp_tls_mode == "implicit_tls" else smtplib.SMTP
             )
             with client(config.email_smtp_host, config.email_smtp_port, timeout=5) as smtp:
                 if config.email_smtp_tls_mode == "starttls":

@@ -55,7 +55,8 @@ export function Home() {
   useEffect(() => {
     if (profileToken === undefined) return;
     const controller = new AbortController();
-    if (session.current()?.profile === null) setProfileState({ phase: "loading" });
+    if (session.current()?.profile === null)
+      setProfileState({ phase: "loading" });
     void api
       .me(profileToken, controller.signal)
       .then((profile) => {
