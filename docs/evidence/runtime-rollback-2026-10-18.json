@@ -1,0 +1,92 @@
+{
+  "passed": true,
+  "run_id": "39083783546",
+  "run_attempt": "1",
+  "expected_source_sha": "35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1",
+  "deployment_identity": {
+    "application_version": "0.1.0-dev.39083503869+g35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1",
+    "image": "prettylisavpn-backend:35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1-run-39083503869-attempt-1",
+    "release_id": "35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1-run-39083503869-attempt-1",
+    "source_sha": "35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1",
+    "run_id": "39083503869",
+    "run_attempt": "1",
+    "channel": "development"
+  },
+  "new_release": "/opt/prettylisavpn/releases/35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1-run-39083503869-attempt-1",
+  "original_previous_release": "/opt/prettylisavpn/releases/1938d4d32eb58fd097e7c8840f695b735ec86b8f",
+  "before": {
+    "checked_at_utc": "2026-10-18T00:43:15.562505+00:00",
+    "container_id": "48d2dac0f55f",
+    "image_id": "sha256:50c3296eca3b5acfec5f9ced1a884404ad9359568d42dd70195ccf254cdd9568",
+    "container_health": "healthy",
+    "alembic_revision": "0017_profile_evidence",
+    "http_status": {
+      "health": 200,
+      "ready": 200,
+      "version": 200
+    },
+    "ready": {
+      "status": "ready",
+      "dependencies": {
+        "postgresql": true,
+        "valkey": true
+      }
+    },
+    "version": {
+      "application_name": "PrettyLisaVPN",
+      "application_version": "0.1.0-dev.39083503869+g35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1",
+      "environment": "development"
+    }
+  },
+  "rollback_baseline": "/opt/prettylisavpn/rollback-baselines/39083783546-attempt-1",
+  "rollback": {
+    "checked_at_utc": "2026-10-18T00:43:25.699398+00:00",
+    "container_id": "183d112d769d",
+    "image_id": "sha256:51b825d271f21e3555045d9dc5a9c4146ded8795e7ce505fead89ca14c7a4d11",
+    "container_health": "healthy",
+    "alembic_revision": "0017_profile_evidence",
+    "http_status": {
+      "health": 200,
+      "ready": 200,
+      "version": 200
+    },
+    "ready": {
+      "status": "ready",
+      "dependencies": {
+        "postgresql": true,
+        "valkey": true
+      }
+    },
+    "version": {
+      "application_name": "PrettyLisaVPN",
+      "application_version": "dev-1938d4d32eb58fd097e7c8840f695b735ec86b8f",
+      "environment": "development"
+    }
+  },
+  "restore": {
+    "checked_at_utc": "2026-10-18T00:43:35.977138+00:00",
+    "container_id": "79d83fddc528",
+    "image_id": "sha256:50c3296eca3b5acfec5f9ced1a884404ad9359568d42dd70195ccf254cdd9568",
+    "container_health": "healthy",
+    "alembic_revision": "0017_profile_evidence",
+    "http_status": {
+      "health": 200,
+      "ready": 200,
+      "version": 200
+    },
+    "ready": {
+      "status": "ready",
+      "dependencies": {
+        "postgresql": true,
+        "valkey": true
+      }
+    },
+    "version": {
+      "application_name": "PrettyLisaVPN",
+      "application_version": "0.1.0-dev.39083503869+g35fec3ae6ddd3cbe7c3d0f9072db3c0a5f61ccb1",
+      "environment": "development"
+    }
+  },
+  "restore_attempt": 1,
+  "database_schema_changed": false
+}
