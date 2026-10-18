@@ -21,22 +21,34 @@ class CatalogConflictError(RuntimeError):
     pass
 
 
-async def publish_catalog(postgres: Postgres, catalog: Catalog, expected_revision: UUID | None = None) -> UUID:
+async def publish_catalog(
+    postgres: Postgres, catalog: Catalog, expected_revision: UUID | None = None
+) -> UUID:
     document = catalog.model_dump(mode="json")
     async with postgres.session() as session, session.begin():
         await session.execute(text("SELECT pg_advisory_xact_lock(903115991)"))
         group_ids = {entry.group_id for entry in catalog.entries}
-        known_groups = set(await session.scalars(select(ClientGroupRecord.id).where(ClientGroupRecord.id.in_(group_ids))))
+        known_groups = set(
+            await session.scalars(
+                select(ClientGroupRecord.id).where(ClientGroupRecord.id.in_(group_ids))
+            )
+        )
         if known_groups != group_ids:
             raise ValueError("Unknown client group")
-        row = await session.scalar(select(BillingCatalogRecord).where(BillingCatalogRecord.id == 1).with_for_update())
+        row = await session.scalar(
+            select(BillingCatalogRecord).where(BillingCatalogRecord.id == 1).with_for_update()
+        )
         if expected_revision is not None and (row is None or row.revision != expected_revision):
             raise CatalogConflictError
         if row is not None and row.document == document:
             return row.revision
         revision = uuid4()
         if row is None:
-            session.add(BillingCatalogRecord(id=1, revision=revision, document=document, updated_at=datetime.now(UTC)))
+            session.add(
+                BillingCatalogRecord(
+                    id=1, revision=revision, document=document, updated_at=datetime.now(UTC)
+                )
+            )
         else:
             row.revision = revision
             row.document = document
@@ -56,7 +68,9 @@ async def publish_file(path: Path, expected_revision: UUID | None) -> UUID:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Publish the server monthly catalogue; no payments")
+    parser = argparse.ArgumentParser(
+        description="Publish the server monthly catalogue; no payments"
+    )
     parser.add_argument("file", type=Path)
     parser.add_argument("--expected-revision", type=UUID)
     args = parser.parse_args()

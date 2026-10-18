@@ -21,7 +21,10 @@ class Price(StrictModel):
 
     @model_validator(mode="after")
     def valid_discount(self) -> Self:
-        if self.original_amount_minor is not None and self.original_amount_minor <= self.amount_minor:
+        if (
+            self.original_amount_minor is not None
+            and self.original_amount_minor <= self.amount_minor
+        ):
             raise ValueError("Original price must exceed the offered price")
         return self
 
@@ -69,16 +72,20 @@ class Catalog(StrictModel):
                 raise ValueError("Offer IDs must be unique")
             ids.add(entry.offer.id)
             for other in self.entries[:index]:
-                if entry.group_id == other.group_id and (
-                    other.valid_to is None or entry.valid_from < other.valid_to
-                ) and (entry.valid_to is None or other.valid_from < entry.valid_to):
+                if (
+                    entry.group_id == other.group_id
+                    and (other.valid_to is None or entry.valid_from < other.valid_to)
+                    and (entry.valid_to is None or other.valid_from < entry.valid_to)
+                ):
                     raise ValueError("Group offer windows must not overlap")
         return self
 
     def offers_for(self, group_id: UUID, at: datetime) -> list[Offer]:
         if at.tzinfo is None or at.utcoffset() is None:
             raise ValueError("at must be timezone-aware")
-        return [entry.offer for entry in self.entries if entry.group_id == group_id and entry.active(at)]
+        return [
+            entry.offer for entry in self.entries if entry.group_id == group_id and entry.active(at)
+        ]
 
 
 class CurrentPrice(StrictModel):
@@ -96,25 +103,44 @@ class Overview(StrictModel):
     current_price: CurrentPrice | None = None
     payment_method: None = None
     offers: list[Offer]
-    actions: list[Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]] = Field(default_factory=list, max_length=0)
+    actions: list[Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]] = Field(
+        default_factory=list, max_length=0
+    )
     payment_operations_available: Literal[False] = False
 
 
-def overview_for(subscription: Subscription, catalog: Catalog, catalog_revision: UUID | None, at: datetime, *, group_id: UUID = DEFAULT_GROUP_ID, current_price: CurrentPrice | None = None) -> Overview:
+def overview_for(
+    subscription: Subscription,
+    catalog: Catalog,
+    catalog_revision: UUID | None,
+    at: datetime,
+    *,
+    group_id: UUID = DEFAULT_GROUP_ID,
+    current_price: CurrentPrice | None = None,
+    contract_offer: Offer | None = None,
+) -> Overview:
     effective_plan = subscription.effective_plan(at)
     paid = effective_plan is not SubscriptionPlan.FREE
     if paid:
-        status: Literal["FREE", "ACTIVE", "CANCELED", "EXPIRED"] = "ACTIVE" if subscription.auto_renew else "CANCELED"
+        status: Literal["FREE", "ACTIVE", "CANCELED", "EXPIRED"] = (
+            "ACTIVE" if subscription.auto_renew else "CANCELED"
+        )
     else:
         status = "FREE" if subscription.plan is SubscriptionPlan.FREE else "EXPIRED"
+    if paid:
+        offers = [contract_offer] if effective_plan is SubscriptionPlan.PREMIUM and contract_offer else []
+    else:
+        offers = catalog.offers_for(group_id, at)
     snapshot = Overview(
         revision="pending",
         plan=effective_plan,
         status=status,
-        paid_until=subscription.current_period_end if subscription.plan is not SubscriptionPlan.FREE else None,
+        paid_until=subscription.current_period_end
+        if subscription.plan is not SubscriptionPlan.FREE
+        else None,
         auto_renew=subscription.auto_renew,
-        current_price=current_price if subscription.plan is not SubscriptionPlan.FREE else None,
-        offers=[offer for offer in catalog.offers_for(group_id, at) if not paid or offer.plan == effective_plan.value],
+        current_price=current_price if subscription.plan is SubscriptionPlan.PREMIUM else None,
+        offers=offers,
     )
     identity = {
         "subscription_id": str(subscription.id),
@@ -123,5 +149,7 @@ def overview_for(subscription: Subscription, catalog: Catalog, catalog_revision:
         "catalog_revision": str(catalog_revision) if catalog_revision is not None else None,
         "overview": snapshot.model_dump(mode="json", exclude={"revision"}),
     }
-    revision = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    revision = hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     return snapshot.model_copy(update={"revision": revision})

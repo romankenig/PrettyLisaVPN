@@ -1,4 +1,5 @@
 name: Billing preparation
+# Verify fixed contract offers and explicit SQL join root.
 on:
   push:
     branches: [cloud/prepare-billing]

@@ -13,6 +13,7 @@ from prettylisavpn.billing.domain import (
     Catalog,
     CurrentPrice,
     Overview,
+    Offer,
     overview_for,
 )
 from prettylisavpn.billing.model import (
@@ -34,7 +35,9 @@ class BillingOverviewPort(Protocol):
 
 
 class BillingOverviewService:
-    def __init__(self, postgres: Postgres, authenticated_sessions: AuthenticatedSessionHandler) -> None:
+    def __init__(
+        self, postgres: Postgres, authenticated_sessions: AuthenticatedSessionHandler
+    ) -> None:
         self.postgres = postgres
         self.authenticated_sessions = authenticated_sessions
 
@@ -43,19 +46,48 @@ class BillingOverviewService:
         try:
             async with self.postgres.session() as session:
                 # One SQL statement: prices and subscription come from the same MVCC snapshot.
-                row = (await session.execute(
-                    select(SubscriptionRecord, BillingCatalogRecord, ClientGroupMembershipRecord, SubscriptionPriceRecord)
-                    .outerjoin(BillingCatalogRecord, literal(True))
-                    .outerjoin(ClientGroupMembershipRecord, ClientGroupMembershipRecord.user_id == SubscriptionRecord.user_id)
-                    .outerjoin(SubscriptionPriceRecord, SubscriptionPriceRecord.subscription_id == SubscriptionRecord.id)
-                    .where(SubscriptionRecord.user_id == identity.user_id)
-                )).one_or_none()
+                row = (
+                    await session.execute(
+                        select(
+                            SubscriptionRecord,
+                            BillingCatalogRecord,
+                            ClientGroupMembershipRecord,
+                            SubscriptionPriceRecord,
+                        )
+                        .select_from(SubscriptionRecord)
+                        .outerjoin(BillingCatalogRecord, literal(True))
+                        .outerjoin(
+                            ClientGroupMembershipRecord,
+                            ClientGroupMembershipRecord.user_id == SubscriptionRecord.user_id,
+                        )
+                        .outerjoin(
+                            SubscriptionPriceRecord,
+                            SubscriptionPriceRecord.subscription_id == SubscriptionRecord.id,
+                        )
+                        .where(SubscriptionRecord.user_id == identity.user_id)
+                    )
+                ).one_or_none()
                 if row is None:
                     raise BillingUnavailableError
                 subscription_record, catalog_record, membership, price = row
+                contract_offer = Offer.model_validate(price.offer_document) if price else None
+                if price and contract_offer and (contract_offer.id != price.offer_id or getattr(contract_offer.prices, price.currency).amount_minor != price.amount_minor):
+                    raise ValueError("Invalid contract snapshot")
                 subscription = SubscriptionRepository._to_domain(subscription_record)
-                catalog = Catalog.model_validate(catalog_record.document) if catalog_record else Catalog()
-                return overview_for(subscription, catalog, catalog_record.revision if catalog_record else None, datetime.now(UTC), group_id=membership.group_id if membership else DEFAULT_GROUP_ID,
-                    current_price=CurrentPrice(amount_minor=price.amount_minor, currency=price.currency) if price else None)
+                catalog = (
+                    Catalog.model_validate(catalog_record.document) if catalog_record else Catalog()
+                )
+                return overview_for(
+                    subscription,
+                    catalog,
+                    catalog_record.revision if catalog_record else None,
+                    datetime.now(UTC),
+                    group_id=membership.group_id if membership else DEFAULT_GROUP_ID,
+                    contract_offer=contract_offer, current_price=CurrentPrice(
+                        amount_minor=price.amount_minor, currency=price.currency
+                    )
+                    if price
+                    else None,
+                )
         except (SQLAlchemyError, ValidationError, ValueError):
             raise BillingUnavailableError from None

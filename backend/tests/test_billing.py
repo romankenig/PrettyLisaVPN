@@ -20,20 +20,41 @@ NOW = datetime(2026, 10, 18, 12, tzinfo=UTC)
 
 
 def paid(**changes):
-    return replace(Subscription(
-        id=uuid4(), user_id=uuid4(), plan=SubscriptionPlan.PREMIUM,
-        status=SubscriptionStatus.ACTIVE, current_period_start=NOW - timedelta(days=1),
-        current_period_end=NOW + timedelta(days=20), auto_renew=False,
-        created_at=NOW, updated_at=NOW,
-    ), **changes)
+    return replace(
+        Subscription(
+            id=uuid4(),
+            user_id=uuid4(),
+            plan=SubscriptionPlan.PREMIUM,
+            status=SubscriptionStatus.ACTIVE,
+            current_period_start=NOW - timedelta(days=1),
+            current_period_end=NOW + timedelta(days=20),
+            auto_renew=False,
+            created_at=NOW,
+            updated_at=NOW,
+        ),
+        **changes,
+    )
 
 
 def catalog():
     # Explicitly synthetic unit-test amounts; never a production fallback.
-    return Catalog.model_validate({"entries": [{"group_id": str(DEFAULT_GROUP_ID), "valid_from": "2026-01-01T00:00:00Z", "offer": {"id": str(uuid4()), "prices": {
-        "RUB": {"amount_minor": 12345, "original_amount_minor": 20000},
-        "USD": {"amount_minor": 456, "original_amount_minor": None},
-    }}}]})
+    return Catalog.model_validate(
+        {
+            "entries": [
+                {
+                    "group_id": str(DEFAULT_GROUP_ID),
+                    "valid_from": "2026-01-01T00:00:00Z",
+                    "offer": {
+                        "id": str(uuid4()),
+                        "prices": {
+                            "RUB": {"amount_minor": 12345, "original_amount_minor": 20000},
+                            "USD": {"amount_minor": 456, "original_amount_minor": None},
+                        },
+                    },
+                }
+            ]
+        }
+    )
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5, "100", 1_000_000_000_001])
@@ -79,7 +100,10 @@ def test_paid_access_and_renewal_are_distinct_and_expiry_changes_revision(plan):
     assert not active.auto_renew
     assert active.current_price is None  # Catalogue is not a receipt for an existing subscription.
     assert active.actions == []
-    assert overview_for(subscription, offers, revision, NOW + timedelta(minutes=1)).revision == active.revision
+    assert (
+        overview_for(subscription, offers, revision, NOW + timedelta(minutes=1)).revision
+        == active.revision
+    )
     expired = overview_for(subscription, offers, revision, subscription.current_period_end)
     assert expired.status == "EXPIRED"
     assert expired.plan is SubscriptionPlan.FREE
@@ -100,16 +124,37 @@ def test_same_snapshot_is_stable_but_catalog_and_subscription_changes_change_rev
     value = overview_for(subscription, offers, revision, NOW)
     assert overview_for(subscription, offers, revision, NOW).revision == value.revision
     assert overview_for(subscription, offers, uuid4(), NOW).revision != value.revision
-    assert overview_for(replace(subscription, updated_at=NOW + timedelta(seconds=1)), offers, revision, NOW).revision != value.revision
+    assert (
+        overview_for(
+            replace(subscription, updated_at=NOW + timedelta(seconds=1)), offers, revision, NOW
+        ).revision
+        != value.revision
+    )
 
 
-@pytest.mark.parametrize("error,status", [(None, 200), (InvalidSessionError(), 401), (BillingUnavailableError(), 503), (RuntimeError("private"), 503)])
+@pytest.mark.parametrize(
+    "error,status",
+    [
+        (None, 200),
+        (InvalidSessionError(), 401),
+        (BillingUnavailableError(), 503),
+        (RuntimeError("private"), 503),
+    ],
+)
 def test_http_overview_is_private_read_only_and_uses_stable_errors(error, status):
     dependency = AsyncMock()
     service = AsyncMock()
     service.overview.return_value = overview_for(paid(), catalog(), uuid4(), NOW)
     service.overview.side_effect = error
-    app = create_app(Settings(_env_file=None), postgres=dependency, valkey=dependency, product_events=AsyncMock(), authenticated_sessions=AsyncMock(), billing=service, support_worker=AsyncMock())
+    app = create_app(
+        Settings(_env_file=None),
+        postgres=dependency,
+        valkey=dependency,
+        product_events=AsyncMock(),
+        authenticated_sessions=AsyncMock(),
+        billing=service,
+        support_worker=AsyncMock(),
+    )
     with TestClient(app) as client:
         response = client.get("/billing/overview", headers={"Authorization": "Bearer token"})
         assert response.status_code == status
@@ -142,6 +187,7 @@ def test_group_and_date_selection_is_exclusive_and_has_no_cross_group_fallback()
 
 def test_same_group_windows_cannot_overlap_but_may_touch():
     import copy
+
     document = catalog().model_dump(mode="json")
     first = document["entries"][0]
     first["valid_to"] = NOW.isoformat()
@@ -159,3 +205,15 @@ def test_same_group_windows_cannot_overlap_but_may_touch():
     second["valid_from"] = "2026-10-18T00:00:00"
     with pytest.raises(ValidationError):
         Catalog.model_validate(document)
+
+
+def test_active_contract_offer_is_fixed_and_legacy_price_is_never_inferred():
+    subscription = paid()
+    offers = catalog()
+    locked = offers.entries[0].offer
+    group = uuid4()
+    active = overview_for(subscription, Catalog(), uuid4(), NOW, group_id=group, contract_offer=locked)
+    assert active.offers == [locked]
+    assert overview_for(subscription, offers, uuid4(), NOW).offers == []
+    expired = overview_for(subscription, offers, uuid4(), subscription.current_period_end, contract_offer=locked)
+    assert expired.offers == offers.offers_for(DEFAULT_GROUP_ID, subscription.current_period_end)

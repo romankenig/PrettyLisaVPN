@@ -38,6 +38,7 @@ class BillingRoute(APIRoute):
             response.headers["Cache-Control"] = "no-store"
             response.headers["Vary"] = "Authorization"
             return response
+
         return private
 
 
@@ -45,7 +46,9 @@ router = APIRouter(prefix="/billing", tags=["billing"], route_class=BillingRoute
 
 
 @router.get("/overview", response_model=Overview)
-async def overview(request: Request, token: Annotated[str | None, Depends(bearer_token)]) -> Overview | Response:
+async def overview(
+    request: Request, token: Annotated[str | None, Depends(bearer_token)]
+) -> Overview | Response:
     if token is None:
         return error_response("AUTH_INVALID", 401)
     return await cast(BillingOverviewPort, request.app.state.billing).overview(token)

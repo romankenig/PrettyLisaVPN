@@ -26,17 +26,33 @@ class PriceConfirmationError(ValueError):
     pass
 
 
-async def lock_contract_price(session: AsyncSession, subscription_id: UUID, offer_id: UUID,
-                              currency: Literal["RUB", "USD"], expected_revision: UUID, at: datetime) -> CurrentPrice:
+async def lock_contract_price(
+    session: AsyncSession,
+    subscription_id: UUID,
+    offer_id: UUID,
+    currency: Literal["RUB", "USD"],
+    expected_revision: UUID,
+    at: datetime,
+) -> CurrentPrice:
     if currency not in ("RUB", "USD") or at.tzinfo is None or at.utcoffset() is None:
         raise PriceConfirmationError("Invalid confirmation")
     await session.execute(text("SELECT pg_advisory_xact_lock(903115991)"))
-    subscription = await session.scalar(select(SubscriptionRecord).where(SubscriptionRecord.id == subscription_id).with_for_update())
-    if subscription is None or SubscriptionRepository._to_domain(subscription).effective_plan(at) is not SubscriptionPlan.PREMIUM:
+    subscription = await session.scalar(
+        select(SubscriptionRecord).where(SubscriptionRecord.id == subscription_id).with_for_update()
+    )
+    if (
+        subscription is None
+        or SubscriptionRepository._to_domain(subscription).effective_plan(at)
+        is not SubscriptionPlan.PREMIUM
+    ):
         raise PriceConfirmationError("Confirmed Premium period required")
     existing = await session.get(SubscriptionPriceRecord, subscription_id)
     if existing is not None:
-        if existing.offer_id != offer_id or existing.currency != currency or existing.catalog_revision != expected_revision:
+        if (
+            existing.offer_id != offer_id
+            or existing.currency != currency
+            or existing.catalog_revision != expected_revision
+        ):
             raise PriceConfirmationError("Contract price is already fixed")
         return CurrentPrice(amount_minor=existing.amount_minor, currency=existing.currency)
     catalog = await session.get(BillingCatalogRecord, 1)
@@ -49,8 +65,17 @@ async def lock_contract_price(session: AsyncSession, subscription_id: UUID, offe
     if offer is None:
         raise PriceConfirmationError("Offer unavailable for account and date")
     price = getattr(offer.prices, currency)
-    session.add(SubscriptionPriceRecord(subscription_id=subscription_id, group_id=group_id,
-        offer_id=offer_id, catalog_revision=expected_revision, amount_minor=price.amount_minor,
-        currency=currency, locked_at=at))
+    session.add(
+        SubscriptionPriceRecord(
+            subscription_id=subscription_id,
+            group_id=group_id,
+            offer_id=offer_id,
+            offer_document=offer.model_dump(mode="json"),
+            catalog_revision=expected_revision,
+            amount_minor=price.amount_minor,
+            currency=currency,
+            locked_at=at,
+        )
+    )
     await session.flush()
     return CurrentPrice(amount_minor=price.amount_minor, currency=currency)

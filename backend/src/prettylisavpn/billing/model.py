@@ -29,21 +29,32 @@ class ClientGroupRecord(Base):
 
 class ClientGroupMembershipRecord(Base):
     __tablename__ = "client_group_memberships"
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    group_id: Mapped[UUID] = mapped_column(ForeignKey("client_groups.id"), nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    group_id: Mapped[UUID] = mapped_column(
+        ForeignKey("client_groups.id"), nullable=False, index=True
+    )
 
 
 class SubscriptionPriceRecord(Base):
     """Immutable contract price, separate from the mutable acquisition catalogue."""
+
     __tablename__ = "subscription_prices"
     __table_args__ = (
-        CheckConstraint("amount_minor > 0 AND amount_minor <= 1000000000000", name="ck_subscription_prices_amount"),
+        CheckConstraint(
+            "amount_minor > 0 AND amount_minor <= 1000000000000",
+            name="ck_subscription_prices_amount",
+        ),
         CheckConstraint("currency IN ('RUB', 'USD')", name="ck_subscription_prices_currency"),
     )
-    subscription_id: Mapped[UUID] = mapped_column(ForeignKey("subscriptions.id", ondelete="CASCADE"), primary_key=True)
+    subscription_id: Mapped[UUID] = mapped_column(
+        ForeignKey("subscriptions.id", ondelete="CASCADE"), primary_key=True
+    )
     group_id: Mapped[UUID] = mapped_column(ForeignKey("client_groups.id"), nullable=False)
     offer_id: Mapped[UUID] = mapped_column(nullable=False)
     catalog_revision: Mapped[UUID] = mapped_column(nullable=False)
+    offer_document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     amount_minor: Mapped[int] = mapped_column(BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
