@@ -15,6 +15,9 @@ DEVICE_ID = "22222222-2222-4222-8222-222222222222"
 INSTALLATION_ID = "33333333-3333-4333-8333-333333333333"
 EVIDENCE_PATH = os.getenv("DEVICE_BACKEND_EVIDENCE_PATH")
 DEVICE_EVIDENCE = json.loads(Path(EVIDENCE_PATH).read_text(encoding="utf-8")) if EVIDENCE_PATH else None
+BILLING_EVIDENCE_PATH = os.getenv("BILLING_BACKEND_EVIDENCE_PATH")
+BILLING_EVIDENCE = json.loads(Path(BILLING_EVIDENCE_PATH).read_text(encoding="utf-8")) if BILLING_EVIDENCE_PATH else None
+BILLING_READONLY_OPERATION_ATTEMPTS = 0
 DEVICE_REVOKED = False
 SUPPORT_REQUESTS = {}
 SUPPORT_ATTEMPTS = 0
@@ -63,7 +66,15 @@ MESSAGE_FIXTURES = [
 
 def fixture(method, path, body):
     global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
-    global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED
+    global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
+    if BILLING_SCENARIO.startswith("server-") and BILLING_EVIDENCE:
+        if method == "GET" and urlsplit(path).path == "/billing/overview":
+            return 200, BILLING_EVIDENCE["snapshots"][BILLING_SCENARIO.removeprefix("server-")]
+        if urlsplit(path).path.startswith("/billing/operations"):
+            BILLING_READONLY_OPERATION_ATTEMPTS += 1
+            return 404, {"error": {"code": "NOT_FOUND"}}
+    if method == "GET" and urlsplit(path).path == "/ui-review/billing-readonly-evidence":
+        return 200, {"operation_attempts": BILLING_READONLY_OPERATION_ATTEMPTS}
     path = urlsplit(path).path
     # Replay allowlisted, non-secret responses recorded by the real backend in CI.
     if DEVICE_EVIDENCE:
@@ -89,7 +100,7 @@ def fixture(method, path, body):
         return 200, {"acknowledged": len(MESSAGE_RECEIPTS), "attempts": MESSAGE_ACK_ATTEMPTS}
     if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-scenario":
         scenario = body.get("scenario")
-        if scenario not in (*BILLING_FIXTURES, "error"):
+        if scenario not in (*BILLING_FIXTURES, "error", *(["server-" + key for key in BILLING_EVIDENCE["snapshots"]] if BILLING_EVIDENCE else [])):
             return 400, {"error": {"code": "INVALID_SCENARIO"}}
         BILLING_SCENARIO = scenario
         BILLING_OPERATION = None

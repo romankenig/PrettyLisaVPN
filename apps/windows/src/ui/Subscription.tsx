@@ -100,6 +100,13 @@ function SubscriptionContent() {
       .then((value) => {
         if (controller.signal.aborted) return;
         setData(value);
+        if (value.payment_operations_available === false) {
+          savePendingOperation(user, null);
+          setOperation(null);
+          setCheckout(null);
+          setConfirm(false);
+          return;
+        }
         const pending = value.pending_operation_id ?? pendingOperation(user);
         if (pending)
           setOperation((old) =>
@@ -124,7 +131,14 @@ function SubscriptionContent() {
   }, [attempt, billing, session, token, user]);
 
   useEffect(() => {
-    if (!token || !user || !billing || operation?.status !== "PENDING") return;
+    if (
+      !token ||
+      !user ||
+      !billing ||
+      data?.payment_operations_available === false ||
+      operation?.status !== "PENDING"
+    )
+      return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let count = 0;
@@ -187,6 +201,7 @@ function SubscriptionContent() {
     user,
     attempt,
     session,
+    data?.payment_operations_available,
   ]);
 
   if (!active) return null;
@@ -202,7 +217,10 @@ function SubscriptionContent() {
   const pending = operation?.status === "PENDING";
   const disabled = busy || pending || loading;
   const can = (action: BillingAction) =>
-    data?.actions.includes(action) ?? false;
+    data?.payment_operations_available !== false &&
+    (data?.actions.includes(action) ?? false);
+  const readOnly = data?.payment_operations_available === false;
+  const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
 
   async function openProvider(url: string) {
     try {
@@ -345,7 +363,7 @@ function SubscriptionContent() {
                     </time>
                   </>
                 ) : data.status === "EXPIRED" ? (
-                  "подписка закончилась"
+                  "платный доступ не активен"
                 ) : (
                   "бесплатный доступ"
                 )}
@@ -360,6 +378,11 @@ function SubscriptionContent() {
                   / месяц
                 </p>
               ) : null}
+              {paid && !data.current_price ? (
+                <p className="billing-current">
+                  стоимость подписки: сведения недоступны
+                </p>
+              ) : null}
               {paid ? (
                 <p
                   className={`billing-renewal ${data.auto_renew ? "" : "billing-renewal--off"}`}
@@ -369,74 +392,94 @@ function SubscriptionContent() {
                     : "автопродление отключено"}
                 </p>
               ) : null}
-              {offers.length > 1 ? (
-                <label className="billing-offer-select">
-                  тариф на месяц
-                  <select
-                    aria-label="тариф на месяц"
-                    value={offer.id}
-                    disabled={disabled}
-                    onChange={(e) => setOfferId(e.target.value)}
-                  >
-                    {offers.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {planName(o.plan)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              {readOnly ? (
+                <p className="billing-footnote" role="status">
+                  оплата пока недоступна. данные подписки доступны для
+                  просмотра.
+                </p>
               ) : null}
-              <div className="billing-price-heading">
-                <span>
-                  {paid
-                    ? "продлить на месяц"
-                    : `${offer ? planName(offer.plan) : "подписка"} на месяц`}
-                </span>
-                <div
-                  className="billing-currencies"
-                  role="group"
-                  aria-label="основная валюта"
-                >
-                  {(["RUB", "USD"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={currency === value}
-                      disabled={disabled}
-                      onClick={() => {
-                        setCurrency(value);
-                        saveCurrency(active.userId, value);
-                      }}
-                    >
-                      {value === "RUB" ? "₽" : "$"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {offer ? (
-                <OfferPrices offer={offer} currency={currency} />
+              {manualPlan ? (
+                <p>
+                  тариф назначен вручную. продление через оплату недоступно.
+                </p>
               ) : (
-                <p>цены пока недоступны</p>
+                <>
+                  {offers.length > 1 ? (
+                    <label className="billing-offer-select">
+                      тариф на месяц
+                      <select
+                        aria-label="тариф на месяц"
+                        value={offer.id}
+                        disabled={disabled}
+                        onChange={(e) => setOfferId(e.target.value)}
+                      >
+                        {offers.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {planName(o.plan)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  <div className="billing-price-heading">
+                    <span>
+                      {readOnly && paid
+                        ? "предложение на месяц"
+                        : paid
+                          ? "продлить на месяц"
+                          : `${offer ? planName(offer.plan) : "подписка"} на месяц`}
+                    </span>
+                    <div
+                      className="billing-currencies"
+                      role="group"
+                      aria-label="основная валюта"
+                    >
+                      {(["RUB", "USD"] as const).map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={currency === value}
+                          disabled={disabled}
+                          onClick={() => {
+                            setCurrency(value);
+                            saveCurrency(active.userId, value);
+                          }}
+                        >
+                          {value === "RUB" ? "₽" : "$"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {offer ? (
+                    <OfferPrices offer={offer} currency={currency} />
+                  ) : (
+                    <p>цены пока недоступны</p>
+                  )}
+                  <button
+                    className="billing-primary"
+                    type="button"
+                    disabled={
+                      disabled || !offer || !can(paid ? "RENEW" : "SUBSCRIBE")
+                    }
+                    onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
+                  >
+                    {busy
+                      ? "подождите…"
+                      : paid
+                        ? "продлить подписку"
+                        : "оформить подписку"}
+                  </button>
+                  <p className="billing-footnote">
+                    {readOnly
+                      ? paid && data.current_price
+                        ? "условия действующей подписки. списание не выполняется."
+                        : "цены предложения на месяц. списание не выполняется."
+                      : paid
+                        ? "оплата и новый способ оплаты — на стороне платёжного сервиса"
+                        : "способ оплаты и автопродление подтверждаются при оформлении"}
+                  </p>
+                </>
               )}
-              <button
-                className="billing-primary"
-                type="button"
-                disabled={
-                  disabled || !offer || !can(paid ? "RENEW" : "SUBSCRIBE")
-                }
-                onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
-              >
-                {busy
-                  ? "подождите…"
-                  : paid
-                    ? "продлить подписку"
-                    : "оформить подписку"}
-              </button>
-              <p className="billing-footnote">
-                {paid
-                  ? "оплата и новый способ оплаты — на стороне платёжного сервиса"
-                  : "способ оплаты и автопродление подтверждаются при оформлении"}
-              </p>
             </section>
             <section
               className="billing-card billing-method"
@@ -452,7 +495,11 @@ function SubscriptionContent() {
                   <span>{data.payment_method.label}</span>
                 </div>
               ) : (
-                <p className="billing-method-value">не привязан</p>
+                <p className="billing-method-value">
+                  {data.auto_renew
+                    ? "сведения о способе оплаты недоступны"
+                    : "не привязан"}
+                </p>
               )}
               {can("CHANGE_METHOD") ? (
                 <button
@@ -467,10 +514,11 @@ function SubscriptionContent() {
                 </button>
               ) : null}
               <p className="billing-footnote">
-                реквизиты хранятся у платёжного сервиса. подтверждение откроется
-                в браузере
+                {readOnly
+                  ? "управление оплатой пока недоступно"
+                  : "реквизиты хранятся у платёжного сервиса. подтверждение откроется в браузере"}
               </p>
-              {paid && !data.auto_renew ? (
+              {paid && !data.auto_renew && !readOnly ? (
                 <p className="billing-no-renew">автоматических списаний нет</p>
               ) : null}
               {can("CANCEL") ? (

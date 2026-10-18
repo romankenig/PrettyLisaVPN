@@ -30,6 +30,8 @@ from prettylisavpn.auth.session_service import (
     AuthenticatedSessionHandler,
     AuthenticatedSessionService,
 )
+from prettylisavpn.billing.router import router as billing_router
+from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
@@ -133,6 +135,7 @@ def create_app(
     vpn_session_reconciler: VpnSessionReconcilerPort | None = None,
     support_mailer: SupportMailPort | None = None,
     support_worker: SupportWorkerPort | None = None,
+    billing: BillingOverviewPort | None = None,
 ) -> FastAPI:
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
@@ -181,6 +184,10 @@ def create_app(
                     )
                 )
                 app.state.account_messages = AccountMessagesService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                )
+                app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                 )
@@ -307,6 +314,7 @@ def create_app(
     app.include_router(vpn_router)
     app.include_router(messages_router)
     app.include_router(support_router)
+    app.include_router(billing_router)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:

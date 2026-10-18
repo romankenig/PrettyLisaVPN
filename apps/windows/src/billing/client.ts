@@ -2,7 +2,7 @@ import { ApiError } from "../api/client";
 import type { HttpTransport } from "../native/http";
 import { parseOperation, parseOverview, type BillingClient } from "./model";
 
-// Proposed billing contract; a missing backend must never supply demo prices.
+// Server overview; operation methods remain guarded by backend capabilities.
 export function createBillingClient(
   base: string,
   transport: HttpTransport,
@@ -30,6 +30,7 @@ export function createBillingClient(
         signal: controller.signal,
         credentials: "omit",
         cache: "no-store",
+        redirect: "error",
       });
       if (response.status === 401 || response.status === 403)
         throw new ApiError("AUTH_INVALID");

@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Backend — 0.6.0 / Windows — 0.10.0
+
+- Added: authenticated read-only billing overview, stable cross-device revisions
+  and UTC/group-scoped monthly RUB/USD offers with independently discounted prices.
+- Added: client groups, scheduled PostgreSQL catalogue with private CAS publication
+  and immutable confirmed subscription price snapshots (migration 0023).
+- Windows now displays server data and disables payments while the provider is
+  unavailable; manual Platinum stays outside sales, historical unknown prices stay null.
+- Temporary owner-authorized Premium prices: 199 RUB / 2.99 USD, regular 299 / 3.99.
+- Compatibility: additive schema/API/capability. Payment operations and provider
+  are not implemented. Exact current-source CI/native/development evidence: task PR.
+
+
 ### Backend 0.5.0 — права подписки
 
 - Отмена автопродления сохраняет Premium до оплаченного срока; единая политика /me/VPN/messages.

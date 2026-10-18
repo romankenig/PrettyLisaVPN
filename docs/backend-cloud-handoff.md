@@ -183,3 +183,28 @@ Windows 0.9.0 без изменений. Free: час/сутки UTC без ре
 Контракт, продуктовые решения и ограничения: [subscription-entitlements.md](subscription-entitlements.md).
 Текущая задача ещё проходит проверки; реальные SHA/run/attempt и deploy будут
 зафиксированы в PR, прежние артефакты не подтверждают эту версию.
+
+
+## Billing overview: backend 0.5.0 → 0.6.0, Windows 0.9.0 → 0.10.0
+
+Новая возможность: авторизованный GET /billing/overview и read-only подключение
+существующего экрана. Миграция 0023 добавляет группы/назначения, атомарный каталог с
+периодами и неизменяемые снимки цены договора. Действующие права остаются общими с
+/me и VPN; изменение каталога не меняет зафиксированную цену. Старые неизвестные
+цены не заполняются задним числом. Каталог имеет разрешённые владельцем временные
+цены 199 ₽/$2,99 (обычные 299 ₽/$3,99). Закрытый CLI, CAS, default-группа и точные
+UTC-границы описаны в [subscriptions-ui.md](subscriptions-ui.md).
+
+Схема/API additive, старые backend не используют новые таблицы. Для rollback
+приложения оставлять схему 0023 и данные; downgrade до 0022 уничтожает каталог,
+группы и снимки договоров и не является безопасным rollback данных. Снимки нельзя
+переписывать при откате или заново вычислять из сегодняшнего каталога.
+
+План проверки: backend format/lint/mypy/unit/integration/Alembic/image; Windows
+format/types/lint/tests, новая native-сборка и replay реальных backend GET из CI.
+Проверенные product HEAD, временный merge SHA, все workflow, скриншоты и фактические
+development build SHA/run/attempt фиксируются в PR этой задачи после завершения
+проверок. Наличие этого текста не доказывает deployment. Платежи выключены:
+actions=[], payment_operations_available=false, operations endpoints отсутствуют.
+Для будущих платежей остаются provider adapter/credentials, webhook confirmation,
+идемпотентность, подтверждённые mandates и атомарный вызов lock_contract_price.
