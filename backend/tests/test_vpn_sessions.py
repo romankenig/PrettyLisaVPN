@@ -26,7 +26,7 @@ def make_session(**changes: object) -> VpnSession:
         plan_snapshot=SubscriptionPlan.FREE,
         status=VpnSessionStatus.PENDING,
         started_at=now,
-        expires_at=now + timedelta(minutes=15),
+        expires_at=now + timedelta(hours=1),
         disconnected_at=None,
         peer_removed_at=None,
         created_at=now,
@@ -48,8 +48,8 @@ def test_new_free_session_uses_server_side_entitlement_duration():
         now=now,
     )
 
-    assert FREE_ENTITLEMENTS.vpn_session_limit == timedelta(minutes=15)
-    assert session.expires_at == now + timedelta(minutes=15)
+    assert FREE_ENTITLEMENTS.vpn_session_limit == timedelta(hours=1)
+    assert session.expires_at == now + timedelta(hours=1)
     assert session.status is VpnSessionStatus.PENDING
     assert session.is_live()
 
@@ -73,7 +73,7 @@ def test_normalizes_session_times_to_utc():
     started_at = datetime.now(UTC).astimezone(offset)
     session = make_session(
         started_at=started_at,
-        expires_at=started_at + timedelta(minutes=15),
+        expires_at=started_at + timedelta(hours=1),
         created_at=started_at,
         updated_at=started_at,
     )

@@ -127,6 +127,17 @@ def test_me_returns_identity_plan_and_active_device_count():
         "email": summary.email,
         "plan": "PREMIUM",
         "active_device_count": 3,
+        "subscription": None,
+        "entitlements": {
+            "vpn_session_limit_seconds": None,
+            "rewarded_ad_required": False,
+            "country_selection_allowed": True,
+            "free_nodes_only": False,
+            "active_device_limit": 5,
+            "daily_vpn_limit_seconds": None,
+            "free_seconds_remaining": None,
+            "free_quota_resets_at": None,
+        },
     }
 
 

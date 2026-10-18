@@ -216,7 +216,7 @@ async def test_plan_aware_service_selects_node_and_creates_session_in_one_transa
         assert created.vpn_node_id == node_id
         assert created.plan_snapshot is SubscriptionPlan.FREE
         assert created.allocated_client_ipv4 == IPv4Address("10.77.0.2")
-        assert created.expires_at == now + timedelta(minutes=15)
+        assert created.expires_at == now + timedelta(hours=1)
     finally:
         await clean_up(postgres, user_id, node_id)
         await postgres.close()
@@ -453,7 +453,7 @@ async def test_manual_disconnect_enforces_ownership_and_is_idempotent():
 async def test_expiry_survives_restart_and_retries_agent_outage_without_extending_session():
     postgres = Postgres(Settings())
     user_id, device_id, node_id = await create_dependencies(postgres)
-    started_at = datetime.now(UTC) - timedelta(minutes=16)
+    started_at = datetime.now(UTC) - timedelta(minutes=61)
     expired = VpnSession.new(
         user_id=user_id,
         device_id=device_id,

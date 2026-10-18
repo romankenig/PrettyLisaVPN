@@ -1,10 +1,10 @@
 """SQLAlchemy mapping for VPN session control-plane state."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from ipaddress import IPv4Address
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, String, func, text
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, String, func, text
 from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column
@@ -126,3 +126,27 @@ class VpnSessionRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, server_default=func.now()
     )
+
+
+class FreeVpnUsageRecord(Base):
+    """Durable account/day reservation, settled once after a session terminates."""
+
+    __tablename__ = "free_vpn_usage"
+    __table_args__ = (
+        CheckConstraint("reserved_until > reserved_from", name="ck_free_vpn_usage_period"),
+        Index("ix_free_vpn_usage_user_day", "user_id", "day"),
+        Index(
+            "ix_free_vpn_usage_unsettled_user",
+            "user_id",
+            postgresql_where=text("released_at IS NULL"),
+        ),
+    )
+    session_id: Mapped[UUID] = mapped_column(
+        ForeignKey("vpn_sessions.id", ondelete="CASCADE"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    reserved_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reserved_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

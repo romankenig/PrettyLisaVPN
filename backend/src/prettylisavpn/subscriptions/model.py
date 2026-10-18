@@ -35,6 +35,10 @@ class SubscriptionRecord(Base):
             "plan <> 'FREE' OR NOT auto_renew",
             name="ck_subscriptions_free_no_auto_renew",
         ),
+        CheckConstraint(
+            "status <> 'CANCELED' OR NOT auto_renew",
+            name="ck_subscriptions_canceled_no_auto_renew",
+        ),
         Index(
             "ix_subscriptions_status_current_period_end",
             "status",

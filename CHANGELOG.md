@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Backend 0.5.0 — права подписки
+
+- Отмена автопродления сохраняет Premium до оплаченного срока; единая политика /me/VPN/messages.
+- /me дополняется сведениями о подписке и правах; существующие поля совместимы.
+- Открытые платные VPN-сессии учитывают истечение и продление; durable peer cleanup.
+- Миграции 0021/0022: отмена автопродления отдельно от срока; ручной Platinum с правами Premium.
+- Free: без рекламы, час/сутки UTC на аккаунт, durable резервации и возврат остатка после peer cleanup.
+- Правила суточного лимита и ограничения удаления offline peer: docs/subscription-entitlements.md.
+
 ### Backend — 0.4.0 / Windows — 0.9.0
 
 - Added: private support POST/status API, transactional requests, sanitized images,

@@ -38,6 +38,13 @@ class VpnSessionStatusService:
         identity = await self._authenticated_sessions.authenticate(access_token)
         try:
             async with self._postgres.session() as database_session:
+                async with database_session.begin():
+                    await VpnSessionRepository(database_session).reconcile_paid_access(
+                        datetime.now(UTC), identity.user_id
+                    )
+                    await VpnSessionRepository(database_session).expire_allocations(
+                        datetime.now(UTC), identity.user_id
+                    )
                 vpn_session = await VpnSessionRepository(database_session).get_live_for_device(
                     identity.device_id, datetime.now(UTC)
                 )

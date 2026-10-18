@@ -110,6 +110,7 @@ class VpnSessionReconciler:
             async with self._postgres.session() as database_session:
                 async with database_session.begin():
                     repository = VpnSessionRepository(database_session)
+                    await repository.reconcile_paid_access(now)
                     await repository.expire_allocations(now)
                 cleanup = await repository.list_cleanup_pending()
                 active = await repository.list_active()
