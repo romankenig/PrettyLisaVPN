@@ -21,6 +21,8 @@ import {
   rememberHomeCountry,
   requestId,
   saveCurrency,
+  savePendingOperation,
+  pendingOperation,
 } from "../billing/preferences";
 import { validatePaymentUrl } from "../native/paymentBrowser";
 import { loadConfig } from "../config/config";
@@ -49,9 +51,10 @@ beforeEach(() => {
 function setup(
   scenario: "free" | "active" | "canceled" = "free",
   country?: () => Promise<PublicLocation>,
+  overview: unknown = fixtures[scenario],
 ) {
   const billing: BillingClient = {
-    overview: vi.fn().mockResolvedValue(parseOverview(fixtures[scenario])),
+    overview: vi.fn().mockResolvedValue(parseOverview(overview)),
     start: vi.fn().mockResolvedValue(pending),
     operation: vi.fn().mockResolvedValue(pending),
   };
@@ -364,5 +367,59 @@ describe("billing contract and provider navigation", () => {
     saveCurrency("one", "USD");
     expect(preferredCurrency("one")).toBe("USD");
     expect(preferredCurrency("two")).toBe("RUB");
+  });
+});
+
+
+describe("read-only server billing", () => {
+  function overview(scenario: "free" | "active" | "canceled" = "free") {
+    return { ...fixtures[scenario], payment_operations_available: false,
+      actions: [], pending_operation_id: null, current_price: null, payment_method: null };
+  }
+  it("displays server prices but never starts payment, polls a stale operation or opens a provider", async () => {
+    savePendingOperation("user", "legacy-operation");
+    const { billing, open } = setup("free", undefined, overview());
+    await screen.findByText(/оплата пока недоступна/);
+    const subscribe = screen.getByRole("button", { name: "оформить подписку" });
+    expect(subscribe).toBeDisabled();
+    fireEvent.click(subscribe);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(billing.start).not.toHaveBeenCalled();
+    expect(billing.operation).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+    expect(pendingOperation("user")).toBeNull();
+    expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("199");
+    expect(screen.getByLabelText("цена в долларах")).toHaveTextContent("2,99");
+  });
+  it("does not invent a historical price or payment method for an active legacy subscription", async () => {
+    setup("active", undefined, overview("active"));
+    await screen.findByText(/оплата пока недоступна/);
+    expect(screen.getByText("сведения о способе оплаты недоступны")).toBeInTheDocument();
+    expect(screen.queryByText("автоматических списаний нет")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "отменить подписку" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "продлить подписку" })).toBeDisabled();
+  });
+  it("shows an independently fixed current contract price alongside a different new offer", async () => {
+    setup("active", undefined, { ...overview("active"), current_price: { amount_minor: 12345, currency: "RUB" } });
+    await screen.findByText(/оплата пока недоступна/);
+    expect(screen.getByText(/123,45/)).toBeInTheDocument();
+    expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("299");
+  });
+  it("shows unavailability when the server has no current group/date offer", async () => {
+    setup("free", undefined, { ...overview(), offers: [] });
+    await screen.findByText("цены пока недоступны");
+    expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "оформить подписку" })).toBeDisabled();
+  });
+  it("keeps manually assigned Platinum out of sales and price comparisons", async () => {
+    setup("active", undefined, { ...overview("active"), plan: "PLATINUM", offers: [] });
+    await screen.findByText(/тариф назначен вручную/);
+    expect(screen.queryByRole("button", { name: "продлить подписку" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
+  });
+  it("preserves an expired subscription's actual renewal flag without granting paid access", () => {
+    expect(parseOverview({ ...overview("active"), plan: "FREE", status: "EXPIRED" }).auto_renew).toBe(true);
+    expect(() => parseOverview({ ...overview(), actions: ["SUBSCRIBE"] })).toThrow();
+    expect(() => parseOverview({ ...overview(), pending_operation_id: "old" })).toThrow();
   });
 });

@@ -1,0 +1,100 @@
+name: Billing preparation
+on:
+  push:
+    branches: [cloud/prepare-billing]
+    paths: [.github/workflows/prepare-billing.yaml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-otp-hmac-secret-at-least-32-characters
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prettylisa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: prettylisa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prettylisa -d prettylisa"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "0.12.9"
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: Format and lint backend
+        working-directory: backend
+        run: |
+          uv run ruff check --fix .
+          uv run ruff format .
+      - name: Backend type check
+        if: always()
+        working-directory: backend
+        run: uv run mypy
+      - name: Backend unit tests
+        if: always()
+        working-directory: backend
+        run: uv run pytest -m "not integration and not docker"
+      - name: Migrations and billing integration
+        if: always()
+        working-directory: backend
+        env:
+          RUN_INTEGRATION_TESTS: "1"
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run pytest tests/test_billing_integration.py
+      - uses: actions/setup-node@v4
+        if: always()
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        if: always()
+        with:
+          package_json_file: apps/windows/package.json
+          run_install: false
+      - name: Install and format frontend
+        if: always()
+        working-directory: apps/windows
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write src/billing/model.ts src/billing/client.ts src/ui/Subscription.tsx src/test/billing.test.tsx scripts/ci/capture-windows-ui.cjs
+      - name: Frontend type lint and tests
+        if: always()
+        working-directory: apps/windows
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm test
+      - name: Export formatted sources
+        if: always()
+        run: |
+          python - <<'PYTHON'
+          import json, base64, subprocess
+          from pathlib import Path
+          changed = subprocess.check_output(['git','diff','--name-only'],text=True).splitlines()
+          for path in changed:
+              if Path(path).is_file():
+                  print('BILLING_PREP_FILE ' + json.dumps({'path':path,'content':base64.b64encode(Path(path).read_bytes()).decode()}))
+          PYTHON

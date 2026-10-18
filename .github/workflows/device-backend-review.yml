@@ -75,6 +75,20 @@ jobs:
           DEVICE_BACKEND_EVIDENCE_PATH: artifacts/device-response.json
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Record billing HTTP evidence
+        run: uv run pytest tests/test_billing_integration.py -k record_billing_api_evidence
+        env:
+          RUN_INTEGRATION_TESTS: "1"
+          BILLING_BACKEND_EVIDENCE_PATH: artifacts/billing-response.json
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Upload billing HTTP evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: billing-backend-responses
+          path: backend/artifacts/billing-response.json
+          if-no-files-found: error
+
       - name: Upload non-secret HTTP evidence
         uses: actions/upload-artifact@v4
         with:
@@ -87,3 +101,4 @@ jobs:
     uses: ./.github/workflows/windows-ui-review.yml
     with:
       device_evidence_artifact: device-backend-responses
+      billing_evidence_artifact: billing-backend-responses

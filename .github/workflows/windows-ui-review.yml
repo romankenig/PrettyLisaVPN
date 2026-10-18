@@ -9,6 +9,10 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
+      billing_evidence_artifact:
+        type: string
+        required: false
+        default: ""
       device_evidence_artifact:
         type: string
         required: false
@@ -31,6 +35,7 @@ jobs:
         shell: pwsh
     env:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BILLING_BACKEND_EVIDENCE_PATH: ${{ inputs.billing_evidence_artifact != '' && format('{0}/apps/windows/artifacts/backend-evidence/billing-response.json', github.workspace) || '' }}
       DEVICE_BACKEND_EVIDENCE_PATH: ${{ inputs.device_evidence_artifact != '' && format('{0}/apps/windows/artifacts/backend-evidence/device-response.json', github.workspace) || '' }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
@@ -44,6 +49,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.device_evidence_artifact }}
+          path: apps/windows/artifacts/backend-evidence
+      - name: Download recorded backend billing responses
+        if: inputs.billing_evidence_artifact != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.billing_evidence_artifact }}
           path: apps/windows/artifacts/backend-evidence
       - uses: actions/setup-node@v4
         with:
