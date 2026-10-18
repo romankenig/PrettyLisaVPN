@@ -353,8 +353,10 @@ describe("authenticated Home", () => {
       }),
       dispose: vi.fn(),
     };
+    const api = mockApi();
+    vi.mocked(api.me).mockResolvedValue({ ...profile, plan: "FREE" });
     const rendered = renderRestored(
-      mockApi(),
+      api,
       createTestCredentialStorage(),
       vpnConnection,
     );

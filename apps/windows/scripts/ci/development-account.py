@@ -7,6 +7,8 @@ by a private runner file. Never upload that file or treat this as an OTP test.
 import asyncio
 import json
 import re
+import smtplib
+import ssl
 import sys
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
@@ -26,6 +28,33 @@ from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.users.service import UserService
+
+
+def smtp_observations(config):
+    result = {}
+    for name, username, password in (
+        ("otp", config.email_smtp_username, config.email_smtp_password),
+        ("support", "app-helper@prettylisavpn.com", config.support_smtp_password),
+    ):
+        if password is None:
+            result[name] = "not configured"
+            continue
+        try:
+            client = (
+                smtplib.SMTP_SSL
+                if config.email_smtp_tls_mode == "implicit_tls"
+                else smtplib.SMTP
+            )
+            with client(config.email_smtp_host, config.email_smtp_port, timeout=5) as smtp:
+                if config.email_smtp_tls_mode == "starttls":
+                    smtp.starttls(context=ssl.create_default_context())
+                smtp.login(username, password.get_secret_value())
+            result[name] = "authenticated; no message sent"
+        except smtplib.SMTPAuthenticationError:
+            result[name] = "authentication failed"
+        except (OSError, smtplib.SMTPException):
+            result[name] = "unavailable"
+    return result
 
 
 async def main():
@@ -79,6 +108,8 @@ async def main():
                         "expires_at": issued.session.expires_at.isoformat(),
                     },
                 }
+        if mode == "create":
+            output["smtp_authentication"] = await asyncio.to_thread(smtp_observations, config)
         print(json.dumps(output))
     finally:
         await postgres.close()

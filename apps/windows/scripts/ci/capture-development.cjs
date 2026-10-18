@@ -18,6 +18,7 @@ const report = {
   api: [], checks: [], status: "running", authentication: "server-seeded disposable account; native refresh tested; email OTP not tested",
   real_payment_provider: false, real_payments: false, support_email_delivery: "not sent",
   vpn_tunnel: "not tested: no signed WireGuard distribution/runtime on hosted runner",
+  smtp_authentication: account.smtp_authentication,
 };
 let app, browser, page;
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

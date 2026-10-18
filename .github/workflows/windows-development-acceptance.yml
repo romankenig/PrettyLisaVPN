@@ -101,10 +101,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pnpm exec prettier --check scripts/ci/capture-development.cjs
+          pnpm exec prettier --check scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
           if ($LASTEXITCODE -ne 0) {
-            pnpm exec prettier --write scripts/ci/capture-development.cjs
-            git diff -- scripts/ci/capture-development.cjs
+            pnpm exec prettier --write scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
+            git diff -- scripts/ci/capture-development.cjs src/ui/Home.tsx src/test/home.test.tsx
             exit 1
           }
       - name: Install pinned Rust toolchain
