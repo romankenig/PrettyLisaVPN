@@ -108,13 +108,11 @@ export async function validateScreenshots(files: readonly File[]) {
     const webp =
       String.fromCharCode(...header.slice(0, 4)) === "RIFF" &&
       String.fromCharCode(...header.slice(8, 12)) === "WEBP";
-    if (
-      !(
-        (file.type === "image/png" && png) ||
-        (file.type === "image/jpeg" && jpeg) ||
-        (file.type === "image/webp" && webp)
-      )
-    )
+    if (!(
+      (file.type === "image/png" && png) ||
+      (file.type === "image/jpeg" && jpeg) ||
+      (file.type === "image/webp" && webp)
+    ))
       return "поддерживаются скриншоты PNG, JPEG и WebP";
   }
   return null;
