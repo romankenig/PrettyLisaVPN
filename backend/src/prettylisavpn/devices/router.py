@@ -138,4 +138,3 @@ async def revoke_device(
     ) as error:
         return _authentication_error(error)
     return RevokeDeviceResponse(device=_response(device))
-

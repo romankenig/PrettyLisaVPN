@@ -30,31 +30,44 @@ async def test_legacy_devices_remain_null_and_timestamp_column_round_trips():
 
     async def alembic(*args):
         process = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "alembic", *args,
-            env=environment, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            sys.executable,
+            "-m",
+            "alembic",
+            *args,
+            env=environment,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         _, errors = await process.communicate()
-        assert process.returncode == 0, "Alembic subprocess failed: " + errors.decode().splitlines()[-1]
+        assert process.returncode == 0, (
+            "Alembic subprocess failed: " + errors.decode().splitlines()[-1]
+        )
 
     try:
         await alembic("upgrade", "0017_profile_evidence")
         user_id, device_id, installation_id = uuid4(), uuid4(), uuid4()
         async with engine.begin() as connection:
-            await connection.execute(text(
-                "INSERT INTO users(id,email,status) VALUES (:id,:email,'ACTIVE')"
-            ), {"id": user_id, "email": "legacy@example.com"})
-            await connection.execute(text(
-                "INSERT INTO devices(id,user_id,installation_id,platform,device_name,status) "
-                "VALUES (:id,:user,:installation,'WINDOWS','Legacy','ACTIVE')"
-            ), {"id": device_id, "user": user_id, "installation": installation_id})
+            await connection.execute(
+                text("INSERT INTO users(id,email,status) VALUES (:id,:email,'ACTIVE')"),
+                {"id": user_id, "email": "legacy@example.com"},
+            )
+            await connection.execute(
+                text(
+                    "INSERT INTO devices(id,user_id,installation_id,platform,device_name,status) "
+                    "VALUES (:id,:user,:installation,'WINDOWS','Legacy','ACTIVE')"
+                ),
+                {"id": device_id, "user": user_id, "installation": installation_id},
+            )
         await alembic("upgrade", "head")
         async with engine.begin() as connection:
             row = (await connection.execute(text("SELECT last_login_at FROM devices"))).one()
             assert row.last_login_at is None
-            kind = await connection.scalar(text(
-                "SELECT data_type FROM information_schema.columns "
-                "WHERE table_name='devices' AND column_name='last_login_at'"
-            ))
+            kind = await connection.scalar(
+                text(
+                    "SELECT data_type FROM information_schema.columns "
+                    "WHERE table_name='devices' AND column_name='last_login_at'"
+                )
+            )
             assert kind == "timestamp with time zone"
             await connection.execute(text("UPDATE devices SET last_login_at=now()"))
         await alembic("downgrade", "0017_profile_evidence")

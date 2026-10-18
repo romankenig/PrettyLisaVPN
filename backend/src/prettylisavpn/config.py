@@ -117,4 +117,3 @@ class Settings(BaseSettings):
 
     def vpn_node_agent_is_configured(self) -> bool:
         return self.vpn_node_agent_auth_token is not None
-

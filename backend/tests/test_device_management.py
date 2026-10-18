@@ -126,4 +126,3 @@ def test_device_endpoint_maps_invalid_session():
     assert response.status_code == 401
     assert response.json() == {"error": {"code": "invalid_session"}}
     assert "secret-token" not in response.text
-

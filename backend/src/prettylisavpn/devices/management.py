@@ -92,7 +92,9 @@ class DeviceManagementService:
                         AuthSessionRepository(session), self._refresh_token_ttl
                     ).revoke_device_sessions(device.id)
                     vpn_sessions = VpnSessionRepository(session)
-                    await vpn_sessions.disconnect_device(identity.user_id, device.id, datetime.now(UTC))
+                    await vpn_sessions.disconnect_device(
+                        identity.user_id, device.id, datetime.now(UTC)
+                    )
                     cleanup = await vpn_sessions.list_device_cleanup(identity.user_id, device.id)
         except (DeviceNotFoundError, DeviceManagementUnavailableError):
             raise
@@ -121,4 +123,3 @@ class DeviceManagementService:
     @staticmethod
     def _managed(device: Device, identity: AccessIdentity) -> ManagedDevice:
         return ManagedDevice(device=device, is_current=device.id == identity.device_id)
-

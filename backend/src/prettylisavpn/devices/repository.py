@@ -102,4 +102,3 @@ class DeviceRepository:
             revoked_at=record.revoked_at,
             last_login_at=record.last_login_at,
         )
-

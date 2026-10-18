@@ -249,4 +249,3 @@ class LoginService:
             auth_session=auth_session,
             access_token=access_token,
         )
-

@@ -59,12 +59,17 @@ class VpnSessionRepository:
         )
 
     async def has_unremoved_public_key(self, public_key: str) -> bool:
-        return await self._session.scalar(
-            select(VpnSessionRecord.id).where(
-                VpnSessionRecord.client_wireguard_public_key == public_key,
-                VpnSessionRecord.peer_removed_at.is_(None),
-            ).limit(1)
-        ) is not None
+        return (
+            await self._session.scalar(
+                select(VpnSessionRecord.id)
+                .where(
+                    VpnSessionRecord.client_wireguard_public_key == public_key,
+                    VpnSessionRecord.peer_removed_at.is_(None),
+                )
+                .limit(1)
+            )
+            is not None
+        )
 
     async def disconnect_device(self, user_id: UUID, device_id: UUID, at: datetime) -> None:
         # Terminal rows with peer_removed_at=NULL are the existing durable cleanup queue.
@@ -80,14 +85,20 @@ class VpnSessionRepository:
 
     async def list_device_cleanup(self, user_id: UUID, device_id: UUID) -> list[VpnSession]:
         records = await self._session.scalars(
-            select(VpnSessionRecord).where(
+            select(VpnSessionRecord)
+            .where(
                 VpnSessionRecord.user_id == user_id,
                 VpnSessionRecord.device_id == device_id,
                 VpnSessionRecord.peer_removed_at.is_(None),
-                VpnSessionRecord.status.in_((
-                    VpnSessionStatus.DISCONNECTED, VpnSessionStatus.EXPIRED, VpnSessionStatus.FAILED,
-                )),
-            ).order_by(VpnSessionRecord.id)
+                VpnSessionRecord.status.in_(
+                    (
+                        VpnSessionStatus.DISCONNECTED,
+                        VpnSessionStatus.EXPIRED,
+                        VpnSessionStatus.FAILED,
+                    )
+                ),
+            )
+            .order_by(VpnSessionRecord.id)
         )
         return [self._to_domain(record) for record in records]
 
@@ -210,4 +221,3 @@ class VpnSessionRepository:
             created_at=record.created_at,
             updated_at=record.updated_at,
         )
-

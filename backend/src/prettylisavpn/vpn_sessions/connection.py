@@ -31,11 +31,11 @@ from prettylisavpn.vpn_sessions.address_allocation import (
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
 from prettylisavpn.vpn_sessions.protocol import ConnectionConfig
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
-from prettylisavpn.vpn_sessions.termination import remove_and_record_peer
 from prettylisavpn.vpn_sessions.service import (
     DeviceAlreadyHasLiveVpnSessionError,
     VpnSessionService,
 )
+from prettylisavpn.vpn_sessions.termination import remove_and_record_peer
 
 
 class CountryUnavailableError(LookupError):
@@ -206,7 +206,9 @@ class VpnConnectionService:
                     # Same device -> session lock order as revoke. Keep the bounded
                     # node operation inside this lock so revoke cannot acknowledge
                     # deletion before an in-flight provisioning call finishes.
-                    device = await DeviceRepository(database_session).get_for_update(pending.device_id)
+                    device = await DeviceRepository(database_session).get_for_update(
+                        pending.device_id
+                    )
                     if device is None or not device.is_active():
                         raise VpnSetupFailedError
                     repository = VpnSessionRepository(database_session)
@@ -215,12 +217,16 @@ class VpnConnectionService:
                         raise VpnSetupFailedError
                     await repository.acquire_peer_lock(current.client_wireguard_public_key)
                     try:
-                        await self._agent.add_peer(node, current.client_wireguard_public_key, current.allocated_client_ipv4)
+                        await self._agent.add_peer(
+                            node, current.client_wireguard_public_key, current.allocated_client_ipv4
+                        )
                     except NodeAgentUnavailableError:
                         raise VpnSetupFailedError from None
-                    return await repository.update(replace(
-                        current, status=VpnSessionStatus.ACTIVE, updated_at=datetime.now(UTC)
-                    ))
+                    return await repository.update(
+                        replace(
+                            current, status=VpnSessionStatus.ACTIVE, updated_at=datetime.now(UTC)
+                        )
+                    )
         except SQLAlchemyError:
             raise VpnSessionPersistenceUnavailableError from None
 
@@ -234,7 +240,9 @@ class VpnConnectionService:
                     if current is None or current.peer_removed_at is not None:
                         return
                     if current.status in (VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE):
-                        current = replace(current, status=VpnSessionStatus.FAILED, updated_at=datetime.now(UTC))
+                        current = replace(
+                            current, status=VpnSessionStatus.FAILED, updated_at=datetime.now(UTC)
+                        )
                         await repository.update(current)
             # Persist terminal cleanup intent before contacting the node.
             await remove_and_record_peer(self._postgres, self._agent, current, node)
@@ -251,4 +259,3 @@ class UnavailableVpnConnectionService:
     ) -> ActiveVpnTransport:
         await self._authenticated_sessions.authenticate(access_token)
         raise VpnSetupFailedError
-

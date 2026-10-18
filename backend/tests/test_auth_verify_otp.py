@@ -211,4 +211,3 @@ async def test_login_service_rejects_invalid_or_unavailable_otp_before_database_
         )
     assert "private-valkey-detail" not in str(captured.value)
     postgres.session.assert_not_called()
-

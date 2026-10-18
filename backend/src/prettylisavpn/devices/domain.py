@@ -65,4 +65,3 @@ class DeviceLimitReachedError(Exception):
 
 class DeviceUserNotFoundError(Exception):
     """The user that would own the device does not exist."""
-

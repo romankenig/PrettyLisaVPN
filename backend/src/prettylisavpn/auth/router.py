@@ -305,4 +305,3 @@ async def me(
         plan=result.plan,
         active_device_count=result.active_device_count,
     )
-
