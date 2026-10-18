@@ -81,7 +81,7 @@ class SandboxBillingProvider:
     sandbox = True
     routes: frozenset[PaymentRoute] = frozenset({"MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"})
     redirect_hosts: frozenset[str] = frozenset()
-    capabilities = (
+    capabilities: tuple[RouteCapability, ...] = (
         RouteCapability(id="MIR", currencies=("RUB",), recurring_currencies=("RUB",)),
         RouteCapability(
             id="BANK_CARD", currencies=("RUB", "USD"), recurring_currencies=("RUB", "USD")
