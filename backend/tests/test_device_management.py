@@ -72,6 +72,7 @@ def test_list_devices_returns_device_metadata_and_current_flag():
             "created_at": managed.device.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": managed.device.updated_at.isoformat().replace("+00:00", "Z"),
             "revoked_at": None,
+            "last_login_at": None,
             "is_current": True,
         }
     ]
@@ -125,3 +126,4 @@ def test_device_endpoint_maps_invalid_session():
     assert response.status_code == 401
     assert response.json() == {"error": {"code": "invalid_session"}}
     assert "secret-token" not in response.text
+

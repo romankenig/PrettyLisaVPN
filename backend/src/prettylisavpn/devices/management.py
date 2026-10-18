@@ -1,7 +1,7 @@
 """Authenticated device-management application service."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 from uuid import UUID
 
@@ -17,6 +17,10 @@ from prettylisavpn.devices.domain import Device
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import DeviceService
 from prettylisavpn.product_events.domain import ProductEventName
+from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort
+from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
+from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
+from prettylisavpn.vpn_sessions.termination import remove_and_record_peer
 
 
 class DeviceNotFoundError(Exception):
@@ -46,7 +50,9 @@ class DeviceManagementService:
         authenticated_sessions: AuthenticatedSessionHandler,
         events: ProductEventSink,
         settings: Settings,
+        agent: NodeAgentPeerPort | None = None,
     ) -> None:
+        self._agent = agent
         self._postgres = postgres
         self._authenticated_sessions = authenticated_sessions
         self._events = events
@@ -85,10 +91,24 @@ class DeviceManagementService:
                     await AuthSessionService(
                         AuthSessionRepository(session), self._refresh_token_ttl
                     ).revoke_device_sessions(device.id)
+                    vpn_sessions = VpnSessionRepository(session)
+                    await vpn_sessions.disconnect_device(identity.user_id, device.id, datetime.now(UTC))
+                    cleanup = await vpn_sessions.list_device_cleanup(identity.user_id, device.id)
         except (DeviceNotFoundError, DeviceManagementUnavailableError):
             raise
         except SQLAlchemyError:
             raise DeviceManagementUnavailableError("Device storage is unavailable") from None
+
+        # Revocation and cleanup intent are committed before external node I/O.
+        if self._agent is not None:
+            for vpn_session in cleanup:
+                try:
+                    async with self._postgres.session() as session:
+                        node = await VpnNodeRepository(session).get(vpn_session.vpn_node_id)
+                    if node is not None:
+                        await remove_and_record_peer(self._postgres, self._agent, vpn_session, node)
+                except SQLAlchemyError:
+                    pass  # Reconciler replays the durable intent after storage recovery.
 
         if transitioned:
             await self._events.record(
@@ -101,3 +121,4 @@ class DeviceManagementService:
     @staticmethod
     def _managed(device: Device, identity: AccessIdentity) -> ManagedDevice:
         return ManagedDevice(device=device, is_current=device.id == identity.device_id)
+

@@ -92,6 +92,10 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - После проверок выполнять commit и push, если владелец не запретил, и обновлять PR. Merge, release-теги/публикация и production deploy — отдельные действия, требующие соответствующего поручения; учитывать существующий автоматический development-deploy.
 - Переход Windows на 0.2.0 применён в задаче полировки UI от 2026-10-16; backend остаётся 0.1.0 в исходных манифестах. Правки названия и экрана входа от 2026-10-17 повышают Windows до 0.2.1. Домашний экран переработан в 0.3.0 (2026-10-17); см. docs/home-screen.md. Блок режимов трафика и сведения о соединении добавлены в 0.4.0; выборочная маршрутизация отложена по решению владельца. Удаление двух подписей правого блока повышает Windows до 0.4.1. Пункт подписки с пустым экраном добавлен в Windows 0.4.2. Порядок пунктов и подписи настроек уточнены в Windows 0.4.3. Подписи подписки/выхода уточнены в Windows 0.4.4. Windows 0.5.0 добавляет экран подписки и клиентский billing-контракт; backend и провайдер отложены по решению владельца, см. docs/subscriptions-ui.md. Windows 0.6.0 добавляет выбор платёжного маршрута перед оформлением/продлением. Windows 0.6.1 уточняет экран устройств: ID, дата добавления и необязательный last_login_at, см. docs/devices-ui.md. Windows 0.7.0 обновляет «о приложении» и добавляет UI поддержки, см. docs/support-ui.md; доставка писем отложена, отправка без backend недоступна. Windows 0.8.0 добавляет JSON-сообщения аккаунту после авторизации и контракт общих backend-подтверждений, см. docs/account-messages.md; backend доставки пока не реализован. Следующую самостоятельную продуктовую задачу Windows версионировать от 0.8.0 по docs/versioning.md; повторные исправления/CI текущей задачи номер не повышают.
 
+Backend devices task: source version 0.2.0 adds migration 0018, real OTP-only
+last_login_at and durable VPN cleanup on device revocation. Windows remains 0.8.0.
+See docs/devices-ui.md; task PR records actual validation and deployment status.
+
 ## Task Workflow
 
 For every coding task:

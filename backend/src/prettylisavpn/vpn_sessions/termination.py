@@ -83,7 +83,7 @@ class VpnSessionTerminationService:
             raise VpnTerminationUnavailableError from None
 
         if current.peer_removed_at is None:
-            await _remove_and_record(self._postgres, self._agent, current, node)
+            await remove_and_record_peer(self._postgres, self._agent, current, node)
         return TerminatedVpnSession(current.id, current.status)
 
 
@@ -120,7 +120,7 @@ class VpnSessionReconciler:
         for vpn_session in cleanup:
             node = await self._node(vpn_session.vpn_node_id)
             if node is not None:
-                await _remove_and_record(self._postgres, self._agent, vpn_session, node)
+                await remove_and_record_peer(self._postgres, self._agent, vpn_session, node)
 
         for vpn_session in active:
             node = await self._node(vpn_session.vpn_node_id)
@@ -171,17 +171,12 @@ class VpnSessionReconciler:
             logger.error("vpn_session_missing_peer_persistence_unavailable")
 
 
-async def _remove_and_record(
+async def remove_and_record_peer(
     postgres: Postgres,
     agent: NodeAgentPeerPort,
     vpn_session: VpnSession,
     node: VpnNode,
 ) -> None:
-    try:
-        await agent.remove_peer(node, vpn_session.client_wireguard_public_key)
-    except NodeAgentUnavailableError:
-        return
-    now = datetime.now(UTC)
     try:
         async with postgres.session() as database_session:
             async with database_session.begin():
@@ -191,6 +186,12 @@ async def _remove_and_record(
                     return
                 if current.status in (VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE):
                     return
+                await repository.acquire_peer_lock(current.client_wireguard_public_key)
+                try:
+                    await agent.remove_peer(node, current.client_wireguard_public_key)
+                except NodeAgentUnavailableError:
+                    return  # Intent is committed already; retry after node recovery.
+                now = datetime.now(UTC)
                 await repository.update(replace(current, peer_removed_at=now, updated_at=now))
     except SQLAlchemyError:
         logger.error("vpn_session_peer_cleanup_persistence_unavailable")

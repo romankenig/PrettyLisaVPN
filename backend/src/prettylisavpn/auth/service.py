@@ -197,9 +197,8 @@ class LoginService:
                     if user.status is UserStatus.BLOCKED:
                         raise BlockedUserError
 
-                    device, device_registered = await DeviceService(
-                        DeviceRepository(session)
-                    ).register_with_result(
+                    devices = DeviceService(DeviceRepository(session))
+                    device, device_registered = await devices.register_with_result(
                         user.id,
                         installation_id,
                         platform,
@@ -210,6 +209,9 @@ class LoginService:
                     ).issue(user.id, device.id)
                     access_token = self._access_tokens.issue(
                         user.id, device.id, auth_session.session.id
+                    )
+                    device = await devices.record_successful_login(
+                        device, auth_session.session.created_at
                     )
         except BlockedUserError:
             await self._events.record(
@@ -247,3 +249,4 @@ class LoginService:
             auth_session=auth_session,
             access_token=access_token,
         )
+

@@ -42,6 +42,7 @@ def test_device_model_contains_no_hardware_identifiers():
         "created_at",
         "updated_at",
         "revoked_at",
+        "last_login_at",
     }
 
 
@@ -136,3 +137,25 @@ async def test_revoke_marks_device_revoked():
     revoked = repository.update.await_args.args[0]
     assert revoked.status is DeviceStatus.REVOKED
     assert revoked.revoked_at == revoked.updated_at
+
+
+
+def test_login_timestamp_requires_timezone_and_normalizes_utc():
+    from dataclasses import replace
+    from datetime import timedelta, timezone
+    value = device()
+    with pytest.raises(ValueError, match="timezone-aware"):
+        replace(value, last_login_at=datetime(2026, 10, 18))
+    local = datetime(2026, 10, 18, 12, tzinfo=timezone(timedelta(hours=3)))
+    assert replace(value, last_login_at=local).last_login_at == datetime(2026, 10, 18, 9, tzinfo=UTC)
+
+
+async def test_revocation_preserves_known_login_timestamp():
+    from dataclasses import replace
+    existing = device()
+    existing = replace(existing, last_login_at=existing.created_at)
+    repository = AsyncMock(spec=DeviceRepository)
+    repository.get_for_update.return_value = existing
+    repository.update.side_effect = lambda value: value
+    await DeviceService(repository).revoke(existing.id)
+    assert repository.update.call_args.args[0].last_login_at == existing.last_login_at

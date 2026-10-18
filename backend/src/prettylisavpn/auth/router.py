@@ -79,6 +79,7 @@ class LoginDeviceResponse(BaseModel):
     id: UUID
     installation_id: UUID
     status: DeviceStatus
+    last_login_at: datetime | None
 
 
 class LoginSubscriptionResponse(BaseModel):
@@ -200,6 +201,7 @@ async def verify_otp(body: VerifyOtpBody, request: Request) -> VerifyOtpResponse
             id=result.device.id,
             installation_id=result.device.installation_id,
             status=result.device.status,
+            last_login_at=result.device.last_login_at,
         ),
         subscription=LoginSubscriptionResponse(
             plan=result.subscription.plan,
@@ -303,3 +305,4 @@ async def me(
         plan=result.plan,
         active_device_count=result.active_device_count,
     )
+

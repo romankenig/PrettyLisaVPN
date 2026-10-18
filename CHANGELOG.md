@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Backend — 0.2.0
+
+- Added: nullable UTC `last_login_at` on device responses, persisted only after
+  successful OTP login in the same transaction as the new auth session.
+- Fixed: device revocation atomically invalidates auth sessions and terminates
+  PENDING/ACTIVE VPN sessions, with durable peer cleanup across node outages.
+- Fixed: provision/revoke races, concurrent cleanup and premature reuse of an
+  unremoved peer public key or client address. Cleanup acknowledgement is durable.
+- Compatibility: additive migration 0018 leaves legacy timestamps null; refresh,
+  listing, renaming and VPN connect do not change last login. Windows remains 0.8.0.
+- Validation: current CI/source/build SHA and screenshot provenance are recorded
+  in the task PR and docs/devices-ui.md; development rollout is separate.
+
 ### Backend infrastructure — version unchanged (0.1.0)
 
 - Changed: runtime-версия CI из pyproject: `<base>-dev.<run>+g<полный SHA>`;

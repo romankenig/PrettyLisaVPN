@@ -162,6 +162,7 @@ def test_verify_endpoint_returns_tokens_and_login_context():
             "id": str(result.device.id),
             "installation_id": str(result.device.installation_id),
             "status": "ACTIVE",
+            "last_login_at": None,
         },
         "subscription": {"plan": "FREE", "status": "ACTIVE"},
     }
@@ -210,3 +211,4 @@ async def test_login_service_rejects_invalid_or_unavailable_otp_before_database_
         )
     assert "private-valkey-detail" not in str(captured.value)
     postgres.session.assert_not_called()
+
