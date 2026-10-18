@@ -225,7 +225,7 @@ printf 'Версия для APPLICATION_VERSION: %s\n' "$release_commit"
 sudoedit /etc/prettylisavpn/backend.env
 ```
 
-Хеш коммита делает тег однозначным. Укажите напечатанный хеш в `APPLICATION_VERSION`. Для приватного Git используйте утверждённый доступ, не встраивая токен в URL.
+Эти ручные команды сохраняют legacy SHA-идентификатор. Для новой схемы runtime используйте [CI deploy и сохранённые metadata](backend-deployment.md#автоматическое-развёртывание-development-через-github-actions). Хеш коммита делает тег однозначным. Укажите напечатанный хеш в `APPLICATION_VERSION`. Для приватного Git используйте утверждённый доступ, не встраивая токен в URL.
 
 После успешной сборки запустите контейнер в том же SSH-сеансе:
 
@@ -278,3 +278,4 @@ ssh -N -L 18000:127.0.0.1:8000 SSH_USER@VPS_PUBLIC_IP
 - [Создание базы данных](https://timeweb.cloud/docs/dbaas/dbaas-create), [подключение к базе](https://timeweb.cloud/docs/dbaas/dbaas-manage/connect-to-database).
 - [Подключение Valkey](https://timeweb.cloud/docs/dbaas/valkey/connect-to-database), [пользователи и права Valkey](https://timeweb.cloud/docs/dbaas/valkey/users-and-privileges).
 - [Публичный доступ к базе](https://timeweb.cloud/docs/dbaas/dbaas-manage/public-ip-access).
+

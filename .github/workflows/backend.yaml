@@ -1,6 +1,7 @@
 name: Backend
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "backend/**"
@@ -72,16 +73,30 @@ jobs:
         run: uv sync --frozen
 
       - name: Check formatting
-        run: uv run ruff format --check .
+        run: uv run ruff format --check . ../infra/deployment/runtime_version.py
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run ruff check . ../infra/deployment/runtime_version.py
 
       - name: Type check
         run: uv run mypy
 
       - name: Run unit tests
         run: uv run pytest -m "not integration and not docker"
+
+      - name: Render build identity
+        run: |
+          python ../infra/deployment/runtime_version.py \
+            --sha "${{ github.sha }}" --run "${{ github.run_id }}" \
+            --attempt "${{ github.run_attempt }}" --channel preview > runtime-identity.json
+          bash -n ../infra/deployment/deploy.sh
+
+      - name: Retain non-secret build identity
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-identity-${{ github.run_id }}-${{ github.run_attempt }}
+          path: backend/runtime-identity.json
+          if-no-files-found: error
 
       - name: Validate Alembic migrations
         run: |
@@ -112,14 +127,33 @@ jobs:
     timeout-minutes: 20
     environment: development
     env:
-      DEPLOY_IMAGE: prettylisavpn-backend:${{ github.sha }}
-      DEPLOY_VERSION: dev-${{ github.sha }}
       SSH_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-ssh
       TRANSFER_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-transfer
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Resolve runtime identity from package manifest
+        env:
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_RUN: ${{ github.run_id }}
+          BUILD_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python3 infra/deployment/runtime_version.py \
+            --sha "$BUILD_SHA" --run "$BUILD_RUN" --attempt "$BUILD_ATTEMPT" \
+            --channel development > runtime-identity.json
+          python3 - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+          identity = json.loads(Path("runtime-identity.json").read_text())
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              for variable, key in (("DEPLOY_IMAGE", "image"),
+                                    ("DEPLOY_VERSION", "application_version"),
+                                    ("RELEASE_ID", "release_id")):
+                  print(f"{variable}={identity[key]}", file=output)
+          PYTHON
 
       - name: Validate development secrets
         env:
@@ -214,6 +248,7 @@ jobs:
 
           tar -czf "$TRANSFER_DIRECTORY/deployment.tar.gz" \
             -C infra/deployment Caddyfile compose.yaml compose.node-agent.yaml deploy.sh
+          cp runtime-identity.json "$TRANSFER_DIRECTORY/runtime-identity.json"
           docker save "$DEPLOY_IMAGE" | gzip -1 > "$TRANSFER_DIRECTORY/backend-image.tar.gz"
 
       - name: Transfer and deploy development
@@ -223,7 +258,7 @@ jobs:
           DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
         run: |
           remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
-          incoming="/opt/prettylisavpn/incoming/${GITHUB_SHA}"
+          incoming="/opt/prettylisavpn/incoming/${RELEASE_ID}"
           common_options=(
             -i "$SSH_DIRECTORY/id_ed25519"
             -o BatchMode=yes
@@ -237,12 +272,13 @@ jobs:
             "$remote" "install -d -m 0700 '$incoming'"
           scp "${common_options[@]}" -P "$DEV_VPS_PORT" \
             "$TRANSFER_DIRECTORY/development.env" \
+            "$TRANSFER_DIRECTORY/runtime-identity.json" \
             "$TRANSFER_DIRECTORY/deployment.tar.gz" \
             "$TRANSFER_DIRECTORY/backend-image.tar.gz" \
             "${remote}:${incoming}/"
 
           ssh "${common_options[@]}" -p "$DEV_VPS_PORT" "$remote" \
-            "bash -s -- '$GITHUB_SHA' '$DEPLOY_IMAGE' '$DEPLOY_VERSION'" <<'REMOTE'
+            "bash -s -- '$RELEASE_ID' '$DEPLOY_IMAGE' '$DEPLOY_VERSION'" <<'REMOTE'
           set -Eeuo pipefail
 
           revision="$1"
@@ -262,13 +298,19 @@ jobs:
           cleanup() {
             rm -f \
               "${incoming_directory}/development.env" \
+              "${incoming_directory}/runtime-identity.json" \
               "${incoming_directory}/deployment.tar.gz" \
               "${incoming_directory}/backend-image.tar.gz"
             rmdir "$incoming_directory" 2>/dev/null || true
           }
           trap cleanup EXIT
 
-          install -d -m 0755 "$release_directory"
+          # Never overwrite a release, including a rerun of the same source SHA.
+          if [[ -e "$release_directory" ]]; then
+            printf 'Release directory already exists. Use a new run attempt.\n' >&2
+            exit 1
+          fi
+          install -d -m 0700 "$release_directory"
           tar -xzf "${incoming_directory}/deployment.tar.gz" -C "$release_directory"
           chmod 0755 "${release_directory}/deploy.sh"
 
@@ -277,6 +319,24 @@ jobs:
             printf 'Loaded image did not match the expected revision.\n' >&2
             exit 1
           fi
+
+          # Archive the exact former env before replacing the running application.
+          if [[ -f "$environment_file" ]]; then
+            install -m 0600 "$environment_file" "${release_directory}/previous.env"
+            previous_image="$(sed -n 's/^BACKEND_IMAGE=//p' "$environment_file" | tail -n 1)"
+            previous_image="${previous_image#\'}"
+            previous_image="${previous_image%\'}"
+            if [[ -z "$previous_image" || ! -f "${deployment_root}/current/compose.yaml" ]]; then
+              printf 'Cannot retain the previous deployment identity and Compose configuration.\n' >&2
+              exit 1
+            fi
+            docker image inspect --format '{{.Id}}' "$previous_image" \
+              > "${release_directory}/previous-image-id"
+            readlink -f "${deployment_root}/current" > "${release_directory}/previous-release"
+          fi
+          install -m 0600 "${incoming_directory}/development.env" "${release_directory}/deployment.env"
+          install -m 0600 "${incoming_directory}/runtime-identity.json" "${release_directory}/runtime-identity.json"
+          docker image inspect --format '{{.Id}}' "$expected_image" > "${release_directory}/image-id"
 
           SKIP_BACKEND_PULL=1 \
             "${release_directory}/deploy.sh" "${incoming_directory}/development.env"
@@ -287,3 +347,4 @@ jobs:
           mv -Tf "${deployment_root}/current.next" "${deployment_root}/current"
           printf 'Development revision %s deployed as %s.\n' "$revision" "$expected_version"
           REMOTE
+

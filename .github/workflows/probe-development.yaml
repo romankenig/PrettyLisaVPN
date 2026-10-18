@@ -1,0 +1,94 @@
+name: Development API probe
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/probe-development.yaml"
+  pull_request:
+    paths:
+      - ".github/workflows/probe-development.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Read public API health and runtime identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe both candidate domains without credentials
+        shell: python
+        run: |
+          import json
+          import os
+          import socket
+          import urllib.error
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(NoRedirect())
+          report = {
+              "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+              "source_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "vantage_point": "GitHub-hosted runner; not Cloud executor or VPS",
+              "hosts": [],
+          }
+          fields = {
+              "/health": ("status",),
+              "/ready": ("status", "dependencies"),
+              "/version": ("application_name", "application_version", "environment"),
+          }
+          for host in ("dev-api.prettylisavpn.com", "api.prettylisavpn.com"):
+              item = {"host": host, "endpoints": []}
+              try:
+                  item["resolved_addresses"] = sorted({
+                      record[4][0]
+                      for record in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+                  })
+              except OSError as exc:
+                  item["dns_error"] = str(exc)
+              for path, allowed_fields in fields.items():
+                  result = {"path": path}
+                  try:
+                      request = urllib.request.Request(
+                          "https://" + host + path,
+                          headers={"Accept": "application/json"},
+                      )
+                      with opener.open(request, timeout=10) as response:
+                          result["http_status"] = response.status
+                          value = json.loads(response.read(16385))
+                          if isinstance(value, dict):
+                              result["response"] = {
+                                  key: value[key] for key in allowed_fields if key in value
+                              }
+                          else:
+                              result["error"] = "Expected a JSON object"
+                  except urllib.error.HTTPError as exc:
+                      result["http_status"] = exc.code
+                      result["error"] = "HTTP response was not successful; redirects are not followed"
+                  except (OSError, ValueError, urllib.error.URLError) as exc:
+                      result["error"] = type(exc).__name__ + ": " + str(exc)
+                  item["endpoints"].append(result)
+              report["hosts"].append(item)
+          Path("development-api-probe.json").write_text(json.dumps(report, indent=2) + "\n")
+          print(json.dumps(report))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Public development API observations\n\n")
+              summary.write("A successful job means the probe completed; inspect each HTTP result.\n\n")
+              summary.write("```json\n" + json.dumps(report, indent=2) + "\n```\n")
+
+      - name: Retain observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-api-probe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: development-api-probe.json
+          if-no-files-found: error
