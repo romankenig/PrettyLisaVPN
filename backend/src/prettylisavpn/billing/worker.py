@@ -67,6 +67,7 @@ class BillingWorker:
         try:
             command = BillingCommand.model_validate(row.command)
             request = ProviderRequest(
+                recurring_supported=row.quote.get("recurring_supported"),
                 operation_id=row.id,
                 account_id=row.user_id,
                 action=command.action,
@@ -81,6 +82,8 @@ class BillingWorker:
             if result.operation_id != row.id:
                 raise ValueError("Receipt identity mismatch")
             self._validate_outcome(request, result)
+            if result.status == "SUCCEEDED" and result.mandate is not None and request.recurring_supported is False:
+                raise ValueError("Recurring was not accepted for this operation")
             async with self.postgres.session() as session, session.begin():
                 subscription = await session.scalar(
                     select(SubscriptionRecord)

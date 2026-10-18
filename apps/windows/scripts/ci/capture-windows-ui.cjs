@@ -497,6 +497,10 @@ async function main() {
   if (await lastBillingCommand())
     throw new Error("Opening payment choice must not create an operation");
   await screenshot("05aa-payment-choice-rub");
+  for (const route of ["ALIPAY_WECHAT", "CRYPTO"]) {
+    if (!(await page.getByRole("dialog").locator(`input[value="${route}"]`).isDisabled()))
+      throw new Error("RUB checkout must respect server currency availability");
+  }
   await page.getByRole("button", { name: "назад", exact: true }).click();
   await page.getByRole("button", { name: "$", exact: true }).click();
   await page
@@ -509,6 +513,11 @@ async function main() {
   )
     throw new Error("USD must prefer bank cards");
   await screenshot("05ab-payment-choice-usd");
+  if (!(await page.getByRole("dialog").locator('input[value="MIR"]').isDisabled()))
+    throw new Error("MIR must be disabled when server does not support USD");
+  await page.getByRole("radio", { name: "криптовалюта", exact: true }).locator("..").click();
+  await page.getByText("разовая оплата. автоматических списаний не будет", { exact: true }).waitFor();
+  await screenshot("05ac-payment-choice-nonrecurring");
   await page.keyboard.press("Escape");
   await page.getByRole("dialog").waitFor({ state: "hidden" });
   await page.getByRole("button", { name: "₽", exact: true }).click();
@@ -590,6 +599,14 @@ async function main() {
       "Unavailable backend must not show stale or invented prices",
     );
   await screenshot("05f-subscription-unavailable");
+  for (const scenario of ["sandbox", "disabled"]) {
+    await billingScenario(scenario);
+    await page.getByRole("button", { name: "обновить", exact: true }).click();
+    await page.getByText("оплата пока недоступна. данные подписки доступны для просмотра.", { exact: true }).waitFor();
+    if (!(await page.getByRole("button", { name: "оформить подписку", exact: true }).isDisabled()) || await lastBillingCommand())
+      throw new Error("Non-live provider must not enable Windows payments");
+    await screenshot(`05fa-provider-${scenario}-disabled`);
+  }
   if (billingEvidence) {
     for (const [scenario, overview] of Object.entries(
       billingEvidence.snapshots,

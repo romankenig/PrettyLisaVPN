@@ -1,5 +1,16 @@
 # Backend: продолжение работы из Cloud — 2026-10-17
 
+## Route capabilities — backend 0.10.0 / Windows 0.11.0
+
+Исходные версии 0.9.0 / 0.10.0; новые версии 0.10.0 / 0.11.0. Schema остаётся
+0026. Overview дополнен mode и route/currency/recurring capabilities; Windows
+требует явного LIVE для платежей, SANDBOX/legacy read-only. Реальный провайдер
+не подключён. Матрица проверяется до provider IO; принятые recurring terms
+сохраняются в quote. Старые receipts/provider requests совместимы.
+Base develop 334bd1bb3570dce7d75d29efd20071aafa1583df. Проверенные product/build
+SHA/run/attempt, нативные скриншоты и артефакты — в task PR. Наличие исходников
+не означает deploy; текущий deploy-статус также фиксируется в PR.
+
 ## Subscription lifecycle — backend 0.9.0
 
 Исходная версия 0.8.0 → 0.9.0; Windows unchanged 0.10.0. Миграция 0026

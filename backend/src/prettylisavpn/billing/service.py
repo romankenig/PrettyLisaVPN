@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Protocol, cast
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -28,8 +28,8 @@ from prettylisavpn.billing.model import (
     ClientGroupMembershipRecord,
     SubscriptionPriceRecord,
 )
-from prettylisavpn.billing.operations_domain import Action
-from prettylisavpn.billing.provider import BillingProvider, validate_provider
+from prettylisavpn.billing.operations_domain import Action, Currency
+from prettylisavpn.billing.provider import BillingProvider, route_capabilities, validate_provider
 from prettylisavpn.connections import Postgres
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.model import SubscriptionRecord
@@ -112,6 +112,10 @@ async def read_context(
     subscription = SubscriptionRepository._to_domain(record)
     catalog = Catalog.model_validate(catalog_record.document) if catalog_record else Catalog()
     effective = subscription.effective_plan(at)
+    purchase_action: Action = "RENEW" if effective is SubscriptionPlan.PREMIUM else "SUBSCRIBE"
+    locked_currency = cast(Currency, price.currency) if purchase_action == "RENEW" and price else None
+    routes = route_capabilities(provider, purchase_action, locked_currency)
+    method_currency: Currency = cast(Currency, price.currency) if price else "RUB"
     ours = bool(
         account
         and provider
@@ -140,19 +144,22 @@ async def read_context(
         and not foreign_mandate
         and subscription.plan is not SubscriptionPlan.PLATINUM
     ):
-        if ours and subscription.auto_renew:
+        if ours and subscription.auto_renew and provider.supports("CANCEL", None, method_currency):
             actions.append("CANCEL")
         if not subscription.auto_renew or ours:
             if (
                 effective is SubscriptionPlan.FREE
                 and catalog.offers_for(group_id, at)
-                and provider.routes
+                and any(cap.currencies for cap in routes)
             ):
                 actions.append("SUBSCRIBE")
             elif effective is SubscriptionPlan.PREMIUM and price and offer:
-                if provider.routes:
+                if any(cap.currencies for cap in routes):
                     actions.append("RENEW")
-                actions.append("CHANGE_METHOD")
+                if provider.supports("CHANGE_METHOD", None, method_currency) and any(
+                    method_currency in cap.recurring_currencies for cap in provider.capabilities
+                ):
+                    actions.append("CHANGE_METHOD")
     overview = overview_for(
         subscription,
         catalog,
@@ -167,6 +174,8 @@ async def read_context(
         actions=actions,
         payment_method=method,
         operations_available=provider is not None or pending is not None,
+        provider_mode="SANDBOX" if provider is not None and provider.sandbox else "LIVE" if provider is not None else "DISABLED",
+        payment_routes=routes,
     )
     return OverviewContext(
         overview,

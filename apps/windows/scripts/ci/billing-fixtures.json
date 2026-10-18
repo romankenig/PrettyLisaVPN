@@ -24,8 +24,48 @@
         }
       }
     ],
-    "actions": ["SUBSCRIBE"],
-    "pending_operation_id": null
+    "actions": [
+      "SUBSCRIBE"
+    ],
+    "pending_operation_id": null,
+    "provider_mode": "LIVE",
+    "payment_operations_available": true,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [
+          "RUB",
+          "USD"
+        ],
+        "recurring_currencies": [
+          "RUB",
+          "USD"
+        ]
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [
+          "USD"
+        ],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [
+          "USD"
+        ],
+        "recurring_currencies": []
+      }
+    ]
   },
   "active": {
     "revision": "fixture-active-1",
@@ -58,8 +98,44 @@
         }
       }
     ],
-    "actions": ["RENEW", "CHANGE_METHOD", "CANCEL"],
-    "pending_operation_id": null
+    "actions": [
+      "RENEW",
+      "CHANGE_METHOD",
+      "CANCEL"
+    ],
+    "pending_operation_id": null,
+    "provider_mode": "LIVE",
+    "payment_operations_available": true,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [],
+        "recurring_currencies": []
+      }
+    ]
   },
   "canceled": {
     "revision": "fixture-canceled-2",
@@ -89,7 +165,162 @@
         }
       }
     ],
-    "actions": ["RENEW", "CHANGE_METHOD"],
-    "pending_operation_id": null
+    "actions": [
+      "RENEW",
+      "CHANGE_METHOD"
+    ],
+    "pending_operation_id": null,
+    "provider_mode": "LIVE",
+    "payment_operations_available": true,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [],
+        "recurring_currencies": []
+      }
+    ]
+  },
+  "sandbox": {
+    "revision": "fixture-free-1",
+    "plan": "FREE",
+    "status": "FREE",
+    "paid_until": null,
+    "auto_renew": false,
+    "current_price": null,
+    "payment_method": null,
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 19900,
+            "original_amount_minor": 29900
+          },
+          "USD": {
+            "amount_minor": 299,
+            "original_amount_minor": 399
+          }
+        }
+      }
+    ],
+    "actions": [
+      "SUBSCRIBE"
+    ],
+    "pending_operation_id": null,
+    "provider_mode": "SANDBOX",
+    "payment_operations_available": true,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [
+          "RUB"
+        ],
+        "recurring_currencies": [
+          "RUB"
+        ]
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [
+          "RUB",
+          "USD"
+        ],
+        "recurring_currencies": [
+          "RUB",
+          "USD"
+        ]
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [
+          "USD"
+        ],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [
+          "USD"
+        ],
+        "recurring_currencies": []
+      }
+    ]
+  },
+  "disabled": {
+    "revision": "fixture-free-1",
+    "plan": "FREE",
+    "status": "FREE",
+    "paid_until": null,
+    "auto_renew": false,
+    "current_price": null,
+    "payment_method": null,
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 19900,
+            "original_amount_minor": 29900
+          },
+          "USD": {
+            "amount_minor": 299,
+            "original_amount_minor": 399
+          }
+        }
+      }
+    ],
+    "actions": [],
+    "pending_operation_id": null,
+    "provider_mode": "DISABLED",
+    "payment_operations_available": false,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [],
+        "recurring_currencies": []
+      }
+    ]
   }
 }

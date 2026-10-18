@@ -323,3 +323,10 @@ Default remains disabled; no payment network/credentials/real charges.
 Subscription lifecycle 0.9.0 adds migration 0026: persistent sandbox authorities,
 retained renewal mandates, confirmed replacement/revocation, and conservative
 handling of partial external failures. See the same operator guide for details.
+
+## Payment route capabilities — backend 0.10.0 / Windows 0.11.0
+
+Overview owns route currencies/recurring support and provider mode. Windows requires
+explicit LIVE, operations availability and account actions; sandbox/legacy responses
+stay read-only. No real provider is configured. See docs/subscriptions-ui.md and
+docs/windows-navigation.md (repository root) for API/UI and native validation rules.

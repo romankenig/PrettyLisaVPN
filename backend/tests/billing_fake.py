@@ -4,6 +4,7 @@ import asyncio
 from uuid import uuid4
 
 from prettylisavpn.billing.operations_domain import ProviderMandate, ProviderResult
+from prettylisavpn.billing.domain import PAYMENT_ROUTES, RouteCapability
 
 
 class TestBillingProvider:
@@ -11,6 +12,7 @@ class TestBillingProvider:
     name = "test-ledger-v1"
     sandbox = True
     routes = frozenset({"MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"})
+    capabilities = tuple(RouteCapability(id=route, currencies=("RUB", "USD"), recurring_currencies=("RUB", "USD") if route in ("MIR", "BANK_CARD") else ()) for route in PAYMENT_ROUTES)
     redirect_hosts = frozenset({"payments.example.test"})
 
     def __init__(self, ledger=None):
