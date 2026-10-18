@@ -230,25 +230,33 @@ async def test_free_hour_is_reserved_across_devices_and_unused_time_returns_afte
     other_auth.authenticate.return_value = AccessIdentity(user_id, second.id, uuid4())
     first_service = VpnConnectionService(postgres, auth, agent, config)
     second_service = VpnConnectionService(postgres, other_auth, agent, config)
+    before = datetime.now(UTC)
     results = await asyncio.gather(
         first_service.connect(token, NodeSelectionRequest.auto(), public_key(85)),
         second_service.connect("other", NodeSelectionRequest.auto(), public_key(86)),
         return_exceptions=True,
     )
-    assert sum(isinstance(r, FreeDailyLimitReachedError) for r in results) == 1
-    winner = next(r for r in results if not isinstance(r, Exception))
-    winner_auth = auth if results[0] is winner else other_auth
-    assert winner.expires_at is not None
-    now = datetime.now(UTC)
-    assert 0 < (winner.expires_at - now).total_seconds() <= 3600
-    assert winner.expires_at <= now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
-        days=1
+    successes = [r for r in results if not isinstance(r, Exception)]
+    assert successes
+    assert all(
+        not isinstance(r, Exception) or isinstance(r, FreeDailyLimitReachedError) for r in results
     )
+    midnight = before.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    if (midnight - before).total_seconds() > 3600:
+        assert sum(isinstance(r, FreeDailyLimitReachedError) for r in results) == 1
+    now = datetime.now(UTC)
     async with postgres.session() as session:
-        assert await VpnSessionRepository(session).remaining_free_seconds(user_id, now) <= 0
-    termination = VpnSessionTerminationService(postgres, winner_auth, agent)
-    await termination.disconnect(token, winner.session_id)
-    await termination.disconnect(token, winner.session_id)
+        rows = await VpnSessionRepository(session).list_by_user(user_id)
+        assert sum((row.expires_at - row.started_at).total_seconds() for row in rows) <= 3600
+        assert all(row.expires_at <= midnight for row in rows)
+    for index, result in enumerate(results):
+        if isinstance(result, Exception):
+            continue
+        termination = VpnSessionTerminationService(
+            postgres, auth if index == 0 else other_auth, agent
+        )
+        await termination.disconnect(token, result.session_id)
+        await termination.disconnect(token, result.session_id)
     async with postgres.session() as session:
         assert (
             await VpnSessionRepository(session).remaining_free_seconds(user_id, datetime.now(UTC))
@@ -316,12 +324,16 @@ async def test_free_budget_stays_reserved_during_node_outage_until_cleanup_ack(a
     active = await VpnConnectionService(postgres, auth, agent, config).connect(
         token, NodeSelectionRequest.auto(), public_key(89)
     )
+    async with postgres.session() as session:
+        reserved_remaining = await VpnSessionRepository(session).remaining_free_seconds(
+            user_id, datetime.now(UTC)
+        )
     agent.remove_peer.side_effect = NodeAgentUnavailableError
     await VpnSessionTerminationService(postgres, auth, agent).disconnect(token, active.session_id)
     async with postgres.session() as session:
         assert (
             await VpnSessionRepository(session).remaining_free_seconds(user_id, datetime.now(UTC))
-            == 0
+            == reserved_remaining
         )
     agent.remove_peer.side_effect = None
     await VpnSessionReconciler(postgres, agent, config).run_once()
