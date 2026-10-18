@@ -29,7 +29,13 @@ push SHA `886dcd36828e96fac6a9d5e42de1f4c0bd7d310e`, attempt 1,
   отдельных `deployment.env` и `image-id`. Нельзя реконструировать прошлые
   credentials/config по одному SHA. Перед первым новым deploy необходимо сохранить
   текущий canonical env, Compose-конфигурацию, current и зафиксированный image ID
-  как одну пару для возврата. Новый CI сохраняет previous.env перед заменой.
+  как одну пару для возврата. Новый CI перед заменой сохраняет `previous.env`,
+  `previous-image-id` и путь `previous-release`; отсутствие старого образа или
+  Compose-конфигурации останавливает deployment до переключения контейнеров.
+
+Дополнительно Git tree SHA сравнен между фактически развёрнутым commit `1938d4d...`
+и PR: `backend/src`, migrations, pyproject, uv.lock и Dockerfile идентичны.
+Переход меняет runtime/deploy tooling, не код приложения и не схему БД.
 
 Preflight не менял контейнеры, образы, env, symlinks или схему БД. Исходный run
 39082727021 остановился до SSH на слишком узкой проверке буквального hostname;

@@ -104,6 +104,9 @@ printf 'Ожидаемая версия: %s\n' "$expected_version"
 CI сохраняет закрытый каталог `/opt/prettylisavpn/releases/<SHA>-run-<run>-attempt-<attempt>`:
 `deployment.env` (0600), прежний `previous.env` (если был deploy), `runtime-identity.json`,
 `image-id` и Compose/deploy-файлы. Не удаляйте каталог и образ в период отката.
+Перед заменой существующего deployment также записываются `previous-image-id`
+и `previous-release`: точный локальный image ID и путь прежнего Compose-каталога.
+Если прежний образ или Compose-конфигурация отсутствуют, CI останавливается до up.
 Секретные env остаются только на VPS и никогда не загружаются в Actions artifacts.
 
 Перед откатом установите совместимость старого приложения с текущей схемой БД.

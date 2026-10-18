@@ -323,6 +323,16 @@ jobs:
           # Archive the exact former env before replacing the running application.
           if [[ -f "$environment_file" ]]; then
             install -m 0600 "$environment_file" "${release_directory}/previous.env"
+            previous_image="$(sed -n 's/^BACKEND_IMAGE=//p' "$environment_file" | tail -n 1)"
+            previous_image="${previous_image#\'}"
+            previous_image="${previous_image%\'}"
+            if [[ -z "$previous_image" || ! -f "${deployment_root}/current/compose.yaml" ]]; then
+              printf 'Cannot retain the previous deployment identity and Compose configuration.\n' >&2
+              exit 1
+            fi
+            docker image inspect --format '{{.Id}}' "$previous_image" \
+              > "${release_directory}/previous-image-id"
+            readlink -f "${deployment_root}/current" > "${release_directory}/previous-release"
           fi
           install -m 0600 "${incoming_directory}/development.env" "${release_directory}/deployment.env"
           install -m 0600 "${incoming_directory}/runtime-identity.json" "${release_directory}/runtime-identity.json"
