@@ -64,7 +64,9 @@ async def state():
     publisher = MessagePublicationService(postgres)
 
     async def publish(**changes):
-        payload = Publication.model_validate(document(**{"user_ids": [str(own.user.id)], **changes}))
+        payload = Publication.model_validate(
+            document(**{"user_ids": [str(own.user.id)], **changes})
+        )
         if payload.id not in published:
             published.append(payload.id)
         await publisher.publish(payload, "integration-test")

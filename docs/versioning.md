@@ -106,6 +106,9 @@ Rollback восстанавливает сохранённый env и образ
 В задаче devices backend package/default повышены до `0.2.0`: добавлены
 last_login_at и завершение VPN-сессий при отзыве. Фактическая версия стенда
 определяется `/version`, а проверки этой задачи — PR #8 и docs/devices-ui.md.
+Задача account messages повышает backend до `0.3.0`: общий JSON v1 GET/ACK,
+редакции и закрытая CLI публикации; Windows остаётся `0.8.0`.
+Контракт и результаты rollout — docs/account-messages.md и PR #9.
 
 ## Что означает версия backend в клиенте
 
