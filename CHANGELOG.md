@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Backend — 0.9.0 (Windows unchanged: 0.10.0)
+
+- Added: persistent simulated mandate lifecycle (migration 0026), including recovery
+  from saved 0.8.0 receipts. Sandbox renewals retain the active authority; method
+  replacement revokes the old authority and cancellation stops recurring payments.
+- Hardened: contradictory method-change/revocation confirmations and failed receipts
+  containing mandate mutations stay PENDING for reconciliation.
+- Tested: exact calendar-month extension once, preserved paid dates/contracts,
+  cancellation/mandate state, failures/timeouts, rollback, notification replay and races.
+- Real charges/bindings remain disabled; the sandbox is opt-in in development/test.
+
 ### Backend — 0.8.0 (Windows unchanged: 0.10.0)
 
 - Added: opt-in development/test payment adapter with PostgreSQL receipts and

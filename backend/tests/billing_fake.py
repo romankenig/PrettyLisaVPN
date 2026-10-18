@@ -62,8 +62,8 @@ class TestBillingProvider:
             if request.amount_minor is not None and status == "SUCCEEDED"
             else None,
             mandate=mandate,
-            recurring_stopped=True,
-            previous_mandate_revoked=True,
+            recurring_stopped=status == "SUCCEEDED",
+            previous_mandate_revoked=status == "SUCCEEDED",
             redirect_url="https://payments.example.test/confirm" if status == "PENDING" else None,
         )
 

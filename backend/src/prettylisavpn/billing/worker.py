@@ -80,8 +80,7 @@ class BillingWorker:
             redirect = safe_redirect(result.redirect_url, self.provider.redirect_hosts)
             if result.operation_id != row.id:
                 raise ValueError("Receipt identity mismatch")
-            if result.status == "SUCCEEDED":
-                self._validate_confirmation(request, result)
+            self._validate_outcome(request, result)
             async with self.postgres.session() as session, session.begin():
                 subscription = await session.scalar(
                     select(SubscriptionRecord)
@@ -127,6 +126,19 @@ class BillingWorker:
             return True
 
     @staticmethod
+    def _validate_outcome(request: ProviderRequest, result: ProviderResult) -> None:
+        if result.status == "SUCCEEDED":
+            BillingWorker._validate_confirmation(request, result)
+        elif result.status in ("FAILED", "CANCELED") and (
+            result.mandate is not None
+            or result.recurring_stopped
+            or result.previous_mandate_revoked
+        ):
+            # A partial external mutation is not a clean failure. Reconcile it before
+            # releasing the account for another operation or changing local rights.
+            raise ValueError("Terminal failure contains a mandate mutation")
+
+    @staticmethod
     def _validate_confirmation(request: ProviderRequest, result: ProviderResult) -> None:
         if request.amount_minor != result.amount_minor:
             raise ValueError("Receipt amount mismatch")
@@ -138,7 +150,10 @@ class BillingWorker:
             or not result.previous_mandate_revoked
         ):
             raise ValueError("Cancellation not confirmed")
-        if request.action == "CHANGE_METHOD" and result.mandate is None:
+        if request.action == "CHANGE_METHOD" and (
+            result.mandate is None
+            or result.mandate.reference == request.previous_mandate_reference
+        ):
             raise ValueError("New mandate not confirmed")
         if (
             request.action in ("SUBSCRIBE", "RENEW")
@@ -148,6 +163,12 @@ class BillingWorker:
             raise ValueError("Route does not support recurring payments")
         previous = request.previous_mandate_reference
         replacement = result.mandate.reference if result.mandate else None
+        if (
+            previous
+            and previous == replacement
+            and (result.recurring_stopped or result.previous_mandate_revoked)
+        ):
+            raise ValueError("Retained mandate cannot be revoked")
         if (
             previous
             and previous != replacement

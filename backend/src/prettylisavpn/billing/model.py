@@ -168,3 +168,17 @@ class SandboxNotificationRecord(Base):
         ForeignKey("billing_sandbox_payments.operation_id", ondelete="CASCADE"), nullable=False
     )
     status: Mapped[str] = mapped_column(String(16), nullable=False)
+
+
+class SandboxMandateRecord(Base):
+    """Simulated reusable payment authority; never a real payment credential."""
+
+    __tablename__ = "billing_sandbox_mandates"
+    __table_args__ = (
+        CheckConstraint("status IN ('ACTIVE', 'REVOKED')", name="ck_billing_sandbox_mandates_status"),
+    )
+    reference: Mapped[str] = mapped_column(String(200), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False)

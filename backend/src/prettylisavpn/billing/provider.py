@@ -2,6 +2,10 @@
 
 Adapters MUST durably deduplicate by operation_id, reconcile an uncertain create
 using that same key, authenticate receipts, and return authoritative mandate state.
+RENEW may retain the active mandate; CHANGE_METHOD must confirm a distinct new
+mandate and revocation of the previous one. CANCEL confirms both recurring stop
+and mandate revocation. Terminal failures mean no successful payment/mandate
+mutation: a partial or uncertain external outcome must remain PENDING.
 Only explicitly injected sandbox adapters are accepted in this release.
 """
 

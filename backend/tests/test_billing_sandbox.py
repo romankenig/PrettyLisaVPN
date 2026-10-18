@@ -54,6 +54,46 @@ def test_nonmonetary_actions_confirm_mandate_state(action):
     assert result.amount_minor is None and result.currency is None
 
 
+def test_renewal_preserves_authority_and_method_change_replaces_it():
+    renew = request(action="RENEW", previous_mandate_reference="sandbox-existing")
+    renewed = simulated_result(renew, "SUCCEEDED")
+    assert renewed.mandate.reference == "sandbox-existing"
+    assert not renewed.previous_mandate_revoked and not renewed.recurring_stopped
+    BillingWorker._validate_confirmation(renew, renewed)
+    changed = request(
+        action="CHANGE_METHOD", payment_route=None, amount_minor=None,
+        previous_mandate_reference="sandbox-existing",
+    )
+    receipt = simulated_result(changed, "SUCCEEDED")
+    assert receipt.mandate.reference != "sandbox-existing"
+    assert receipt.previous_mandate_revoked and receipt.recurring_stopped
+    BillingWorker._validate_confirmation(changed, receipt)
+
+
+@pytest.mark.parametrize("action", ["RENEW", "CHANGE_METHOD", "CANCEL"])
+@pytest.mark.parametrize("status", ["PENDING", "FAILED", "CANCELED"])
+def test_unsuccessful_lifecycle_results_do_not_claim_money_or_mandate_changes(action, status):
+    accepted = request(
+        action=action,
+        payment_route="MIR" if action == "RENEW" else None,
+        amount_minor=19900 if action == "RENEW" else None,
+        previous_mandate_reference="old",
+    )
+    result = simulated_result(accepted, status)
+    assert result.mandate is result.amount_minor is result.currency is None
+    assert not result.recurring_stopped and not result.previous_mandate_revoked
+
+
+@pytest.mark.parametrize("route", ["CRYPTO", "ALIPAY_WECHAT"])
+def test_nonrecurring_renewal_confirms_previous_authority_revocation(route):
+    accepted = request(
+        action="RENEW", payment_route=route, previous_mandate_reference="old"
+    )
+    result = simulated_result(accepted, "SUCCEEDED")
+    assert result.mandate is None and result.recurring_stopped and result.previous_mandate_revoked
+    BillingWorker._validate_confirmation(accepted, result)
+
+
 @pytest.mark.parametrize("environment", ["production", "staging", "Development"])
 def test_sandbox_cannot_be_configured_or_injected_outside_allowed_environments(environment):
     with pytest.raises(ValidationError, match="Sandbox billing"):

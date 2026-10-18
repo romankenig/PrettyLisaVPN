@@ -158,3 +158,8 @@ Development sandbox task: backend 0.8.0, migration 0025; Windows unchanged 0.10.
 Read docs/billing-sandbox.md. BILLING_PROVIDER defaults to disabled; sandbox requires
 exact development/test environment. Server-only notification CLI never charges money.
 Keep provider receipts/event deduplication until pending operations are settled.
+
+Subscription lifecycle task: backend 0.9.0, migration 0026; Windows unchanged 0.10.0.
+Sandbox authority state is durable. Renewals retain active authorities; replacements
+revoke the previous one. Preserve both paid dates for CHANGE_METHOD/CANCEL and
+apply RENEW once per operation. Partial/contradictory external outcomes stay PENDING.
