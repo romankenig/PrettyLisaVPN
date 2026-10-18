@@ -26,7 +26,7 @@ class TestBillingProvider:
         self.unsupported = set()
 
     def supports(self, action, route, currency):
-        return (route,currency) not in self.unsupported
+        return (route, currency) not in self.unsupported
 
     async def reconcile(self, request):
         self.calls.append(request.operation_id)
@@ -46,13 +46,26 @@ class TestBillingProvider:
 
     def result(self, request, status):
         mandate = None
-        if status == "SUCCEEDED" and request.action != "CANCEL" and request.payment_route not in ("CRYPTO", "ALIPAY_WECHAT"):
-            mandate = ProviderMandate(reference="sandbox-" + str(uuid4()), label="Тестовый способ оплаты")
-        return ProviderResult(operation_id=request.operation_id, status=status,
+        if (
+            status == "SUCCEEDED"
+            and request.action != "CANCEL"
+            and request.payment_route not in ("CRYPTO", "ALIPAY_WECHAT")
+        ):
+            mandate = ProviderMandate(
+                reference="sandbox-" + str(uuid4()), label="Тестовый способ оплаты"
+            )
+        return ProviderResult(
+            operation_id=request.operation_id,
+            status=status,
             amount_minor=request.amount_minor if status == "SUCCEEDED" else None,
-            currency=request.currency if request.amount_minor is not None and status == "SUCCEEDED" else None,
-            mandate=mandate, recurring_stopped=True, previous_mandate_revoked=True,
-            redirect_url="https://payments.example.test/confirm" if status == "PENDING" else None)
+            currency=request.currency
+            if request.amount_minor is not None and status == "SUCCEEDED"
+            else None,
+            mandate=mandate,
+            recurring_stopped=True,
+            previous_mandate_revoked=True,
+            redirect_url="https://payments.example.test/confirm" if status == "PENDING" else None,
+        )
 
     def complete(self, operation_id, status="SUCCEEDED"):
         self.ledger[operation_id] = self.result(self.requests[operation_id], status)

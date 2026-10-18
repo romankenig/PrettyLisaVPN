@@ -1,4 +1,5 @@
 name: Billing operations preparation
+# Isolated foreign-account fixture; verify provider identity pinning.
 on:
   push:
     branches: [cloud/prepare-billing-operations]

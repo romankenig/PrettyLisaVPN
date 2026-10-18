@@ -34,7 +34,9 @@ class BillingCommand(StrictModel):
         return self
 
     def fingerprint(self) -> str:
-        return hashlib.sha256(json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return hashlib.sha256(
+            json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
 
 
 class BillingOperation(StrictModel):
@@ -81,7 +83,14 @@ def safe_redirect(value: str | None, allowed_hosts: frozenset[str]) -> str | Non
     if len(value) > 2048 or any(ord(c) <= 32 or ord(c) == 127 for c in value):
         raise ValueError("Unsafe redirect")
     parsed = urlsplit(value)
-    if parsed.scheme != "https" or parsed.hostname not in allowed_hosts or parsed.port not in (None, 443) or parsed.username is not None or parsed.password is not None or parsed.fragment:
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in allowed_hosts
+        or parsed.port not in (None, 443)
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+    ):
         raise ValueError("Unsafe redirect")
     return value
 
@@ -90,4 +99,6 @@ def next_month(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("Timezone-aware time required")
     year, month = (value.year + 1, 1) if value.month == 12 else (value.year, value.month + 1)
-    return value.replace(year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1]))
+    return value.replace(
+        year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1])
+    )

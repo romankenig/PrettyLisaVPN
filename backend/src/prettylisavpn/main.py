@@ -30,11 +30,11 @@ from prettylisavpn.auth.session_service import (
     AuthenticatedSessionHandler,
     AuthenticatedSessionService,
 )
-from prettylisavpn.billing.provider import BillingProvider, validate_provider
 from prettylisavpn.billing.operations import BillingOperationsService
-from prettylisavpn.billing.worker import BillingWorkerPort
+from prettylisavpn.billing.provider import BillingProvider, validate_provider
 from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
+from prettylisavpn.billing.worker import BillingWorkerPort
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
@@ -195,10 +195,14 @@ def create_app(
                 )
                 app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
-                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions), billing_provider,
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    billing_provider,
                 )
                 app.state.billing_operations = BillingOperationsService(
-                    cast(Postgres, pg), cast(AuthenticatedSessionHandler, app.state.authenticated_sessions), billing_provider)
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    billing_provider,
+                )
                 active_billing_worker = billing_worker or app.state.billing_operations.worker
                 app.state.support = SupportService(
                     cast(Postgres, pg),
@@ -292,7 +296,11 @@ def create_app(
                     if isinstance(pg, Postgres)
                     else None
                 )
-                billing_task = asyncio.create_task(active_billing_worker.run(monitor_stop)) if billing_provider is not None and isinstance(pg, Postgres) else None
+                billing_task = (
+                    asyncio.create_task(active_billing_worker.run(monitor_stop))
+                    if billing_provider is not None and isinstance(pg, Postgres)
+                    else None
+                )
                 logger.info("application_started")
                 try:
                     yield

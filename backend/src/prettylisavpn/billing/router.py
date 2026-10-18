@@ -5,8 +5,8 @@ from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.routing import APIRoute
 from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
 from starlette.responses import Response
 
 from prettylisavpn.auth.router import bearer_token
@@ -18,7 +18,12 @@ from prettylisavpn.auth.session_service import (
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.billing.domain import Overview
-from prettylisavpn.billing.operations import BillingOperationsPort, BillingConflictError, BillingDisabledError, BillingOperationNotFoundError
+from prettylisavpn.billing.operations import (
+    BillingConflictError,
+    BillingDisabledError,
+    BillingOperationNotFoundError,
+    BillingOperationsPort,
+)
 from prettylisavpn.billing.operations_domain import BillingCommand, BillingOperation
 from prettylisavpn.billing.service import BillingOverviewPort, BillingUnavailableError
 from prettylisavpn.main_errors import error_response
@@ -67,14 +72,22 @@ async def overview(
 
 
 @router.post("/operations", response_model=BillingOperation)
-async def start_operation(request: Request, command: BillingCommand, token: Annotated[str | None, Depends(bearer_token)]) -> BillingOperation | Response:
+async def start_operation(
+    request: Request, command: BillingCommand, token: Annotated[str | None, Depends(bearer_token)]
+) -> BillingOperation | Response:
     if token is None:
         return error_response("AUTH_INVALID", 401)
-    return await cast(BillingOperationsPort, request.app.state.billing_operations).start(token, command)
+    return await cast(BillingOperationsPort, request.app.state.billing_operations).start(
+        token, command
+    )
 
 
 @router.get("/operations/{operation_id}", response_model=BillingOperation)
-async def operation(request: Request, operation_id: UUID, token: Annotated[str | None, Depends(bearer_token)]) -> BillingOperation | Response:
+async def operation(
+    request: Request, operation_id: UUID, token: Annotated[str | None, Depends(bearer_token)]
+) -> BillingOperation | Response:
     if token is None:
         return error_response("AUTH_INVALID", 401)
-    return await cast(BillingOperationsPort, request.app.state.billing_operations).get(token, operation_id)
+    return await cast(BillingOperationsPort, request.app.state.billing_operations).get(
+        token, operation_id
+    )

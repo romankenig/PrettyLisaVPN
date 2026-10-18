@@ -7,7 +7,13 @@ Only explicitly injected sandbox adapters are accepted in this release.
 
 from typing import Protocol
 
-from prettylisavpn.billing.operations_domain import Action, Currency, PaymentRoute, ProviderRequest, ProviderResult
+from prettylisavpn.billing.operations_domain import (
+    Action,
+    Currency,
+    PaymentRoute,
+    ProviderRequest,
+    ProviderResult,
+)
 
 
 class BillingProvider(Protocol):
@@ -22,5 +28,7 @@ class BillingProvider(Protocol):
 
 
 def validate_provider(provider: BillingProvider | None) -> None:
-    if provider is not None and (not provider.sandbox or not provider.name or len(provider.name) > 64):
+    if provider is not None and (
+        not provider.sandbox or not provider.name or len(provider.name) > 64
+    ):
         raise ValueError("Only explicitly injected sandbox billing providers are supported")
