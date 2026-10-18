@@ -149,3 +149,74 @@ def test_live_adapter_cannot_be_enabled_in_this_release(sandbox):
     provider.sandbox = sandbox
     with pytest.raises(ValueError):
         validate_provider(provider)
+
+
+@pytest.mark.parametrize("change", ["same", "missing", "not_revoked", "not_stopped"])
+def test_method_change_needs_a_distinct_authority_and_confirmed_previous_revocation(change):
+    request = ProviderRequest(
+        operation_id=uuid4(),
+        account_id=uuid4(),
+        action="CHANGE_METHOD",
+        payment_route=None,
+        amount_minor=None,
+        currency="RUB",
+        previous_mandate_reference="old",
+    )
+    result = ProviderResult(
+        operation_id=request.operation_id,
+        status="SUCCEEDED",
+        mandate=ProviderMandate(reference="new", label="test"),
+        recurring_stopped=True,
+        previous_mandate_revoked=True,
+    )
+    BillingWorker._validate_confirmation(request, result)
+    updates = {
+        "same": {"mandate": ProviderMandate(reference="old", label="test")},
+        "missing": {"mandate": None},
+        "not_revoked": {"previous_mandate_revoked": False},
+        "not_stopped": {"recurring_stopped": False},
+    }
+    with pytest.raises(ValueError):
+        BillingWorker._validate_confirmation(request, result.model_copy(update=updates[change]))
+
+
+@pytest.mark.parametrize("flag", ["recurring_stopped", "previous_mandate_revoked"])
+def test_retained_renewal_authority_cannot_also_be_confirmed_revoked(flag):
+    request = ProviderRequest(
+        operation_id=uuid4(),
+        account_id=uuid4(),
+        action="RENEW",
+        payment_route="MIR",
+        amount_minor=19900,
+        currency="RUB",
+        previous_mandate_reference="old",
+    )
+    result = ProviderResult(
+        operation_id=request.operation_id,
+        status="SUCCEEDED",
+        amount_minor=19900,
+        currency="RUB",
+        mandate=ProviderMandate(reference="old", label="test"),
+    )
+    BillingWorker._validate_confirmation(request, result)
+    with pytest.raises(ValueError):
+        BillingWorker._validate_confirmation(request, result.model_copy(update={flag: True}))
+
+
+@pytest.mark.parametrize("status", ["FAILED", "CANCELED"])
+@pytest.mark.parametrize("mutation", ["mandate", "recurring_stopped", "previous_mandate_revoked"])
+def test_partial_external_mutation_is_not_a_clean_terminal_failure(status, mutation):
+    request = ProviderRequest(
+        operation_id=uuid4(),
+        account_id=uuid4(),
+        action="CANCEL",
+        payment_route=None,
+        amount_minor=None,
+        currency="RUB",
+        previous_mandate_reference="old",
+    )
+    result = ProviderResult(operation_id=request.operation_id, status=status)
+    BillingWorker._validate_outcome(request, result)
+    value = ProviderMandate(reference="partial", label="test") if mutation == "mandate" else True
+    with pytest.raises(ValueError, match="mutation"):
+        BillingWorker._validate_outcome(request, result.model_copy(update={mutation: value}))

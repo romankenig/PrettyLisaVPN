@@ -319,3 +319,7 @@ Opt-in persisted sandbox provider and operator notification CLI: see
 [docs/billing-sandbox.md](../docs/billing-sandbox.md). Apply migration 0025, then
 set BILLING_PROVIDER=sandbox only on an isolated development/test database.
 Default remains disabled; no payment network/credentials/real charges.
+
+Subscription lifecycle 0.9.0 adds migration 0026: persistent sandbox authorities,
+retained renewal mandates, confirmed replacement/revocation, and conservative
+handling of partial external failures. See the same operator guide for details.

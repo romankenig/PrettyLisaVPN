@@ -1,6 +1,6 @@
 # Подписки: серверный обзор и Windows UI
 
-Windows 0.10.0 / backend 0.8.0: GET /billing/overview, POST /billing/operations и
+Windows 0.10.0 / backend 0.9.0: GET /billing/overview, POST /billing/operations и
 GET /billing/operations/{id} реализованы. Операции и идемпотентность хранятся в
 PostgreSQL. Заменяемый provider port проверен на изолированном тестовом провайдере.
 В работающем development backend adapter не подключён: новые операции отвечают
@@ -10,6 +10,11 @@ PostgreSQL. Заменяемый provider port проверен на изоли�
 В 0.8.0 добавлен явно включаемый development/test адаптер с сохранённым журналом
 и служебными уведомлениями: [инструкция sandbox](billing-sandbox.md).
 По умолчанию он выключен; его наличие не означает включение в развёрнутом backend.
+
+В 0.9.0 усилены RENEW/CHANGE_METHOD/CANCEL и подтверждение состояния тестовых
+разрешений (миграция 0026). Продление сохраняет действующее разрешение, смена
+отзывает прежнее, отмена сохраняет обе даты оплаченного периода. Полные правила
+и управление тестовым адаптером — в [billing-sandbox.md](billing-sandbox.md).
 
 
 ## Реализованный серверный обзор — 0.6.0

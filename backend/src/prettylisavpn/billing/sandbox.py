@@ -13,9 +13,11 @@ from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.billing.model import (
     BillingOperationRecord,
+    SandboxMandateRecord,
     SandboxNotificationRecord,
     SandboxPaymentRecord,
 )
@@ -43,18 +45,30 @@ def simulated_result(request: ProviderRequest, status: OperationStatus) -> Provi
         and request.action != "CANCEL"
         and request.payment_route not in ("CRYPTO", "ALIPAY_WECHAT")
     ):
+        reference = (
+            request.previous_mandate_reference
+            if request.action == "RENEW" and request.previous_mandate_reference
+            else "sandbox-" + str(request.operation_id)
+        )
         mandate = ProviderMandate(
-            reference="sandbox-" + str(request.operation_id),
+            reference=reference,
             label="Тестовый способ оплаты — без списания",
         )
+    revokes_previous = succeeded and (
+        request.action == "CANCEL"
+        or bool(
+            request.previous_mandate_reference
+            and (mandate is None or mandate.reference != request.previous_mandate_reference)
+        )
+    )
     return ProviderResult(
         operation_id=request.operation_id,
         status=status,
         amount_minor=request.amount_minor if succeeded else None,
         currency=request.currency if succeeded and request.amount_minor is not None else None,
         mandate=mandate,
-        recurring_stopped=succeeded,
-        previous_mandate_revoked=succeeded,
+        recurring_stopped=revokes_previous,
+        previous_mandate_revoked=revokes_previous,
     )
 
 
@@ -123,7 +137,10 @@ class SandboxBillingProvider:
             if event is None or event.operation_id != operation_id or event.status != status:
                 raise ValueError("Sandbox notification identity conflict")
             if result.status == "PENDING":
-                result = simulated_result(ProviderRequest.model_validate(row.request), status)
+                request = ProviderRequest.model_validate(row.request)
+                result = simulated_result(request, status)
+                if status == "SUCCEEDED":
+                    await self._apply_mandate(session, request, result)
                 row.result = result.model_dump(mode="json")
             await session.execute(
                 update(BillingOperationRecord)
@@ -135,6 +152,35 @@ class SandboxBillingProvider:
                 .values(next_attempt_at=datetime.now(UTC))
             )
         return result
+
+    @staticmethod
+    async def _apply_mandate(
+        session: AsyncSession, request: ProviderRequest, result: ProviderResult
+    ) -> None:
+        previous = None
+        if request.previous_mandate_reference:
+            previous = await session.scalar(
+                select(SandboxMandateRecord)
+                .where(SandboxMandateRecord.reference == request.previous_mandate_reference)
+                .with_for_update()
+            )
+            if (
+                previous is None
+                or previous.user_id != request.account_id
+                or previous.status != "ACTIVE"
+            ):
+                raise ValueError("Sandbox mandate is unknown, foreign or revoked")
+        replacement = result.mandate.reference if result.mandate else None
+        if previous is not None and previous.reference != replacement:
+            previous.status = "REVOKED"
+        if result.mandate is not None and (previous is None or previous.reference != replacement):
+            session.add(
+                SandboxMandateRecord(
+                    reference=result.mandate.reference,
+                    user_id=request.account_id,
+                    status="ACTIVE",
+                )
+            )
 
 
 async def deliver(
