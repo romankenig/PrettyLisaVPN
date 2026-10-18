@@ -118,4 +118,3 @@ docs/                Инструкции настройки и эксплуат
 ## Windows-клиент
 
 Основа приложения и команды запуска: [apps/windows/README.md](apps/windows/README.md).
-

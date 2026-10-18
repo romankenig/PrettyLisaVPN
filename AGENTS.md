@@ -134,7 +134,7 @@ POST/status API, account-scoped idempotency, app-helper SMTP, fixed help recipie
 durable retries and 30-day content retention. See docs/support-ui.md and task PR
 for real evidence. Next independent task starts from these component versions.
 
-Subscription access task: backend 0.5.0, migration 0021; Windows stays 0.9.0.
+Subscription access task: backend 0.5.0, migrations 0021/0022; Windows stays 0.9.0.
 Free may select AUTO/country among free nodes (README clarification). Canceled
 renewal preserves paid access through the exclusive paid deadline. Read
 docs/subscription-entitlements.md before changing plans; Platinum is manual with Premium parity; Free is now one hour/day UTC with no ads.
