@@ -1,5 +1,47 @@
 # Backend: продолжение работы из Cloud — 2026-10-17
 
+## Проверка SSH и готовности rollback — 2026-10-18
+
+Владелец разрешил использовать существующие development SSH secrets Actions для
+проверки. Workflow `Development SSH preflight`,
+[run 39082773250](https://github.com/romankenig/PrettyLisaVPN/actions/runs/39082773250),
+push SHA `886dcd36828e96fac6a9d5e42de1f4c0bd7d310e`, attempt 1,
+успешно выполнил read-only SSH-проверку в 00:26:48 UTC.
+
+- Все пять SSH secrets присутствуют; настроенный DNS alias разрешается точно в
+  подтверждённый `95.140.152.42`, порт 22. Значения secrets не выводились.
+- SSH-аутентификация успешна с существующим deployment-пользователем из secrets;
+  сервер проверен через known_hosts, StrictHostKeyChecking и ED25519 fingerprint
+  владельца. Это доступ из Actions, не прямой SSH из Cloud и не отдельная проверка root-login.
+- Backend container `c699b077e0ab` — healthy; runtime `development`, версия
+  `dev-1938d4d32eb58fd097e7c8840f695b735ec86b8f`.
+- Фактический image ID:
+  `sha256:51b825d271f21e3555045d9dc5a9c4146ded8795e7ce505fead89ca14c7a4d11`.
+  Тег `prettylisavpn-backend:1938d4d32eb58fd097e7c8840f695b735ec86b8f`
+  сохранён локально и указывает ровно на этот запущенный image ID.
+- `current`, Compose working directory и canonical env согласованы с релизом
+  `1938d4d32eb58fd097e7c8840f695b735ec86b8f`; canonical env находится в
+  `/opt/prettylisavpn/secrets/deployment.env`, mode 0600.
+- Реальные `alembic current` и `alembic heads` завершились с кодом 0 и показали
+  одинаковый `0017_profile_evidence`. Миграции этой проверкой не запускались.
+- `/health`, `/ready`, `/version` — HTTP 200; PostgreSQL и Valkey доступны.
+- На VPS сохранены прежние образы и Compose-каталоги, но в legacy-каталогах нет
+  отдельных `deployment.env` и `image-id`. Нельзя реконструировать прошлые
+  credentials/config по одному SHA. Перед первым новым deploy необходимо сохранить
+  текущий canonical env, Compose-конфигурацию, current и зафиксированный image ID
+  как одну пару для возврата. Новый CI сохраняет previous.env перед заменой.
+
+Preflight не менял контейнеры, образы, env, symlinks или схему БД. Исходный run
+39082727021 остановился до SSH на слишком узкой проверке буквального hostname;
+исправленный вариант допускает DNS alias только при точном совпадении IP и
+проверяет ED25519 host key. Это не обход проверки целевого VPS.
+
+Пункт SSH-доступа через Actions подтверждён. Реальное развёртывание нового runtime
+и цикл rollback/restore ещё не выполнялись; PR #7 остаётся неслитым.
+Окончательные результаты всех workflow нового HEAD фиксируются в PR description.
+
+## Исходная подготовка и ограничения Cloud
+
 Уточнение владельца: development VPS — `95.140.152.42`, SSH `root`, порт `22`.
 Предоставлен ED25519 known_hosts, fingerprint
 `SHA256:BrayNvgVNXSzO6xAJ08FwnebiUA8/VlQNgI+ctes96U`.
