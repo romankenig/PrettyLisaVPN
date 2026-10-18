@@ -54,7 +54,9 @@ Pop-Location
 
 ## 2. Проверка PostgreSQL и Valkey
 
-Текущий migration head должен быть `0008_auth_session_device_fk`. Просмотрите таблицы и ключевые
+Исторический Stage 2 использовал `0008_auth_session_device_fk`; текущий migration
+head — `0026_sandbox_mandates`. Полная актуальная приёмка:
+[Windows с development](windows-development-acceptance.md). Просмотрите таблицы и ключевые
 колонки без вывода чувствительных значений:
 
 ```powershell
@@ -178,3 +180,4 @@ docker compose -f infra/docker/compose.yaml down
 ```
 
 Команда `down` сохраняет volume PostgreSQL. Удалять volume для acceptance-проверки не требуется.
+

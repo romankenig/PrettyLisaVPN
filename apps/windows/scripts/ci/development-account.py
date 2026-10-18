@@ -1,6 +1,6 @@
 """Disposable acceptance account; run inside the existing development container.
 
-The sole stdout secret is the short-lived refresh credential, consumed over SSH
+Short-lived acceptance credentials on stdout are consumed over SSH
 by a private runner file. Never upload that file or treat this as an OTP test.
 """
 
@@ -13,9 +13,9 @@ from uuid import uuid4
 
 from sqlalchemy import delete
 
+from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
-from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform
@@ -42,12 +42,28 @@ async def main():
                 result = await session.execute(delete(UserRecord).where(UserRecord.email == email))
                 output = {"cleanup": "passed", "deleted_accounts": result.rowcount}
             else:
-                user = await UserService(UserRepository(session), SubscriptionRepository(session)).create(email)
+                user = await UserService(
+                    UserRepository(session), SubscriptionRepository(session)
+                ).create(email)
                 devices = DeviceService(DeviceRepository(session))
-                current = await devices.register(user.id, uuid4(), DevicePlatform.WINDOWS, "Acceptance Windows")
+                current = await devices.register(
+                    user.id, uuid4(), DevicePlatform.WINDOWS, "Acceptance Windows"
+                )
                 await devices.register(user.id, uuid4(), DevicePlatform.WINDOWS, "Acceptance spare")
-                issued = await AuthSessionService(AuthSessionRepository(session), timedelta(minutes=20)).issue(user.id, current.id)
-                output = {"email": email, "access_token": AccessTokenService(config).issue(user.id, current.id, issued.session.id).token, "credential": {"session_id": str(issued.session.id), "refresh_token": issued.refresh_token, "expires_at": issued.session.expires_at.isoformat()}}
+                issued = await AuthSessionService(
+                    AuthSessionRepository(session), timedelta(minutes=20)
+                ).issue(user.id, current.id)
+                output = {
+                    "email": email,
+                    "access_token": AccessTokenService(config)
+                    .issue(user.id, current.id, issued.session.id)
+                    .token,
+                    "credential": {
+                        "session_id": str(issued.session.id),
+                        "refresh_token": issued.refresh_token,
+                        "expires_at": issued.session.expires_at.isoformat(),
+                    },
+                }
         print(json.dumps(output))
     finally:
         await postgres.close()

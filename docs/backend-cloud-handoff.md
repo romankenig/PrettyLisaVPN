@@ -1,5 +1,17 @@
 # Backend: продолжение работы из Cloud — 2026-10-17
 
+## Windows development acceptance — Windows 0.11.1 / backend 0.10.0 unchanged
+
+Development base SHA `4347935f2c5c20cabc523ff94acc12a2f1bd3c21`, runtime
+`0.10.0-dev.39126998534+g4347935f2c5c20cabc523ff94acc12a2f1bd3c21`, schema 0026.
+Native acceptance connects directly through HTTPS. Disposable identities are
+created through server services and removed in cleanup; separate manual OTP
+acceptance uses the owner-approved mailbox. Payment checks use isolated CI
+PostgreSQL/sandbox; deployed billing remains disabled. Home refresh is fixed in
+Windows 0.11.1; backend source is unchanged. Actual SHA/run/attempt and observations
+are recorded in PR #17 and [acceptance runbook](windows-development-acceptance.md).
+
+
 ## Route capabilities — backend 0.10.0 / Windows 0.11.0
 
 Исходные версии 0.9.0 / 0.10.0; новые версии 0.10.0 / 0.11.0. Schema остаётся

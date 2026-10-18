@@ -9,11 +9,14 @@ try {
   [IO.File]::WriteAllText($known, $env:DEV_SSH_KNOWN_HOSTS + "`n", [Text.UTF8Encoding]::new($false))
   icacls $key /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
   if ($LASTEXITCODE -ne 0) { throw 'SSH key permissions failed' }
-  if ($env:DEV_VPS_HOST -ne '95.140.152.42' -or $env:DEV_VPS_PORT -ne '22') { throw 'Unexpected development target' }
+  $targetHost = $env:DEV_VPS_HOST.Trim()
+  $targetPort = $env:DEV_VPS_PORT.Trim()
+  $addresses = @([Net.Dns]::GetHostAddresses($targetHost) | ForEach-Object { $_.IPAddressToString })
+  if ($addresses -notcontains '95.140.152.42' -or $targetPort -ne '22') { throw 'Configured development target does not match documented VPS' }
   $scope = "$($env:GITHUB_RUN_ID)-$($env:GITHUB_RUN_ATTEMPT)"
   $script = Get-Content -Raw scripts/ci/development-account.py
   $remote = 'container=$(docker ps --filter label=com.docker.compose.project=prettylisavpn-development --filter label=com.docker.compose.service=backend --format "{{.ID}}"); test $(echo "$container" | wc -w) -eq 1 && docker exec -i "$container" python - ' + $Mode + ' ' + $scope
-  $result = $script | ssh -i $key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ConnectTimeout=10 -o LogLevel=ERROR -p $env:DEV_VPS_PORT "$($env:DEV_VPS_USER)@$($env:DEV_VPS_HOST)" $remote
+  $result = $script | ssh -i $key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ConnectTimeout=10 -o LogLevel=ERROR -p $targetPort "$($env:DEV_VPS_USER)@$targetHost" $remote
   if ($LASTEXITCODE -ne 0) { throw 'Development account operation failed' }
   $value = ($result -join "`n") | ConvertFrom-Json
   if ($Mode -eq 'create') {

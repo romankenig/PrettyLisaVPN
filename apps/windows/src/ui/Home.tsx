@@ -29,6 +29,7 @@ export function Home() {
     session.current,
     session.current,
   );
+  const profileToken = activeSession?.accessToken;
   const [profileState, setProfileState] = useState<ProfileState>(() =>
     activeSession?.profile ? { phase: "ready" } : { phase: "loading" },
   );
@@ -52,13 +53,14 @@ export function Home() {
   }, [activeSession, vpnConnection]);
 
   useEffect(() => {
-    if (activeSession === null || activeSession.profile !== null) return;
+    if (profileToken === undefined) return;
     const controller = new AbortController();
-    setProfileState({ phase: "loading" });
+    if (session.current()?.profile === null) setProfileState({ phase: "loading" });
     void api
-      .me(activeSession.accessToken, controller.signal)
+      .me(profileToken, controller.signal)
       .then((profile) => {
-        session.updateProfile(activeSession.accessToken, profile);
+        if (controller.signal.aborted) return;
+        session.updateProfile(profileToken, profile);
         setProfileState({ phase: "ready" });
       })
       .catch((error: unknown) => {
@@ -75,7 +77,7 @@ export function Home() {
         setProfileState({ phase: "error", message: profileError(error) });
       });
     return () => controller.abort();
-  }, [activeSession, api, profileAttempt, session]);
+  }, [profileToken, api, profileAttempt, session]);
 
   if (activeSession === null) return null;
   const profile = activeSession.profile;

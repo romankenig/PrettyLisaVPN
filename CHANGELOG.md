@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Windows — 0.11.1 / Backend — 0.10.0 unchanged
+
+- Fixed: Home refreshes `/me` on entry so changed device counts and plans do not
+  remain hidden behind the restored profile cache.
+- Added native Windows acceptance against actual development HTTPS, disposable
+  identities, refresh rotation/logout, real email OTP with manual encrypted handoff,
+  and isolated sandbox lifecycle/race/restart checks. No live payment provider.
+- Evidence and limits: docs/windows-development-acceptance.md and task PR #17.
+
 ### Backend — 0.10.0 / Windows — 0.11.0
 
 - Added: server-declared capabilities for MIR, BANK_CARD, ALIPAY_WECHAT and CRYPTO,

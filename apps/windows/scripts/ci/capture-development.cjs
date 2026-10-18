@@ -1,10 +1,11 @@
 /* eslint @typescript-eslint/no-require-imports: "off" */
-/* global process, console, fetch, AbortSignal, setTimeout, window */
+/* global process, console, fetch, AbortSignal, setTimeout, window, require, Buffer */
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 const { spawn, spawnSync } = require("node:child_process");
 const { chromium } = require("playwright-core");
+const { privateDecrypt, constants } = require("node:crypto");
 const output = path.resolve("artifacts/development-acceptance");
 fs.mkdirSync(output, { recursive: true });
 const base = process.env.VITE_BACKEND_BASE_URL;
@@ -42,6 +43,23 @@ async function connect() {
   }
   if (!page) throw new Error("Native page unavailable");
   page.setDefaultTimeout(20000);
+}
+async function waitForOtp() {
+  const key = fs.readFileSync(process.env.ACCEPTANCE_OTP_PRIVATE_KEY, "utf8");
+  const scope = JSON.parse(fs.readFileSync(process.env.ACCEPTANCE_OTP_PUBLIC_KEY, "utf8"));
+  const url = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/acceptance-otp.json?ref=acceptance-otp-${process.env.GITHUB_RUN_ID}`;
+  for (let i = 0; i < 300; i++) {
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.GH_ACCEPTANCE_READ_TOKEN}`, Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(10000) });
+    if (response.status === 200) {
+      const envelope = JSON.parse(Buffer.from((await response.json()).content, "base64").toString("utf8"));
+      const value = JSON.parse(privateDecrypt({ key, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" }, Buffer.from(envelope.ciphertext, "base64")).toString("utf8"));
+      if (value.run !== scope.run || value.nonce !== scope.nonce || !/^\d{6}$/.test(value.code)) throw new Error("Invalid OTP envelope scope");
+      return value.code;
+    }
+    if (response.status !== 404) throw new Error("OTP envelope transport unavailable");
+    await delay(2000);
+  }
+  throw new Error("Manual OTP not received within acceptance window");
 }
 async function main() {
   await get("/health", false);
@@ -82,6 +100,9 @@ async function main() {
   await page.getByText("отозвано", { exact: true }).waitFor();
   report.checks.push("real device list and spare-device revocation");
   await capture("03-development-revoked");
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page.locator(".account-summary").getByText("1", { exact: true }).waitFor();
+  report.checks.push("returning Home refreshes the device count after revocation");
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /подписк/ }).click();
   await page.getByText("оплата пока недоступна. данные подписки доступны для просмотра.", { exact: true }).waitFor();
@@ -108,13 +129,28 @@ async function main() {
   await page.locator("#login-email").waitFor();
   report.checks.push("real logout; native credential removed; restart stays logged out");
   await capture("06-development-logout");
+  report.phase = "real email OTP";
+  await page.locator("#login-email").fill(process.env.ACCEPTANCE_OTP_EMAIL);
+  await page.getByRole("button", { name: /продолжить/i }).click();
+  await page.locator("#otp-code").waitFor();
+  const code = await waitForOtp();
+  await page.locator("#otp-code").fill(code);
+  await page.getByRole("button", { name: /подтвердить/i }).click();
+  await page.getByText(process.env.ACCEPTANCE_OTP_EMAIL, { exact: true }).waitFor();
+  report.authentication = "real email OTP manually supplied by mailbox owner; native refresh separately verified on disposable account";
+  report.checks.push("real Windows → OTP email request → owner-supplied OTP → authenticated Home");
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
+  await page.getByRole("button", { name: /выйти/ }).click();
+  await page.locator("#login-email").waitFor();
+  report.checks.push("real OTP account logged out; existing devices and subscriptions were not modified");
   report.status = "passed";
 }
-main().catch(async () => { report.status = "failed"; report.failure = "Native/API assertion failed; secrets and response bodies intentionally omitted"; if (page) { try { await capture("failure"); } catch { /* best effort */ } } process.exitCode = 1; }).finally(async () => {
+main().catch(async () => { report.status = "failed"; report.failure = "Native/API assertion failed; secrets and response bodies intentionally omitted"; if (page && report.phase !== "real email OTP") { try { await capture("failure"); } catch { /* best effort */ } } process.exitCode = 1; }).finally(async () => {
   if (page) { try { await page.evaluate(() => window.__TAURI_INTERNALS__.invoke("delete_refresh_credential")); } catch { /* cleanup also deletes server account */ } }
   if (browser) await browser.close();
   if (app) app.kill();
   fs.rmSync(process.env.ACCEPTANCE_CREDENTIAL_PATH, { force: true });
+  if (process.env.ACCEPTANCE_OTP_PRIVATE_KEY) fs.rmSync(process.env.ACCEPTANCE_OTP_PRIVATE_KEY, { force: true });
   fs.writeFileSync(path.join(output, "result.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report));
 });

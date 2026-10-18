@@ -168,3 +168,10 @@ Route capabilities task: backend 0.10.0 / Windows 0.11.0, schema unchanged (0026
 Overview owns route currencies/recurring currencies and provider mode. Windows
 requires explicit LIVE plus operations availability/actions; sandbox/legacy responses
 stay read-only. Sandbox API tests remain isolated. Freeze accepted recurring terms.
+
+
+Windows development acceptance task: Windows 0.11.1, backend unchanged 0.10.0.
+Read docs/windows-development-acceptance.md. Direct HTTPS/native checks differ
+from fixture replay. Disposable acceptance credentials and ephemeral OTP private
+keys must never enter artifacts; manual OTP is encrypted for its single run.
+Home refreshes /me on entry. Keep real payment integration a separate future task.
