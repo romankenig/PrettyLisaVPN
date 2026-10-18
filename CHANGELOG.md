@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Documentation — карта Windows 0.8.0
+
+- Added: сводная схема экранов/popup, таблица маршрутов, auth/возвраты/ошибки,
+  подготовленный платёжный flow и фактическая доступность интеграций.
+- Changed: ссылка в README и правило актуализации карты в AGENTS; карта учитывает
+  backend 0.2.0 и реализованный last_login_at после merge PR #8.
+- Version unchanged: Windows 0.8.0, backend 0.2.0; только документация.
+
 ### Backend — 0.2.0
 
 - Added: nullable UTC `last_login_at` on device responses, persisted only after
@@ -199,4 +207,3 @@
 
 Windows и backend объявляют 0.1.0 в исходных манифестах. Предыдущая история
 релизов здесь не реконструируется и стабильный выпуск задним числом не объявляется.
-

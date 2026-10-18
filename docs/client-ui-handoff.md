@@ -433,3 +433,33 @@ Windows: `apps/windows`, Tauri 2 + Rust + React 19 + TypeScript + Vite.
 - Проверенные remote HEAD/build SHA/run/attempt, все CI статусы и артефакты
   фиксируются в описании PR по завершении, без docs push ради результатов.
   Предыдущие 0.7.0 артефакты не подтверждают эту задачу. Merge/release/deploy отдельно.
+
+## Merge PR #5 и карта навигации — 2026-10-17
+
+- По поручению владельца PR #5 слит squash в develop, commit
+  `694ec52f5a29a7c7174c09ab340d6e436f2c9328`; дерево совпадает с проверенным
+  product HEAD `be4cfc28e7372c7736028273d96146713392e838`.
+- Windows UI review 39022996113 завершился success (attempt 1), все jobs/steps
+  успешны, 299 тестов. После merge Actions не запускались по текущим триггерам.
+- Добавлена [карта экранов и переходов](windows-navigation.md): сводная Mermaid,
+  маршруты/guard, popup, оплата с внешним браузером, ошибки/отмена/выход,
+  различие рабочего UI и ещё не подключённых backend/provider/sender.
+- Карта сверена с фактическими App/SessionRestorationGate и обработчиками экранов
+  на merge commit выше. Она не добавляет кнопки возврата OTP, FAQ route,
+  Escape в отзыв устройства или другие несуществующие переходы.
+- Version unchanged: Windows 0.8.0, backend source 0.1.0. Только docs/root README/
+  AGENTS/CHANGELOG, исходники приложения и workflow не меняются. Новый native
+  build не нужен; проверяются ссылки, покрытие маршрутов и схемы, diff, затем
+  все Actions/checks/statuses docs HEAD. Документация идёт отдельной веткой/PR.
+
+## Актуализация карты после backend 0.2.0 — 2026-10-18
+
+- PR #6 синхронизирован с develop после merge PR #8:
+  `1b17f56f3b93408bba2c02ffb6a147d31a70eec7`.
+- В карте обновлены backend version и статус `last_login_at`: поле уже реализовано,
+  старые устройства без успешного OTP-входа отображают «нет данных».
+- Сохранены все новые записи CHANGELOG и правила AGENTS из develop.
+- Version unchanged: Windows 0.8.0, backend 0.2.0. Только пять docs/root файлов;
+  исходники приложения и workflow не меняются, новый build/deploy не требуется.
+- Ссылки, покрытие маршрутов, неизменность Mermaid-схем и docs-only diff проверены.
+  Фактические статусы последнего docs HEAD и merge фиксируются в PR #6.

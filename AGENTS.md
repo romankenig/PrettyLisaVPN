@@ -68,6 +68,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - Preserve backwards compatibility unless the task explicitly requires a breaking change.
 - Reuse existing tooling and dependencies when they already solve the requirement.
 - For client UI work, follow the shared logo and color rules in `docs/design-system.md`.
+- При изменении экранов, popup, маршрутов, auth guard и внешних переходов обновлять `docs/windows-navigation.md`; различать реализованные UI-переходы и ожидающую backend интеграцию.
 - Always write the product name exactly as `PrettyLisaVPN`, including rendered UI and error messages. Preserve this casing when applying lowercase typography.
 - Every database schema change requires an Alembic migration.
 - Every new endpoint requires tests.
@@ -122,4 +123,3 @@ For every coding task:
 - После ЛЮБОГО последнего push, включая docs/handoff commit, снова проверить remote HEAD и все автоматически запущенные workflow. Не завершать задачу, пока они pending/in_progress. Итоговые ссылки и результаты можно обновлять в описании PR без нового commit, чтобы не создавать бесконечные повторные прогоны документацией.
 - Источник бинарного артефакта обязан соответствовать проверяемым исходникам. Не скачивать фиксированный исторический exe для нового UI/capture-сценария. Windows window capture теперь вызывает общий Windows UI review через workflow_call и собирает текущий commit; обычные UI/script-изменения автоматически проверяет основной PR workflow.
 - В итоговом отчёте указывать проверенный HEAD, названия всех workflow, конечные статусы и ссылки. Если полноценный обзор Actions недоступен, явно сообщить ограничение и не утверждать, что все проверки прошли.
-
