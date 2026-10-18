@@ -1,6 +1,8 @@
 # Windows и development: сквозная приёмка
 
 Windows 0.11.0 → 0.11.1 (PATCH: актуализация профиля при возвращении Home).
+Также исправлен выход длинной runtime-версии за границы sidebar; native pixel
+bounds проверяются на настоящем development-значении.
 Backend 0.10.0 unchanged; schema 0026. Development base:
 `4347935f2c5c20cabc523ff94acc12a2f1bd3c21`.
 

@@ -13,6 +13,10 @@ Home обновляет `/me` при каждом открытии и смене
 [Windows с development](windows-development-acceptance.md): loopback UI review
 и прямой HTTPS-прогон подтверждают разные интеграции.
 
+Длинная runtime-версия backend ограничена шириной боковой панели и сокращается
+многоточием; полное значение доступно в tooltip и About. Native acceptance
+проверяет границы блока версии с реальной development-строкой.
+
 ## Возможности оплаты — Windows 0.11.0
 
 Экран подписки читает `provider_mode` и четыре `payment_routes` из overview.

@@ -51,6 +51,13 @@ async function get(endpoint, authenticated = true) {
   return response.json();
 }
 async function capture(name) {
+  const bounded = await page.locator(".sidebar-versions").evaluate((versions) => {
+    const sidebar = versions.closest("aside").getBoundingClientRect();
+    return [...versions.querySelectorAll("dd")].every(
+      (value) => value.getBoundingClientRect().right <= sidebar.right,
+    );
+  });
+  if (!bounded) throw new Error("Runtime version overflows the sidebar");
   const result = spawnSync(
     "pwsh",
     [
@@ -140,6 +147,18 @@ async function main() {
   )
     throw new Error("Unexpected runtime identity");
   report.runtime_version = version.application_version;
+  try {
+    const response = await fetch("https://ipwho.is/", {
+      signal: AbortSignal.timeout(10000),
+    });
+    const location = await response.json();
+    report.public_location_probe = {
+      http_status: response.status,
+      provider_success: location.success === true,
+    };
+  } catch {
+    report.public_location_probe = { status: "unavailable" };
+  }
   const me = await get("/me");
   if (
     me.email !== account.email ||
@@ -199,6 +218,9 @@ async function main() {
   await page.reload();
   await page.getByText(account.email, { exact: true }).waitFor();
   await page.getByRole("combobox").waitFor();
+  report.native_location_error_visible = await page
+    .getByText("не удалось определить", { exact: true })
+    .isVisible();
   report.checks.push(
     "native credential store → real HTTPS refresh → me → Home",
   );
@@ -236,6 +258,7 @@ async function main() {
   report.checks.push(
     "returning Home refreshes the device count after revocation",
   );
+  await capture("03a-development-home-refreshed");
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /подписк/ }).click();
   await page

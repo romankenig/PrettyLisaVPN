@@ -593,10 +593,16 @@ nav {
 }
 .sidebar-versions {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  width: 100%;
   gap: 12px;
   margin: auto 0 0;
   font-size: 11px;
   line-height: 1.4;
+}
+.sidebar-versions > div {
+  min-width: 0;
 }
 .sidebar-versions dt {
   margin: 0 0 2px;

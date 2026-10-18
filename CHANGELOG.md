@@ -9,7 +9,8 @@
 ### Windows — 0.11.1 / Backend — 0.10.0 unchanged
 
 - Fixed: Home refreshes `/me` on entry so changed device counts and plans do not
-  remain hidden behind the restored profile cache.
+  remain hidden behind the restored profile cache. Long runtime versions stay
+  inside the sidebar with ellipsis and the complete tooltip.
 - Added native Windows acceptance against actual development HTTPS, disposable
   identities, refresh rotation/logout, real email OTP with manual encrypted handoff,
   and isolated sandbox lifecycle/race/restart checks. No live payment provider.
