@@ -163,7 +163,7 @@ class Publication(StrictModel):
     starts_at: datetime | None = None
     expires_at: datetime | None = None
     user_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=5000)
-    plans: list[SubscriptionPlan] | None = Field(default=None, min_length=1, max_length=2)
+    plans: list[SubscriptionPlan] | None = Field(default=None, min_length=1, max_length=3)
     platforms: dict[DevicePlatform, VersionRange] = Field(min_length=1, max_length=7)
     default_locale: str = "ru"
     localizations: dict[str, Content] = Field(min_length=1, max_length=10)

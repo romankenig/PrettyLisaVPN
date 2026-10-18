@@ -1,4 +1,5 @@
 name: Subscription preparation
+# Revision 2: final quota semantics and additional boundary tests
 on:
   push:
     branches: [cloud/prepare-subscriptions]
@@ -22,7 +23,7 @@ jobs:
           POSTGRES_PASSWORD: ci-only
           POSTGRES_DB: prettylisa
         ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+        options: --health-cmd 'pg_isready -U prettylisa' --health-interval 5s --health-retries 10
       valkey:
         image: valkey/valkey:8-alpine
         ports: ['6379:6379']

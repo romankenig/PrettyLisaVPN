@@ -24,6 +24,7 @@ from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
+from prettylisavpn.subscriptions.entitlements import free_quota_resets_at
 from prettylisavpn.users.domain import User, UserStatus
 from prettylisavpn.users.repository import UserRepository
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
@@ -187,7 +188,7 @@ class AuthenticatedSessionService:
                 resets_at = None
                 if plan is SubscriptionPlan.FREE:
                     remaining = await VpnSessionRepository(session).remaining_free_seconds(user.id, now)
-                    resets_at = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                    resets_at = free_quota_resets_at(now)
                 await session.commit()
         except (
             InvalidSessionError,

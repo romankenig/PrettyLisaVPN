@@ -12,6 +12,8 @@ from prettylisavpn.subscriptions.entitlements import (
     FREE_ENTITLEMENTS,
     PREMIUM_ENTITLEMENTS,
     entitlements_for,
+    free_session_duration,
+    free_quota_resets_at,
 )
 
 
@@ -60,6 +62,8 @@ def test_plan_entitlements_are_provider_independent():
     assert entitlements_for(free, now) == FREE_ENTITLEMENTS
     assert entitlements_for(premium, now) == PREMIUM_ENTITLEMENTS
     assert FREE_ENTITLEMENTS.vpn_session_limit == timedelta(hours=1)
+    assert FREE_ENTITLEMENTS.daily_vpn_limit_seconds == 3600
+    assert FREE_ENTITLEMENTS.rewarded_ad_required is False
     assert PREMIUM_ENTITLEMENTS.vpn_session_limit is None
     assert FREE_ENTITLEMENTS.country_selection_allowed is True
     assert PREMIUM_ENTITLEMENTS.country_selection_allowed is True
@@ -134,4 +138,26 @@ def test_future_paid_period_does_not_grant_access_early():
 def test_canceled_subscription_cannot_claim_auto_renew():
     with pytest.raises(ValueError, match="CANCELED subscriptions cannot auto-renew"):
         subscription(plan=SubscriptionPlan.PREMIUM, status=SubscriptionStatus.CANCELED, auto_renew=True)
+
+
+def test_manual_platinum_has_exact_premium_capabilities():
+    now = datetime.now(UTC)
+    platinum = subscription(plan=SubscriptionPlan.PLATINUM, period_end=now + timedelta(days=30))
+    assert platinum.effective_plan(now) is SubscriptionPlan.PLATINUM
+    assert entitlements_for(platinum, now) == PREMIUM_ENTITLEMENTS
+    assert platinum.effective_plan(platinum.current_period_end) is SubscriptionPlan.FREE
+
+
+def test_free_duration_uses_remaining_budget_and_utc_midnight():
+    at = datetime(2026, 10, 16, 23, 50, tzinfo=UTC)
+    assert free_session_duration(at, 3600) == timedelta(minutes=10)
+    assert free_session_duration(at, 30) == timedelta(seconds=30)
+    assert free_quota_resets_at(at) == datetime(2026, 10, 17, tzinfo=UTC)
+    assert free_session_duration(datetime(2026, 10, 17, tzinfo=UTC), 3600) == timedelta(hours=1)
+
+
+@pytest.mark.parametrize("remaining", [0, -1, 3601])
+def test_free_duration_rejects_invalid_budget(remaining):
+    with pytest.raises(ValueError, match="daily budget"):
+        free_session_duration(datetime.now(UTC), remaining)
 

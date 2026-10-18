@@ -1,7 +1,7 @@
 """Plan entitlements independent of payment-provider details."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 
@@ -41,4 +41,16 @@ def entitlements_for_plan(plan: SubscriptionPlan) -> PlanEntitlements:
         SubscriptionPlan.PREMIUM: PREMIUM_ENTITLEMENTS,
         SubscriptionPlan.PLATINUM: PREMIUM_ENTITLEMENTS,
     }[plan]
+
+
+def free_quota_resets_at(at: datetime) -> datetime:
+    if at.tzinfo is None or at.utcoffset() is None:
+        raise ValueError("at must be timezone-aware")
+    return at.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+
+def free_session_duration(at: datetime, remaining_seconds: int) -> timedelta:
+    if not 0 < remaining_seconds <= 3600:
+        raise ValueError("remaining_seconds must be within the daily budget")
+    return min(timedelta(seconds=remaining_seconds), free_quota_resets_at(at) - at)
 

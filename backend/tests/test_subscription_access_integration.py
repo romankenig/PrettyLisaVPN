@@ -4,6 +4,7 @@ import os
 import asyncio
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from ipaddress import IPv4Address
 from unittest.mock import AsyncMock
 
 import pytest
@@ -28,7 +29,7 @@ from prettylisavpn.vpn_nodes.agent import NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.model import VpnNodeRecord
 from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest
 from prettylisavpn.vpn_sessions.connection import FreeDailyLimitReachedError, VpnConnectionService, VpnSetupFailedError
-from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
+from prettylisavpn.vpn_sessions.domain import VpnSessionStatus, VpnSession
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 from prettylisavpn.vpn_sessions.termination import VpnSessionReconciler, VpnSessionTerminationService
 from uuid import uuid4
@@ -188,3 +189,34 @@ async def test_failed_free_provisioning_does_not_spend_daily_budget(access_state
         await VpnConnectionService(postgres, auth, agent, config).connect(token, NodeSelectionRequest.auto(), public_key(87))
     async with postgres.session() as session:
         assert await VpnSessionRepository(session).remaining_free_seconds(user_id, datetime.now(UTC)) == 3600
+
+
+async def test_full_hour_exhaustion_survives_new_repository_and_resets_at_utc_midnight(access_state):
+    _, postgres, user_id, device_id, node_id, _, _, _ = access_state
+    start = datetime(2026, 10, 16, 12, tzinfo=UTC)
+    end = start + timedelta(hours=1)
+    historical = VpnSession.new(user_id=user_id, device_id=device_id, vpn_node_id=node_id, client_wireguard_public_key=public_key(88), allocated_client_ipv4=IPv4Address('10.77.3.88'), plan_snapshot=SubscriptionPlan.FREE, now=start)
+    async with postgres.session() as session, session.begin():
+        repo = VpnSessionRepository(session)
+        await repo.add(historical)
+        await repo.reserve_free_usage(historical)
+        await repo.activate_free_usage(historical.id, start)
+        await repo.update(replace(historical, status=VpnSessionStatus.EXPIRED, updated_at=end, peer_removed_at=end))
+    async with postgres.session() as session:
+        repo = VpnSessionRepository(session)
+        assert await repo.remaining_free_seconds(user_id, end) == 0
+        assert await repo.remaining_free_seconds(user_id, datetime(2026, 10, 16, 23, 59, 59, tzinfo=UTC)) == 0
+        assert await repo.remaining_free_seconds(user_id, datetime(2026, 10, 17, tzinfo=UTC)) == 3600
+
+
+async def test_free_budget_stays_reserved_during_node_outage_until_cleanup_ack(access_state):
+    config, postgres, user_id, _, _, token, auth, agent = access_state
+    active = await VpnConnectionService(postgres, auth, agent, config).connect(token, NodeSelectionRequest.auto(), public_key(89))
+    agent.remove_peer.side_effect = NodeAgentUnavailableError
+    await VpnSessionTerminationService(postgres, auth, agent).disconnect(token, active.session_id)
+    async with postgres.session() as session:
+        assert await VpnSessionRepository(session).remaining_free_seconds(user_id, datetime.now(UTC)) == 0
+    agent.remove_peer.side_effect = None
+    await VpnSessionReconciler(postgres, agent, config).run_once()
+    async with postgres.session() as session:
+        assert await VpnSessionRepository(session).remaining_free_seconds(user_id, datetime.now(UTC)) >= 3590

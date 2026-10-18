@@ -24,7 +24,7 @@ class VpnSessionRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def settle_free_usage(self) -> None:
+    async def settle_free_usage(self, user_id: UUID | None = None) -> None:
         """Return unused budget only after the node acknowledges peer removal."""
         ended = (
             select(func.least(VpnSessionRecord.peer_removed_at, VpnSessionRecord.expires_at))
@@ -33,13 +33,15 @@ class VpnSessionRepository:
                    VpnSessionRecord.status.in_((VpnSessionStatus.EXPIRED, VpnSessionStatus.DISCONNECTED, VpnSessionStatus.FAILED)))
             .scalar_subquery()
         )
+        conditions = [] if user_id is None else [FreeVpnUsageRecord.user_id == user_id]
         await self._session.execute(update(FreeVpnUsageRecord).where(
+            *conditions,
             FreeVpnUsageRecord.released_at.is_(None), ended.is_not(None)
         ).values(released_at=ended))
 
     async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
         """Caller locks the account before checking and reserving its UTC budget."""
-        await self.settle_free_usage()
+        await self.settle_free_usage(user_id)
         row = FreeVpnUsageRecord
         seconds = case(
             (row.released_at.is_(None), func.extract('epoch', row.reserved_until - row.reserved_from)),
@@ -252,7 +254,7 @@ class VpnSessionRepository:
             )
         )
         if not vpn_session.is_live():
-            await self.settle_free_usage()
+            await self.settle_free_usage(vpn_session.user_id)
         return vpn_session
 
     async def get_owned_for_update(

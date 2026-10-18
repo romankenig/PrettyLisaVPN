@@ -13,6 +13,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.entitlements import free_session_duration
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort, NodeAgentUnavailableError
 from prettylisavpn.vpn_nodes.domain import VpnNode
@@ -165,6 +166,7 @@ class VpnConnectionService:
                     # Allocation may expire other rows. Take its global lock before
                     # session locks so parallel connects cannot invert this order.
                     await sessions.acquire_address_allocation_lock()
+                    now = datetime.now(UTC)
                     await sessions.reconcile_paid_access(now, user_id)
                     await sessions.expire_allocations(now, user_id)
                     if await sessions.get_live_for_device(device_id, now) is not None:
@@ -184,8 +186,7 @@ class VpnConnectionService:
                         remaining = await sessions.remaining_free_seconds(user_id, now)
                         if remaining <= 0:
                             raise FreeDailyLimitReachedError
-                        midnight = now.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-                        free_limit = min(timedelta(seconds=remaining), midnight - now)
+                        free_limit = free_session_duration(now, remaining)
                     sessions = VpnSessionRepository(database_session)
                     nodes = VpnNodeRepository(database_session)
                     pending = await VpnSessionService(

@@ -135,6 +135,7 @@ class FreeVpnUsageRecord(Base):
     __table_args__ = (
         CheckConstraint("reserved_until > reserved_from", name="ck_free_vpn_usage_period"),
         Index("ix_free_vpn_usage_user_day", "user_id", "day"),
+        Index("ix_free_vpn_usage_unsettled_user", "user_id", postgresql_where=text("released_at IS NULL")),
     )
     session_id: Mapped[UUID] = mapped_column(ForeignKey("vpn_sessions.id", ondelete="CASCADE"), primary_key=True)
     day: Mapped[date] = mapped_column(Date, primary_key=True)

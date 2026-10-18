@@ -14,6 +14,7 @@ from prettylisavpn.vpn_nodes.selection import NodeSelectionRequest
 from prettylisavpn.vpn_sessions.connection import (
     ActiveVpnTransport,
     CountryUnavailableError,
+    FreeDailyLimitReachedError,
     VpnSetupFailedError,
     VpnUnavailableError,
 )
@@ -181,6 +182,15 @@ def test_target_and_setup_failures_use_stable_codes(
     assert response.json() == {"error": {"code": code}}
 
 
+def test_exhausted_free_quota_has_stable_code():
+    service = AsyncMock()
+    service.connect.side_effect = FreeDailyLimitReachedError
+    with api_client(service) as client:
+        response = client.post("/vpn/sessions", headers={"Authorization": "Bearer token"}, json={"mode": "AUTO", "public_key": PUBLIC_KEY})
+    assert response.status_code == 403
+    assert response.json() == {"error": {"code": "FREE_DAILY_LIMIT_REACHED"}}
+
+
 def test_endpoint_requires_authentication_and_valid_target_shape():
     service = AsyncMock()
     with api_client(service) as client:
@@ -280,3 +290,4 @@ def test_disconnect_enforces_owned_session_lookup():
 
     assert response.status_code == 404
     assert response.json() == {"error": {"code": "VPN_SESSION_NOT_FOUND"}}
+
