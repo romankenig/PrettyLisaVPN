@@ -41,10 +41,11 @@ class Device:
     created_at: datetime
     updated_at: datetime
     revoked_at: datetime | None
+    last_login_at: datetime | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "device_name", normalize_device_name(self.device_name))
-        for field_name in ("created_at", "updated_at", "revoked_at"):
+        for field_name in ("created_at", "updated_at", "revoked_at", "last_login_at"):
             value = getattr(self, field_name)
             if value is None:
                 continue

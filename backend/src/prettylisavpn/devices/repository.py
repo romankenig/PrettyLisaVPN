@@ -67,6 +67,7 @@ class DeviceRepository:
             created_at=device.created_at,
             updated_at=device.updated_at,
             revoked_at=device.revoked_at,
+            last_login_at=device.last_login_at,
         )
         self._session.add(record)
         await self._session.flush()
@@ -82,6 +83,7 @@ class DeviceRepository:
                 status=device.status,
                 updated_at=device.updated_at,
                 revoked_at=device.revoked_at,
+                last_login_at=device.last_login_at,
             )
         )
         return device
@@ -98,4 +100,5 @@ class DeviceRepository:
             created_at=record.created_at,
             updated_at=record.updated_at,
             revoked_at=record.revoked_at,
+            last_login_at=record.last_login_at,
         )

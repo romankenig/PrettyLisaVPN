@@ -103,7 +103,9 @@ Rollback восстанавливает сохранённый env и образ
 
 Наличие реализации не подтверждает развёртывание: актуальный статус deploy и
 реального rollback фиксируется в [Cloud handoff](backend-cloud-handoff.md).
-Локальные defaults, Python package version и HTTP-контракт остаются `0.1.0`.
+В задаче devices backend package/default повышены до `0.2.0`: добавлены
+last_login_at и завершение VPN-сессий при отзыве. Фактическая версия стенда
+определяется `/version`, а проверки этой задачи — PR #8 и docs/devices-ui.md.
 
 ## Что означает версия backend в клиенте
 

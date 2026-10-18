@@ -1,6 +1,7 @@
 """Loopback-only UI fixtures. Never connects to production or creates VPN tunnels."""
 import argparse
 import json
+import os
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
@@ -10,6 +11,15 @@ from threading import Thread
 USER_ID = "11111111-1111-4111-8111-111111111111"
 DEVICE_ID = "22222222-2222-4222-8222-222222222222"
 INSTALLATION_ID = "33333333-3333-4333-8333-333333333333"
+EVIDENCE_PATH = os.getenv("DEVICE_BACKEND_EVIDENCE_PATH")
+DEVICE_EVIDENCE = json.loads(Path(EVIDENCE_PATH).read_text(encoding="utf-8")) if EVIDENCE_PATH else None
+DEVICE_REVOKED = False
+ACCOUNT_EMAIL = DEVICE_EVIDENCE["account_email"] if DEVICE_EVIDENCE else "ui-review@example.com"
+if DEVICE_EVIDENCE:
+    current = next(item for item in DEVICE_EVIDENCE["devices"] if item["is_current"])
+    USER_ID = DEVICE_EVIDENCE["user_id"]
+    DEVICE_ID = current["id"]
+    INSTALLATION_ID = current["installation_id"]
 SESSION_ID = "44444444-4444-4444-8444-444444444444"
 DATE = "2026-10-16T00:00:00Z"
 BILLING_FIXTURES = json.loads(Path(__file__).with_name("billing-fixtures.json").read_text(encoding="utf-8"))
@@ -48,8 +58,17 @@ MESSAGE_FIXTURES = [
 
 def fixture(method, path, body):
     global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
-    global MESSAGE_ACK_ATTEMPTS
+    global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED
     path = urlsplit(path).path
+    # Replay allowlisted, non-secret responses recorded by the real backend in CI.
+    if DEVICE_EVIDENCE:
+        if method == "GET" and path == "/version":
+            return 200, DEVICE_EVIDENCE["version"]
+        if method == "GET" and path == "/devices":
+            return 200, DEVICE_EVIDENCE["after_revoke" if DEVICE_REVOKED else "devices"]
+        if method == "DELETE" and path == "/devices/" + DEVICE_EVIDENCE["revoked_response"]["device"]["id"]:
+            DEVICE_REVOKED = True
+            return 200, DEVICE_EVIDENCE["revoked_response"]
     if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
         return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
     if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):
@@ -143,7 +162,7 @@ def fixture(method, path, body):
         return 200, {"success": True, "ip": "203.0.113.42", "country_code": "RU", "city": "Москва"}
     if method == "GET" and path == "/me":
         return 200, {
-            "id": USER_ID, "email": "ui-review@example.com",
+            "id": USER_ID, "email": ACCOUNT_EMAIL,
             "plan": "PREMIUM", "active_device_count": 2,
         }
     if method == "GET" and path == "/devices":
@@ -206,7 +225,7 @@ def self_test():
     base = "http://127.0.0.1:" + str(server.server_port)
     try:
         with urlopen(base + "/me", timeout=2) as response:
-            assert json.load(response)["email"] == "ui-review@example.com"
+            assert json.load(response)["email"] == ACCOUNT_EMAIL
         request = Request(
             base + "/auth/verify-otp",
             data=json.dumps({"installation_id": INSTALLATION_ID}).encode(),

@@ -1,5 +1,6 @@
 """Application service for device lifecycle operations."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -87,30 +88,20 @@ class DeviceService:
             return False
         now = datetime.now(UTC)
         await self._repository.update(
-            Device(
-                id=device.id,
-                user_id=device.user_id,
-                installation_id=device.installation_id,
-                platform=device.platform,
-                device_name=device.device_name,
-                status=DeviceStatus.REVOKED,
-                created_at=device.created_at,
-                updated_at=now,
-                revoked_at=now,
-            )
+            replace(device, status=DeviceStatus.REVOKED, updated_at=now, revoked_at=now)
         )
         return True
 
     @staticmethod
     def _with_active_metadata(device: Device, platform: DevicePlatform, device_name: str) -> Device:
-        return Device(
-            id=device.id,
-            user_id=device.user_id,
-            installation_id=device.installation_id,
+        return replace(
+            device,
             platform=platform,
             device_name=device_name,
             status=DeviceStatus.ACTIVE,
-            created_at=device.created_at,
             updated_at=datetime.now(UTC),
             revoked_at=None,
         )
+
+    async def record_successful_login(self, device: Device, at: datetime) -> Device:
+        return await self._repository.update(replace(device, last_login_at=at, updated_at=at))

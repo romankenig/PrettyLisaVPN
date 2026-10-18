@@ -8,9 +8,14 @@ on:
       - ".github/workflows/windows-ui-review.yml"
   workflow_dispatch:
   workflow_call:
+    inputs:
+      device_evidence_artifact:
+        type: string
+        required: false
+        default: ""
 
 concurrency:
-  group: windows-ui-review-${{ github.ref }}
+  group: windows-ui-review-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -26,6 +31,7 @@ jobs:
         shell: pwsh
     env:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      DEVICE_BACKEND_EVIDENCE_PATH: ${{ inputs.device_evidence_artifact != '' && format('{0}/apps/windows/artifacts/backend-evidence/device-response.json', github.workspace) || '' }}
       VITE_APP_ENVIRONMENT: test
       VITE_BACKEND_BASE_URL: http://127.0.0.1:8000
       # Explicit synthetic tunnel dependencies are shared by both native UI runs.
@@ -33,6 +39,12 @@ jobs:
       VITE_UI_REVIEW_VPN: "1"
     steps:
       - uses: actions/checkout@v4
+      - name: Download recorded backend device responses
+        if: inputs.device_evidence_artifact != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.device_evidence_artifact }}
+          path: apps/windows/artifacts/backend-evidence
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
