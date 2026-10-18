@@ -51,12 +51,14 @@ async function get(endpoint, authenticated = true) {
   return response.json();
 }
 async function capture(name) {
-  const bounded = await page.locator(".sidebar-versions").evaluate((versions) => {
-    const sidebar = versions.closest("aside").getBoundingClientRect();
-    return [...versions.querySelectorAll("dd")].every(
-      (value) => value.getBoundingClientRect().right <= sidebar.right,
-    );
-  });
+  const bounded = await page
+    .locator(".sidebar-versions")
+    .evaluate((versions) => {
+      const sidebar = versions.closest("aside").getBoundingClientRect();
+      return [...versions.querySelectorAll("dd")].every(
+        (value) => value.getBoundingClientRect().right <= sidebar.right,
+      );
+    });
   if (!bounded) throw new Error("Runtime version overflows the sidebar");
   const result = spawnSync(
     "pwsh",
