@@ -1,4 +1,4 @@
-"""Private read-only HTTP billing contract; no payment operations are registered."""
+"""Private billing overview, durable command admission and operation recovery."""
 
 from collections.abc import Callable, Coroutine
 from typing import Annotated, Any, cast

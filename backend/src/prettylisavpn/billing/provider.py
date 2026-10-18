@@ -29,6 +29,6 @@ class BillingProvider(Protocol):
 
 def validate_provider(provider: BillingProvider | None) -> None:
     if provider is not None and (
-        not provider.sandbox or not provider.name or len(provider.name) > 64
+        provider.sandbox is not True or not provider.name or len(provider.name) > 64
     ):
         raise ValueError("Only explicitly injected sandbox billing providers are supported")

@@ -143,8 +143,9 @@ def test_price_currency_and_nonrecurring_route_must_match_confirmation():
     BillingWorker._validate_confirmation(request, result)
 
 
-def test_live_adapter_cannot_be_enabled_in_this_release():
+@pytest.mark.parametrize("sandbox", [False, "false", None])
+def test_live_adapter_cannot_be_enabled_in_this_release(sandbox):
     provider = TestBillingProvider()
-    provider.sandbox = False
+    provider.sandbox = sandbox
     with pytest.raises(ValueError):
         validate_provider(provider)
