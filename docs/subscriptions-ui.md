@@ -1,11 +1,15 @@
 # Подписки: серверный обзор и Windows UI
 
-Windows 0.10.0 / backend 0.7.0: GET /billing/overview, POST /billing/operations и
+Windows 0.10.0 / backend 0.8.0: GET /billing/overview, POST /billing/operations и
 GET /billing/operations/{id} реализованы. Операции и идемпотентность хранятся в
 PostgreSQL. Заменяемый provider port проверен на изолированном тестовом провайдере.
 В работающем development backend adapter не подключён: новые операции отвечают
 503 BILLING_DISABLED, actions=[], реальные списания выключены. Endpoint операции
 читает сохранённый результат; повтор уже принятого запроса работает и без adapter.
+
+В 0.8.0 добавлен явно включаемый development/test адаптер с сохранённым журналом
+и служебными уведомлениями: [инструкция sandbox](billing-sandbox.md).
+По умолчанию он выключен; его наличие не означает включение в развёрнутом backend.
 
 
 ## Реализованный серверный обзор — 0.6.0

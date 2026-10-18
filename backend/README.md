@@ -312,3 +312,10 @@ Remove-Item Env:RUN_DOCKER_TESTS
 В Bash: `RUN_DOCKER_TESTS=1 uv run pytest -m docker`. `DOCKER_TEST_IMAGE` позволяет выбрать другой тег. Проверяются пользователь контейнера, содержимое образа, liveness без баз, корректная остановка и production Compose. Тесты создают временный контейнер и удаляют его после проверки, не останавливая ваш стек. CI выполняет проверки с настоящими сервисами и собранным образом.
 
 Ручную проверку отказа выполняйте только локально: из корня остановите Valkey командой `docker compose -f infra/docker/compose.yaml stop valkey`. `/ready` должен вернуть 503, а `/health` — 200. Восстановите сервис командой `docker compose -f infra/docker/compose.yaml start valkey` и снова проверьте `/ready`.
+
+## Development/test billing adapter — 0.8.0
+
+Opt-in persisted sandbox provider and operator notification CLI: see
+[docs/billing-sandbox.md](../docs/billing-sandbox.md). Apply migration 0025, then
+set BILLING_PROVIDER=sandbox only on an isolated development/test database.
+Default remains disabled; no payment network/credentials/real charges.

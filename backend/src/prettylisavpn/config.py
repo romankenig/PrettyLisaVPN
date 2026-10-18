@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.7.0", min_length=1)
+    application_version: str = Field(default="0.8.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
+    billing_provider: Literal["disabled", "sandbox"] = "disabled"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     postgres_url: SecretStr = SecretStr(
         "postgresql+asyncpg://prettylisa:local-development-only@localhost:5432/prettylisa"
@@ -83,6 +84,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.billing_provider == "sandbox" and self.environment not in ("development", "test"):
+            raise ValueError("Sandbox billing requires development or test environment")
         if self.vpn_client_subnet.version != 4:
             raise ValueError("VPN_CLIENT_SUBNET must be IPv4")
         if any(address.version != 4 for address in self.vpn_client_dns):

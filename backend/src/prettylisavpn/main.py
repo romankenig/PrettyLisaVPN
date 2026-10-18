@@ -33,6 +33,7 @@ from prettylisavpn.auth.session_service import (
 from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.billing.provider import BillingProvider, validate_provider
 from prettylisavpn.billing.router import router as billing_router
+from prettylisavpn.billing.sandbox import SandboxBillingProvider
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
 from prettylisavpn.billing.worker import BillingWorkerPort
 from prettylisavpn.config import Settings
@@ -144,12 +145,17 @@ def create_app(
 ) -> FastAPI:
     validate_provider(billing_provider)
     config = settings if settings is not None else Settings()
+    if billing_provider is not None and config.environment not in ("development", "test"):
+        raise ValueError("Sandbox billing requires development or test environment")
     configure_logging(config.log_level)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         pg = postgres if postgres is not None else Postgres(config)
         try:
+            active_billing_provider = billing_provider
+            if active_billing_provider is None and config.billing_provider == "sandbox":
+                active_billing_provider = SandboxBillingProvider(cast(Postgres, pg), config)
             cache = valkey if valkey is not None else Valkey(config)
             try:
                 app.state.postgres = pg
@@ -196,12 +202,12 @@ def create_app(
                 app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                    billing_provider,
+                    active_billing_provider,
                 )
                 app.state.billing_operations = BillingOperationsService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                    billing_provider,
+                    active_billing_provider,
                 )
                 active_billing_worker = billing_worker or app.state.billing_operations.worker
                 app.state.support = SupportService(
@@ -298,7 +304,7 @@ def create_app(
                 )
                 billing_task = (
                     asyncio.create_task(active_billing_worker.run(monitor_stop))
-                    if billing_provider is not None and isinstance(pg, Postgres)
+                    if active_billing_provider is not None and isinstance(pg, Postgres)
                     else None
                 )
                 logger.info("application_started")
