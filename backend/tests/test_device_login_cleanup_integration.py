@@ -37,6 +37,7 @@ from prettylisavpn.vpn_sessions.connection import (
 )
 from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
+from prettylisavpn.vpn_sessions.service import DeviceAlreadyHasLiveVpnSessionError
 from prettylisavpn.vpn_sessions.termination import VpnSessionReconciler
 
 pytestmark = [
@@ -92,6 +93,17 @@ async def connect_target(state, key=71):
 async def persisted(postgres, session_id):
     async with postgres.session() as session:
         return await VpnSessionRepository(session).get(session_id)
+
+
+async def test_duplicate_connect_preserves_live_session_and_conflict(state):
+    _, _, _, _, _, _, _, agent, _, _ = state
+    connection, transport = await connect_target(state, 78)
+    for key in (78, 80):
+        with pytest.raises(DeviceAlreadyHasLiveVpnSessionError):
+            await connection.connect("target", NodeSelectionRequest.auto(), public_key(key))
+    assert (await persisted(state[0], transport.session_id)).status is VpnSessionStatus.ACTIVE
+    agent.add_peer.assert_awaited_once()
+    agent.remove_peer.assert_not_awaited()
 
 
 async def test_record_device_api_evidence_with_simulated_otp(state):

@@ -156,6 +156,8 @@ class VpnConnectionService:
                     if device is None or device.user_id != user_id or not device.is_active():
                         raise VpnSetupFailedError
                     sessions = VpnSessionRepository(database_session)
+                    if await sessions.get_live_for_device(device_id, now) is not None:
+                        raise DeviceAlreadyHasLiveVpnSessionError
                     await sessions.acquire_peer_lock(public_key)
                     if await sessions.has_unremoved_public_key(public_key):
                         raise VpnUnavailableError
