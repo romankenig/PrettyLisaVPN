@@ -1,5 +1,5 @@
 name: Billing operations preparation
-# Isolated foreign-account fixture; verify provider identity pinning.
+# Verify renewal/cancel races, expired-contract history and admission rollback.
 on:
   push:
     branches: [cloud/prepare-billing-operations]

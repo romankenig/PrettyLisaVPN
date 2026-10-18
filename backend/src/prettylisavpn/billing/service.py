@@ -127,9 +127,19 @@ async def read_context(
         and effective is not SubscriptionPlan.FREE
         else None
     )
-    foreign_mandate = bool(account and provider and account.mandate_reference and account.provider_name != provider.name)
+    foreign_mandate = bool(
+        account
+        and provider
+        and account.mandate_reference
+        and account.provider_name != provider.name
+    )
     actions: list[Action] = []
-    if provider and not pending and not foreign_mandate and subscription.plan is not SubscriptionPlan.PLATINUM:
+    if (
+        provider
+        and not pending
+        and not foreign_mandate
+        and subscription.plan is not SubscriptionPlan.PLATINUM
+    ):
         if ours and subscription.auto_renew:
             actions.append("CANCEL")
         if not subscription.auto_renew or ours:

@@ -299,12 +299,17 @@ async def test_foreign_account_unknown_ids_auth_and_disabled_adapter(state):
     pg, _, _, _, provider, client, config = state
     response = await post(state, await body(state))
     operation_id = UUID(response.json()["id"])
+    from prettylisavpn.subscriptions.repository import SubscriptionRepository
     from prettylisavpn.users.repository import UserRepository
     from prettylisavpn.users.service import UserService
-    from prettylisavpn.subscriptions.repository import SubscriptionRepository
+
     async with pg.session() as session, session.begin():
-        other_user = await UserService(UserRepository(session), SubscriptionRepository(session)).create(f"billing-other-{uuid4()}@example.com")
-        other_device = await DeviceService(DeviceRepository(session)).register(other_user.id, uuid4(), DevicePlatform.ANDROID, "Foreign billing account")
+        other_user = await UserService(
+            UserRepository(session), SubscriptionRepository(session)
+        ).create(f"billing-other-{uuid4()}@example.com")
+        other_device = await DeviceService(DeviceRepository(session)).register(
+            other_user.id, uuid4(), DevicePlatform.ANDROID, "Foreign billing account"
+        )
     other, device, node = other_user.id, other_device.id, uuid4()
     try:
         async with pg.session() as session, session.begin():
@@ -427,6 +432,114 @@ async def test_provider_replacement_does_not_send_pending_operations_to_wrong_ad
     replacement = TestBillingProvider()
     replacement.name = "other-sandbox-provider"
     await due(state[0], operation_id)
-    result = await BillingOperationsService(state[0], state[3], replacement).get(state[2], operation_id)
+    result = await BillingOperationsService(state[0], state[3], replacement).get(
+        state[2], operation_id
+    )
     assert result.status == "PENDING" and replacement.calls == []
     assert (await overview(state))["pending_operation_id"] == str(operation_id)
+
+
+async def test_renewal_and_cancellation_race_admits_only_one_without_early_state_change(state):
+    state[4].outcome = "SUCCEEDED"
+    assert (await post(state, await body(state))).json()["status"] == "SUCCEEDED"
+    before = await overview(state)
+    cancel, renew = await body(state, "CANCEL"), await body(state, "RENEW")
+    state[4].outcome = "PENDING"
+    responses = await asyncio.gather(post(state, cancel), post(state, renew))
+    assert sorted(r.status_code for r in responses) == [200, 409]
+    after = await overview(state)
+    assert after["paid_until"] == before["paid_until"]
+    assert after["auto_renew"] and after["current_price"] == before["current_price"]
+    assert len(state[4].ledger) == 2
+
+
+async def test_new_purchase_after_expiry_keeps_previous_contract_history(state):
+    import copy
+
+    pg, user, _, _, provider, _, _ = state
+    provider.outcome = "SUCCEEDED"
+    first = await post(state, await body(state))
+    old_id = UUID(first.json()["id"])
+    async with pg.session() as session:
+        catalog = await session.get(BillingCatalogRecord, 1)
+        original, revision, timestamp = catalog.document, catalog.revision, catalog.updated_at
+    changed = copy.deepcopy(original)
+    changed["entries"][0]["offer"]["id"] = str(uuid4())
+    changed["entries"][0]["offer"]["prices"]["RUB"]["amount_minor"] = 20000
+    try:
+        async with pg.session() as session, session.begin():
+            await session.execute(
+                update(SubscriptionRecord)
+                .where(SubscriptionRecord.user_id == user)
+                .values(
+                    current_period_start=datetime.now(UTC) - timedelta(days=40),
+                    current_period_end=datetime.now(UTC) - timedelta(seconds=1),
+                    updated_at=datetime.now(UTC),
+                )
+            )
+        await publish_catalog(pg, Catalog.model_validate(changed), revision)
+        assert (await overview(state))["plan"] == "FREE"
+        second = await post(state, await body(state))
+        assert second.json()["status"] == "SUCCEEDED"
+        assert (await overview(state))["current_price"]["amount_minor"] == 20000
+        async with pg.session() as session:
+            old = await session.get(BillingContractRecord, old_id)
+            new = await session.get(BillingContractRecord, UUID(second.json()["id"]))
+            assert old.amount_minor == 19900 and new.amount_minor == 20000
+            assert old.id != new.id
+    finally:
+        async with pg.session() as session, session.begin():
+            await session.execute(
+                update(BillingCatalogRecord)
+                .where(BillingCatalogRecord.id == 1)
+                .values(document=original, revision=revision, updated_at=timestamp)
+            )
+
+
+async def test_disabled_http_adapter_reads_saved_operation_but_cannot_start_another(state):
+    pending = await post(state, await body(state))
+    config, pg = state[6], state[0]
+    app = create_app(
+        config, postgres=pg, valkey=AsyncMock(), product_events=AsyncMock(),
+        support_worker=AsyncMock(),
+    )
+    data = await body(state)
+    async with app.router.lifespan_context(app), AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        headers = {"Authorization": "Bearer " + state[2]}
+        response = await client.post("/billing/operations", headers=headers, json=data)
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "BILLING_DISABLED"
+        assert response.headers["Cache-Control"] == "no-store"
+        saved = await client.get(
+            "/billing/operations/" + pending.json()["id"], headers=headers
+        )
+        assert saved.status_code == 200 and saved.json() == pending.json()
+        assert set(saved.json()) == {"id", "status", "redirect_url"}
+        assert (await client.get("/billing/operations/not-a-uuid", headers=headers)).status_code == 422
+        assert (await client.get("/billing/operations/" + str(uuid4()), headers=headers)).status_code == 404
+        assert (await client.post("/billing/operations", json=data)).status_code == 401
+
+
+async def test_admission_rollback_does_not_call_provider(state, monkeypatch):
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    data = await body(state)
+    original = AsyncSession.flush
+
+    async def reject_operation(self, *args, **kwargs):
+        if any(isinstance(row, BillingOperationRecord) for row in self.new):
+            raise SQLAlchemyError("Admission commit failed")
+        return await original(self, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(AsyncSession, "flush", reject_operation)
+        response = await post(state, data)
+    assert response.status_code == 503
+    assert state[4].calls == [] and state[4].ledger == {}
+    async with state[0].session() as session:
+        assert await session.scalar(
+            select(func.count()).select_from(BillingOperationRecord)
+            .where(BillingOperationRecord.user_id == state[1])
+        ) == 0
