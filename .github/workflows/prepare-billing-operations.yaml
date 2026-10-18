@@ -1,0 +1,78 @@
+name: Billing operations preparation
+on:
+  push:
+    branches: [cloud/prepare-billing-operations]
+    paths: [.github/workflows/prepare-billing-operations.yaml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_URL: postgresql+asyncpg://prettylisa:ci-only@127.0.0.1:5432/prettylisa
+      VALKEY_URL: redis://127.0.0.1:6379/0
+      OTP_HMAC_SECRET: ci-only-otp-hmac-secret-at-least-32-characters
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prettylisa
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: prettylisa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prettylisa -d prettylisa"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "0.12.9"
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: Format and lint
+        working-directory: backend
+        run: |
+          uv run ruff format .
+          uv run ruff check --fix .
+          uv run ruff format .
+      - name: Types
+        if: always()
+        working-directory: backend
+        run: uv run mypy
+      - name: Unit tests
+        if: always()
+        working-directory: backend
+        run: uv run pytest -m "not integration and not docker"
+      - name: Migration and billing integration
+        if: always()
+        working-directory: backend
+        env:
+          RUN_INTEGRATION_TESTS: "1"
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run pytest tests/test_billing_integration.py tests/test_billing_operations_integration.py
+      - name: Return formatted sources
+        if: always()
+        run: |
+          python - <<'PYTHON'
+          import json, base64, subprocess
+          from pathlib import Path
+          for p in subprocess.check_output(['git','diff','--name-only'],text=True).splitlines():
+              if Path(p).is_file():
+                  print('OPS_PREP_FILE '+json.dumps({'path':p,'content':base64.b64encode(Path(p).read_bytes()).decode()}))
+          PYTHON

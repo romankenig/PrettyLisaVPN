@@ -166,7 +166,7 @@ def test_http_overview_is_private_read_only_and_uses_stable_errors(error, status
         else:
             assert "private" not in response.text
         assert client.get("/billing/overview").status_code == 401
-        assert client.post("/billing/operations", json={"action": "SUBSCRIBE"}).status_code == 404
+        assert client.post("/billing/operations", json={"action": "SUBSCRIBE"}).status_code == 422
 
 
 def test_group_and_date_selection_is_exclusive_and_has_no_cross_group_fallback():
