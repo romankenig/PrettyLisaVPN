@@ -1,5 +1,16 @@
 # Backend: продолжение работы из Cloud — 2026-10-17
 
+## Development sandbox — задача backend 0.8.0
+
+Исходная версия 0.7.0 → 0.8.0, Windows unchanged 0.10.0; миграция 0025
+добавляет постоянные тестовые receipts/events. HTTP-контракт совместим, обычный
+runtime по умолчанию disabled. Настройка и восстановление описаны в
+[billing-sandbox.md](billing-sandbox.md). Изменения готовятся от develop
+`0fb3a42a61d95fae2b086bfe1397642b380784e7`; проверяемые product/build SHA,
+run/attempt и артефакты будут в task PR. Deploy этой задачи пока не выполнен.
+Реальный платёжный provider не подключается. Не откатывать/удалять журналы
+0024/0025 при откате приложения; PENDING требует прежнего адаптера.
+
 ## Проверка SSH и готовности rollback — 2026-10-18
 
 Владелец разрешил использовать существующие development SSH secrets Actions для

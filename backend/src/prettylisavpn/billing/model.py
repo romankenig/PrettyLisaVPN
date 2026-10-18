@@ -142,3 +142,29 @@ class BillingOperationRecord(Base):
     last_error: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SandboxPaymentRecord(Base):
+    """Independent simulated provider receipt, committed before local settlement."""
+
+    __tablename__ = "billing_sandbox_payments"
+    operation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("billing_operations.id", ondelete="CASCADE"), primary_key=True
+    )
+    request: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    result: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+
+
+class SandboxNotificationRecord(Base):
+    __tablename__ = "billing_sandbox_notifications"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('SUCCEEDED', 'FAILED', 'CANCELED')",
+            name="ck_billing_sandbox_notifications_status",
+        ),
+    )
+    event_id: Mapped[UUID] = mapped_column(primary_key=True)
+    operation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("billing_sandbox_payments.operation_id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False)

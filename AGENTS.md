@@ -153,3 +153,8 @@ Idempotency keys and immutable quotes belong to the account. Unknown provider ou
 must stay PENDING and reuse the same provider operation UUID; never create a new charge
 on timeout or idempotency-window expiry. Keep provider adapters for their pending rows.
 Read docs/subscriptions-ui.md before changing settlement, contract prices or cancellation.
+
+Development sandbox task: backend 0.8.0, migration 0025; Windows unchanged 0.10.0.
+Read docs/billing-sandbox.md. BILLING_PROVIDER defaults to disabled; sandbox requires
+exact development/test environment. Server-only notification CLI never charges money.
+Keep provider receipts/event deduplication until pending operations are settled.

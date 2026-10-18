@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.8.0 (Windows unchanged: 0.10.0)
+
+- Added: opt-in development/test payment adapter with PostgreSQL receipts and
+  deduplicated notifications (migration 0025). Default billing remains disabled.
+- Added: server-only CLI for delayed success, decline and payment cancellation;
+  conflicting events cannot replace terminal receipts or settle a payment twice.
+- Added: tests for subscription/renewal/cancellation, notification races, lost
+  responses, settlement rollback and recovery with fresh database pools.
+- No payment SDK, external payment service, credentials, public simulation controls
+  or real charges. Enable only on an isolated development database; see
+  docs/billing-sandbox.md and the task PR for actual validation status.
+
 ### Backend — 0.7.0 (Windows unchanged: 0.10.0)
 
 - Added: private billing POST/status endpoints, account-scoped persistent idempotency,
