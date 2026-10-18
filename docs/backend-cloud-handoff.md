@@ -208,3 +208,24 @@ development build SHA/run/attempt фиксируются в PR этой зада
 actions=[], payment_operations_available=false, operations endpoints отсутствуют.
 Для будущих платежей остаются provider adapter/credentials, webhook confirmation,
 идемпотентность, подтверждённые mandates и атомарный вызов lock_contract_price.
+
+
+## Billing operations — backend 0.6.0 → 0.7.0; Windows unchanged 0.10.0
+
+Миграция 0024, POST /billing/operations и GET /billing/operations/{id}. Durable
+account-scoped keys, immutable quotes, частичный unique pending index, leased/fenced
+provider reconciliation и append-only подтверждённые договоры. Существующие снимки
+0023 не удаляются. Live provider/credentials не подключены: новые операции в обычном
+runtime получают BILLING_DISABLED; статусы и повторы уже принятых запросов читаются
+из PostgreSQL. Внешние/локальные неопределённые сбои остаются PENDING с тем же UUID.
+Контракт adapter и закрытая сверка SUBSCRIPTION_CHANGED: docs/subscriptions-ui.md.
+
+Проверки на тестовом provider используют изолированный ledger, настоящий PostgreSQL,
+JWT/HTTP, гонки, crash/timeout/DB rollback, price revisions и подтверждение mandate.
+Это не банковские списания. Точный проверенный HEAD, все CI runs/jobs, build SHA и
+фактический development deploy/smoke после завершения фиксируются в PR этой задачи.
+Для application rollback сохранять схему 0024/ключи/договоры. Downgrade уничтожает
+финансовую историю/возможность идемпотентного восстановления и не является безопасным
+rollback данных. Если остаются PENDING, сохранять совместимый reconciler и adapter:
+старый backend 0.6.0 не умеет продолжать новые операции, поэтому предпочтителен
+совместимый forward fix. Ни реальный платёж, ни live-provider webhook не включены.

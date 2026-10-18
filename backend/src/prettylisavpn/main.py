@@ -30,8 +30,11 @@ from prettylisavpn.auth.session_service import (
     AuthenticatedSessionHandler,
     AuthenticatedSessionService,
 )
+from prettylisavpn.billing.operations import BillingOperationsService
+from prettylisavpn.billing.provider import BillingProvider, validate_provider
 from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
+from prettylisavpn.billing.worker import BillingWorkerPort
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
@@ -136,7 +139,10 @@ def create_app(
     support_mailer: SupportMailPort | None = None,
     support_worker: SupportWorkerPort | None = None,
     billing: BillingOverviewPort | None = None,
+    billing_provider: BillingProvider | None = None,
+    billing_worker: BillingWorkerPort | None = None,
 ) -> FastAPI:
+    validate_provider(billing_provider)
     config = settings if settings is not None else Settings()
     configure_logging(config.log_level)
 
@@ -190,7 +196,14 @@ def create_app(
                 app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    billing_provider,
                 )
+                app.state.billing_operations = BillingOperationsService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    billing_provider,
+                )
+                active_billing_worker = billing_worker or app.state.billing_operations.worker
                 app.state.support = SupportService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
@@ -283,11 +296,18 @@ def create_app(
                     if isinstance(pg, Postgres)
                     else None
                 )
+                billing_task = (
+                    asyncio.create_task(active_billing_worker.run(monitor_stop))
+                    if billing_provider is not None and isinstance(pg, Postgres)
+                    else None
+                )
                 logger.info("application_started")
                 try:
                     yield
                 finally:
                     monitor_stop.set()
+                    if billing_task is not None:
+                        await billing_task
                     if support_task is not None:
                         await support_task
                     if monitor_task is not None:

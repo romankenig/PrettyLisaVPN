@@ -145,3 +145,11 @@ Billing overview task: backend 0.6.0, Windows 0.10.0, migration 0023. Read
 RUB/USD offers are PostgreSQL-owned; confirmed contract prices are immutable and
 never backfilled from current offers. GET is implemented; provider/payment operations
 remain disabled (actions=[]). Temporary prices were explicitly authorized by owner.
+
+
+Billing operations task: backend 0.7.0, migration 0024; Windows unchanged 0.10.0.
+POST/GET operations and durable recovery are implemented; live provider stays disabled.
+Idempotency keys and immutable quotes belong to the account. Unknown provider outcomes
+must stay PENDING and reuse the same provider operation UUID; never create a new charge
+on timeout or idempotency-window expiry. Keep provider adapters for their pending rows.
+Read docs/subscriptions-ui.md before changing settlement, contract prices or cancellation.

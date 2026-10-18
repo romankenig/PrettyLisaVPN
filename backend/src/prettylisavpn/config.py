@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.6.0", min_length=1)
+    application_version: str = Field(default="0.7.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     postgres_url: SecretStr = SecretStr(
