@@ -93,20 +93,25 @@ class CurrentPrice(StrictModel):
     currency: Literal["RUB", "USD"]
 
 
+class PaymentMethod(StrictModel):
+    provider: str
+    label: str
+
+
 class Overview(StrictModel):
     revision: str
-    pending_operation_id: None = None
+    pending_operation_id: UUID | None = None
     plan: SubscriptionPlan
     status: Literal["FREE", "ACTIVE", "CANCELED", "EXPIRED"]
     paid_until: datetime | None
     auto_renew: bool
     current_price: CurrentPrice | None = None
-    payment_method: None = None
+    payment_method: PaymentMethod | None = None
     offers: list[Offer]
     actions: list[Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]] = Field(
-        default_factory=list, max_length=0
+        default_factory=list
     )
-    payment_operations_available: Literal[False] = False
+    payment_operations_available: bool = False
 
 
 def overview_for(
@@ -118,6 +123,10 @@ def overview_for(
     group_id: UUID = DEFAULT_GROUP_ID,
     current_price: CurrentPrice | None = None,
     contract_offer: Offer | None = None,
+    pending_id: UUID | None = None,
+    actions: list[Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]] | None = None,
+    payment_method: PaymentMethod | None = None,
+    operations_available: bool = False,
 ) -> Overview:
     effective_plan = subscription.effective_plan(at)
     paid = effective_plan is not SubscriptionPlan.FREE
@@ -137,6 +146,10 @@ def overview_for(
         offers = catalog.offers_for(group_id, at)
     snapshot = Overview(
         revision="pending",
+        pending_operation_id=pending_id,
+        actions=actions or [],
+        payment_method=payment_method,
+        payment_operations_available=operations_available,
         plan=effective_plan,
         status=status,
         paid_until=subscription.current_period_end

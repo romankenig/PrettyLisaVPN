@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Backend — 0.7.0 (Windows unchanged: 0.10.0)
+
+- Added: private billing POST/status endpoints, account-scoped persistent idempotency,
+  immutable quotes, price-revision admission and one pending operation per account.
+- Added: replaceable sandbox provider port and leased/fenced durable reconciliation,
+  including recovery from accepted-but-lost responses and local transaction failures.
+- Added: append-only confirmed contracts and verified mandate/cancellation application;
+  renewal preserves fixed prices and extends the paid period exactly once (migration 0024).
+- Safety: no live adapter, credentials or real charges enabled; default new requests
+  return BILLING_DISABLED. Test provider runs only under explicit test injection.
+- Compatibility, uncertainty/manual reconciliation and actual validation/deploy evidence:
+  docs/subscriptions-ui.md and task PR.
+
+
 ### Backend — 0.6.0 / Windows — 0.10.0
 
 - Added: authenticated read-only billing overview, stable cross-device revisions

@@ -120,7 +120,7 @@ async def test_auth_account_scope_cross_device_and_no_payment_side_effects(billi
             json={"action": "SUBSCRIBE"},
             headers={"Authorization": "Bearer " + token},
         )
-    ).status_code == 404
+    ).status_code == 422
     assert (
         await client.get(
             f"/billing/operations/{uuid4()}", headers={"Authorization": "Bearer " + token}
