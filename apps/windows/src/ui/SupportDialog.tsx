@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import {
   useEffect,
   useMemo,
@@ -24,6 +25,7 @@ export function SupportDialog({
   readonly backend: string;
   readonly onClose: () => void;
 }) {
+  useLanguage();
   const { session, vpnConnection, support } = useApplication();
   const active = useSyncExternalStore(
     session.subscribe,
@@ -176,11 +178,11 @@ export function SupportDialog({
       }}
     >
       <header className="support-dialog-heading">
-        <h2 id="support-dialog-title">помощь и поддержка</h2>
+        <h2 id="support-dialog-title">{t("помощь и поддержка")}</h2>
         <button
           type="button"
           className="support-close"
-          aria-label="закрыть обращение"
+          aria-label={t("закрыть обращение")}
           onClick={onClose}
         >
           ×
@@ -188,19 +190,25 @@ export function SupportDialog({
       </header>
       {receipt ? (
         <div className="support-receipt" role="status">
-          <h3>обращение принято</h3>
-          <p>адрес для ответа: {email}</p>
-          <p>номер: {receipt.request_id}</p>
+          <h3>{t("обращение принято")}</h3>
           <p>
-            {
+            {t("адрес для ответа: ")}
+            {email}
+          </p>
+          <p>
+            {t("номер: ")}
+            {t(receipt.request_id)}
+          </p>
+          <p>
+            {t(
               {
                 ACCEPTED: "обращение сохранено и ожидает отправки письма",
                 RETRYING: "отправка письма будет повторена",
                 SENT: "почтовый сервер принял письмо",
                 FAILED: "письмо пока не отправлено; обращение сохранено",
                 EXPIRED: "срок хранения содержимого истёк",
-              }[receipt.status ?? "ACCEPTED"]
-            }
+              }[receipt.status ?? "ACCEPTED"],
+            )}
           </p>
           {support?.getStatus ? (
             <button
@@ -233,19 +241,19 @@ export function SupportDialog({
                   });
               }}
             >
-              проверить статус
+              {t("проверить статус")}
             </button>
           ) : null}
-          {error ? <p role="alert">{error}</p> : null}
+          {error ? <p role="alert">{t(error)}</p> : null}
           <button type="button" onClick={onClose}>
-            готово
+            {t("готово")}
           </button>
         </div>
       ) : (
         <form onSubmit={(event) => void submit(event)} noValidate>
           <div className="support-fields">
             <label>
-              тема
+              {t("тема")}
               <input
                 name="subject"
                 autoFocus
@@ -254,11 +262,11 @@ export function SupportDialog({
                 value={subject}
                 disabled={pending || frozen}
                 onChange={(event) => setSubject(event.target.value)}
-                placeholder="кратко о проблеме"
+                placeholder={t("кратко о проблеме")}
               />
             </label>
             <label>
-              описание проблемы
+              {t("описание проблемы")}
               <textarea
                 name="description"
                 maxLength={4000}
@@ -266,11 +274,11 @@ export function SupportDialog({
                 value={description}
                 disabled={pending || frozen}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="что произошло и что вы ожидали"
+                placeholder={t("что произошло и что вы ожидали")}
               />
             </label>
             <label>
-              email для ответа
+              {t("email для ответа")}
               <input
                 name="reply_email"
                 type="email"
@@ -285,11 +293,11 @@ export function SupportDialog({
           </div>
           <div className="support-attachments">
             <label className="support-file-label">
-              прикрепить скриншоты
+              {t("прикрепить скриншоты")}
               <input
                 type="file"
                 className="visually-hidden"
-                aria-label="прикрепить скриншоты"
+                aria-label={t("прикрепить скриншоты")}
                 accept="image/png,image/jpeg,image/webp"
                 multiple
                 disabled={pending || frozen || checkingFiles}
@@ -301,7 +309,7 @@ export function SupportDialog({
               />
             </label>
             <span>
-              до 3 файлов · PNG, JPEG, WebP · до 5 МБ каждый, 10 МБ всего
+              {t("до 3 файлов · PNG, JPEG, WebP · до 5 МБ каждый, 10 МБ всего")}
             </span>
             {screenshots.length ? (
               <ul>
@@ -311,7 +319,7 @@ export function SupportDialog({
                     <button
                       type="button"
                       disabled={pending || frozen || checkingFiles}
-                      aria-label={`убрать ${file.name}`}
+                      aria-label={t(`убрать ${file.name}`)}
                       onClick={() =>
                         setScreenshots(
                           screenshots.filter(
@@ -337,50 +345,55 @@ export function SupportDialog({
                   setIncludeDiagnostics(event.target.checked)
                 }
               />
-              приложить технические данные
+              {t("приложить технические данные")}
             </label>
             {includeDiagnostics ? (
               <details>
-                <summary>что будет приложено</summary>
+                <summary>{t("что будет приложено")}</summary>
                 <pre>
-                  {JSON.stringify(
-                    frozen ? attempt.current?.diagnostics : diagnostics,
-                    null,
-                    2,
+                  {t(
+                    JSON.stringify(
+                      frozen ? attempt.current?.diagnostics : diagnostics,
+                      null,
+                      2,
+                    ),
                   )}
                 </pre>
               </details>
             ) : null}
           </div>
           {!support ? (
-            <p className="support-unavailable">отправка пока недоступна</p>
+            <p className="support-unavailable">
+              {t("отправка пока недоступна")}
+            </p>
           ) : null}
           {!active ? (
             <p className="support-unavailable">
-              войдите в аккаунт для отправки
+              {t("войдите в аккаунт для отправки")}
             </p>
           ) : null}
           {error ? (
             <p className="support-error" role="alert">
-              {error}
+              {t(error)}
             </p>
           ) : null}
           {frozen && !pending ? (
             <p>
-              результат неизвестен. повтор проверит исходное обращение; поля
-              временно заблокированы
+              {t(
+                "результат неизвестен. повтор проверит исходное обращение; поля временно заблокированы",
+              )}
             </p>
           ) : null}
-          <p>закрытие окна не отменяет уже принятое обращение</p>
+          <p>{t("закрытие окна не отменяет уже принятое обращение")}</p>
           <footer className="support-actions">
             <button type="button" className="support-cancel" onClick={onClose}>
-              отмена
+              {t("отмена")}
             </button>
             <button
               type="submit"
               disabled={pending || checkingFiles || !support || !active}
             >
-              {pending ? "отправляем…" : "отправить"}
+              {t(pending ? "отправляем…" : "отправить")}
             </button>
           </footer>
         </form>

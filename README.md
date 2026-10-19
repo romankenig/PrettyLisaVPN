@@ -126,7 +126,9 @@ docs/                Инструкции настройки и эксплуат
 ## Android-клиент
 
 [Android 0.1.0](apps/android/README.md) — Kotlin/Jetpack Compose каркас с Gradle,
-debug APK, тремя вкладками и GitHub Actions для сборки и эмуляторов API 26/35.
+debug APK, тремя вкладками и GitHub Actions для сборки и эмуляторов API 26/35/36.
 Зафиксированы карты Windows-экранов/API/дизайна/native и
 [план переноса](docs/android-porting-plan.md). API/VPN runtime пока не подключены;
-backend и код Windows на этом этапе не меняются. Результаты CI — в task PR.
+backend и код Windows на этом этапе не меняются. Эталон переноса — Windows 0.12.0;
+его [шесть языков](docs/android-localization.md) включены в следующий UI-этап,
+но в Android 0.1.0 пока отсутствуют. Результаты CI — в task PR.

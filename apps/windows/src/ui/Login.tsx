@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
@@ -11,6 +12,7 @@ type FormState =
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function Login() {
+  useLanguage();
   const { api } = useApplication();
   const navigate = useNavigate();
   const request = useRef<AbortController | null>(null);
@@ -49,8 +51,8 @@ export function Login() {
   const submitting = state.phase === "submitting";
   return (
     <section className="auth-page" aria-labelledby="login-title">
-      <h1 id="login-title">вход по email</h1>
-      <p className="auth-intro">отправим одноразовый код</p>
+      <h1 id="login-title">{t("вход по email")}</h1>
+      <p className="auth-intro">{t("отправим одноразовый код")}</p>
       <form
         className="auth-card"
         onSubmit={(event) => void submit(event)}
@@ -77,15 +79,15 @@ export function Login() {
           }}
         />
         <p id="login-help" className="field-help">
-          Используйте адрес, к которому у вас есть доступ
+          {t("Используйте адрес, к которому у вас есть доступ")}
         </p>
         {state.phase === "error" ? (
           <p id="login-error" className="form-error" role="alert">
-            {state.message}
+            {t(state.message)}
           </p>
         ) : null}
         <button className="primary-button" type="submit" disabled={submitting}>
-          {submitting ? "отправляем…" : "продолжить"}
+          {t(submitting ? "отправляем…" : "продолжить")}
         </button>
       </form>
     </section>

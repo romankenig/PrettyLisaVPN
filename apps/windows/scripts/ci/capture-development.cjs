@@ -229,7 +229,7 @@ async function main() {
   }, account.credential);
   await page.reload();
   await page.getByText(account.email, { exact: true }).waitFor();
-  await page.getByRole("combobox").waitFor();
+  await page.locator(".location-trigger").waitFor();
   await page.waitForFunction(() => {
     const location = window.document.querySelector(".current-location");
     return location && !location.textContent.includes("определяем…");

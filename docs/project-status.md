@@ -1,20 +1,21 @@
 # Текущее состояние PrettyLisaVPN
 
 Срез на **2026-10-19**, исходный `develop`:
-`090dd4117fb829f6faad1853cba5ae577c8837aa`.
-Windows **0.11.1**, backend **0.10.0**, последняя миграция **0026**
+`78f59991761b93bd176326c901829ee49cbdd9a4` (Windows PR #21).
+Windows **0.12.0**, backend **0.10.0**, последняя миграция **0026**
 (`0026_sandbox_mandates`). Обновление этой документации — version unchanged.
 Срез описывает реализацию и зафиксированные проверки, а не непрерывную доступность
 внешних сервисов или готовность всего продукта к production.
 
-## Начальный Android-клиент — 0.1.0
+## Начальный Android-клиент — 0.1.0 / PR #20
 
-Создан Kotlin/Jetpack Compose каркас в [apps/android](../apps/android/README.md):
-независимая версия 0.1.0/code 1, Gradle, debug APK, три вкладки, тема/Rubik/логотип.
-Workflow Android debug проверяет APK текущего checkout на эмуляторах API 26/35/36;
-точные результаты, SHA/run/attempt и артефакты публикуются в task PR после CI.
-Это не подтверждение API/VPN-приёмки: сетевых интеграций, VPN runtime и платежей
-в Android пока нет. Windows/backend/schema не менялись.
+В открытом [PR #20](https://github.com/romankenig/PrettyLisaVPN/pull/20) подготовлен
+Kotlin/Jetpack Compose каркас: Gradle, debug APK текущего SHA, три вкладки,
+Back/recreation и Rubik/логотип. Версия **0.1.0 / code 1**, CI API **26/35/36**.
+API/auth/VPN, платежи и выбор языка ещё отсутствуют; текущие UI resources русские.
+Нельзя считать готовую локализацию Windows реализацией той же функции на Android.
+Новая docs-only актуализация не повышает версию и не меняет Android runtime.
+Точные source/build SHA, run/attempt, CI и APK/evidence — в PR.
 
 ## Что реализовано
 
@@ -91,16 +92,17 @@ Workflow Android debug проверяет APK текущего checkout на э�
 Последние пункты — backlog развития и эксплуатации, а не утверждение об отсутствии
 уже реализованных API и не новый обязательный контракт Windows MVP.
 
-## Android: архитектура и следующие этапы
+## Android: следующий этап после Windows 0.12.0
 
-От Windows 0.11.1 на develop `69ab8d1d3d3c5680fc72bb23980776242606a104`
-подготовлены [архитектура Kotlin/Compose](android-architecture.md) и
-[план переноса](android-porting-plan.md): экраны, API, мобильные токены,
-native ports, VPN runtime/transport gates и этапы приёмки. Первый каркас Android
-0.1.0 описан выше; API/VPN ещё не реализованы, backend/Windows не меняются.
-Support diagnostics Android ограничены текущим WINDOWS-only schema (разрешён
-`diagnostics=null`); OpenVPN/MASQUE и legacy wrappers не объявляются рабочими
-на Android по наличию Windows descriptors.
+[Архитектура](android-architecture.md) и [план переноса](android-porting-plan.md)
+актуализированы по develop `78f59991761b93bd176326c901829ee49cbdd9a4`.
+Приоритет — мобильная тема/навигация и [локализация](android-localization.md):
+шесть языков, English default, сохраняемый ручной выбор и безопасный RU auto-origin
+на fixtures. Затем экраны, auth/API, VPN runtime spike и реальная приёмка.
+Рекомендуемая следующая продуктовая версия 0.2.0/code 2 пока не реализована.
+Support diagnostics по-прежнему `null` при WINDOWS-only schema; платежи read-only
+без LIVE provider. Профили/first-candidate/cleanup и остальные backend gates не
+изменились после Windows 0.12.0. Новых backend endpoints для языка не требуется.
 
 ## Подробности
 
@@ -111,3 +113,11 @@ Support diagnostics Android ограничены текущим WINDOWS-only sch
   [OTP runbook](stage-2-acceptance.md), [WireGuard runtime](windows-wireguard-runtime.md).
 - [Текущий handoff и журнал](backend-cloud-handoff.md),
   [development deployment](../infra/deployment/README.md).
+
+## Windows: локализация — 0.12.0
+
+[Шесть языков интерфейса](windows-localization.md): выбор в sidebar, English по
+умолчанию, RU по подтверждённой локации до VPN; сохранённый ручной выбор имеет
+приоритет. Полные UI-каталоги, locale-aware даты/цены/страны, технические имена
+сохранены. Версия Windows повышена с 0.11.1 до 0.12.0; backend/schema unchanged.
+Точные CI/native screenshots текущего SHA и ограничения приёмки публикуются в PR.

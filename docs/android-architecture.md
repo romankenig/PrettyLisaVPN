@@ -4,10 +4,15 @@
 **0.1.0** реализован в `apps/android`: Gradle, Compose, три вкладки и CI.
 [Сборка, текущие ограничения и проверка на эмуляторах](../apps/android/README.md).
 Остальные разделы описывают целевую архитектуру; API/VPN ещё не реализованы.
-Аудит 2026-10-19, `develop` **69ab8d1d3d3c5680fc72bb23980776242606a104**:
-Windows **0.11.1**, backend **0.10.0**, schema **0026**. В `apps/android` до этой
-задачи был только `.gitkeep`. Backend, Windows и инфраструктура не изменяются.
-Версии независимы: Android начинает с 0.1.0; Windows/backend unchanged. [Этапы переноса](android-porting-plan.md).
+Первоначальный аудит: 2026-10-19, Windows **0.11.1** на develop
+`69ab8d1d3d3c5680fc72bb23980776242606a104`. Актуальный эталон переноса —
+Windows **0.12.0**, develop **78f59991761b93bd176326c901829ee49cbdd9a4**, после
+[PR #21](https://github.com/romankenig/PrettyLisaVPN/pull/21).
+Backend **0.10.0**, schema **0026** не изменились. Android остаётся **0.1.0 / code 1**:
+обновление плана не добавляет ему API, VPN или языки интерфейса.
+[Локализация и точная дельта 0.12.0](android-localization.md),
+[этапы переноса](android-porting-plan.md). Backend, Windows и инфраструктуру
+в рамках Android-переноса не меняем; версии платформ независимы.
 
 ## 1. Решение и границы повторного использования
 
@@ -49,6 +54,7 @@ Gradle-модулей:
 app/.../prettylisavpn/
   app/                 Application, DI composition, Activity, navigation
   core/design/         PrettyLisaTheme, tokens, reusable Compose components
+  core/localization/   LanguageRepository, LocaleController, locale mapping
   core/network/        DTO/serialization, API clients, stable error mapping
   core/storage/        credential vault, installation ID, preferences
   domain/              SessionCoordinator, ConnectionCoordinator, policies/ports
@@ -94,6 +100,7 @@ suffix `.dev`; namespace и signing identity подтвердить при boots
 | `/auth/verify-otp`, OtpVerification | Auth.Otp | 6 цифр, paste, countdown resend, invalid/expired/rate limit; Back → email, проверка очистки кода; успешный вход очищает auth back stack |
 | `/`, Home | Main.Home | Сводка аккаунта, тариф/устройства, страна, CONNECT/status, локация, режим трафика; карточки вертикально, не масштабировать две desktop-колонки |
 | ConnectionLocationSelector | CountryPicker sheet | Autopilot, top-3 и полный список по Windows policy; качество из API, недоступные страны disabled; stale snapshot не выдавать за свежий |
+| LanguageSelector | Settings.Language + auth/startup language control | Флаг + English/native names; compact bottom sheet вместо desktop sidebar; доступно до входа, 6 языков и сохранение выбора по [контракту](android-localization.md) |
 | CurrentLocation | Home.PublicLocation | Loading/result/error/retry, без запроса GPS; отдельно от выбранной страны и статуса VPN |
 | ConnectionInfo | ConnectionDetails sheet | Показать только фактические проверенные параметры активного runtime, неизвестные не выдумывать |
 | TrafficMode | Home.TrafficMode card | «весь трафик» активен; оба выборочных режима disabled/«скоро», без Android-specific split tunneling в первом переносе |
@@ -172,6 +179,29 @@ status/navigation bars, IME insets, TalkBack, ≥48dp targets, контраст,
 Для обязательного текста ориентир ≥4.5:1, для крупного ≥3:1; Dusty Gray не применять
 к обязательной информации на Mercury, если контраст недостаточен. Палитру не менять:
 выбирать подходящую семантическую пару, например Scorpion на светлой карточке.
+
+### Локализация Windows 0.12.0 → Android
+
+Шесть языков теперь входят в обязательный UI-паритет: English по умолчанию,
+Russian при подтверждённой исходной RU-локации до VPN, явный выбор с приоритетом.
+Текущее `values/strings.xml` каркаса русское; это ограничение 0.1.0, а не целевой
+продуктовый default. До API/VPN этапов требуется offline English и ручной выбор.
+Geo-автовыбор подключается позже через public-location/runtime ports и сначала
+проверяется fixtures; отсутствие готового geo/runtime не заменять языком ОС.
+
+Использовать Android string/plural resources, параметризованные сообщения и
+LocaleController с AndroidX per-app locales; не переносить React hooks/JSON lookup
+как runtime-механизм. Политика выбора живёт вне Activity и аккаунта. Recreation
+не должна перезапускать auth/VPN операции. Для API 33+ необходимо согласовать
+системный выбор языка с явным приложенческим предпочтением; пустая locale list,
+означающая Follow OS, не реализует требуемый English default.
+
+Rubik сохраняется; CJK использует проверенный Android font fallback. Флаги —
+лицензированные vector assets, не emoji. Все состояния, accessibility, notifications
+и форматирование принадлежащего приложению UI локализуются; бренд, протоколы,
+прежние английские подписи и пользовательский/авторский контент сохраняются.
+Политика, список языков, мобильное размещение и проверки — в
+[android-localization.md](android-localization.md).
 
 ## 5. API-карта: существующий backend без изменений
 
@@ -380,6 +410,8 @@ allowBypass/allowFamily(AF_INET6) для удобства. При невозмо
   Keystore wrapping key, CAS и account generation. Исключить credentials, VPN keys,
   installation identity и pending secret payloads из Android backup/device transfer.
 - DataStore только для несекретных настроек (страна, валюта, UI), scoped по аккаунту.
+  Исключение: язык и маркер явного выбора относятся к установке приложения и не
+  сбрасываются при logout/смене аккаунта; не помещать их в credential vault.
   Billing/support request UUID и snapshot сохранять до неоднозначной операции;
   черновики поддержки/файлы ограничены private storage и сроком хранения.
 - Private key/OTP/refresh/HTTP bodies и URI вложений не попадают в logs, crash

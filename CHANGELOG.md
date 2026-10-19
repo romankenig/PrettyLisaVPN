@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Android — план под Windows 0.12.0, version unchanged
+
+- Эталон переноса обновлён до develop 78f5999 после Windows PR #21; история
+  Windows 0.12.0 и начального Android 0.1.0 сохранена без изменения runtime.
+- Добавлены требования шести языков, мобильного размещения выбора, English/RU
+  auto-origin, хранения и проверки locale/гео/VPN races; локализация ещё не реализована.
+- Обновлены архитектура, этапы, ближайший промпт и handoff PR #20.
+- Android 0.1.0/code 1, Windows 0.12.0 и backend 0.10.0/schema 0026 unchanged.
+
 ### Android — 0.1.0 (первая версия) / Windows и Backend unchanged
 
 - Создан отдельный Kotlin/Jetpack Compose проект: Gradle wrapper, pinned toolchain,
@@ -28,6 +37,17 @@
 - Добавлены этапы переноса, критерии приёмки и ссылка из apps/android/README.md.
 - Только документация: Android APK/проект ещё не создан; backend 0.10.0,
   Windows 0.11.1, schema 0026 не меняются. Новая сборка/deploy не выполнялись.
+
+### Windows — 0.12.0 / Backend — 0.10.0 unchanged
+
+- Добавлены English, Russian, Chinese, Spanish, German и French для всего UI,
+  ошибок, диалогов и accessibility labels, с сохранением технических английских имён.
+- Выбор флага и English/native названий внизу sidebar, клавиатура и сохранение выбора.
+- По умолчанию English; подтверждённая исходная локация RU до VPN выбирает Russian.
+  Ручной выбор имеет приоритет, ответы после смены VPN-состояния игнорируются.
+- Даты/цены/страны учитывают язык; формы, auth и VPN сохраняют состояние.
+- Native UI review снимает текущую сборку на шести языках. Результаты — в task PR;
+  реальные провайдеры и backend не меняются. См. docs/windows-localization.md.
 
 ### Документация — актуальный статус на 2026-10-19
 

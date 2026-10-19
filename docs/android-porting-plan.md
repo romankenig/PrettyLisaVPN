@@ -1,11 +1,15 @@
 # Android: последовательный план переноса
 
-Основа — [архитектура Kotlin/Compose](android-architecture.md), аудит Windows
-0.11.1 и backend 0.10.0 на commit `69ab8d1d3d3c5680fc72bb23980776242606a104`.
+Основа — [архитектура Kotlin/Compose](android-architecture.md) и Windows **0.12.0**
+на develop `78f59991761b93bd176326c901829ee49cbdd9a4` после PR #21.
+Первоначальный аудит Windows 0.11.1 на `69ab8d1` сохранён как история;
+[дельта локализации](android-localization.md) теперь обязательна для переноса.
 Это roadmap. **Реализован каркас этапа 1: Android 0.1.0**, базовые три вкладки
 и тема из этапа 2. [Инструкции/CI и ограничения](../apps/android/README.md).
 Приёмка APK/эмуляторов и точные SHA/run/attempt фиксируются в task PR.
-Backend 0.10.0 / Windows 0.11.1 / schema 0026 unchanged; API/VPN пока отсутствуют.
+Backend 0.10.0 / schema 0026 unchanged; Windows-эталон 0.12.0. Android
+0.1.0/code 1 пока без API/VPN и без выбора языка. Это docs-only актуализация,
+version unchanged; новая Android-версия и её APK здесь не заявляются.
 
 ## Порядок и результаты этапов
 
@@ -14,6 +18,7 @@ Backend 0.10.0 / Windows 0.11.1 / schema 0026 unchanged; API/VPN пока отс
 | 0. Аудит и архитектура — этот документ | Карты экранов/API/дизайна/native, матрица профилей, совместимость frozen backend | Исходники и точный SHA зафиксированы; нет обещаний Android runtime/E2E |
 | 1. Каркас и первый APK | Kotlin/Compose project, Gradle/toolchain, flavors, CI, простой стартовый экран | Устанавливаемый debug APK текущего HEAD, launch на эмуляторе, независимая Android 0.1.0; не UI screenshot из Windows |
 | 2. Тема и мобильная навигация | Rubik/логотип/токены, компоненты, 3 вкладки, auth graph, адаптация insets/IME/Back | Native screenshots 320/360/412dp и landscape/fontScale; бренд и регистр PrettyLisaVPN сохранены |
+| 2A. Языки и locale foundation | English default, шесть языков/флаги/English-native labels, storage и mobile language sheet до auth; geo/VPN policy на fixtures | Android resources, live UI/ошибки, process recreation, locale/OS independence, API 26/35/36, CJK/fontScale и отсутствие повторных операций; [контракт](android-localization.md) |
 | 3. Все экраны на fixtures | Auth/Home/countries/settings/devices/subscription/about/support/messages, loading/error/stale/disabled | Просматриваемый APK без сервера, Compose tests переходов; fake VPN явно обозначен и исключён из release |
 | 4. Auth/session | Существующие OTP/refresh/me/logout, ANDROID platform, installation UUID, Keystore vault | Contract/MockWebServer tests, single-flight rotation, expiry/revocation/offline/process restart; настоящее письмо не запрашивается автоматически |
 | 5. Остальные API | Устройства, сообщения JSON v1, read-only billing, поддержка без diagnostics, public location | Последствия действий отражаются на Home; optional APIs не блокируют вход; server constraints не обходятся |
@@ -27,6 +32,15 @@ Backend 0.10.0 / Windows 0.11.1 / schema 0026 unchanged; API/VPN пока отс
 Android MVP. Если доступные узлы требуют неподдерживаемый режим, это реальный блокер
 VPN-приёмки: нельзя выдать direct UDP за эквивалент или изменить backend/узлы без
 отдельной задачи. Ранние APK этапов 1–5 всё равно полезны для проверки UI и API.
+
+## Ближайшая задача после каркаса
+
+Сначала завершить мобильную тему/навигацию и этап **2A**, затем расширять экраны
+на fixtures (3), подключать auth (4), остальные API (5) и VPN spike (6–7).
+Копировать прежнюю русскую-only оболочку в новые экраны больше не следует.
+Рекомендуемый объём следующего отдельного PR: Android **0.2.0 / code 2** —
+мобильная UI-основа с шестью языками; это планируемая версия, не текущая.
+В этом PR #20 остаётся 0.1.0/code 1, без изменения Kotlin/Gradle/runtime.
 
 ## Общие правила реализации
 
@@ -66,6 +80,19 @@ VPN-приёмки: нельзя выдать direct UDP за эквивален
 > Перенеси утверждённые logo/Rubik/colors/components в PrettyLisaTheme и мобильную
 > навигацию. Сохрани оформление Windows, адаптируй размеры, Back, insets и IME.
 > Проверь small widths, landscape, TalkBack и большой шрифт; приложи native screenshots.
+
+**2A — ближайший рекомендуемый промпт:**
+
+> Актуализируй Android UI PrettyLisaVPN по Windows 0.12.0 и
+> docs/android-localization.md. Реализуй шесть языков Android resources,
+> English default, сохраняемый явный выбор, флаг и English/native названия.
+> На телефоне используй строку языка в настройках и bottom sheet; выбор должен
+> быть доступен до входа. Геополитику RU до VPN проверь на fixtures, реальный
+> геоадаптер подключай только с готовым безопасным runtime-state port.
+> Сохрани формы, навигацию и независимость VPN от Activity recreation.
+> Проверь API 26/35/36, cold start/recreation, TalkBack, landscape/fontScale/CJK,
+> все языки и исключения английских технических подписей. Приложи native PNG
+> текущего APK/SHA. Backend и Windows не меняй; реальный OTP/VPN/платежи не запускай.
 
 **3 — экраны:**
 
@@ -143,6 +170,8 @@ keys, PSK и пользовательская история трафика не
 ## Источники и открытые блокеры
 
 - [Android architecture, contracts and native gates](android-architecture.md).
+- [Локализация и дельта Windows 0.12.0](android-localization.md),
+  [проверенный Windows-контракт](windows-localization.md).
 - [Текущий проект](project-status.md), [Windows navigation](windows-navigation.md),
   [Windows acceptance](windows-development-acceptance.md).
 - [VPN profiles](connection-profiles.md), [verification](connection-verification.md),

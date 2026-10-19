@@ -156,6 +156,17 @@ def fixture(method, path, body):
         return 200, {"session_id": DEMO_VPN_ID, "status": "DISCONNECTED"}
     if method == "POST" and path == "/auth/request-otp":
         return 200, {"status": "accepted"}
+    if method == "POST" and path == "/auth/refresh":
+        if body.get("session_id") != SESSION_ID or body.get("refresh_token") != "ui-review-refresh-not-a-real-token":
+            return 401, {"error": {"code": "AUTH_INVALID"}}
+        return 200, {
+            "token_type": "bearer",
+            "access_token": "ui-review-restored-access-not-a-real-token",
+            "access_token_expires_in": 3600,
+            "refresh_token": "ui-review-refresh-not-a-real-token",
+            "refresh_token_expires_at": "2099-01-01T00:00:00Z",
+            "session_id": SESSION_ID,
+        }
     if method == "POST" and path == "/auth/verify-otp":
         return 200, {
             "token_type": "bearer",
@@ -278,6 +289,15 @@ def self_test():
         )
         with urlopen(request, timeout=2) as response:
             assert json.load(response)["device"]["installation_id"] == INSTALLATION_ID
+        refresh_body = {"session_id": SESSION_ID, "refresh_token": "ui-review-refresh-not-a-real-token"}
+        request = Request(
+            base + "/auth/refresh",
+            data=json.dumps(refresh_body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with urlopen(request, timeout=2) as response:
+            assert json.load(response)["session_id"] == SESSION_ID
+        assert fixture("POST", "/auth/refresh", {})[0] == 401
         assert fixture("POST", "/vpn/sessions", {})[0] == 404
         assert fixture("DELETE", "/devices/" + DEVICE_ID, {})[0] == 404
         assert fixture("GET", "/vpn/sessions/current", {}) == (200, {"session": None})

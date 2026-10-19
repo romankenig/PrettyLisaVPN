@@ -1,9 +1,14 @@
-import { useState, type ReactNode } from "react";
+import { t, useLanguage } from "../i18n";
+import { useEffect, useState, type ReactNode } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import lockIcon from "../assets/lock.svg";
 
 export function WindowFrame({ children }: { readonly children: ReactNode }) {
+  const language = useLanguage();
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const [error, setError] = useState<string | null>(null);
   async function control(action: "minimize" | "close") {
     if (!isTauri()) return;
@@ -23,8 +28,8 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
         <div className="window-controls">
           <button
             type="button"
-            aria-label="Свернуть"
-            title="Свернуть"
+            aria-label={t("Свернуть")}
+            title={t("Свернуть")}
             onClick={() => void control("minimize")}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -33,8 +38,8 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
           </button>
           <button
             type="button"
-            aria-label="Закрыть"
-            title="Закрыть"
+            aria-label={t("Закрыть")}
+            title={t("Закрыть")}
             onClick={() => void control("close")}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -45,10 +50,10 @@ export function WindowFrame({ children }: { readonly children: ReactNode }) {
       </header>
       {error ? (
         <p className="window-error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : null}
-      <div className="window-content">{children}</div>
+      <div className="window-content">{t(children)}</div>
     </div>
   );
 }
