@@ -51,7 +51,7 @@ PrettyLisaVPN — проект коммерческого VPN-сервиса д�
 apps/
   windows/           Windows-клиент: Tauri 2, React, Rust, API/native adapters
   desktop/           Заготовка остальных desktop-клиентов
-  android/           Kotlin/Compose Android 0.1.0: debug APK, навигация и CI
+  android/           Kotlin/Compose Android 0.2.0: мобильный UI, debug APK и native CI
   ios/               Заготовка клиента iOS
   android-tv/        Заготовка клиента Android TV
   chrome-extension/  Заготовка браузерного прокси-клиента
@@ -125,10 +125,13 @@ docs/                Инструкции настройки и эксплуат
 
 ## Android-клиент
 
-[Android 0.1.0](apps/android/README.md) — Kotlin/Jetpack Compose каркас с Gradle,
+[Android 0.2.0](apps/android/README.md) — Kotlin/Jetpack Compose каркас с Gradle,
 debug APK, тремя вкладками и GitHub Actions для сборки и эмуляторов API 26/35/36.
 Зафиксированы карты Windows-экранов/API/дизайна/native и
 [план переноса](docs/android-porting-plan.md). API/VPN runtime пока не подключены;
 backend и код Windows на этом этапе не меняются. Эталон переноса — Windows 0.12.0;
 его [шесть языков](docs/android-localization.md) включены в следующий UI-этап,
-но в Android 0.1.0 пока отсутствуют. Результаты CI — в task PR.
+но в Android 0.2.0 пока отсутствуют. Результаты CI — в task PR.
+
+Мобильные компоненты, локальная форма и проверки small screens/fontScale/IME:
+[Android design](docs/android-design.md).

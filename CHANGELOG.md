@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.2.0 / Windows 0.12.0 и backend 0.10.0 unchanged
+
+- Перенесены брендовые поверхности, исходные logo contours, Rubik variable weights,
+  карточки, кнопки enabled/disabled/loading, focus/error text fields и телефонная навигация.
+- Home/Settings/About адаптированы под вертикальную прокрутку, крупный шрифт и insets.
+  Добавлена локальная форма поддержки с email validation/recreation, без реальной отправки.
+- CI проверяет текущий APK на API 26/35/36: 320/360/412dp, landscape, fontScale до 2.0,
+  настоящую IME, system bars, native PNG/source identity. См. docs/android-design.md.
+- Версия 0.2.0/code 2; API/VPN/payments и шесть языков ещё не подключены.
+  Точные SHA/run/attempt, статусы и PNG — в task PR; следующая локализация отдельно.
+
 ### Android — план под Windows 0.12.0, version unchanged
 
 - Эталон переноса обновлён до develop 78f5999 после Windows PR #21; история

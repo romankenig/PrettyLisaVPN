@@ -313,3 +313,12 @@ backend 0.4.0. Гарантии и ограничения: [support-ui.md](suppo
 VPN/billing operations. Ручная настройка сохраняется; язык интерфейса и версия ОС
 независимы. Клавиатура, выбор флага/English/native names и безопасная автонастройка
 до VPN описаны в [windows-localization.md](windows-localization.md).
+
+
+## Сопоставление с Android 0.2.0
+
+Windows 0.12.0 остаётся без изменений; его палитра, логотип, Rubik и состояния
+компонентов перенесены в мобильную UI-основу Android. Три вкладки, вертикальные
+карточки и отдельный экран локальной формы заменяют sidebar/desktop popup.
+Это не добавляет Windows routes/API и не подтверждает Android auth/VPN интеграцию.
+См. [Android design](android-design.md) и [архитектуру](android-architecture.md).

@@ -1,26 +1,27 @@
 # PrettyLisaVPN для Android
 
-Android **0.1.0**, versionCode **1** — первая самостоятельная версия клиента.
+Android **0.2.0**, versionCode **2** — мобильный дизайн поверх первого каркаса 0.1.0.
 Текущий Windows-эталон — **0.12.0** (develop `78f5999`, PR #21).
 Backend **0.10.0**, schema **0026** не меняются; версии платформ независимы.
 
-Реализован нативный Kotlin/Jetpack Compose каркас: одна Activity, три вкладки
+Реализован нативный Kotlin/Jetpack Compose UI: одна Activity, три вкладки
 «главная / настройки / о приложении», системный Back и восстановление выбранной
 вкладки после пересоздания Activity. Фирменные цвета, Rubik/OFL и контуры логотипа
 перенесены из Windows; учитываются системные insets и прокрутка небольших экранов.
-Это стартовый APK: API/auth, VPN runtime, платежи и поддержка ещё не подключены.
+Это UI-этап: API/auth, VPN runtime, платежи и поддержка ещё не подключены.
 Кнопка подключения недоступна; приложение не запрашивает VPN-разрешение и не
-отправляет сетевые запросы. Backend-версия в UI — «не подключён».
+отправляет сетевые запросы. Backend-версия в UI — «недоступна».
 
 ## Что изменилось в требованиях после Windows 0.12.0
 
-Каркас 0.1.0 остаётся без выбора языка: его `values/strings.xml` содержит русские
+Android 0.2.0 остаётся без выбора языка: его `values/strings.xml` содержит русские
 тексты. Шесть языков, English default и RU auto-origin ещё **не реализованы**
 на Android. Следующий UI-этап должен заложить resources/locale policy до расширения
 экранов: [требования локализации](../../docs/android-localization.md),
 [обновлённый порядок и промпт](../../docs/android-porting-plan.md).
-Текущее обновление — документация и синхронизация develop; versionName/code,
-Kotlin, ресурсы, Gradle и API/VPN поведение Android не изменяются.
+Текущее обновление добавляет компоненты карточек/кнопок/полей, мобильные экраны
+и локальную форму поддержки без отправки. [Дизайн и матрица проверок](../../docs/android-design.md).
+API/VPN поведение не изменяется; следующая локализация планируется отдельно.
 
 ## Сборка и запуск
 
@@ -41,7 +42,7 @@ Windows: те же Gradle tasks через `gradlew.bat`. Wrapper JAR и distrib
 Compose BOM **2025.05.01**, Navigation **2.9.0**. Версии — в
 [libs.versions.toml](gradle/libs.versions.toml). minSdk **26**, compile/targetSdk **36**.
 Основной источник Android-версии — [app/build.gradle.kts](app/build.gradle.kts):
-`versionName=0.1.0`, `versionCode=1`. Windows package.json не используется.
+`versionName=0.2.0`, `versionCode=2`. Windows package.json не используется.
 Debug applicationId — `com.prettylisavpn.android.dev`; подпись локальным debug key.
 Release signing, Play Store и auto-update в этот этап не входят.
 
@@ -51,8 +52,11 @@ Release signing, Play Store и auto-update в этот этап не входя�
 push/PR с изменением Android и вручную. Сначала собирает APK/тестовый APK текущего
 checkout и запускает lint (API/resources/security warnings — errors; онлайн-советы
 об обновлении pinned toolchain/dependencies остаются informational); затем устанавливает **тот же APK** на x86_64 эмуляторы
-Android **8.0 (API 26)**, **15 (API 35)** и **16 (API 36)**. Три instrumented-теста проверяют вкладки,
+Android **8.0 (API 26)**, **15 (API 35)** и **16 (API 36)**. Три базовых instrumented-теста проверяют вкладки,
 недоступность подключения, повторные переходы/Back и Activity recreation.
+Затем DesignAcceptanceTest проверяет шесть конфигураций 320/360/412dp,
+fontScale 1.0/1.3/2.0 и landscape: форму с настоящей IME, insets,
+валидацию/recreation и состояния компонентов. Всего 21 тест на API.
 После тестов выполняется отдельный cold launcher start с проверкой процесса,
 resumed Activity и отсутствия AndroidRuntime crash. Нативные PNG сохраняются
 с каждого экрана и после запуска.
