@@ -130,7 +130,11 @@ function OtpForm({ email }: { readonly email: string }) {
         <p className="eyebrow">{t("готово")}</p>
         <h1 id="otp-success-title">{t("вход выполнен")}</h1>
         <div className="auth-card" aria-live="polite">
-          <p className="auth-success">{t("Сессия активна в памяти приложения. Домашний экран будет подключён следующим этапом.")}</p>
+          <p className="auth-success">
+            {t(
+              "Сессия активна в памяти приложения. Домашний экран будет подключён следующим этапом.",
+            )}
+          </p>
         </div>
       </section>
     );
@@ -142,7 +146,9 @@ function OtpForm({ email }: { readonly email: string }) {
     <section className="auth-page" aria-labelledby="otp-title">
       <p className="eyebrow">{t("проверьте почту")}</p>
       <h1 id="otp-title">{t("введите код")}</h1>
-      <p className="auth-intro">{t("Код для ")}<strong className="verified-email">{email}</strong>
+      <p className="auth-intro">
+        {t("Код для ")}
+        <strong className="verified-email">{email}</strong>
       </p>
       <form
         className="auth-card"
@@ -168,7 +174,9 @@ function OtpForm({ email }: { readonly email: string }) {
             if (state.phase === "error") setState({ phase: "idle" });
           }}
         />
-        <p id="otp-help" className="field-help">{t("Можно ввести код с клавиатуры или вставить его целиком.")}</p>
+        <p id="otp-help" className="field-help">
+          {t("Можно ввести код с клавиатуры или вставить его целиком.")}
+        </p>
         {state.phase === "error" ? (
           <p id="otp-error" className="form-error" role="alert">
             {t(state.message)}
@@ -184,14 +192,18 @@ function OtpForm({ email }: { readonly email: string }) {
             disabled={resendDisabled}
             onClick={() => void resend()}
           >
-            {t(resendState.phase === "sending"
-              ? "отправляем…"
-              : cooldown > 0
-                ? `отправить повторно через ${cooldown} с`
-                : "отправить код повторно")}
+            {t(
+              resendState.phase === "sending"
+                ? "отправляем…"
+                : cooldown > 0
+                  ? `отправить повторно через ${cooldown} с`
+                  : "отправить код повторно",
+            )}
           </button>
           {resendState.phase === "sent" ? (
-            <p className="form-notice" role="status">{t("Новый код запрошен.")}</p>
+            <p className="form-notice" role="status">
+              {t("Новый код запрошен.")}
+            </p>
           ) : null}
           {resendState.phase === "error" ? (
             <p className="form-error" role="alert">

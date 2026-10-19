@@ -32,11 +32,15 @@ export function ConnectionInfo({ sessionId }: { readonly sessionId: string }) {
   }, [sessionId, vpnConnection]);
   if (state?.sessionId !== sessionId)
     return (
-      <p className="connection-info" role="status">{t("получаем параметры соединения…")}</p>
+      <p className="connection-info" role="status">
+        {t("получаем параметры соединения…")}
+      </p>
     );
   const info = state.data;
   if (!info)
-    return <p className="connection-info">{t("параметры соединения недоступны")}</p>;
+    return (
+      <p className="connection-info">{t("параметры соединения недоступны")}</p>
+    );
   return (
     <div className="connection-info" aria-label={t("способ подключения")}>
       <p>

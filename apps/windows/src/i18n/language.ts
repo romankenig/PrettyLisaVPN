@@ -13,13 +13,20 @@ export function isLanguage(value: unknown): value is Language {
 }
 
 // Only an explicit choice is persisted. Egress location is never a language preference.
-export function createLanguagePreference(storage: Pick<Storage, "getItem" | "setItem"> | null) {
+export function createLanguagePreference(
+  storage: Pick<Storage, "getItem" | "setItem"> | null,
+) {
   let manual = false;
   let language: Language = "en";
   try {
     const saved = storage?.getItem(LANGUAGE_KEY);
-    if (isLanguage(saved)) { language = saved; manual = true; }
-  } catch { /* Optional local preference; English still works offline. */ }
+    if (isLanguage(saved)) {
+      language = saved;
+      manual = true;
+    }
+  } catch {
+    /* Optional local preference; English still works offline. */
+  }
   const listeners = new Set<() => void>();
   const update = (next: Language) => {
     if (next === language) return;
@@ -28,10 +35,19 @@ export function createLanguagePreference(storage: Pick<Storage, "getItem" | "set
   };
   return {
     current: () => language,
-    subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
     choose(next: Language) {
       manual = true;
-      try { storage?.setItem(LANGUAGE_KEY, next); } catch { /* Keep the choice in memory. */ }
+      try {
+        storage?.setItem(LANGUAGE_KEY, next);
+      } catch {
+        /* Keep the choice in memory. */
+      }
       update(next);
     },
     suggestCountry(country: string | null) {
@@ -40,7 +56,11 @@ export function createLanguagePreference(storage: Pick<Storage, "getItem" | "set
   };
 }
 function preferenceStorage(): Storage | null {
-  try { return globalThis.localStorage ?? null; } catch { return null; }
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
 }
 export const languagePreference = createLanguagePreference(preferenceStorage());
 export const getLanguage = languagePreference.current;

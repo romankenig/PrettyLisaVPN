@@ -78,7 +78,14 @@ function MessageVisit({
           {
             platform: "WINDOWS",
             app_version: version,
-            locale: ({ru: "ru-RU", en: "en-GB", zh: "zh-CN", es: "es-ES", de: "de-DE", fr: "fr-FR"})[getLanguage()],
+            locale: {
+              ru: "ru-RU",
+              en: "en-GB",
+              zh: "zh-CN",
+              es: "es-ES",
+              de: "de-DE",
+              fr: "fr-FR",
+            }[getLanguage()],
             schema_version: 1,
           },
           controller.signal,
@@ -254,11 +261,13 @@ function MessageDialog({
     >
       <div className="account-message-heading">
         <span>
-          {t(message.kind === "promotion"
-            ? "предложение"
-            : message.kind === "update"
-              ? "обновление"
-              : "сообщение")}
+          {t(
+            message.kind === "promotion"
+              ? "предложение"
+              : message.kind === "update"
+                ? "обновление"
+                : "сообщение",
+          )}
         </span>
         <button
           type="button"
@@ -284,20 +293,28 @@ function MessageDialog({
         )}
       </div>
       {error ? (
-        <p className="account-message-error" role="alert">{t("не удалось сохранить подтверждение. попробуйте ещё раз или закройте окно")}</p>
+        <p className="account-message-error" role="alert">
+          {t(
+            "не удалось сохранить подтверждение. попробуйте ещё раз или закройте окно",
+          )}
+        </p>
       ) : null}
       <div className="account-message-actions">
         <button
           type="button"
           className="account-message-later"
           onClick={onLater}
-        >{t("позже")}</button>
+        >
+          {t("позже")}
+        </button>
         <button
           type="button"
           disabled={pending}
           onClick={() => onAcknowledge()}
         >
-          <MessageLabel text={pending ? t("сохраняем…") : message.dismiss_label} />
+          <MessageLabel
+            text={pending ? t("сохраняем…") : message.dismiss_label}
+          />
         </button>
         {message.primary_action ? (
           <button

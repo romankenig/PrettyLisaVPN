@@ -74,7 +74,9 @@ export function PaymentChoice({
     >
       <h2 id="payment-choice-title">{t("как оплатить")}</h2>
       <p id="payment-choice-summary" className="payment-choice-summary">
-        {t(offer.plan.toLowerCase())}{t(" · месяц ·")}{t(" ")}
+        {t(offer.plan.toLowerCase())}
+        {t(" · месяц ·")}
+        {t(" ")}
         {t(formatPrice(offer.prices[currency].amount_minor, currency))}
       </p>
       <fieldset className="payment-choice-options">
@@ -104,13 +106,15 @@ export function PaymentChoice({
               <small id={`payment-route-description-${route}`}>
                 {t(routes[route].description)}
                 <br />
-                {t(!available.includes(route)
-                  ? `недоступно в ${currency}`
-                  : capabilities
-                        .find((cap) => cap.id === route)
-                        ?.recurring_currencies.includes(currency)
-                    ? "поддерживает автопродление"
-                    : "без автопродления")}
+                {t(
+                  !available.includes(route)
+                    ? `недоступно в ${currency}`
+                    : capabilities
+                          .find((cap) => cap.id === route)
+                          ?.recurring_currencies.includes(currency)
+                      ? "поддерживает автопродление"
+                      : "без автопродления",
+                )}
               </small>
             </span>
             <span className="payment-choice-check" aria-hidden="true">
@@ -120,14 +124,18 @@ export function PaymentChoice({
         ))}
       </fieldset>
       <p className="payment-choice-hint">
-        {t(selectedRoute === null
-          ? "в этой валюте нет доступных способов оплаты"
-          : recurring
-            ? "автопродление включится только после подтверждения платёжного сервиса"
-            : "разовая оплата. автоматических списаний не будет")}
+        {t(
+          selectedRoute === null
+            ? "в этой валюте нет доступных способов оплаты"
+            : recurring
+              ? "автопродление включится только после подтверждения платёжного сервиса"
+              : "разовая оплата. автоматических списаний не будет",
+        )}
       </p>
       <div className="payment-choice-actions">
-        <button className="billing-secondary" type="button" onClick={onClose}>{t("назад")}</button>
+        <button className="billing-secondary" type="button" onClick={onClose}>
+          {t("назад")}
+        </button>
         <button
           className="billing-primary"
           type="button"
@@ -135,7 +143,9 @@ export function PaymentChoice({
           onClick={() => {
             if (selectedRoute !== null) onConfirm(selectedRoute);
           }}
-        >{t("перейти к оплате")}</button>
+        >
+          {t("перейти к оплате")}
+        </button>
       </div>
     </dialog>
   );

@@ -130,7 +130,9 @@ export function Home() {
           <button
             type="button"
             onClick={() => setProfileAttempt((value) => value + 1)}
-          >{t("повторить")}</button>
+          >
+            {t("повторить")}
+          </button>
         </div>
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
@@ -171,16 +173,18 @@ export function Home() {
                 void (canDisconnect(connectionState) ? disconnect() : connect())
               }
             >
-              {t(connectionState.phase === "DISCONNECTING"
-                ? "DISCONNECTING"
-                : connectionState.phase === "CONNECTING" ||
-                    connectionState.phase === "TUNNEL_ESTABLISHED" ||
-                    connectionState.phase === "VERIFYING_INTERNET" ||
-                    connectionState.phase === "RECONCILING"
-                  ? "CONNECTING"
-                  : canDisconnect(connectionState)
-                    ? "DISCONNECT"
-                    : "CONNECT")}
+              {t(
+                connectionState.phase === "DISCONNECTING"
+                  ? "DISCONNECTING"
+                  : connectionState.phase === "CONNECTING" ||
+                      connectionState.phase === "TUNNEL_ESTABLISHED" ||
+                      connectionState.phase === "VERIFYING_INTERNET" ||
+                      connectionState.phase === "RECONCILING"
+                    ? "CONNECTING"
+                    : canDisconnect(connectionState)
+                      ? "DISCONNECT"
+                      : "CONNECT",
+              )}
             </button>
             <h2 className="connection-status" aria-live="polite">
               {t(connectionHeading(connectionState))}
@@ -191,28 +195,38 @@ export function Home() {
             {profile?.plan === "FREE" &&
             connectionState.phase === "CONNECTED" &&
             connectionState.session.remainingSeconds !== null ? (
-              <p role="timer">{t("Осталось:")}{t(" ")}
+              <p role="timer">
+                {t("Осталось:")}
+                {t(" ")}
                 {t(formatRemaining(connectionState.session.remainingSeconds))}
               </p>
             ) : null}
             <p id="connection-unavailable" className="field-help">
-              {t(connectionState.phase === "DISCONNECTED" &&
-                (!locationConnectable
-                  ? "Сейчас подключение недоступно."
-                  : "Готово к подключению."))}
+              {t(
+                connectionState.phase === "DISCONNECTED" &&
+                  (!locationConnectable
+                    ? "Сейчас подключение недоступно."
+                    : "Готово к подключению."),
+              )}
             </p>
             {connectionErrorMessage !== null ||
             ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
               connectionState.phase,
             ) ? (
               <p className="connection-error" role="alert">
-                {t(connectionErrorMessage ??
-                  connectionUnavailableMessage(connectionState))}
+                {t(
+                  connectionErrorMessage ??
+                    connectionUnavailableMessage(connectionState),
+                )}
               </p>
             ) : null}
             {connectionState.phase === "DISCONNECTED" &&
             connectionState.backend === "UNAVAILABLE" ? (
-              <p className="connection-error" role="status">{t("VPN на компьютере остановлен. Сервер завершит сессию после восстановления связи.")}</p>
+              <p className="connection-error" role="status">
+                {t(
+                  "VPN на компьютере остановлен. Сервер завершит сессию после восстановления связи.",
+                )}
+              </p>
             ) : null}
           </div>
           <CurrentLocation connection={connectionState} />
@@ -235,11 +249,13 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
         <span>{t("план")}</span>
         <strong>
           {t(profile.plan)}
-          {t(profile.plan === "PREMIUM"
-            ? " ⭐"
-            : profile.plan === "PLATINUM"
-              ? " 💎"
-              : "")}
+          {t(
+            profile.plan === "PREMIUM"
+              ? " ⭐"
+              : profile.plan === "PLATINUM"
+                ? " 💎"
+                : "",
+          )}
         </strong>
       </div>
       <div>
@@ -280,8 +296,12 @@ function connectionError(error: unknown) {
     }
     if (error.code === "VPN_TRAFFIC_INTERCEPTED") {
       return (
-        <>{t("Другой VPN или сетевой фильтр не пропускает интернет через")}{t(" ")}
-          <span className="product-name">PrettyLisaVPN</span>{t(". Отключите другой VPN и повторите подключение.")}</>
+        <>
+          {t("Другой VPN или сетевой фильтр не пропускает интернет через")}
+          {t(" ")}
+          <span className="product-name">PrettyLisaVPN</span>
+          {t(". Отключите другой VPN и повторите подключение.")}
+        </>
       );
     }
     if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
@@ -338,7 +358,7 @@ function formatRemaining(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function ConnectionErrorMessage({error}: {readonly error: unknown}) {
+function ConnectionErrorMessage({ error }: { readonly error: unknown }) {
   useLanguage();
   return <>{t(connectionError(error))}</>;
 }

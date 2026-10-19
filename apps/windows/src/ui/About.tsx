@@ -31,7 +31,9 @@ export function About({
         <section className="about-card" aria-labelledby="support-title">
           <h2 id="support-title">{t("помощь и поддержка")}</h2>
           <p>{t("расскажите, с чем нужна помощь")}</p>
-          <button type="button" onClick={() => setSupportOpen(true)}>{t("написать в поддержку")}</button>
+          <button type="button" onClick={() => setSupportOpen(true)}>
+            {t("написать в поддержку")}
+          </button>
         </section>
       </div>
       <p className="about-dedication">inspired by love of my life, Lisa</p>

@@ -353,7 +353,9 @@ function SubscriptionContent() {
 
   return (
     <section className="subscription-page" aria-labelledby="subscription-title">
-      <Link className="settings-back" to="/settings">{t("← настройки")}</Link>
+      <Link className="settings-back" to="/settings">
+        {t("← настройки")}
+      </Link>
       <div className="subscription-heading">
         <h1 id="subscription-title">{t("подписка")}</h1>
         <button
@@ -361,7 +363,9 @@ function SubscriptionContent() {
           type="button"
           disabled={busy || loading}
           onClick={() => setAttempt((a) => a + 1)}
-        >{t("обновить")}</button>
+        >
+          {t("обновить")}
+        </button>
       </div>
       <div className="subscription-scroll">
         {loading ? <p role="status">{t("загружаем подписку…")}</p> : null}
@@ -382,7 +386,9 @@ function SubscriptionContent() {
               <h2>{t(planName(data.plan))}</h2>
               <p className="billing-term">
                 {paid ? (
-                  <>{t("доступ до")}{t(" ")}
+                  <>
+                    {t("доступ до")}
+                    {t(" ")}
                     <time dateTime={data.paid_until!}>
                       {t(dateLabel(data.paid_until!))}
                     </time>
@@ -394,33 +400,54 @@ function SubscriptionContent() {
                 )}
               </p>
               {paid && data.current_price ? (
-                <p className="billing-current">{t("стоимость подписки:")}{t(" ")}
-                  {t(formatPrice(
-                    data.current_price.amount_minor,
-                    data.current_price.currency,
-                  ))}{t(" ")}{t("/ месяц")}</p>
+                <p className="billing-current">
+                  {t("стоимость подписки:")}
+                  {t(" ")}
+                  {t(
+                    formatPrice(
+                      data.current_price.amount_minor,
+                      data.current_price.currency,
+                    ),
+                  )}
+                  {t(" ")}
+                  {t("/ месяц")}
+                </p>
               ) : null}
               {paid && !data.current_price ? (
-                <p className="billing-current">{t("стоимость подписки: сведения недоступны")}</p>
+                <p className="billing-current">
+                  {t("стоимость подписки: сведения недоступны")}
+                </p>
               ) : null}
               {paid ? (
                 <p
                   className={`billing-renewal ${data.auto_renew ? "" : "billing-renewal--off"}`}
                 >
-                  {t(data.auto_renew
-                    ? "автопродление включено"
-                    : "автопродление отключено")}
+                  {t(
+                    data.auto_renew
+                      ? "автопродление включено"
+                      : "автопродление отключено",
+                  )}
                 </p>
               ) : null}
               {readOnly ? (
-                <p className="billing-footnote" role="status">{t("оплата пока недоступна. данные подписки доступны для просмотра.")}</p>
+                <p className="billing-footnote" role="status">
+                  {t(
+                    "оплата пока недоступна. данные подписки доступны для просмотра.",
+                  )}
+                </p>
               ) : null}
               {manualPlan ? (
-                <p>{t("тариф назначен вручную. продление через оплату недоступно.")}</p>
+                <p>
+                  {t(
+                    "тариф назначен вручную. продление через оплату недоступно.",
+                  )}
+                </p>
               ) : (
                 <>
                   {offers.length > 1 ? (
-                    <label className="billing-offer-select">{t("тариф на месяц")}<select
+                    <label className="billing-offer-select">
+                      {t("тариф на месяц")}
+                      <select
                         aria-label={t("тариф на месяц")}
                         value={offer.id}
                         disabled={disabled}
@@ -436,11 +463,13 @@ function SubscriptionContent() {
                   ) : null}
                   <div className="billing-price-heading">
                     <span>
-                      {t(readOnly && paid
-                        ? "предложение на месяц"
-                        : paid
-                          ? "продлить на месяц"
-                          : `${offer ? planName(offer.plan) : "подписка"} на месяц`)}
+                      {t(
+                        readOnly && paid
+                          ? "предложение на месяц"
+                          : paid
+                            ? "продлить на месяц"
+                            : `${offer ? planName(offer.plan) : "подписка"} на месяц`,
+                      )}
                     </span>
                     <div
                       className="billing-currencies"
@@ -479,23 +508,31 @@ function SubscriptionContent() {
                     }
                     onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
                   >
-                    {t(busy
-                      ? "подождите…"
-                      : paid
-                        ? "продлить подписку"
-                        : "оформить подписку")}
+                    {t(
+                      busy
+                        ? "подождите…"
+                        : paid
+                          ? "продлить подписку"
+                          : "оформить подписку",
+                    )}
                   </button>
                   {!readOnly && !currencyAvailable ? (
-                    <p className="billing-footnote">{t("в этой валюте оплата недоступна. выберите другую валюту")}</p>
+                    <p className="billing-footnote">
+                      {t(
+                        "в этой валюте оплата недоступна. выберите другую валюту",
+                      )}
+                    </p>
                   ) : null}
                   <p className="billing-footnote">
-                    {t(readOnly
-                      ? paid && data.current_price
-                        ? "условия действующей подписки. списание не выполняется."
-                        : "цены предложения на месяц. списание не выполняется."
-                      : paid
-                        ? "оплата и новый способ оплаты — на стороне платёжного сервиса"
-                        : "способ оплаты и автопродление подтверждаются при оформлении")}
+                    {t(
+                      readOnly
+                        ? paid && data.current_price
+                          ? "условия действующей подписки. списание не выполняется."
+                          : "цены предложения на месяц. списание не выполняется."
+                        : paid
+                          ? "оплата и новый способ оплаты — на стороне платёжного сервиса"
+                          : "способ оплаты и автопродление подтверждаются при оформлении",
+                    )}
                   </p>
                 </>
               )}
@@ -515,9 +552,11 @@ function SubscriptionContent() {
                 </div>
               ) : (
                 <p className="billing-method-value">
-                  {t(data.auto_renew
-                    ? "сведения о способе оплаты недоступны"
-                    : "не привязан")}
+                  {t(
+                    data.auto_renew
+                      ? "сведения о способе оплаты недоступны"
+                      : "не привязан",
+                  )}
                 </p>
               )}
               {can("CHANGE_METHOD") ? (
@@ -527,18 +566,24 @@ function SubscriptionContent() {
                   disabled={disabled}
                   onClick={() => void start("CHANGE_METHOD")}
                 >
-                  {t(data.payment_method
-                    ? "изменить способ оплаты"
-                    : "привязать способ оплаты")}
+                  {t(
+                    data.payment_method
+                      ? "изменить способ оплаты"
+                      : "привязать способ оплаты",
+                  )}
                 </button>
               ) : null}
               <p className="billing-footnote">
-                {t(readOnly
-                  ? "управление оплатой пока недоступно"
-                  : "реквизиты хранятся у платёжного сервиса. подтверждение откроется в браузере")}
+                {t(
+                  readOnly
+                    ? "управление оплатой пока недоступно"
+                    : "реквизиты хранятся у платёжного сервиса. подтверждение откроется в браузере",
+                )}
               </p>
               {paid && !data.auto_renew && !readOnly ? (
-                <p className="billing-no-renew">{t("автоматических списаний нет")}</p>
+                <p className="billing-no-renew">
+                  {t("автоматических списаний нет")}
+                </p>
               ) : null}
               {can("CANCEL") ? (
                 <div className="billing-cancel-area">
@@ -548,7 +593,9 @@ function SubscriptionContent() {
                     type="button"
                     disabled={disabled}
                     onClick={() => setConfirm(true)}
-                  >{t("отменить подписку")}</button>
+                  >
+                    {t("отменить подписку")}
+                  </button>
                 </div>
               ) : null}
             </section>
@@ -562,7 +609,9 @@ function SubscriptionContent() {
                 type="button"
                 className="billing-refresh"
                 onClick={() => void openProvider(operation.redirect_url!)}
-              >{t("открыть платёжный сервис")}</button>
+              >
+                {t("открыть платёжный сервис")}
+              </button>
             ) : null}
           </div>
         ) : notice ? (
@@ -620,7 +669,9 @@ function OfferPrices({
               {t(formatPrice(offer.prices[code].original_amount_minor!, code))}
             </del>
           ) : null}
-          <strong>{t(formatPrice(offer.prices[code].amount_minor, code))}</strong>
+          <strong>
+            {t(formatPrice(offer.prices[code].amount_minor, code))}
+          </strong>
           <span>{t("/ месяц")}</span>
         </div>
       ))}
@@ -670,15 +721,25 @@ function CancelConfirmation({
       }}
     >
       <h2 id="cancel-title">{t("отменить подписку?")}</h2>
-      <p id="cancel-description">{t("доступ сохранится до ")}{t(until)}{t(". автопродление отключится, способ оплаты отвяжется. новых списаний не будет.")}</p>
+      <p id="cancel-description">
+        {t("доступ сохранится до ")}
+        {t(until)}
+        {t(
+          ". автопродление отключится, способ оплаты отвяжется. новых списаний не будет.",
+        )}
+      </p>
       <div>
         <button
           className="billing-secondary"
           type="button"
           autoFocus
           onClick={onClose}
-        >{t("оставить подписку")}</button>
-        <button className="billing-danger" type="button" onClick={onConfirm}>{t("да, отменить")}</button>
+        >
+          {t("оставить подписку")}
+        </button>
+        <button className="billing-danger" type="button" onClick={onConfirm}>
+          {t("да, отменить")}
+        </button>
       </div>
     </dialog>
   );

@@ -17,7 +17,9 @@ export function Settings() {
         path="devices"
         element={
           <div className="settings-devices">
-            <Link className="settings-back" to="/settings">{t("← настройки")}</Link>
+            <Link className="settings-back" to="/settings">
+              {t("← настройки")}
+            </Link>
             <Devices />
           </div>
         }
@@ -101,7 +103,9 @@ function SettingsOverview() {
         </button>
       </div>
       {logoutState === "error" ? (
-        <p className="logout-error" role="alert">{t("Не удалось завершить сессию. Проверьте сеть и попробуйте снова.")}</p>
+        <p className="logout-error" role="alert">
+          {t("Не удалось завершить сессию. Проверьте сеть и попробуйте снова.")}
+        </p>
       ) : null}
     </section>
   );

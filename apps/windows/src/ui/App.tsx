@@ -60,17 +60,17 @@ export function App() {
           )}
         </nav>
         <div className="sidebar-footer">
-        <LanguageSelector />
-        <dl className="sidebar-versions" aria-label={t("версии приложения")}>
-          <div>
-            <dt>Frontend</dt>
-            <dd title={t(versions.frontend)}>{t(versions.frontend)}</dd>
-          </div>
-          <div>
-            <dt>Backend</dt>
-            <dd title={t(versions.backend)}>{t(versions.backend)}</dd>
-          </div>
-        </dl>
+          <LanguageSelector />
+          <dl className="sidebar-versions" aria-label={t("версии приложения")}>
+            <div>
+              <dt>Frontend</dt>
+              <dd title={t(versions.frontend)}>{t(versions.frontend)}</dd>
+            </div>
+            <div>
+              <dt>Backend</dt>
+              <dd title={t(versions.backend)}>{t(versions.backend)}</dd>
+            </div>
+          </dl>
         </div>
       </aside>
       <main>

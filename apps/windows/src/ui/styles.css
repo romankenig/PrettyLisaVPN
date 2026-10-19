@@ -1909,20 +1909,105 @@ main dd {
 }
 
 /* Stable footer: language selection stays available on auth and every route. */
-.sidebar-footer { margin-top: auto; display: grid; gap: 18px; min-width: 0; }
-.sidebar-footer .sidebar-versions { margin: 0; }
-.language-selector { position: relative; width: 100%; text-transform: none; z-index: 30; }
-.language-selector button { text-transform: none; font-family: inherit; }
-.language-trigger { width: 100%; padding: 9px 3px; display: grid; justify-items: center; gap: 5px; position: relative; border: 1px solid rgb(172 115 255 / 45%); border-radius: 12px; background: rgb(95 34 217 / 28%); color: var(--color-mercury); cursor: pointer; }
-.language-trigger:hover, .language-trigger[aria-expanded="true"] { border-color: var(--color-viking); background: rgb(95 34 217 / 55%); }
-.language-trigger .country-icon { width: 24px; height: 24px; }
-.language-names { display: grid; gap: 2px; min-width: 0; line-height: 1.2; }
-.language-names strong { font-size: 12px; font-weight: 500; }
-.language-names small { font-size: 11px; opacity: 0.72; }
-.language-trigger .language-names { text-align: center; }
-.language-chevron { position: absolute; top: 7px; right: 5px; font-size: 10px; }
-.language-menu { position: absolute; left: 0; bottom: calc(100% + 8px); width: 246px; padding: 6px; display: grid; gap: 3px; border: 1px solid var(--color-heliotrope); border-radius: 14px; background: var(--color-christalle); box-shadow: 0 14px 36px rgb(1 1 1 / 45%); z-index: 50; }
-.language-option { min-height: 47px; padding: 6px 12px; display: grid; grid-template-columns: 28px 1fr 14px; align-items: center; gap: 12px; text-align: left; border: 0; border-radius: 9px; background: transparent; color: var(--color-mercury); cursor: pointer; }
-.language-option.is-active { background: rgb(172 115 255 / 20%); }
-.language-option[aria-selected="true"] { color: var(--color-viking); }
-.language-selector button:focus-visible { outline: 2px solid var(--color-viking); outline-offset: 2px; }
+.sidebar-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.sidebar-footer .sidebar-versions {
+  margin: 0;
+}
+.language-selector {
+  position: relative;
+  width: 100%;
+  text-transform: none;
+  z-index: 30;
+}
+.language-selector button {
+  text-transform: none;
+  font-family: inherit;
+}
+.language-trigger {
+  width: 100%;
+  padding: 9px 3px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  position: relative;
+  border: 1px solid rgb(172 115 255 / 45%);
+  border-radius: 12px;
+  background: rgb(95 34 217 / 28%);
+  color: var(--color-mercury);
+  cursor: pointer;
+}
+.language-trigger:hover,
+.language-trigger[aria-expanded="true"] {
+  border-color: var(--color-viking);
+  background: rgb(95 34 217 / 55%);
+}
+.language-trigger .country-icon {
+  width: 24px;
+  height: 24px;
+}
+.language-names {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.2;
+}
+.language-names strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.language-names small {
+  font-size: 11px;
+  opacity: 0.72;
+}
+.language-trigger .language-names {
+  text-align: center;
+}
+.language-chevron {
+  position: absolute;
+  top: 7px;
+  right: 5px;
+  font-size: 10px;
+}
+.language-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 246px;
+  padding: 6px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--color-heliotrope);
+  border-radius: 14px;
+  background: var(--color-christalle);
+  box-shadow: 0 14px 36px rgb(1 1 1 / 45%);
+  z-index: 50;
+}
+.language-option {
+  min-height: 47px;
+  padding: 6px 12px;
+  display: grid;
+  grid-template-columns: 28px 1fr 14px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-mercury);
+  cursor: pointer;
+}
+.language-option.is-active {
+  background: rgb(172 115 255 / 20%);
+}
+.language-option[aria-selected="true"] {
+  color: var(--color-viking);
+}
+.language-selector button:focus-visible {
+  outline: 2px solid var(--color-viking);
+  outline-offset: 2px;
+}

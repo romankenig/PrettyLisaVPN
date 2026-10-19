@@ -78,7 +78,9 @@ export function Login() {
             if (state.phase === "error") setState({ phase: "idle" });
           }}
         />
-        <p id="login-help" className="field-help">{t("Используйте адрес, к которому у вас есть доступ")}</p>
+        <p id="login-help" className="field-help">
+          {t("Используйте адрес, к которому у вас есть доступ")}
+        </p>
         {state.phase === "error" ? (
           <p id="login-error" className="form-error" role="alert">
             {t(state.message)}

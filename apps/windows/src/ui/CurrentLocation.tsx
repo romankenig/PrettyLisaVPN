@@ -92,16 +92,20 @@ export function CurrentLocation({
           <div>
             <span>
               {t(visible.data.city ?? "город неизвестен")},{t(" ")}
-              {t(visible.data.countryCode
-                ? countryName(visible.data.countryCode)
-                : "страна неизвестна")}
+              {t(
+                visible.data.countryCode
+                  ? countryName(visible.data.countryCode)
+                  : "страна неизвестна",
+              )}
             </span>
             <span className="current-location__ip">{t(visible.data.ip)}</span>
           </div>
         </div>
       ) : (
         <span className="current-location__notice">
-          {t(visible.phase === "error" ? "не удалось определить" : "определяем…")}
+          {t(
+            visible.phase === "error" ? "не удалось определить" : "определяем…",
+          )}
         </span>
       )}
       {visible.phase === "error" ? (

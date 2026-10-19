@@ -137,7 +137,10 @@ export function ConnectionLocationSelector({
           .sort((a, b) => a.name.localeCompare(b.name, getLanguage()))
       : [];
   const top = [...countries]
-    .sort((a, b) => b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()))
+    .sort(
+      (a, b) =>
+        b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()),
+    )
     .slice(0, 3);
   const autopilot: Choice = {
     key: "auto",
@@ -309,15 +312,20 @@ export function ConnectionLocationSelector({
         </div>
       ) : null}
       {state.phase === "loading" || state.phase === "refreshing" ? (
-        <p className="availability-note" role="status">{t("загружаем доступные локации…")}</p>
+        <p className="availability-note" role="status">
+          {t("загружаем доступные локации…")}
+        </p>
       ) : null}
       {state.phase === "error" || state.phase === "stale" ? (
         <p className="availability-warning" role="alert">
-          {t(state.message)}{t(" ")}
+          {t(state.message)}
+          {t(" ")}
           <button
             type="button"
             onClick={() => setAttempt((value) => value + 1)}
-          >{t("повторить")}</button>
+          >
+            {t("повторить")}
+          </button>
         </p>
       ) : null}
     </div>
@@ -357,8 +365,9 @@ function ChoiceLabel({
 export function countryName(countryCode: string): string {
   try {
     return (
-      new Intl.DisplayNames([getLanguage()], { type: "region" }).of(countryCode) ??
-      countryCode
+      new Intl.DisplayNames([getLanguage()], { type: "region" }).of(
+        countryCode,
+      ) ?? countryCode
     );
   } catch {
     return countryCode;

@@ -11,8 +11,12 @@ export function HomeCountryObserver() {
     vpnConnection.current,
   );
   useEffect(() => {
-    const disconnected = state.phase === "DISCONNECTED" && state.backend === "NONE" && state.tunnel === "DOWN";
-    const probe = state.phase === "RECONCILING" && Boolean(vpnConnection.localTunnelStatus);
+    const disconnected =
+      state.phase === "DISCONNECTED" &&
+      state.backend === "NONE" &&
+      state.tunnel === "DOWN";
+    const probe =
+      state.phase === "RECONCILING" && Boolean(vpnConnection.localTunnelStatus);
     if (!publicLocation || (!disconnected && !probe)) return;
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -23,10 +27,17 @@ export function HomeCountryObserver() {
       const current = new AbortController();
       controller = current;
       try {
-        if (probe && await vpnConnection.localTunnelStatus?.() !== "DOWN") return;
-        if (disposed || current.signal.aborted || vpnConnection.current() !== state) return;
+        if (probe && (await vpnConnection.localTunnelStatus?.()) !== "DOWN")
+          return;
+        if (
+          disposed ||
+          current.signal.aborted ||
+          vpnConnection.current() !== state
+        )
+          return;
         const data = await publicLocation.current(current.signal);
-        if (probe && await vpnConnection.localTunnelStatus?.() !== "DOWN") return;
+        if (probe && (await vpnConnection.localTunnelStatus?.()) !== "DOWN")
+          return;
         if (
           !disposed &&
           !current.signal.aborted &&

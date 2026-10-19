@@ -78,7 +78,13 @@ export function Devices() {
   return (
     <section className="devices-page" aria-labelledby="devices-title">
       <h1 id="devices-title">{t("устройства")}</h1>
-      <p className="devices-limit">{t("в аккаунте может быть не более 5 активных устройств.")}<br />{t("отзовите доступ ненужного устройства, чтобы освободить место для нового.")}</p>
+      <p className="devices-limit">
+        {t("в аккаунте может быть не более 5 активных устройств.")}
+        <br />
+        {t(
+          "отзовите доступ ненужного устройства, чтобы освободить место для нового.",
+        )}
+      </p>
 
       {listState.phase === "loading" ? (
         <p role="status">{t("загружаем устройства…")}</p>
@@ -89,7 +95,9 @@ export function Devices() {
           <button
             type="button"
             onClick={() => setListAttempt((value) => value + 1)}
-          >{t("повторить")}</button>
+          >
+            {t("повторить")}
+          </button>
         </div>
       ) : null}
       {listState.phase === "ready" ? (
@@ -105,13 +113,19 @@ export function Devices() {
                     <p className="device-identity" title={device.id}>
                       id: {t(deviceIdentifier(device, listState.devices))}
                     </p>
-                    <p className="device-dates">{t("добавлено: ")}<DeviceTime value={device.created_at} />
-                      <br />{t("последний вход:")}{t(" ")}
+                    <p className="device-dates">
+                      {t("добавлено: ")}
+                      <DeviceTime value={device.created_at} />
+                      <br />
+                      {t("последний вход:")}
+                      {t(" ")}
                       <DeviceTime value={device.last_login_at} />
                     </p>
                   </div>
                   {device.is_current ? (
-                    <span className="current-device">{t("текущее устройство")}</span>
+                    <span className="current-device">
+                      {t("текущее устройство")}
+                    </span>
                   ) : null}
                 </div>
                 <div className="device-card__footer">
@@ -129,7 +143,9 @@ export function Devices() {
                         setConfirmation(device);
                         setActionError(null);
                       }}
-                    >{t("отозвать доступ")}</button>
+                    >
+                      {t("отозвать доступ")}
+                    </button>
                   ) : null}
                 </div>
               </li>
@@ -147,7 +163,13 @@ export function Devices() {
           aria-describedby="revoke-confirmation-description"
         >
           <h2 id="revoke-confirmation-title">{t("Отозвать доступ?")}</h2>
-          <p id="revoke-confirmation-description">{t("Устройство «")}{confirmation.device_name}{t("» выйдет из аккаунта, а все его активные сессии будут завершены.")}</p>
+          <p id="revoke-confirmation-description">
+            {t("Устройство «")}
+            {confirmation.device_name}
+            {t(
+              "» выйдет из аккаунта, а все его активные сессии будут завершены.",
+            )}
+          </p>
           <p className="device-identity">id: {t(confirmation.id)}</p>
           <div className="confirmation-actions">
             <button
@@ -163,7 +185,9 @@ export function Devices() {
               type="button"
               disabled={revokingId !== null}
               onClick={() => setConfirmation(null)}
-            >{t("отмена")}</button>
+            >
+              {t("отмена")}
+            </button>
           </div>
         </div>
       ) : null}
@@ -236,16 +260,19 @@ function deviceIdentifier(device: DeviceResponse, devices: DeviceResponse[]) {
 
 function DeviceTime({ value }: { readonly value?: string | null }) {
   useLanguage();
-  if (!value || !Number.isFinite(Date.parse(value))) return <>{t("нет данных")}</>;
+  if (!value || !Number.isFinite(Date.parse(value)))
+    return <>{t("нет данных")}</>;
   return (
     <time dateTime={value} title={t("по времени этого устройства")}>
-      {t(new Intl.DateTimeFormat(getLanguage(), {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(value)))}
+      {t(
+        new Intl.DateTimeFormat(getLanguage(), {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(value)),
+      )}
     </time>
   );
 }

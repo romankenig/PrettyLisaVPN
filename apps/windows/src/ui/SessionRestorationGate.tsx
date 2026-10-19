@@ -47,7 +47,9 @@ export function SessionRestorationGate({
   if (result === "temporarily-unavailable") {
     return (
       <StartupFailure
-        message={t("Backend временно недоступен. Сессия сохранена на этом устройстве.")}
+        message={t(
+          "Backend временно недоступен. Сессия сохранена на этом устройстве.",
+        )}
         onRetry={() => void retry(restoration, setResult)}
       />
     );
@@ -100,7 +102,9 @@ function StartupFailure({
   return (
     <main className="startup-status" role="alert">
       <p>{t(message)}</p>
-      <button type="button" onClick={onRetry}>{t("повторить")}</button>
+      <button type="button" onClick={onRetry}>
+        {t("повторить")}
+      </button>
     </main>
   );
 }

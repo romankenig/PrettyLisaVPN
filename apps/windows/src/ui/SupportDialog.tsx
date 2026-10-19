@@ -191,18 +191,24 @@ export function SupportDialog({
       {receipt ? (
         <div className="support-receipt" role="status">
           <h3>{t("обращение принято")}</h3>
-          <p>{t("адрес для ответа: ")}{email}</p>
-          <p>{t("номер: ")}{t(receipt.request_id)}</p>
           <p>
-            {
-              t({
+            {t("адрес для ответа: ")}
+            {email}
+          </p>
+          <p>
+            {t("номер: ")}
+            {t(receipt.request_id)}
+          </p>
+          <p>
+            {t(
+              {
                 ACCEPTED: "обращение сохранено и ожидает отправки письма",
                 RETRYING: "отправка письма будет повторена",
                 SENT: "почтовый сервер принял письмо",
                 FAILED: "письмо пока не отправлено; обращение сохранено",
                 EXPIRED: "срок хранения содержимого истёк",
-              }[receipt.status ?? "ACCEPTED"])
-            }
+              }[receipt.status ?? "ACCEPTED"],
+            )}
           </p>
           {support?.getStatus ? (
             <button
@@ -234,15 +240,21 @@ export function SupportDialog({
                     if (alive.current) setPending(false);
                   });
               }}
-            >{t("проверить статус")}</button>
+            >
+              {t("проверить статус")}
+            </button>
           ) : null}
           {error ? <p role="alert">{t(error)}</p> : null}
-          <button type="button" onClick={onClose}>{t("готово")}</button>
+          <button type="button" onClick={onClose}>
+            {t("готово")}
+          </button>
         </div>
       ) : (
         <form onSubmit={(event) => void submit(event)} noValidate>
           <div className="support-fields">
-            <label>{t("тема")}<input
+            <label>
+              {t("тема")}
+              <input
                 name="subject"
                 autoFocus
                 maxLength={120}
@@ -253,7 +265,9 @@ export function SupportDialog({
                 placeholder={t("кратко о проблеме")}
               />
             </label>
-            <label>{t("описание проблемы")}<textarea
+            <label>
+              {t("описание проблемы")}
+              <textarea
                 name="description"
                 maxLength={4000}
                 required
@@ -263,7 +277,9 @@ export function SupportDialog({
                 placeholder={t("что произошло и что вы ожидали")}
               />
             </label>
-            <label>{t("email для ответа")}<input
+            <label>
+              {t("email для ответа")}
+              <input
                 name="reply_email"
                 type="email"
                 maxLength={254}
@@ -276,7 +292,9 @@ export function SupportDialog({
             </label>
           </div>
           <div className="support-attachments">
-            <label className="support-file-label">{t("прикрепить скриншоты")}<input
+            <label className="support-file-label">
+              {t("прикрепить скриншоты")}
+              <input
                 type="file"
                 className="visually-hidden"
                 aria-label={t("прикрепить скриншоты")}
@@ -290,7 +308,9 @@ export function SupportDialog({
                 }}
               />
             </label>
-            <span>{t("до 3 файлов · PNG, JPEG, WebP · до 5 МБ каждый, 10 МБ всего")}</span>
+            <span>
+              {t("до 3 файлов · PNG, JPEG, WebP · до 5 МБ каждый, 10 МБ всего")}
+            </span>
             {screenshots.length ? (
               <ul>
                 {screenshots.map((file, index) => (
@@ -324,25 +344,33 @@ export function SupportDialog({
                 onChange={(event) =>
                   setIncludeDiagnostics(event.target.checked)
                 }
-              />{t("приложить технические данные")}</label>
+              />
+              {t("приложить технические данные")}
+            </label>
             {includeDiagnostics ? (
               <details>
                 <summary>{t("что будет приложено")}</summary>
                 <pre>
-                  {t(JSON.stringify(
-                    frozen ? attempt.current?.diagnostics : diagnostics,
-                    null,
-                    2,
-                  ))}
+                  {t(
+                    JSON.stringify(
+                      frozen ? attempt.current?.diagnostics : diagnostics,
+                      null,
+                      2,
+                    ),
+                  )}
                 </pre>
               </details>
             ) : null}
           </div>
           {!support ? (
-            <p className="support-unavailable">{t("отправка пока недоступна")}</p>
+            <p className="support-unavailable">
+              {t("отправка пока недоступна")}
+            </p>
           ) : null}
           {!active ? (
-            <p className="support-unavailable">{t("войдите в аккаунт для отправки")}</p>
+            <p className="support-unavailable">
+              {t("войдите в аккаунт для отправки")}
+            </p>
           ) : null}
           {error ? (
             <p className="support-error" role="alert">
@@ -350,11 +378,17 @@ export function SupportDialog({
             </p>
           ) : null}
           {frozen && !pending ? (
-            <p>{t("результат неизвестен. повтор проверит исходное обращение; поля временно заблокированы")}</p>
+            <p>
+              {t(
+                "результат неизвестен. повтор проверит исходное обращение; поля временно заблокированы",
+              )}
+            </p>
           ) : null}
           <p>{t("закрытие окна не отменяет уже принятое обращение")}</p>
           <footer className="support-actions">
-            <button type="button" className="support-cancel" onClick={onClose}>{t("отмена")}</button>
+            <button type="button" className="support-cancel" onClick={onClose}>
+              {t("отмена")}
+            </button>
             <button
               type="submit"
               disabled={pending || checkingFiles || !support || !active}

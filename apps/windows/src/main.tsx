@@ -108,7 +108,9 @@ try {
   root.render(
     <WindowFrame>
       <main role="alert">
-        <h1>{t("не удалось запустить")}{t(" ")}
+        <h1>
+          {t("не удалось запустить")}
+          {t(" ")}
           <span className="product-name">PrettyLisaVPN</span>
         </h1>
         <p>{t("проверьте конфигурацию приложения.")}</p>
