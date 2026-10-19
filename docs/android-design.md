@@ -56,7 +56,8 @@ composables; в продукте нет страницы component gallery ил�
 ## Приёмка на эмуляторах
 
 Существующий CI собирает APK/test APK текущего checkout, проходит lint, устанавливает
-**тот же APK** на x86_64 API **26/35/36**. Android source/version/package/APK digest
+**тот же APK** на x86_64 API **26/35/36**. Headless runner использует
+SwiftShader без Vulkan и 4GiB RAM; framework ANR/IME logs сохраняются при сбое. Android source/version/package/APK digest
 проверяются до установки. Старые APK или Windows PNG не используются как результат.
 
 Сначала выполняются прежние 3 NavigationTest, затем 3 DesignAcceptanceTest для

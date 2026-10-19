@@ -45,10 +45,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,10 +61,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.R
@@ -84,16 +80,8 @@ private const val SUPPORT = "SUPPORT"
 @Composable
 fun PrettyLisaApp() {
     val navController = rememberNavController()
-    // Keep the initial restored tab before NavHost finishes restoring its graph. Then follow
-    // destination callbacks synchronously, including Back and Support, rather than a delayed Flow.
-    var route by rememberSaveable { mutableStateOf(Destination.HOME.name) }
-    DisposableEffect(navController) {
-        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            route = destination.route ?: Destination.HOME.name
-        }
-        navController.addOnDestinationChangedListener(listener)
-        onDispose { navController.removeOnDestinationChangedListener(listener) }
-    }
+    val entry by navController.currentBackStackEntryAsState()
+    val route = entry?.destination?.route ?: Destination.HOME.name
     val imeVisible = WindowInsets.isImeVisible
     Scaffold(
         modifier = Modifier.imePadding(),

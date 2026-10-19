@@ -9,6 +9,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -47,18 +49,34 @@ class NavigationTest {
 
     @Test
     fun recreationRestoresSelectedTab() {
-        compose.onNodeWithTag("tab_ABOUT").performClick()
-        compose.activityRule.scenario.recreate()
-        // Navigation restores its destination before the back-stack Flow updates tab state.
-        compose.waitUntil(5_000) {
-            compose.onAllNodesWithTag("tab_ABOUT").fetchSemanticsNodes().any {
-                it.config.getOrNull(SemanticsProperties.Selected) == true
+        try {
+            // Commit and render the About destination before saving Activity/NavHost state.
+            compose.onNodeWithTag("tab_ABOUT").performClick().assertIsSelected()
+            compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
+            screenshot("before-recreation")
+            compose.activityRule.scenario.recreate()
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithTag("tab_ABOUT").fetchSemanticsNodes().any {
+                    it.config.getOrNull(SemanticsProperties.Selected) == true
+                }
             }
+            compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
+            compose.onNodeWithTag("tab_ABOUT").assertIsSelected()
+            screenshot("after-recreation")
+            compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            compose.onNodeWithTag("screen_HOME").assertIsDisplayed()
+        } catch (failure: Throwable) {
+            runCatching {
+                val tree = compose.onRoot(useUnmergedTree = true).printToString()
+                println(tree)
+                val context = InstrumentationRegistry.getInstrumentation().targetContext
+                val directory = File(context.getExternalFilesDir(null), "acceptance")
+                check(directory.mkdirs() || directory.isDirectory)
+                File(directory, "recreation-failure.txt").writeText(tree)
+                screenshot("recreation-failure")
+            }
+            throw failure
         }
-        compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
-        compose.onNodeWithTag("tab_ABOUT").assertIsSelected()
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithTag("screen_HOME").assertIsDisplayed()
     }
 
     private fun screenshot(name: String) {

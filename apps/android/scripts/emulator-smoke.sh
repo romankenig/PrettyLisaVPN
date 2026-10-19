@@ -4,6 +4,10 @@ set -euo pipefail
 package=com.prettylisavpn.android.dev
 mkdir -p evidence
 cleanup() {
+  # Preserve framework/IME evidence too: a System UI ANR must not look like an app-input failure.
+  adb logcat -d -b events > evidence/android-events.txt 2>&1 || true
+  adb shell dumpsys activity lastanr > evidence/last-anr.txt 2>&1 || true
+  adb shell dumpsys input_method > evidence/input-method.txt 2>&1 || true
   # Best-effort evidence and device reset also on test failure; never replaces the failing exit code.
   adb pull "/sdcard/Android/data/$package/files/acceptance/." evidence/ >/dev/null 2>&1 || true
   adb shell wm size reset >/dev/null 2>&1 || true
@@ -107,6 +111,12 @@ if grep -q 'FATAL EXCEPTION' evidence/android-runtime.txt; then
   cat evidence/android-runtime.txt
   exit 1
 fi
+adb logcat -d -b events > evidence/android-events.txt
+python3 - <<'ANR_CHECK'
+import pathlib, re
+log = pathlib.Path('evidence/android-events.txt').read_text()
+assert not re.search(r'\bam_anr\b.*(?:com\.android\.systemui|com\.prettylisavpn\.android\.dev)', log), 'App/System UI ANR; inspect android-events.txt and last-anr.txt'
+ANR_CHECK
 cp apk/build-identity.json evidence/
 adb shell getprop ro.build.version.sdk > evidence/emulator-api.txt
 adb shell getprop ro.product.cpu.abi > evidence/emulator-abi.txt

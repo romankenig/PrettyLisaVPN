@@ -22,6 +22,9 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -94,9 +97,9 @@ class DesignAcceptanceTest {
         compose.onNodeWithTag("tab_ABOUT").performClick()
         compose.onNodeWithTag("open-support").performScrollTo().performClick()
         compose.onNodeWithTag("screen_SUPPORT").assertIsDisplayed()
-        compose.onNodeWithTag("support-subject").performScrollTo().performClick().performTextInput("VPN")
-        compose.onNodeWithTag("support-description").performScrollTo().performClick().performTextInput("Connection")
-        compose.onNodeWithTag("support-email").performScrollTo().performClick().performTextInput("invalid")
+        enterField("support-subject", "VPN")
+        enterField("support-description", "Connection")
+        enterField("support-email", "invalid")
         compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).assertExists()
         compose.waitUntil(10_000) { keyboardVisible() }
         compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).performScrollTo().assertIsDisplayed()
@@ -154,6 +157,13 @@ class DesignAcceptanceTest {
         assertTextFits()
         capture("components")
         passed = true
+    }
+
+    private fun enterField(tag: String, value: String) {
+        // Do not inject through a system dialog; require the actual foreground window and touch.
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
+        compose.onNodeWithTag(tag).performScrollTo().performTouchInput { click() }
+            .assertIsFocused().performTextInput(value)
     }
 
     private fun keyboardVisible(): Boolean =
