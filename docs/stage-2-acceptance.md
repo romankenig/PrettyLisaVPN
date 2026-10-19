@@ -1,5 +1,11 @@
 # Stage 2 acceptance: passwordless authentication
 
+Актуальный срез — [project-status.md](project-status.md): backend **0.10.0**,
+Windows **0.11.1**, schema **0026**. Это инструкция ручной приёмки, не отчёт о её
+успехе. По решению владельца реальный OTP-прогон Windows на паузе; автоматически
+письмо не запрашивается. Возобновлять только при согласованной готовности читать
+почту, через отдельный opt-in из [Windows acceptance](windows-development-acceptance.md).
+
 Этот runbook проверяет цепочку Windows → OTP → Timeweb → PostgreSQL/Valkey → session
 restoration → devices → logout. Не вставляйте SMTP-пароль, OTP, access token или refresh token в
 командную строку, issue, отчёт или лог. Реальную доставку письма можно считать успешной только

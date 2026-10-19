@@ -8,10 +8,17 @@
 Правила продуктовых версий, сборок и дальнейших изменений:
 [система версионирования](../../docs/versioning.md).
 
-Основа desktop-клиента: Tauri 2, Rust, React и TypeScript. Есть passwordless-вход,
-восстановление сессии, авторизованная главная, экран «О приложении», конфигурация и заменяемые
-API/native-адаптеры. Нативный слой умеет запускать, останавливать и проверять состояние
-WireGuardNT-туннеля; подключение этого слоя к продуктовому Home flow выполняется отдельно.
+Windows-клиент: Tauri 2, Rust, React и TypeScript. Реализованы OTP/session API,
+Home, устройства, сообщения, подписка, поддержка и заменяемые API/native-адаптеры.
+Home connect/disconnect связан с backend VPN sessions и native WireGuardNT layer;
+для реального туннеля нужны официальный проверенный DLL и elevated Windows.
+Наличие flow не означает завершённую приёмку VPN-трафика.
+
+[Текущий статус проекта](../../docs/project-status.md) содержит точные версии,
+source/build SHA и проверки. В development платежи read-only, реального провайдера
+нет; OTP-вход поставлен владельцем на паузу. Полный VPN data plane и inbox доставки
+поддержки не объявляются проверенными. Installer/signing/auto-update остаются вне
+текущего результата.
 
 ## Зависимости
 
@@ -324,7 +331,7 @@ Release manifest требует UAC elevation для управления сет
 отозванным согласно следующему ответу Backend. При ответе `401/403` приложение должно очистить
 защищённую сессию и вернуть пользователя к Email login.
 
-## Payment route capabilities — backend 0.10.0 / Windows 0.11.0
+## Payment route capabilities — backend 0.10.0 / Windows 0.11.1
 
 Overview owns route currencies/recurring support and provider mode. Windows requires
 explicit LIVE, operations availability and account actions; sandbox/legacy responses

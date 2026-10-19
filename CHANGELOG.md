@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Документация — актуальный статус на 2026-10-19
+
+- Исправлены устаревшие описания backend-каркаса, отсутствующей аутентификации,
+  неподключённого Home flow и якобы отсутствующего development deployment.
+- Добавлена единая сводка реализованных модулей, фактической приёмки, source/build
+  SHA, runtime/deploy и backlog. Исторические handoff-записи явно отделены от неё.
+- OTP остаётся на паузе; inbox поддержки и полный Windows VPN data plane не
+  объявляются проверенными. Реальный платёжный провайдер остаётся отдельной задачей #18.
+- Version unchanged: Windows 0.11.1, backend 0.10.0, schema 0026; только документация.
+
 ### Windows — 0.11.1 / Backend — 0.10.0 unchanged
 
 - Fixed: Home refreshes `/me` on entry so changed device counts and plans do not

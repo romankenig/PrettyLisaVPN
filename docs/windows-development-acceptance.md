@@ -11,6 +11,22 @@ bounds проверяются на настоящем development-значени
 Backend 0.10.0 unchanged; schema 0026. Development base:
 `4347935f2c5c20cabc523ff94acc12a2f1bd3c21`.
 
+## Зафиксированный результат
+
+[Текущая сводка](project-status.md) содержит точные source/build SHA и ссылки.
+PR #17 слит 2026-10-19; development deploy выполнен run **39200525561**, attempt 1,
+source **090dd4117fb829f6faad1853cba5ae577c8837aa**. Runtime:
+`0.10.0-dev.39200525561+g090dd4117fb829f6faad1853cba5ae577c8837aa`.
+
+Native acceptance run **39141375774**, attempt 1, source
+**4452327e6904a1cbf520f3088f908f51e453e00d**: девять endpoint вернули 200,
+восемь автоматических native-сценариев прошли, временный аккаунт удалён.
+Геолокация появилась в UI; Home обновил счётчик 2→1, runtime остался в sidebar.
+Прошли 339 frontend tests, 2 Rust tests, 65 sandbox integration scenarios.
+OTP явно отмечен deferred/unverified; поддержка не отправлялась, VPN data plane
+не проверялся. Исходники Windows между acceptance HEAD и deployed HEAD совпадают.
+Обновление документации не является новым прогоном или deploy.
+
 ## Источники доказательств
 
 `Windows development acceptance` собирает текущий Tauri/native код на Windows
@@ -83,6 +99,7 @@ SMTP receipt не доказывает inbox; открытие поддержк�
 
 ## Отдельная будущая задача: настоящий платёжный провайдер
 
+Отдельная задача: [issue #18](https://github.com/romankenig/PrettyLisaVPN/issues/18).
 Не включать LIVE в рамках этой приёмки. Будущая задача должна отдельно выбрать и
 настроить провайдера, подтвердить его маршруты/валюты/recurring, реализовать
 аутентификацию уведомлений, durable idempotency/reconciliation и сверку частичных

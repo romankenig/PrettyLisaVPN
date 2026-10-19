@@ -1,4 +1,22 @@
-# Backend: продолжение работы из Cloud — 2026-10-17
+# Backend: актуальный статус и журнал продолжения
+
+## Актуальный срез — 2026-10-19
+
+Актуальные функции, границы проверки и backlog собраны в
+[project-status.md](project-status.md): backend **0.10.0**, Windows **0.11.1**,
+schema **0026**. PR #17 слит; deployed source develop —
+`090dd4117fb829f6faad1853cba5ae577c8837aa`.
+[Backend run 39200525561](https://github.com/romankenig/PrettyLisaVPN/actions/runs/39200525561),
+attempt 1, успешно выполнил development deployment с runtime
+`0.10.0-dev.39200525561+g090dd4117fb829f6faad1853cba5ae577c8837aa`:
+health/readiness/точная версия подтверждены workflow 2026-10-19.
+
+Windows acceptance проверяла source HEAD `4452327e6904a1cbf520f3088f908f51e453e00d`;
+между ним и deployed HEAD отличается только deployment README. Реальный провайдер
+не подключён; OTP остаётся на паузе; inbox поддержки и полный Windows VPN data plane
+не приняты. Тексты ниже — **журнал предыдущих задач**: старые версии, migration head,
+условия Cloud и статусы «не слито/не развёрнуто» относятся к своим историческим
+срезам и не заменяют актуальную сводку. Изменение этой документации — version unchanged.
 
 ## Windows development acceptance — Windows 0.11.1 / backend 0.10.0 unchanged
 
