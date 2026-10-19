@@ -66,7 +66,18 @@ class DesignAcceptanceTest {
 
     @Before
     fun verifyActualFontScale() {
-        val expected = InstrumentationRegistry.getArguments().getString("fontScale")?.toFloat()
+        val arguments = InstrumentationRegistry.getArguments()
+        val width = arguments.getString("widthPx")?.toInt()
+        val height = arguments.getString("heightPx")?.toInt()
+        if (width != null && height != null) {
+            compose.waitUntil(10_000) {
+                val size = windowSize()
+                size.x == width && size.y == height && compose.activity.hasWindowFocus()
+            }
+            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(1_000, 5_000)
+            compose.waitForIdle()
+        }
+        val expected = arguments.getString("fontScale")?.toFloat()
         if (expected != null) assertEquals(expected, compose.activity.resources.configuration.fontScale, 0.02f)
     }
 

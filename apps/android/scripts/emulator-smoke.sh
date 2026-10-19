@@ -66,10 +66,19 @@ for design_case in compact small scaled-font large-font roomy landscape; do
       adb shell settings put system user_rotation 1
     fi
   fi
+  # Settle the real Activity/display configuration before the instrumentation rule owns it.
+  # Otherwise the final rotation can recreate the Activity after a test-only setContent call.
+  adb shell am start -W -n "$package/com.prettylisavpn.android.MainActivity" > /dev/null
+  if [[ "$design_case" == landscape ]]; then
+    expected_width=1280; expected_height=720
+  else
+    expected_width=${viewport%x*}; expected_height=${viewport#*x}
+  fi
   mkdir -p "evidence/$design_case"
   adb shell am instrument -w -r \
     -e class com.prettylisavpn.android.DesignAcceptanceTest \
     -e designCase "$design_case" -e fontScale "$font_scale" \
+    -e widthPx "$expected_width" -e heightPx "$expected_height" \
     "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee "evidence/$design_case/instrumentation.txt"
   python3 - "$design_case" <<'PY'
 import pathlib, re, sys
