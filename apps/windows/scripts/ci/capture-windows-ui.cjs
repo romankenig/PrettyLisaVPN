@@ -149,6 +149,19 @@ async function screenshot(name) {
   const layout = await page.evaluate(() => {
     const main = document.querySelector("main");
     const bad = [];
+    const languageMenu = document.querySelector(".language-menu");
+    if (languageMenu) {
+      const bounds = languageMenu.getBoundingClientRect();
+      if (
+        bounds.left < 0 ||
+        bounds.top < 0 ||
+        bounds.right > window.innerWidth ||
+        bounds.bottom > window.innerHeight ||
+        languageMenu.scrollWidth > languageMenu.clientWidth + 1 ||
+        languageMenu.scrollHeight > languageMenu.clientHeight + 1
+      )
+        bad.push("language menu exceeds window or clips its options");
+    }
     for (const node of [
       document.documentElement,
       document.body,
@@ -161,7 +174,9 @@ async function screenshot(name) {
         node &&
         ((node.scrollHeight > node.clientHeight + 1 &&
           !node.matches(".connection-card")) ||
-          node.scrollWidth > node.clientWidth + 1)
+          (node.scrollWidth > node.clientWidth + 1 &&
+            // The popup intentionally extends beyond the narrow sidebar.
+            !(languageMenu && node.matches(".sidebar"))))
       )
         bad.push(
           `${node.className || node.tagName} (${node.scrollHeight}/${node.clientHeight}, ${node.scrollWidth}/${node.clientWidth})`,
@@ -1001,7 +1016,14 @@ main()
             .innerText()
             .catch(() => "unavailable")),
       );
-      await screenshot("failure").catch(() => {});
+      try {
+        nativeWindow("Capture", "failure");
+      } catch {
+        // Keep the raw WebView capture even when native capture fails.
+      }
+      await page
+        .screenshot({ path: path.join(output, "failure-content.png") })
+        .catch(() => {});
       fs.writeFileSync(
         path.join(output, "failure-page.txt"),
         await page
