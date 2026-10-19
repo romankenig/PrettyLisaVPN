@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
@@ -108,10 +109,11 @@ try {
     <WindowFrame>
       <main role="alert">
         <h1>
-          не удалось запустить{" "}
+          {t("не удалось запустить")}
+          {t(" ")}
           <span className="product-name">PrettyLisaVPN</span>
         </h1>
-        <p>проверьте конфигурацию приложения.</p>
+        <p>{t("проверьте конфигурацию приложения.")}</p>
       </main>
     </WindowFrame>,
   );

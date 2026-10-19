@@ -137,7 +137,10 @@ async function screenshot(name) {
         throw new Error("Product name must preserve PrettyLisaVPN casing");
     }
     for (const button of document.querySelectorAll("button")) {
-      if (getComputedStyle(button).textTransform !== "lowercase")
+      if (
+        !button.closest(".language-selector") &&
+        getComputedStyle(button).textTransform !== "lowercase"
+      )
         throw new Error("Buttons must use lowercase text");
     }
   });
@@ -146,6 +149,19 @@ async function screenshot(name) {
   const layout = await page.evaluate(() => {
     const main = document.querySelector("main");
     const bad = [];
+    const languageMenu = document.querySelector(".language-menu");
+    if (languageMenu) {
+      const bounds = languageMenu.getBoundingClientRect();
+      if (
+        bounds.left < 0 ||
+        bounds.top < 0 ||
+        bounds.right > window.innerWidth ||
+        bounds.bottom > window.innerHeight ||
+        languageMenu.scrollWidth > languageMenu.clientWidth + 1 ||
+        languageMenu.scrollHeight > languageMenu.clientHeight + 1
+      )
+        bad.push("language menu exceeds window or clips its options");
+    }
     for (const node of [
       document.documentElement,
       document.body,
@@ -158,7 +174,9 @@ async function screenshot(name) {
         node &&
         ((node.scrollHeight > node.clientHeight + 1 &&
           !node.matches(".connection-card")) ||
-          node.scrollWidth > node.clientWidth + 1)
+          (node.scrollWidth > node.clientWidth + 1 &&
+            // The popup intentionally extends beyond the narrow sidebar.
+            !(languageMenu && node.matches(".sidebar"))))
       )
         bad.push(
           `${node.className || node.tagName} (${node.scrollHeight}/${node.clientHeight}, ${node.scrollWidth}/${node.clientWidth})`,
@@ -168,8 +186,17 @@ async function screenshot(name) {
   });
   if (layout.length)
     throw new Error("Content exceeds fixed canvas: " + layout.join(", "));
-  await page.getByRole("button", { name: "Свернуть", exact: true }).waitFor();
-  await page.getByRole("button", { name: "Закрыть", exact: true }).waitFor();
+  const chromeLabels = {
+    ru: ["Свернуть", "Закрыть"],
+    en: ["Minimize", "Close"],
+    zh: ["最小化", "关闭"],
+    es: ["Minimizar", "Cerrar"],
+    de: ["Minimieren", "Schließen"],
+    fr: ["Réduire", "Fermer"],
+  };
+  const locale = await page.locator("html").getAttribute("lang");
+  for (const name of chromeLabels[locale])
+    await page.getByRole("button", { name, exact: true }).waitFor();
   nativeWindow("Capture", name);
   await page.screenshot({
     path: path.join(output, name + "-content.png"),
@@ -376,7 +403,7 @@ async function main() {
   if ((await page.locator(".account-summary").innerText()).includes("статус"))
     throw new Error("Account status must be removed");
   await screenshot("04-home");
-  const combo = page.getByRole("combobox");
+  const combo = page.locator(".location-trigger");
   await combo.click();
   await page.getByRole("listbox").waitFor();
   if (
@@ -705,12 +732,11 @@ async function main() {
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await page.getByRole("link", { name: "главная", exact: true }).click();
-  await page.getByRole("combobox").waitFor();
-  await page.waitForFunction(() =>
-    document
-      .querySelector('[role="combobox"]')
-      ?.textContent.includes("Германия"),
-  );
+  await page.locator(".location-trigger").waitFor();
+  await page.waitForFunction(() => {
+    const location = document.querySelector(".location-trigger");
+    return location?.textContent.includes("Германия");
+  });
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /устройства/ }).click();
   const settingsNav = page
@@ -843,6 +869,63 @@ async function main() {
   )
     throw new Error("Support draft must not survive closing");
   await support.getByRole("button", { name: "закрыть обращение" }).click();
+  // Real WebView2/native window screenshots for every application language.
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "главная", exact: true })
+    .click();
+  await page.locator(".location-trigger").waitFor();
+  await page.locator(".language-trigger").click();
+  const languageOrder = await page
+    .locator(".language-menu [data-language]")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-language")),
+    );
+  if (
+    JSON.stringify(languageOrder) !==
+    JSON.stringify(["zh", "en", "fr", "de", "ru", "es"])
+  )
+    throw new Error("Language order must use English names");
+  await screenshot("12-language-menu");
+  await page.keyboard.press("Escape");
+  for (const locale of ["en", "zh", "es", "de", "fr", "ru"]) {
+    await page.locator(".language-trigger").click();
+    await page.locator(`[data-language="${locale}"]`).click();
+    await page.waitForFunction(
+      (language) => document.documentElement.lang === language,
+      locale,
+    );
+    await screenshot("13-home-" + locale);
+    if (
+      locale !== "ru" &&
+      (await page
+        .locator(".traffic-mode")
+        .innerText()
+        .then((text) => /[А-Яа-яЁё]/.test(text)))
+    )
+      throw new Error("Untranslated traffic controls: " + locale);
+  }
+  await page.locator(".language-trigger").click();
+  await page.locator('[data-language="en"]').click();
+  await page.reload();
+  await page.waitForFunction(() => document.documentElement.lang === "en");
+  await page
+    .getByRole("heading", { name: "PrettyLisaVPN", exact: true })
+    .waitFor();
+  await screenshot("14-home-en-restored");
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "about", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "about", exact: true }).waitFor();
+  await screenshot("15-about-en");
+  await page
+    .getByRole("button", { name: "contact support", exact: true })
+    .click();
+  await screenshot("16-support-en");
+  await page.keyboard.press("Escape");
+  await page.locator(".language-trigger").click();
+  await page.locator('[data-language="ru"]').click();
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "настройки", exact: true })
@@ -933,7 +1016,14 @@ main()
             .innerText()
             .catch(() => "unavailable")),
       );
-      await screenshot("failure").catch(() => {});
+      try {
+        nativeWindow("Capture", "failure");
+      } catch {
+        // Keep the raw WebView capture even when native capture fails.
+      }
+      await page
+        .screenshot({ path: path.join(output, "failure-content.png") })
+        .catch(() => {});
       fs.writeFileSync(
         path.join(output, "failure-page.txt"),
         await page

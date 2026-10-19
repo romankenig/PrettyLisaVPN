@@ -1,3 +1,4 @@
+import { getLanguage } from "../i18n/language";
 export type Currency = "RUB" | "USD";
 export type PaymentRoute = "MIR" | "BANK_CARD" | "ALIPAY_WECHAT" | "CRYPTO";
 export type BillingAction = "SUBSCRIBE" | "RENEW" | "CHANGE_METHOD" | "CANCEL";
@@ -71,7 +72,7 @@ export interface BillingClient {
 }
 
 export function formatPrice(amount: number, currency: Currency): string {
-  return new Intl.NumberFormat("ru-RU", {
+  return new Intl.NumberFormat(getLanguage(), {
     style: "currency",
     currency,
     minimumFractionDigits: amount % 100 === 0 ? 0 : 2,

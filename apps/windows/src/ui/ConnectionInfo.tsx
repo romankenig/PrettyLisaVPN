@@ -1,8 +1,10 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useState } from "react";
 import type { ConnectionDetails } from "../vpn/connectionDetails";
 import { useApplication } from "../state/application";
 
 export function ConnectionInfo({ sessionId }: { readonly sessionId: string }) {
+  useLanguage();
   const { vpnConnection } = useApplication();
   const [state, setState] = useState<{
     readonly sessionId: string;
@@ -31,66 +33,68 @@ export function ConnectionInfo({ sessionId }: { readonly sessionId: string }) {
   if (state?.sessionId !== sessionId)
     return (
       <p className="connection-info" role="status">
-        получаем параметры соединения…
+        {t("получаем параметры соединения…")}
       </p>
     );
   const info = state.data;
   if (!info)
-    return <p className="connection-info">параметры соединения недоступны</p>;
+    return (
+      <p className="connection-info">{t("параметры соединения недоступны")}</p>
+    );
   return (
-    <div className="connection-info" aria-label="способ подключения">
+    <div className="connection-info" aria-label={t("способ подключения")}>
       <p>
-        {info.protocol} · {info.transport} · {info.server}
+        {t(info.protocol)} · {t(info.transport)} · {t(info.server)}
       </p>
       <p>
-        {info.encryption}
-        {info.mtu ? ` · mtu ${info.mtu}` : ""}
+        {t(info.encryption)}
+        {t(info.mtu ? ` · mtu ${info.mtu}` : "")}
       </p>
       <details>
-        <summary>параметры подключения</summary>
+        <summary>{t("параметры подключения")}</summary>
         <dl>
           <div>
-            <dt>маскировка</dt>
-            <dd>{info.obfuscation}</dd>
+            <dt>{t("маскировка")}</dt>
+            <dd>{t(info.obfuscation)}</dd>
           </div>
           {info.dns ? (
             <div>
               <dt>dns</dt>
-              <dd>{info.dns.join(", ")}</dd>
+              <dd>{t(info.dns.join(", "))}</dd>
             </div>
           ) : null}
           {info.clientAddress ? (
             <div>
-              <dt>адрес туннеля</dt>
-              <dd>{info.clientAddress}</dd>
+              <dt>{t("адрес туннеля")}</dt>
+              <dd>{t(info.clientAddress)}</dd>
             </div>
           ) : null}
           {info.allowedIps ? (
             <div>
-              <dt>маршруты</dt>
-              <dd>{info.allowedIps.join(", ")}</dd>
+              <dt>{t("маршруты")}</dt>
+              <dd>{t(info.allowedIps.join(", "))}</dd>
             </div>
           ) : null}
           {info.keepalive !== undefined ? (
             <div>
               <dt>keepalive</dt>
-              <dd>{info.keepalive} s</dd>
+              <dd>{t(info.keepalive)} s</dd>
             </div>
           ) : null}
           {info.maxDatagramSize !== undefined ? (
             <div>
-              <dt>размер пакета</dt>
-              <dd>{info.maxDatagramSize}</dd>
+              <dt>{t("размер пакета")}</dt>
+              <dd>{t(info.maxDatagramSize)}</dd>
             </div>
           ) : null}
           {info.serverPublicKey ? (
             <div>
-              <dt>публичный ключ сервера</dt>
-              <dd>{info.serverPublicKey}</dd>
+              <dt>{t("публичный ключ сервера")}</dt>
+              <dd>{t(info.serverPublicKey)}</dd>
             </div>
           ) : null}
         </dl>
-        <p>для ручной настройки также нужен профиль с ключами</p>
+        <p>{t("для ручной настройки также нужен профиль с ключами")}</p>
       </details>
     </div>
   );

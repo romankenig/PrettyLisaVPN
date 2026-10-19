@@ -1,3 +1,4 @@
+import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApplication } from "../state/application";
@@ -11,6 +12,7 @@ import {
 } from "../messages/model";
 
 export function AccountMessages({ version }: { readonly version: string }) {
+  useLanguage();
   const { session, messages } = useApplication();
   const active = useSyncExternalStore(
     session.subscribe,
@@ -42,6 +44,7 @@ function MessageVisit({
   readonly client: MessagesClient;
   readonly version: string;
 }) {
+  useLanguage();
   const { session } = useApplication();
   const navigate = useNavigate();
   const [queue, setQueue] = useState<readonly AccountMessage[]>([]);
@@ -75,7 +78,14 @@ function MessageVisit({
           {
             platform: "WINDOWS",
             app_version: version,
-            locale: navigator.language,
+            locale: {
+              ru: "ru-RU",
+              en: "en-GB",
+              zh: "zh-CN",
+              es: "es-ES",
+              de: "de-DE",
+              fr: "fr-FR",
+            }[getLanguage()],
             schema_version: 1,
           },
           controller.signal,
@@ -209,7 +219,7 @@ function MessageVisit({
   return (
     <MessageDialog
       key={messageKey(message)}
-      message={message}
+      message={t(message)}
       pending={pending}
       error={error}
       onLater={later}
@@ -231,6 +241,7 @@ function MessageDialog({
   readonly onLater: () => void;
   readonly onAcknowledge: (action?: MessageAction) => void;
 }) {
+  useLanguage();
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -250,16 +261,18 @@ function MessageDialog({
     >
       <div className="account-message-heading">
         <span>
-          {message.kind === "promotion"
-            ? "предложение"
-            : message.kind === "update"
-              ? "обновление"
-              : "сообщение"}
+          {t(
+            message.kind === "promotion"
+              ? "предложение"
+              : message.kind === "update"
+                ? "обновление"
+                : "сообщение",
+          )}
         </span>
         <button
           type="button"
           className="account-message-close"
-          aria-label="показать сообщение позже"
+          aria-label={t("показать сообщение позже")}
           onClick={onLater}
         >
           ×
@@ -281,8 +294,9 @@ function MessageDialog({
       </div>
       {error ? (
         <p className="account-message-error" role="alert">
-          не удалось сохранить подтверждение. попробуйте ещё раз или закройте
-          окно
+          {t(
+            "не удалось сохранить подтверждение. попробуйте ещё раз или закройте окно",
+          )}
         </p>
       ) : null}
       <div className="account-message-actions">
@@ -291,14 +305,16 @@ function MessageDialog({
           className="account-message-later"
           onClick={onLater}
         >
-          позже
+          {t("позже")}
         </button>
         <button
           type="button"
           disabled={pending}
           onClick={() => onAcknowledge()}
         >
-          <MessageLabel text={pending ? "сохраняем…" : message.dismiss_label} />
+          <MessageLabel
+            text={pending ? t("сохраняем…") : message.dismiss_label}
+          />
         </button>
         {message.primary_action ? (
           <button
@@ -316,6 +332,7 @@ function MessageDialog({
 }
 
 function MessageLabel({ text }: { readonly text: string }) {
+  useLanguage();
   return (
     <>
       {text.split(/(PrettyLisaVPN)/g).map((part, index) =>

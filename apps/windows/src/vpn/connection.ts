@@ -65,6 +65,8 @@ export type VpnConnectionState =
     };
 
 export interface VpnConnectionManager {
+  /** Read-only probe for pre-login locale detection; never starts or stops a tunnel. */
+  localTunnelStatus?(): Promise<ProtocolStatus>;
   connectionDetails?(): Promise<ConnectionDetails | null>;
   readonly current: () => VpnConnectionState;
   readonly subscribe: (listener: () => void) => () => void;
@@ -343,6 +345,7 @@ export function createVpnConnectionManager(
         return null;
       }
     },
+    localTunnelStatus: () => tunnel.status(),
     current: () => state,
     subscribe(listener) {
       listeners.add(listener);
