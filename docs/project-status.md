@@ -91,13 +91,13 @@ Workflow Android debug проверяет APK текущего checkout на э�
 Последние пункты — backlog развития и эксплуатации, а не утверждение об отсутствии
 уже реализованных API и не новый обязательный контракт Windows MVP.
 
-## Android: начало переноса — проектирование
+## Android: архитектура и следующие этапы
 
 От Windows 0.11.1 на develop `69ab8d1d3d3c5680fc72bb23980776242606a104`
 подготовлены [архитектура Kotlin/Compose](android-architecture.md) и
 [план переноса](android-porting-plan.md): экраны, API, мобильные токены,
-native ports, VPN runtime/transport gates и этапы приёмки. Android-проект и APK
-ещё не реализованы; version unchanged, backend/Windows не меняются.
+native ports, VPN runtime/transport gates и этапы приёмки. Первый каркас Android
+0.1.0 описан выше; API/VPN ещё не реализованы, backend/Windows не меняются.
 Support diagnostics Android ограничены текущим WINDOWS-only schema (разрешён
 `diagnostics=null`); OpenVPN/MASQUE и legacy wrappers не объявляются рабочими
 на Android по наличию Windows descriptors.

@@ -27,12 +27,15 @@ jobs:
       run:
         working-directory: apps/android
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - name: Build current checkout and instrumented tests; lint
         run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
@@ -74,8 +77,8 @@ jobs:
       matrix:
         api: [26, 35]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'

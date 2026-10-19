@@ -125,7 +125,8 @@ docs/                Инструкции настройки и эксплуат
 
 ## Android-клиент
 
-[Android](apps/android/README.md) находится на этапе проектирования: выбран Kotlin
-и Jetpack Compose, зафиксированы карты Windows-экранов/API/дизайна/native и
-[план переноса](docs/android-porting-plan.md). Gradle-проект, APK и Android VPN
-runtime пока не созданы; backend и код Windows на этом этапе не меняются.
+[Android 0.1.0](apps/android/README.md) — Kotlin/Jetpack Compose каркас с Gradle,
+debug APK, тремя вкладками и GitHub Actions для сборки и эмуляторов API 26/35.
+Зафиксированы карты Windows-экранов/API/дизайна/native и
+[план переноса](docs/android-porting-plan.md). API/VPN runtime пока не подключены;
+backend и код Windows на этом этапе не меняются. Результаты CI — в task PR.
