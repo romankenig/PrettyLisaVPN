@@ -46,6 +46,7 @@
 | --- | --- | --- |
 | Windows | `apps/windows/package.json:version` | `src-tauri/Cargo.toml:[package].version`, `src-tauri/tauri.conf.json:version`, версия собственного пакета в `src-tauri/Cargo.lock`; UI читает `DesktopAdapter.getVersion()` / Tauri `getVersion()` |
 | Backend | `backend/pyproject.toml:[project].version` | Локальный default `Settings.application_version` в `backend/src/prettylisavpn/config.py`, примеры окружения и release metadata; запущенный сервер сообщает фактический `APPLICATION_VERSION` через `GET /version` |
+| Android | `apps/android/app/build.gradle.kts:defaultConfig.versionName` | `versionCode` там же; UI читает сгенерированный `BuildConfig.VERSION_NAME`. Первая версия 0.1.0 / code 1; последующие поставляемые версии увеличивают code независимо от Windows и CI run ID. `BuildConfig.SOURCE_SHA` / build-identity.json различают сборки одной версии. |
 | Другие клиенты | Манифест пакета конкретной платформы, когда клиент вводится в работу | В той же задаче документировать путь, UI-источник и платформенный build number; до этого не присваивать версии заготовкам |
 
 При повышении версии Windows все четыре места проверяются в одной задаче.
@@ -203,4 +204,5 @@ Backend повышает собственную версию только при
 переход runtime-идентификатора реализован в CI; фактический deploy/rollback
 проверяется отдельно по Cloud handoff. Автоматизация всех копий версий остаётся
 отдельной задачей.
+
 

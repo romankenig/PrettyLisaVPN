@@ -1,11 +1,21 @@
 # Текущее состояние PrettyLisaVPN
 
 Срез на **2026-10-19**, исходный `develop`:
-`090dd4117fb829f6faad1853cba5ae577c8837aa`.
-Windows **0.11.1**, backend **0.10.0**, последняя миграция **0026**
+`78f59991761b93bd176326c901829ee49cbdd9a4` (Windows PR #21).
+Windows **0.12.0**, backend **0.10.0**, последняя миграция **0026**
 (`0026_sandbox_mandates`). Обновление этой документации — version unchanged.
 Срез описывает реализацию и зафиксированные проверки, а не непрерывную доступность
 внешних сервисов или готовность всего продукта к production.
+
+## Начальный Android-клиент — 0.1.0 / PR #20
+
+В открытом [PR #20](https://github.com/romankenig/PrettyLisaVPN/pull/20) подготовлен
+Kotlin/Jetpack Compose каркас: Gradle, debug APK текущего SHA, три вкладки,
+Back/recreation и Rubik/логотип. Версия **0.1.0 / code 1**, CI API **26/35/36**.
+API/auth/VPN, платежи и выбор языка ещё отсутствуют; текущие UI resources русские.
+Нельзя считать готовую локализацию Windows реализацией той же функции на Android.
+Новая docs-only актуализация не повышает версию и не меняет Android runtime.
+Точные source/build SHA, run/attempt, CI и APK/evidence — в PR.
 
 ## Что реализовано
 
@@ -81,6 +91,18 @@ Windows **0.11.1**, backend **0.10.0**, последняя миграция **00
 
 Последние пункты — backlog развития и эксплуатации, а не утверждение об отсутствии
 уже реализованных API и не новый обязательный контракт Windows MVP.
+
+## Android: следующий этап после Windows 0.12.0
+
+[Архитектура](android-architecture.md) и [план переноса](android-porting-plan.md)
+актуализированы по develop `78f59991761b93bd176326c901829ee49cbdd9a4`.
+Приоритет — мобильная тема/навигация и [локализация](android-localization.md):
+шесть языков, English default, сохраняемый ручной выбор и безопасный RU auto-origin
+на fixtures. Затем экраны, auth/API, VPN runtime spike и реальная приёмка.
+Рекомендуемая следующая продуктовая версия 0.2.0/code 2 пока не реализована.
+Support diagnostics по-прежнему `null` при WINDOWS-only schema; платежи read-only
+без LIVE provider. Профили/first-candidate/cleanup и остальные backend gates не
+изменились после Windows 0.12.0. Новых backend endpoints для языка не требуется.
 
 ## Подробности
 

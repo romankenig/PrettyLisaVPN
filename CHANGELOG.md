@@ -6,6 +6,38 @@
 
 ## Unreleased
 
+### Android — план под Windows 0.12.0, version unchanged
+
+- Эталон переноса обновлён до develop 78f5999 после Windows PR #21; история
+  Windows 0.12.0 и начального Android 0.1.0 сохранена без изменения runtime.
+- Добавлены требования шести языков, мобильного размещения выбора, English/RU
+  auto-origin, хранения и проверки locale/гео/VPN races; локализация ещё не реализована.
+- Обновлены архитектура, этапы, ближайший промпт и handoff PR #20.
+- Android 0.1.0/code 1, Windows 0.12.0 и backend 0.10.0/schema 0026 unchanged.
+
+### Android — 0.1.0 (первая версия) / Windows и Backend unchanged
+
+- Создан отдельный Kotlin/Jetpack Compose проект: Gradle wrapper, pinned toolchain,
+  debug APK, minSdk 26 / targetSdk 36, собственные versionName 0.1.0 / versionCode 1.
+- Добавлены главная, настройки и «о приложении», Back/сохранение вкладки,
+  брендовая палитра, Rubik с OFL и исходные контуры логотипа Windows.
+- GitHub Actions собирает текущий checkout с source SHA и APK SHA-256; тот же APK
+  проверяется на API 26/35/36, с instrumented navigation tests и native screenshots.
+- API, VPN runtime и платежи ещё недоступны; никаких реальных подключений,
+  списаний и новых backend изменений. Результаты и артефакты — в task PR.
+
+### Android — архитектура и план переноса, version unchanged
+
+- Зафиксирован аудит Windows 0.11.1 на develop 69ab8d1: карта экранов/API,
+  дизайн-токены, Kotlin/Compose слои и замена Windows native-зависимостей.
+- Разделены протокольный каталог и реальные runtime capabilities; первый
+  VPN-этап — WireGuard IPv4 full tunnel, остальные профили gated/disabled.
+- Документированы support diagnostics WINDOWS-only с безопасным null для Android,
+  legacy NATIVE policy, first-candidate/no-fallback и service ownership GoBackend.
+- Добавлены этапы переноса, критерии приёмки и ссылка из apps/android/README.md.
+- Только документация: Android APK/проект ещё не создан; backend 0.10.0,
+  Windows 0.11.1, schema 0026 не меняются. Новая сборка/deploy не выполнялись.
+
 ### Windows — 0.12.0 / Backend — 0.10.0 unchanged
 
 - Добавлены English, Russian, Chinese, Spanish, German и French для всего UI,

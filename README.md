@@ -51,7 +51,7 @@ PrettyLisaVPN — проект коммерческого VPN-сервиса д�
 apps/
   windows/           Windows-клиент: Tauri 2, React, Rust, API/native adapters
   desktop/           Заготовка остальных desktop-клиентов
-  android/           Заготовка клиента Android
+  android/           Kotlin/Compose Android 0.1.0: debug APK, навигация и CI
   ios/               Заготовка клиента iOS
   android-tv/        Заготовка клиента Android TV
   chrome-extension/  Заготовка браузерного прокси-клиента
@@ -107,6 +107,7 @@ docs/                Инструкции настройки и эксплуат
 | Задача | Документ |
 | --- | --- |
 | Актуальные функции, незавершённая приёмка и backlog | [Текущий статус](docs/project-status.md) |
+| Android: архитектура Kotlin/Compose, API/экраны/дизайн/native и план переноса | [Архитектура](docs/android-architecture.md), [план](docs/android-porting-plan.md) |
 | Запуск через Docker или Python, настройки, тесты | [Разработка Backend](backend/README.md) |
 | Подготовка VPS, домена, HTTPS и первый production-запуск | [Развёртывание Backend](docs/backend-deployment.md) |
 | Обновление кода на VPS, пересборка/загрузка образа, перезапуск и откат | [Обновление и перезапуск VPS](docs/vps-maintenance.md) |
@@ -121,3 +122,13 @@ docs/                Инструкции настройки и эксплуат
 ## Windows-клиент
 
 Текущий клиент, требования к native runtime и команды запуска: [apps/windows/README.md](apps/windows/README.md).
+
+## Android-клиент
+
+[Android 0.1.0](apps/android/README.md) — Kotlin/Jetpack Compose каркас с Gradle,
+debug APK, тремя вкладками и GitHub Actions для сборки и эмуляторов API 26/35/36.
+Зафиксированы карты Windows-экранов/API/дизайна/native и
+[план переноса](docs/android-porting-plan.md). API/VPN runtime пока не подключены;
+backend и код Windows на этом этапе не меняются. Эталон переноса — Windows 0.12.0;
+его [шесть языков](docs/android-localization.md) включены в следующий UI-этап,
+но в Android 0.1.0 пока отсутствуют. Результаты CI — в task PR.
