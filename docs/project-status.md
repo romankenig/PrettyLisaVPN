@@ -9,12 +9,12 @@ Windows **0.12.0**, backend **0.10.0**, последняя миграция **00
 
 ## Начальный Android-клиент — 0.1.0 / PR #20
 
-В открытом [PR #20](https://github.com/romankenig/PrettyLisaVPN/pull/20) подготовлен
+В слитом [PR #20](https://github.com/romankenig/PrettyLisaVPN/pull/20) подготовлен
 Kotlin/Jetpack Compose каркас: Gradle, debug APK текущего SHA, три вкладки,
 Back/recreation и Rubik/логотип. Версия **0.1.0 / code 1**, CI API **26/35/36**.
 API/auth/VPN, платежи и выбор языка ещё отсутствуют; текущие UI resources русские.
 Нельзя считать готовую локализацию Windows реализацией той же функции на Android.
-Новая docs-only актуализация не повышает версию и не меняет Android runtime.
+Историческая docs-only актуализация плана не повышала версию каркаса.
 Точные source/build SHA, run/attempt, CI и APK/evidence — в PR.
 
 ## Что реализовано
@@ -121,3 +121,15 @@ Support diagnostics по-прежнему `null` при WINDOWS-only schema; п�
 приоритет. Полные UI-каталоги, locale-aware даты/цены/страны, технические имена
 сохранены. Версия Windows повышена с 0.11.1 до 0.12.0; backend/schema unchanged.
 Точные CI/native screenshots текущего SHA и ограничения приёмки публикуются в PR.
+
+
+## Android 0.2.0: мобильный дизайн
+
+После merge PR #20 (develop `60fe13b`) подготовлены mobile theme/components,
+Home/Settings/About и локальная форма поддержки без отправки. Версия Android
+0.1.0/code 1 → **0.2.0/code 2**; Windows 0.12.0/backend 0.10.0 unchanged.
+[Дизайн и acceptance matrix](android-design.md): API 26/35/36, 320/360/412dp,
+landscape, fontScale до 2.0, настоящая IME, insets и native screenshots текущего APK.
+Точные результаты CI/source/build/run/attempt и PNG — в task PR после проверок.
+API/VPN, отправка поддержки, платежи и локализация не считаются реализованными.
+Следующая языковая задача планируется отдельно как 0.3.0/code 3.
