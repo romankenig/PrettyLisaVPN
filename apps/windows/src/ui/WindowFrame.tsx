@@ -1,11 +1,14 @@
 import { t, useLanguage } from "../i18n";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import lockIcon from "../assets/lock.svg";
 
 export function WindowFrame({ children }: { readonly children: ReactNode }) {
-  useLanguage();
+  const language = useLanguage();
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const [error, setError] = useState<string | null>(null);
   async function control(action: "minimize" | "close") {
     if (!isTauri()) return;

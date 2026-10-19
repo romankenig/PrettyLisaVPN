@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { WindowFrame } from "../ui/WindowFrame";
 import lockIcon from "../assets/lock.svg";
+import { languagePreference } from "../i18n";
 
 const controls = vi.hoisted(() => ({
   minimize: vi.fn<() => Promise<void>>(),
@@ -51,4 +52,18 @@ it("places the original lock and product name in the top header", () => {
   const image = brand.parentElement?.querySelector("img");
   expect(image).toHaveAttribute("src", lockIcon);
   expect(image).toHaveAttribute("alt", "");
+});
+
+it("sets the document language before the sidebar mounts", () => {
+  languagePreference.choose("en");
+  render(
+    <WindowFrame>
+      <p>startup screen</p>
+    </WindowFrame>,
+  );
+  expect(document.documentElement.lang).toBe("en");
+  expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
+  act(() => languagePreference.choose("fr"));
+  expect(document.documentElement.lang).toBe("fr");
+  expect(screen.getByRole("button", { name: "Fermer" })).toBeVisible();
 });
