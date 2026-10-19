@@ -718,11 +718,10 @@ async function main() {
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await page.locator(".location-trigger").waitFor();
-  await page.waitForFunction(() =>
-    document
-      .querySelector('[role="combobox"]')
-      ?.textContent.includes("Германия"),
-  );
+  await page.waitForFunction(() => {
+    const location = document.querySelector(".location-trigger");
+    return location?.textContent.includes("Германия");
+  });
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: /устройства/ }).click();
   const settingsNav = page
