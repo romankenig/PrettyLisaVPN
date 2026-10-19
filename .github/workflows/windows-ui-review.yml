@@ -119,6 +119,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/windows/src-tauri
+          cache-on-failure: true
       - name: Build native UI review executable
         run: |
           cargo metadata --locked --offline --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | Out-Null

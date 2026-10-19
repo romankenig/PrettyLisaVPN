@@ -1925,6 +1925,7 @@ main dd {
   z-index: 30;
 }
 .language-selector button {
+  margin: 0;
   text-transform: none;
   font-family: inherit;
 }
