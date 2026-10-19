@@ -8,6 +8,8 @@ cleanup() {
   adb pull "/sdcard/Android/data/$package/files/acceptance/." evidence/ >/dev/null 2>&1 || true
   adb shell wm size reset >/dev/null 2>&1 || true
   adb shell wm density reset >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+  adb shell settings put system accelerometer_rotation 1 >/dev/null 2>&1 || true
   adb shell settings put system font_scale 1.0 >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -21,6 +23,8 @@ PY
 adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
+adb shell settings put system accelerometer_rotation 0
+adb shell settings put system user_rotation 0
 adb shell am instrument -w -r -e class com.prettylisavpn.android.NavigationTest \
   "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee evidence/instrumentation.txt
 python3 - <<'PY'
@@ -38,9 +42,12 @@ for design_case in compact small scaled-font large-font roomy landscape; do
     scaled-font) viewport=640x1136; font_scale=1.3 ;;
     large-font) viewport=720x1280; font_scale=2.0 ;;
     roomy) viewport=824x1648; font_scale=1.0 ;;
-    landscape) viewport=1280x720; font_scale=1.0 ;;
+    landscape) viewport=720x1280; font_scale=1.0 ;;
   esac
   adb shell am force-stop "$package"
+  # Rotate the portrait display for landscape instead of stretching its natural aspect ratio.
+  if [[ "$design_case" == landscape ]]; then rotation=1; else rotation=0; fi
+  adb shell settings put system user_rotation "$rotation"
   adb shell wm size "$viewport"
   adb shell wm density 320
   adb shell settings put system font_scale "$font_scale"
@@ -84,6 +91,8 @@ PY
 
 adb shell wm size reset
 adb shell wm density reset
+adb shell settings put system user_rotation 0
+adb shell settings put system accelerometer_rotation 1
 adb shell settings put system font_scale 1.0
 # Test the actual launcher after instrumentation, at the original device configuration.
 adb shell am force-stop "$package"

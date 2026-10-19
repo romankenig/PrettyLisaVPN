@@ -1,6 +1,7 @@
 package com.prettylisavpn.android
 
 import android.graphics.Bitmap
+import android.os.ParcelFileDescriptor
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -239,17 +240,28 @@ class DesignAcceptanceTest {
         val target = File(directory, "$name.png")
         // Native display capture includes the real IME and bars, respecting logical display size
         // on old Android where shell screencap can retain the pre-wm physical composition.
-        val screenshot = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
-        try {
-            target.outputStream().use { check(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)) }
-        } finally {
-            screenshot.recycle()
+        val screenshot = instrumentation.uiAutomation.takeScreenshot()
+        val captureMethod = if (screenshot != null) {
+            try {
+                target.outputStream().use { check(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+            } finally {
+                screenshot.recycle()
+            }
+            "ui-automation"
+        } else {
+            // Some old Android display/rotation combinations cannot use UiAutomation capture.
+            // Keep the unmodified native display PNG, and record the method explicitly.
+            ParcelFileDescriptor.AutoCloseInputStream(
+                instrumentation.uiAutomation.executeShellCommand("screencap -p"),
+            ).use { input -> target.outputStream().use { input.copyTo(it) } }
+            "shell-screencap"
         }
         val header = ByteArray(8)
         target.inputStream().use { DataInputStream(it).readFully(header) }
         val metrics = compose.activity.resources.displayMetrics
         val window = windowSize()
         val metadata = JSONObject()
+            .put("capture_method", captureMethod)
             .put("source_sha", BuildConfig.SOURCE_SHA)
             .put("version_name", BuildConfig.VERSION_NAME)
             .put("version_code", BuildConfig.VERSION_CODE)

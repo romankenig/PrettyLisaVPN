@@ -45,6 +45,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +56,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -60,10 +65,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.R
@@ -79,8 +84,16 @@ private const val SUPPORT = "SUPPORT"
 @Composable
 fun PrettyLisaApp() {
     val navController = rememberNavController()
-    val entry by navController.currentBackStackEntryAsState()
-    val route = entry?.destination?.route ?: Destination.HOME.name
+    // Keep the initial restored tab before NavHost finishes restoring its graph. Then follow
+    // destination callbacks synchronously, including Back and Support, rather than a delayed Flow.
+    var route by rememberSaveable { mutableStateOf(Destination.HOME.name) }
+    DisposableEffect(navController) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            route = destination.route ?: Destination.HOME.name
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose { navController.removeOnDestinationChangedListener(listener) }
+    }
     val imeVisible = WindowInsets.isImeVisible
     Scaffold(
         modifier = Modifier.imePadding(),
@@ -118,6 +131,40 @@ fun PrettyLisaApp() {
 /** No fixed height: tab labels grow and wrap with the user's font size. */
 @Composable
 private fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
+    // Three narrow columns split whole words at 200% text. Full-width rows keep labels readable.
+    if (LocalDensity.current.fontScale >= 1.5f) {
+        Column(
+            Modifier.fillMaxWidth().background(Brand.Christalle)
+                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+                .selectableGroup().padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Destination.entries.forEach { destination ->
+                val active = route == destination.name
+                Row(
+                    Modifier.fillMaxWidth().sizeIn(minHeight = 56.dp).clip(MaterialTheme.shapes.medium)
+                        .selectable(selected = active, role = Role.Tab, onClick = { navigate(destination) })
+                        .testTag("tab_${destination.name}").padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier.size(width = 48.dp, height = 36.dp).clip(MaterialTheme.shapes.medium)
+                            .background(if (active) Brand.Viking else Brand.Christalle),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(destination.icon, null, tint = if (active) Brand.Black else Brand.Mercury)
+                    }
+                    Text(
+                        stringResource(destination.label), modifier = Modifier.weight(1f),
+                        color = if (active) Brand.Viking else Brand.Mercury,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+        return
+    }
     Row(
         Modifier.fillMaxWidth().background(Brand.Christalle)
             .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))

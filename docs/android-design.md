@@ -17,7 +17,7 @@ Windows/backend **0.12.0 / 0.10.0** и schema **0026** unchanged.
 | Mercury / Black / Scorpion | Светлые карточки, основной / вторичный текст |
 | Viking / Heliotrope / Persian Red | Основные действия и selected, outline/focus, ошибка формы |
 | Радиусы и спокойные плоские карточки | Shapes 6/8/12/16/24dp, карточки 16dp, кнопки 12dp, поля 8dp; без Material dynamic color |
-| Desktop sidebar | Три телефонные вкладки с outline icons, выбранным акцентом, адаптивной высотой и touch target ≥48dp |
+| Desktop sidebar | Три телефонные вкладки с outline icons, выбранным акцентом и touch target ≥48dp; при fontScale ≥1.5 — полноширинные строки без разрыва слов |
 | Две колонки Home | Вертикальный scroll: бренд, подключение, режим трафика; контент ограничен 600dp и центрируется на широкой области |
 | Support popup | Отдельный мобильный экран формы, Back, прокрутка и IME; desktop chrome не переносится |
 
@@ -76,7 +76,10 @@ system bars/cutout, наличие реальной IME и видимость em
 сетевых действий, validation → corrected input, сохранение трёх полей после recreation,
 enabled/disabled/loading semantics. Screenshot helper не создаёт графику программно:
 это `UiAutomation.takeScreenshot()` реального Android дисплея после native idle,
-lossless PNG без изменения размеров/пикселей. Baseline/launcher используют shell screencap.
+lossless PNG без изменения размеров/пикселей; при недоступности UiAutomation
+на старом display используется raw shell screencap с явным capture_method в JSON.
+Baseline/launcher используют shell screencap. Landscape — реальный поворот display,
+не изменение его естественного соотношения сторон.
 
 Для каждого case сохраняются Home/Settings/About, форма с IME/error, заполненная
 форма и component states. У PNG есть JSON: source SHA, версия/code/package, fontScale,
