@@ -3,7 +3,27 @@
 Правила продуктовых версий, сборок и дальнейших изменений:
 [система версионирования](../docs/versioning.md).
 
-Backend — сервер управления PrettyLisaVPN на Python 3.13 и FastAPI. Это модульный монолит: настройки, подключения к PostgreSQL и Valkey, структурированные логи, служебные API и модуль пользователей. Пользователь хранится в PostgreSQL с нормализованным уникальным email, UUID, статусом и UTC-временем создания и изменения. HTTP-методов аутентификации пока нет. Каждое изменение схемы должно добавлять новую миграцию Alembic.
+Backend — сервер управления PrettyLisaVPN на Python 3.13 и FastAPI, модульный монолит с PostgreSQL, Valkey и структурированными логами. Реализованы OTP/session API, пользователи и устройства, VPN control plane, права подписки, сообщения аккаунту, поддержка и billing operations с тестовым провайдером. Каждое изменение схемы добавляет миграцию Alembic.
+
+Срез на 2026-10-19: **backend 0.10.0, schema 0026, Windows 0.11.1**.
+[Текущий статус проекта](../docs/project-status.md) разделяет реализацию, доказательства
+приёмки и backlog. В development реальные платежи отключены; ручной OTP-прогон
+Windows остаётся на паузе. Это обновление документации — version unchanged.
+
+## Модули и API
+
+| Область | Методы / подробности |
+| --- | --- |
+| Вход и аккаунт | POST `/auth/request-otp`, `/auth/verify-otp`, `/auth/refresh`, `/auth/logout`; GET `/me`. Access tokens, сохранённые refresh-сессии и rotation. |
+| Устройства | GET `/devices`, DELETE `/devices/{device_id}`; лимит пяти устройств и отзыв auth/VPN-доступа. [Контракт](../docs/devices-ui.md). |
+| VPN | AUTO/COUNTRY, availability/capacity/health policy, конфигурации и сессии через Node Agent; клиентский трафик проходит через отдельный узел. [Профили](../docs/connection-profiles.md). |
+| Сообщения | GET `/messages`, POST `/messages/{message_id}/acknowledgements`; серверная CLI-публикация. [Контракт](../docs/account-messages.md). |
+| Поддержка | POST `/support/requests`, GET `/support/requests/{request_id}`; вложения, идемпотентность, outbox и SMTP worker. [Контракт](../docs/support-ui.md). |
+| Подписки и платежи | GET `/billing/overview`, POST `/billing/operations`, GET `/billing/operations/{id}`; quotes/revisions, идемпотентность, сверка, восстановление и lifecycle. [Контракт](../docs/subscriptions-ui.md). |
+
+Права Free/Premium/Platinum, оплаченный срок и суточный лимит определяет
+[серверная entitlement policy](../docs/subscription-entitlements.md).
+Последующие разделы описывают запуск и действующие политики выбора узла.
 
 VPN-узлы выбираются только внутри Backend. FREE и PREMIUM передают режим AUTO или страну, но никогда не получают список отдельных узлов. Общая eligibility policy требует `ACTIVE`, свежий healthy-check и свободную ёмкость; для FREE дополнительно требуется `is_available_for_free=true`. AUTO рассматривает все подходящие страны, COUNTRY — только запрошенную. Оба режима используют заменяемую стратегию; MVP выбирает узел с наименьшей загрузкой по отношению числа активных сессий к capacity, затем с наибольшим свободным запасом и стабильным UUID tie-break. Внутренние оценки наружу не возвращаются. Создание сессии блокирует строки узлов candidate set и повторно применяет ту же policy, чтобы конкурентные запросы не превысили capacity.
 
@@ -105,7 +125,7 @@ docker compose -f infra/docker/compose.yaml down
 | Переменная | Значение по умолчанию / назначение |
 | --- | --- |
 | `APPLICATION_NAME` | `PrettyLisaVPN`; непустое имя в `/version`. |
-| `APPLICATION_VERSION` | `0.1.0`; на VPS задавайте идентификатор фактически развёрнутой сборки. |
+| `APPLICATION_VERSION` | `0.10.0`; на VPS CI задаёт фактическую runtime identity с SHA/run. |
 | `ENVIRONMENT` | `development`; для рабочего сервиса используйте `production`. |
 | `LOG_LEVEL` | `INFO`; допустимы также `DEBUG`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `POSTGRES_URL` | Локальная демонстрационная строка; схема обязательно `postgresql+asyncpg://`. На VPS задаётся явно. |
@@ -135,6 +155,8 @@ docker compose -f infra/docker/compose.yaml down
 | `VPN_NODE_AGENT_PORT` | `8443`; HTTPS/mTLS порт Node Control Agent. |
 | `VPN_NODE_AGENT_AUTH_TOKEN` | Дополнительный machine bearer secret, минимум 32 символа. |
 | `VPN_NODE_AGENT_TLS_CA`, `VPN_NODE_AGENT_TLS_CLIENT_CERTIFICATE`, `VPN_NODE_AGENT_TLS_CLIENT_KEY` | CA сервера и клиентская mTLS identity Backend; задаются только вместе с token и монтируются read-only. |
+| `BILLING_PROVIDER` | `disabled`; `sandbox` допускается только в development/test и требует явного включения. Реального адаптера нет. |
+| `SUPPORT_SMTP_PASSWORD` | Секрет SMTP-отправителя поддержки; не сохранять в git. См. [support guide](../docs/support-ui.md). |
 | `DEPENDENCY_TIMEOUT_SECONDS` | `2`; тайм-аут проверки зависимости, больше 0 и не больше 30 секунд. |
 | `POSTGRES_POOL_SIZE` | `5`; размер пула соединений, минимум 1. |
 | `POSTGRES_MAX_OVERFLOW` | `5`; дополнительные временные соединения сверх пула, минимум 0. |
@@ -185,13 +207,13 @@ Backend пишет JSON-логи с UTC-временем. Неожиданные
 Из корня репозитория:
 
 ```sh
-docker build -t prettylisavpn-backend:0.1.0 backend
+docker build -t prettylisavpn-backend:0.10.0 backend
 ```
 
 Тег здесь иллюстративный. Для каждого релиза используйте уникальную версию или хеш коммита. Перед запуском передайте `POSTGRES_URL`, `VALKEY_URL` и `OTP_HMAC_SECRET` через окружение терминала или менеджер секретов:
 
 ```sh
-docker run -d --name prettylisa-backend --init --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop ALL --security-opt no-new-privileges:true --stop-timeout 30 -p 127.0.0.1:8000:8000 -e ENVIRONMENT=production -e APPLICATION_VERSION=0.1.0 -e POSTGRES_URL -e VALKEY_URL -e OTP_HMAC_SECRET prettylisavpn-backend:0.1.0
+docker run -d --name prettylisa-backend --init --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop ALL --security-opt no-new-privileges:true --stop-timeout 30 -p 127.0.0.1:8000:8000 -e ENVIRONMENT=production -e APPLICATION_VERSION=0.10.0 -e POSTGRES_URL -e VALKEY_URL -e OTP_HMAC_SECRET prettylisavpn-backend:0.10.0
 ```
 
 Команда передаёт переменные по имени, не записывая пароль в аргументы. Приложение работает от UID/GID 10001, с файловой системой только для чтения и временным `/tmp`. Доступ администратора Docker позволяет читать окружение контейнера, поэтому его нужно ограничивать.
@@ -247,7 +269,15 @@ Workflow [backend.yaml](../.github/workflows/backend.yaml) запускаетс�
 6. интеграционные тесты с временными PostgreSQL и Valkey;
 7. сборка production Docker-образа и Docker-тесты образа и Compose-файлов.
 
-CI использует только одноразовые локальные учётные данные service containers. Production-секреты и доступ к deployment-среде ему не нужны; workflow ничего не публикует и не развёртывает.
+Проверочный job использует одноразовые локальные учётные данные service containers;
+production-секреты для проверок не нужны. После успешного job workflow отдельно
+выполняет **Deploy development** только на push в `develop`, если
+`DEV_DEPLOY_ENABLED=true`. Этот job использует secrets GitHub Environment
+`development`, проверяет SSH host key, разворачивает уникальный образ и сверяет
+health/readiness/точную runtime-версию. PR, другие ветки и текущий workflow_dispatch
+не выполняют deploy. Production deployment автоматически не добавлен.
+См. [deployment guide](../infra/deployment/README.md) и
+[зафиксированный rollout](../docs/project-status.md).
 
 Чтобы воспроизвести проверки качества и unit-тесты, из `backend/` выполните:
 
@@ -313,7 +343,7 @@ Remove-Item Env:RUN_DOCKER_TESTS
 
 Ручную проверку отказа выполняйте только локально: из корня остановите Valkey командой `docker compose -f infra/docker/compose.yaml stop valkey`. `/ready` должен вернуть 503, а `/health` — 200. Восстановите сервис командой `docker compose -f infra/docker/compose.yaml start valkey` и снова проверьте `/ready`.
 
-## Development/test billing adapter — 0.8.0
+## Development/test billing adapter — добавлен в 0.8.0
 
 Opt-in persisted sandbox provider and operator notification CLI: see
 [docs/billing-sandbox.md](../docs/billing-sandbox.md). Apply migration 0025, then
@@ -324,7 +354,7 @@ Subscription lifecycle 0.9.0 adds migration 0026: persistent sandbox authorities
 retained renewal mandates, confirmed replacement/revocation, and conservative
 handling of partial external failures. See the same operator guide for details.
 
-## Payment route capabilities — backend 0.10.0 / Windows 0.11.0
+## Payment route capabilities — backend 0.10.0 / Windows 0.11.1
 
 Overview owns route currencies/recurring support and provider mode. Windows requires
 explicit LIVE, operations availability and account actions; sandbox/legacy responses
