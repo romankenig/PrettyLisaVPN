@@ -1,6 +1,6 @@
 package com.prettylisavpn.android
 
-import android.graphics.Bitmap
+import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.io.DataInputStream
 import java.io.File
 import org.junit.Rule
 import org.junit.Test
@@ -52,14 +53,27 @@ class NavigationTest {
     }
 
     private fun screenshot(name: String) {
+        listOf("HOME", "SETTINGS", "ABOUT").forEach {
+            compose.onNodeWithTag("tab_$it").assertIsDisplayed()
+        }
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        // Compose's virtual clock becoming idle does not fence SurfaceFlinger frames.
+        // Wait for native UI quietness, then capture the display through screencap.
+        instrumentation.waitForIdleSync()
+        instrumentation.uiAutomation.waitForIdle(250, 5_000)
         val directory = File(instrumentation.targetContext.getExternalFilesDir(null), "acceptance")
         check(directory.mkdirs() || directory.isDirectory)
-        val bitmap = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
-        File(directory, "$name.png").outputStream().use {
-            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+        val target = File(directory, "$name.png")
+        ParcelFileDescriptor.AutoCloseInputStream(
+            instrumentation.uiAutomation.executeShellCommand("screencap -p"),
+        ).use { input ->
+            target.outputStream().use { output -> input.copyTo(output) }
         }
-        bitmap.recycle()
+        val header = ByteArray(8)
+        target.inputStream().use { DataInputStream(it).readFully(header) }
+        check(header.contentEquals(
+            byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A),
+        )) { "Native screencap did not return PNG" }
     }
 }
