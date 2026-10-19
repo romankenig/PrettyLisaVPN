@@ -51,7 +51,7 @@ PrettyLisaVPN — проект коммерческого VPN-сервиса д�
 apps/
   windows/           Windows-клиент: Tauri 2, React, Rust, API/native adapters
   desktop/           Заготовка остальных desktop-клиентов
-  android/           Заготовка клиента Android
+  android/           Kotlin/Compose Android 0.1.0: debug APK, навигация и CI
   ios/               Заготовка клиента iOS
   android-tv/        Заготовка клиента Android TV
   chrome-extension/  Заготовка браузерного прокси-клиента

@@ -2,8 +2,10 @@
 
 Основа — [архитектура Kotlin/Compose](android-architecture.md), аудит Windows
 0.11.1 и backend 0.10.0 на commit `69ab8d1d3d3c5680fc72bb23980776242606a104`.
-Это roadmap, не отчёт о созданном APK. **Текущий этап — только документация**.
-Backend/Windows/version/schema unchanged; реальное приложение Android пока отсутствует.
+Это roadmap. **Реализован каркас этапа 1: Android 0.1.0**, базовые три вкладки
+и тема из этапа 2. [Инструкции/CI и ограничения](../apps/android/README.md).
+Приёмка APK/эмуляторов и точные SHA/run/attempt фиксируются в task PR.
+Backend 0.10.0 / Windows 0.11.1 / schema 0026 unchanged; API/VPN пока отсутствуют.
 
 ## Порядок и результаты этапов
 

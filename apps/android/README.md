@@ -1,31 +1,71 @@
 # PrettyLisaVPN для Android
 
-Текущий этап — **проектирование**, 2026-10-19. Kotlin/Compose-проект, Gradle,
-APK и VPN runtime ещё не созданы. Эта документация не объявляет Android готовым
-или проверенным. Backend и Windows не меняются; version unchanged.
+Android **0.1.0**, versionCode **1** — первая самостоятельная версия клиента.
+Windows **0.11.1**, backend **0.10.0**, schema **0026** не меняются.
 
-Основа аудита: Windows **0.11.1**, backend **0.10.0**, schema **0026**,
-`develop` **69ab8d1d3d3c5680fc72bb23980776242606a104**.
+Реализован нативный Kotlin/Jetpack Compose каркас: одна Activity, три вкладки
+«главная / настройки / о приложении», системный Back и восстановление выбранной
+вкладки после пересоздания Activity. Фирменные цвета, Rubik/OFL и контуры логотипа
+перенесены из Windows; учитываются системные insets и прокрутка небольших экранов.
+Это стартовый APK: API/auth, VPN runtime, платежи и поддержка ещё не подключены.
+Кнопка подключения недоступна; приложение не запрашивает VPN-разрешение и не
+отправляет сетевые запросы. Backend-версия в UI — «не подключён».
+
+## Сборка и запуск
+
+Требуются JDK **17**, Android SDK platform **35** и лицензии Android SDK.
+Открыть эту директорию в Android Studio либо указать `ANDROID_HOME` / `sdk.dir`
+в локальном `local.properties` (не коммитить).
+
+```bash
+cd apps/android
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -W -n com.prettylisavpn.android.dev/com.prettylisavpn.android.MainActivity
+./gradlew :app:connectedDebugAndroidTest
+```
+
+Windows: те же Gradle tasks через `gradlew.bat`. Wrapper JAR и distribution checksum
+зафиксированы для Gradle **8.13**; AGP **8.11.1**, Kotlin/Compose compiler **2.1.21**,
+Compose BOM **2025.05.01**, Navigation **2.9.0**. Версии — в
+[libs.versions.toml](gradle/libs.versions.toml). minSdk **26**, compile/targetSdk **35**.
+Основной источник Android-версии — [app/build.gradle.kts](app/build.gradle.kts):
+`versionName=0.1.0`, `versionCode=1`. Windows package.json не используется.
+Debug applicationId — `com.prettylisavpn.android.dev`; подпись локальным debug key.
+Release signing, Play Store и auto-update в этот этап не входят.
+
+## CI и происхождение APK
+
+[Android debug workflow](../../.github/workflows/android.yml) запускается при
+push/PR с изменением Android и вручную. Сначала собирает APK/тестовый APK текущего
+checkout и запускает lint; затем устанавливает **тот же APK** на x86_64 эмуляторы
+Android **8.0 (API 26)** и **15 (API 35)**. Три instrumented-теста проверяют вкладки,
+недоступность подключения, повторные переходы/Back и Activity recreation.
+После тестов выполняется отдельный cold launcher start с проверкой процесса,
+resumed Activity и отсутствия AndroidRuntime crash. Нативные PNG сохраняются
+с каждого экрана и после запуска.
+
+Артефакт `PrettyLisaVPN-android-debug-<sha>-<run>-<attempt>` содержит `app-debug.apk`
+и `build-identity.json`: полный source SHA, PR head SHA, версия/code, package,
+run/attempt и SHA-256 APK. В PR-событии source SHA — временный merge commit,
+в push — точный head ветки. `BuildConfig.SOURCE_SHA` также встроен в APK и показан
+в «о приложении». Локальная сборка без `-PsourceSha=<40 hex>` помечена `local`.
+Скриншоты/запуск — отдельные `android-emulator-api26/35-...` артефакты; lint —
+`android-build-reports-...`. Итоговые run/attempt, проверенный HEAD и ссылки
+публикуются в PR после завершения CI, чтобы не создавать цикл новых docs-сборок.
+
+Эмуляторные проверки ещё должны завершиться в CI; до фиксации результатов в PR
+этот документ описывает проверки workflow, а не утверждает их успех.
+В текущей cloud workspace SDK отсутствует и локальный сетевой proxy недоступен:
+локально выполняются проверки исходников/скриптов, Android build — на Actions.
+
+## Продолжение переноса
 
 - [Архитектура, экраны/API, дизайн и native-зависимости](../../docs/android-architecture.md).
-- [Последовательный план переноса и промпты](../../docs/android-porting-plan.md).
-- [Общий статус проекта](../../docs/project-status.md),
-  [правила версий](../../docs/versioning.md), [визуальный стиль](../../docs/design-system.md).
-
-Выбран отдельный Kotlin + Jetpack Compose клиент, без запуска React/Tauri/Win32.
-Предлагаются minSdk26 и первая версия Android 0.1.0 при реализации каркаса;
-точные SDK/toolchain/dependency versions фиксируются в следующем техническом этапе.
-Первые APK должны сохранять logo/Rubik/палитру Windows с мобильной компоновкой,
-insets/IME, системным Back и доступными размерами элементов.
-
-Первый VPN-этап проектируется для WireGuard IPv4 full tunnel через Android runtime.
-Объявленные в каталоге OpenVPN/MASQUE и Windows legacy wrappers не становятся
-автоматически поддерживаемыми Android. До runtime/transport acceptance они disabled.
-`NATIVE` не подменяется direct UDP, explicit empty candidates не заменяются legacy.
-
-Существующий backend допускает ANDROID для auth/messages, но support diagnostics
-принимает только WINDOWS. Android-обращения могут отправляться с `diagnostics=null`;
-подменять платформу или менять backend для обхода ограничения нельзя.
-
-Реальные платежи отключены, ручной OTP остаётся на паузе владельца. Никаких
-реальных писем, списаний, привязок или изменений VPN-узлов этот этап не выполняет.
+- [Последовательный план](../../docs/android-porting-plan.md),
+  [статус проекта](../../docs/project-status.md), [версии](../../docs/versioning.md).
+- Первый будущий VPN runtime — WireGuard IPv4 full tunnel. Ни один VPN-профиль
+  сейчас не исполняется; OpenVPN/MASQUE/legacy wrappers остаются disabled.
+- Backend поддерживает ANDROID в auth/messages, но support diagnostics принимает
+  только WINDOWS: будущий Android-адаптер отправляет `diagnostics=null`.
+- Реальные платежи отключены; ручной OTP остаётся на паузе владельца.

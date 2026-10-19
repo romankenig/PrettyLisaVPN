@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PrettyLisaVPN</string>
+    <string name="home">главная</string>
+    <string name="settings">настройки</string>
+    <string name="about">о приложении</string>
+    <string name="welcome">ваше безопасное подключение</string>
+    <string name="not_connected">не подключено</string>
+    <string name="bootstrap_notice">Мы готовим PrettyLisaVPN для Android. Подключение VPN станет доступно в следующем этапе.</string>
+    <string name="connect">подключиться</string>
+    <string name="settings_notice">Настройки подключения появятся после интеграции VPN.</string>
+    <string name="appearance">оформление</string>
+    <string name="appearance_value">фирменная тема PrettyLisaVPN</string>
+    <string name="backend_label">backend</string>
+    <string name="backend_unavailable">не подключён</string>
+    <string name="android_version">Android · версия %1$s</string>
+    <string name="source_commit">исходники: %1$s</string>
+    <string name="about_notice">Первая версия приложения для Android. Вход, VPN и управление подпиской пока недоступны.</string>
+</resources>

@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.1.0 (первая версия) / Windows и Backend unchanged
+
+- Создан отдельный Kotlin/Jetpack Compose проект: Gradle wrapper, pinned toolchain,
+  debug APK, minSdk 26 / targetSdk 35, собственные versionName 0.1.0 / versionCode 1.
+- Добавлены главная, настройки и «о приложении», Back/сохранение вкладки,
+  брендовая палитра, Rubik с OFL и исходные контуры логотипа Windows.
+- GitHub Actions собирает текущий checkout с source SHA и APK SHA-256; тот же APK
+  проверяется на API 26/35, с instrumented navigation tests и native screenshots.
+- API, VPN runtime и платежи ещё недоступны; никаких реальных подключений,
+  списаний и новых backend изменений. Результаты и артефакты — в task PR.
+
 ### Android — архитектура и план переноса, version unchanged
 
 - Зафиксирован аудит Windows 0.11.1 на develop 69ab8d1: карта экранов/API,
