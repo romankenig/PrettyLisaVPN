@@ -26,7 +26,37 @@ permissions:
   contents: read
 
 jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/windows/package.json
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - name: Check changed source formatting
+        env:
+          FORMAT_BASE: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ci/check-source-format.cjs
+      - name: Upload formatting suggestions on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-format-suggestions-${{ github.run_id }}
+          path: apps/windows/artifacts/formatting/
+          if-no-files-found: warn
   review:
+    needs: formatting
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
@@ -113,5 +143,22 @@ jobs:
           overwrite: true
           path: |
             apps/windows/artifacts/ui-review/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload language screenshots from this build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-language-screenshots-${{ github.sha }}-${{ github.run_id }}
+          overwrite: true
+          path: |
+            apps/windows/artifacts/ui-review/12-language-menu*.png
+            apps/windows/artifacts/ui-review/13-home-*.png
+            apps/windows/artifacts/ui-review/14-home-*.png
+            apps/windows/artifacts/ui-review/15-about-*.png
+            apps/windows/artifacts/ui-review/16-support-*.png
+            apps/windows/artifacts/ui-review/capture-result.json
+            apps/windows/artifacts/ui-review/README.txt
           if-no-files-found: warn
           retention-days: 14

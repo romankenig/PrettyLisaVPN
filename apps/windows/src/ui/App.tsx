@@ -1,3 +1,5 @@
+import { LanguageSelector } from "./LanguageSelector";
+import { t, useLanguage } from "../i18n";
 import {
   NavLink,
   Navigate,
@@ -16,6 +18,7 @@ import { Settings } from "./Settings";
 import { useVersions } from "./useVersions";
 
 export function App() {
+  useLanguage();
   const versions = useVersions();
   const { pathname } = useLocation();
   const authenticating =
@@ -30,7 +33,7 @@ export function App() {
       <HomeCountryObserver />
       <AccountMessages version={versions.frontend} />
       <aside className="sidebar">
-        <nav aria-label="основная навигация">
+        <nav aria-label={t("основная навигация")}>
           {items.map((item) =>
             authenticating ? (
               <span
@@ -38,8 +41,8 @@ export function App() {
                 className="nav-disabled"
                 role="link"
                 aria-disabled="true"
-                aria-label={item.label}
-                title={item.label}
+                aria-label={t(item.label)}
+                title={t(item.label)}
               >
                 <NavigationIcon name={item.icon} />
               </span>
@@ -48,24 +51,27 @@ export function App() {
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
-                aria-label={item.label}
-                title={item.label}
+                aria-label={t(item.label)}
+                title={t(item.label)}
               >
                 <NavigationIcon name={item.icon} />
               </NavLink>
             ),
           )}
         </nav>
-        <dl className="sidebar-versions" aria-label="версии приложения">
+        <div className="sidebar-footer">
+        <LanguageSelector />
+        <dl className="sidebar-versions" aria-label={t("версии приложения")}>
           <div>
             <dt>Frontend</dt>
-            <dd title={versions.frontend}>{versions.frontend}</dd>
+            <dd title={t(versions.frontend)}>{t(versions.frontend)}</dd>
           </div>
           <div>
             <dt>Backend</dt>
-            <dd title={versions.backend}>{versions.backend}</dd>
+            <dd title={t(versions.backend)}>{t(versions.backend)}</dd>
           </div>
         </dl>
+        </div>
       </aside>
       <main>
         <Routes>

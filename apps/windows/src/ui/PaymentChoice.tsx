@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   formatPrice,
@@ -33,6 +34,7 @@ export function PaymentChoice({
   readonly onConfirm: (route: PaymentRoute) => void;
   readonly onClose: () => void;
 }) {
+  useLanguage();
   const dialog = useRef<HTMLDialogElement>(null);
   const preferred = currency === "RUB" ? "MIR" : "BANK_CARD";
   const [selected, setSelected] = useState<PaymentRoute>(preferred);
@@ -70,13 +72,13 @@ export function PaymentChoice({
         onClose();
       }}
     >
-      <h2 id="payment-choice-title">как оплатить</h2>
+      <h2 id="payment-choice-title">{t("как оплатить")}</h2>
       <p id="payment-choice-summary" className="payment-choice-summary">
-        {offer.plan.toLowerCase()} · месяц ·{" "}
-        {formatPrice(offer.prices[currency].amount_minor, currency)}
+        {t(offer.plan.toLowerCase())}{t(" · месяц ·")}{t(" ")}
+        {t(formatPrice(offer.prices[currency].amount_minor, currency))}
       </p>
       <fieldset className="payment-choice-options">
-        <legend className="sr-only">способ оплаты</legend>
+        <legend className="sr-only">{t("способ оплаты")}</legend>
         {order.map((route) => (
           <label
             key={route}
@@ -91,43 +93,41 @@ export function PaymentChoice({
               onChange={() => {
                 if (available.includes(route)) setSelected(route);
               }}
-              aria-label={routes[route].title}
+              aria-label={t(routes[route].title)}
               aria-describedby={`payment-route-description-${route}`}
             />
             <span className="payment-choice-icon">
               <PaymentIcon route={route} />
             </span>
             <span className="payment-choice-label">
-              <strong>{routes[route].title}</strong>
+              <strong>{t(routes[route].title)}</strong>
               <small id={`payment-route-description-${route}`}>
-                {routes[route].description}
+                {t(routes[route].description)}
                 <br />
-                {!available.includes(route)
+                {t(!available.includes(route)
                   ? `недоступно в ${currency}`
                   : capabilities
                         .find((cap) => cap.id === route)
                         ?.recurring_currencies.includes(currency)
                     ? "поддерживает автопродление"
-                    : "без автопродления"}
+                    : "без автопродления")}
               </small>
             </span>
             <span className="payment-choice-check" aria-hidden="true">
-              {selectedRoute === route ? "✓" : ""}
+              {t(selectedRoute === route ? "✓" : "")}
             </span>
           </label>
         ))}
       </fieldset>
       <p className="payment-choice-hint">
-        {selectedRoute === null
+        {t(selectedRoute === null
           ? "в этой валюте нет доступных способов оплаты"
           : recurring
             ? "автопродление включится только после подтверждения платёжного сервиса"
-            : "разовая оплата. автоматических списаний не будет"}
+            : "разовая оплата. автоматических списаний не будет")}
       </p>
       <div className="payment-choice-actions">
-        <button className="billing-secondary" type="button" onClick={onClose}>
-          назад
-        </button>
+        <button className="billing-secondary" type="button" onClick={onClose}>{t("назад")}</button>
         <button
           className="billing-primary"
           type="button"
@@ -135,15 +135,14 @@ export function PaymentChoice({
           onClick={() => {
             if (selectedRoute !== null) onConfirm(selectedRoute);
           }}
-        >
-          перейти к оплате
-        </button>
+        >{t("перейти к оплате")}</button>
       </div>
     </dialog>
   );
 }
 
 function PaymentIcon({ route }: { readonly route: PaymentRoute }) {
+  useLanguage();
   return (
     <svg
       width="28"

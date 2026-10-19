@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useState } from "react";
 import type { PublicLocation } from "../location/publicLocation";
 import type { VpnConnectionState } from "../vpn/connection";
@@ -19,6 +20,7 @@ export function CurrentLocation({
 }: {
   readonly connection: VpnConnectionState;
 }) {
+  useLanguage();
   const { publicLocation } = useApplication();
   const pending = [
     "RECONCILING",
@@ -80,33 +82,33 @@ export function CurrentLocation({
   return (
     <div
       className="current-location"
-      aria-label="текущая локация"
+      aria-label={t("текущая локация")}
       aria-live="polite"
     >
-      <span className="current-location__label">текущая локация:</span>
+      <span className="current-location__label">{t("текущая локация:")}</span>
       {visible.phase === "ready" ? (
         <div className="current-location__details">
           <CountryIcon code={visible.data.countryCode} />
           <div>
             <span>
-              {visible.data.city ?? "город неизвестен"},{" "}
-              {visible.data.countryCode
+              {t(visible.data.city ?? "город неизвестен")},{t(" ")}
+              {t(visible.data.countryCode
                 ? countryName(visible.data.countryCode)
-                : "страна неизвестна"}
+                : "страна неизвестна")}
             </span>
-            <span className="current-location__ip">{visible.data.ip}</span>
+            <span className="current-location__ip">{t(visible.data.ip)}</span>
           </div>
         </div>
       ) : (
         <span className="current-location__notice">
-          {visible.phase === "error" ? "не удалось определить" : "определяем…"}
+          {t(visible.phase === "error" ? "не удалось определить" : "определяем…")}
         </span>
       )}
       {visible.phase === "error" ? (
         <button
           type="button"
           className="location-refresh"
-          aria-label="обновить текущую локацию"
+          aria-label={t("обновить текущую локацию")}
           onClick={() => setAttempt((value) => value + 1)}
         >
           ↻

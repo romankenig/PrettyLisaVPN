@@ -1,3 +1,4 @@
+import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ApiError, type VpnCountriesResponse } from "../api/client";
 import { useApplication } from "../state/application";
@@ -32,6 +33,7 @@ export function ConnectionLocationSelector({
   readonly onConnectabilityChange: (available: boolean) => void;
   readonly disabled?: boolean;
 }) {
+  useLanguage();
   const { api, session } = useApplication();
   const activeSession = session.current();
   const [state, setState] = useState<AvailabilityState>({ phase: "loading" });
@@ -132,10 +134,10 @@ export function ConnectionLocationSelector({
             quality: country.quality,
             available: true,
           }))
-          .sort((a, b) => a.name.localeCompare(b.name, "ru"))
+          .sort((a, b) => a.name.localeCompare(b.name, getLanguage()))
       : [];
   const top = [...countries]
-    .sort((a, b) => b.quality - a.quality || a.name.localeCompare(b.name, "ru"))
+    .sort((a, b) => b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()))
     .slice(0, 3);
   const autopilot: Choice = {
     key: "auto",
@@ -224,12 +226,12 @@ export function ConnectionLocationSelector({
       }}
     >
       <div className="location-selector__heading">
-        <h2 id={`${id}-title`}>куда подключиться</h2>
+        <h2 id={`${id}-title`}>{t("куда подключиться")}</h2>
         <button
           type="button"
           className="location-refresh"
-          aria-label="обновить страны"
-          title="обновить страны"
+          aria-label={t("обновить страны")}
+          title={t("обновить страны")}
           disabled={
             disabled ||
             state.phase === "refreshing" ||
@@ -274,9 +276,9 @@ export function ConnectionLocationSelector({
           aria-labelledby={`${id}-title`}
         >
           {groups.map((group) => (
-            <div role="group" aria-label={group.name} key={group.name}>
+            <div role="group" aria-label={t(group.name)} key={group.name}>
               <p className="location-group-label" aria-hidden="true">
-                {group.name}
+                {t(group.name)}
               </p>
               {group.choices.length ? (
                 group.choices.map((choice) => {
@@ -300,26 +302,22 @@ export function ConnectionLocationSelector({
                   );
                 })
               ) : (
-                <p className="location-empty">нет доступных стран</p>
+                <p className="location-empty">{t("нет доступных стран")}</p>
               )}
             </div>
           ))}
         </div>
       ) : null}
       {state.phase === "loading" || state.phase === "refreshing" ? (
-        <p className="availability-note" role="status">
-          загружаем доступные локации…
-        </p>
+        <p className="availability-note" role="status">{t("загружаем доступные локации…")}</p>
       ) : null}
       {state.phase === "error" || state.phase === "stale" ? (
         <p className="availability-warning" role="alert">
-          {state.message}{" "}
+          {t(state.message)}{t(" ")}
           <button
             type="button"
             onClick={() => setAttempt((value) => value + 1)}
-          >
-            повторить
-          </button>
+          >{t("повторить")}</button>
         </p>
       ) : null}
     </div>
@@ -333,6 +331,7 @@ function ChoiceLabel({
   readonly choice: Choice;
   readonly id?: string;
 }) {
+  useLanguage();
   return (
     <>
       <CountryIcon
@@ -343,13 +342,13 @@ function ChoiceLabel({
         }
       />
       <span className="location-option__name" id={id}>
-        {choice.name}
+        {t(choice.name)}
       </span>
       <span
         className="location-option__quality"
-        aria-label={`доступность ${choice.quality} из 100`}
+        aria-label={t(`доступность ${choice.quality} из 100`)}
       >
-        {choice.quality}
+        {t(choice.quality)}
       </span>
     </>
   );
@@ -358,7 +357,7 @@ function ChoiceLabel({
 export function countryName(countryCode: string): string {
   try {
     return (
-      new Intl.DisplayNames(["ru"], { type: "region" }).of(countryCode) ??
+      new Intl.DisplayNames([getLanguage()], { type: "region" }).of(countryCode) ??
       countryCode
     );
   } catch {

@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import { ApiError } from "../api/client";
@@ -7,6 +8,7 @@ import { Subscription } from "./Subscription";
 import { NavigationIcon } from "./NavigationIcon";
 
 export function Settings() {
+  useLanguage();
   return (
     <Routes>
       <Route index element={<SettingsOverview />} />
@@ -15,9 +17,7 @@ export function Settings() {
         path="devices"
         element={
           <div className="settings-devices">
-            <Link className="settings-back" to="/settings">
-              ← настройки
-            </Link>
+            <Link className="settings-back" to="/settings">{t("← настройки")}</Link>
             <Devices />
           </div>
         }
@@ -27,6 +27,7 @@ export function Settings() {
 }
 
 function SettingsOverview() {
+  useLanguage();
   const { api, session } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
@@ -66,21 +67,21 @@ function SettingsOverview() {
   if (activeSession === null) return null;
   return (
     <section className="settings-page" aria-labelledby="settings-title">
-      <h1 id="settings-title">настройки</h1>
+      <h1 id="settings-title">{t("настройки")}</h1>
       <div className="settings-options">
         <Link className="settings-option" to="/settings/subscription">
           <NavigationIcon name="subscription" />
           <span>
-            <strong>подписка</strong>
-            <small>управление подпиской и платежами</small>
+            <strong>{t("подписка")}</strong>
+            <small>{t("управление подпиской и платежами")}</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
         <Link className="settings-option" to="/settings/devices">
           <NavigationIcon name="devices" />
           <span>
-            <strong>устройства</strong>
-            <small>Управление доступом к аккаунту</small>
+            <strong>{t("устройства")}</strong>
+            <small>{t("Управление доступом к аккаунту")}</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
@@ -93,16 +94,14 @@ function SettingsOverview() {
           <NavigationIcon name="logout" />
           <span>
             <strong>
-              {logoutState === "submitting" ? "выходим…" : "выйти"}
+              {t(logoutState === "submitting" ? "выходим…" : "выйти")}
             </strong>
-            <small>Завершить сессию на этом устройстве</small>
+            <small>{t("Завершить сессию на этом устройстве")}</small>
           </span>
         </button>
       </div>
       {logoutState === "error" ? (
-        <p className="logout-error" role="alert">
-          Не удалось завершить сессию. Проверьте сеть и попробуйте снова.
-        </p>
+        <p className="logout-error" role="alert">{t("Не удалось завершить сессию. Проверьте сеть и попробуйте снова.")}</p>
       ) : null}
     </section>
   );

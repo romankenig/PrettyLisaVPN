@@ -1,3 +1,4 @@
+import { languagePreference } from "../i18n/language";
 import { useEffect, useSyncExternalStore } from "react";
 import { rememberHomeCountry } from "../billing/preferences";
 import { useApplication } from "../state/application";
@@ -10,13 +11,9 @@ export function HomeCountryObserver() {
     vpnConnection.current,
   );
   useEffect(() => {
-    if (
-      !publicLocation ||
-      state.phase !== "DISCONNECTED" ||
-      state.backend !== "NONE" ||
-      state.tunnel !== "DOWN"
-    )
-      return;
+    const disconnected = state.phase === "DISCONNECTED" && state.backend === "NONE" && state.tunnel === "DOWN";
+    const probe = state.phase === "RECONCILING" && Boolean(vpnConnection.localTunnelStatus);
+    if (!publicLocation || (!disconnected && !probe)) return;
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
@@ -26,13 +23,18 @@ export function HomeCountryObserver() {
       const current = new AbortController();
       controller = current;
       try {
+        if (probe && await vpnConnection.localTunnelStatus?.() !== "DOWN") return;
+        if (disposed || current.signal.aborted || vpnConnection.current() !== state) return;
         const data = await publicLocation.current(current.signal);
+        if (probe && await vpnConnection.localTunnelStatus?.() !== "DOWN") return;
         if (
           !disposed &&
           !current.signal.aborted &&
           vpnConnection.current() === state
-        )
-          rememberHomeCountry(data.countryCode);
+        ) {
+          if (disconnected) rememberHomeCountry(data.countryCode);
+          languagePreference.suggestCountry(data.countryCode);
+        }
       } catch {
         /* Keep the last known country. Never disconnect VPN for a price. */
       }

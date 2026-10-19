@@ -91,3 +91,11 @@ Windows **0.11.1**, backend **0.10.0**, последняя миграция **00
   [OTP runbook](stage-2-acceptance.md), [WireGuard runtime](windows-wireguard-runtime.md).
 - [Текущий handoff и журнал](backend-cloud-handoff.md),
   [development deployment](../infra/deployment/README.md).
+
+## Windows: локализация — 0.12.0
+
+[Шесть языков интерфейса](windows-localization.md): выбор в sidebar, English по
+умолчанию, RU по подтверждённой локации до VPN; сохранённый ручной выбор имеет
+приоритет. Полные UI-каталоги, locale-aware даты/цены/страны, технические имена
+сохранены. Версия Windows повышена с 0.11.1 до 0.12.0; backend/schema unchanged.
+Точные CI/native screenshots текущего SHA и ограничения приёмки публикуются в PR.

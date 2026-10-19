@@ -382,7 +382,7 @@ describe("authenticated Home", () => {
     expect(
       await screen.findByRole("heading", { name: "Connected" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: /куда подключиться/ })).toBeDisabled();
     expect(screen.getByRole("timer")).toHaveTextContent("Осталось: 10:15");
 
     fireEvent.click(screen.getByRole("button", { name: "DISCONNECT" }));

@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import {
   useEffect,
   useState,
@@ -23,6 +24,7 @@ type ProfileState =
   | { phase: "error"; message: string };
 
 export function Home() {
+  useLanguage();
   const { api, session, vpnConnection } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
@@ -99,7 +101,7 @@ export function Home() {
     try {
       await vpnConnection.connect(accessToken, locationSelection);
     } catch (error) {
-      setConnectionErrorMessage(connectionError(error));
+      setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
   }
 
@@ -108,7 +110,7 @@ export function Home() {
     try {
       await vpnConnection.disconnect(accessToken);
     } catch (error) {
-      setConnectionErrorMessage(connectionError(error));
+      setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
   }
 
@@ -120,17 +122,15 @@ export function Home() {
       </h1>
 
       {profileState.phase === "loading" ? (
-        <p role="status">загружаем данные аккаунта…</p>
+        <p role="status">{t("загружаем данные аккаунта…")}</p>
       ) : null}
       {profileState.phase === "error" ? (
         <div className="account-error" role="alert">
-          <p>{profileState.message}</p>
+          <p>{t(profileState.message)}</p>
           <button
             type="button"
             onClick={() => setProfileAttempt((value) => value + 1)}
-          >
-            повторить
-          </button>
+          >{t("повторить")}</button>
         </div>
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
@@ -171,7 +171,7 @@ export function Home() {
                 void (canDisconnect(connectionState) ? disconnect() : connect())
               }
             >
-              {connectionState.phase === "DISCONNECTING"
+              {t(connectionState.phase === "DISCONNECTING"
                 ? "DISCONNECTING"
                 : connectionState.phase === "CONNECTING" ||
                     connectionState.phase === "TUNNEL_ESTABLISHED" ||
@@ -180,10 +180,10 @@ export function Home() {
                   ? "CONNECTING"
                   : canDisconnect(connectionState)
                     ? "DISCONNECT"
-                    : "CONNECT"}
+                    : "CONNECT")}
             </button>
             <h2 className="connection-status" aria-live="polite">
-              {connectionHeading(connectionState)}
+              {t(connectionHeading(connectionState))}
             </h2>
             {connectionState.phase === "CONNECTED" ? (
               <ConnectionInfo sessionId={connectionState.session.sessionId} />
@@ -191,32 +191,28 @@ export function Home() {
             {profile?.plan === "FREE" &&
             connectionState.phase === "CONNECTED" &&
             connectionState.session.remainingSeconds !== null ? (
-              <p role="timer">
-                Осталось:{" "}
-                {formatRemaining(connectionState.session.remainingSeconds)}
+              <p role="timer">{t("Осталось:")}{t(" ")}
+                {t(formatRemaining(connectionState.session.remainingSeconds))}
               </p>
             ) : null}
             <p id="connection-unavailable" className="field-help">
-              {connectionState.phase === "DISCONNECTED" &&
+              {t(connectionState.phase === "DISCONNECTED" &&
                 (!locationConnectable
                   ? "Сейчас подключение недоступно."
-                  : "Готово к подключению.")}
+                  : "Готово к подключению."))}
             </p>
             {connectionErrorMessage !== null ||
             ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
               connectionState.phase,
             ) ? (
               <p className="connection-error" role="alert">
-                {connectionErrorMessage ??
-                  connectionUnavailableMessage(connectionState)}
+                {t(connectionErrorMessage ??
+                  connectionUnavailableMessage(connectionState))}
               </p>
             ) : null}
             {connectionState.phase === "DISCONNECTED" &&
             connectionState.backend === "UNAVAILABLE" ? (
-              <p className="connection-error" role="status">
-                VPN на компьютере остановлен. Сервер завершит сессию после
-                восстановления связи.
-              </p>
+              <p className="connection-error" role="status">{t("VPN на компьютере остановлен. Сервер завершит сессию после восстановления связи.")}</p>
             ) : null}
           </div>
           <CurrentLocation connection={connectionState} />
@@ -228,26 +224,27 @@ export function Home() {
 }
 
 function AccountSummary({ profile }: { readonly profile: MeResponse }) {
+  useLanguage();
   return (
     <div className="account-summary">
       <div>
-        <span>аккаунт</span>
+        <span>{t("аккаунт")}</span>
         <strong title={profile.email}>{profile.email}</strong>
       </div>
       <div>
-        <span>план</span>
+        <span>{t("план")}</span>
         <strong>
-          {profile.plan}
-          {profile.plan === "PREMIUM"
+          {t(profile.plan)}
+          {t(profile.plan === "PREMIUM"
             ? " ⭐"
             : profile.plan === "PLATINUM"
               ? " 💎"
-              : ""}
+              : "")}
         </strong>
       </div>
       <div>
-        <span>активные устройства</span>
-        <strong>{profile.active_device_count}</strong>
+        <span>{t("активные устройства")}</span>
+        <strong>{t(profile.active_device_count)}</strong>
       </div>
     </div>
   );
@@ -283,11 +280,8 @@ function connectionError(error: unknown) {
     }
     if (error.code === "VPN_TRAFFIC_INTERCEPTED") {
       return (
-        <>
-          Другой VPN или сетевой фильтр не пропускает интернет через{" "}
-          <span className="product-name">PrettyLisaVPN</span>. Отключите другой
-          VPN и повторите подключение.
-        </>
+        <>{t("Другой VPN или сетевой фильтр не пропускает интернет через")}{t(" ")}
+          <span className="product-name">PrettyLisaVPN</span>{t(". Отключите другой VPN и повторите подключение.")}</>
       );
     }
     if (error.code === "LOCAL_TUNNEL_STOP_FAILED") {
@@ -342,4 +336,9 @@ function formatRemaining(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function ConnectionErrorMessage({error}: {readonly error: unknown}) {
+  useLanguage();
+  return <>{t(connectionError(error))}</>;
 }

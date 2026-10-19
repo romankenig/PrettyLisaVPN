@@ -1,3 +1,4 @@
+import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ApiError, type DeviceResponse } from "../api/client";
 import { useApplication } from "../state/application";
@@ -8,6 +9,7 @@ type ListState =
   | { readonly phase: "error"; readonly message: string };
 
 export function Devices() {
+  useLanguage();
   const { api, session } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
@@ -75,30 +77,24 @@ export function Devices() {
 
   return (
     <section className="devices-page" aria-labelledby="devices-title">
-      <h1 id="devices-title">устройства</h1>
-      <p className="devices-limit">
-        в аккаунте может быть не более 5 активных устройств.
-        <br />
-        отзовите доступ ненужного устройства, чтобы освободить место для нового.
-      </p>
+      <h1 id="devices-title">{t("устройства")}</h1>
+      <p className="devices-limit">{t("в аккаунте может быть не более 5 активных устройств.")}<br />{t("отзовите доступ ненужного устройства, чтобы освободить место для нового.")}</p>
 
       {listState.phase === "loading" ? (
-        <p role="status">загружаем устройства…</p>
+        <p role="status">{t("загружаем устройства…")}</p>
       ) : null}
       {listState.phase === "error" ? (
         <div className="account-error" role="alert">
-          <p>{listState.message}</p>
+          <p>{t(listState.message)}</p>
           <button
             type="button"
             onClick={() => setListAttempt((value) => value + 1)}
-          >
-            повторить
-          </button>
+          >{t("повторить")}</button>
         </div>
       ) : null}
       {listState.phase === "ready" ? (
         listState.devices.length === 0 ? (
-          <p className="devices-empty">Устройств пока нет.</p>
+          <p className="devices-empty">{t("Устройств пока нет.")}</p>
         ) : (
           <ul className="device-list">
             {listState.devices.map((device) => (
@@ -107,24 +103,22 @@ export function Devices() {
                   <div>
                     <h2>{device.device_name}</h2>
                     <p className="device-identity" title={device.id}>
-                      id: {deviceIdentifier(device, listState.devices)}
+                      id: {t(deviceIdentifier(device, listState.devices))}
                     </p>
-                    <p className="device-dates">
-                      добавлено: <DeviceTime value={device.created_at} />
-                      <br />
-                      последний вход:{" "}
+                    <p className="device-dates">{t("добавлено: ")}<DeviceTime value={device.created_at} />
+                      <br />{t("последний вход:")}{t(" ")}
                       <DeviceTime value={device.last_login_at} />
                     </p>
                   </div>
                   {device.is_current ? (
-                    <span className="current-device">текущее устройство</span>
+                    <span className="current-device">{t("текущее устройство")}</span>
                   ) : null}
                 </div>
                 <div className="device-card__footer">
                   <span
                     className={`device-status device-status--${device.status.toLowerCase()}`}
                   >
-                    {device.status === "ACTIVE" ? "активно" : "отозвано"}
+                    {t(device.status === "ACTIVE" ? "активно" : "отозвано")}
                   </span>
                   {!device.is_current && device.status === "ACTIVE" ? (
                     <button
@@ -135,9 +129,7 @@ export function Devices() {
                         setConfirmation(device);
                         setActionError(null);
                       }}
-                    >
-                      отозвать доступ
-                    </button>
+                    >{t("отозвать доступ")}</button>
                   ) : null}
                 </div>
               </li>
@@ -154,12 +146,9 @@ export function Devices() {
           aria-labelledby="revoke-confirmation-title"
           aria-describedby="revoke-confirmation-description"
         >
-          <h2 id="revoke-confirmation-title">Отозвать доступ?</h2>
-          <p id="revoke-confirmation-description">
-            Устройство «{confirmation.device_name}» выйдет из аккаунта, а все
-            его активные сессии будут завершены.
-          </p>
-          <p className="device-identity">id: {confirmation.id}</p>
+          <h2 id="revoke-confirmation-title">{t("Отозвать доступ?")}</h2>
+          <p id="revoke-confirmation-description">{t("Устройство «")}{confirmation.device_name}{t("» выйдет из аккаунта, а все его активные сессии будут завершены.")}</p>
+          <p className="device-identity">id: {t(confirmation.id)}</p>
           <div className="confirmation-actions">
             <button
               className="revoke-button"
@@ -167,27 +156,25 @@ export function Devices() {
               disabled={revokingId !== null}
               onClick={() => void revokeDevice()}
             >
-              {revokingId ? "отзываем…" : "да, отозвать"}
+              {t(revokingId ? "отзываем…" : "да, отозвать")}
             </button>
             <button
               className="text-button"
               type="button"
               disabled={revokingId !== null}
               onClick={() => setConfirmation(null)}
-            >
-              отмена
-            </button>
+            >{t("отмена")}</button>
           </div>
         </div>
       ) : null}
       {notice ? (
         <p className="device-notice" role="status">
-          {notice}
+          {t(notice)}
         </p>
       ) : null}
       {actionError ? (
         <p className="logout-error" role="alert">
-          {actionError}
+          {t(actionError)}
         </p>
       ) : null}
     </section>
@@ -248,16 +235,17 @@ function deviceIdentifier(device: DeviceResponse, devices: DeviceResponse[]) {
 }
 
 function DeviceTime({ value }: { readonly value?: string | null }) {
-  if (!value || !Number.isFinite(Date.parse(value))) return <>нет данных</>;
+  useLanguage();
+  if (!value || !Number.isFinite(Date.parse(value))) return <>{t("нет данных")}</>;
   return (
-    <time dateTime={value} title="по времени этого устройства">
-      {new Intl.DateTimeFormat("ru-RU", {
+    <time dateTime={value} title={t("по времени этого устройства")}>
+      {t(new Intl.DateTimeFormat(getLanguage(), {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      }).format(new Date(value))}
+      }).format(new Date(value)))}
     </time>
   );
 }

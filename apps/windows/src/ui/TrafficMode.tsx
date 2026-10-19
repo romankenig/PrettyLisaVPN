@@ -1,9 +1,11 @@
+import { t, useLanguage } from "../i18n";
 export function TrafficMode() {
+  useLanguage();
   return (
     <section className="traffic-mode" aria-labelledby="traffic-mode-title">
-      <h2 id="traffic-mode-title">что защищаем</h2>
+      <h2 id="traffic-mode-title">{t("что защищаем")}</h2>
       <fieldset className="traffic-mode__options">
-        <legend className="sr-only">режим трафика</legend>
+        <legend className="sr-only">{t("режим трафика")}</legend>
         <label className="traffic-choice traffic-choice--active">
           <input
             type="radio"
@@ -27,8 +29,8 @@ export function TrafficMode() {
             </svg>
           </span>
           <span>
-            <strong>весь трафик</strong>
-            <small>все сайты и приложения через VPN</small>
+            <strong>{t("весь трафик")}</strong>
+            <small>{t("все сайты и приложения через VPN")}</small>
           </span>
           <span className="traffic-choice__check" aria-hidden="true">
             ✓
@@ -40,9 +42,9 @@ export function TrafficMode() {
             ＋
           </span>
           <span>
-            <strong>только выбранные сайты</strong>
-            <small>остальной трафик — напрямую</small>
-            <em>скоро</em>
+            <strong>{t("только выбранные сайты")}</strong>
+            <small>{t("остальной трафик — напрямую")}</small>
+            <em>{t("скоро")}</em>
           </span>
         </label>
         <label className="traffic-choice traffic-choice--future">
@@ -51,9 +53,9 @@ export function TrafficMode() {
             −
           </span>
           <span>
-            <strong>кроме выбранных сайтов</strong>
-            <small>VPN для всего, кроме вашего списка</small>
-            <em>скоро</em>
+            <strong>{t("кроме выбранных сайтов")}</strong>
+            <small>{t("VPN для всего, кроме вашего списка")}</small>
+            <em>{t("скоро")}</em>
           </span>
         </label>
       </fieldset>

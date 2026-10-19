@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import {
   useEffect,
   useState,
@@ -20,6 +21,7 @@ export function SessionRestorationGate({
   readonly session: AuthenticationSession;
   readonly children: ReactNode;
 }) {
+  useLanguage();
   const location = useLocation();
   const activeSession = useSyncExternalStore(
     session.subscribe,
@@ -41,11 +43,11 @@ export function SessionRestorationGate({
   }, [restoration]);
 
   if (result === "checking")
-    return <StartupStatus message="восстанавливаем сессию…" />;
+    return <StartupStatus message={t("восстанавливаем сессию…")} />;
   if (result === "temporarily-unavailable") {
     return (
       <StartupFailure
-        message="Backend временно недоступен. Сессия сохранена на этом устройстве."
+        message={t("Backend временно недоступен. Сессия сохранена на этом устройстве.")}
         onRetry={() => void retry(restoration, setResult)}
       />
     );
@@ -53,7 +55,7 @@ export function SessionRestorationGate({
   if (result === "storage-unavailable") {
     return (
       <StartupFailure
-        message="Не удалось открыть защищённое хранилище Windows."
+        message={t("Не удалось открыть защищённое хранилище Windows.")}
         onRetry={() => void retry(restoration, setResult)}
       />
     );
@@ -79,9 +81,10 @@ async function retry(
 }
 
 function StartupStatus({ message }: { readonly message: string }) {
+  useLanguage();
   return (
     <main className="startup-status" aria-live="polite">
-      <p>{message}</p>
+      <p>{t(message)}</p>
     </main>
   );
 }
@@ -93,12 +96,11 @@ function StartupFailure({
   readonly message: string;
   readonly onRetry: () => void;
 }) {
+  useLanguage();
   return (
     <main className="startup-status" role="alert">
-      <p>{message}</p>
-      <button type="button" onClick={onRetry}>
-        повторить
-      </button>
+      <p>{t(message)}</p>
+      <button type="button" onClick={onRetry}>{t("повторить")}</button>
     </main>
   );
 }
