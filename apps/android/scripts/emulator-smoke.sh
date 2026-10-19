@@ -60,6 +60,7 @@ adb pull "/sdcard/Android/data/$package/files/acceptance/." evidence/
 python3 - <<'PY'
 import json, os, pathlib, struct
 identity = json.loads(pathlib.Path('apk/build-identity.json').read_text())
+native_size = struct.unpack('>II', pathlib.Path('evidence/home.png').read_bytes()[16:24])
 cases = {'compact': (720,1280,1.0), 'small': (640,1136,1.0), 'scaled-font': (640,1136,1.3),
          'large-font': (720,1280,2.0), 'roomy': (824,1648,1.0), 'landscape': (1280,720,1.0)}
 for case, (width,height,font) in cases.items():
@@ -67,9 +68,11 @@ for case, (width,height,font) in cases.items():
         path = pathlib.Path('evidence') / case / shot
         png = path.with_suffix('.png').read_bytes()
         assert png[:8] == b'\x89PNG\r\n\x1a\n'
-        assert struct.unpack('>II', png[16:24]) == (width,height), (case,shot)
+        # wm size changes the logical display; SurfaceFlinger keeps its native capture size.
+        assert struct.unpack('>II', png[16:24]) in (native_size, native_size[::-1]), (case,shot)
         metadata = json.loads(path.with_suffix('.json').read_text())
         assert metadata['source_sha'] == os.environ['GITHUB_SHA']
+        assert (metadata['window_width_px'], metadata['window_height_px']) == (width,height), (case,shot,metadata)
         assert metadata['version_name'] == identity['version_name']
         assert metadata['version_code'] == identity['version_code']
         assert metadata['application_id'] == identity['application_id']

@@ -209,7 +209,15 @@ class DesignAcceptanceTest {
             nodes.filter { !it.config.contains(SemanticsProperties.EditableText) }.forEach { node ->
                 val results = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
-                results.forEach { result -> assertFalse("Text clipped: ${result.layoutInput.text}", result.hasVisualOverflow) }
+                results.forEach { result ->
+                    // Paragraph metrics may exceed integer layout height by a fractional pixel.
+                    val paragraph = result.multiParagraph
+                    val clipped = result.didOverflowWidth || paragraph.didExceedMaxLines || paragraph.height > result.size.height + 1f
+                    assertFalse(
+                        "Text clipped: ${result.layoutInput.text}; size=${result.size}; paragraph=${paragraph.width}x${paragraph.height}; constraints=${result.layoutInput.constraints}",
+                        clipped,
+                    )
+                }
             }
         }
     }
@@ -230,6 +238,7 @@ class DesignAcceptanceTest {
         val header = ByteArray(8)
         target.inputStream().use { DataInputStream(it).readFully(header) }
         val metrics = compose.activity.resources.displayMetrics
+        val window = windowSize()
         val metadata = JSONObject()
             .put("source_sha", BuildConfig.SOURCE_SHA)
             .put("version_name", BuildConfig.VERSION_NAME)
@@ -238,6 +247,8 @@ class DesignAcceptanceTest {
             .put("case", case)
             .put("font_scale", compose.activity.resources.configuration.fontScale)
             .put("density", metrics.density)
+            .put("window_width_px", window.x)
+            .put("window_height_px", window.y)
             .put("width_px", metrics.widthPixels)
             .put("height_px", metrics.heightPixels)
             .put("ime_visible", keyboardVisible())

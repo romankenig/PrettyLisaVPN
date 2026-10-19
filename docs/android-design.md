@@ -62,7 +62,7 @@ composables; в продукте нет страницы component gallery ил�
 Сначала выполняются прежние 3 NavigationTest, затем 3 DesignAcceptanceTest для
 каждой конфигурации (21 instrumented tests на API), после них отдельный cold launcher.
 
-| Case | Физический viewport / density | Логический размер | fontScale |
+| Case | Логический display (wm size) / density | Логический размер | fontScale |
 | --- | --- | --- | --- |
 | compact | 720×1280 / 320dpi | 360×640dp | 1.0 |
 | small | 640×1136 / 320dpi | 320×568dp | 1.0 |
@@ -79,7 +79,8 @@ enabled/disabled/loading semantics. Screenshot helper не создаёт гра
 
 Для каждого case сохраняются Home/Settings/About, форма с IME/error, заполненная
 форма и component states. У PNG есть JSON: source SHA, версия/code/package, fontScale,
-density, размеры и IME visibility. CI проверяет физические PNG dimensions, source
+density, размеры и IME visibility. CI сверяет размеры логического display с каждым case, native PNG dimensions с
+исходным дисплеем эмулятора (wm size не меняет физический screencap), source
 и version/density/fontScale, включая реальную IME в keyboard capture. При ошибке
 сохраняется raw failure capture; cleanup не превращает упавший тест в успех.
 Отчёты и baseline/cold start evidence остаются в том же emulator artifact.

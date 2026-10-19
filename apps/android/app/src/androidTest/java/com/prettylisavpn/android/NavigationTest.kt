@@ -5,6 +5,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +49,12 @@ class NavigationTest {
     fun recreationRestoresSelectedTab() {
         compose.onNodeWithTag("tab_ABOUT").performClick()
         compose.activityRule.scenario.recreate()
+        // Navigation restores its destination before the back-stack Flow updates tab state.
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("tab_ABOUT").fetchSemanticsNodes().any {
+                it.config.getOrNull(SemanticsProperties.Selected) == true
+            }
+        }
         compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
         compose.onNodeWithTag("tab_ABOUT").assertIsSelected()
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
