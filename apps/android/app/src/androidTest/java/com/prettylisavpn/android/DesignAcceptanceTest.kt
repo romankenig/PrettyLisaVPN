@@ -211,9 +211,13 @@ class DesignAcceptanceTest {
                 val results = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
                 results.forEach { result ->
-                    // Paragraph metrics may exceed integer layout height by a fractional pixel.
+                    // The Text semantics adapter can retain a full-constraint paragraph while
+                    // reporting an intrinsic-width node. Check actual line spans, not that container.
                     val paragraph = result.multiParagraph
-                    val clipped = result.didOverflowWidth || paragraph.didExceedMaxLines || paragraph.height > result.size.height + 1f
+                    val wideLine = (0 until result.lineCount).any { line ->
+                        result.getLineRight(line) - result.getLineLeft(line) > result.size.width + 1f
+                    }
+                    val clipped = wideLine || paragraph.didExceedMaxLines || paragraph.height > result.size.height + 1f
                     assertFalse(
                         "Text clipped: ${result.layoutInput.text}; size=${result.size}; paragraph=${paragraph.width}x${paragraph.height}; constraints=${result.layoutInput.constraints}",
                         clipped,
