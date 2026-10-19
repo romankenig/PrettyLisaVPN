@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,9 +25,17 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -89,12 +101,25 @@ fun BrandTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     error: String? = null,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+    val bringIntoView = remember { BringIntoViewRequester() }
+    var focused by remember { mutableStateOf(false) }
+    val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(focused, error, imeBottom) {
+        if (focused) {
+            withFrameNanos { } // Wait for the updated IME/error layout before scrolling the whole field.
+            bringIntoView.bringIntoView()
+        }
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(bringIntoView),
+    ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = modifier.fillMaxWidth().semantics { contentDescription = label },
+            modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
+                .semantics { contentDescription = label },
             label = null,
             singleLine = singleLine,
             minLines = minLines,

@@ -75,12 +75,13 @@ composables; в продукте нет страницы component gallery ил�
 system bars/cutout, наличие реальной IME и видимость email над ней, недоступность
 сетевых действий, validation → corrected input, сохранение трёх полей после recreation,
 enabled/disabled/loading semantics. Screenshot helper не создаёт графику программно:
-это `screencap -p` реального Android дисплея после native idle.
+это `UiAutomation.takeScreenshot()` реального Android дисплея после native idle,
+lossless PNG без изменения размеров/пикселей. Baseline/launcher используют shell screencap.
 
 Для каждого case сохраняются Home/Settings/About, форма с IME/error, заполненная
 форма и component states. У PNG есть JSON: source SHA, версия/code/package, fontScale,
 density, размеры и IME visibility. CI сверяет размеры логического display с каждым case, native PNG dimensions с
-исходным дисплеем эмулятора (wm size не меняет физический screencap), source
+логическим либо исходным физическим дисплеем эмулятора (зависит от API screencap), source
 и version/density/fontScale, включая реальную IME в keyboard capture. При ошибке
 сохраняется raw failure capture; cleanup не превращает упавший тест в успех.
 Отчёты и baseline/cold start evidence остаются в том же emulator artifact.

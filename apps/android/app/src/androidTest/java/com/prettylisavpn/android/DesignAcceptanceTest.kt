@@ -1,6 +1,6 @@
 package com.prettylisavpn.android
 
-import android.os.ParcelFileDescriptor
+import android.graphics.Bitmap
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -98,7 +98,8 @@ class DesignAcceptanceTest {
         compose.onNodeWithTag("support-email").performScrollTo().performClick().performTextInput("invalid")
         compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).assertExists()
         compose.waitUntil(10_000) { keyboardVisible() }
-        compose.onNodeWithTag("support-email").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("support-email").assertIsDisplayed()
         assertFocusedFieldAboveKeyboard()
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
         capture("support-keyboard-error")
@@ -232,9 +233,14 @@ class DesignAcceptanceTest {
         val directory = File(instrumentation.targetContext.getExternalFilesDir(null), "acceptance/$case")
         check(directory.mkdirs() || directory.isDirectory)
         val target = File(directory, "$name.png")
-        ParcelFileDescriptor.AutoCloseInputStream(
-            instrumentation.uiAutomation.executeShellCommand("screencap -p"),
-        ).use { input -> target.outputStream().use { input.copyTo(it) } }
+        // Native display capture includes the real IME and bars, respecting logical display size
+        // on old Android where shell screencap can retain the pre-wm physical composition.
+        val screenshot = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+        try {
+            target.outputStream().use { check(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        } finally {
+            screenshot.recycle()
+        }
         val header = ByteArray(8)
         target.inputStream().use { DataInputStream(it).readFully(header) }
         val metrics = compose.activity.resources.displayMetrics

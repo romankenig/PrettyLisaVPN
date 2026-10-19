@@ -68,8 +68,8 @@ for case, (width,height,font) in cases.items():
         path = pathlib.Path('evidence') / case / shot
         png = path.with_suffix('.png').read_bytes()
         assert png[:8] == b'\x89PNG\r\n\x1a\n'
-        # wm size changes the logical display; SurfaceFlinger keeps its native capture size.
-        assert struct.unpack('>II', png[16:24]) in (native_size, native_size[::-1]), (case,shot)
+        # Old SurfaceFlinger captures retain the physical display; newer APIs use wm size.
+        assert struct.unpack('>II', png[16:24]) in ((width,height), native_size, native_size[::-1]), (case,shot)
         metadata = json.loads(path.with_suffix('.json').read_text())
         assert metadata['source_sha'] == os.environ['GITHUB_SHA']
         assert (metadata['window_width_px'], metadata['window_height_px']) == (width,height), (case,shot,metadata)
