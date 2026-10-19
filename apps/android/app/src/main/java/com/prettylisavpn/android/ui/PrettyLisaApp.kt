@@ -104,7 +104,9 @@ fun PrettyLisaApp() {
             composable(Destination.ABOUT.name) {
                 AboutScreen { navController.navigate(SUPPORT) { launchSingleTop = true } }
             }
-            composable(SUPPORT) { SupportDraftScreen { navController.popBackStack() } }
+            composable(SUPPORT) { supportEntry ->
+                SupportDraftScreen(supportEntry.savedStateHandle) { navController.popBackStack() }
+            }
         }
     }
     BackHandler(enabled = route != Destination.HOME.name && route != SUPPORT) {

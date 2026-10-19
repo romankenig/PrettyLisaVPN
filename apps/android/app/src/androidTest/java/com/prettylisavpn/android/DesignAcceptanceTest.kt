@@ -1,6 +1,7 @@
 package com.prettylisavpn.android
 
 import android.graphics.Bitmap
+import android.content.pm.ActivityInfo
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -70,6 +71,13 @@ class DesignAcceptanceTest {
         val width = arguments.getString("widthPx")?.toInt()
         val height = arguments.getString("heightPx")?.toInt()
         if (width != null && height != null) {
+            if (width > height) {
+                // A fresh Activity can inherit portrait from Launcher even with user rotation locked.
+                // Request the actual landscape configuration before installing test-only content.
+                compose.runOnUiThread {
+                    compose.activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                }
+            }
             compose.waitUntil(10_000) {
                 val size = windowSize()
                 size.x == width && size.y == height && compose.activity.hasWindowFocus()
@@ -121,6 +129,10 @@ class DesignAcceptanceTest {
         compose.onNodeWithTag("support-send").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithTag("support-email").performScrollTo().performTextReplacement("test@example.invalid")
         compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).assertDoesNotExist()
+        compose.onNodeWithTag("support-subject").assertTextEquals("VPN")
+        compose.onNodeWithTag("support-description").assertTextEquals("Connection")
+        compose.onNodeWithTag("support-email").assertTextEquals("test@example.invalid")
+        capture("support-before-recreation")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("support-subject").assertTextEquals("VPN")
         compose.onNodeWithTag("support-description").assertTextEquals("Connection")

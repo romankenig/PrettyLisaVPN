@@ -42,7 +42,8 @@ Button различает enabled/disabled/loading, loading блокирует �
   границы 120/4000/254 взяты из существующего support schema; отправки нет.
   Send disabled независимо от правильности ввода: sender/attachments/diagnostics
   ещё не подключены. Нет симуляции успешного обращения или фоновых запросов.
-- Форма использует ограниченный rememberSaveable state Activity. Поля переживают
+- Форма использует SavedStateHandle собственного navigation entry: state не зависит
+  от пересоздания composable при Activity/configuration changes. Поля переживают
   recreation; закрытие destination удаляет черновик. Постоянного draft repository
   нет, секреты/OTP/credentials не сохраняются. Данные в тестовых PNG синтетические.
 - Support Back возвращает About; системный Back сначала закрывает IME.

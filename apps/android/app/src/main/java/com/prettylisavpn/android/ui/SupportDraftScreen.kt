@@ -8,9 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.SavedStateHandle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -22,10 +21,12 @@ import com.prettylisavpn.android.R
 
 /** Local UI only. No sender/diagnostics/attachments until the Android API adapter exists. */
 @Composable
-internal fun SupportDraftScreen(onBack: () -> Unit) {
-    var subject by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
+internal fun SupportDraftScreen(state: SavedStateHandle, onBack: () -> Unit) {
+    // Entry-owned state survives Activity/configuration changes independently of composition.
+    // Popping the Support destination removes its state together with the navigation entry.
+    val subject by state.getStateFlow("subject", "").collectAsState()
+    val description by state.getStateFlow("description", "").collectAsState()
+    val email by state.getStateFlow("email", "").collectAsState()
     val invalidEmail = email.isNotBlank() && !Patterns.EMAIL_ADDRESS.matcher(email).matches()
     PhoneScreen("screen_SUPPORT") {
         ScreenHeading(stringResource(R.string.help), onBack)
@@ -33,17 +34,17 @@ internal fun SupportDraftScreen(onBack: () -> Unit) {
             Text(stringResource(R.string.support_unavailable), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 BrandTextField(
-                    subject, { subject = it.take(120) }, stringResource(R.string.subject),
+                    subject, { state["subject"] = it.take(120) }, stringResource(R.string.subject),
                     Modifier.testTag("support-subject"),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                 )
                 BrandTextField(
-                    description, { description = it.take(4000) }, stringResource(R.string.description),
+                    description, { state["description"] = it.take(4000) }, stringResource(R.string.description),
                     Modifier.testTag("support-description"), singleLine = false, minLines = 3,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
                 BrandTextField(
-                    email, { email = it.take(254) }, stringResource(R.string.reply_email),
+                    email, { state["email"] = it.take(254) }, stringResource(R.string.reply_email),
                     Modifier.testTag("support-email"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
                     error = if (invalidEmail) stringResource(R.string.invalid_email) else null,
