@@ -82,6 +82,17 @@ Windows **0.11.1**, backend **0.10.0**, последняя миграция **00
 Последние пункты — backlog развития и эксплуатации, а не утверждение об отсутствии
 уже реализованных API и не новый обязательный контракт Windows MVP.
 
+## Android: начало переноса — проектирование
+
+От Windows 0.11.1 на develop `69ab8d1d3d3c5680fc72bb23980776242606a104`
+подготовлены [архитектура Kotlin/Compose](android-architecture.md) и
+[план переноса](android-porting-plan.md): экраны, API, мобильные токены,
+native ports, VPN runtime/transport gates и этапы приёмки. Android-проект и APK
+ещё не реализованы; version unchanged, backend/Windows не меняются.
+Support diagnostics Android ограничены текущим WINDOWS-only schema (разрешён
+`diagnostics=null`); OpenVPN/MASQUE и legacy wrappers не объявляются рабочими
+на Android по наличию Windows descriptors.
+
 ## Подробности
 
 - [Разработка Backend](../backend/README.md), [Windows](../apps/windows/README.md).

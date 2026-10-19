@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — архитектура и план переноса, version unchanged
+
+- Зафиксирован аудит Windows 0.11.1 на develop 69ab8d1: карта экранов/API,
+  дизайн-токены, Kotlin/Compose слои и замена Windows native-зависимостей.
+- Разделены протокольный каталог и реальные runtime capabilities; первый
+  VPN-этап — WireGuard IPv4 full tunnel, остальные профили gated/disabled.
+- Документированы support diagnostics WINDOWS-only с безопасным null для Android,
+  legacy NATIVE policy, first-candidate/no-fallback и service ownership GoBackend.
+- Добавлены этапы переноса, критерии приёмки и ссылка из apps/android/README.md.
+- Только документация: Android APK/проект ещё не создан; backend 0.10.0,
+  Windows 0.11.1, schema 0026 не меняются. Новая сборка/deploy не выполнялись.
+
 ### Документация — актуальный статус на 2026-10-19
 
 - Исправлены устаревшие описания backend-каркаса, отсутствующей аутентификации,

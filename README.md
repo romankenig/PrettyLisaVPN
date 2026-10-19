@@ -107,6 +107,7 @@ docs/                Инструкции настройки и эксплуат
 | Задача | Документ |
 | --- | --- |
 | Актуальные функции, незавершённая приёмка и backlog | [Текущий статус](docs/project-status.md) |
+| Android: архитектура Kotlin/Compose, API/экраны/дизайн/native и план переноса | [Архитектура](docs/android-architecture.md), [план](docs/android-porting-plan.md) |
 | Запуск через Docker или Python, настройки, тесты | [Разработка Backend](backend/README.md) |
 | Подготовка VPS, домена, HTTPS и первый production-запуск | [Развёртывание Backend](docs/backend-deployment.md) |
 | Обновление кода на VPS, пересборка/загрузка образа, перезапуск и откат | [Обновление и перезапуск VPS](docs/vps-maintenance.md) |
@@ -121,3 +122,10 @@ docs/                Инструкции настройки и эксплуат
 ## Windows-клиент
 
 Текущий клиент, требования к native runtime и команды запуска: [apps/windows/README.md](apps/windows/README.md).
+
+## Android-клиент
+
+[Android](apps/android/README.md) находится на этапе проектирования: выбран Kotlin
+и Jetpack Compose, зафиксированы карты Windows-экранов/API/дизайна/native и
+[план переноса](docs/android-porting-plan.md). Gradle-проект, APK и Android VPN
+runtime пока не созданы; backend и код Windows на этом этапе не меняются.
