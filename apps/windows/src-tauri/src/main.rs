@@ -6,6 +6,7 @@ mod internet_verification;
 mod obfuscation_transport;
 mod packet_obfuscation;
 mod payment_browser;
+mod public_location;
 mod refresh_credentials;
 mod wg_obfuscator;
 mod window_frame;
@@ -29,6 +30,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             payment_browser::open_payment_url,
+            public_location::get_public_location,
             installation_id::get_installation_id,
             refresh_credentials::save_refresh_credential,
             refresh_credentials::load_refresh_credential,

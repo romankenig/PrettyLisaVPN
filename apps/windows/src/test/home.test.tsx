@@ -206,17 +206,34 @@ describe("authenticated Home", () => {
     );
   });
 
-  it("reuses the /me profile loaded during restoration", () => {
+  it("shows the restored profile while refreshing account data", () => {
     const api = mockApi();
     renderRestored(api);
 
     expect(screen.getByText(profile.email)).toBeInTheDocument();
-    expect(api.me).not.toHaveBeenCalled();
+    expect(api.me).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Not connected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CONNECT" })).toBeDisabled();
     expect(
       screen.getByText("загружаем доступные локации…"),
     ).toBeInTheDocument();
+  });
+
+  it("refreshes plan and device count when returning Home", async () => {
+    const api = mockApi();
+    renderRestored(api);
+    await waitFor(() => expect(api.me).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("link", { name: "настройки" }));
+    vi.mocked(api.me).mockResolvedValue({
+      ...profile,
+      plan: "FREE",
+      active_device_count: 1,
+    });
+    fireEvent.click(screen.getByRole("link", { name: "главная" }));
+    expect(await screen.findByText("FREE")).toBeVisible();
+    expect(screen.getByText("1")).toBeVisible();
+    expect(screen.queryByText("PREMIUM ⭐")).not.toBeInTheDocument();
+    expect(api.me).toHaveBeenCalledTimes(2);
   });
 
   it("shows backend errors and retries /me", async () => {
@@ -340,8 +357,10 @@ describe("authenticated Home", () => {
       }),
       dispose: vi.fn(),
     };
+    const api = mockApi();
+    vi.mocked(api.me).mockResolvedValue({ ...profile, plan: "FREE" });
     const rendered = renderRestored(
-      mockApi(),
+      api,
       createTestCredentialStorage(),
       vpnConnection,
     );

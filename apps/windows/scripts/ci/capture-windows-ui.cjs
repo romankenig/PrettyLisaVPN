@@ -151,7 +151,7 @@ async function screenshot(name) {
       document.body,
       main,
       ...document.querySelectorAll(
-        ".connection-card, .home-workspace, .sidebar, .settings-devices, .subscription-scroll, .payment-choice",
+        ".connection-card, .home-workspace, .sidebar, .sidebar-versions, .sidebar-versions > div, .settings-devices, .subscription-scroll, .payment-choice",
       ),
     ]) {
       if (

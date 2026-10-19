@@ -1,5 +1,10 @@
 # PrettyLisaVPN для Windows
 
+Приёмка Windows 0.11.1 с backend 0.10.0 описана в
+[Windows development acceptance](../../docs/windows-development-acceptance.md).
+Отдельный workflow использует реальный HTTPS и native Credential Manager;
+обычный Windows UI review остаётся прогоном fixtures.
+
 Правила продуктовых версий, сборок и дальнейших изменений:
 [система версионирования](../../docs/versioning.md).
 
