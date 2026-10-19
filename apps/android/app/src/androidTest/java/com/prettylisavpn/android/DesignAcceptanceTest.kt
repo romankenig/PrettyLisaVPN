@@ -162,8 +162,19 @@ class DesignAcceptanceTest {
     private fun enterField(tag: String, value: String) {
         // Do not inject through a system dialog; require the actual foreground window and touch.
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
-        compose.onNodeWithTag(tag).performScrollTo().performTouchInput { click() }
-            .assertIsFocused().performTextInput(value)
+        val field = compose.onNodeWithTag(tag).performScrollTo()
+        compose.waitForIdle()
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        // Fence the previous field's native IME animation before calculating touch coordinates.
+        automation.waitForIdle(500, 5_000)
+        field.performTouchInput { click() }
+        compose.waitUntil(5_000) {
+            field.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Focused) == true
+        }
+        field.assertIsFocused().performTextInput(value)
+        compose.waitUntil(10_000) { keyboardVisible() }
+        automation.waitForIdle(500, 5_000)
+        compose.waitForIdle()
     }
 
     private fun keyboardVisible(): Boolean =

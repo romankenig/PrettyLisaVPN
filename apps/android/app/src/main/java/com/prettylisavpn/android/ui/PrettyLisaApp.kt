@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -76,20 +74,18 @@ private enum class Destination(val label: Int, val icon: ImageVector) {
 }
 private const val SUPPORT = "SUPPORT"
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PrettyLisaApp() {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: Destination.HOME.name
-    val imeVisible = WindowInsets.isImeVisible
     Scaffold(
         modifier = Modifier.imePadding(),
         containerColor = Brand.PurpleHeart,
         contentColor = Brand.Mercury,
         contentWindowInsets = WindowInsets.safeDrawing,
         bottomBar = {
-            if (route != SUPPORT && !imeVisible) PhoneNavigation(route) { destination ->
+            if (route != SUPPORT) PhoneNavigation(route) { destination ->
                 navController.navigate(destination.name) {
                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true

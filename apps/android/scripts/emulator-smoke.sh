@@ -2,6 +2,8 @@
 set -euo pipefail
 
 package=com.prettylisavpn.android.dev
+api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
+[[ "$api_level" =~ ^[0-9]+$ ]]
 mkdir -p evidence
 cleanup() {
   # Preserve framework/IME evidence too: a System UI ANR must not look like an app-input failure.
@@ -12,8 +14,12 @@ cleanup() {
   adb pull "/sdcard/Android/data/$package/files/acceptance/." evidence/ >/dev/null 2>&1 || true
   adb shell wm size reset >/dev/null 2>&1 || true
   adb shell wm density reset >/dev/null 2>&1 || true
-  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
-  adb shell settings put system accelerometer_rotation 1 >/dev/null 2>&1 || true
+  if (( api_level >= 30 )); then
+    adb shell wm user-rotation free >/dev/null 2>&1 || true
+  else
+    adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+    adb shell settings put system accelerometer_rotation 1 >/dev/null 2>&1 || true
+  fi
   adb shell settings put system font_scale 1.0 >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -27,8 +33,6 @@ PY
 adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
-adb shell settings put system accelerometer_rotation 0
-adb shell settings put system user_rotation 0
 adb shell am instrument -w -r -e class com.prettylisavpn.android.NavigationTest \
   "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee evidence/instrumentation.txt
 python3 - <<'PY'
@@ -49,12 +53,19 @@ for design_case in compact small scaled-font large-font roomy landscape; do
     landscape) viewport=720x1280; font_scale=1.0 ;;
   esac
   adb shell am force-stop "$package"
-  # Rotate the portrait display for landscape instead of stretching its natural aspect ratio.
-  if [[ "$design_case" == landscape ]]; then rotation=1; else rotation=0; fi
-  adb shell settings put system user_rotation "$rotation"
   adb shell wm size "$viewport"
   adb shell wm density 320
   adb shell settings put system font_scale "$font_scale"
+  # Do not race SettingsProvider rotation observers against wm resize on modern Android.
+  # Portrait cases use the emulator's natural orientation; rotate only the final landscape case.
+  if [[ "$design_case" == landscape ]]; then
+    if (( api_level >= 30 )); then
+      adb shell wm user-rotation lock 1
+    else
+      adb shell settings put system accelerometer_rotation 0
+      adb shell settings put system user_rotation 1
+    fi
+  fi
   mkdir -p "evidence/$design_case"
   adb shell am instrument -w -r \
     -e class com.prettylisavpn.android.DesignAcceptanceTest \
@@ -95,8 +106,12 @@ PY
 
 adb shell wm size reset
 adb shell wm density reset
-adb shell settings put system user_rotation 0
-adb shell settings put system accelerometer_rotation 1
+if (( api_level >= 30 )); then
+  adb shell wm user-rotation free
+else
+  adb shell settings put system user_rotation 0
+  adb shell settings put system accelerometer_rotation 1
+fi
 adb shell settings put system font_scale 1.0
 # Test the actual launcher after instrumentation, at the original device configuration.
 adb shell am force-stop "$package"
