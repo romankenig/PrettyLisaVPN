@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -131,6 +132,10 @@ private fun HomeScreen() {
             Button(
                 onClick = {},
                 enabled = false,
+                colors = ButtonDefaults.buttonColors(
+                    disabledContainerColor = Brand.Black.copy(alpha = 0.12f),
+                    disabledContentColor = Brand.Scorpion,
+                ),
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.fillMaxWidth().sizeIn(minHeight = 48.dp).testTag("connect"),
             ) { Text(stringResource(R.string.connect)) }

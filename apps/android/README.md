@@ -13,7 +13,7 @@ Windows **0.11.1**, backend **0.10.0**, schema **0026** не меняются.
 
 ## Сборка и запуск
 
-Требуются JDK **17**, Android SDK platform **35** и лицензии Android SDK.
+Требуются JDK **17**, Android SDK platform **36** и лицензии Android SDK.
 Открыть эту директорию в Android Studio либо указать `ANDROID_HOME` / `sdk.dir`
 в локальном `local.properties` (не коммитить).
 
@@ -28,7 +28,7 @@ adb shell am start -W -n com.prettylisavpn.android.dev/com.prettylisavpn.android
 Windows: те же Gradle tasks через `gradlew.bat`. Wrapper JAR и distribution checksum
 зафиксированы для Gradle **8.13**; AGP **8.11.1**, Kotlin/Compose compiler **2.1.21**,
 Compose BOM **2025.05.01**, Navigation **2.9.0**. Версии — в
-[libs.versions.toml](gradle/libs.versions.toml). minSdk **26**, compile/targetSdk **35**.
+[libs.versions.toml](gradle/libs.versions.toml). minSdk **26**, compile/targetSdk **36**.
 Основной источник Android-версии — [app/build.gradle.kts](app/build.gradle.kts):
 `versionName=0.1.0`, `versionCode=1`. Windows package.json не используется.
 Debug applicationId — `com.prettylisavpn.android.dev`; подпись локальным debug key.
@@ -38,8 +38,9 @@ Release signing, Play Store и auto-update в этот этап не входя�
 
 [Android debug workflow](../../.github/workflows/android.yml) запускается при
 push/PR с изменением Android и вручную. Сначала собирает APK/тестовый APK текущего
-checkout и запускает lint; затем устанавливает **тот же APK** на x86_64 эмуляторы
-Android **8.0 (API 26)** и **15 (API 35)**. Три instrumented-теста проверяют вкладки,
+checkout и запускает lint (API/resources/security warnings — errors; онлайн-советы
+об обновлении pinned toolchain/dependencies остаются informational); затем устанавливает **тот же APK** на x86_64 эмуляторы
+Android **8.0 (API 26)**, **15 (API 35)** и **16 (API 36)**. Три instrumented-теста проверяют вкладки,
 недоступность подключения, повторные переходы/Back и Activity recreation.
 После тестов выполняется отдельный cold launcher start с проверкой процесса,
 resumed Activity и отсутствия AndroidRuntime crash. Нативные PNG сохраняются
@@ -50,12 +51,12 @@ resumed Activity и отсутствия AndroidRuntime crash. Нативные 
 run/attempt и SHA-256 APK. В PR-событии source SHA — временный merge commit,
 в push — точный head ветки. `BuildConfig.SOURCE_SHA` также встроен в APK и показан
 в «о приложении». Локальная сборка без `-PsourceSha=<40 hex>` помечена `local`.
-Скриншоты/запуск — отдельные `android-emulator-api26/35-...` артефакты; lint —
+Скриншоты/запуск — отдельные `android-emulator-api26/35/36-...` артефакты; lint —
 `android-build-reports-...`. Итоговые run/attempt, проверенный HEAD и ссылки
 публикуются в PR после завершения CI, чтобы не создавать цикл новых docs-сборок.
 
-Эмуляторные проверки ещё должны завершиться в CI; до фиксации результатов в PR
-этот документ описывает проверки workflow, а не утверждает их успех.
+Фактические результаты эмуляторных проверок и визуального просмотра PNG — в PR.
+Описанные выше проверки считаются пройденными только для успешного CI того же SHA.
 В текущей cloud workspace SDK отсутствует и локальный сетевой proxy недоступен:
 локально выполняются проверки исходников/скриптов, Android build — на Actions.
 

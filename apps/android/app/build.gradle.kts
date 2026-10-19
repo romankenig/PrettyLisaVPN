@@ -9,12 +9,12 @@ require(sourceSha == "local" || sourceSha.matches(Regex("[0-9a-f]{40}")))
 
 android {
     namespace = "com.prettylisavpn.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -43,8 +43,9 @@ android {
     lint {
         warningsAsErrors = true
         checkDependencies = false
-        // Dependency updates require a reviewed, pinned toolchain change.
-        disable += "GradleDependency"
+        // Keep online update notices visible without making a pinned build time-dependent.
+        // API compatibility, resource and security warnings still fail CI.
+        informational += setOf("GradleDependency", "AndroidGradlePluginVersion")
     }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"

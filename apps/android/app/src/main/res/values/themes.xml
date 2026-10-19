@@ -3,7 +3,6 @@
     <style name="Theme.PrettyLisaVPN" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowBackground">#2c016d</item>
         <item name="android:colorAccent">#51d6ca</item>
     </style>

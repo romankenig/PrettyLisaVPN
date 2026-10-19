@@ -11,7 +11,7 @@ Windows **0.11.1**, backend **0.10.0**, последняя миграция **00
 
 Создан Kotlin/Jetpack Compose каркас в [apps/android](../apps/android/README.md):
 независимая версия 0.1.0/code 1, Gradle, debug APK, три вкладки, тема/Rubik/логотип.
-Workflow Android debug проверяет APK текущего checkout на эмуляторах API 26/35;
+Workflow Android debug проверяет APK текущего checkout на эмуляторах API 26/35/36;
 точные результаты, SHA/run/attempt и артефакты публикуются в task PR после CI.
 Это не подтверждение API/VPN-приёмки: сетевых интеграций, VPN runtime и платежей
 в Android пока нет. Windows/backend/schema не менялись.

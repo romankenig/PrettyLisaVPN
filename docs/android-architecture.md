@@ -311,7 +311,7 @@ TLS/QUIC descriptors не создают соответствующий peer/boo
 Исходник библиотеки объявляет minSdk24/compileSdk36; это не доказательство
 совместимости любого артефакта и не выбор текущего targetSdk приложения.
 
-В каркасе 0.1.0 зафиксированы **minSdk26 / compileSdk35 / targetSdk35**,
+В каркасе 0.1.0 зафиксированы **minSdk26 / compileSdk36 / targetSdk36**,
 JDK 17, AGP 8.11.1, Kotlin 2.1.21 и Compose BOM 2025.05.01.
 NDK/WireGuard Maven version выбираются в отдельном VPN spike.
 Android versionCode/versionName независимы от Windows.
