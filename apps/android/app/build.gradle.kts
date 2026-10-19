@@ -45,7 +45,7 @@ android {
         checkDependencies = false
         // Keep online update notices visible without making a pinned build time-dependent.
         // API compatibility, resource and security warnings still fail CI.
-        informational += setOf("GradleDependency", "AndroidGradlePluginVersion")
+        informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
