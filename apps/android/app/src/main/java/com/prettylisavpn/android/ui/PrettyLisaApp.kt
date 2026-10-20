@@ -52,7 +52,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.selected
@@ -105,7 +104,7 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
                         Icon(destination.icon, null, tint = if (active) Brand.Black else Brand.Mercury)
                     }
                     Text(
-                        stringResource(destination.label), modifier = Modifier.weight(1f),
+                        appString(destination.label), modifier = Modifier.weight(1f),
                         color = if (active) Brand.Viking else Brand.Mercury,
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -137,7 +136,7 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
                     Icon(destination.icon, contentDescription = null, tint = if (active) Brand.Black else Brand.Mercury)
                 }
                 Text(
-                    stringResource(destination.label),
+                    appString(destination.label),
                     color = if (active) Brand.Viking else Brand.Mercury,
                     style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center,
@@ -163,7 +162,7 @@ internal fun ScreenHeading(title: String, onBack: (() -> Unit)? = null) {
     if (onBack == null) Text(title, style = MaterialTheme.typography.headlineLarge, color = Brand.Mercury)
     else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         IconButton(onClick = onBack, modifier = Modifier.size(48.dp).testTag("support-back")) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), tint = Brand.Mercury)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, appString(R.string.back), tint = Brand.Mercury)
         }
         Text(title, style = MaterialTheme.typography.headlineLarge, color = Brand.Mercury)
     }

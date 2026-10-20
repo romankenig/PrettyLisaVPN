@@ -26,7 +26,7 @@ import java.util.UUID
 
 @Composable
 internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
@@ -91,7 +91,7 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
 
 @Composable
 private fun LiveLoad(model: ScreenModel, area: Area, content: @Composable () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     LaunchedEffect(area) { model.load(area) }
     val load = state.loads[area] ?: Load()
@@ -105,7 +105,7 @@ private fun LiveLoad(model: ScreenModel, area: Area, content: @Composable () -> 
 
 @Composable
 private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     var target by rememberSaveable { mutableStateOf<String?>(null) }
     PhoneScreen("live-devices-screen") {
@@ -130,7 +130,7 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
 
 @Composable
 private fun LiveMessages(model: ScreenModel, back: () -> Unit, navigate: (String) -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     PhoneScreen("live-messages-screen") {
         ScreenHeading(tr(R.string.ui_account_messages), back)
@@ -153,7 +153,7 @@ private fun LiveMessages(model: ScreenModel, back: () -> Unit, navigate: (String
 private fun money(amount: Long, currency: String) = "${currency} ${java.math.BigDecimal.valueOf(amount, 2).toPlainString()}"
 @Composable
 private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     var currency by rememberSaveable { mutableStateOf("RUB") }
     var route by rememberSaveable { mutableStateOf("MIR") }
@@ -211,7 +211,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
 
 @Composable
 private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     val subject by draft.getStateFlow("subject", "").collectAsState()
     val description by draft.getStateFlow("description", "").collectAsState()

@@ -15,7 +15,8 @@
   При активном системном VPN запрос не запускается; перед применением результата
   VPN проверяется снова. Поздний ответ никогда не заменяет ручной выбор.
   Невозможность проверить VPN/локацию оставляет English. IP/ответ не сохраняются.
-- Compose использует Android resources в шести полных каталогах, сохраняя nav,
+- Compose выбирает Android string resources через отдельный configuration context;
+  Activity/LocalContext, font resolver, launcher и IME не подменяются. Это сохраняет nav,
   ViewModel, auth challenge, email/code и монотонный resend deadline. Смена locale
   не пересоздаёт Activity. OTP не сохраняется при настоящем пересоздании Activity.
 - Бренд PrettyLisaVPN, протоколы, идентификаторы, валюты и серверные пользовательские

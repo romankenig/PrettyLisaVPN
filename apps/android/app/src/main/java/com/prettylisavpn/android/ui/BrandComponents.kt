@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -95,7 +94,7 @@ fun BrandActionButton(
             if (loading) CircularProgressIndicator(
                 modifier = Modifier.size(20.dp), color = Brand.PurpleHeart, strokeWidth = 2.dp,
             )
-            Text(if (loading) stringResource(R.string.processing) else label, style = MaterialTheme.typography.labelLarge)
+            Text(if (loading) appString(R.string.processing) else label, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

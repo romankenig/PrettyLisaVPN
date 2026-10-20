@@ -26,7 +26,7 @@ import java.util.UUID
 
 @Composable
 internal fun FeatureApp(model: ScreenModel) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     if (!model.enabled) {
         Surface(color = Brand.PurpleHeart, contentColor = Brand.Mercury) {
@@ -212,7 +212,7 @@ internal fun FeatureApp(model: ScreenModel) {
 
 @Composable
 internal fun LoadedPage(model: ScreenModel, area: Area, tag: String, onBack: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     val load = state.loads[area] ?: Load()
     LaunchedEffect(area, load.phase) { if (load.phase == LoadPhase.IDLE) model.load(area) }
@@ -237,7 +237,7 @@ internal fun LoadedPage(model: ScreenModel, area: Area, tag: String, onBack: (()
 
 @Composable
 internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     var email by remember { mutableStateOf(model.emailDraft) }
     var code by remember { mutableStateOf("") } // Never saved, including Activity recreation.
@@ -280,7 +280,7 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
 
 @Composable
 private fun FixtureHome(state: ScreenState, model: ScreenModel, countries: () -> Unit, details: () -> Unit, subscription: () -> Unit, messages: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     Image(painterResource(R.drawable.prettylisavpn_logo), "PrettyLisaVPN", contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Brand.Mercury), modifier = Modifier.fillMaxWidth().height(96.dp).testTag("brand-logo"))
     BrandCard {
         Text(tr(R.string.ui_where_to_connect), style = MaterialTheme.typography.titleMedium)
@@ -311,7 +311,7 @@ private fun FixtureHome(state: ScreenState, model: ScreenModel, countries: () ->
 
 @Composable
 private fun LocationCard(model: ScreenModel) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     val load = state.loads[Area.LOCATION] ?: Load()
     LaunchedEffect(load.phase) { if (load.phase == LoadPhase.IDLE) model.load(Area.LOCATION) }
@@ -328,7 +328,7 @@ private fun LocationCard(model: ScreenModel) {
 
 @Composable
 private fun ColumnScope.CountryScreen(state: ScreenState, model: ScreenModel, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     var query by rememberSaveable { mutableStateOf("") }
     BrandCard {
         Text(tr(R.string.ui_autopilot_uses_available_nodes_country_selection_requires_premium))
@@ -345,7 +345,7 @@ private fun ColumnScope.CountryScreen(state: ScreenState, model: ScreenModel, ba
 
 @Composable
 private fun ColumnScope.SubscriptionScreen(state: ScreenState, model: ScreenModel, payment: () -> Unit, dialog: (String) -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val data = state.data
     BrandCard {
         Text(tr(R.string.ui_your_plan), style = MaterialTheme.typography.titleMedium)
@@ -370,7 +370,7 @@ private fun ColumnScope.SubscriptionScreen(state: ScreenState, model: ScreenMode
 
 @Composable
 private fun PaymentScreen(state: ScreenState, model: ScreenModel, back: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     var currency by rememberSaveable { mutableStateOf("RUB") }
     var route by rememberSaveable { mutableStateOf("MIR") }
     val operationId = rememberSaveable { UUID.randomUUID().toString() }
@@ -397,20 +397,20 @@ private fun PaymentScreen(state: ScreenState, model: ScreenModel, back: () -> Un
 
 @Composable
 private fun Action(title: String, subtitle: String, tag: String, action: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
     BrandActionButton(title, action, Modifier.testTag(tag))
 }
 
 @Composable
 internal fun OperationError(error: String?) {
-    val tr = LocalStrings.current
+    val tr = strings()
     if (error != null) Text(tr.error(error), Modifier.testTag("operation-error"), color = Brand.PersianRed, style = MaterialTheme.typography.bodyMedium)
 }
 
 @Composable
 internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, action: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     AlertDialog(
         modifier = Modifier.testTag("confirmation-dialog"), containerColor = Brand.Mercury,
         onDismissRequest = dismiss, title = { Text(title) },
@@ -422,6 +422,6 @@ internal fun ConfirmDialog(title: String, body: String, confirm: String, state: 
 
 @Composable
 private fun InformationDialog(title: String, body: String, dismiss: () -> Unit) {
-    val tr = LocalStrings.current
+    val tr = strings()
     AlertDialog(containerColor = Brand.Mercury, onDismissRequest = dismiss, title = { Text(title) }, text = { Text(body) }, confirmButton = { TextButton(onClick = dismiss) { Text(tr(R.string.ui_close)) } })
 }

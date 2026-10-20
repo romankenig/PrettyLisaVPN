@@ -1,7 +1,6 @@
 package com.prettylisavpn.android.ui
 
 import android.content.Context
-import android.content.ContextWrapper
 import androidx.core.content.edit
 import android.content.res.Configuration
 import android.net.ConnectivityManager
@@ -15,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -187,14 +187,14 @@ internal class Strings(private val context: Context) {
         else -> R.string.ui_current_location
     })
 }
-internal val LocalStrings = staticCompositionLocalOf<Strings> { error("Missing localized resources") }
-internal val LocalPresentation = staticCompositionLocalOf<PresentationState> { error("Missing presentation state") }
+internal val LocalStrings = staticCompositionLocalOf<Strings?> { null }
 
-/** Keep the Activity in the ContextWrapper chain for SAF launchers and external intents. */
-private class LanguageContext(base: Context, configuration: Configuration) : ContextWrapper(base) {
-    private val localizedResources = base.createConfigurationContext(configuration).resources
-    override fun getResources(): android.content.res.Resources = localizedResources
-}
+@Composable
+internal fun strings(): Strings = LocalStrings.current ?: Strings(LocalContext.current)
+
+@Composable
+internal fun appString(id: Int): String = strings()(id)
+internal val LocalPresentation = staticCompositionLocalOf<PresentationState> { error("Missing presentation state") }
 
 @Composable
 internal fun LocalizedApp(content: @Composable () -> Unit) {
@@ -203,14 +203,18 @@ internal fun LocalizedApp(content: @Composable () -> Unit) {
     val presentation = remember { PresentationStore.get(context) }
     val language by presentation.preference.language.collectAsState()
     val localized = remember(context, language, configuration) {
-        LanguageContext(context, Configuration(configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
+        context.createConfigurationContext(Configuration(configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
     }
-    CompositionLocalProvider(LocalConfiguration provides localized.resources.configuration, LocalContext provides localized, LocalStrings provides Strings(localized), LocalPresentation provides presentation) { content() }
+    CompositionLocalProvider(LocalStrings provides Strings(localized), LocalPresentation provides presentation) { content() }
 }
 
 @Composable
 internal fun AppHeader(fixture: Boolean) {
-    val tr = LocalStrings.current
+    val configuration = LocalConfiguration.current
+    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    // Give the focused field room above large landscape keyboards. No route/state changes.
+    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && configuration.screenHeightDp < 400 && keyboard) return
+    val tr = strings()
     val presentation = LocalPresentation.current
     val language by presentation.preference.language.collectAsState()
     val version by presentation.version.collectAsState()

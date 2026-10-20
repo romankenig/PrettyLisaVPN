@@ -16,7 +16,7 @@ import com.prettylisavpn.android.data.*
 /** Auth-only live shell. All unconnected product actions remain explicitly unavailable. */
 @Composable
 internal fun SessionApp(model: ScreenModel) {
-    val tr = LocalStrings.current
+    val tr = strings()
     val state by model.state.collectAsState()
     var otp by rememberSaveable { mutableStateOf(false) }
     var logout by rememberSaveable { mutableStateOf(false) }
