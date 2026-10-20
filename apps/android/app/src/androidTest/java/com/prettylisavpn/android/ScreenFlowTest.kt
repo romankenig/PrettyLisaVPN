@@ -2,6 +2,7 @@ package com.prettylisavpn.android
 
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -31,6 +32,24 @@ class ScreenFlowTest {
         compose.waitForIdle()
         InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5_000)
         compose.onNodeWithTag(tag).performClick()
+    }
+    private fun enter(tag: String, value: String, replace: Boolean = false) {
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
+        val field = compose.onNodeWithTag(tag).performScrollTo()
+        compose.waitForIdle()
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(500, 5_000)
+        field.performTouchInput { click() }
+        compose.waitUntil(5_000) {
+            field.fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Focused) == true
+        }
+        compose.waitUntil(10_000) {
+            androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(WindowInsetsCompat.Type.ime()) == true
+        }
+        automation.waitForIdle(500, 5_000)
+        if (replace) field.performTextReplacement(value) else field.performTextInput(value)
+        field.assertTextEquals(value)
+        automation.waitForIdle(500, 5_000)
     }
     private fun back() {
         compose.waitForIdle()
@@ -72,14 +91,16 @@ class ScreenFlowTest {
         signOut()
         click("auth-submit")
         compose.onNodeWithText("Enter a valid email.").assertExists()
-        compose.onNodeWithTag("login-email").performTextInput("test@example.invalid")
-        hideKeyboard(); click("auth-submit")
+        enter("login-email", "test@example.invalid")
+        hideKeyboard()
+        compose.onNodeWithTag("login-email").assertTextEquals("test@example.invalid")
+        click("auth-submit")
         compose.onNodeWithTag("auth-submit").assertIsNotEnabled()
         compose.onNodeWithTag("login-email").assertIsNotEnabled()
         screenshot("auth-loading")
         waitFor("screen_OTP")
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
-        compose.onNodeWithTag("otp").performTextInput("000000")
+        enter("otp", "000000")
         hideKeyboard(); click("auth-submit"); idle()
         compose.onNodeWithText("Test code expired. Request a new code.").assertExists()
         screenshot("otp-error")
@@ -90,7 +111,7 @@ class ScreenFlowTest {
         back(); waitFor("screen_LOGIN")
         compose.onNodeWithTag("login-email").assertTextEquals("test@example.invalid")
         click("auth-submit"); waitFor("screen_OTP")
-        compose.onNodeWithTag("otp").performTextInput("123456")
+        enter("otp", "123456")
         hideKeyboard(); click("auth-submit"); idle(); waitFor("message-dialog")
         back(); waitFor("brand-logo")
         compose.onNodeWithTag("screen_LOGIN").assertDoesNotExist()
@@ -105,9 +126,9 @@ class ScreenFlowTest {
         back(); waitFor("brand-logo")
         scenario(Scenario.SLOW); waitFor("brand-logo")
         click("open-countries"); waitFor("country-DE")
-        compose.onNodeWithTag("country-search").performTextInput("zzzz")
+        enter("country-search", "zzzz")
         compose.onNodeWithTag("countries-empty").assertExists()
-        compose.onNodeWithTag("country-search").performTextReplacement("")
+        enter("country-search", "", replace = true)
         hideKeyboard(); click("country-DE"); idle(); waitFor("brand-logo")
         click("connect"); compose.onNodeWithTag("connect").assertIsNotEnabled(); idle()
         compose.onNodeWithTag("connection-status").assertTextEquals("SIMULATION ACTIVE — NOT A VPN")
@@ -169,9 +190,9 @@ class ScreenFlowTest {
     @Test fun supportDraftBackFailureReceiptAndAttachmentLimit() {
         scenario(Scenario.SLOW)
         click("tab_ABOUT"); click("open-support")
-        click("support-subject"); compose.onNodeWithTag("support-subject").performTextInput("Test issue")
-        compose.onNodeWithTag("support-description").performScrollTo().performTextInput("Synthetic description")
-        compose.onNodeWithTag("support-email").performScrollTo().performTextInput("test@example.invalid")
+        enter("support-subject", "Test issue")
+        enter("support-description", "Synthetic description")
+        enter("support-email", "test@example.invalid")
         hideKeyboard()
         repeat(3) { click("support-attach") }
         compose.onNodeWithTag("support-attach").assertIsNotEnabled()
