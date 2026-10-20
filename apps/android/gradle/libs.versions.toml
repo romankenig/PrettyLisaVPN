@@ -7,8 +7,10 @@ activity = "1.10.1"
 navigation = "2.9.0"
 testRunner = "1.6.2"
 testJunit = "1.2.1"
+espresso = "3.6.1"
 
 [libraries]
+androidx-test-espresso = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
