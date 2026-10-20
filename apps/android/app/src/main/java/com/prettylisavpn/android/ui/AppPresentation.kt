@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.ui
 
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.core.content.edit
 import android.content.res.Configuration
 import android.net.ConnectivityManager
@@ -87,7 +88,7 @@ internal class PublicMetadata(
 internal class PresentationState(context: Context, network: Boolean) {
     private val app = context.applicationContext as android.app.Application
     private val preferences = app.getSharedPreferences("presentation", Context.MODE_PRIVATE)
-    val preference = LanguagePreference(preferences.getString("language", null)) {
+    val preference = LanguagePreference(runCatching { preferences.getString("language", null) }.getOrNull()) {
         preferences.edit { putString("language", it) }
     }
     private val mutableVersion = MutableStateFlow<String?>(null)
@@ -189,6 +190,12 @@ internal class Strings(private val context: Context) {
 internal val LocalStrings = staticCompositionLocalOf<Strings> { error("Missing localized resources") }
 internal val LocalPresentation = staticCompositionLocalOf<PresentationState> { error("Missing presentation state") }
 
+/** Keep the Activity in the ContextWrapper chain for SAF launchers and external intents. */
+private class LanguageContext(base: Context, configuration: Configuration) : ContextWrapper(base) {
+    private val localizedResources = base.createConfigurationContext(configuration).resources
+    override fun getResources(): android.content.res.Resources = localizedResources
+}
+
 @Composable
 internal fun LocalizedApp(content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -196,7 +203,7 @@ internal fun LocalizedApp(content: @Composable () -> Unit) {
     val presentation = remember { PresentationStore.get(context) }
     val language by presentation.preference.language.collectAsState()
     val localized = remember(context, language, configuration) {
-        context.createConfigurationContext(Configuration(configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
+        LanguageContext(context, Configuration(configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
     }
     CompositionLocalProvider(LocalConfiguration provides localized.resources.configuration, LocalContext provides localized, LocalStrings provides Strings(localized), LocalPresentation provides presentation) { content() }
 }
