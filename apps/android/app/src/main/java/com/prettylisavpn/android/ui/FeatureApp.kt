@@ -55,7 +55,8 @@ internal fun FeatureApp(model: ScreenModel) {
             restoreState = true
         }
     }
-    LaunchedEffect(state.data.signedIn) {
+    LaunchedEffect(state.data.signedIn, entry) {
+        if (entry == null) return@LaunchedEffect
         if (!state.data.signedIn && route !in listOf("LOGIN", "OTP")) {
             dialog = ""
             nav.navigate("LOGIN") { popUpTo(nav.graph.id); launchSingleTop = true }
@@ -64,6 +65,7 @@ internal fun FeatureApp(model: ScreenModel) {
             later = false
         }
     }
+    val contentState = if (dialog.isEmpty()) state else state.copy(error = null)
     Scaffold(
         modifier = Modifier.imePadding(), containerColor = Brand.PurpleHeart, contentColor = Brand.Mercury,
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -84,7 +86,7 @@ internal fun FeatureApp(model: ScreenModel) {
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable("HOME") {
                 LoadedPage(model, Area.HOME, "screen_HOME") {
-                    FixtureHome(state, model, { go("COUNTRIES") }, { openDialog("connection") }, { go("SUBSCRIPTION") }, { openDialog("message") })
+                    FixtureHome(contentState, model, { go("COUNTRIES") }, { openDialog("connection") }, { go("SUBSCRIPTION") }, { openDialog("message") })
                 }
             }
             composable("SETTINGS") {
@@ -95,7 +97,7 @@ internal fun FeatureApp(model: ScreenModel) {
                         Action("devices", "Manage account access", "open-devices") { go("DEVICES") }
                         Action("sign out", "End the test session on this device", "logout") { openDialog("logout") }
                     }
-                    OperationError(state.error)
+                    if (dialog.isEmpty()) OperationError(state.error)
                 }
             }
             composable("ABOUT") {
@@ -143,7 +145,7 @@ internal fun FeatureApp(model: ScreenModel) {
             }
             composable("SUBSCRIPTION") {
                 LoadedPage(model, Area.BILLING, "screen_SUBSCRIPTION", { nav.popBackStack() }) {
-                    SubscriptionScreen(state, model, { go("PAYMENT") }, { openDialog(it) })
+                    SubscriptionScreen(contentState, model, { go("PAYMENT") }, { openDialog(it) })
                 }
             }
             composable("PAYMENT") { PaymentScreen(state, model) { nav.popBackStack() } }
@@ -196,7 +198,7 @@ internal fun FeatureApp(model: ScreenModel) {
                         Text(message.body); OperationError(state.error)
                         BrandActionButton("view details", {
                             model.perform(Command.Acknowledge(message.id, message.revision)) {
-                                if (dialog == "message") { dialog = ""; message.destination?.let(::go) }
+                                if (dialog == "message") { dialog = ""; message.destination?.takeIf { it in setOf("SUBSCRIPTION", "SETTINGS", "ABOUT") }?.let(::go) }
                             }
                         }, Modifier.testTag("message-action"), loading = state.busy)
                     }

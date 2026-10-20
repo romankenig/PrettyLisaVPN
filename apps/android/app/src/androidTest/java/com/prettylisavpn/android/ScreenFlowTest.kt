@@ -15,10 +15,11 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class ScreenFlowTest {
+    @get:Rule val name = org.junit.rules.TestName()
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private var passed = false
     @Before fun ready() { waitFor("brand-logo") }
-    @After fun evidenceOnFailure() { if (!passed) runCatching { screenshot("failure") } }
+    @After fun evidenceOnFailure() { if (!passed) runCatching { screenshot("failure-${name.methodName}") } }
     private fun waitFor(tag: String) {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
@@ -30,8 +31,14 @@ class ScreenFlowTest {
         compose.onNodeWithTag(tag).performClick()
     }
     private fun back() {
+        compose.waitForIdle()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        // Fence native Dialog window registration/focus before sending the OS Back action.
+        instrumentation.uiAutomation.waitForIdle(300, 5_000)
         check(InstrumentationRegistry.getInstrumentation().uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK))
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        instrumentation.waitForIdleSync()
+        instrumentation.uiAutomation.waitForIdle(300, 5_000)
         compose.waitForIdle()
     }
     private fun idle() { compose.waitUntil(10_000) { !compose.activity.screenModel.state.value.busy } }
@@ -43,7 +50,10 @@ class ScreenFlowTest {
             val activity = compose.activity
             WindowInsetsControllerCompat(activity.window, activity.window.decorView).hide(WindowInsetsCompat.Type.ime())
         }
-        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 5_000)
+        compose.waitUntil(10_000) {
+            androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(WindowInsetsCompat.Type.ime()) != true
+        }
+        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5_000)
     }
     private fun signOut() {
         click("tab_SETTINGS"); click("logout"); click("confirm-dialog"); idle(); waitFor("screen_LOGIN")
@@ -98,7 +108,7 @@ class ScreenFlowTest {
     @Test fun deviceDialogCancelFailureRetryAndHomeRefresh() {
         click("tab_SETTINGS"); click("open-devices"); waitFor("revoke-2")
         compose.onNodeWithText("Last login: no data").assertExists()
-        click("revoke-2"); back()
+        click("revoke-2"); compose.onNodeWithTag("confirmation-dialog").assertIsDisplayed(); back()
         compose.onNodeWithTag("revoke-2").assertIsEnabled()
         scenario(Scenario.FAIL_NEXT)
         click("revoke-2"); click("confirm-dialog"); idle()
