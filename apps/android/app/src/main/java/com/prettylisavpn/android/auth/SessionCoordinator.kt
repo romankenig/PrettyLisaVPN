@@ -83,6 +83,7 @@ class SessionCoordinator(
     suspend fun restore(): Profile? = mutex.withLock {
         if (credentials() == null) { access = null; profile = null; null } else fetchProfile()
     }
+    suspend fun <T> request(action: suspend (String) -> T): T = mutex.withLock { authenticated(action) }
     suspend fun refreshProfile(): Profile = mutex.withLock { fetchProfile() }
     suspend fun logout() = mutex.withLock {
         try { authenticated { api.logout(it) } } catch (failure: AuthFailure) {

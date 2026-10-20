@@ -1,5 +1,11 @@
 # Windows: экраны, окна и переходы
 
+Android 0.5.0: Home/Settings/About → devices/messages/subscription/support, nested Back,
+revoke/logout confirmation, ACK → internal navigation только после receipt; поддержка
+имеет discard draft/status/retry исходного UUID. Auth guard очищает account stack.
+Платёжные действия при DISABLED/SANDBOX недоступны. Windows не менялся.
+См. [Android account API](android-account-api.md).
+
 Android 0.4.0: обычный запуск использует OTP → проверка кода → /me account shell;
 Back из OTP возвращает email, успешный вход/restore убирает auth UI. Revoke/expiry
 переводят в sign-in; offline restore предлагает retry/явное удаление local credentials.

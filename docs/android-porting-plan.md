@@ -1,5 +1,9 @@
 # Android: последовательный план переноса
 
+> Android 0.5.0/code5: [account API](android-account-api.md), profile/devices/messages/
+> subscription/support, encrypted operation recovery; DISABLED/SANDBOX payments blocked.
+> Windows/backend unchanged. Исторические описания предыдущих этапов ниже.
+
 > Текущее продолжение: Android 0.4.0 подключает auth/session development API.
 > См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
 > в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.

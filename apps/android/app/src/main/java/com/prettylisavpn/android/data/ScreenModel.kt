@@ -34,7 +34,11 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
         scope.launch {
             try {
                 val data = source.read(area)
-                if (owner == epoch) mutable.value = mutable.value.copy(data = data, loads = mutable.value.loads + (area to Load(LoadPhase.READY)))
+                if (owner == epoch) {
+                    val changed = data.signedIn != mutable.value.data.signedIn
+                    if (changed) epoch++
+                    mutable.value = mutable.value.copy(data = data, loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads + (area to Load(LoadPhase.READY)))
+                }
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
                 if (owner == epoch) {
@@ -55,8 +59,9 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
             try {
                 val data = source.execute(command)
                 if (owner == epoch) {
-                    if (!data.signedIn && mutable.value.data.signedIn) epoch++
-                    mutable.value = mutable.value.copy(data = data, busy = false, error = null)
+                    val changed = data.signedIn != mutable.value.data.signedIn
+                    if (changed) epoch++
+                    mutable.value = mutable.value.copy(data = data, loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads, busy = false, error = null)
                     if (command is Command.RequestOtp) resendAtMillis = android.os.SystemClock.elapsedRealtime() + 30_000
                     onSuccess()
                 }

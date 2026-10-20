@@ -75,6 +75,19 @@ assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_F
 RESTART_CHECK
 done
 
+# Live account screens and encrypted operation journal use isolated API ports only.
+for spec in AccountScreensTest:5 AccountJournalTest:2; do
+  test_class=${spec%:*}; test_count=${spec#*:}
+  adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
+    "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"
+  python3 - "$test_class" "$test_count" <<'ACCOUNT_CHECK'
+import pathlib, re, sys
+result = pathlib.Path(f'evidence/{sys.argv[1]}-instrumentation.txt').read_text()
+assert re.search(rf'OK \({sys.argv[2]} tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+ACCOUNT_CHECK
+done
+
 # Full fixture flows use the same installed APK, real Android Back and native dialogs.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/flows-instrumentation.txt

@@ -2,6 +2,8 @@ package com.prettylisavpn.android.auth
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonElement
+import okhttp3.RequestBody
 import java.io.IOException
 import java.net.ConnectException
 import java.net.UnknownHostException
@@ -18,6 +20,15 @@ import java.util.concurrent.TimeUnit
 
 /** Deliberately no server body, URL, credential or IOException message in user-facing errors. */
 class AuthFailure(val code: String) : Exception(when (code) {
+    "BILLING_REVISION_CHANGED" -> "The price changed. Refresh and review the subscription before confirming again."
+    "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_DISABLED" -> "This payment action is unavailable. Refresh subscription details."
+    "BILLING_IDEMPOTENCY_CONFLICT", "IDEMPOTENCY_CONFLICT" -> "The saved request conflicts with the server record. Check its status before continuing."
+    "BILLING_OPERATION_IN_PROGRESS" -> "Another billing operation is still pending. Refresh its status."
+    "RATE_LIMITED" -> "Too many support requests. Please wait before trying again."
+    "ATTACHMENT_REJECTED" -> "The selected image was rejected. Choose PNG, JPEG or WebP within the size limits."
+    "INVALID_REQUEST" -> "Review the subject, description and reply address."
+    "MESSAGE_NOT_FOUND" -> "This message changed or is no longer available. Refresh messages."
+    "device_not_found" -> "This device is no longer available. Refresh the device list."
     "offline" -> "No network connection. Check your connection and retry."
     "otp_invalid_or_expired" -> "The code is invalid or expired. Request a new code."
     "otp_rate_limited" -> "Too many requests. Please wait before requesting another code."
@@ -35,7 +46,7 @@ data class Credentials(val sessionId: String, val refreshToken: String, val expi
 data class Tokens(val access: String, val ttlSeconds: Long, val credentials: Credentials) {
     override fun toString() = "Tokens([redacted])"
 }
-data class Profile(val email: String, val plan: String, val activeDevices: Int)
+data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "")
 interface AuthApi {
     suspend fun requestOtp(email: String)
     suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String): Tokens
@@ -53,22 +64,27 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         .retryOnConnectionFailure(false).connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
     private val gson = Gson()
-    private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject = withContext(Dispatchers.IO) {
-        val url = base.newBuilder().addPathSegments(path).build()
-        val request = Request.Builder().url(url).apply {
-            header("Accept", "application/json")
+    private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject =
+        request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access).asJsonObject
+    internal suspend fun request(path: String, method: String = "GET", body: RequestBody? = null, access: String? = null, query: Map<String,String> = emptyMap()): JsonElement = withContext(Dispatchers.IO) {
+        val url = base.newBuilder().addPathSegments(path).apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
+        val request = Request.Builder().url(url).method(method, body).apply {
+            header("Accept", "application/json"); header("Cache-Control", "no-store")
             if (access != null) header("Authorization", "Bearer $access")
-            if (body != null) post(gson.toJson(body).toRequestBody("application/json; charset=utf-8".toMediaType()))
         }.build()
         try {
-            client.newCall(request).execute().use { response ->
+            val requestClient = if (path.startsWith("support/")) client.newBuilder().readTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS).build() else client
+            requestClient.newCall(request).execute().use { response ->
                 val responseBody = response.body ?: throw AuthFailure("invalid_response")
                 val bytes = responseBody.source().apply { request(65_537) }.buffer
                 if (bytes.size > 65_536) throw AuthFailure("invalid_response")
-                val json = runCatching { gson.fromJson(bytes.readUtf8(), JsonObject::class.java) }.getOrNull()
+                val json = runCatching { gson.fromJson(bytes.readUtf8(), JsonElement::class.java) }.getOrNull()
                 if (!response.isSuccessful) {
-                    val code = runCatching { json?.getAsJsonObject("error")?.get("code")?.asString }.getOrNull()
+                    val code = runCatching { json?.asJsonObject?.getAsJsonObject("error")?.get("code")?.asString }.getOrNull()
                     throw AuthFailure(when {
+                        path !in setOf("auth/request-otp", "auth/verify-otp", "auth/refresh", "auth/logout", "me") && response.code == 401 -> "invalid_access_token"
+                        code == "AUTH_INVALID" || code == "account_unavailable" -> "invalid_session"
+                        code in setOf("SUPPORT_NOT_FOUND", "IDEMPOTENCY_CONFLICT", "RATE_LIMITED", "ATTACHMENT_REJECTED", "INVALID_REQUEST", "MESSAGE_NOT_FOUND", "BILLING_DISABLED", "BILLING_REVISION_CHANGED", "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_IDEMPOTENCY_CONFLICT", "BILLING_OPERATION_IN_PROGRESS", "BILLING_OPERATION_NOT_FOUND", "device_not_found") -> code!!
                         code in setOf("otp_invalid_or_expired", "otp_rate_limited", "device_limit_reached", "device_revoked", "user_blocked", "invalid_refresh_token", "invalid_access_token", "invalid_session", "authentication_required") -> code!!
                         response.code == 503 -> "service_unavailable"
                         else -> "http_error"
@@ -99,7 +115,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         return try {
             val count = json.get("active_device_count").asInt; require(count in 0..5)
             val plan = json.text("plan"); require(plan in setOf("FREE", "PREMIUM", "PLATINUM"))
-            Profile(json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count)
+            Profile(json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) })
         } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
     override suspend fun logout(access: String) {

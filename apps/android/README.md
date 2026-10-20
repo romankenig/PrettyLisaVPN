@@ -1,18 +1,19 @@
 # PrettyLisaVPN для Android
 
-Android **0.4.0 / versionCode 4** — auth/session API существующего development-backend.
-Windows 0.12.0 и backend 0.10.0/schema0026 unchanged. Подробности:
-[auth/session, безопасность и приёмка](../../docs/android-auth-session.md).
+Android **0.5.0 / versionCode 5** — auth/session и profile/devices/messages/billing/
+support API существующего development-backend. Windows 0.12.0 и backend 0.10.0/schema0026
+unchanged. [Контракты, восстановление и ограничения](../../docs/android-account-api.md).
 
-Обычный debug/release запускает email OTP, восстанавливает защищённую сессию,
-показывает профиль из /me и позволяет выйти. Continue/Resend отправляет настоящее
-письмо через development API; автоматического запроса нет. VPN, платежи, поддержка
-и управление устройствами в этом режиме недоступны. Реального туннеля нет.
+Обычный launcher: настоящий email OTP, защищённая сессия, данные аккаунта, отзыв устройств,
+ACK сообщений, overview подписки, обращение в поддержку и status receipt. При первом
+запуске письма/обращения не отправляются автоматически. Поддержка отправляется явной
+кнопкой Send; вложения выбираются системным SAF. Диагностика Android пока недоступна.
 
-Прежние [тестовые экраны](../../docs/android-fixture-screens.md) остались в src/debug
-и включаются instrumentation runner только для автоматической проверки UI. Их данные
-не смешиваются с реальным аккаунтом. Release не содержит FixtureSource. INTERNET
-разрешён для HTTPS API; cleartext/backup запрещены. Шесть языков — следующая задача.
+При DISABLED/SANDBOX платежи недоступны; действия допускаются только по LIVE capabilities
+и свежей price revision. Реальный provider не настраивался. VPN runtime ещё отсутствует.
+[Auth/session 0.4.0](../../docs/android-auth-session.md) и [fixture screens](../../docs/android-fixture-screens.md)
+сохранены как этапы. FixtureSource включается только instrumentation; release его не содержит.
+Шесть языков — будущая отдельная задача.
 
 ## Сборка и CI
 

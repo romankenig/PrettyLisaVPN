@@ -49,24 +49,7 @@ internal fun SessionApp(model: ScreenModel) {
                         }
                     }
                     !state.data.signedIn -> AuthScreen(model, otp, { otp = true }, { otp = false; model.clearError() })
-                    else -> PhoneScreen("live-account") {
-                        ScreenHeading("PrettyLisaVPN")
-                        BrandCard {
-                            Text(state.data.email, Modifier.testTag("account-email"))
-                            Text("Plan: ${state.data.plan}")
-                            Text("Active devices: ${state.data.activeDeviceCount} / 5")
-                            Text("Account data from development backend. No VPN tunnel is running.")
-                            BrandActionButton("refresh account", { model.load(Area.HOME) }, Modifier.testTag("account-refresh"), loading = state.loads[Area.HOME]?.phase == LoadPhase.LOADING)
-                            OperationError(state.loads[Area.HOME]?.error)
-                            OperationError(state.error)
-                            BrandActionButton("sign out", { logout = true }, Modifier.testTag("live-logout"), enabled = !state.busy)
-                        }
-                        BrandCard {
-                            Text("VPN, country selection, payments, support and device management are not connected in this mode.")
-                            BrandActionButton("connect VPN · unavailable", {}, enabled = false)
-                            Text("Android ${BuildConfig.VERSION_NAME} · ${BuildConfig.SOURCE_SHA.take(12)}")
-                        }
-                    }
+                    else -> LiveAccountScreens(model) { logout = true }
                 }
             }
         }

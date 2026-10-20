@@ -1,5 +1,9 @@
 # Client UI handoff
 
+> Android 0.5.0/code5: [account API](android-account-api.md), profile/devices/messages/
+> subscription/support, encrypted operation recovery; DISABLED/SANDBOX payments blocked.
+> Windows/backend unchanged. Исторические описания предыдущих этапов ниже.
+
 > Android 0.4.0/code4: [auth/session development API](android-auth-session.md), Keystore,
 > restore/rotation/logout; live account shell без fixtures. VPN и другие интеграции пока
 > недоступны. Windows/backend unchanged; проверенные SHA/run/artifacts — в task PR.

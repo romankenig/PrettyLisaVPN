@@ -103,6 +103,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
                 receipts[command.id] = command
                 snapshot = snapshot.copy(supportReceipt = command.id, supportDelivered = false)
             }
+            Command.NewSupport -> { snapshot = snapshot.copy(supportReceipt = null, supportDelivered = false) }
             Command.SupportStatus -> snapshot = snapshot.copy(supportDelivered = snapshot.supportReceipt != null)
         }
         mutationCount++

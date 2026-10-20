@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.5.0 / Windows и backend unchanged
+
+- Подключены profile/devices/messages/subscription/support API и мобильная навигация.
+- Добавлены ACK id+revision, обновление данных после мутаций, ciphertext journal для
+  immutable support/payment retries, восстановление receipt и защита смены аккаунта.
+- Поддержка отправляет diagnostics:null и выбранные через SAF ограниченные изображения.
+- DISABLED/SANDBOX запрещают платёжные действия в UI/data layer; LIVE требует capabilities
+  и повторной проверки price revision. Реальный provider не подключался.
+- Android 0.4.0/code4 → 0.5.0/code5; ручной OTP-вход 0.4.0 подтверждён владельцем.
+  Контракты, ограничения и CI evidence: docs/android-account-api.md и task PR.
+
+
 ### Android — 0.4.0 / Windows и backend unchanged
 
 - Подключены существующие OTP/refresh/me/logout API с ANDROID installation identity.
