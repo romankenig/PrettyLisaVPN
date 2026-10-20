@@ -49,6 +49,10 @@ class HttpAuthApiTest {
         server.enqueue(MockResponse().setBody("""{"access_token":"private"}"""))
         try { api.verifyOtp("person@example.com", "123456", "id", "phone"); fail() } catch (e: AuthFailure) { assertEquals("invalid_response", e.code) }
     }
+    @Test fun unexpectedJsonShapeDoesNotExposeBody() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(202).setBody("[\"PRIVATE_BODY\"]"))
+        try { api.requestOtp("person@example.com"); fail() } catch (e: AuthFailure) { assertEquals("invalid_response", e.code); assertFalse(e.message!!.contains("PRIVATE_BODY")) }
+    }
     @Test fun apiRequiresHttpsAndRejectsEmbeddedCredentials() {
         for (url in listOf("http://example.com/", "https://user:pass@example.com/", "https://example.com/?token=private")) {
             try { HttpAuthApi(url); fail(url) } catch (_: IllegalArgumentException) { }

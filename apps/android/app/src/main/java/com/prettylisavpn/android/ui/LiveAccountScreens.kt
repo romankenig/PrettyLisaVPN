@@ -200,7 +200,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
         }
     }
     action?.let { kind -> ConfirmDialog("${kind.lowercase().replace('_', ' ')}?", "Review the displayed price and currency. Cancel/change method preserve your paid period. Payments require an available LIVE provider.", "confirm", state, { action = null }) {
-        model.perform(Command.Payment(requestId, kind, route, currency)) { action = null }
+        model.perform(Command.Payment(requestId, kind, route, currency, confirmedRevision)) { action = null }
     } }
 }
 

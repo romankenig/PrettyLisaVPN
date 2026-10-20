@@ -64,8 +64,10 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         .retryOnConnectionFailure(false).connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
     private val gson = Gson()
-    private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject =
-        request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access).asJsonObject
+    private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject {
+        val value = request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access)
+        return try { value.asJsonObject } catch (_: Exception) { throw AuthFailure("invalid_response") }
+    }
     internal suspend fun request(path: String, method: String = "GET", body: RequestBody? = null, access: String? = null, query: Map<String,String> = emptyMap()): JsonElement = withContext(Dispatchers.IO) {
         val url = base.newBuilder().addPathSegments(path).apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).method(method, body).apply {

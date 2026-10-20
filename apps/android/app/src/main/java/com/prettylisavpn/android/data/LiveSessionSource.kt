@@ -146,7 +146,7 @@ class LiveSessionSource(
     }
     private suspend fun pay(command: Command.Payment) {
         // Refresh capabilities immediately before every new POST. A failed refresh never grants access.
-        val acceptedRevision = snapshot.billing?.revision
+        val acceptedRevision = command.expectedRevision ?: snapshot.billing?.revision
         val fresh = sessions.request { api().overview(it) }; snapshot = initial.copy(billing = fresh)
         if (fresh.mode != "LIVE" || !fresh.available || fresh.routes.map { it.id }.toSet() != routeIds) throw SourceFailure("Payments are unavailable for this provider.")
         val old = journal.billing
