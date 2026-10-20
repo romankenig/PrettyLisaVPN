@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -211,9 +212,11 @@ internal fun LocalizedApp(content: @Composable () -> Unit) {
 @Composable
 internal fun AppHeader(fixture: Boolean) {
     val configuration = LocalConfiguration.current
-    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val density = LocalDensity.current
+    val window = LocalWindowInfo.current.containerSize
+    val keyboard = WindowInsets.ime.getBottom(density) > 0
     // Give the focused field room above large landscape keyboards. No route/state changes.
-    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && configuration.screenHeightDp < 400 && keyboard) return
+    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && with(density) { window.height.toDp() } < 400.dp && keyboard) return
     val tr = strings()
     val presentation = LocalPresentation.current
     val language by presentation.preference.language.collectAsState()
