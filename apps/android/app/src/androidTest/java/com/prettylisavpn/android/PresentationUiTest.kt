@@ -1,6 +1,7 @@
 package com.prettylisavpn.android
 
-import android.graphics.Bitmap
+import android.os.ParcelFileDescriptor
+import java.io.DataInputStream
 import androidx.core.content.edit
 import android.os.SystemClock
 import androidx.compose.ui.test.*
@@ -64,7 +65,13 @@ class PresentationUiTest {
         i.uiAutomation.waitForIdle(500, 5_000)
         val dir = File(i.targetContext.getExternalFilesDir(null), "acceptance/ui-polish")
         check(dir.mkdirs() || dir.isDirectory)
-        File(dir, "$name.png").outputStream().use { checkNotNull(i.uiAutomation.takeScreenshot()).compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val target = File(dir, "$name.png")
+        ParcelFileDescriptor.AutoCloseInputStream(i.uiAutomation.executeShellCommand("screencap -p")).use { input ->
+            target.outputStream().use { output -> input.copyTo(output) }
+        }
+        val header = ByteArray(8)
+        target.inputStream().use { DataInputStream(it).readFully(header) }
+        check(header.contentEquals(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)))
     }
     @Test fun allSixLanguagesTranslateLoginAndPreserveBrandAndDraft() {
         compose.onNodeWithTag("login-email").performTextInput("acceptance@example.com")
@@ -80,7 +87,7 @@ class PresentationUiTest {
             screenshot("login-${language.code}")
         }
         compose.onNodeWithTag("language-picker").performClick()
-        val nodes = AppLanguage.entries.map { compose.onNodeWithTag("language-${it.code}").fetchSemanticsNode().boundsInRoot.top }
+        val nodes = AppLanguage.entries.map { compose.onNodeWithTag("language-${it.code}").getUnclippedBoundsInRoot().top.value }
         assertEquals(nodes.sorted(), nodes)
         screenshot("language-menu")
     }
@@ -96,9 +103,9 @@ class PresentationUiTest {
         assertEquals(deadline, model.resendAtMillis)
         compose.onNodeWithTag("otp").assertTextEquals("123456")
         compose.onNodeWithTag("otp-resend").performScrollTo().assertIsNotEnabled()
-        val resend = compose.onNodeWithTag("otp-resend").fetchSemanticsNode().boundsInRoot.top
-        val change = compose.onNodeWithTag("change-email").fetchSemanticsNode().boundsInRoot.top
-        val submit = compose.onNodeWithTag("auth-submit").fetchSemanticsNode().boundsInRoot.top
+        val resend = compose.onNodeWithTag("otp-resend").getUnclippedBoundsInRoot().top.value
+        val change = compose.onNodeWithTag("change-email").getUnclippedBoundsInRoot().top.value
+        val submit = compose.onNodeWithTag("auth-submit").getUnclippedBoundsInRoot().top.value
         assertTrue(resend < submit && change < submit)
         screenshot("otp-ru")
         compose.waitUntil(35_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
