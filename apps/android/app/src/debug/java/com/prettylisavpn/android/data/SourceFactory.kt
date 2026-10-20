@@ -48,7 +48,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
                 if (requestedEmail == null) throw SourceFailure("Request a new test code.")
                 if (command.code == "000000") throw SourceFailure("Test code expired. Request a new code.")
                 if (command.code != "123456") throw SourceFailure("Incorrect test code. Use 123456.")
-                snapshot = snapshot.copy(signedIn = true, email = requestedEmail!!)
+                snapshot = snapshot.copy(signedIn = true, email = requestedEmail!!, messages = standard().messages)
                 requestedEmail = null
             }
             Command.Logout -> {
