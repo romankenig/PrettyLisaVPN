@@ -28,6 +28,8 @@ class ScreenFlowTest {
         if (compose.onAllNodes(hasTestTag(tag) and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithTag(tag).performScrollTo()
         }
+        compose.waitForIdle()
+        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5_000)
         compose.onNodeWithTag(tag).performClick()
     }
     private fun back() {
@@ -46,15 +48,15 @@ class ScreenFlowTest {
         compose.runOnUiThread { compose.activity.screenModel.configure(value) }
     }
     private fun hideKeyboard() {
-        compose.runOnUiThread {
-            val activity = compose.activity
-            activity.currentFocus?.clearFocus()
-            WindowInsetsControllerCompat(activity.window, activity.window.decorView).hide(WindowInsetsCompat.Type.ime())
-        }
+        // Use the instrumentation IME action; clearing the Android host View focus races
+        // Compose's own focus tree on API 26 and can reopen the keyboard.
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        instrumentation.uiAutomation.waitForIdle(500, 5_000)
         compose.waitUntil(10_000) {
             androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(WindowInsetsCompat.Type.ime()) != true
         }
-        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5_000)
     }
     private fun signOut() {
         click("tab_SETTINGS"); click("logout"); click("confirm-dialog"); idle(); waitFor("screen_LOGIN")
