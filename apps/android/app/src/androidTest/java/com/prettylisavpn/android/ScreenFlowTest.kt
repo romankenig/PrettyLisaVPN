@@ -141,7 +141,7 @@ class ScreenFlowTest {
     }
     @Test fun deviceDialogCancelFailureRetryAndHomeRefresh() {
         click("tab_SETTINGS"); click("open-devices"); waitFor("revoke-2")
-        compose.onNodeWithText("Last login: no data").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.ui_last_login_0, compose.activity.getString(R.string.ui_no_data))).assertExists()
         click("revoke-2"); compose.onNodeWithTag("confirmation-dialog").assertIsDisplayed(); back()
         compose.onNodeWithTag("revoke-2").assertIsEnabled()
         scenario(Scenario.FAIL_NEXT)
