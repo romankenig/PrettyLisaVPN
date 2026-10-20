@@ -106,6 +106,15 @@ class AccountIntegrationTest {
         val result=next.execute(Command.Support(UUID.randomUUID().toString(),"Changed","Changed body","other@example.com",0))
         assertEquals(original,port.submissions.last());assertEquals("ACCEPTED",result.supportStatus)
     }
+    @Test fun attachmentRetryUsesFrozenBytesAfterExternalSelectionChanges()=runBlocking {
+        var selected=SupportUpload("image/png","AQID")
+        val s=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),port,journal,{ listOf(selected) })
+        s.read(Area.SESSION);port.supportError=true
+        val command=Command.Support(UUID.randomUUID().toString(),"Subject","Body","reply@example.com",1,listOf("content://test/image"))
+        failure { s.execute(command) };val first=port.submissions.single()
+        selected=SupportUpload("image/png","BAUG");port.supportError=false;s.execute(command)
+        assertEquals(first.uploads,port.submissions.last().uploads)
+    }
     @Test fun acceptedSupportIsNotSubmittedTwice()=runBlocking {
         val s=source();s.read(Area.SESSION)
         val command=Command.Support(UUID.randomUUID().toString(),"Subject","Body","reply@example.com",0)

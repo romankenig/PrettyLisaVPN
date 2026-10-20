@@ -6,6 +6,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import com.prettylisavpn.android.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,7 +41,7 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
             composable("HOME") {
                 LaunchedEffect(Unit) { model.load(Area.MESSAGES) }
                 PhoneScreen("live-account") {
-                    ScreenHeading("PrettyLisaVPN")
+                    Image(painterResource(R.drawable.prettylisavpn_logo), "PrettyLisaVPN", contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Brand.Mercury), modifier = Modifier.fillMaxWidth().height(96.dp).testTag("live-brand-logo"))
                     BrandCard {
                         Text(state.data.email, Modifier.testTag("account-email"))
                         Text("Plan: ${state.data.plan}")
@@ -181,7 +186,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                 if (state.data.paymentPending) {
                     Text("An operation needs confirmation. Refresh its status before starting another.")
                     BrandActionButton("check operation", { model.perform(Command.ConfirmPayment) }, Modifier.testTag("live-check-payment"), loading = state.busy)
-                    BrandActionButton("retry original operation", { model.perform(Command.Payment(requestId, "RENEW", route, currency)) }, Modifier.testTag("live-retry-payment"), enabled = billing.mode == "LIVE" && billing.available && !state.busy)
+                    if (state.data.billingRetryAvailable) BrandActionButton("retry original operation", { model.perform(Command.Payment(requestId, "RENEW", route, currency)) }, Modifier.testTag("live-retry-payment"), enabled = billing.mode == "LIVE" && billing.available && !state.busy)
                 }
                 state.data.billingOperation?.let { operation ->
                     Text("Operation ${operation.id}: ${operation.status}")
@@ -248,6 +253,7 @@ private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () ->
                 BrandActionButton("send to support", { model.perform(Command.Support(id, subject.trim(), description.trim(), email.trim(), selected.size, selected.toList())) }, Modifier.testTag("live-support-send"), enabled = subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
             }
             OperationError(state.error)
+            OperationError(state.loads[Area.SUPPORT]?.error)
             BrandActionButton("done", close)
         }
     }

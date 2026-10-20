@@ -9,6 +9,7 @@ data class PaymentRoute(val id: String, val label: String, val currencies: Set<S
 data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood")
 data class Snapshot(
     val billing: BillingOverview? = null,
+    val billingRetryAvailable: Boolean = false,
     val billingOperation: OperationReceipt? = null,
     val supportStatus: String? = null,
     val supportFrozen: Boolean = false,

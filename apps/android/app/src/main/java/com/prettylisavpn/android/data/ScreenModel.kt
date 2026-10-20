@@ -44,9 +44,11 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                 if (owner == epoch) {
                     val data = if (fixture) mutable.value.data else source.initial
                     val ended = !fixture && failure is AuthFailure && failure.code in setOf("reauth_required", "invalid_refresh_token", "invalid_session", "device_revoked", "user_blocked")
-                    mutable.value = mutable.value.copy(data = data,
+                    val changed = data.signedIn != mutable.value.data.signedIn
+                    if (changed) epoch++
+                    mutable.value = mutable.value.copy(data = data, busy = if (changed) false else mutable.value.busy,
                         error = if (!fixture && !data.signedIn) failure.message else mutable.value.error,
-                        loads = mutable.value.loads + (area to Load(if (ended) LoadPhase.READY else LoadPhase.ERROR, failure.message)))
+                        loads = (if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads) + (area to Load(if (ended) LoadPhase.READY else LoadPhase.ERROR, failure.message)))
                 }
             }
         }
@@ -61,7 +63,15 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                 if (owner == epoch) {
                     val changed = data.signedIn != mutable.value.data.signedIn
                     if (changed) epoch++
-                    mutable.value = mutable.value.copy(data = data, loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads, busy = false, error = null)
+                    val completedArea = when (command) {
+                        is Command.Support, Command.SupportStatus, Command.NewSupport -> Area.SUPPORT
+                        is Command.Payment, Command.ConfirmPayment -> Area.BILLING
+                        is Command.Revoke -> Area.DEVICES
+                        is Command.Acknowledge -> Area.MESSAGES
+                        else -> null
+                    }
+                    val loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads
+                    mutable.value = mutable.value.copy(data = data, loads = if (completedArea == null) loads else loads + (completedArea to Load(LoadPhase.READY)), busy = false, error = null)
                     if (command is Command.RequestOtp) resendAtMillis = android.os.SystemClock.elapsedRealtime() + 30_000
                     onSuccess()
                 }

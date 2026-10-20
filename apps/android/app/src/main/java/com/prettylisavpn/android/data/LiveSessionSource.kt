@@ -48,7 +48,7 @@ class LiveSessionSource(
         snapshot = snapshot.copy(supportReceipt = journal.supportReceipt?.id ?: journal.support?.requestId,
             supportStatus = journal.supportReceipt?.status, supportDelivered = journal.supportReceipt?.status == "SENT",
             supportFrozen = journal.support != null || journal.supportReceipt != null, supportAwaiting = journal.support != null && journal.supportReceipt == null,
-            billingOperation = journal.operation, paymentPending = journal.billing != null || journal.operation?.status == "PENDING")
+            billingRetryAvailable = journal.billing != null && journal.operation == null, billingOperation = journal.operation, paymentPending = journal.billing != null || journal.operation?.status == "PENDING")
     }
     override suspend fun read(area: Area): Snapshot = mutex.withLock {
         if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal() }
