@@ -39,6 +39,15 @@ internal enum class AppLanguage(val flag: String, val english: String, val nativ
     SPANISH("🇪🇸", "Spanish", "Español", "es"),
 }
 
+/** Display only the release core of a valid SemVer; never concatenate digits from a SHA. */
+internal fun releaseVersion(raw: String?): String? {
+    if (raw == null || raw.length > 256) return null
+    val number = "(?:0|[1-9][0-9]*)"
+    val identifier = "(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+    val version = Regex("($number\\.$number\\.$number)(?:-$identifier(?:\\.$identifier)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?")
+    return version.matchEntire(raw)?.groupValues?.get(1)?.takeIf { it.length <= 20 }
+}
+
 /** Only an explicit user choice is durable; a country suggestion is never a preference. */
 internal class LanguagePreference(saved: String?, private val persist: (String) -> Unit) {
     private var manual = AppLanguage.entries.any { it.code == saved }
@@ -76,9 +85,7 @@ internal class PublicMetadata(
         }.getOrNull()
     }
     suspend fun version(): String? = read(versionUrl)?.let { value -> runCatching {
-        value.get("application_version")?.asString?.takeIf {
-            it.length <= 80 && it.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.+-]+)?"))
-        }
+        releaseVersion(value.get("application_version")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString)
     }.getOrNull() }
     suspend fun country(): String? = read(countryUrl)?.let { value -> runCatching {
         value.takeIf { it.get("success")?.asBoolean == true }?.get("country_code")?.asString
@@ -226,25 +233,19 @@ internal fun AppHeader(fixture: Boolean) {
         Column(Modifier.fillMaxWidth().background(Brand.Christalle)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
             .padding(horizontal = 12.dp, vertical = 6.dp).testTag("app-header")) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Image(painterResource(R.drawable.brand_mark), null, modifier = Modifier.size(26.dp))
-                    Text("PrettyLisaVPN", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("header-logo"))
-                }
-                Box {
-                    TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("language-picker"),
-                        contentPadding = PaddingValues(horizontal = 4.dp), colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
-                        Column(horizontalAlignment = Alignment.Start) {
-                            Text("${language.flag} ${language.english}", style = MaterialTheme.typography.labelSmall)
-                            Text(language.native, style = MaterialTheme.typography.labelSmall)
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                // Keep the brand readable rather than squeezing it beside the language control.
+                if (maxWidth < 350.dp || density.fontScale > 1.15f) {
+                    Column {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
+                            HeaderLanguage(language, expanded, { expanded = it }, presentation)
                         }
+                        HeaderBrand()
                     }
-                    DropdownMenu(expanded, { expanded = false }, modifier = Modifier.testTag("language-menu"), containerColor = Brand.Mercury) {
-                        AppLanguage.entries.forEach { item -> DropdownMenuItem(
-                            text = { Text("${item.flag} ${item.english} · ${item.native}") },
-                            onClick = { presentation.preference.choose(item); expanded = false },
-                            modifier = Modifier.testTag("language-${item.code}"),
-                        ) }
+                } else {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) { HeaderBrand() }
+                        HeaderLanguage(language, expanded, { expanded = it }, presentation)
                     }
                 }
             }
@@ -252,6 +253,54 @@ internal fun AppHeader(fixture: Boolean) {
                 style = MaterialTheme.typography.labelSmall, color = Brand.Viking, modifier = Modifier.testTag("component-versions"))
             if (fixture) Text(tr(R.string.test_data_notice), style = MaterialTheme.typography.labelSmall, color = Brand.Galliano,
                 modifier = Modifier.testTag("test-banner"))
+        }
+    }
+}
+
+@Composable
+private fun HeaderBrand() {
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth / density.fontScale < 210.dp
+        val mark: @Composable () -> Unit = {
+            Image(painterResource(R.drawable.brand_mark), null, modifier = Modifier.size(44.dp).testTag("header-mark"))
+        }
+        val name: @Composable () -> Unit = {
+            Text("PrettyLisaVPN", style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.testTag("header-logo"))
+        }
+        if (stacked) Column { mark(); name() }
+        else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { mark(); name() }
+    }
+}
+
+@Composable
+private fun HeaderLanguage(language: AppLanguage, expanded: Boolean, expand: (Boolean) -> Unit, presentation: PresentationState) {
+    Box {
+        TextButton(onClick = { expand(true) }, modifier = Modifier.testTag("language-picker"),
+            contentPadding = PaddingValues(horizontal = 6.dp), colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
+            LanguageNames(language, Brand.Mercury)
+        }
+        DropdownMenu(expanded, { expand(false) }, modifier = Modifier.testTag("language-menu"), containerColor = Brand.Christalle) {
+            AppLanguage.entries.forEach { item -> DropdownMenuItem(
+                text = { LanguageNames(item, if (item == language) Brand.Viking else Brand.Mercury) },
+                onClick = { presentation.preference.choose(item); expand(false) },
+                modifier = Modifier.testTag("language-${item.code}"),
+            ) }
+        }
+    }
+}
+
+@Composable
+private fun LanguageNames(language: AppLanguage, color: androidx.compose.ui.graphics.Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Flag occupies its own column, centered beside both names.
+        Text(language.flag, modifier = Modifier.width(24.dp * LocalDensity.current.fontScale), style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier.width(88.dp * LocalDensity.current.fontScale), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(language.english, color = color, style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.testTag("language-english-${language.code}"))
+            Text(language.native, color = color.copy(alpha = 0.72f), style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.testTag("language-native-${language.code}"))
         }
     }
 }

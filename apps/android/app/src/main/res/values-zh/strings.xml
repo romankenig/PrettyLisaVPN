@@ -25,7 +25,7 @@
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">此测试渠道支持自动续订；取消后保留已付费访问。</string>
     <string name="ui_auto_renewal_0">自动续订：%1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">自动模式使用可用节点。选择国家需要Premium或Platinum。</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">Backend：不可用 — 测试数据，未调用GET /version</string>
+    <string name="ui_backend_unavailable_test_source_no_get_version_performed">后端：不可用 — 测试数据，未调用GET /version</string>
     <string name="ui_choose_at_most_3_images">最多选择3张图片。</string>
     <string name="ui_current_price_0">当前价格：%1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">仅限调试。重置内存数据；不连接后端、邮件、银行卡或隧道。进程重启后恢复默认测试账户。</string>
@@ -33,14 +33,14 @@
     <string name="ui_email">电子邮箱</string>
     <string name="ui_end_the_test_session_on_this_device">结束此设备上的测试会话</string>
     <string name="ui_end_this_server_session_on_this_device_if_the_network_is_unavaila">结束此设备的服务器会话。网络不可用时将保留凭据以便重试。</string>
-    <string name="ui_enter_a_valid_email">请输入有效的 email。</string>
+    <string name="ui_enter_a_valid_email">请输入有效的电子邮箱。</string>
     <string name="ui_enter_all_6_digits">请输入全部6位数字。</string>
     <string name="ui_enter_the_code_sent_to_0">请输入发送至 %1$s 的验证码。</string>
     <string name="ui_example_location_berlin_germany_nip_192_0_2_10_documentation_rang">示例位置：德国柏林\nIP：192.0.2.10（文档范围）\n测试数据，实际IP未知。</string>
     <string name="ui_example_offer_rub_100_00_usd_5_00_per_30_day_test_period_these_ar">示例：30天测试期100 RUB / 5 USD，并非商业价格。</string>
     <string name="ui_example_rub_100_00_30_days">示例：100 RUB / 30天</string>
     <string name="ui_example_usd_5_00_30_days">示例：5 USD / 30天</string>
-    <string name="ui_free_preview_1_hour_per_utc_day_no_real_quota_is_consumed">Free预览：每天UTC时间1小时，不消耗真实额度。</string>
+    <string name="ui_free_preview_1_hour_per_utc_day_no_real_quota_is_consumed">free预览：每天UTC时间1小时，不消耗真实额度。</string>
     <string name="ui_integration_is_unavailable_this_release_build_contains_no_test_da">集成不可用。此版本不包含测试数据或VPN适配器。</string>
     <string name="ui_last_login_0">上次登录：%1$s</string>
     <string name="ui_loading_test_data">正在加载测试数据…</string>
@@ -67,7 +67,7 @@
     <string name="ui_provider_0">支付提供商：%1$s</string>
     <string name="ui_queued_in_the_test_source">已加入测试队列。</string>
     <string name="ui_reference_0">请求编号：%1$s</string>
-    <string name="ui_reply_email">回复 email</string>
+    <string name="ui_reply_email">回复电子邮箱</string>
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">请核对价格和货币。取消或更改付款方式不影响已付费期限。付款需要可用的LIVE提供商。</string>
     <string name="ui_revision_0">修订版本 %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">模拟运行中 — 非VPN</string>
@@ -170,7 +170,7 @@
     <string name="ui_settings">设置</string>
     <string name="ui_sign_in">登录</string>
     <string name="ui_sign_in_again">重新登录</string>
-    <string name="ui_sign_in_by_email">通过 email 登录</string>
+    <string name="ui_sign_in_by_email">通过电子邮箱登录</string>
     <string name="ui_sign_in_to_test_account">登录测试账户</string>
     <string name="ui_sign_out">退出登录</string>
     <string name="ui_sign_out_54">退出登录？</string>
@@ -235,7 +235,7 @@
     <string name="detail_10">消息已变更，请刷新后再确认。</string>
     <string name="detail_11">所选货币不支持此付款渠道。</string>
     <string name="detail_12">无法安全保存操作。开始新操作前请重试。</string>
-    <string name="detail_13">Mir银行卡</string>
+    <string name="detail_13">mir银行卡</string>
     <string name="detail_14">银行卡</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">加密货币</string>

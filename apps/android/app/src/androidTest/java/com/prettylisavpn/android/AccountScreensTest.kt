@@ -78,7 +78,7 @@ class AccountScreensTest {
         click("live-devices");waitFor("live-revoke-$device");click("live-revoke-$device");click("confirm-dialog");idle()
         compose.onNodeWithText("revoked").assertExists();screenshot("devices-revoked")
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-account")
-        compose.onNodeWithText("Active devices: 1 / 5").assertExists()
+        compose.onNodeWithText("active devices: 1 / 5").assertExists()
     }
     @Test fun messagesOnlyNavigateAfterSuccessfulAck() {
         click("live-messages");waitFor("message-action-$message");ackFail=true;click("message-action-$message");idle()

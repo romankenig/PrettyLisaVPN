@@ -11,6 +11,16 @@ def read(folder):
     return result
 
 base = read('values')
+# Lowercase starts are an editorial rule on templates, never a runtime transform
+# of formatted email, device names, API messages or other user/server content.
+proper_prefixes = ('PrettyLisaVPN', 'Android', 'WireGuard', 'VPN', 'IP:', 'ID:',
+                   'UTC', 'PNG', 'JPEG', 'WebP', 'Alipay', 'WeChat', 'Mir ', 'MIR',
+                   'Premium', 'Platinum', 'Free ')
+for folder in ('values', 'values-ru', 'values-zh', 'values-es', 'values-de', 'values-fr'):
+    for key, text in read(folder).items():
+        assert not text[0].isupper() or text.startswith(proper_prefixes), (folder, key, 'uppercase start')
+        if folder in ('values-zh', 'values-es', 'values-fr', 'values-de'):
+            assert not re.search(r'\bemail\b', text, re.I), (folder, key, 'unlocalized email')
 for language in ('ru', 'zh', 'es', 'de', 'fr'):
     translated = read('values-' + language)
     assert translated.keys() == base.keys(), language
@@ -19,4 +29,4 @@ for language in ('ru', 'zh', 'es', 'de', 'fr'):
         assert sorted(re.findall(r'%\d+\$[sd]', source)) == sorted(re.findall(r'%\d+\$[sd]', translated[key])), (language, key)
         if 'PrettyLisaVPN' in source:
             assert 'PrettyLisaVPN' in translated[key], (language, key)
-print('All six language catalogs are complete; placeholders and brand casing match')
+print('All six catalogs: parity, placeholders, brand casing, lowercase starts and email terminology verified')

@@ -114,7 +114,7 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
             if (state.data.devices.isEmpty()) BrandCard { Text(tr(R.string.ui_no_devices_to_display)) }
             state.data.devices.forEach { device -> BrandCard {
                 Text(device.name + if (device.current) tr(R.string.ui_this_device) else "")
-                Text("ID: ${device.id}")
+                Text("id: ${device.id}")
                 Text(tr(R.string.ui_added_0, device.added))
                 Text(tr(R.string.ui_last_login_0, device.lastLogin ?: tr(R.string.ui_unavailable)))
                 Text(if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked))

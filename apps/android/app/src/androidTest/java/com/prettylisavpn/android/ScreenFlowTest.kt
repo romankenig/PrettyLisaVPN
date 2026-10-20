@@ -90,7 +90,7 @@ class ScreenFlowTest {
         scenario(Scenario.SLOW)
         signOut()
         click("auth-submit")
-        compose.onNodeWithText("Enter a valid email.").assertExists()
+        compose.onNodeWithText("enter a valid email.").assertExists()
         enter("login-email", "test@example.invalid")
         hideKeyboard()
         compose.onNodeWithTag("login-email").assertTextEquals("test@example.invalid")
@@ -131,10 +131,10 @@ class ScreenFlowTest {
         enter("country-search", "", replace = true)
         hideKeyboard(); click("country-DE"); idle(); waitFor("brand-logo")
         click("connect"); compose.onNodeWithTag("connect").assertIsNotEnabled(); idle()
-        compose.onNodeWithTag("connection-status").assertTextEquals("SIMULATION ACTIVE — NOT A VPN")
+        compose.onNodeWithTag("connection-status").assertTextEquals("simulation active — not a VPN")
         click("connection-details"); compose.onNodeWithText("simulated connection").assertExists()
         screenshot("connection-details"); back()
-        compose.onNodeWithTag("connection-status").assertTextEquals("SIMULATION ACTIVE — NOT A VPN")
+        compose.onNodeWithTag("connection-status").assertTextEquals("simulation active — not a VPN")
         click("connect"); idle()
         compose.onNodeWithTag("connection-status").assertTextEquals("not connected")
         passed = true
@@ -154,7 +154,7 @@ class ScreenFlowTest {
         screenshot("devices")
         back(); compose.onNodeWithTag("screen_SETTINGS").assertIsDisplayed()
         back(); waitFor("brand-logo")
-        compose.onNodeWithTag("device-count").assertTextEquals("Active devices: 1 / 5")
+        compose.onNodeWithTag("device-count").assertTextEquals("active devices: 1 / 5")
         passed = true
     }
     @Test fun currentDeviceRevocationRemovesProtectedScreens() {
@@ -171,7 +171,7 @@ class ScreenFlowTest {
         click("open-payment"); click("currency-USD")
         compose.onNodeWithTag("route-MIR").assertIsNotEnabled()
         click("route-CRYPTO")
-        compose.onNodeWithTag("recurring-terms").assertTextEquals("One-time test payment; no automatic charges.")
+        compose.onNodeWithTag("recurring-terms").assertTextEquals("one-time test payment; no automatic charges.")
         click("currency-RUB"); screenshot("payment-routes")
         click("simulate-payment"); idle(); waitFor("screen_SUBSCRIPTION")
         assertEquals(before, compose.activity.screenModel.state.value.data.paidUntil)

@@ -7,6 +7,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PresentationTest {
+    @Test fun runtimeVersionDisplaysOnlyValidatedReleaseCore() {
+        for (version in listOf("0.10.0", "0.10.0-dev.39206276137+g69ab8d1d3d3c5680fc72bb23980776242606a104", "0.10.0-rc.1", "0.10.0+build.002")) {
+            assertEquals("0.10.0", releaseVersion(version))
+        }
+        assertEquals("12.34.567", releaseVersion("12.34.567-beta+abc123"))
+        for (version in listOf(null, "", "dev-69ab8d1", "0.10", "v0.10.0", "01.10.0", "0.10.0-01", "0.10.0+", "0.10.0-dev..2", "0.10.0 trailing", "9".repeat(300))) {
+            assertNull(version, releaseVersion(version))
+        }
+    }
     @Test fun defaultsToEnglishAndSuggestsRussianOnlyForRussia() {
         val writes = mutableListOf<String>()
         val preference = LanguagePreference(null, writes::add)
@@ -37,7 +46,7 @@ class PresentationTest {
     }
     @Test fun publicMetadataUsesActualVersionAndCountryWithoutCredentials() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setBody("""{"application_version":"0.10.0","environment":"development"}"""))
+            server.enqueue(MockResponse().setBody("""{"application_version":"0.10.0-dev.39206276137+g69ab8d1d3d3c5680fc72bb23980776242606a104","environment":"development"}"""))
             server.enqueue(MockResponse().setBody("""{"success":true,"country_code":"RU"}"""))
             val metadata = PublicMetadata(server.url("/version").toString(), server.url("/country").toString())
             assertEquals("0.10.0", metadata.version()); assertEquals("RU", metadata.country())
@@ -52,7 +61,7 @@ class PresentationTest {
     @Test fun invalidFailedAndOversizedMetadataFailClosed() = runBlocking {
         MockWebServer().use { server ->
             val metadata = PublicMetadata(server.url("/version").toString(), server.url("/country").toString())
-            for (body in listOf("{}", """{"application_version":{}}""", """{"application_version":"not-a-version"}""", "x".repeat(16_385))) {
+            for (body in listOf("{}", """{"application_version":{}}""", """{"application_version":["0.10.0"]}""", """{"application_version":10}""", """{"application_version":"not-a-version"}""", "x".repeat(16_385))) {
                 server.enqueue(MockResponse().setBody(body)); assertNull(metadata.version())
             }
             server.enqueue(MockResponse().setResponseCode(503)); assertNull(metadata.version())

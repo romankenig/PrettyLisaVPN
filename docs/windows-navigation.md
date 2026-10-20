@@ -347,3 +347,8 @@ Android 0.6.0 переносит выбор шести языков в прав�
 Смена языка не создаёт новый маршрут и не повторяет HTTP-операции. Resend/change
 email — текстовые действия над подтверждением OTP. Windows-маршруты и backend
 не меняются; детали: [android-language-ui.md](android-language-ui.md).
+
+Android 0.6.1 уточняет общую шапку: увеличенный бренд, выровненный двуязычный
+selector, компактная фактическая backend SemVer и строчные локализованные подписи.
+При крупном шрифте selector справа сверху занимает отдельную строку. Маршруты,
+API и Windows unchanged; приёмка: [android-language-ui.md](android-language-ui.md).

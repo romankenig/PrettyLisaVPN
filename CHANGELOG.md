@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.6.1 / Windows и backend unchanged
+
+- В общей шапке показана только проверенная числовая часть фактической backend
+  SemVer: `0.10.0-dev.<run>+g<sha>` → `0.10.0`. Серверный runtime не меняется.
+- Увеличены знак и PrettyLisaVPN; языки центрированы в отдельных колонках,
+  native name приглушено. Узкие экраны и крупный шрифт используют две строки.
+- Исправлены native-термины электронной почты и начальные строчные буквы во всех
+  шести каталогах. Введённый текст, бренды, протоколы и данные API не преобразуются.
+- Android 0.6.0/code6 → 0.6.1/code7 (PATCH); handoff и приёмка:
+  [docs/android-language-ui.md](docs/android-language-ui.md), актуальные SHA/CI — в PR #25.
+
 ### Android — 0.6.0 / Windows и backend unchanged
 
 - Добавлен выбор Chinese/English/French/German/Russian/Spanish с флагами и обоими

@@ -83,16 +83,22 @@ class PresentationUiTest {
         check(header.contentEquals(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)))
     }
     @Test fun allSixLanguagesTranslateLoginAndPreserveBrandAndDraft() {
-        compose.onNodeWithTag("login-email").performTextInput("acceptance@example.com")
+        compose.onNodeWithTag("login-email").performTextInput("Acceptance.Case@example.com")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         for (language in AppLanguage.entries) {
             choose(language.code)
             hideKeyboard()
             compose.onNodeWithTag("header-logo").assertTextEquals("PrettyLisaVPN")
-            compose.onNodeWithTag("login-email").assertTextEquals("acceptance@example.com")
+            compose.onNodeWithTag("login-email").assertTextEquals("Acceptance.Case@example.com")
             val localized = compose.activity.createConfigurationContext(android.content.res.Configuration(compose.activity.resources.configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
             compose.onNodeWithText(localized.getString(R.string.ui_sign_in_by_email)).assertExists()
-            compose.onNodeWithTag("component-versions").assertTextContains("0.6.0", substring = true)
+            compose.onNodeWithText(localized.getString(R.string.ui_email)).assertExists()
+            val english = compose.onNodeWithTag("language-english-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            val native = compose.onNodeWithTag("language-native-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertEquals(english.center.x.value, native.center.x.value, 1f)
+            assertTrue(english.bottom <= native.top)
+            compose.onNodeWithTag("header-mark").assertWidthIsAtLeast(androidx.compose.ui.unit.Dp(44f))
+            compose.onNodeWithTag("component-versions").assertTextContains(BuildConfig.VERSION_NAME, substring = true)
             compose.onNodeWithTag("live-banner").assertDoesNotExist()
             screenshot("login-${language.code}")
         }
@@ -102,7 +108,7 @@ class PresentationUiTest {
         screenshot("language-menu")
     }
     @Test fun otpLinksKeepThirtySecondCooldownAndCodeDuringLanguageChanges() {
-        compose.onNodeWithTag("login-email").performTextInput("acceptance@example.com")
+        compose.onNodeWithTag("login-email").performTextInput("Acceptance.Case@example.com")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithTag("auth-submit").performScrollTo().performClick(); waitFor("screen_OTP")
         val deadline = model.resendAtMillis
@@ -131,12 +137,12 @@ class PresentationUiTest {
         choose("de")
         compose.activityRule.scenario.recreate(); waitFor("screen_LOGIN")
         compose.onNodeWithTag("language-picker").assertTextContains("German", substring = true)
-        compose.onNodeWithTag("login-email").performTextInput("acceptance@example.com")
+        compose.onNodeWithTag("login-email").performTextInput("Acceptance.Case@example.com")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithTag("auth-submit").performScrollTo().performClick(); waitFor("screen_OTP")
         val deadline = model.resendAtMillis
         compose.onNodeWithTag("change-email").performScrollTo().performClick(); waitFor("screen_LOGIN")
-        compose.onNodeWithTag("login-email").assertTextEquals("acceptance@example.com")
+        compose.onNodeWithTag("login-email").assertTextEquals("Acceptance.Case@example.com")
         assertEquals(deadline, model.resendAtMillis)
         compose.onNodeWithTag("header-logo").assertIsDisplayed()
     }
