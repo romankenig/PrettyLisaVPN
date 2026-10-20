@@ -1,4 +1,5 @@
 [versions]
+junit = "4.13.2"
 agp = "8.11.1"
 kotlin = "2.1.21"
 composeBom = "2025.05.01"
@@ -8,6 +9,7 @@ testRunner = "1.6.2"
 testJunit = "1.2.1"
 
 [libraries]
+junit = { module = "junit:junit", version.ref = "junit" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-tooling = { module = "androidx.compose.ui:ui-tooling" }
