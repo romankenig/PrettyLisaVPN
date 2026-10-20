@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">PrettyLisaVPN</string>
     <string name="home">home</string>
     <string name="settings">settings</string>
@@ -107,7 +107,8 @@
     <string name="ui_attach_screenshots">attach screenshots</string>
     <string name="ui_autopilot">autopilot</string>
     <string name="ui_build_0">build: %1$s</string>
-    <string name="ui_cancel">cancel</string>
+    <!-- Intentional shared PrettyLisaVPN lowercase typography; not Android dialog casing. -->
+    <string name="ui_cancel" tools:ignore="ButtonCase">cancel</string>
     <string name="ui_cancel_subscription">cancel subscription?</string>
     <string name="ui_change_email">change email</string>
     <string name="ui_change_method">change method</string>
