@@ -31,7 +31,9 @@
 - Resend the code/change email — TextButton без заливки, менее контрастный bodySmall,
   touch target не менее 48dp; расположены до основной кнопки sign in.
   Resend недоступен 30 секунд по SystemClock.elapsedRealtime и при busy.
-  Смена языка не отправляет OTP и не сбрасывает ограничение.
+  Смена языка не отправляет OTP и не сбрасывает ограничение. Deadline входит в
+  ScreenState: даже мгновенный ответ resend обновляет UI. Обработчик дополнительно
+  проверяет текущее монотонное время перед запросом, защищая от двойного клика.
 - Удалён live development/VPN banner. Предупреждение no VPN tunnel на аккаунте
   и disabled connect VPN остаются честными. В изолированном fixture-режиме
   сохранён отдельный локализованный Test data/no VPN tunnel, чтобы симуляция

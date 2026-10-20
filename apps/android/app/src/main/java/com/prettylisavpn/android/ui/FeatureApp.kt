@@ -244,7 +244,7 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
     var validation by remember { mutableStateOf<Int?>(null) }
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(otp) { while (otp) { now = SystemClock.elapsedRealtime(); delay(250) } }
-    val remaining = ((model.resendAtMillis - now + 999) / 1000).coerceAtLeast(0)
+    val remaining = ((state.resendAtMillis - now + 999) / 1000).coerceIn(0L, 30L)
     PhoneScreen(if (otp) "screen_OTP" else "screen_LOGIN") {
         ScreenHeading(if (otp) tr(R.string.ui_enter_the_code) else tr(R.string.ui_sign_in_by_email), if (otp) back else null)
         BrandCard {
@@ -256,7 +256,9 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             OperationError(state.error)
             if (otp) {
                 OtpLink(if (remaining > 0) tr(R.string.ui_resend_in_0_s, remaining) else if (model.fixture) tr(R.string.ui_resend_test_code) else tr(R.string.ui_resend_the_code), {
-                    code = ""; model.perform(Command.RequestOtp(model.emailDraft))
+                    if (SystemClock.elapsedRealtime() >= model.resendAtMillis) {
+                        code = ""; model.perform(Command.RequestOtp(model.emailDraft))
+                    }
                 }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
                 if (model.fixture) Text(tr(R.string.ui_123456_success_000000_expired_other_codes_invalid), style = MaterialTheme.typography.bodySmall)
                 OtpLink(tr(R.string.ui_change_email), back, Modifier.testTag("change-email"), enabled = !state.busy)

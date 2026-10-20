@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class LoadPhase { IDLE, LOADING, READY, ERROR }
 data class Load(val phase: LoadPhase = LoadPhase.IDLE, val error: String? = null)
-data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap(), val busy: Boolean = false, val error: String? = null)
+data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap(), val busy: Boolean = false, val error: String? = null, val resendAtMillis: Long = 0L)
 
 /** Activity ViewModel owns operations, so rotation never repeats a mutation. Process death resets fixtures. */
 class ScreenModel(private val source: ScreenSource) : ViewModel() {
@@ -24,8 +24,7 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
     val state = mutable.asStateFlow()
     private var epoch = 0
     var emailDraft = ""
-    var resendAtMillis = 0L
-        private set
+    val resendAtMillis: Long get() = mutable.value.resendAtMillis
     init { if (!fixture) load(Area.SESSION) }
     fun load(area: Area) {
         if (!enabled || mutable.value.loads[area]?.phase == LoadPhase.LOADING) return
@@ -71,8 +70,8 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                         else -> null
                     }
                     val loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads
-                    mutable.value = mutable.value.copy(data = data, loads = if (completedArea == null) loads else loads + (completedArea to Load(LoadPhase.READY)), busy = false, error = null)
-                    if (command is Command.RequestOtp) resendAtMillis = android.os.SystemClock.elapsedRealtime() + 30_000
+                    mutable.value = mutable.value.copy(data = data, loads = if (completedArea == null) loads else loads + (completedArea to Load(LoadPhase.READY)), busy = false, error = null,
+                        resendAtMillis = if (command is Command.RequestOtp) android.os.SystemClock.elapsedRealtime() + 30_000 else mutable.value.resendAtMillis)
                     onSuccess()
                 }
             } catch (failure: Exception) {
