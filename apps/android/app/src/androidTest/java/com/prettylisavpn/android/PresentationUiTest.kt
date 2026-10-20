@@ -3,6 +3,8 @@ package com.prettylisavpn.android
 import android.os.ParcelFileDescriptor
 import java.io.DataInputStream
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import android.os.SystemClock
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -59,7 +61,14 @@ class PresentationUiTest {
         compose.onNodeWithTag("language-$code").performScrollTo().performClick()
         compose.waitForIdle()
     }
+    private fun hideKeyboard() {
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitUntil(10_000) {
+            ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(WindowInsetsCompat.Type.ime()) != true
+        }
+    }
     private fun screenshot(name: String) {
+        compose.runOnUiThread { compose.activity.window.decorView.invalidate() }
         compose.waitForIdle()
         val i = InstrumentationRegistry.getInstrumentation()
         i.uiAutomation.waitForIdle(500, 5_000)
@@ -78,6 +87,7 @@ class PresentationUiTest {
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         for (language in AppLanguage.entries) {
             choose(language.code)
+            hideKeyboard()
             compose.onNodeWithTag("header-logo").assertTextEquals("PrettyLisaVPN")
             compose.onNodeWithTag("login-email").assertTextEquals("acceptance@example.com")
             val localized = compose.activity.createConfigurationContext(android.content.res.Configuration(compose.activity.resources.configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
@@ -100,6 +110,7 @@ class PresentationUiTest {
         compose.onNodeWithTag("otp").performScrollTo().performTextInput("123456")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         choose("ru")
+        hideKeyboard()
         assertEquals(deadline, model.resendAtMillis)
         compose.onNodeWithTag("otp").assertTextEquals("123456")
         compose.onNodeWithTag("otp-resend").performScrollTo().assertIsNotEnabled()
@@ -107,6 +118,7 @@ class PresentationUiTest {
         val change = compose.onNodeWithTag("change-email").getUnclippedBoundsInRoot().top.value
         val submit = compose.onNodeWithTag("auth-submit").getUnclippedBoundsInRoot().top.value
         assertTrue(resend < submit && change < submit)
+        compose.onNodeWithTag("auth-submit").performScrollTo().assertIsDisplayed()
         screenshot("otp-ru")
         compose.waitUntil(35_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
         compose.onNodeWithTag("otp-resend").assertIsEnabled().performClick()

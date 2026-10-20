@@ -215,34 +215,36 @@ internal fun AppHeader(fixture: Boolean) {
     val language by presentation.preference.language.collectAsState()
     val version by presentation.version.collectAsState()
     var expanded by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().background(Brand.Christalle)
-        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-        .padding(horizontal = 12.dp, vertical = 6.dp).testTag("app-header")) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Image(painterResource(R.drawable.brand_mark), null, modifier = Modifier.size(26.dp))
-                Text("PrettyLisaVPN", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("header-logo"))
-            }
-            Box {
-                TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("language-picker"),
-                    contentPadding = PaddingValues(horizontal = 4.dp), colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
-                    Column(horizontalAlignment = Alignment.Start) {
-                        Text("${language.flag} ${language.english}", style = MaterialTheme.typography.labelSmall)
-                        Text(language.native, style = MaterialTheme.typography.labelSmall)
+    key(language) {
+        Column(Modifier.fillMaxWidth().background(Brand.Christalle)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+            .padding(horizontal = 12.dp, vertical = 6.dp).testTag("app-header")) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Image(painterResource(R.drawable.brand_mark), null, modifier = Modifier.size(26.dp))
+                    Text("PrettyLisaVPN", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("header-logo"))
+                }
+                Box {
+                    TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("language-picker"),
+                        contentPadding = PaddingValues(horizontal = 4.dp), colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text("${language.flag} ${language.english}", style = MaterialTheme.typography.labelSmall)
+                            Text(language.native, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    DropdownMenu(expanded, { expanded = false }, modifier = Modifier.testTag("language-menu"), containerColor = Brand.Mercury) {
+                        AppLanguage.entries.forEach { item -> DropdownMenuItem(
+                            text = { Text("${item.flag} ${item.english} · ${item.native}") },
+                            onClick = { presentation.preference.choose(item); expanded = false },
+                            modifier = Modifier.testTag("language-${item.code}"),
+                        ) }
                     }
                 }
-                DropdownMenu(expanded, { expanded = false }, modifier = Modifier.testTag("language-menu")) {
-                    AppLanguage.entries.forEach { item -> DropdownMenuItem(
-                        text = { Text("${item.flag} ${item.english} · ${item.native}") },
-                        onClick = { presentation.preference.choose(item); expanded = false },
-                        modifier = Modifier.testTag("language-${item.code}"),
-                    ) }
-                }
             }
+            Text(tr(R.string.component_versions, BuildConfig.VERSION_NAME, version ?: tr(R.string.unavailable)),
+                style = MaterialTheme.typography.labelSmall, color = Brand.Viking, modifier = Modifier.testTag("component-versions"))
+            if (fixture) Text(tr(R.string.test_data_notice), style = MaterialTheme.typography.labelSmall, color = Brand.Galliano,
+                modifier = Modifier.testTag("test-banner"))
         }
-        Text(tr(R.string.component_versions, BuildConfig.VERSION_NAME, version ?: tr(R.string.unavailable)),
-            style = MaterialTheme.typography.labelSmall, color = Brand.Viking, modifier = Modifier.testTag("component-versions"))
-        if (fixture) Text(tr(R.string.test_data_notice), style = MaterialTheme.typography.labelSmall, color = Brand.Galliano,
-            modifier = Modifier.testTag("test-banner"))
     }
 }
