@@ -1,6 +1,7 @@
 package com.prettylisavpn.android
 
 import android.graphics.Bitmap
+import androidx.core.content.edit
 import android.os.SystemClock
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -37,7 +38,7 @@ class PresentationUiTest {
     @Before fun launch() {
         SourceFactory.sourceForTests = LiveSessionSource(SessionCoordinator(api, vault, "Test Android"))
         compose.runOnUiThread {
-            compose.activity.getSharedPreferences("presentation", 0).edit().clear().commit()
+            compose.activity.getSharedPreferences("presentation", 0).edit(commit = true) { clear() }
             PresentationStore.reset()
             compose.activity.viewModelStore.clear()
         }
@@ -47,7 +48,7 @@ class PresentationUiTest {
     }
     @After fun reset() {
         compose.runOnUiThread {
-            compose.activity.getSharedPreferences("presentation", 0).edit().clear().commit()
+            compose.activity.getSharedPreferences("presentation", 0).edit(commit = true) { clear() }
             PresentationStore.reset()
         }
         SourceFactory.sourceForTests = null

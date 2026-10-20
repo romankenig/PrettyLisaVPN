@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.ui
 
 import android.content.Context
+import androidx.core.content.edit
 import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -84,10 +85,10 @@ internal class PublicMetadata(
 }
 
 internal class PresentationState(context: Context, network: Boolean) {
-    private val app = context.applicationContext
+    private val app = context.applicationContext as android.app.Application
     private val preferences = app.getSharedPreferences("presentation", Context.MODE_PRIVATE)
     val preference = LanguagePreference(preferences.getString("language", null)) {
-        preferences.edit().putString("language", it).apply()
+        preferences.edit { putString("language", it) }
     }
     private val mutableVersion = MutableStateFlow<String?>(null)
     val version = mutableVersion.asStateFlow()
@@ -145,10 +146,29 @@ internal class Strings(private val context: Context) {
             "Simulated request failure. Retry is safe; nothing was changed." -> R.string.error_21
             "Test code expired. Request a new code." -> R.string.error_22
             "Incorrect test code. Use 123456." -> R.string.error_23
+            "Choose up to 3 PNG, JPEG or WebP images, at most 5 MB each and 10 MB total." -> R.string.detail_0
+            "Service unavailable." -> R.string.detail_1
+            "A unique offer is unavailable." -> R.string.detail_2
+            "Choose New request before composing another support request." -> R.string.detail_3
+            "Payments are unavailable for this provider." -> R.string.detail_4
+            "Resolve the previous request before starting another one." -> R.string.detail_5
+            "Saved operations are unavailable. Restore secure storage before starting a new request." -> R.string.detail_6
+            "The price or subscription changed. Review the refreshed details before confirming again." -> R.string.detail_7
+            "This currency is unavailable." -> R.string.detail_8
+            "This feature is not connected yet." -> R.string.detail_9
+            "This message changed. Refresh messages before confirming." -> R.string.detail_10
+            "This payment route is unavailable for the selected currency." -> R.string.detail_11
+            "Unable to save the operation securely. Retry before starting another operation." -> R.string.detail_12
             else -> null
         }
         return if (id == null) message else invoke(id)
     }
+    fun route(id: String): String = invoke(when (id) {
+        "MIR" -> R.string.detail_13
+        "BANK_CARD" -> R.string.detail_14
+        "ALIPAY_WECHAT" -> R.string.detail_15
+        else -> R.string.detail_16
+    })
     fun action(code: String): String = invoke(when (code) {
         "SUBSCRIBE" -> R.string.ui_subscribe
         "RENEW" -> R.string.ui_renew
@@ -172,10 +192,11 @@ internal val LocalPresentation = staticCompositionLocalOf<PresentationState> { e
 @Composable
 internal fun LocalizedApp(content: @Composable () -> Unit) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val presentation = remember { PresentationStore.get(context) }
     val language by presentation.preference.language.collectAsState()
-    val localized = remember(context, language) {
-        context.createConfigurationContext(Configuration(context.resources.configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
+    val localized = remember(context, language, configuration) {
+        context.createConfigurationContext(Configuration(configuration).apply { setLocale(Locale.forLanguageTag(language.code)) })
     }
     CompositionLocalProvider(LocalConfiguration provides localized.resources.configuration, LocalContext provides localized, LocalStrings provides Strings(localized), LocalPresentation provides presentation) { content() }
 }

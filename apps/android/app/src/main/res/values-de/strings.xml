@@ -222,4 +222,21 @@
     <string name="error_21">Simulierter Fehler. Wiederholen ist sicher, nichts wurde geändert.</string>
     <string name="error_22">Testcode abgelaufen. Fordere einen neuen an.</string>
     <string name="error_23">Falscher Testcode. Nutze 123456.</string>
+    <string name="detail_0">Wähle bis zu 3 PNG-, JPEG- oder WebP-Bilder, je 5 MB und insgesamt 10 MB.</string>
+    <string name="detail_1">Dienst nicht verfügbar.</string>
+    <string name="detail_2">Kein eindeutiges Angebot verfügbar.</string>
+    <string name="detail_3">Wähle Neue Anfrage, bevor du eine weitere verfasst.</string>
+    <string name="detail_4">Zahlungen sind bei diesem Anbieter nicht verfügbar.</string>
+    <string name="detail_5">Schließe die vorherige Anfrage ab, bevor du eine neue startest.</string>
+    <string name="detail_6">Gespeicherte Vorgänge nicht verfügbar. Stelle vor einer neuen Anfrage den sicheren Speicher wieder her.</string>
+    <string name="detail_7">Preis oder Abonnement geändert. Prüfe die aktualisierten Angaben vor der Bestätigung.</string>
+    <string name="detail_8">Diese Währung ist nicht verfügbar.</string>
+    <string name="detail_9">Diese Funktion ist noch nicht angebunden.</string>
+    <string name="detail_10">Die Nachricht wurde geändert. Aktualisiere vor der Bestätigung.</string>
+    <string name="detail_11">Dieser Zahlungsweg ist für die gewählte Währung nicht verfügbar.</string>
+    <string name="detail_12">Vorgang konnte nicht sicher gespeichert werden. Wiederhole, bevor du einen neuen startest.</string>
+    <string name="detail_13">Mir-Karte</string>
+    <string name="detail_14">Bankkarte</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">Kryptowährung</string>
 </resources>

@@ -29,6 +29,7 @@ android {
             isMinifyEnabled = false
         }
     }
+    bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
         compose = true
         buildConfig = true

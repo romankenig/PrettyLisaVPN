@@ -382,7 +382,7 @@ private fun PaymentScreen(state: ScreenState, model: ScreenModel, back: () -> Un
             }
             Text(if (currency == "RUB") tr(R.string.ui_example_rub_100_00_30_days) else tr(R.string.ui_example_usd_5_00_30_days))
             state.data.routes.forEach { item ->
-                BrandActionButton("${item.label}${if (item.id == route) " ✓" else ""}", { route = item.id }, Modifier.testTag("route-${item.id}"), enabled = currency in item.currencies && !state.busy)
+                BrandActionButton("${tr.route(item.id)}${if (item.id == route) " ✓" else ""}", { route = item.id }, Modifier.testTag("route-${item.id}"), enabled = currency in item.currencies && !state.busy)
             }
             Text(if (cap != null && currency in cap.recurring) tr(R.string.ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_) else tr(R.string.ui_one_time_test_payment_no_automatic_charges), Modifier.testTag("recurring-terms"))
             OperationError(state.error)
@@ -413,7 +413,7 @@ internal fun ConfirmDialog(title: String, body: String, confirm: String, state: 
         modifier = Modifier.testTag("confirmation-dialog"), containerColor = Brand.Mercury,
         onDismissRequest = dismiss, title = { Text(title) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(body); OperationError(state.error) } },
-        confirmButton = { TextButton(onClick = action, enabled = !state.busy, modifier = Modifier.testTag("confirm-dialog")) { Text(if (state.busy) "processing…" else confirm) } },
+        confirmButton = { TextButton(onClick = action, enabled = !state.busy, modifier = Modifier.testTag("confirm-dialog")) { Text(if (state.busy) tr(R.string.processing) else confirm) } },
         dismissButton = { TextButton(onClick = dismiss, modifier = Modifier.testTag("dismiss-dialog")) { Text(tr(R.string.ui_cancel)) } },
     )
 }

@@ -142,7 +142,7 @@ private fun LiveMessages(model: ScreenModel, back: () -> Unit, navigate: (String
                 message.destination?.let { dest -> BrandActionButton(message.actionLabel ?: tr(R.string.ui_view_details), {
                     model.perform(Command.Acknowledge(message.id, message.revision)) { navigate(dest) }
                 }, Modifier.testTag("message-action-${message.id}"), enabled = !state.busy && state.loads[Area.MESSAGES]?.phase == LoadPhase.READY) }
-                BrandActionButton(message.dismissLabel, { model.perform(Command.Acknowledge(message.id, message.revision)) }, Modifier.testTag("live-ack-${message.id}"), enabled = state.loads[Area.MESSAGES]?.phase == LoadPhase.READY, loading = state.busy)
+                BrandActionButton(if (message.dismissLabel == "understood") tr(R.string.ui_understood) else message.dismissLabel, { model.perform(Command.Acknowledge(message.id, message.revision)) }, Modifier.testTag("live-ack-${message.id}"), enabled = state.loads[Area.MESSAGES]?.phase == LoadPhase.READY, loading = state.busy)
             } }
             OperationError(state.error)
             BrandActionButton(tr(R.string.ui_later), back, Modifier.testTag("messages-later"))

@@ -107,7 +107,7 @@
     <string name="ui_attach_screenshots">attach screenshots</string>
     <string name="ui_autopilot">autopilot</string>
     <string name="ui_build_0">build: %1$s</string>
-    <string name="ui_cancel">cancel</string>
+    <string name="ui_cancel">Cancel</string>
     <string name="ui_cancel_subscription">cancel subscription?</string>
     <string name="ui_change_email">change email</string>
     <string name="ui_change_method">change method</string>
@@ -223,4 +223,21 @@
     <string name="error_21">Simulated request failure. Retry is safe; nothing was changed.</string>
     <string name="error_22">Test code expired. Request a new code.</string>
     <string name="error_23">Incorrect test code. Use 123456.</string>
+    <string name="detail_0">Choose up to 3 PNG, JPEG or WebP images, at most 5 MB each and 10 MB total.</string>
+    <string name="detail_1">Service unavailable.</string>
+    <string name="detail_2">A unique offer is unavailable.</string>
+    <string name="detail_3">Choose New request before composing another support request.</string>
+    <string name="detail_4">Payments are unavailable for this provider.</string>
+    <string name="detail_5">Resolve the previous request before starting another one.</string>
+    <string name="detail_6">Saved operations are unavailable. Restore secure storage before starting a new request.</string>
+    <string name="detail_7">The price or subscription changed. Review the refreshed details before confirming again.</string>
+    <string name="detail_8">This currency is unavailable.</string>
+    <string name="detail_9">This feature is not connected yet.</string>
+    <string name="detail_10">This message changed. Refresh messages before confirming.</string>
+    <string name="detail_11">This payment route is unavailable for the selected currency.</string>
+    <string name="detail_12">Unable to save the operation securely. Retry before starting another operation.</string>
+    <string name="detail_13">Mir card</string>
+    <string name="detail_14">Bank card</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">Cryptocurrency</string>
 </resources>

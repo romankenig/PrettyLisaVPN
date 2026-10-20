@@ -222,4 +222,21 @@
     <string name="error_21">Fallo simulado. Reintentar es seguro, no se cambió nada.</string>
     <string name="error_22">Código de prueba caducado. Solicita otro.</string>
     <string name="error_23">Código de prueba incorrecto. Usa 123456.</string>
+    <string name="detail_0">Elige hasta 3 imágenes PNG, JPEG o WebP, 5 MB cada una y 10 MB en total.</string>
+    <string name="detail_1">Servicio no disponible.</string>
+    <string name="detail_2">No hay una oferta única disponible.</string>
+    <string name="detail_3">Elige Nueva solicitud antes de redactar otra.</string>
+    <string name="detail_4">Los pagos no están disponibles con este proveedor.</string>
+    <string name="detail_5">Resuelve la solicitud anterior antes de iniciar otra.</string>
+    <string name="detail_6">Operaciones guardadas no disponibles. Recupera el almacenamiento seguro antes de una nueva solicitud.</string>
+    <string name="detail_7">El precio o la suscripción cambió. Revisa los datos actualizados antes de confirmar.</string>
+    <string name="detail_8">Esta moneda no está disponible.</string>
+    <string name="detail_9">Esta función aún no está conectada.</string>
+    <string name="detail_10">El mensaje cambió. Actualiza los mensajes antes de confirmar.</string>
+    <string name="detail_11">Este método no está disponible para la moneda elegida.</string>
+    <string name="detail_12">No se pudo guardar la operación de forma segura. Reintenta antes de iniciar otra.</string>
+    <string name="detail_13">Tarjeta Mir</string>
+    <string name="detail_14">Tarjeta bancaria</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">Criptomoneda</string>
 </resources>

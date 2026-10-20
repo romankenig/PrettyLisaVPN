@@ -222,4 +222,21 @@
     <string name="error_21">模拟请求失败，可安全重试，数据未变更。</string>
     <string name="error_22">测试验证码已过期，请获取新验证码。</string>
     <string name="error_23">测试验证码错误，请使用123456。</string>
+    <string name="detail_0">请选择最多3张PNG、JPEG或WebP图片，每张不超过5 MB，总共不超过10 MB。</string>
+    <string name="detail_1">服务不可用。</string>
+    <string name="detail_2">无唯一可用优惠。</string>
+    <string name="detail_3">请先选择新请求，再编写下一条支持消息。</string>
+    <string name="detail_4">此提供商不支持付款。</string>
+    <string name="detail_5">请先处理上一个请求，再创建新请求。</string>
+    <string name="detail_6">已保存的操作不可用。新建请求前请恢复安全存储。</string>
+    <string name="detail_7">价格或订阅已变更，请核对最新详情后再确认。</string>
+    <string name="detail_8">此货币不可用。</string>
+    <string name="detail_9">此功能尚未接入。</string>
+    <string name="detail_10">消息已变更，请刷新后再确认。</string>
+    <string name="detail_11">所选货币不支持此付款渠道。</string>
+    <string name="detail_12">无法安全保存操作。开始新操作前请重试。</string>
+    <string name="detail_13">Mir银行卡</string>
+    <string name="detail_14">银行卡</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">加密货币</string>
 </resources>

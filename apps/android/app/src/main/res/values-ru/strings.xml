@@ -222,4 +222,21 @@
     <string name="error_21">Тестовый сбой запроса. Повтор безопасен; данные не изменены.</string>
     <string name="error_22">Тестовый код истёк. Запросите новый.</string>
     <string name="error_23">Неверный тестовый код. Используйте 123456.</string>
+    <string name="detail_0">Выберите до 3 изображений PNG, JPEG или WebP, до 5 МБ каждое и 10 МБ всего.</string>
+    <string name="detail_1">Сервис недоступен.</string>
+    <string name="detail_2">Однозначное предложение недоступно.</string>
+    <string name="detail_3">Выберите «новое обращение» перед следующим сообщением в поддержку.</string>
+    <string name="detail_4">Платежи у этого провайдера недоступны.</string>
+    <string name="detail_5">Завершите предыдущее обращение перед новым.</string>
+    <string name="detail_6">Сохранённые операции недоступны. Восстановите защищённое хранилище перед новым запросом.</string>
+    <string name="detail_7">Цена или подписка изменились. Проверьте обновлённые данные перед подтверждением.</string>
+    <string name="detail_8">Валюта недоступна.</string>
+    <string name="detail_9">Эта функция пока не подключена.</string>
+    <string name="detail_10">Сообщение изменилось. Обновите сообщения перед подтверждением.</string>
+    <string name="detail_11">Способ оплаты недоступен для выбранной валюты.</string>
+    <string name="detail_12">Не удалось безопасно сохранить операцию. Повторите попытку перед новой операцией.</string>
+    <string name="detail_13">Карта «Мир»</string>
+    <string name="detail_14">Банковская карта</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">Криптовалюта</string>
 </resources>

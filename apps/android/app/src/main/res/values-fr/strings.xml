@@ -222,4 +222,21 @@
     <string name="error_21">Échec simulé. Réessayer est sûr, aucune modification.</string>
     <string name="error_22">Code de test expiré. Demandez-en un autre.</string>
     <string name="error_23">Code de test incorrect. Utilisez 123456.</string>
+    <string name="detail_0">Choisissez jusqu’à 3 images PNG, JPEG ou WebP, 5 Mo chacune et 10 Mo au total.</string>
+    <string name="detail_1">Service indisponible.</string>
+    <string name="detail_2">Aucune offre unique disponible.</string>
+    <string name="detail_3">Choisissez Nouvelle demande avant d’en rédiger une autre.</string>
+    <string name="detail_4">Les paiements sont indisponibles avec ce prestataire.</string>
+    <string name="detail_5">Terminez la demande précédente avant d’en créer une autre.</string>
+    <string name="detail_6">Opérations enregistrées indisponibles. Restaurez le stockage sécurisé avant une nouvelle demande.</string>
+    <string name="detail_7">Le prix ou l’abonnement a changé. Vérifiez les détails actualisés avant de confirmer.</string>
+    <string name="detail_8">Cette devise est indisponible.</string>
+    <string name="detail_9">Cette fonction n’est pas encore connectée.</string>
+    <string name="detail_10">Le message a changé. Actualisez avant de confirmer.</string>
+    <string name="detail_11">Ce moyen est indisponible pour la devise choisie.</string>
+    <string name="detail_12">Impossible d’enregistrer l’opération de façon sécurisée. Réessayez avant d’en démarrer une autre.</string>
+    <string name="detail_13">Carte Mir</string>
+    <string name="detail_14">Carte bancaire</string>
+    <string name="detail_15">Alipay / WeChat Pay</string>
+    <string name="detail_16">Cryptomonnaie</string>
 </resources>
