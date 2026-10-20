@@ -54,6 +54,9 @@ class AccountScreensTest {
             override fun clear() { value=null }
             override fun installationId()=owner
         }
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        compose.waitForIdle();instrumentation.waitForIdleSync();instrumentation.uiAutomation.waitForIdle(500,5_000)
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
         SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test"),accounts)
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")

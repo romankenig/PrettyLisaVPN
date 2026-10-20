@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AuthSessionUiTest {
+    @get:Rule val testName = org.junit.rules.TestName()
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private class Vault : CredentialVault {
         var value: Credentials? = Credentials("c21132ac-0d2e-4da7-96ac-8a6ceeb019ba", "synthetic", "2030-01-01T00:00:00Z")
@@ -38,12 +39,25 @@ class AuthSessionUiTest {
     private val api = Api()
     private val vault = Vault()
     private fun launch() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        compose.waitForIdle(); instrumentation.waitForIdleSync(); instrumentation.uiAutomation.waitForIdle(500, 5_000)
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
         SourceFactory.sourceForTests = LiveSessionSource(SessionCoordinator(api, vault, "Test Android"))
         compose.runOnUiThread { compose.activity.viewModelStore.clear() }
         compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model = compose.activity.screenModel }
     }
-    @After fun reset() { SourceFactory.sourceForTests = null }
+    @After fun reset() {
+        runCatching {
+            val i = InstrumentationRegistry.getInstrumentation()
+            val dir = File(i.targetContext.getExternalFilesDir(null), "acceptance/auth-session")
+            check(dir.mkdirs() || dir.isDirectory)
+            for ((name, command) in listOf("windows" to "dumpsys window windows", "ime" to "dumpsys input_method")) {
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(i.uiAutomation.executeShellCommand(command)).use { input -> File(dir, "${testName.methodName}-$name.txt").outputStream().use { output -> input.copyTo(output) } }
+            }
+        }
+        SourceFactory.sourceForTests = null
+    }
     private fun waitFor(tag: String) = compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     private fun enter(tag: String, value: String) {
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
