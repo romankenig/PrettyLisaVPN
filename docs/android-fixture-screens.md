@@ -19,7 +19,7 @@ Windows **0.12.0**, backend **0.10.0**, schema **0026** не меняются.
 | Subscription / PaymentChoice | План, оплаченная дата, auto-renew, method, пример RUB/USD, четыре маршрута и recurring. Подписка/продление/замена/отмена **явно симулируются**. CANCEL/CHANGE_METHOD сохраняют дату; RENEW добавляет период один раз; delayed confirmation и failure не начисляют период раньше времени. |
 | AccountMessages | Очередь из двух синтетических сообщений; Later/Back не ACK; ACK привязан к id/revision. Ошибка ACK не открывает destination; поддерживаются только внутренние SUBSCRIPTION/ABOUT, без произвольных URL. |
 | About / Support | Версия Android/source; Backend unavailable, GET /version не вызывается. Полноэкранный support draft, validation/recreation, synthetic attachments (до 3), discard dialog, local receipt/status. Отправки/SAF/реальных вложений нет; Android diagnostics disabled. |
-| Errors/loading/empty/stale | Отдельные состояния read и mutation; retry, disabled duplicate actions, empty lists и stale notice. Debug gallery содержит Standard/Free/Expired/Platinum/Empty/Device limit/Stale/Offline/Fail next/Payment pending. |
+| Errors/loading/empty/stale | Отдельные состояния read и mutation; retry, disabled duplicate actions, empty lists и stale notice. Debug gallery содержит Standard/Slow/Free/Expired/Platinum/Empty/Device limit/Stale/Offline/Fail next/Payment pending. |
 
 Это перенос смысла действий и структуры Windows, с мобильными экранами и системными
 AlertDialog. Desktop chrome и Win32 не переносятся. Брендовая тема/Rubik/logo из
@@ -57,8 +57,8 @@ back stack очищается; OTP/email не попадают в route URI. С�
 - 5 JVM tests: once-only renewal, cancel/method paid date, delayed confirmation/failure,
   currencies/Free entitlement, current-device revoke, message revision, support receipt
   idempotency и явный ephemeral restart.
-- 3 NavigationTest, 8 ScreenFlowTest (реальный GLOBAL_ACTION_BACK, auth/recreation,
-  dialogs/cancel/fail/retry, loading, страны, устройства, billing, support, messages,
+- 3 NavigationTest, 9 ScreenFlowTest (реальный GLOBAL_ACTION_BACK, auth/recreation,
+  dialogs/cancel/fail/retry, late response after Back, loading, страны, устройства, billing, support, messages,
   offline/stale/empty), 3 DesignAcceptanceTest × 6 конфигураций.
 - Матрица API 26/35/36; 320/360/412dp, 130%/200% fonts, landscape и настоящая IME.
   Native PNG: baseline, flows и design cases; source identity/APK digest, runtime/ANR guards.

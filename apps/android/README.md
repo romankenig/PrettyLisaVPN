@@ -32,8 +32,8 @@ adb shell am start -W -n com.prettylisavpn.android.dev/com.prettylisavpn.android
 
 [Android debug workflow](../../.github/workflows/android.yml) собирает текущий SHA,
 проверяет debug/release isolation, JVM tests и lint. Тот же debug APK устанавливается
-на API26/35/36: 3 navigation + 8 flow tests + 3 design tests ×6конфигураций =
-29 instrumented tests/API. Сохраняются native PNG baseline/flows/design, JSON
+на API26/35/36: 3 navigation + 9 flow tests + 3 design tests ×6конфигураций =
+30 instrumented tests/API. Сохраняются native PNG baseline/flows/design, JSON
 viewport/fontScale/IME/source и runtime/ANR diagnostics. Source SHA, PR merge SHA,
 run/attempt и APK SHA-256 — в build-identity.json; после завершения — в task PR.
 Артефакты APK/native evidence хранятся14дней. Проверки не доказывают настоящий VPN.

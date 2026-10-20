@@ -199,6 +199,18 @@ class ScreenFlowTest {
         back(); back(); waitFor("brand-logo")
         passed = true
     }
+    @Test fun latePaymentResultDoesNotPopTheParentPage() {
+        scenario(Scenario.SLOW); waitFor("brand-logo")
+        click("tab_SETTINGS"); click("open-subscription"); waitFor("open-payment")
+        val before = compose.activity.screenModel.state.value.data.paidUntil
+        click("open-payment"); click("simulate-payment")
+        compose.onNodeWithTag("simulate-payment").assertIsNotEnabled()
+        back(); waitFor("screen_SUBSCRIPTION")
+        idle()
+        compose.onNodeWithTag("screen_SUBSCRIPTION").assertIsDisplayed()
+        assertNotEquals(before, compose.activity.screenModel.state.value.data.paidUntil)
+        passed = true
+    }
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()

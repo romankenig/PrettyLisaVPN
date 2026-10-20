@@ -48,7 +48,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest 
 python3 - <<'FLOW_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/flows-instrumentation.txt').read_text()
-assert re.search(r'OK \(8 tests\)', result), result
+assert re.search(r'OK \(9 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 FLOW_CHECK
 

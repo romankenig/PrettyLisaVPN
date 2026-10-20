@@ -14,6 +14,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
     private var snapshot = standard()
     override val initial get() = snapshot
     private var offline = false
+    private var slow = false
     private var failNext = false
     private var delayPayments = false
     private var requestedEmail: String? = null
@@ -26,7 +27,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
     private suspend fun respond() {
         val shouldFail = failNext
         failNext = false
-        delay(latencyMs)
+        delay(if (slow) 2_000 else latencyMs)
         if (offline) throw SourceFailure("Test source is offline. No network request was made.")
         if (shouldFail) {
             throw SourceFailure("Simulated request failure. Retry is safe; nothing was changed.")
@@ -120,6 +121,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
     override fun configure(scenario: Scenario) {
         if (scenario == Scenario.FAIL_NEXT) { failNext = true; return }
         offline = scenario == Scenario.OFFLINE
+        slow = scenario == Scenario.SLOW
         delayPayments = scenario == Scenario.PAYMENT_PENDING
         failNext = false
         pending = null

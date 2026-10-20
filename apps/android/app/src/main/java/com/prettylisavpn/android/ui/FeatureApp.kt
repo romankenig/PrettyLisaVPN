@@ -148,7 +148,12 @@ internal fun FeatureApp(model: ScreenModel) {
                     SubscriptionScreen(contentState, model, { go("PAYMENT") }, { openDialog(it) })
                 }
             }
-            composable("PAYMENT") { PaymentScreen(state, model) { nav.popBackStack() } }
+            composable("PAYMENT") { paymentEntry ->
+                PaymentScreen(state, model) {
+                    // A late result belongs to its original page, never to the page underneath it.
+                    if (nav.currentBackStackEntry?.id == paymentEntry.id) nav.popBackStack()
+                }
+            }
             composable("SUPPORT") { support -> SupportDraftScreen(support.savedStateHandle, model) { nav.popBackStack() } }
             composable("SCENARIOS") {
                 PhoneScreen("screen_SCENARIOS") {
@@ -179,14 +184,14 @@ internal fun FeatureApp(model: ScreenModel) {
         "revoke" -> {
             val device = state.data.devices.find { it.id == target }
             ConfirmDialog("revoke access?", "${device?.name.orEmpty()}\nid: $target\n${if (device?.current == true) "This test device will be signed out." else "This test device will lose account access."}", "yes, revoke", state, { dialog = "" }) {
-                model.perform(Command.Revoke(target)) { dialog = "" }
+                model.perform(Command.Revoke(target)) { if (dialog == "revoke") dialog = "" }
             }
         }
         "cancel" -> ConfirmDialog("cancel subscription?", "Access is preserved until ${state.data.paidUntil}. Auto-renewal will stop. Test data only.", "yes, cancel", state, { dialog = "" }) {
-            model.perform(Command.Payment(UUID.randomUUID().toString(), "CANCEL", "", "")) { dialog = "" }
+            model.perform(Command.Payment(UUID.randomUUID().toString(), "CANCEL", "", "")) { if (dialog == "cancel") dialog = "" }
         }
         "method" -> ConfirmDialog("change payment method?", "Simulate replacing the test method with BANK_CARD. The paid period is preserved. No card is linked.", "simulate replacement", state, { dialog = "" }) {
-            model.perform(Command.Payment(UUID.randomUUID().toString(), "CHANGE_METHOD", "BANK_CARD", "USD")) { dialog = "" }
+            model.perform(Command.Payment(UUID.randomUUID().toString(), "CHANGE_METHOD", "BANK_CARD", "USD")) { if (dialog == "method") dialog = "" }
         }
         "connection" -> InformationDialog("simulated connection", "No VPN tunnel exists. No handshake, traffic routing, IP change or internet verification was performed. Protocol preview: WireGuard; selected country: ${state.data.selectedCountry}. Runtime statistics are unavailable.") { dialog = "" }
         "message" -> {
