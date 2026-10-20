@@ -48,7 +48,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.KeystoreSession
 python3 - <<'KEYSTORE_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/keystore-instrumentation.txt').read_text()
-assert re.search(r'OK \(3 tests\)', result), result
+assert re.search(r'OK \(4 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 KEYSTORE_CHECK
 
@@ -58,7 +58,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.AuthSessionUiTe
 python3 - <<'AUTH_UI_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/auth-ui-instrumentation.txt').read_text()
-assert re.search(r'OK \(4 tests\)', result), result
+assert re.search(r'OK \(5 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 AUTH_UI_CHECK
 

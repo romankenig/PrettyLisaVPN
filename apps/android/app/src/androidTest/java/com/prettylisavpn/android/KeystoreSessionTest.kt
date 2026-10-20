@@ -29,6 +29,11 @@ class KeystoreSessionTest {
         KeystoreVault(context).clear(); assertNull(vault.read())
         assertEquals(installation, KeystoreVault(context).installationId())
     }
+    @Test fun missingKeystoreKeyNeverReturnsCredentials() {
+        KeystoreVault(context).write(credential)
+        java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null); deleteEntry("PrettyLisaVPN.session.v1") }
+        try { KeystoreVault(context).read(); fail("A missing key must require reauthentication") } catch (_: Exception) { }
+    }
     @Test fun tamperedCiphertextFailsAuthentication() {
         KeystoreVault(context).write(credential)
         val bytes = record.readBytes(); bytes[bytes.lastIndex] = (bytes.last().toInt() xor 1).toByte(); record.writeBytes(bytes)

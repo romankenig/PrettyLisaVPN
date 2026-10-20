@@ -125,13 +125,13 @@ docs/                Инструкции настройки и эксплуат
 
 ## Android-клиент
 
-[Android 0.4.0](apps/android/README.md) — auth/session API и отдельные тестовые экраны на
-изолированном debug-only источнике: вход/OTP, Home/countries, devices, subscription,
-messages и support. Постоянная маркировка TEST DATA; никакого настоящего VPN/API,
-OTP-письма, платежа или отправки поддержки. Release остаётся unavailable.
-[Карта экранов/проверки](docs/android-fixture-screens.md),
-[дизайн](docs/android-design.md), [архитектура](docs/android-architecture.md).
-Шесть языков остаются [отдельной задачей](docs/android-localization.md).
-Точные SHA/артефакты/результаты фиксируются в task PR.
+[Android 0.4.0](apps/android/README.md) — Kotlin/Jetpack Compose, существующие OTP/
+refresh/me/logout API, Keystore и восстановление сессии. Обычный launcher показывает
+реальный профиль development API; VPN и другие live-интеграции недоступны.
+[Auth/session и ограничения](docs/android-auth-session.md).
 
-Android auth/session 0.4.0: [реализация, защищённое хранение и ограничения](docs/android-auth-session.md).
+[Изолированные fixture-экраны](docs/android-fixture-screens.md) Home/countries,
+devices, subscription, messages/support сохранены в debug instrumentation; они не
+используют реальный аккаунт. [Дизайн](docs/android-design.md),
+[архитектура](docs/android-architecture.md),
+[будущая локализация](docs/android-localization.md). Точные SHA/артефакты/результаты — в task PR.

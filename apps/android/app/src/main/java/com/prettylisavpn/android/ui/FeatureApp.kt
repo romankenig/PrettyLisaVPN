@@ -255,7 +255,7 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             Text(if (model.fixture) {
                 if (otp) "Test code for ${model.emailDraft}: 123456. Nothing was sent." else "Use any valid test email. No real OTP email is sent."
             } else if (otp) "Enter the code sent to ${model.emailDraft}." else "We will email you a one-time sign-in code.")
-            if (otp) BrandTextField(code, { code = it.filter(Char::isDigit).take(6); validation = null }, "6-digit code", Modifier.testTag("otp"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), error = validation, enabled = !state.busy)
+            if (otp) BrandTextField(code, { code = it.filter { digit -> digit in '0'..'9' }.take(6); validation = null }, "6-digit code", Modifier.testTag("otp"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), error = validation, enabled = !state.busy)
             else BrandTextField(email, { email = it.take(254); model.emailDraft = email; validation = null }, "Email", Modifier.testTag("login-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), error = validation, enabled = !state.busy)
             OperationError(state.error)
             BrandActionButton(if (otp) { if (model.fixture) "sign in to test account" else "sign in" } else "continue", {

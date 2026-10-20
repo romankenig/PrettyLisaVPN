@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.data
 
 import androidx.lifecycle.ViewModel
+import com.prettylisavpn.android.auth.AuthFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,13 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                 if (owner == epoch) mutable.value = mutable.value.copy(data = data, loads = mutable.value.loads + (area to Load(LoadPhase.READY)))
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
-                if (owner == epoch) mutable.value = mutable.value.copy(data = if (fixture) mutable.value.data else source.initial, loads = mutable.value.loads + (area to Load(LoadPhase.ERROR, failure.message ?: "Service unavailable.")))
+                if (owner == epoch) {
+                    val data = if (fixture) mutable.value.data else source.initial
+                    val ended = !fixture && failure is AuthFailure && failure.code in setOf("reauth_required", "invalid_refresh_token", "invalid_session", "device_revoked", "user_blocked")
+                    mutable.value = mutable.value.copy(data = data,
+                        error = if (!fixture && !data.signedIn) failure.message else mutable.value.error,
+                        loads = mutable.value.loads + (area to Load(if (ended) LoadPhase.READY else LoadPhase.ERROR, failure.message)))
+                }
             }
         }
     }

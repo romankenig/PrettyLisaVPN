@@ -8,9 +8,11 @@ import org.junit.Test
 class MemoryVault : CredentialVault {
     var value: Credentials? = null
     var failWrite = false
+    var failAtWrite = -1
+    var writes = 0
     val history = mutableListOf<Credentials>()
     override fun read() = value
-    override fun write(credentials: Credentials) { check(!failWrite); value = credentials; history += credentials }
+    override fun write(credentials: Credentials) { check(!failWrite && ++writes != failAtWrite); value = credentials; history += credentials }
     override fun clear() { value = null }
     override fun installationId() = "a1d3475f-0155-49e9-88a9-27125a19b12d"
 }
@@ -148,6 +150,22 @@ class SessionCoordinatorTest {
         assertTrue(sessions.needsRecovery); assertNotNull(vault.value)
         api.meError = null; sessions.restore()
         assertFalse(sessions.needsRecovery); assertEquals(1, api.verifies)
+    }
+    @Test fun failureWritingRotatedCredentialKeepsPendingAndNeverReplaysOldToken() = runBlocking {
+        val sessions = coordinator(); sessions.login("person@example.com", "123456"); elapsed = 60_000
+        vault.failAtWrite = 3
+        expect("storage_unavailable") { sessions.refreshProfile() }
+        assertNull(sessions.profile); assertTrue(vault.value!!.rotationPending)
+        expect("rotation_uncertain") { coordinator().restore() }; assertEquals(1, api.refreshes)
+    }
+    @Test fun unauthorizedTwiceStopsAfterOneRefresh() = runBlocking {
+        val sessions = coordinator(); sessions.login("person@example.com", "123456"); api.meError = "invalid_access_token"
+        expect("invalid_access_token") { sessions.refreshProfile() }
+        assertEquals(1, api.refreshes); assertNull(vault.value)
+    }
+    @Test fun expiredAccessAndOfflineLogoutKeepsDurableRefresh() = runBlocking {
+        val sessions = coordinator(); sessions.login("person@example.com", "123456"); elapsed = 60_000; api.refreshError = "offline"
+        expect("offline") { sessions.logout() }; assertEquals(api.issued.credentials, vault.value); assertEquals(0, api.logouts)
     }
     @Test fun localForgetNeverClaimsRemoteLogout() = runBlocking {
         val sessions = coordinator(); sessions.login("person@example.com", "123456"); sessions.forgetLocalSession()
