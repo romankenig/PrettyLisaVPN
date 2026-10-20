@@ -50,8 +50,14 @@ class ScreenFlowTest {
     private fun hideKeyboard() {
         // Use the instrumentation IME action; clearing the Android host View focus races
         // Compose's own focus tree on API 26 and can reopen the keyboard.
-        androidx.test.espresso.Espresso.closeSoftKeyboard()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        instrumentation.uiAutomation.waitForIdle(500, 5_000)
+        val insets = checkNotNull(androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView))
+        // Android 16 may not acknowledge a redundant IMM hide after recreation.
+        if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+            androidx.test.espresso.Espresso.closeSoftKeyboard()
+        }
         instrumentation.waitForIdleSync()
         instrumentation.uiAutomation.waitForIdle(500, 5_000)
         compose.waitUntil(10_000) {
