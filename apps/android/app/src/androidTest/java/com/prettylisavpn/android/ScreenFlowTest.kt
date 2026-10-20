@@ -48,6 +48,7 @@ class ScreenFlowTest {
     private fun hideKeyboard() {
         compose.runOnUiThread {
             val activity = compose.activity
+            activity.currentFocus?.clearFocus()
             WindowInsetsControllerCompat(activity.window, activity.window.decorView).hide(WindowInsetsCompat.Type.ime())
         }
         compose.waitUntil(10_000) {
@@ -94,7 +95,7 @@ class ScreenFlowTest {
         compose.onNodeWithTag("country-DE").assertIsNotEnabled()
         compose.onNodeWithTag("country-AUTO").assertIsEnabled()
         back(); waitFor("brand-logo")
-        scenario(Scenario.STANDARD); waitFor("brand-logo")
+        scenario(Scenario.SLOW); waitFor("brand-logo")
         click("open-countries"); waitFor("country-DE")
         compose.onNodeWithTag("country-search").performTextInput("zzzz")
         compose.onNodeWithTag("countries-empty").assertExists()
@@ -166,6 +167,7 @@ class ScreenFlowTest {
         hideKeyboard()
         repeat(3) { click("support-attach") }
         compose.onNodeWithTag("support-attach").assertIsNotEnabled()
+        hideKeyboard()
         back(); compose.onNodeWithTag("confirmation-dialog").assertExists(); back()
         compose.onNodeWithTag("support-subject").assertTextEquals("Test issue")
         scenario(Scenario.FAIL_NEXT)
