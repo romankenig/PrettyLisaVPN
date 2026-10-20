@@ -106,6 +106,22 @@ class AccountIntegrationTest {
         val result=next.execute(Command.Support(UUID.randomUUID().toString(),"Changed","Changed body","other@example.com",0))
         assertEquals(original,port.submissions.last());assertEquals("ACCEPTED",result.supportStatus)
     }
+    @Test fun unreadableJournalBlocksNewPostsUntilRecoverySucceeds()=runBlocking {
+        var broken=true
+        val store=object:JournalStore {
+            private var value:AccountJournal?=null
+            override fun read():AccountJournal? { check(!broken);return value }
+            override fun write(value:AccountJournal) { this.value=value }
+            override fun clear() { value=null }
+        }
+        port.overview=port.overview.copy(mode="LIVE",available=true)
+        val s=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),port,store)
+        failure { s.read(Area.SESSION) };assertFalse(s.initial.operationsReady)
+        failure { s.execute(Command.Support(UUID.randomUUID().toString(),"Subject","Body","reply@example.com",0)) }
+        failure { s.execute(Command.Payment(UUID.randomUUID().toString(),"RENEW","MIR","RUB")) }
+        assertTrue(port.starts.isEmpty());assertTrue(port.submissions.isEmpty())
+        broken=false;s.read(Area.SUPPORT);assertTrue(s.initial.operationsReady)
+    }
     @Test fun attachmentRetryUsesFrozenBytesAfterExternalSelectionChanges()=runBlocking {
         var selected=SupportUpload("image/png","AQID")
         val s=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),port,journal,{ listOf(selected) })

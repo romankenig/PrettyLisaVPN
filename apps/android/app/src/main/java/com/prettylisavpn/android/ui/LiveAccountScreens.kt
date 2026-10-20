@@ -181,7 +181,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                 billingActions.forEach { kind ->
                     val purchase = kind in setOf("SUBSCRIBE", "RENEW")
                     val allowedRoute = !purchase || (billing.offers.size == 1 && billing.routes.any { it.id == route && currency in it.currencies })
-                    BrandActionButton(kind.lowercase().replace('_', ' '), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-$kind"), enabled = billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
+                    BrandActionButton(kind.lowercase().replace('_', ' '), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-$kind"), enabled = state.data.operationsReady && billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
                 }
                 if (state.data.paymentPending) {
                     Text("An operation needs confirmation. Refresh its status before starting another.")
@@ -250,10 +250,11 @@ private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () ->
                 if (selected.isNotEmpty()) BrandActionButton("remove selected images", { releaseImages(); draft["selected"] = arrayListOf<String>() }, enabled = !state.busy)
                 Text("Technical diagnostics are unavailable for Android.")
                 OperationError(pickerError)
-                BrandActionButton("send to support", { model.perform(Command.Support(id, subject.trim(), description.trim(), email.trim(), selected.size, selected.toList())) }, Modifier.testTag("live-support-send"), enabled = subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
+                BrandActionButton("send to support", { model.perform(Command.Support(id, subject.trim(), description.trim(), email.trim(), selected.size, selected.toList())) }, Modifier.testTag("live-support-send"), enabled = state.data.operationsReady && subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
             }
             OperationError(state.error)
             OperationError(state.loads[Area.SUPPORT]?.error)
+            if (!state.data.operationsReady) BrandActionButton("retry secure operation recovery", { model.load(Area.SUPPORT) }, Modifier.testTag("live-recover-journal"), enabled = !state.busy)
             BrandActionButton("done", close)
         }
     }

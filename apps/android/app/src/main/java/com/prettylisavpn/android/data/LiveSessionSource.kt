@@ -22,6 +22,7 @@ class LiveSessionSource(
     override val enabled = true
     override val fixture = false
     private val mutex = Mutex()
+    private var journalReady = accounts == null
     private var requestedEmail: String? = null
     private var owner = ""
     private var snapshot = Snapshot()
@@ -29,7 +30,7 @@ class LiveSessionSource(
     override val initial: Snapshot get() {
         val p = sessions.profile ?: return Snapshot().also { snapshot = it; owner = "" }
         if (owner != p.id && p.id.isNotEmpty()) { snapshot = Snapshot(); owner = p.id }
-        return snapshot.copy(signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices)
+        return snapshot.copy(operationsReady = journalReady, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices)
     }
     private fun api() = accounts ?: throw SourceFailure("This feature is not connected yet.")
     private suspend fun disk(block: () -> Unit) {
@@ -38,10 +39,12 @@ class LiveSessionSource(
     private suspend fun save(value: AccountJournal) { disk { journalStore.write(value) }; journal = value }
     private suspend fun restoreJournal() {
         if (accounts == null) return
+        journalReady = false
         val id = sessions.profile?.id ?: return
         var stored: AccountJournal? = null; disk { stored = journalStore.read() }
         if (stored != null && stored!!.owner != id) disk { journalStore.clear() }
         journal = stored?.takeIf { it.owner == id } ?: AccountJournal(id)
+        journalReady = true
         projectJournal()
     }
     private fun projectJournal() {
@@ -56,8 +59,8 @@ class LiveSessionSource(
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
             Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
             Area.MESSAGES -> snapshot = initial.copy(messages = sessions.request { api().messages(it) })
-            Area.BILLING -> refreshBilling()
-            Area.SUPPORT -> recoverSupport(false)
+            Area.BILLING -> { if (!journalReady) restoreJournal(); refreshBilling() }
+            Area.SUPPORT -> { if (!journalReady) restoreJournal(); recoverSupport(false) }
             else -> throw SourceFailure("This feature is not connected yet.")
         }
         initial
@@ -80,6 +83,10 @@ class LiveSessionSource(
         }
     }
     override suspend fun execute(command: Command): Snapshot = mutex.withLock {
+        if (command is Command.Payment || command is Command.Support || command == Command.NewSupport || command == Command.SupportStatus || command == Command.ConfirmPayment) {
+            if (!journalReady) restoreJournal()
+            if (!journalReady) throw SourceFailure("Saved operations are unavailable. Restore secure storage before starting a new request.")
+        }
         when (command) {
             is Command.RequestOtp -> { sessions.requestOtp(command.email); requestedEmail = command.email }
             is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal() }

@@ -34,6 +34,9 @@ SessionCoordinator сериализует Bearer/refresh и authenticated API; L
 Общие 401 после истечения bearer допускают один bounded refresh; terminal auth errors
 очищают сессию. Ошибки отображаются по закрытым code mappings, без сырых HTTP bodies.
 
+Если encrypted journal недоступен или повреждён, новые support/payment POST запрещены
+до успешного восстановления; UI предлагает повтор secure recovery.
+
 AccountJournal — AES-256-GCM, отдельный AndroidKeyStore alias, AtomicFile в
 noBackupFilesDir. account user UUID ограничивает восстановление: записи другого
 аккаунта удаляются. Logout очищает journal. Поддержка сохраняет immutable UUID,
