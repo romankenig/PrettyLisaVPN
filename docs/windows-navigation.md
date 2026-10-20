@@ -340,3 +340,10 @@ Windows 0.12.0 остаётся без изменений; его палитра
 карточки и отдельный экран локальной формы заменяют sidebar/desktop popup.
 Это не добавляет Windows routes/API и не подтверждает Android auth/VPN интеграцию.
 См. [Android design](android-design.md) и [архитектуру](android-architecture.md).
+
+
+Android 0.6.0 переносит выбор шести языков в правый верхний угол общей мобильной
+шапки; auth/OTP и экраны аккаунта используют одну шапку с логотипом и версиями.
+Смена языка не создаёт новый маршрут и не повторяет HTTP-операции. Resend/change
+email — текстовые действия над подтверждением OTP. Windows-маршруты и backend
+не меняются; детали: [android-language-ui.md](android-language-ui.md).

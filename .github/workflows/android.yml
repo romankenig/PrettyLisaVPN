@@ -39,6 +39,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Check language catalogs
+        run: python3 scripts/check-localization.py
       - name: Build current checkout and instrumented tests; lint
         run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
       - name: Verify debug adapter is absent from release

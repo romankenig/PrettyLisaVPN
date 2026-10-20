@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +43,15 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.prettylisavpn.android.R
+
+/** Secondary OTP actions retain a 48dp touch target without a filled button surface. */
+@Composable
+internal fun OtpLink(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    TextButton(onClick = onClick, enabled = enabled, modifier = modifier.sizeIn(minHeight = 48.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = Brand.Scorpion, disabledContentColor = Brand.DustyGray)) {
+        Text(label, style = MaterialTheme.typography.bodySmall)
+    }
+}
 
 @Composable
 fun BrandCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {

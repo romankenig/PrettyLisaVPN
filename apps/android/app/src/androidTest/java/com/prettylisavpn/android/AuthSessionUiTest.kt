@@ -99,7 +99,7 @@ class AuthSessionUiTest {
         compose.onNodeWithTag("test-banner").assertDoesNotExist()
         compose.onNodeWithText("connect VPN · unavailable").assertIsNotEnabled()
         compose.activityRule.scenario.recreate(); waitFor("live-account")
-        compose.onNodeWithTag("live-banner").assertIsDisplayed()
+        compose.onNodeWithTag("component-versions").assertIsDisplayed()
         screenshot("restored-account")
     }
     @Test fun offlineRestoreIsRetryable() {

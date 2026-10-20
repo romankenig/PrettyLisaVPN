@@ -62,6 +62,16 @@ assert re.search(r'OK \(5 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 AUTH_UI_CHECK
 
+# Shared header, six locales and the real monotonic OTP cooldown; all APIs are synthetic.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.PresentationUiTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/presentation-ui-instrumentation.txt
+python3 - <<'PRESENTATION_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/presentation-ui-instrumentation.txt').read_text()
+assert re.search(r'OK \(3 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+PRESENTATION_CHECK
+
 # Two independent Android processes prove encrypted state survives force-stop.
 for stage in Seed Check; do
   adb shell am force-stop "$package"

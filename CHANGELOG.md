@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Android — 0.6.0 / Windows и backend unchanged
+
+- Добавлен выбор Chinese/English/French/German/Russian/Spanish с флагами и обоими
+  названиями языка в правом верхнем углу общей шапки. Ручной выбор сохраняется;
+  без него English, для подтверждённой RU-локации до VPN — Russian.
+- Общая шапка на auth/OTP и остальных экранах: исходный знак, PrettyLisaVPN,
+  frontend BuildConfig.VERSION_NAME и фактическая backend-версия GET /version
+  либо локализованное «недоступна». Прежний development banner удалён.
+- OTP resend/change email оформлены вторичными текстовыми ссылками над sign in;
+  30-секундный монотонный cooldown сохранён без сброса при смене языка.
+- Android 0.5.0/code5 → 0.6.0/code6. Контракты и приёмка:
+  [docs/android-language-ui.md](docs/android-language-ui.md); SHA/run/artifacts — в task PR.
+
 ### Android — 0.5.0 / Windows и backend unchanged
 
 - Подключены profile/devices/messages/subscription/support API и мобильная навигация.
