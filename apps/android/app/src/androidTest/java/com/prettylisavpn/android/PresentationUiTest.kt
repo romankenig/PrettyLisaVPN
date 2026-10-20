@@ -95,7 +95,7 @@ class PresentationUiTest {
             compose.onNodeWithText(localized.getString(R.string.ui_email)).assertExists()
             val english = compose.onNodeWithTag("language-english-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
             val native = compose.onNodeWithTag("language-native-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
-            assertEquals(english.center.x.value, native.center.x.value, 1f)
+            assertEquals((english.left.value + english.right.value) / 2, (native.left.value + native.right.value) / 2, 1f)
             assertTrue(english.bottom <= native.top)
             compose.onNodeWithTag("header-mark").assertWidthIsAtLeast(androidx.compose.ui.unit.Dp(44f))
             compose.onNodeWithTag("component-versions").assertTextContains(BuildConfig.VERSION_NAME, substring = true)
