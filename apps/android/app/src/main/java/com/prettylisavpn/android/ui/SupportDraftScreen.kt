@@ -51,9 +51,9 @@ internal fun SupportDraftScreen(state: SavedStateHandle, model: ScreenModel, onB
                 BrandActionButton("done", onBack, Modifier.testTag("support-done"))
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    BrandTextField(subject, { state["subject"] = it.take(120) }, stringResource(R.string.subject), Modifier.testTag("support-subject"), keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next))
-                    BrandTextField(description, { state["description"] = it.take(4000) }, stringResource(R.string.description), Modifier.testTag("support-description"), singleLine = false, minLines = 3, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences))
-                    BrandTextField(email, { state["email"] = it.take(254) }, stringResource(R.string.reply_email), Modifier.testTag("support-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done), error = if (invalidEmail) stringResource(R.string.invalid_email) else null)
+                    BrandTextField(subject, { state["subject"] = it.take(120) }, stringResource(R.string.subject), Modifier.testTag("support-subject"), keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next), enabled = !ui.busy)
+                    BrandTextField(description, { state["description"] = it.take(4000) }, stringResource(R.string.description), Modifier.testTag("support-description"), singleLine = false, minLines = 3, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), enabled = !ui.busy)
+                    BrandTextField(email, { state["email"] = it.take(254) }, stringResource(R.string.reply_email), Modifier.testTag("support-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done), error = if (invalidEmail) stringResource(R.string.invalid_email) else null, enabled = !ui.busy)
                 }
                 Text("Synthetic screenshots: $attachments / 3. Each is a 1 KB sample; no file picker or private file access.")
                 BrandActionButton("add test screenshot", { state["attachments"] = attachments + 1 }, Modifier.testTag("support-attach"), enabled = attachments < 3 && !ui.busy)

@@ -59,12 +59,15 @@ class ScreenFlowTest {
         click("tab_SETTINGS"); click("logout"); click("confirm-dialog"); idle(); waitFor("screen_LOGIN")
     }
     @Test fun authValidationBackAndRecreationClearOtp() {
+        scenario(Scenario.SLOW)
         signOut()
         click("auth-submit")
         compose.onNodeWithText("Enter a valid email.").assertExists()
         compose.onNodeWithTag("login-email").performTextInput("test@example.invalid")
         hideKeyboard(); click("auth-submit")
         compose.onNodeWithTag("auth-submit").assertIsNotEnabled()
+        compose.onNodeWithTag("login-email").assertIsNotEnabled()
+        screenshot("auth-loading")
         waitFor("screen_OTP")
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
         compose.onNodeWithTag("otp").performTextInput("000000")
@@ -74,6 +77,7 @@ class ScreenFlowTest {
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("otp").assertTextEquals("")
         compose.onNodeWithTag("otp-resend").assertIsNotEnabled()
+        hideKeyboard()
         back(); waitFor("screen_LOGIN")
         compose.onNodeWithTag("login-email").assertTextEquals("test@example.invalid")
         click("auth-submit"); waitFor("screen_OTP")
@@ -154,6 +158,7 @@ class ScreenFlowTest {
         passed = true
     }
     @Test fun supportDraftBackFailureReceiptAndAttachmentLimit() {
+        scenario(Scenario.SLOW)
         click("tab_ABOUT"); click("open-support")
         click("support-subject"); compose.onNodeWithTag("support-subject").performTextInput("Test issue")
         compose.onNodeWithTag("support-description").performScrollTo().performTextInput("Synthetic description")
@@ -164,7 +169,9 @@ class ScreenFlowTest {
         back(); compose.onNodeWithTag("confirmation-dialog").assertExists(); back()
         compose.onNodeWithTag("support-subject").assertTextEquals("Test issue")
         scenario(Scenario.FAIL_NEXT)
-        click("support-send"); idle(); compose.onNodeWithTag("operation-error").assertExists()
+        click("support-send")
+        compose.onNodeWithTag("support-email").assertIsNotEnabled()
+        idle(); compose.onNodeWithTag("operation-error").assertExists()
         click("support-send"); idle(); waitFor("support-receipt")
         screenshot("support-receipt")
         click("support-status"); idle()
@@ -205,6 +212,7 @@ class ScreenFlowTest {
         val before = compose.activity.screenModel.state.value.data.paidUntil
         click("open-payment"); click("simulate-payment")
         compose.onNodeWithTag("simulate-payment").assertIsNotEnabled()
+        compose.onNodeWithTag("currency-USD").assertIsNotEnabled()
         back(); waitFor("screen_SUBSCRIPTION")
         idle()
         compose.onNodeWithTag("screen_SUBSCRIPTION").assertIsDisplayed()

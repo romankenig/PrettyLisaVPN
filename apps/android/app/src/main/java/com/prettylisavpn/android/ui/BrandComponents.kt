@@ -100,6 +100,7 @@ fun BrandTextField(
     minLines: Int = 1,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     error: String? = null,
+    enabled: Boolean = true,
 ) {
     val bringIntoView = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
@@ -118,6 +119,7 @@ fun BrandTextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
                 .semantics { contentDescription = label },
             label = null,
