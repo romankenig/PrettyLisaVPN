@@ -1,5 +1,9 @@
 # Android: требования локализации после Windows 0.12.0
 
+> Текущее продолжение: Android 0.4.0 подключает auth/session development API.
+> См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
+> в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.
+
 Статус: **план следующего UI-этапа, не реализованная Android-функция**.
 Android 0.3.0/code 3 реализует [экраны на fixtures](android-fixture-screens.md)
 с English base и без выбора языка/гео. Следующая рекомендуемая задача локализации

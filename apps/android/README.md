@@ -1,21 +1,18 @@
 # PrettyLisaVPN для Android
 
-Android **0.3.0 / versionCode 3** — экраны на изолированном тестовом источнике.
-Эталон Windows **0.12.0**, develop `41feac6`; backend0.10.0/schema0026 unchanged.
-Версии платформ независимы. [Карта экранов и ограничения](../../docs/android-fixture-screens.md).
+Android **0.4.0 / versionCode 4** — auth/session API существующего development-backend.
+Windows 0.12.0 и backend 0.10.0/schema0026 unchanged. Подробности:
+[auth/session, безопасность и приёмка](../../docs/android-auth-session.md).
 
-Debug стартует с синтетическим Premium-аккаунтом. Через Settings → Sign out можно
-проверить вход: любой корректный email, test code **123456**; **000000** показывает
-expired. Письмо не отправляется. About → Test scenarios переключает Free/Expired/
-Platinum/Empty/Device limit/Stale/Offline/Fail next/Payment pending. Это не development API.
+Обычный debug/release запускает email OTP, восстанавливает защищённую сессию,
+показывает профиль из /me и позволяет выйти. Continue/Resend отправляет настоящее
+письмо через development API; автоматического запроса нет. VPN, платежи, поддержка
+и управление устройствами в этом режиме недоступны. Реального туннеля нет.
 
-Постоянный **TEST DATA · NO VPN TUNNEL**; кнопка **simulate connection** не создаёт
-VPN, не меняет IP/маршруты и не защищает трафик. Платежи, привязка карты, отправка
-поддержки и прикрепление скриншотов исключительно симулируются, без сети/личных файлов.
-Source из src/debug не включается в release: там unavailable screen, пока не создан
-реальный адаптер. В main manifest нет network/VPN permissions. После process death
-fixtures сбрасываются; Activity recreation сохраняет навигацию/черновик/операцию,
-но OTP не сохраняется. English base; шесть языков — отдельная задача 0.4.0.
+Прежние [тестовые экраны](../../docs/android-fixture-screens.md) остались в src/debug
+и включаются instrumentation runner только для автоматической проверки UI. Их данные
+не смешиваются с реальным аккаунтом. Release не содержит FixtureSource. INTERNET
+разрешён для HTTPS API; cleartext/backup запрещены. Шесть языков — следующая задача.
 
 ## Сборка и CI
 

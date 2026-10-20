@@ -1,5 +1,9 @@
 # Текущее состояние PrettyLisaVPN
 
+> Android 0.4.0/code4: [auth/session development API](android-auth-session.md), Keystore,
+> restore/rotation/logout; live account shell без fixtures. VPN и другие интеграции пока
+> недоступны. Windows/backend unchanged; проверенные SHA/run/artifacts — в task PR.
+
 > Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
 > Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
 > English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.

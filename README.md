@@ -51,7 +51,7 @@ PrettyLisaVPN — проект коммерческого VPN-сервиса д�
 apps/
   windows/           Windows-клиент: Tauri 2, React, Rust, API/native adapters
   desktop/           Заготовка остальных desktop-клиентов
-  android/           Kotlin/Compose Android 0.3.0: debug-only fixture screens и native CI
+  android/           Kotlin/Compose Android 0.4.0: auth/session API, Keystore и native CI
   ios/               Заготовка клиента iOS
   android-tv/        Заготовка клиента Android TV
   chrome-extension/  Заготовка браузерного прокси-клиента
@@ -125,7 +125,7 @@ docs/                Инструкции настройки и эксплуат
 
 ## Android-клиент
 
-[Android 0.3.0](apps/android/README.md) — Kotlin/Jetpack Compose экраны на
+[Android 0.4.0](apps/android/README.md) — auth/session API и отдельные тестовые экраны на
 изолированном debug-only источнике: вход/OTP, Home/countries, devices, subscription,
 messages и support. Постоянная маркировка TEST DATA; никакого настоящего VPN/API,
 OTP-письма, платежа или отправки поддержки. Release остаётся unavailable.
@@ -133,3 +133,5 @@ OTP-письма, платежа или отправки поддержки. Rel
 [дизайн](docs/android-design.md), [архитектура](docs/android-architecture.md).
 Шесть языков остаются [отдельной задачей](docs/android-localization.md).
 Точные SHA/артефакты/результаты фиксируются в task PR.
+
+Android auth/session 0.4.0: [реализация, защищённое хранение и ограничения](docs/android-auth-session.md).

@@ -1,6 +1,6 @@
 package com.prettylisavpn.android.data
 
-/** UI boundary only. No API tokens, Android VPN runtime, sockets or payment redirects. */
+/** UI boundary. Credentials stay inside the auth coordinator, never in a Snapshot. */
 enum class Area { SESSION, HOME, COUNTRIES, LOCATION, DEVICES, BILLING, MESSAGES, SUPPORT }
 enum class Scenario { STANDARD, SLOW, FREE, EXPIRED, PLATINUM, EMPTY, DEVICE_LIMIT, STALE, OFFLINE, FAIL_NEXT, PAYMENT_PENDING }
 data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true)
@@ -8,6 +8,7 @@ data class Country(val code: String, val name: String, val quality: String, val 
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
 data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?)
 data class Snapshot(
+    val activeDeviceCount: Int = 0,
     val signedIn: Boolean = false,
     val email: String = "",
     val plan: String = "Free",
@@ -29,6 +30,7 @@ sealed interface Command {
     data class RequestOtp(val email: String) : Command
     data class VerifyOtp(val code: String) : Command
     data object Logout : Command
+    data object ForgetLocalSession : Command
     data class SelectCountry(val code: String) : Command
     data object ToggleConnection : Command
     data class Revoke(val id: String) : Command
@@ -40,6 +42,8 @@ sealed interface Command {
 }
 class SourceFailure(message: String) : Exception(message)
 interface ScreenSource {
+    val recoveryRequired: Boolean get() = false
+    val fixture: Boolean get() = true
     val enabled: Boolean
     val initial: Snapshot
     suspend fun read(area: Area): Snapshot

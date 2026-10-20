@@ -1,5 +1,9 @@
 # Android: последовательный план переноса
 
+> Текущее продолжение: Android 0.4.0 подключает auth/session development API.
+> См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
+> в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.
+
 Основа — [архитектура Kotlin/Compose](android-architecture.md) и Windows **0.12.0**
 на develop `78f59991761b93bd176326c901829ee49cbdd9a4` после PR #21.
 Первоначальный аудит Windows 0.11.1 на `69ab8d1` сохранён как история;

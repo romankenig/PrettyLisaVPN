@@ -1,5 +1,11 @@
 # Windows: экраны, окна и переходы
 
+Android 0.4.0: обычный запуск использует OTP → проверка кода → /me account shell;
+Back из OTP возвращает email, успешный вход/restore убирает auth UI. Revoke/expiry
+переводят в sign-in; offline restore предлагает retry/явное удаление local credentials.
+Logout confirmation закрывается только после серверного результата. Fixture-переходы
+изолированы в instrumentation. Windows не менялся. См. [Android auth/session](android-auth-session.md).
+
 > Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
 > Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
 > English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.

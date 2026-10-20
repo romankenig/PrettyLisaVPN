@@ -1,5 +1,9 @@
 # Android: архитектура Kotlin и Jetpack Compose
 
+> Текущее продолжение: Android 0.4.0 подключает auth/session development API.
+> См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
+> в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.
+
 > Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
 > Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
 > English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.

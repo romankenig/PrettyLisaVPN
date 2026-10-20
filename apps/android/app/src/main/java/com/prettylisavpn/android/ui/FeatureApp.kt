@@ -241,7 +241,7 @@ internal fun LoadedPage(model: ScreenModel, area: Area, tag: String, onBack: (()
 }
 
 @Composable
-private fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back: () -> Unit) {
+internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back: () -> Unit) {
     val state by model.state.collectAsState()
     var email by remember { mutableStateOf(model.emailDraft) }
     var code by remember { mutableStateOf("") } // Never saved, including Activity recreation.
@@ -252,11 +252,13 @@ private fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back:
     PhoneScreen(if (otp) "screen_OTP" else "screen_LOGIN") {
         ScreenHeading(if (otp) "enter the code" else "sign in by email", if (otp) back else null)
         BrandCard {
-            Text(if (otp) "Test code for ${model.emailDraft}: 123456. Nothing was sent." else "Use any valid test email. No real OTP email is sent.")
+            Text(if (model.fixture) {
+                if (otp) "Test code for ${model.emailDraft}: 123456. Nothing was sent." else "Use any valid test email. No real OTP email is sent."
+            } else if (otp) "Enter the code sent to ${model.emailDraft}." else "We will email you a one-time sign-in code.")
             if (otp) BrandTextField(code, { code = it.filter(Char::isDigit).take(6); validation = null }, "6-digit code", Modifier.testTag("otp"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), error = validation, enabled = !state.busy)
             else BrandTextField(email, { email = it.take(254); model.emailDraft = email; validation = null }, "Email", Modifier.testTag("login-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), error = validation, enabled = !state.busy)
             OperationError(state.error)
-            BrandActionButton(if (otp) "sign in to test account" else "continue", {
+            BrandActionButton(if (otp) { if (model.fixture) "sign in to test account" else "sign in" } else "continue", {
                 if (otp) {
                     if (code.length != 6) validation = "Enter all 6 digits."
                     else model.perform(Command.VerifyOtp(code)) { code = "" }
@@ -267,10 +269,10 @@ private fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back:
                 }
             }, Modifier.testTag("auth-submit"), loading = state.busy)
             if (otp) {
-                BrandActionButton(if (remaining > 0) "resend in ${remaining}s" else "resend test code", {
+                BrandActionButton(if (remaining > 0) "resend in ${remaining}s" else if (model.fixture) "resend test code" else "resend code", {
                     code = ""; model.perform(Command.RequestOtp(model.emailDraft))
                 }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
-                Text("123456: success · 000000: expired · other codes: invalid", style = MaterialTheme.typography.bodySmall)
+                if (model.fixture) Text("123456: success · 000000: expired · other codes: invalid", style = MaterialTheme.typography.bodySmall)
                 BrandActionButton("change email", back, Modifier.testTag("change-email"), enabled = !state.busy)
             }
         }

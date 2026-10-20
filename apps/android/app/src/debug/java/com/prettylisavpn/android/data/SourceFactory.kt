@@ -5,7 +5,10 @@ import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.delay
 
 object SourceFactory {
-    fun create(): ScreenSource = FixtureSource()
+    var useFixturesForTests = false
+    var sourceForTests: ScreenSource? = null
+    fun create(context: android.content.Context): ScreenSource =
+        sourceForTests ?: if (useFixturesForTests) FixtureSource() else LiveSessionFactory.create(context)
 }
 
 /** In-memory, deterministic and debug-only. Never creates VPN/auth/payment/support side effects. */
@@ -51,7 +54,7 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
                 snapshot = snapshot.copy(signedIn = true, email = requestedEmail!!, messages = standard().messages)
                 requestedEmail = null
             }
-            Command.Logout -> {
+            Command.ForgetLocalSession, Command.Logout -> {
                 snapshot = standard().copy(signedIn = false, email = "", messages = emptyList())
                 requestedEmail = null
                 pending = null

@@ -9,5 +9,7 @@ for variant, filename in (("debug", "app-debug.apk"), ("release", "app-release-u
     present = b"Lcom/prettylisavpn/android/data/FixtureSource;" in dex
     assert present == (variant == "debug"), (variant, present)
 manifest = ET.parse("app/src/main/AndroidManifest.xml")
-assert not manifest.findall("uses-permission"), "Offline UI must not request network or VPN permissions"
-print("Debug fixture present; release fixture absent; main manifest has no network/VPN permissions")
+permissions = {p.attrib["{http://schemas.android.com/apk/res/android}name"] for p in manifest.findall("uses-permission")}
+assert permissions == {"android.permission.INTERNET"}, permissions
+assert manifest.find("application").attrib["{http://schemas.android.com/apk/res/android}usesCleartextTraffic"] == "false"
+print("Debug fixture present; release fixture absent; main permits HTTPS auth, no VPN permission")
