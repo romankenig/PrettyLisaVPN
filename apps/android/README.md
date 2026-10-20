@@ -1,87 +1,44 @@
 # PrettyLisaVPN для Android
 
-Android **0.2.0**, versionCode **2** — мобильный дизайн поверх первого каркаса 0.1.0.
-Текущий Windows-эталон — **0.12.0** (develop `78f5999`, PR #21).
-Backend **0.10.0**, schema **0026** не меняются; версии платформ независимы.
+Android **0.3.0 / versionCode 3** — экраны на изолированном тестовом источнике.
+Эталон Windows **0.12.0**, develop `41feac6`; backend0.10.0/schema0026 unchanged.
+Версии платформ независимы. [Карта экранов и ограничения](../../docs/android-fixture-screens.md).
 
-Реализован нативный Kotlin/Jetpack Compose UI: одна Activity, три вкладки
-«главная / настройки / о приложении», системный Back и восстановление выбранной
-вкладки после пересоздания Activity. Фирменные цвета, Rubik/OFL и контуры логотипа
-перенесены из Windows; учитываются системные insets и прокрутка небольших экранов.
-Это UI-этап: API/auth, VPN runtime, платежи и поддержка ещё не подключены.
-Кнопка подключения недоступна; приложение не запрашивает VPN-разрешение и не
-отправляет сетевые запросы. Backend-версия в UI — «недоступна».
+Debug стартует с синтетическим Premium-аккаунтом. Через Settings → Sign out можно
+проверить вход: любой корректный email, test code **123456**; **000000** показывает
+expired. Письмо не отправляется. About → Test scenarios переключает Free/Expired/
+Platinum/Empty/Device limit/Stale/Offline/Fail next/Payment pending. Это не development API.
 
-## Что изменилось в требованиях после Windows 0.12.0
+Постоянный **TEST DATA · NO VPN TUNNEL**; кнопка **simulate connection** не создаёт
+VPN, не меняет IP/маршруты и не защищает трафик. Платежи, привязка карты, отправка
+поддержки и прикрепление скриншотов исключительно симулируются, без сети/личных файлов.
+Source из src/debug не включается в release: там unavailable screen, пока не создан
+реальный адаптер. В main manifest нет network/VPN permissions. После process death
+fixtures сбрасываются; Activity recreation сохраняет навигацию/черновик/операцию,
+но OTP не сохраняется. English base; шесть языков — отдельная задача 0.4.0.
 
-Android 0.2.0 остаётся без выбора языка: его `values/strings.xml` содержит русские
-тексты. Шесть языков, English default и RU auto-origin ещё **не реализованы**
-на Android. Следующий UI-этап должен заложить resources/locale policy до расширения
-экранов: [требования локализации](../../docs/android-localization.md),
-[обновлённый порядок и промпт](../../docs/android-porting-plan.md).
-Текущее обновление добавляет компоненты карточек/кнопок/полей, мобильные экраны
-и локальную форму поддержки без отправки. [Дизайн и матрица проверок](../../docs/android-design.md).
-API/VPN поведение не изменяется; следующая локализация планируется отдельно.
+## Сборка и CI
 
-## Сборка и запуск
-
-Требуются JDK **17**, Android SDK platform **36** и лицензии Android SDK.
-Открыть эту директорию в Android Studio либо указать `ANDROID_HOME` / `sdk.dir`
-в локальном `local.properties` (не коммитить).
+JDK17, Android SDK36, minSdk26, targetSdk36, Gradle8.13/AGP8.11.1/Kotlin2.1.21.
+Pinned зависимости — [libs.versions.toml](gradle/libs.versions.toml).
 
 ```bash
 cd apps/android
-./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
+python3 scripts/check-source-isolation.py
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -W -n com.prettylisavpn.android.dev/com.prettylisavpn.android.MainActivity
-./gradlew :app:connectedDebugAndroidTest
 ```
 
-Windows: те же Gradle tasks через `gradlew.bat`. Wrapper JAR и distribution checksum
-зафиксированы для Gradle **8.13**; AGP **8.11.1**, Kotlin/Compose compiler **2.1.21**,
-Compose BOM **2025.05.01**, Navigation **2.9.0**. Версии — в
-[libs.versions.toml](gradle/libs.versions.toml). minSdk **26**, compile/targetSdk **36**.
-Основной источник Android-версии — [app/build.gradle.kts](app/build.gradle.kts):
-`versionName=0.2.0`, `versionCode=2`. Windows package.json не используется.
-Debug applicationId — `com.prettylisavpn.android.dev`; подпись локальным debug key.
-Release signing, Play Store и auto-update в этот этап не входят.
+[Android debug workflow](../../.github/workflows/android.yml) собирает текущий SHA,
+проверяет debug/release isolation, JVM tests и lint. Тот же debug APK устанавливается
+на API26/35/36: 3 navigation + 9 flow tests + 3 design tests ×6конфигураций =
+30 instrumented tests/API. Сохраняются native PNG baseline/flows/design, JSON
+viewport/fontScale/IME/source и runtime/ANR diagnostics. Source SHA, PR merge SHA,
+run/attempt и APK SHA-256 — в build-identity.json; после завершения — в task PR.
+Артефакты APK/native evidence хранятся14дней. Проверки не доказывают настоящий VPN.
 
-## CI и происхождение APK
-
-[Android debug workflow](../../.github/workflows/android.yml) запускается при
-push/PR с изменением Android и вручную. Сначала собирает APK/тестовый APK текущего
-checkout и запускает lint (API/resources/security warnings — errors; онлайн-советы
-об обновлении pinned toolchain/dependencies остаются informational); затем устанавливает **тот же APK** на x86_64 эмуляторы
-Android **8.0 (API 26)**, **15 (API 35)** и **16 (API 36)**. Три базовых instrumented-теста проверяют вкладки,
-недоступность подключения, повторные переходы/Back и Activity recreation.
-Затем DesignAcceptanceTest проверяет шесть конфигураций 320/360/412dp,
-fontScale 1.0/1.3/2.0 и landscape: форму с настоящей IME, insets,
-валидацию/recreation и состояния компонентов. Всего 21 тест на API.
-После тестов выполняется отдельный cold launcher start с проверкой процесса,
-resumed Activity и отсутствия AndroidRuntime crash. Нативные PNG сохраняются
-с каждого экрана и после запуска.
-
-Артефакт `PrettyLisaVPN-android-debug-<sha>-<run>-<attempt>` содержит `app-debug.apk`
-и `build-identity.json`: полный source SHA, PR head SHA, версия/code, package,
-run/attempt и SHA-256 APK. В PR-событии source SHA — временный merge commit,
-в push — точный head ветки. `BuildConfig.SOURCE_SHA` также встроен в APK и показан
-в «о приложении». Локальная сборка без `-PsourceSha=<40 hex>` помечена `local`.
-Скриншоты/запуск — отдельные `android-emulator-api26/35/36-...` артефакты; lint —
-`android-build-reports-...`. Итоговые run/attempt, проверенный HEAD и ссылки
-публикуются в PR после завершения CI, чтобы не создавать цикл новых docs-сборок.
-
-Фактические результаты эмуляторных проверок и визуального просмотра PNG — в PR.
-Описанные выше проверки считаются пройденными только для успешного CI того же SHA.
-В текущей cloud workspace SDK отсутствует и локальный сетевой proxy недоступен:
-локально выполняются проверки исходников/скриптов, Android build — на Actions.
-
-## Продолжение переноса
-
-- [Архитектура, экраны/API, дизайн и native-зависимости](../../docs/android-architecture.md).
-- [Последовательный план](../../docs/android-porting-plan.md),
-  [статус проекта](../../docs/project-status.md), [версии](../../docs/versioning.md).
-- Первый будущий VPN runtime — WireGuard IPv4 full tunnel. Ни один VPN-профиль
-  сейчас не исполняется; OpenVPN/MASQUE/legacy wrappers остаются disabled.
-- Backend поддерживает ANDROID в auth/messages, но support diagnostics принимает
-  только WINDOWS: будущий Android-адаптер отправляет `diagnostics=null`.
-- Реальные платежи отключены; ручной OTP остаётся на паузе владельца.
+Прежний [дизайн0.2.0](../../docs/android-design.md), [архитектура](../../docs/android-architecture.md),
+[план](../../docs/android-porting-plan.md), [требования локализации](../../docs/android-localization.md).
+Rubik/OFL: [лицензия](app/src/main/assets/licenses/Rubik-OFL.txt).
+Release signing/store publication/auth/API/VPN/SAF/TalkBack и device E2E — будущие задачи.

@@ -1,5 +1,11 @@
 # Windows: экраны, окна и переходы
 
+> Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
+> Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
+> English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.
+> Source/build SHA, все CI runs и native evidence — в task PR.
+
+
 Карта Windows **0.11.1** с контрактами backend **0.10.0**.
 Маршруты Windows сохранены с merge PR #5; устройства реализованы в backend 0.2.0,
 общие сообщения аккаунту — в backend 0.3.0; поддержка — в backend 0.4.0. Фактический rollout зафиксирован в PR.

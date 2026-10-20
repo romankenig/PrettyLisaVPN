@@ -26,9 +26,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -85,6 +87,7 @@ class DesignAcceptanceTest {
             InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(1_000, 5_000)
             compose.waitForIdle()
         }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("brand-logo").fetchSemanticsNodes().isNotEmpty() }
         val expected = arguments.getString("fontScale")?.toFloat()
         if (expected != null) assertEquals(expected, compose.activity.resources.configuration.fontScale, 0.02f)
     }
@@ -100,7 +103,7 @@ class DesignAcceptanceTest {
         assertNavigationInsets()
         assertTextFits()
         capture("home")
-        compose.onNodeWithTag("connect").performScrollTo().assertIsNotEnabled().assertIsDisplayed()
+        compose.onNodeWithTag("connect").performScrollTo().assertIsEnabled().assertIsDisplayed()
         for (tab in listOf("SETTINGS", "ABOUT")) {
             compose.onNodeWithTag("tab_$tab").performClick()
             compose.onNodeWithTag("screen_$tab").assertIsDisplayed()
@@ -142,9 +145,10 @@ class DesignAcceptanceTest {
             WindowInsetsControllerCompat(activity.window, activity.window.decorView).hide(WindowInsetsCompat.Type.ime())
         }
         compose.waitUntil(10_000) { !keyboardVisible() }
-        compose.onNodeWithTag("support-send").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("support-send").performScrollTo().assertIsEnabled()
         capture("support-filled")
         compose.onNodeWithTag("support-back").performScrollTo().performClick()
+        compose.onNodeWithTag("confirm-dialog").performClick()
         compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
         passed = true
     }

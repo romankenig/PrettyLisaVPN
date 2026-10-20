@@ -1,5 +1,11 @@
 # Android 0.2.0: мобильный дизайн PrettyLisaVPN
 
+> Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
+> Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
+> English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.
+> Source/build SHA, все CI runs и native evidence — в task PR.
+
+
 Исходный develop: `60fe13bfcbf6cd0e85deb85c7f5104810bf29e13`.
 Эталон оформления — Windows **0.12.0** и [общий дизайн](design-system.md).
 Android **0.1.0 / code 1 → 0.2.0 / code 2**: существенное обновление UI.

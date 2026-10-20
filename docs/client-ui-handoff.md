@@ -1,5 +1,11 @@
 # Client UI handoff
 
+> Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
+> Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
+> English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.
+> Source/build SHA, все CI runs и native evidence — в task PR.
+
+
 ## Актуальная точка продолжения — 2026-10-19
 
 Windows **0.11.1** подключён к backend **0.10.0**, schema **0026**.

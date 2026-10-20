@@ -42,6 +42,16 @@ assert re.search(r'OK \(3 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PY
 
+# Full fixture flows use the same installed APK, real Android Back and native dialogs.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest \
+  "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee evidence/flows-instrumentation.txt
+python3 - <<'FLOW_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/flows-instrumentation.txt').read_text()
+assert re.search(r'OK \(9 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+FLOW_CHECK
+
 # Use real Android configuration changes and actual keyboard/insets, not Compose previews.
 for design_case in compact small scaled-font large-font roomy landscape; do
   case "$design_case" in
