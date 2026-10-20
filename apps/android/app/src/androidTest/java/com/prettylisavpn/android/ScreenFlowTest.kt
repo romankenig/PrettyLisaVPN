@@ -197,7 +197,14 @@ class ScreenFlowTest {
         repeat(3) { click("support-attach") }
         compose.onNodeWithTag("support-attach").assertIsNotEnabled()
         hideKeyboard()
-        back(); compose.onNodeWithTag("confirmation-dialog").assertExists(); back()
+        back()
+        // A native Dialog can register before its container enters the merged tree.
+        // Inspect the container marker directly, then require real visible bounds.
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("confirmation-dialog", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("confirmation-dialog", useUnmergedTree = true).assertIsDisplayed()
+        back()
         compose.onNodeWithTag("support-subject").assertTextEquals("Test issue")
         scenario(Scenario.FAIL_NEXT)
         click("support-send")
