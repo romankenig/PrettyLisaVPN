@@ -8,7 +8,7 @@
     <string name="description">describe el problema</string>
     <string name="reply_email">correo de respuesta</string>
     <string name="invalid_email">introduce un correo válido.</string>
-    <string name="component_versions">frontend %1$s · Backend %2$s</string>
+    <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">no disponible</string>
     <string name="test_data_notice">datos de prueba · sin túnel VPN</string>
     <string name="ui_was_0"> (antes %1$s)</string>
@@ -70,7 +70,7 @@
     <string name="ui_reply_email">correo electrónico de respuesta</string>
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">revisa el precio y la moneda. Cancelar o cambiar de método conserva el período pagado. Se requiere un proveedor LIVE disponible.</string>
     <string name="ui_revision_0">revisión %1$s</string>
-    <string name="ui_simulation_active_not_a_vpn">sIMULACIÓN ACTIVA — SIN VPN</string>
+    <string name="ui_simulation_active_not_a_vpn">simulación activa — sin VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">imágenes: %1$s / 3 · PNG/JPEG/WebP · 5 MB cada una / 10 MB total</string>
     <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">escribe a soporte de PrettyLisaVPN. Solo se envían tu texto, dirección de respuesta e imágenes elegidas.</string>
     <string name="ui_signing_in_again_removes_credentials_on_this_device_only_it_does_">volver a entrar elimina las credenciales solo de este dispositivo. No confirma el cierre en el servidor.</string>
@@ -80,8 +80,8 @@
     <string name="ui_status_0">estado: %1$s</string>
     <string name="ui_subject">asunto</string>
     <string name="ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or">capturas de prueba: %1$s / 3. Cada una de 1 KB, sin acceso a archivos privados.</string>
-    <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">dATOS DE PRUEBA. Ningún correo o archivo sale del dispositivo.</string>
-    <string name="ui_test_provider_only_real_payment_actions_are_unavailable">sOLO PROVEEDOR DE PRUEBA. Pagos reales no disponibles.</string>
+    <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">datos de prueba. Ningún correo o archivo sale del dispositivo.</string>
+    <string name="ui_test_provider_only_real_payment_actions_are_unavailable">solo proveedor de prueba. Pagos reales no disponibles.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">el diagnóstico técnico no está disponible en Android.</string>
     <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">describe el problema. Las solicitudes de prueba permanecen en el dispositivo.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">código de prueba para %1$s: 123456. No se envió nada.</string>

@@ -15,10 +15,11 @@ base = read('values')
 # of formatted email, device names, API messages or other user/server content.
 proper_prefixes = ('PrettyLisaVPN', 'Android', 'WireGuard', 'VPN', 'IP:', 'ID:',
                    'UTC', 'PNG', 'JPEG', 'WebP', 'Alipay', 'WeChat', 'Mir ', 'MIR',
-                   'Premium', 'Platinum', 'Free ')
+                   'Premium', 'Platinum', 'Free')
 for folder in ('values', 'values-ru', 'values-zh', 'values-es', 'values-de', 'values-fr'):
     for key, text in read(folder).items():
         assert not text[0].isupper() or text.startswith(proper_prefixes), (folder, key, 'uppercase start')
+        assert not re.match(r'[a-zа-яà-ÿ][A-ZА-ЯÀ-Ý]{2}', text), (folder, key, 'mixed initial case')
         if folder in ('values-zh', 'values-es', 'values-fr', 'values-de'):
             assert not re.search(r'\bemail\b', text, re.I), (folder, key, 'unlocalized email')
 for language in ('ru', 'zh', 'es', 'de', 'fr'):

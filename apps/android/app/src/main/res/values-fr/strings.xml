@@ -8,7 +8,7 @@
     <string name="description">décrivez le problème</string>
     <string name="reply_email">e-mail de réponse</string>
     <string name="invalid_email">saisissez une adresse e-mail valide.</string>
-    <string name="component_versions">frontend %1$s · Backend %2$s</string>
+    <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">indisponible</string>
     <string name="test_data_notice">données de test · aucun tunnel VPN</string>
     <string name="ui_was_0"> (auparavant %1$s)</string>
@@ -81,7 +81,7 @@
     <string name="ui_subject">sujet</string>
     <string name="ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or">captures de test : %1$s / 3. 1 Ko chacune, sans accès aux fichiers privés.</string>
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">données de test. Aucun e-mail ni pièce jointe ne quitte cet appareil.</string>
-    <string name="ui_test_provider_only_real_payment_actions_are_unavailable">pRESTATAIRE DE TEST UNIQUEMENT. Paiements réels indisponibles.</string>
+    <string name="ui_test_provider_only_real_payment_actions_are_unavailable">prestataire de test uniquement. Paiements réels indisponibles.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">le diagnostic technique est indisponible sur Android.</string>
     <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">décrivez le problème. Les demandes de test restent sur cet appareil.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">code de test pour %1$s : 123456. Aucun envoi effectué.</string>

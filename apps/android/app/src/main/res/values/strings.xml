@@ -9,7 +9,7 @@
     <string name="description">describe the problem</string>
     <string name="reply_email">reply email</string>
     <string name="invalid_email">enter a valid email.</string>
-    <string name="component_versions">frontend %1$s · Backend %2$s</string>
+    <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">unavailable</string>
     <string name="test_data_notice">test data · no VPN tunnel</string>
     <string name="ui_was_0"> (was %1$s)</string>
