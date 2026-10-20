@@ -73,7 +73,7 @@ internal enum class Destination(val label: Int, val icon: ImageVector) {
     ABOUT(R.string.about, Icons.Outlined.Info),
 }
 @Composable
-fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) = FeatureApp(model)
+fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) = if (model.fixture) FeatureApp(model) else SessionApp(model)
 
 /** No fixed height: tab labels grow and wrap with the user's font size. */
 @Composable

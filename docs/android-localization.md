@@ -1,9 +1,17 @@
 # Android: требования локализации после Windows 0.12.0
 
+> Android 0.5.0/code5: [account API](android-account-api.md), profile/devices/messages/
+> subscription/support, encrypted operation recovery; DISABLED/SANDBOX payments blocked.
+> Windows/backend unchanged. Исторические описания предыдущих этапов ниже.
+
+> Текущее продолжение: Android 0.4.0 подключает auth/session development API.
+> См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
+> в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.
+
 Статус: **план следующего UI-этапа, не реализованная Android-функция**.
 Android 0.3.0/code 3 реализует [экраны на fixtures](android-fixture-screens.md)
 с English base и без выбора языка/гео. Следующая рекомендуемая задача локализации
-**0.4.0 / code 4** — отдельная реализация; шесть языков не считаются готовыми.
+**0.5.0 / code 5**, если станет следующей самостоятельной задачей; шесть языков не считаются готовыми.
 
 Эталон: Windows **0.12.0**, [PR #21](https://github.com/romankenig/PrettyLisaVPN/pull/21),
 develop `78f59991761b93bd176326c901829ee49cbdd9a4`.

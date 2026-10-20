@@ -51,7 +51,7 @@ PrettyLisaVPN — проект коммерческого VPN-сервиса д�
 apps/
   windows/           Windows-клиент: Tauri 2, React, Rust, API/native adapters
   desktop/           Заготовка остальных desktop-клиентов
-  android/           Kotlin/Compose Android 0.3.0: debug-only fixture screens и native CI
+  android/           Kotlin/Compose Android 0.5.0: account API, Keystore, operation recovery и native CI
   ios/               Заготовка клиента iOS
   android-tv/        Заготовка клиента Android TV
   chrome-extension/  Заготовка браузерного прокси-клиента
@@ -125,11 +125,10 @@ docs/                Инструкции настройки и эксплуат
 
 ## Android-клиент
 
-[Android 0.3.0](apps/android/README.md) — Kotlin/Jetpack Compose экраны на
-изолированном debug-only источнике: вход/OTP, Home/countries, devices, subscription,
-messages и support. Постоянная маркировка TEST DATA; никакого настоящего VPN/API,
-OTP-письма, платежа или отправки поддержки. Release остаётся unavailable.
-[Карта экранов/проверки](docs/android-fixture-screens.md),
-[дизайн](docs/android-design.md), [архитектура](docs/android-architecture.md).
-Шесть языков остаются [отдельной задачей](docs/android-localization.md).
-Точные SHA/артефакты/результаты фиксируются в task PR.
+[Android 0.5.0](apps/android/README.md): OTP/session, profile/devices/messages,
+subscription overview и support API, защищённое восстановление операций.
+[Контракты/ограничения](docs/android-account-api.md). Платежи DISABLED/SANDBOX недоступны;
+настоящий provider и VPN runtime не подключены. Автотесты работают без реальных писем/списаний.
+[Fixture screens](docs/android-fixture-screens.md) изолированы в instrumentation.
+[Дизайн](docs/android-design.md), [архитектура](docs/android-architecture.md),
+[будущая локализация](docs/android-localization.md). Точные SHA/артефакты/результаты — в PR.

@@ -6,6 +6,30 @@
 
 ## Unreleased
 
+### Android — 0.5.0 / Windows и backend unchanged
+
+- Подключены profile/devices/messages/subscription/support API и мобильная навигация.
+- Добавлены ACK id+revision, обновление данных после мутаций, ciphertext journal для
+  immutable support/payment retries, восстановление receipt и защита смены аккаунта.
+- Поддержка отправляет diagnostics:null и выбранные через SAF ограниченные изображения.
+- DISABLED/SANDBOX запрещают платёжные действия в UI/data layer; LIVE требует capabilities
+  и повторной проверки price revision. Реальный provider не подключался.
+- Android 0.4.0/code4 → 0.5.0/code5; ручной OTP-вход 0.4.0 подтверждён владельцем.
+  Контракты, ограничения и CI evidence: docs/android-account-api.md и task PR.
+
+
+### Android — 0.4.0 / Windows и backend unchanged
+
+- Подключены существующие OTP/refresh/me/logout API с ANDROID installation identity.
+- Refresh credentials шифруются Android Keystore AES-GCM и сохраняются атомарно без backup;
+  bearer/OTP остаются в памяти. Добавлены restore, single-flight rotation, expiry/revoke,
+  честный offline logout и защита от повторного refresh после неоднозначного сбоя.
+- Обычный launcher использует auth-only live shell; offline fixture UI изолирован в
+  instrumentation. VPN/платежи и остальные live-интеграции недоступны.
+- Android 0.3.0/code3 → 0.4.0/code4. JVM/HTTP, Keystore и native UI проверки описаны в
+  docs/android-auth-session.md; фактические SHA/run/artifacts — в task PR.
+
+
 ### Android — 0.3.0 / Windows и backend unchanged
 
 - Перенесены auth/OTP, Home/countries/details/location, settings/devices/subscription,

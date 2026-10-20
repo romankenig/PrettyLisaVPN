@@ -1,13 +1,22 @@
 package com.prettylisavpn.android.data
 
-/** UI boundary only. No API tokens, Android VPN runtime, sockets or payment redirects. */
+/** UI boundary. Credentials stay inside the auth coordinator, never in a Snapshot. */
 enum class Area { SESSION, HOME, COUNTRIES, LOCATION, DEVICES, BILLING, MESSAGES, SUPPORT }
 enum class Scenario { STANDARD, SLOW, FREE, EXPIRED, PLATINUM, EMPTY, DEVICE_LIMIT, STALE, OFFLINE, FAIL_NEXT, PAYMENT_PENDING }
 data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true)
 data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
-data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?)
+data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood")
 data class Snapshot(
+    val operationsReady: Boolean = true,
+    val billing: BillingOverview? = null,
+    val billingRetryAvailable: Boolean = false,
+    val billingOperation: OperationReceipt? = null,
+    val supportStatus: String? = null,
+    val supportFrozen: Boolean = false,
+    val supportAwaiting: Boolean = false,
+    val refreshWarning: String? = null,
+    val activeDeviceCount: Int = 0,
     val signedIn: Boolean = false,
     val email: String = "",
     val plan: String = "Free",
@@ -29,17 +38,21 @@ sealed interface Command {
     data class RequestOtp(val email: String) : Command
     data class VerifyOtp(val code: String) : Command
     data object Logout : Command
+    data object ForgetLocalSession : Command
     data class SelectCountry(val code: String) : Command
     data object ToggleConnection : Command
     data class Revoke(val id: String) : Command
     data class Acknowledge(val id: String, val revision: Int) : Command
-    data class Payment(val id: String, val kind: String, val route: String, val currency: String) : Command
+    data class Payment(val id: String, val kind: String, val route: String, val currency: String, val expectedRevision: String? = null) : Command
     data object ConfirmPayment : Command
-    data class Support(val id: String, val subject: String, val description: String, val email: String, val attachments: Int) : Command
+    data class Support(val id: String, val subject: String, val description: String, val email: String, val attachments: Int, val uris: List<String> = emptyList()) : Command
     data object SupportStatus : Command
+    data object NewSupport : Command
 }
 class SourceFailure(message: String) : Exception(message)
 interface ScreenSource {
+    val recoveryRequired: Boolean get() = false
+    val fixture: Boolean get() = true
     val enabled: Boolean
     val initial: Snapshot
     suspend fun read(area: Area): Snapshot

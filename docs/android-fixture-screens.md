@@ -1,5 +1,9 @@
 # Android 0.3.0: экраны на изолированных данных
 
+> Текущее продолжение: Android 0.4.0 подключает auth/session development API.
+> См. [реализацию и ограничения](android-auth-session.md). Fixture UI остаётся только
+> в instrumentation; локализация ещё не выполнена, будущий номер выбирается от текущего.
+
 Самостоятельная задача: Android **0.2.0/code 2 → 0.3.0/code 3**.
 Эталон — Windows **0.12.0** на develop
 `41feac69f92828d450d99d65a634d5400922a97f` (после Android design PR #22).

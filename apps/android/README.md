@@ -1,21 +1,19 @@
 # PrettyLisaVPN для Android
 
-Android **0.3.0 / versionCode 3** — экраны на изолированном тестовом источнике.
-Эталон Windows **0.12.0**, develop `41feac6`; backend0.10.0/schema0026 unchanged.
-Версии платформ независимы. [Карта экранов и ограничения](../../docs/android-fixture-screens.md).
+Android **0.5.0 / versionCode 5** — auth/session и profile/devices/messages/billing/
+support API существующего development-backend. Windows 0.12.0 и backend 0.10.0/schema0026
+unchanged. [Контракты, восстановление и ограничения](../../docs/android-account-api.md).
 
-Debug стартует с синтетическим Premium-аккаунтом. Через Settings → Sign out можно
-проверить вход: любой корректный email, test code **123456**; **000000** показывает
-expired. Письмо не отправляется. About → Test scenarios переключает Free/Expired/
-Platinum/Empty/Device limit/Stale/Offline/Fail next/Payment pending. Это не development API.
+Обычный launcher: настоящий email OTP, защищённая сессия, данные аккаунта, отзыв устройств,
+ACK сообщений, overview подписки, обращение в поддержку и status receipt. При первом
+запуске письма/обращения не отправляются автоматически. Поддержка отправляется явной
+кнопкой Send; вложения выбираются системным SAF. Диагностика Android пока недоступна.
 
-Постоянный **TEST DATA · NO VPN TUNNEL**; кнопка **simulate connection** не создаёт
-VPN, не меняет IP/маршруты и не защищает трафик. Платежи, привязка карты, отправка
-поддержки и прикрепление скриншотов исключительно симулируются, без сети/личных файлов.
-Source из src/debug не включается в release: там unavailable screen, пока не создан
-реальный адаптер. В main manifest нет network/VPN permissions. После process death
-fixtures сбрасываются; Activity recreation сохраняет навигацию/черновик/операцию,
-но OTP не сохраняется. English base; шесть языков — отдельная задача 0.4.0.
+При DISABLED/SANDBOX платежи недоступны; действия допускаются только по LIVE capabilities
+и свежей price revision. Реальный provider не настраивался. VPN runtime ещё отсутствует.
+[Auth/session 0.4.0](../../docs/android-auth-session.md) и [fixture screens](../../docs/android-fixture-screens.md)
+сохранены как этапы. FixtureSource включается только instrumentation; release его не содержит.
+Шесть языков — будущая отдельная задача.
 
 ## Сборка и CI
 

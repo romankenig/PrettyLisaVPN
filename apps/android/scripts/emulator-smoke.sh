@@ -34,7 +34,7 @@ adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
 adb shell am instrument -w -r -e class com.prettylisavpn.android.NavigationTest \
-  "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee evidence/instrumentation.txt
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/instrumentation.txt
 python3 - <<'PY'
 import pathlib, re
 result = pathlib.Path('evidence/instrumentation.txt').read_text()
@@ -42,9 +42,55 @@ assert re.search(r'OK \(3 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PY
 
+# Exercise the actual Android Keystore and durable encrypted record on every supported API.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.KeystoreSessionTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/keystore-instrumentation.txt
+python3 - <<'KEYSTORE_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/keystore-instrumentation.txt').read_text()
+assert re.search(r'OK \(4 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+KEYSTORE_CHECK
+
+# The real auth shell uses a synthetic AuthApi port here, never a real email/account.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.AuthSessionUiTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/auth-ui-instrumentation.txt
+python3 - <<'AUTH_UI_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/auth-ui-instrumentation.txt').read_text()
+assert re.search(r'OK \(5 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+AUTH_UI_CHECK
+
+# Two independent Android processes prove encrypted state survives force-stop.
+for stage in Seed Check; do
+  adb shell am force-stop "$package"
+  adb shell am instrument -w -r -e class "com.prettylisavpn.android.KeystoreRestart$stage" \
+    "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/keystore-restart-$stage.txt"
+  python3 - "$stage" <<'RESTART_CHECK'
+import pathlib, re, sys
+result = pathlib.Path(f'evidence/keystore-restart-{sys.argv[1]}.txt').read_text()
+assert re.search(r'OK \(1 test\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+RESTART_CHECK
+done
+
+# Live account screens and encrypted operation journal use isolated API ports only.
+for spec in AccountScreensTest:6 AccountJournalTest:2; do
+  test_class=${spec%:*}; test_count=${spec#*:}
+  adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
+    "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"
+  python3 - "$test_class" "$test_count" <<'ACCOUNT_CHECK'
+import pathlib, re, sys
+result = pathlib.Path(f'evidence/{sys.argv[1]}-instrumentation.txt').read_text()
+assert re.search(rf'OK \({sys.argv[2]} tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+ACCOUNT_CHECK
+done
+
 # Full fixture flows use the same installed APK, real Android Back and native dialogs.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest \
-  "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee evidence/flows-instrumentation.txt
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/flows-instrumentation.txt
 python3 - <<'FLOW_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/flows-instrumentation.txt').read_text()
@@ -89,7 +135,7 @@ for design_case in compact small scaled-font large-font roomy landscape; do
     -e class com.prettylisavpn.android.DesignAcceptanceTest \
     -e designCase "$design_case" -e fontScale "$font_scale" \
     -e widthPx "$expected_width" -e heightPx "$expected_height" \
-    "$package.test/androidx.test.runner.AndroidJUnitRunner" | tee "evidence/$design_case/instrumentation.txt"
+    "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$design_case/instrumentation.txt"
   python3 - "$design_case" <<'PY'
 import pathlib, re, sys
 result = (pathlib.Path('evidence') / sys.argv[1] / 'instrumentation.txt').read_text()
