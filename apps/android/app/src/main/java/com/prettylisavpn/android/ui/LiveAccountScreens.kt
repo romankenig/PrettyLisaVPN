@@ -1,7 +1,7 @@
 package com.prettylisavpn.android.ui
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -148,8 +148,12 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     var currency by rememberSaveable { mutableStateOf("RUB") }
     var route by rememberSaveable { mutableStateOf("MIR") }
     var action by rememberSaveable { mutableStateOf<String?>(null) }
+    var confirmedRevision by rememberSaveable { mutableStateOf("") }
     var requestId by rememberSaveable { mutableStateOf(UUID.randomUUID().toString()) }
     val context = LocalContext.current
+    LaunchedEffect(state.data.billing?.revision, action) {
+        if (action != null && confirmedRevision != state.data.billing?.revision) action = null
+    }
     PhoneScreen("live-subscription-screen") {
         ScreenHeading("subscription", back)
         LiveLoad(model, Area.BILLING) {
@@ -172,7 +176,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                 billingActions.forEach { kind ->
                     val purchase = kind in setOf("SUBSCRIBE", "RENEW")
                     val allowedRoute = !purchase || (billing.offers.size == 1 && billing.routes.any { it.id == route && currency in it.currencies })
-                    BrandActionButton(kind.lowercase().replace('_', ' '), { model.clearError(); requestId = UUID.randomUUID().toString(); action = kind }, Modifier.testTag("live-pay-$kind"), enabled = billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
+                    BrandActionButton(kind.lowercase().replace('_', ' '), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-$kind"), enabled = billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
                 }
                 if (state.data.paymentPending) {
                     Text("An operation needs confirmation. Refresh its status before starting another.")
@@ -181,7 +185,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                 }
                 state.data.billingOperation?.let { operation ->
                     Text("Operation ${operation.id}: ${operation.status}")
-                    val url = operation.redirect?.let { value -> runCatching { Uri.parse(value).takeIf { it.scheme == "https" && it.host != null && it.userInfo == null && it.fragment == null && it.port in setOf(-1,443) } }.getOrNull() }
+                    val url = operation.redirect?.let { value -> runCatching { value.toUri().takeIf { it.scheme == "https" && it.host != null && it.userInfo == null && it.fragment == null && it.port in setOf(-1,443) } }.getOrNull() }
                     if (url != null && operation.status == "PENDING") BrandActionButton("continue with payment provider", {
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
                     }, enabled = billing.mode == "LIVE" && billing.available)
@@ -207,6 +211,8 @@ private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () ->
     var discard by rememberSaveable { mutableStateOf(false) }
     var pickerError by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    fun releaseImages() { selected.forEach { value -> runCatching { context.contentResolver.releasePersistableUriPermission(value.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION) } } }
+    LaunchedEffect(state.data.supportFrozen) { if (state.data.supportFrozen && selected.isNotEmpty()) { releaseImages(); draft["selected"] = arrayListOf<String>() } }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { values ->
         if (values.size + selected.size > 3) pickerError = "Choose at most 3 images."
         else draft["selected"] = ArrayList((selected + values.map { uri ->
@@ -236,7 +242,7 @@ private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () ->
                 BrandTextField(email, { draft["email"] = it.take(254) }, "Reply email", Modifier.testTag("live-support-email"), enabled = !state.busy)
                 Text("Selected images: ${selected.size} / 3 · PNG/JPEG/WebP · 5 MB each / 10 MB total")
                 BrandActionButton("attach screenshots", { picker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, Modifier.testTag("live-support-attach"), enabled = selected.size < 3 && !state.busy)
-                if (selected.isNotEmpty()) BrandActionButton("remove selected images", { draft["selected"] = arrayListOf<String>() }, enabled = !state.busy)
+                if (selected.isNotEmpty()) BrandActionButton("remove selected images", { releaseImages(); draft["selected"] = arrayListOf<String>() }, enabled = !state.busy)
                 Text("Technical diagnostics are unavailable for Android.")
                 OperationError(pickerError)
                 BrandActionButton("send to support", { model.perform(Command.Support(id, subject.trim(), description.trim(), email.trim(), selected.size, selected.toList())) }, Modifier.testTag("live-support-send"), enabled = subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
@@ -245,5 +251,5 @@ private fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () ->
             BrandActionButton("done", close)
         }
     }
-    if (discard) ConfirmDialog("discard draft?", "This removes the local draft. Accepted requests are not cancelled by closing this screen.", "discard", state, { discard = false }) { discard = false; back() }
+    if (discard) ConfirmDialog("discard draft?", "This removes the local draft. Sending or accepted requests are not cancelled by closing this screen.", "discard", state, { discard = false }) { releaseImages(); discard = false; back() }
 }

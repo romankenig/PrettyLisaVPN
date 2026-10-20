@@ -2,7 +2,7 @@ package com.prettylisavpn.android.data
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.net.Uri
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -12,7 +12,7 @@ suspend fun readSupportImages(context: Context, uris: List<String>): List<Suppor
         require(uris.size <= 3)
         var total = 0
         uris.map { value ->
-            val uri = Uri.parse(value); require(uri.scheme == "content")
+            val uri = value.toUri(); require(uri.scheme == "content")
             val media = context.contentResolver.getType(uri); require(media in setOf("image/png", "image/jpeg", "image/webp"))
             val stream = checkNotNull(context.contentResolver.openInputStream(uri))
             val bytes = stream.use { input ->

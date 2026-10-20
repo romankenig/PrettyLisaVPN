@@ -19,6 +19,7 @@ class AccountScreensTest {
     private val device="30000000-0000-0000-0000-000000000002"
     private val message="30000000-0000-0000-0000-000000000003"
     private var mode="DISABLED"
+    private var revision="r1"
     private var active=true
     private var ackFail=false
     private var messages=true
@@ -39,7 +40,7 @@ class AccountScreensTest {
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).single() }
         override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION"))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
-        override suspend fun overview(token:String)=BillingOverview("r1",mode,true,"PREMIUM","ACTIVE","2030-01-01T00:00:00Z",true,"Test card","RUB 100.00",routeIds.map { PaymentRoute(it,it,setOf("RUB","USD"),emptySet()) },emptyList(),billingActions,null)
+        override suspend fun overview(token:String)=BillingOverview(revision,mode,true,"PREMIUM","ACTIVE","2030-01-01T00:00:00Z",true,"Test card","RUB 100.00",routeIds.map { PaymentRoute(it,it,setOf("RUB","USD"),emptySet()) },emptyList(),billingActions,null)
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
         override suspend fun supportStatus(token:String,id:String)=receipt
@@ -87,6 +88,13 @@ class AccountScreensTest {
         mode="SANDBOX";click("live-refresh-BILLING");compose.waitUntil(10_000) { model.state.value.data.billing?.mode=="SANDBOX" }
         for(kind in billingActions)compose.onNodeWithTag("live-pay-$kind").assertIsNotEnabled()
         assertEquals(0,starts);screenshot("sandbox-read-only")
+    }
+    @Test fun changedPriceClosesConfirmationWithoutPosting() {
+        mode="LIVE";click("live-subscription");waitFor("provider-mode")
+        click("live-pay-CANCEL");waitFor("confirmation-dialog");revision="r2"
+        click("confirm-dialog");idle()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("confirmation-dialog").fetchSemanticsNodes().isEmpty() }
+        assertEquals(0,starts)
     }
     @Test fun supportAcceptedReceiptSurvivesRecreationWithoutResending() {
         click("live-support");waitFor("live-support-screen")

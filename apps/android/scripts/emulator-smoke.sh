@@ -76,7 +76,7 @@ RESTART_CHECK
 done
 
 # Live account screens and encrypted operation journal use isolated API ports only.
-for spec in AccountScreensTest:5 AccountJournalTest:2; do
+for spec in AccountScreensTest:6 AccountJournalTest:2; do
   test_class=${spec%:*}; test_count=${spec#*:}
   adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
     "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"
