@@ -102,7 +102,7 @@ class ScreenFlowTest {
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
         enter("otp", "000000")
         hideKeyboard(); click("auth-submit"); idle()
-        compose.onNodeWithText("Test code expired. Request a new code.").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.error_22)).assertExists()
         screenshot("otp-error")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("otp").assertTextEquals("")
@@ -206,7 +206,7 @@ class ScreenFlowTest {
         click("support-send"); idle(); waitFor("support-receipt")
         screenshot("support-receipt")
         click("support-status"); idle()
-        compose.onNodeWithText("Simulated delivery complete — no email was sent.").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.ui_simulated_delivery_complete_no_email_was_sent)).assertExists()
         back(); compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
         passed = true
     }
