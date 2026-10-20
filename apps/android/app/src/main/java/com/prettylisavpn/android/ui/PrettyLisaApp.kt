@@ -67,56 +67,17 @@ import androidx.navigation.compose.rememberNavController
 import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.R
 
-private enum class Destination(val label: Int, val icon: ImageVector) {
+internal enum class Destination(val label: Int, val icon: ImageVector) {
     HOME(R.string.home, Icons.Outlined.Home),
     SETTINGS(R.string.settings, Icons.Outlined.Settings),
     ABOUT(R.string.about, Icons.Outlined.Info),
 }
-private const val SUPPORT = "SUPPORT"
-
 @Composable
-fun PrettyLisaApp() {
-    val navController = rememberNavController()
-    val entry by navController.currentBackStackEntryAsState()
-    val route = entry?.destination?.route ?: Destination.HOME.name
-    Scaffold(
-        modifier = Modifier.imePadding(),
-        containerColor = Brand.PurpleHeart,
-        contentColor = Brand.Mercury,
-        contentWindowInsets = WindowInsets.safeDrawing,
-        bottomBar = {
-            if (route != SUPPORT) PhoneNavigation(route) { destination ->
-                navController.navigate(destination.name) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }
-        },
-    ) { padding ->
-        NavHost(
-            navController,
-            startDestination = Destination.HOME.name,
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-        ) {
-            composable(Destination.HOME.name) { HomeScreen() }
-            composable(Destination.SETTINGS.name) { SettingsScreen() }
-            composable(Destination.ABOUT.name) {
-                AboutScreen { navController.navigate(SUPPORT) { launchSingleTop = true } }
-            }
-            composable(SUPPORT) { supportEntry ->
-                SupportDraftScreen(supportEntry.savedStateHandle) { navController.popBackStack() }
-            }
-        }
-    }
-    BackHandler(enabled = route != Destination.HOME.name && route != SUPPORT) {
-        navController.popBackStack(Destination.HOME.name, inclusive = false)
-    }
-}
+fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) = FeatureApp(model)
 
 /** No fixed height: tab labels grow and wrap with the user's font size. */
 @Composable
-private fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
+internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
     // Three narrow columns split whole words at 200% text. Full-width rows keep labels readable.
     if (LocalDensity.current.fontScale >= 1.5f) {
         Column(
@@ -185,7 +146,7 @@ private fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
 }
 
 @Composable
-internal fun PhoneScreen(tag: String, content: @Composable () -> Unit) {
+internal fun PhoneScreen(tag: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
             modifier = Modifier.widthIn(max = 600.dp).fillMaxSize().testTag(tag)
@@ -206,102 +167,3 @@ internal fun ScreenHeading(title: String, onBack: (() -> Unit)? = null) {
     }
 }
 
-@Composable
-private fun HomeScreen() {
-    PhoneScreen("screen_HOME") {
-        Image(
-            painterResource(R.drawable.prettylisavpn_logo),
-            contentDescription = stringResource(R.string.app_name),
-            colorFilter = ColorFilter.tint(Brand.Mercury),
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().height(96.dp).testTag("brand-logo"),
-        )
-        BrandCard {
-            Text(stringResource(R.string.connection), style = MaterialTheme.typography.titleMedium)
-            Row(
-                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
-                    .background(androidx.compose.ui.graphics.Color.White)
-                    .semantics { disabled() }.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Outlined.LocationOn, null, tint = Brand.PurpleHeart)
-                Text(stringResource(R.string.autopilot), style = MaterialTheme.typography.titleSmall)
-            }
-            BrandActionButton(
-                stringResource(R.string.connect), onClick = {}, enabled = false,
-                modifier = Modifier.testTag("connect"),
-            )
-            Text(stringResource(R.string.not_connected), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.connection_unavailable), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
-        }
-        BrandCard {
-            Text(stringResource(R.string.what_to_protect), style = MaterialTheme.typography.titleMedium)
-            TrafficOption(R.string.all_traffic, R.string.all_traffic_description, true)
-            TrafficOption(R.string.selected_traffic, R.string.selected_traffic_description, false)
-            TrafficOption(R.string.except_traffic, R.string.except_traffic_description, false)
-        }
-    }
-}
-
-@Composable
-private fun TrafficOption(title: Int, subtitle: Int, active: Boolean) {
-    Row(
-        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
-            .background(if (active) Brand.Viking.copy(alpha = 0.22f) else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f))
-            .semantics { selected = active; if (!active) disabled() }.padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (active) Icon(Icons.Outlined.Check, null, tint = Brand.PurpleHeart, modifier = Modifier.size(24.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(title), style = MaterialTheme.typography.titleSmall, color = if (active) Brand.Black else Brand.Scorpion)
-            Text(stringResource(subtitle), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-            if (!active) Text(stringResource(R.string.soon), style = MaterialTheme.typography.labelSmall, color = Brand.PurpleHeart)
-        }
-    }
-}
-
-@Composable
-private fun SettingsScreen() {
-    PhoneScreen("screen_SETTINGS") {
-        ScreenHeading(stringResource(R.string.settings))
-        BrandCard {
-            UnavailableSetting(R.string.subscription)
-            HorizontalDivider(color = Brand.PurpleHeart.copy(alpha = 0.18f))
-            UnavailableSetting(R.string.devices)
-        }
-        BrandCard {
-            Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.appearance_value), style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-}
-
-@Composable
-private fun UnavailableSetting(label: Int) {
-    Column(Modifier.fillMaxWidth().semantics { disabled() }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
-        Text(stringResource(R.string.feature_unavailable), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
-    }
-}
-
-@Composable
-private fun AboutScreen(openSupport: () -> Unit) {
-    PhoneScreen("screen_ABOUT") {
-        ScreenHeading(stringResource(R.string.about))
-        BrandCard {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.android_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodyLarge)
-            Text(stringResource(R.string.source_commit, BuildConfig.SOURCE_SHA.take(12)), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("build-source"))
-            HorizontalDivider(color = Brand.PurpleHeart.copy(alpha = 0.18f))
-            Text(stringResource(R.string.backend_label), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.backend_unavailable), color = Brand.Scorpion)
-        }
-        BrandCard {
-            Text(stringResource(R.string.help), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.help_description), style = MaterialTheme.typography.bodyMedium)
-            BrandActionButton(stringResource(R.string.contact_support), openSupport, Modifier.testTag("open-support"))
-        }
-        Text(stringResource(R.string.dedication), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = 0.85f))
-    }
-}

@@ -1,5 +1,11 @@
 # Android: архитектура Kotlin и Jetpack Compose
 
+> Android 0.3.0/code3: [экраны на изолированных fixtures](android-fixture-screens.md).
+> Windows0.12.0/backend0.10.0/schema0026 unchanged. Debug-only, no real VPN/API;
+> English base, шесть языков отдельно. Историческое описание 0.2.0 ниже сохранено.
+> Source/build SHA, все CI runs и native evidence — в task PR.
+
+
 Статус: **архитектурное решение и план переноса**. Начальный каркас Android
 **0.1.0** реализован в `apps/android`; мобильный UI **0.2.0** добавляет общие
 компоненты, форму без отправки и small-screen/IME acceptance. [Дизайн](android-design.md).

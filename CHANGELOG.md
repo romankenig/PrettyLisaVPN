@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.3.0 / Windows и backend unchanged
+
+- Перенесены auth/OTP, Home/countries/details/location, settings/devices/subscription,
+  четыре payment routes, account messages и support receipt на debug-only ScreenSource.
+- Добавлены confirmation/Back, loading/error/retry/empty/stale и fault scenarios.
+  Сохранены Rubik/палитра/logo/mobile insets и прежняя design acceptance.
+- Постоянный TEST DATA / NO VPN TUNNEL; имитация не создаёт туннель, не отправляет
+  OTP/support, не списывает деньги. Release не содержит FixtureSource.
+- Android 0.2.0/code2 → 0.3.0/code3. English base; шесть языков остаются отдельной
+  задачей 0.4.0. CI и ограничения: docs/android-fixture-screens.md; evidence — task PR.
+
 ### Android — 0.2.0 / Windows 0.12.0 и backend 0.10.0 unchanged
 
 - Перенесены брендовые поверхности, исходные logo contours, Rubik variable weights,

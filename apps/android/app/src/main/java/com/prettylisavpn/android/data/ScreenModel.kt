@@ -1,0 +1,73 @@
+package com.prettylisavpn.android.data
+
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+enum class LoadPhase { IDLE, LOADING, READY, ERROR }
+data class Load(val phase: LoadPhase = LoadPhase.IDLE, val error: String? = null)
+data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap(), val busy: Boolean = false, val error: String? = null)
+
+/** Activity ViewModel owns operations, so rotation never repeats a mutation. Process death resets fixtures. */
+class ScreenModel(private val source: ScreenSource = SourceFactory.create()) : ViewModel() {
+    val enabled = source.enabled
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val mutable = MutableStateFlow(ScreenState(source.initial))
+    val state = mutable.asStateFlow()
+    private var epoch = 0
+    var emailDraft = ""
+    var resendAtMillis = 0L
+        private set
+    fun load(area: Area) {
+        if (!enabled || mutable.value.loads[area]?.phase == LoadPhase.LOADING) return
+        val owner = epoch
+        mutable.value = mutable.value.copy(loads = mutable.value.loads + (area to Load(LoadPhase.LOADING)))
+        scope.launch {
+            try {
+                val data = source.read(area)
+                if (owner == epoch) mutable.value = mutable.value.copy(data = data, loads = mutable.value.loads + (area to Load(LoadPhase.READY)))
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (owner == epoch) mutable.value = mutable.value.copy(loads = mutable.value.loads + (area to Load(LoadPhase.ERROR, failure.message ?: "Test source failed.")))
+            }
+        }
+    }
+    fun perform(command: Command, onSuccess: () -> Unit = {}) {
+        if (!enabled || mutable.value.busy) return
+        val owner = epoch
+        mutable.value = mutable.value.copy(busy = true, error = null)
+        scope.launch {
+            try {
+                val data = source.execute(command)
+                if (owner == epoch) {
+                    if (!data.signedIn && mutable.value.data.signedIn) epoch++
+                    mutable.value = mutable.value.copy(data = data, busy = false, error = null)
+                    if (command is Command.RequestOtp) resendAtMillis = android.os.SystemClock.elapsedRealtime() + 30_000
+                    onSuccess()
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (owner == epoch) mutable.value = mutable.value.copy(busy = false, error = failure.message ?: "Test operation failed.")
+            }
+        }
+    }
+    fun clearError() { mutable.value = mutable.value.copy(error = null) }
+    fun configure(scenario: Scenario) {
+        if (mutable.value.busy) return
+        if (scenario == Scenario.FAIL_NEXT) {
+            source.configure(scenario)
+            clearError()
+            return
+        }
+        epoch++
+        source.configure(scenario)
+        mutable.value = ScreenState(source.initial)
+    }
+    override fun onCleared() { scope.cancel() }
+}

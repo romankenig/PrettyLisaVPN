@@ -1,10 +1,9 @@
 # Android: требования локализации после Windows 0.12.0
 
 Статус: **план следующего UI-этапа, не реализованная Android-функция**.
-Android PR #20 с каркасом **0.1.0 / code 1** слит; UI **0.2.0 / code 2**
-описан в [android-design.md](android-design.md). Русские resources остаются без
-выбора языка, auth/API/geo/VPN runtime. Следующая рекомендуемая задача локализации
-**0.3.0 / code 3** — план отдельной реализации, не текущий выпуск.
+Android 0.3.0/code 3 реализует [экраны на fixtures](android-fixture-screens.md)
+с English base и без выбора языка/гео. Следующая рекомендуемая задача локализации
+**0.4.0 / code 4** — отдельная реализация; шесть языков не считаются готовыми.
 
 Эталон: Windows **0.12.0**, [PR #21](https://github.com/romankenig/PrettyLisaVPN/pull/21),
 develop `78f59991761b93bd176326c901829ee49cbdd9a4`.

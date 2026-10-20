@@ -2,7 +2,7 @@ package com.prettylisavpn.android
 
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.DataInputStream
 import java.io.File
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,10 +26,15 @@ class NavigationTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @Before
+    fun waitForFixtureAccount() {
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("brand-logo").fetchSemanticsNodes().isNotEmpty() }
+    }
+
     @Test
     fun launchAndAllTabs() {
         compose.onNodeWithTag("screen_HOME").assertIsDisplayed()
-        compose.onNodeWithTag("connect").assertIsNotEnabled()
+        compose.onNodeWithTag("connect").assertIsEnabled()
         screenshot("home")
         compose.onNodeWithTag("tab_SETTINGS").performClick().assertIsSelected()
         compose.onNodeWithTag("screen_SETTINGS").assertIsDisplayed()
