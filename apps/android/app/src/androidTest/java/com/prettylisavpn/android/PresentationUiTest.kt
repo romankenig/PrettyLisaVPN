@@ -134,7 +134,7 @@ class PresentationUiTest {
         assertTrue(resend < submit && change < submit)
         assertEquals("Compact links should share a row at the default font size", resend, change, 1f)
         val links = compose.onNodeWithTag("otp-links").getUnclippedBoundsInRoot()
-        assertTrue("OTP links must not reserve two button rows", links.height.value <= 56f)
+        assertTrue("OTP links must not reserve two button rows", links.bottom.value - links.top.value <= 56f)
         compose.onNodeWithTag("auth-submit").performScrollTo().assertIsDisplayed()
         screenshot("otp-ru")
         compose.waitUntil(35_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
