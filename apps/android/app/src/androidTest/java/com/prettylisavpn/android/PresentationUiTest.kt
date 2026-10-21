@@ -138,7 +138,9 @@ class PresentationUiTest {
         compose.onNodeWithTag("auth-submit").performScrollTo().assertIsDisplayed()
         screenshot("otp-ru")
         compose.waitUntil(35_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
-        compose.onNodeWithTag("otp-resend").assertIsEnabled().performClick()
+        compose.onNodeWithTag("otp-resend").assertIsEnabled()
+        screenshot("otp-ready-ru")
+        compose.onNodeWithTag("otp-resend").performClick()
         compose.waitUntil(5_000) { api.requests == 2 && !model.state.value.busy }
         assertTrue(model.resendAtMillis > deadline)
         compose.onNodeWithTag("otp-resend").assertIsNotEnabled()
