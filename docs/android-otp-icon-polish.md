@@ -35,3 +35,15 @@ HEAD; metadata в UI instrumentation отключены. Автотесты не
 OTP/support письма, платежи и не подключают VPN. Backend follow-up отсутствует.
 Финальные product/build SHA, run/attempt, артефакты и результаты фиксируются в
 описании PR #25 после завершения всех jobs без нового documentation-only push.
+
+## Фиолетовый значок APK — Android 0.6.5
+
+Отдельное уточнение владельца после проверки 0.6.4: фон launcher должен быть
+фиолетовым из палитры. Android 0.6.4/code10 → 0.6.5/code11 (PATCH), исходный HEAD
+`e5f3e8ded9bfab720af8cf7789c7b417cdbbcf0c`. Только ic_launcher.xml меняет цвета:
+фон Purple Heart #5f22d9, знак Mercury #e4e4e4, контраст около 7:1. Геометрия,
+центровка и 0.65 scale прежние. Header/full logo и Windows/backend unchanged;
+API/навигация не затронуты, backend follow-up отсутствует. Новый APK и native
+app-info-icon.png проверяются по текущему SHA; итоговые build SHA/run/attempt и
+артефакты фиксируются в PR #25 после всех push/PR jobs. Результаты 0.6.4 не
+считаются проверкой 0.6.5. Реальные письма, платежи и VPN не запускаются.

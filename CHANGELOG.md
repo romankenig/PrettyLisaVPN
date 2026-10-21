@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Android — 0.6.5 / Windows и backend unchanged
+
+- Фон значка APK изменён с Viking на Purple Heart `#5f22d9`; замок использует
+  Mercury `#e4e4e4` для контраста. Исправленная симметрия и размеры сохранены.
+- Android 0.6.4/code10 → 0.6.5/code11 (PATCH); handoff:
+  [docs/android-otp-icon-polish.md](docs/android-otp-icon-polish.md); CI/artifacts — PR #25.
+
 ### Android — 0.6.4 / Windows и backend unchanged
 
 - Область OTP-ссылок с отступами уменьшена с 80dp до 56dp при стандартном шрифте;
