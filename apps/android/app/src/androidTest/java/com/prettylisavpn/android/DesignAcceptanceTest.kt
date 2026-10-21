@@ -127,6 +127,7 @@ class DesignAcceptanceTest {
         compose.onNodeWithText(compose.activity.getString(R.string.invalid_email)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("support-email").assertIsDisplayed()
         assertFocusedFieldAboveKeyboard()
+        assertFooterInsets()
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
         capture("support-keyboard-error")
         compose.onNodeWithTag("support-send").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
@@ -231,6 +232,8 @@ class DesignAcceptanceTest {
     }
 
     private fun assertNavigationInsets() {
+        assertFooterInsets()
+        val footerTop = compose.onNodeWithTag("component-versions").fetchSemanticsNode().boundsInWindow.top
         val density = compose.activity.resources.displayMetrics.density
         val bounds = listOf("HOME", "SETTINGS", "ABOUT").map {
             compose.onNodeWithTag("tab_$it").assertIsDisplayed().fetchSemanticsNode().boundsInWindow
@@ -243,11 +246,26 @@ class DesignAcceptanceTest {
             val location = IntArray(2)
             view.getLocationOnScreen(location)
             bounds.forEach {
+                assertTrue("Navigation overlaps version footer: $it", it.bottom <= footerTop + 2)
                 assertTrue("Touch target narrower than 48dp: $it", it.width + 1 >= 48 * density)
                 assertTrue("Touch target shorter than 48dp: $it", it.height + 1 >= 48 * density)
                 assertTrue("Navigation overlaps system bars: $it", it.bottom + location[1] <= size.y - bars.bottom + 2)
                 assertTrue("Navigation overlaps cutout: $it", it.left + location[0] >= bars.left && it.right + location[0] <= size.x - bars.right + 2)
             }
+        }
+    }
+
+    private fun assertFooterInsets() {
+        compose.onNodeWithTag("app-version-footer").assertIsDisplayed()
+        val text = compose.onNodeWithTag("component-versions").assertIsDisplayed().fetchSemanticsNode().boundsInWindow
+        compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            val insets = checkNotNull(ViewCompat.getRootWindowInsets(view))
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()).bottom
+            val location = IntArray(2)
+            view.getLocationOnScreen(location)
+            val visible = android.graphics.Rect().also { view.getWindowVisibleDisplayFrame(it) }
+            assertTrue("Version text overlaps system bars or IME: $text", text.bottom + location[1] <= minOf(windowSize().y - bottom, visible.bottom) + 2)
         }
     }
 

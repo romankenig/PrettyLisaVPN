@@ -97,8 +97,15 @@ class PresentationUiTest {
             val native = compose.onNodeWithTag("language-native-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
             assertEquals((english.left.value + english.right.value) / 2, (native.left.value + native.right.value) / 2, 1f)
             assertTrue(english.bottom <= native.top)
+            val flag = compose.onNodeWithTag("language-flag-${language.code}", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertTrue("Flag/name gap is too wide", english.left.value - flag.right.value in 4f..20f)
             compose.onNodeWithTag("header-mark").assertWidthIsAtLeast(androidx.compose.ui.unit.Dp(44f))
             compose.onNodeWithTag("component-versions").assertTextContains(BuildConfig.VERSION_NAME, substring = true)
+            compose.onNodeWithTag("component-versions").assert(hasAnyAncestor(hasTestTag("app-version-footer")))
+            compose.onAllNodes(hasTestTag("component-versions") and hasAnyAncestor(hasTestTag("app-header"))).assertCountEquals(0)
+            val footer = compose.onNodeWithTag("app-version-footer").getUnclippedBoundsInRoot()
+            assertEquals(compose.onNodeWithTag("app-root").getUnclippedBoundsInRoot().bottom.value, footer.bottom.value, 1f)
+            assertTrue(footer.top > compose.onNodeWithTag("app-header").getUnclippedBoundsInRoot().bottom)
             compose.onNodeWithTag("live-banner").assertDoesNotExist()
             screenshot("login-${language.code}")
         }
@@ -111,6 +118,7 @@ class PresentationUiTest {
         compose.onNodeWithTag("login-email").performTextInput("Acceptance.Case@example.com")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithTag("auth-submit").performScrollTo().performClick(); waitFor("screen_OTP")
+        compose.onNodeWithTag("app-version-footer").assertIsDisplayed()
         val deadline = model.resendAtMillis
         compose.onNodeWithTag("otp-resend").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithTag("otp").performScrollTo().performTextInput("123456")

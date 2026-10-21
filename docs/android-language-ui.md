@@ -87,3 +87,32 @@ Windows 0.12.0, backend 0.10.0/schema0026 и API-контракты unchanged.
 Результаты прежнего 0.6.0 не являются приёмкой 0.6.1. Product/build SHA, run/attempt,
 результаты и artifact links обновляются в PR #25 после CI без дополнительного push.
 Backend follow-up для этой полировки отсутствует; реальный provider/VPN не добавлены.
+
+## Нижняя полоска и компактный selector — Android 0.6.2
+
+Исходная версия 0.6.1/code7 (`9df4e177b2c61a0063ca92628ab930e866b2ef51`),
+целевая 0.6.2/code8: PATCH за небольшую перестановку элементов. Windows 0.12.0,
+backend 0.10.0/schema0026, auth/billing/API-контракты unchanged.
+
+Версии удалены из AppHeader. AppVersionFooter расположен в общем корневом Column
+после всех экранов/нижней навигации: auth, OTP, restore, account и fixture используют
+одну полоску Christalle с labelSmall/Viking и вертикальным padding 3dp. Высота
+растёт при увеличении шрифта; текст не ограничен одной строкой. Фактическая backend
+SemVer и fallback «недоступна» работают по прежним правилам 0.6.1.
+
+Корневой контейнер применяет imePadding ко всему приложению; версии перемещаются
+над клавиатурой. Footer владеет нижними safeDrawing/cutout отступами, а область
+экранов потребляет эти insets, чтобы вложенные Scaffold/PhoneNavigation не добавляли
+их повторно. Top/horizontal insets экранов сохраняются. Переходов/новых действий нет.
+
+В LanguageNames общий gap сокращён с 8dp до 4dp, колонка названий с 88dp до 56dp,
+флаг центрирован в своей колонке. Ширины масштабируются с fontScale; центры обоих
+названий совпадают, native name остаётся opacity 0.72. Сортировка/выбор/геолокация,
+состояние auth и resend deadline не меняются.
+
+Native PresentationUiTest проверяет нижнее положение версий/отсутствие их в шапке
+на всех шести языках, близость флага и сохранение центрирования. DesignAcceptance
+проверяет footer ниже вкладок и над system bars/IME во всех прежних размерах,
+fontScale и клавиатурных сценариях. PNG/identity и полные результаты актуального
+HEAD фиксируются в PR #25 после всех push/PR jobs. Прежние APK не считаются
+приёмкой 0.6.2. Реальные письма/платежи/VPN не выполняются; backend follow-up нет.

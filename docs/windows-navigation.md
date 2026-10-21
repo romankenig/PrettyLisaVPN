@@ -352,3 +352,8 @@ Android 0.6.1 уточняет общую шапку: увеличенный б�
 selector, компактная фактическая backend SemVer и строчные локализованные подписи.
 При крупном шрифте selector справа сверху занимает отдельную строку. Маршруты,
 API и Windows unchanged; приёмка: [android-language-ui.md](android-language-ui.md).
+
+Android 0.6.2 переносит версии в общий footer под мобильной навигацией/экранами.
+Полоска остаётся над клавиатурой и учитывает системные отступы; флаг сближен с
+названиями языка. Маршруты, Windows и backend unchanged; детали и приёмка:
+[android-language-ui.md](android-language-ui.md).

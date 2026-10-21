@@ -73,7 +73,15 @@ internal enum class Destination(val label: Int, val icon: ImageVector) {
 }
 @Composable
 fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) {
-    LocalizedApp { if (model.fixture) FeatureApp(model) else SessionApp(model) }
+    LocalizedApp {
+        Column(Modifier.fillMaxSize().background(Brand.PurpleHeart).imePadding().testTag("app-root")) {
+            // The footer owns bottom safe drawing; nested navigation must not reserve it again.
+            Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) {
+                if (model.fixture) FeatureApp(model) else SessionApp(model)
+            }
+            AppVersionFooter()
+        }
+    }
 }
 
 /** No fixed height: tab labels grow and wrap with the user's font size. */

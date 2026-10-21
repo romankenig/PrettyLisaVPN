@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.6.2 / Windows и backend unchanged
+
+- Версии frontend/backend перенесены из шапки в общую тонкую нижнюю полоску
+  Christalle; она есть на auth/OTP и экранах аккаунта, под навигацией.
+- Нижние safe drawing/IME отступы учитываются общим контейнером без повторного
+  отступа внутри навигации. При клавиатуре полоска остаётся над ней.
+- Флаг и центрированные English/native names сближены в selector и меню;
+  приглушённый native name, порядок языков и сохранение выбора не меняются.
+- Android 0.6.1/code7 → 0.6.2/code8 (PATCH). Handoff:
+  [docs/android-language-ui.md](docs/android-language-ui.md); CI/SHA/artifacts — PR #25.
+
 ### Android — 0.6.1 / Windows и backend unchanged
 
 - В общей шапке показана только проверенная числовая часть фактической backend

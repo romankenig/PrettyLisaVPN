@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonParser
 import com.prettylisavpn.android.BuildConfig
@@ -227,7 +228,6 @@ internal fun AppHeader(fixture: Boolean) {
     val tr = strings()
     val presentation = LocalPresentation.current
     val language by presentation.preference.language.collectAsState()
-    val version by presentation.version.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     key(language) {
         Column(Modifier.fillMaxWidth().background(Brand.Christalle)
@@ -249,11 +249,22 @@ internal fun AppHeader(fixture: Boolean) {
                     }
                 }
             }
-            Text(tr(R.string.component_versions, BuildConfig.VERSION_NAME, version ?: tr(R.string.unavailable)),
-                style = MaterialTheme.typography.labelSmall, color = Brand.Viking, modifier = Modifier.testTag("component-versions"))
             if (fixture) Text(tr(R.string.test_data_notice), style = MaterialTheme.typography.labelSmall, color = Brand.Galliano,
                 modifier = Modifier.testTag("test-banner"))
         }
+    }
+}
+
+@Composable
+internal fun AppVersionFooter() {
+    val tr = strings()
+    val version by LocalPresentation.current.version.collectAsState()
+    Box(Modifier.fillMaxWidth().background(Brand.Christalle).testTag("app-version-footer")
+        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+        .padding(horizontal = 12.dp, vertical = 3.dp)) {
+        Text(tr(R.string.component_versions, BuildConfig.VERSION_NAME, version ?: tr(R.string.unavailable)),
+            style = MaterialTheme.typography.labelSmall, color = Brand.Viking,
+            modifier = Modifier.testTag("component-versions"))
     }
 }
 
@@ -293,10 +304,11 @@ private fun HeaderLanguage(language: AppLanguage, expanded: Boolean, expand: (Bo
 
 @Composable
 private fun LanguageNames(language: AppLanguage, color: androidx.compose.ui.graphics.Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         // Flag occupies its own column, centered beside both names.
-        Text(language.flag, modifier = Modifier.width(24.dp * LocalDensity.current.fontScale), style = MaterialTheme.typography.bodyMedium)
-        Column(Modifier.width(88.dp * LocalDensity.current.fontScale), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(language.flag, modifier = Modifier.width(24.dp * LocalDensity.current.fontScale).testTag("language-flag-${language.code}"),
+            style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        Column(Modifier.width(56.dp * LocalDensity.current.fontScale), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(language.english, color = color, style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.testTag("language-english-${language.code}"))
             Text(language.native, color = color.copy(alpha = 0.72f), style = MaterialTheme.typography.labelSmall,
