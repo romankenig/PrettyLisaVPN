@@ -21,12 +21,10 @@
     <string name="ui_active_devices_0_5">active devices: %1$s / 5</string>
     <string name="ui_added_0">added: %1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">an operation needs confirmation. Refresh its status before starting another.</string>
-    <string name="ui_android_version_0">Android · version %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">at most 5 active devices per account. Dates below are synthetic UTC data.</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">auto-renewal supported by this test route; cancellation preserves paid access.</string>
     <string name="ui_auto_renewal_0">auto-renewal: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">autopilot uses available nodes. Country selection requires Premium or Platinum.</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">backend: unavailable — test source, no GET /version performed</string>
     <string name="ui_choose_at_most_3_images">choose at most 3 images.</string>
     <string name="ui_current_price_0">current price: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">debug only. Resets in-memory data; no backend, email, card or tunnel is contacted. After process death the standard test account returns.</string>
@@ -84,7 +82,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">test data. no support email or attachment leaves this device.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">test provider only. real payment actions are unavailable.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">technical diagnostics are unavailable for Android.</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">tell us what happened. Test requests stay on this device.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">test code for %1$s: 123456. Nothing was sent.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">test mode does not protect or route your traffic.</string>
     <string name="ui_test_request_accepted">test request accepted</string>
@@ -98,7 +95,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">use any valid test email. No real OTP email is sent.</string>
     <string name="ui_waiting_for_test_provider_confirmation">waiting for test provider confirmation.</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">we will email you a one-time sign-in code.</string>
-    <string name="ui_about">about</string>
     <string name="ui_account">account</string>
     <string name="ui_account_messages">account messages</string>
     <string name="ui_active">active</string>
@@ -132,7 +128,6 @@
     <string name="ui_enter_the_code">enter the code</string>
     <string name="ui_help_and_support">help and support</string>
     <string name="ui_how_to_pay_test_preview">how to pay — test preview</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">inspired by love of my life, Lisa</string>
     <string name="ui_later">later</string>
     <string name="ui_messages_0">messages (%1$s)</string>
     <string name="ui_new_request">new request</string>
@@ -241,4 +236,12 @@
     <string name="detail_14">bank card</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">cryptocurrency</string>
+    <string name="about_title">about</string>
+    <string name="about_support_title">help and support</string>
+    <string name="about_support_prompt">tell us what you need help with</string>
+    <string name="about_contact_support">contact support</string>
+    <string name="about_frontend" translatable="false">frontend</string>
+    <string name="about_backend" translatable="false">backend</string>
+    <string name="about_faq" translatable="false">faq</string>
+    <string name="about_dedication" translatable="false">inspired by love of my life, Lisa</string>
 </resources>

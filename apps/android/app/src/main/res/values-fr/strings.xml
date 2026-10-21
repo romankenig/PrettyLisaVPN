@@ -20,12 +20,10 @@
     <string name="ui_active_devices_0_5">appareils actifs : %1$s / 5</string>
     <string name="ui_added_0">ajouté : %1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">une opération attend confirmation. Actualisez son statut avant d’en démarrer une autre.</string>
-    <string name="ui_android_version_0">Android · version %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">au maximum 5 appareils actifs par compte. Dates de test en UTC ci-dessous.</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">ce moyen de test permet le renouvellement ; l’annulation conserve l’accès payé.</string>
     <string name="ui_auto_renewal_0">renouvellement automatique : %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">le pilote automatique utilise les nœuds disponibles. Le choix du pays nécessite Premium ou Platinum.</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">backend : indisponible — source de test, sans GET /version</string>
     <string name="ui_choose_at_most_3_images">choisissez au maximum 3 images.</string>
     <string name="ui_current_price_0">prix actuel : %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">mode de test uniquement. Réinitialise les données sans contacter le serveur, e-mail, carte ni tunnel. Au redémarrage, le compte de test est rétabli.</string>
@@ -83,7 +81,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">données de test. Aucun e-mail ni pièce jointe ne quitte cet appareil.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">prestataire de test uniquement. Paiements réels indisponibles.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">le diagnostic technique est indisponible sur Android.</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">décrivez le problème. Les demandes de test restent sur cet appareil.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">code de test pour %1$s : 123456. Aucun envoi effectué.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">le mode de test ne protège ni ne route votre trafic.</string>
     <string name="ui_test_request_accepted">demande de test acceptée</string>
@@ -97,7 +94,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">utilisez un e-mail de test valide. Aucun véritable code n’est envoyé.</string>
     <string name="ui_waiting_for_test_provider_confirmation">en attente de confirmation du prestataire de test.</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">nous vous enverrons un code de connexion par e-mail.</string>
-    <string name="ui_about">à propos</string>
     <string name="ui_account">compte</string>
     <string name="ui_account_messages">messages du compte</string>
     <string name="ui_active">actif</string>
@@ -130,7 +126,6 @@
     <string name="ui_enter_the_code">saisissez le code</string>
     <string name="ui_help_and_support">aide et assistance</string>
     <string name="ui_how_to_pay_test_preview">comment payer — aperçu de test</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">inspiré par l’amour de ma vie, Lisa</string>
     <string name="ui_later">plus tard</string>
     <string name="ui_messages_0">messages (%1$s)</string>
     <string name="ui_new_request">nouvelle demande</string>
@@ -239,4 +234,8 @@
     <string name="detail_14">carte bancaire</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">cryptomonnaie</string>
+    <string name="about_title">à propos</string>
+    <string name="about_support_title">aide et assistance</string>
+    <string name="about_support_prompt">dites-nous comment vous aider</string>
+    <string name="about_contact_support">contacter l’assistance</string>
 </resources>

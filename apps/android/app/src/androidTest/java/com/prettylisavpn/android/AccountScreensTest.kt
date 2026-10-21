@@ -106,7 +106,14 @@ class AccountScreensTest {
         click("live-support-status");idle();assertEquals(1,sends);screenshot("support-accepted")
     }
     @Test fun supportDraftBackRequiresConfirmation() {
-        click("live-support");waitFor("live-support-screen")
+        click("tab_ABOUT");waitFor("live-about")
+        compose.onNodeWithTag("about-frontend-version").assertTextEquals(BuildConfig.VERSION_NAME)
+        compose.onNodeWithTag("about-backend-version").assertTextEquals(compose.activity.getString(R.string.unavailable))
+        compose.onNodeWithTag("about-faq-title").assertTextEquals("faq")
+        compose.onNodeWithTag("build-source").assertDoesNotExist()
+        compose.onNodeWithTag("about-dedication").performScrollTo().assertTextEquals("inspired by love of my life, Lisa")
+        screenshot("about-windows-content")
+        click("about-support");waitFor("live-support-screen")
         // A test-only semantics edit; the real platform picker remains user initiated.
         val field=compose.onNodeWithTag("live-support-subject").performScrollTo()
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }

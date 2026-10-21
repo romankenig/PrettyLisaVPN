@@ -20,12 +20,10 @@
     <string name="ui_active_devices_0_5">dispositivos activos: %1$s / 5</string>
     <string name="ui_added_0">añadido: %1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">una operación requiere confirmación. Actualiza su estado antes de iniciar otra.</string>
-    <string name="ui_android_version_0">Android · versión %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">máximo 5 dispositivos activos por cuenta. Fechas de prueba en UTC.</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">este método de prueba permite renovación; cancelar conserva el acceso pagado.</string>
     <string name="ui_auto_renewal_0">renovación automática: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">el piloto automático usa nodos disponibles. Elegir país requiere Premium o Platinum.</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">backend: no disponible — datos de prueba, sin GET /version</string>
     <string name="ui_choose_at_most_3_images">elige un máximo de 3 imágenes.</string>
     <string name="ui_current_price_0">precio actual: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">solo modo de prueba. Reinicia datos en memoria sin contactar el servidor, correo, tarjetas ni túneles. Al reiniciar vuelve la cuenta de prueba.</string>
@@ -83,7 +81,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">datos de prueba. Ningún correo o archivo sale del dispositivo.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">solo proveedor de prueba. Pagos reales no disponibles.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">el diagnóstico técnico no está disponible en Android.</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">describe el problema. Las solicitudes de prueba permanecen en el dispositivo.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">código de prueba para %1$s: 123456. No se envió nada.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">el modo de prueba no protege ni enruta tu tráfico.</string>
     <string name="ui_test_request_accepted">solicitud de prueba aceptada</string>
@@ -97,7 +94,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">usa cualquier correo de prueba válido. No se envía un correo real.</string>
     <string name="ui_waiting_for_test_provider_confirmation">esperando confirmación del proveedor de prueba.</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">te enviaremos un código de acceso por correo.</string>
-    <string name="ui_about">acerca de</string>
     <string name="ui_account">cuenta</string>
     <string name="ui_account_messages">mensajes de la cuenta</string>
     <string name="ui_active">activo</string>
@@ -130,7 +126,6 @@
     <string name="ui_enter_the_code">introduce el código</string>
     <string name="ui_help_and_support">ayuda y soporte</string>
     <string name="ui_how_to_pay_test_preview">cómo pagar — vista de prueba</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">inspirado por el amor de mi vida, Lisa</string>
     <string name="ui_later">más tarde</string>
     <string name="ui_messages_0">mensajes (%1$s)</string>
     <string name="ui_new_request">nueva solicitud</string>
@@ -239,4 +234,8 @@
     <string name="detail_14">tarjeta bancaria</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">criptomoneda</string>
+    <string name="about_title">acerca de</string>
+    <string name="about_support_title">ayuda y soporte</string>
+    <string name="about_support_prompt">cuéntanos en qué necesitas ayuda</string>
+    <string name="about_contact_support">contactar con soporte</string>
 </resources>

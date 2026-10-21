@@ -20,12 +20,10 @@
     <string name="ui_active_devices_0_5">aktive Geräte: %1$s / 5</string>
     <string name="ui_added_0">hinzugefügt: %1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">eine Aktion wartet auf Bestätigung. Aktualisiere ihren Status, bevor du eine neue startest.</string>
-    <string name="ui_android_version_0">Android · Version %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">höchstens 5 aktive Geräte je Konto. Die UTC-Daten unten sind Testdaten.</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">dieser Testweg unterstützt Verlängerung; Kündigung erhält bezahlten Zugriff.</string>
     <string name="ui_auto_renewal_0">automatische Verlängerung: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">autopilot nutzt verfügbare Knoten. Länderwahl erfordert Premium oder Platinum.</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">backend: nicht verfügbar — Testquelle, kein GET /version</string>
     <string name="ui_choose_at_most_3_images">wähle höchstens 3 Bilder.</string>
     <string name="ui_current_price_0">aktueller Preis: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">nur Debug. Setzt Speicherdaten zurück, ohne Backend, E-Mail, Karten oder Tunnel. Nach Neustart erscheint das Standardtestkonto.</string>
@@ -83,7 +81,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">testdaten. Keine E-Mail oder Anlage verlässt dieses Gerät.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">nur Testanbieter. Echte Zahlungen sind nicht verfügbar.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">technische Diagnose ist unter Android nicht verfügbar.</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">beschreibe das Problem. Testanfragen bleiben auf diesem Gerät.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">testcode für %1$s: 123456. Es wurde nichts versendet.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">der Testmodus schützt oder leitet deinen Datenverkehr nicht.</string>
     <string name="ui_test_request_accepted">testanfrage angenommen</string>
@@ -97,7 +94,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">nutze eine gültige Test-E-Mail. Es wird keine echte E-Mail versendet.</string>
     <string name="ui_waiting_for_test_provider_confirmation">warte auf Bestätigung des Testanbieters.</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">wir senden dir einen einmaligen Anmeldecode per E-Mail.</string>
-    <string name="ui_about">über die App</string>
     <string name="ui_account">konto</string>
     <string name="ui_account_messages">kontonachrichten</string>
     <string name="ui_active">aktiv</string>
@@ -130,7 +126,6 @@
     <string name="ui_enter_the_code">code eingeben</string>
     <string name="ui_help_and_support">hilfe und Support</string>
     <string name="ui_how_to_pay_test_preview">zahlungsweise — Testvorschau</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">inspiriert von der Liebe meines Lebens, Lisa</string>
     <string name="ui_later">später</string>
     <string name="ui_messages_0">nachrichten (%1$s)</string>
     <string name="ui_new_request">neue Anfrage</string>
@@ -239,4 +234,8 @@
     <string name="detail_14">bankkarte</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">kryptowährung</string>
+    <string name="about_title">über die App</string>
+    <string name="about_support_title">hilfe und Support</string>
+    <string name="about_support_prompt">wobei brauchst du Hilfe?</string>
+    <string name="about_contact_support">support kontaktieren</string>
 </resources>

@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.6.3 / Windows и backend unchanged
+
+- OTP resend/change email оформлены как подчёркнутые фиолетовые ссылки в компактном
+  FlowRow над sign in, с переносом при крупном шрифте. Размер текста и 48dp touch
+  targets сохранены; 30-секундный монотонный resend deadline не меняется.
+- Общий About для live/fixture повторяет Windows 0.12.0: версии frontend/backend,
+  FAQ-карточка, помощь с кнопкой обращения и исходное английское посвящение внизу.
+  Две desktop-карточки адаптированы в вертикальные мобильные; build SHA и сообщения
+  убраны из About. Fixture-инструменты доступны из Settings, build — в Scenarios.
+- Android 0.6.2/code8 → 0.6.3/code9 (PATCH). Контракт и приёмка:
+  [docs/android-about-otp-ui.md](docs/android-about-otp-ui.md); SHA/CI/artifacts — PR #25.
+
 ### Android — 0.6.2 / Windows и backend unchanged
 
 - Версии frontend/backend перенесены из шапки в общую тонкую нижнюю полоску

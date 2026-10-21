@@ -357,3 +357,10 @@ Android 0.6.2 переносит версии в общий footer под моб
 Полоска остаётся над клавиатурой и учитывает системные отступы; флаг сближен с
 названиями языка. Маршруты, Windows и backend unchanged; детали и приёмка:
 [android-language-ui.md](android-language-ui.md).
+
+Android 0.6.3 приводит About к Windows 0.12.0: версии, пустой FAQ, помощь/обращение
+в поддержку, посвящение. На телефоне карточки вертикальные, поддержка открывается
+существующим экраном SUPPORT с прежним Back/draft guard. Fixture-only messages и
+Scenarios перенесены из About в Settings; обычный live Home сохраняет Messages.
+OTP resend/change email сгруппированы в FlowRow перед sign in, с переносом при
+нехватке ширины. Windows/backend не меняются; см. [android-about-otp-ui.md](android-about-otp-ui.md).

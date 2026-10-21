@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.compose.*
-import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.data.*
 import java.util.UUID
 
@@ -67,15 +66,7 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
                     BrandActionButton(tr(R.string.ui_sign_out), logout, enabled = !state.busy)
                 }
             } }
-            composable("ABOUT") { PhoneScreen("live-about") {
-                ScreenHeading(tr(R.string.ui_about))
-                BrandCard {
-                    Text("PrettyLisaVPN"); Text("Android ${BuildConfig.VERSION_NAME}")
-                    Text(tr(R.string.ui_build_0, BuildConfig.SOURCE_SHA.take(12)))
-                    BrandActionButton(tr(R.string.ui_contact_support), { go("SUPPORT") })
-                    BrandActionButton(tr(R.string.ui_account_messages), { go("MESSAGES") })
-                }
-            } }
+            composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }) }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
             composable("MESSAGES") { messageEntry ->
                 LiveMessages(model, { nav.popBackStack() }) { destination ->

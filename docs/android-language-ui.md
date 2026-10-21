@@ -116,3 +116,6 @@ Native PresentationUiTest проверяет нижнее положение в�
 fontScale и клавиатурных сценариях. PNG/identity и полные результаты актуального
 HEAD фиксируются в PR #25 после всех push/PR jobs. Прежние APK не считаются
 приёмкой 0.6.2. Реальные письма/платежи/VPN не выполняются; backend follow-up нет.
+
+Android 0.6.3/code9 сохраняет эту шапку/footer/выбор языка и уточняет OTP-ссылки и
+состав About по Windows: [android-about-otp-ui.md](android-about-otp-ui.md).

@@ -91,27 +91,15 @@ internal fun FeatureApp(model: ScreenModel) {
                         Action(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), "open-devices") { go("DEVICES") }
                         Action(tr(R.string.ui_sign_out), tr(R.string.ui_end_the_test_session_on_this_device), "logout") { openDialog("logout") }
                     }
+                    BrandCard(Modifier.testTag("fixture-tools")) {
+                        BrandActionButton(tr(R.string.ui_account_messages), { openDialog("message") }, Modifier.testTag("open-messages"))
+                        BrandActionButton(tr(R.string.ui_test_scenarios), { go("SCENARIOS") }, Modifier.testTag("open-scenarios"))
+                    }
                     if (dialog.isEmpty()) OperationError(state.error)
                 }
             }
             composable("ABOUT") {
-                PhoneScreen("screen_ABOUT") {
-                    ScreenHeading(tr(R.string.ui_about))
-                    BrandCard {
-                        Text("PrettyLisaVPN", style = MaterialTheme.typography.titleLarge)
-                        Text(tr(R.string.ui_android_version_0, BuildConfig.VERSION_NAME))
-                        Text(tr(R.string.ui_build_0, BuildConfig.SOURCE_SHA.take(12)), Modifier.testTag("build-source"))
-                        Text(tr(R.string.ui_backend_unavailable_test_source_no_get_version_performed), color = Brand.Scorpion)
-                    }
-                    BrandCard {
-                        Text(tr(R.string.ui_help_and_support), style = MaterialTheme.typography.titleMedium)
-                        Text(tr(R.string.ui_tell_us_what_happened_test_requests_stay_on_this_device))
-                        BrandActionButton(tr(R.string.ui_contact_support), { go("SUPPORT") }, Modifier.testTag("open-support"))
-                        BrandActionButton(tr(R.string.ui_account_messages), { openDialog("message") }, Modifier.testTag("open-messages"))
-                        BrandActionButton(tr(R.string.ui_test_scenarios), { go("SCENARIOS") }, Modifier.testTag("open-scenarios"))
-                    }
-                    Text(tr(R.string.ui_inspired_by_love_of_my_life_lisa), style = MaterialTheme.typography.bodySmall)
-                }
+                AboutScreen("screen_ABOUT", { go("SUPPORT") }, "open-support")
             }
             composable("LOGIN") { AuthScreen(model, false, { go("OTP") }, { nav.popBackStack() }) }
             composable("OTP") { AuthScreen(model, true, {}, { nav.popBackStack() }) }
@@ -154,6 +142,7 @@ internal fun FeatureApp(model: ScreenModel) {
                     ScreenHeading(tr(R.string.ui_test_scenarios)) { nav.popBackStack() }
                     BrandCard {
                         Text(tr(R.string.ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_))
+                        Text(tr(R.string.ui_build_0, BuildConfig.SOURCE_SHA.take(12)), Modifier.testTag("build-source"))
                         Scenario.entries.forEach { scenario ->
                             BrandActionButton(scenario.name.lowercase().replace('_', ' '), {
                                 model.configure(scenario)
@@ -236,6 +225,7 @@ internal fun LoadedPage(model: ScreenModel, area: Area, tag: String, onBack: (()
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back: () -> Unit) {
     val tr = strings()
     val state by model.state.collectAsState()
@@ -255,13 +245,15 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             else BrandTextField(email, { email = it.take(254); model.emailDraft = email; validation = null }, tr(R.string.ui_email), Modifier.testTag("login-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), error = validation?.let { tr(it) }, enabled = !state.busy)
             OperationError(state.error)
             if (otp) {
-                OtpLink(if (remaining > 0) tr(R.string.ui_resend_in_0_s, remaining) else if (model.fixture) tr(R.string.ui_resend_test_code) else tr(R.string.ui_resend_the_code), {
-                    if (SystemClock.elapsedRealtime() >= model.resendAtMillis) {
-                        code = ""; model.perform(Command.RequestOtp(model.emailDraft))
-                    }
-                }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
+                FlowRow(Modifier.fillMaxWidth().testTag("otp-links"), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OtpLink(if (remaining > 0) tr(R.string.ui_resend_in_0_s, remaining) else if (model.fixture) tr(R.string.ui_resend_test_code) else tr(R.string.ui_resend_the_code), {
+                        if (SystemClock.elapsedRealtime() >= model.resendAtMillis) {
+                            code = ""; model.perform(Command.RequestOtp(model.emailDraft))
+                        }
+                    }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
+                    OtpLink(tr(R.string.ui_change_email), back, Modifier.testTag("change-email"), enabled = !state.busy)
+                }
                 if (model.fixture) Text(tr(R.string.ui_123456_success_000000_expired_other_codes_invalid), style = MaterialTheme.typography.bodySmall)
-                OtpLink(tr(R.string.ui_change_email), back, Modifier.testTag("change-email"), enabled = !state.busy)
             }
             BrandActionButton(if (otp) { if (model.fixture) tr(R.string.ui_sign_in_to_test_account) else tr(R.string.ui_sign_in) } else tr(R.string.ui_continue), {
                 if (otp) {

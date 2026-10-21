@@ -20,12 +20,10 @@
     <string name="ui_active_devices_0_5">активных устройств: %1$s / 5</string>
     <string name="ui_added_0">добавлено: %1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">операция ожидает подтверждения. Обновите её статус перед новой.</string>
-    <string name="ui_android_version_0">Android · версия %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">не более 5 активных устройств. Даты ниже — тестовые данные UTC.</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">тестовый способ поддерживает автопродление; отмена сохраняет оплаченный доступ.</string>
     <string name="ui_auto_renewal_0">автопродление: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">автопилот использует доступные узлы. Выбор страны требует Premium или Platinum.</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">backend: недоступна — тестовый источник, GET /version не выполнялся</string>
     <string name="ui_choose_at_most_3_images">выберите не более 3 изображений.</string>
     <string name="ui_current_price_0">текущая цена: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">только отладочный режим. Сбрасывает данные в памяти; без сервера, писем, карт и туннеля. После перезапуска вернётся стандартный тестовый аккаунт.</string>
@@ -83,7 +81,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">тестовые данные. Письмо и вложения не покидают устройство.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">только тестовый провайдер. Настоящие платежи недоступны.</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">техническая диагностика для Android недоступна.</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">расскажите о проблеме. Тестовые обращения остаются на устройстве.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">тестовый код для %1$s: 123456. Письмо не отправлялось.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">тестовый режим не защищает и не маршрутизирует трафик.</string>
     <string name="ui_test_request_accepted">тестовое обращение принято</string>
@@ -97,7 +94,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">введите любой корректный тестовый email. Настоящее письмо не отправляется.</string>
     <string name="ui_waiting_for_test_provider_confirmation">ожидаем подтверждения тестового провайдера.</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">мы отправим одноразовый код входа на вашу почту.</string>
-    <string name="ui_about">о приложении</string>
     <string name="ui_account">аккаунт</string>
     <string name="ui_account_messages">сообщения аккаунта</string>
     <string name="ui_active">активно</string>
@@ -130,7 +126,6 @@
     <string name="ui_enter_the_code">введите код</string>
     <string name="ui_help_and_support">помощь и поддержка</string>
     <string name="ui_how_to_pay_test_preview">как оплатить — тестовый просмотр</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">вдохновлено любовью к Лизе</string>
     <string name="ui_later">позже</string>
     <string name="ui_messages_0">сообщения (%1$s)</string>
     <string name="ui_new_request">новое обращение</string>
@@ -239,4 +234,8 @@
     <string name="detail_14">банковская карта</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">криптовалюта</string>
+    <string name="about_title">о приложении</string>
+    <string name="about_support_title">помощь и поддержка</string>
+    <string name="about_support_prompt">расскажите, с чем нужна помощь</string>
+    <string name="about_contact_support">написать в поддержку</string>
 </resources>

@@ -20,12 +20,10 @@
     <string name="ui_active_devices_0_5">活跃设备：%1$s / 5</string>
     <string name="ui_added_0">添加时间：%1$s</string>
     <string name="ui_an_operation_needs_confirmation_refresh_its_status_before_startin">有操作需要确认。开始新操作前请刷新其状态。</string>
-    <string name="ui_android_version_0">Android · 版本 %1$s</string>
     <string name="ui_at_most_5_active_devices_per_account_dates_below_are_synthetic_ut">每个账户最多5台活跃设备。以下为测试UTC日期。</string>
     <string name="ui_auto_renewal_supported_by_this_test_route_cancellation_preserves_">此测试渠道支持自动续订；取消后保留已付费访问。</string>
     <string name="ui_auto_renewal_0">自动续订：%1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">自动模式使用可用节点。选择国家需要Premium或Platinum。</string>
-    <string name="ui_backend_unavailable_test_source_no_get_version_performed">后端：不可用 — 测试数据，未调用GET /version</string>
     <string name="ui_choose_at_most_3_images">最多选择3张图片。</string>
     <string name="ui_current_price_0">当前价格：%1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">仅限调试。重置内存数据；不连接后端、邮件、银行卡或隧道。进程重启后恢复默认测试账户。</string>
@@ -83,7 +81,6 @@
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">测试数据。邮件及附件不会离开此设备。</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">仅测试提供商。真实付款不可用。</string>
     <string name="ui_technical_diagnostics_are_unavailable_for_android">Android暂不支持技术诊断。</string>
-    <string name="ui_tell_us_what_happened_test_requests_stay_on_this_device">请描述问题。测试请求仅保存在此设备。</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">%1$s的测试验证码：123456。未发送邮件。</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">测试模式不保护或路由您的流量。</string>
     <string name="ui_test_request_accepted">测试请求已接受</string>
@@ -97,7 +94,6 @@
     <string name="ui_use_any_valid_test_email_no_real_otp_email_is_sent">使用任意有效测试邮箱。不会发送真实验证码邮件。</string>
     <string name="ui_waiting_for_test_provider_confirmation">等待测试提供商确认。</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">我们将向您发送一次性登录验证码。</string>
-    <string name="ui_about">关于应用</string>
     <string name="ui_account">账号</string>
     <string name="ui_account_messages">账户消息</string>
     <string name="ui_active">活跃</string>
@@ -130,7 +126,6 @@
     <string name="ui_enter_the_code">输入验证码</string>
     <string name="ui_help_and_support">帮助与支持</string>
     <string name="ui_how_to_pay_test_preview">如何付款 — 测试预览</string>
-    <string name="ui_inspired_by_love_of_my_life_lisa">献给我一生的挚爱Lisa</string>
     <string name="ui_later">稍后</string>
     <string name="ui_messages_0">消息（%1$s）</string>
     <string name="ui_new_request">新请求</string>
@@ -239,4 +234,8 @@
     <string name="detail_14">银行卡</string>
     <string name="detail_15">Alipay / WeChat Pay</string>
     <string name="detail_16">加密货币</string>
+    <string name="about_title">关于应用</string>
+    <string name="about_support_title">帮助与支持</string>
+    <string name="about_support_prompt">请描述您需要的帮助</string>
+    <string name="about_contact_support">联系支持</string>
 </resources>
