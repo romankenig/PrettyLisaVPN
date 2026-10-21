@@ -42,6 +42,7 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable("HOME") { LiveHome(model) }
             composable("SETTINGS") { PhoneScreen("live-settings") {
+                LaunchedEffect(Unit) { model.load(Area.MESSAGES) }
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
                 SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }

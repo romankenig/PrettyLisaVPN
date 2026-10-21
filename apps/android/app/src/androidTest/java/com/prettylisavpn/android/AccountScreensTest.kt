@@ -84,6 +84,9 @@ class AccountScreensTest {
         val reads=deviceReads
         compose.onNodeWithTag("live-devices-screen").performTouchInput { swipeDown() }
         compose.waitUntil(10_000) { deviceReads>reads && model.state.value.loads[Area.DEVICES]?.phase==LoadPhase.READY }
+        val afterDown=deviceReads
+        compose.onNodeWithTag("live-devices-screen").performTouchInput { swipeUp() }
+        compose.waitUntil(10_000) { deviceReads>afterDown && model.state.value.loads[Area.DEVICES]?.phase==LoadPhase.READY }
         screenshot("devices-readable")
         click("live-revoke-$device");click("confirm-dialog");idle()
         compose.onNodeWithText("revoked").assertExists();screenshot("devices-revoked")
