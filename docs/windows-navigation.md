@@ -364,3 +364,8 @@ Android 0.6.3 приводит About к Windows 0.12.0: версии, пусто
 Scenarios перенесены из About в Settings; обычный live Home сохраняет Messages.
 OTP resend/change email сгруппированы в FlowRow перед sign in, с переносом при
 нехватке ширины. Windows/backend не меняются; см. [android-about-otp-ui.md](android-about-otp-ui.md).
+
+Android 0.6.4 уменьшает только отступы OTP-ссылок (80dp → 56dp вместе с touch row)
+и исправляет симметрию Android знака. Ссылки используют Rubik Medium/Christalle;
+переходы, cooldown, Back guard, Windows и backend unchanged. См.
+[android-otp-icon-polish.md](android-otp-icon-polish.md).

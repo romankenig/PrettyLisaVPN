@@ -210,3 +210,8 @@ ANR_CHECK
 cp apk/build-identity.json evidence/
 adb shell getprop ro.build.version.sdk > evidence/emulator-api.txt
 adb shell getprop ro.product.cpu.abi > evidence/emulator-abi.txt
+
+# Capture the installed package icon on the native Android app-info screen.
+adb shell am start -W -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:$package" > evidence/app-info-launch.txt
+sleep 2
+adb exec-out screencap -p > evidence/app-info-icon.png

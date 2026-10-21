@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.font.FontWeight
 import com.prettylisavpn.android.R
 
 /** Secondary OTP actions retain a 48dp touch target without a filled button surface. */
@@ -49,8 +50,8 @@ import com.prettylisavpn.android.R
 internal fun OtpLink(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     TextButton(onClick = onClick, enabled = enabled, modifier = modifier.sizeIn(minHeight = 48.dp),
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = Brand.PurpleHeart, disabledContentColor = Brand.DustyGray)) {
-        Text(label, style = MaterialTheme.typography.bodySmall,
+        colors = ButtonDefaults.textButtonColors(contentColor = Brand.Christalle, disabledContentColor = Brand.DustyGray)) {
+        Text(label, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             textDecoration = if (enabled) TextDecoration.Underline else TextDecoration.None)
     }
 }

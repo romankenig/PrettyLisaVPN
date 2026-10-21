@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.6.4 / Windows и backend unchanged
+
+- Область OTP-ссылок с отступами уменьшена с 80dp до 56dp при стандартном шрифте;
+  48dp touch targets, перенос и 30-секундный resend сохранены. Rubik Medium,
+  Christalle и подчёркивание согласуют ссылки с оформлением приложения.
+- По замечанию владельца исправлена симметрия Android замка-сердца: дужка,
+  сердечко и скважина имеют общую ось; launcher центрирован. Шапка и полный
+  Android логотип используют исправленную геометрию, надпись не меняется.
+- Android 0.6.3/code9 → 0.6.4/code10 (PATCH); handoff:
+  [docs/android-otp-icon-polish.md](docs/android-otp-icon-polish.md), CI/artifacts — PR #25.
+
 ### Android — 0.6.3 / Windows и backend unchanged
 
 - OTP resend/change email оформлены как подчёркнутые фиолетовые ссылки в компактном

@@ -241,30 +241,32 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             Text(if (model.fixture) {
                 if (otp) tr(R.string.ui_test_code_for_0_123456_nothing_was_sent, model.emailDraft) else tr(R.string.ui_use_any_valid_test_email_no_real_otp_email_is_sent)
             } else if (otp) tr(R.string.ui_enter_the_code_sent_to_0, model.emailDraft) else tr(R.string.ui_we_will_email_you_a_one_time_sign_in_code))
-            if (otp) BrandTextField(code, { code = it.filter { digit -> digit in '0'..'9' }.take(6); validation = null }, tr(R.string.ui_6_digit_code), Modifier.testTag("otp"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), error = validation?.let { tr(it) }, enabled = !state.busy)
-            else BrandTextField(email, { email = it.take(254); model.emailDraft = email; validation = null }, tr(R.string.ui_email), Modifier.testTag("login-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), error = validation?.let { tr(it) }, enabled = !state.busy)
-            OperationError(state.error)
-            if (otp) {
-                FlowRow(Modifier.fillMaxWidth().testTag("otp-links"), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OtpLink(if (remaining > 0) tr(R.string.ui_resend_in_0_s, remaining) else if (model.fixture) tr(R.string.ui_resend_test_code) else tr(R.string.ui_resend_the_code), {
-                        if (SystemClock.elapsedRealtime() >= model.resendAtMillis) {
-                            code = ""; model.perform(Command.RequestOtp(model.emailDraft))
-                        }
-                    }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
-                    OtpLink(tr(R.string.ui_change_email), back, Modifier.testTag("change-email"), enabled = !state.busy)
-                }
-                if (model.fixture) Text(tr(R.string.ui_123456_success_000000_expired_other_codes_invalid), style = MaterialTheme.typography.bodySmall)
-            }
-            BrandActionButton(if (otp) { if (model.fixture) tr(R.string.ui_sign_in_to_test_account) else tr(R.string.ui_sign_in) } else tr(R.string.ui_continue), {
+            Column(verticalArrangement = Arrangement.spacedBy(if (otp) 4.dp else 16.dp)) {
+                if (otp) BrandTextField(code, { code = it.filter { digit -> digit in '0'..'9' }.take(6); validation = null }, tr(R.string.ui_6_digit_code), Modifier.testTag("otp"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), error = validation?.let { tr(it) }, enabled = !state.busy)
+                else BrandTextField(email, { email = it.take(254); model.emailDraft = email; validation = null }, tr(R.string.ui_email), Modifier.testTag("login-email"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), error = validation?.let { tr(it) }, enabled = !state.busy)
+                OperationError(state.error)
                 if (otp) {
-                    if (code.length != 6) validation = R.string.ui_enter_all_6_digits
-                    else model.perform(Command.VerifyOtp(code)) { code = "" }
-                } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) validation = R.string.ui_enter_a_valid_email
-                else {
-                    model.emailDraft = email.trim().lowercase()
-                    model.perform(Command.RequestOtp(model.emailDraft), next)
+                    FlowRow(Modifier.fillMaxWidth().testTag("otp-links"), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        OtpLink(if (remaining > 0) tr(R.string.ui_resend_in_0_s, remaining) else if (model.fixture) tr(R.string.ui_resend_test_code) else tr(R.string.ui_resend_the_code), {
+                            if (SystemClock.elapsedRealtime() >= model.resendAtMillis) {
+                                code = ""; model.perform(Command.RequestOtp(model.emailDraft))
+                            }
+                        }, Modifier.testTag("otp-resend"), enabled = remaining == 0L && !state.busy)
+                        OtpLink(tr(R.string.ui_change_email), back, Modifier.testTag("change-email"), enabled = !state.busy)
+                    }
+                    if (model.fixture) Text(tr(R.string.ui_123456_success_000000_expired_other_codes_invalid), style = MaterialTheme.typography.bodySmall)
                 }
-            }, Modifier.testTag("auth-submit"), loading = state.busy)
+                BrandActionButton(if (otp) { if (model.fixture) tr(R.string.ui_sign_in_to_test_account) else tr(R.string.ui_sign_in) } else tr(R.string.ui_continue), {
+                    if (otp) {
+                        if (code.length != 6) validation = R.string.ui_enter_all_6_digits
+                        else model.perform(Command.VerifyOtp(code)) { code = "" }
+                    } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) validation = R.string.ui_enter_a_valid_email
+                    else {
+                        model.emailDraft = email.trim().lowercase()
+                        model.perform(Command.RequestOtp(model.emailDraft), next)
+                    }
+                }, Modifier.testTag("auth-submit"), loading = state.busy)
+            }
 
         }
     }
