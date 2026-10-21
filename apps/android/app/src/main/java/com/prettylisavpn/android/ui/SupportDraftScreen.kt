@@ -48,7 +48,6 @@ internal fun SupportDraftScreen(state: SavedStateHandle, model: ScreenModel, onB
                 Text(if (ui.data.supportDelivered) tr(R.string.ui_simulated_delivery_complete_no_email_was_sent) else tr(R.string.ui_queued_in_the_test_source))
                 BrandActionButton(tr(R.string.ui_check_test_status), { model.perform(Command.SupportStatus) }, Modifier.testTag("support-status"), loading = ui.busy)
                 OperationError(ui.error)
-                BrandActionButton(tr(R.string.ui_done), onBack, Modifier.testTag("support-done"))
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     BrandTextField(subject, { state["subject"] = it.take(120) }, appString(R.string.subject), Modifier.testTag("support-subject"), keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next), enabled = !ui.busy)
@@ -58,7 +57,6 @@ internal fun SupportDraftScreen(state: SavedStateHandle, model: ScreenModel, onB
                 Text(tr(R.string.ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or, attachments))
                 BrandActionButton(tr(R.string.ui_add_test_screenshot), { state["attachments"] = attachments + 1 }, Modifier.testTag("support-attach"), enabled = attachments < 3 && !ui.busy)
                 if (attachments > 0) BrandActionButton(tr(R.string.ui_remove_test_screenshot), { state["attachments"] = attachments - 1 }, Modifier.testTag("support-remove"), enabled = !ui.busy)
-                BrandActionButton(tr(R.string.ui_technical_diagnostics_unavailable_on_android), {}, enabled = false)
                 OperationError(ui.error)
                 BrandActionButton(tr(R.string.ui_simulate_send), {
                     model.perform(Command.Support(requestId, subject.trim(), description.trim(), email.trim(), attachments))

@@ -50,7 +50,9 @@ sealed interface Command {
     data object NewSupport : Command
 }
 class SourceFailure(message: String) : Exception(message)
+data class SupportTransfer(val phase: String = "IDLE", val fraction: Float = 0f)
 interface ScreenSource {
+    val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> get() = kotlinx.coroutines.flow.flowOf(SupportTransfer())
     val recoveryRequired: Boolean get() = false
     val fixture: Boolean get() = true
     val enabled: Boolean

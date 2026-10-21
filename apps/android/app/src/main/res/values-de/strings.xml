@@ -70,7 +70,7 @@
     <string name="ui_revision_0">revision %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">simulation aktiv — kein VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">bilder: %1$s / 3 · PNG/JPEG/WebP · je 5 MB / insgesamt 10 MB</string>
-    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">schreibe dem PrettyLisaVPN-Support. Nur Text, Antwortadresse und ausgewählte Bilder werden gesendet.</string>
+    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">schreibe dem PrettyLisaVPN-Support. nur Text, Antwortadresse und ausgewählte Bilder werden gesendet.</string>
     <string name="ui_signing_in_again_removes_credentials_on_this_device_only_it_does_">erneutes Anmelden entfernt nur die Zugangsdaten auf diesem Gerät. Die Serverabmeldung ist nicht bestätigt.</string>
     <string name="ui_simulate_replacing_the_test_method_with_bank_card_the_paid_period">simuliert den Wechsel zu BANK_CARD. Der bezahlte Zeitraum bleibt erhalten, keine Karte wird verknüpft.</string>
     <string name="ui_simulated_delivery_complete_no_email_was_sent">simulierter Versand abgeschlossen, keine E-Mail gesendet.</string>
@@ -80,7 +80,6 @@
     <string name="ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or">testbilder: %1$s / 3. Je 1 KB, ohne Zugriff auf private Dateien.</string>
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">testdaten. Keine E-Mail oder Anlage verlässt dieses Gerät.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">nur Testanbieter. Echte Zahlungen sind nicht verfügbar.</string>
-    <string name="ui_technical_diagnostics_are_unavailable_for_android">technische Diagnose ist unter Android nicht verfügbar.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">testcode für %1$s: 123456. Es wurde nichts versendet.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">der Testmodus schützt oder leitet deinen Datenverkehr nicht.</string>
     <string name="ui_test_request_accepted">testanfrage angenommen</string>
@@ -122,7 +121,6 @@
     <string name="ui_devices">geräte</string>
     <string name="ui_discard">verwerfen</string>
     <string name="ui_discard_draft">entwurf verwerfen?</string>
-    <string name="ui_done">fertig</string>
     <string name="ui_enter_the_code">code eingeben</string>
     <string name="ui_help_and_support">hilfe und Support</string>
     <string name="ui_how_to_pay_test_preview">zahlungsweise — Testvorschau</string>
@@ -142,7 +140,6 @@
     <string name="ui_refresh_location">standort aktualisieren</string>
     <string name="ui_remove_and_sign_in">entfernen und anmelden</string>
     <string name="ui_remove_local_session">lokale Sitzung entfernen?</string>
-    <string name="ui_remove_selected_images">ausgewählte Bilder entfernen</string>
     <string name="ui_remove_test_screenshot">testbild entfernen</string>
     <string name="ui_renew">verlängern</string>
     <string name="ui_resend_in_0_s">erneut senden in %1$s s</string>
@@ -181,7 +178,6 @@
     <string name="ui_stop_simulation">simulation stoppen</string>
     <string name="ui_subscribe">abonnieren</string>
     <string name="ui_subscription">abonnement</string>
-    <string name="ui_technical_diagnostics_unavailable_on_android">technische Diagnose · unter Android nicht verfügbar</string>
     <string name="ui_test_scenarios">testszenarien</string>
     <string name="ui_unavailable">nicht verfügbar</string>
     <string name="ui_understood">verstanden</string>
@@ -238,4 +234,32 @@
     <string name="about_support_title">hilfe und Support</string>
     <string name="about_support_prompt">wobei brauchst du Hilfe?</string>
     <string name="about_contact_support">support kontaktieren</string>
+    <string name="dash_account">konto</string>
+    <string name="dash_plan">tarif</string>
+    <string name="dash_devices">aktive geräte</string>
+    <string name="dash_where">verbindungsziel</string>
+    <string name="dash_scenario">verbindungsmodus</string>
+    <string name="dash_country">land auswählen</string>
+    <string name="dash_choose_country">land auswählen</string>
+    <string name="dash_top">beste standorte</string>
+    <string name="dash_all_countries">alle länder</string>
+    <string name="dash_no_countries">keine länder verfügbar</string>
+    <string name="dash_connect">verbinden</string>
+    <string name="dash_preview">oberflächenvorschau: diese taste startet noch keine VPN-verbindung</string>
+    <string name="dash_region">aktuelle region</string>
+    <string name="dash_all_traffic">gesamter datenverkehr</string>
+    <string name="dash_include">nur ausgewählte webseiten</string>
+    <string name="dash_exclude">außer ausgewählten webseiten</string>
+    <string name="dash_soon">demnächst</string>
+    <string name="dash_end_session">sitzung auf diesem gerät beenden</string>
+    <string name="dash_added">hinzugefügt</string>
+    <string name="dash_last_login">letzte anmeldung</string>
+    <string name="dash_reading_image">bild wird vorbereitet…</string>
+    <string name="dash_image_error">bild konnte nicht vorbereitet werden</string>
+    <string name="dash_upload_progress">wird gesendet: %1$d%%</string>
+    <string name="dash_image_ready">bereit zum senden · %1$d KB</string>
+    <string name="dash_remove_image">bild entfernen</string>
+    <string name="dash_diagnostics">technische daten beifügen</string>
+    <string name="dash_diagnostics_preview">was wird beigefügt</string>
+    <string name="dash_description_limit">beschreibung kürzen: mit technischen daten sind höchstens 4000 zeichen erlaubt</string>
 </resources>

@@ -26,5 +26,18 @@ suspend fun readSupportImages(context: Context, uris: List<String>): List<Suppor
             require(bounds.outWidth in 1..8192 && bounds.outHeight in 1..8192 && bounds.outWidth.toLong()*bounds.outHeight <= 12_000_000)
             SupportUpload(media!!, java.util.Base64.getEncoder().encodeToString(bytes))
         }
-    } catch (_: Exception) { throw SourceFailure("Choose up to 3 PNG, JPEG or WebP images, at most 5 MB each and 10 MB total.") }
+    } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { throw SourceFailure("Choose up to 3 PNG, JPEG or WebP images, at most 5 MB each and 10 MB total.") }
+}
+
+/** The name is display-only; multipart transport continues to use anonymous filenames. */
+data class SupportImageInfo(val uri: String, val name: String, val size: Long)
+suspend fun supportImageInfo(context: Context, value: String): SupportImageInfo = withContext(Dispatchers.IO) {
+    val uri = value.toUri()
+    require(uri.scheme == "content")
+    val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }?.filterNot(Char::isISOControl)?.take(160)?.takeIf { it.isNotBlank() } ?: "image"
+    // Decode/limits are checked before announcing that the attachment is ready.
+    val image = readSupportImages(context, listOf(value)).single()
+    SupportImageInfo(value, name, image.bytes().size.toLong())
 }

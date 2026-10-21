@@ -18,6 +18,8 @@ class LiveSessionSource(
     private val journalStore: JournalStore = MemoryJournal(),
     private val uploads: suspend (List<String>) -> List<SupportUpload> = { emptyList() },
 ) : ScreenSource {
+    private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
+    override val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> = transfer
     override val recoveryRequired get() = sessions.needsRecovery
     override val enabled = true
     override val fixture = false
@@ -58,6 +60,7 @@ class LiveSessionSource(
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
             Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
+            Area.COUNTRIES -> snapshot = initial.copy(countries = sessions.request { api().countries(it) })
             Area.MESSAGES -> snapshot = initial.copy(messages = sessions.request { api().messages(it) })
             Area.BILLING -> { if (!journalReady) restoreJournal(); refreshBilling() }
             Area.SUPPORT -> { if (!journalReady) restoreJournal(); recoverSupport(false) }
@@ -118,7 +121,8 @@ class LiveSessionSource(
                 if (journal.support == null) {
                     if (journal.supportReceipt != null) throw SourceFailure("Choose New request before composing another support request.")
                     require(command.subject.isNotBlank() && command.subject.length <= 120 && command.description.isNotBlank() && command.description.length <= 4000)
-                    val files = uploads(command.uris)
+                    transfer.value = SupportTransfer("PREPARING")
+                    val files = try { uploads(command.uris) } finally { transfer.value = SupportTransfer() }
                     require(files.size <= 3 && files.sumOf { it.bytes().size } <= 10*1024*1024 && files.all { it.bytes().size <= 5*1024*1024 })
                     save(journal.copy(support = SupportSubmission(command.id, command.subject, command.description, command.email, files), supportReceipt = null))
                     projectJournal()
@@ -138,10 +142,10 @@ class LiveSessionSource(
         val pending = journal.support
         val id = pending?.requestId ?: journal.supportReceipt?.id ?: return
         val receipt = sessions.request { api().supportStatus(it, id) }
-            ?: if (allowSubmit && pending != null) try { sessions.request { api().supportSubmit(it, pending) } } catch (e: AuthFailure) {
+            ?: if (allowSubmit && pending != null) try { sessions.request { api().supportSubmit(it, pending) { sent, total -> transfer.value = SupportTransfer("UPLOADING", if (total > 0) (sent.toFloat() / total).coerceIn(0f, 1f) else 0f) } } } catch (e: AuthFailure) {
                 if (e.code in setOf("INVALID_REQUEST", "ATTACHMENT_REJECTED")) { save(journal.copy(support = null, supportReceipt = null)); projectJournal() }
                 throw e
-            } else null
+            } finally { transfer.value = SupportTransfer() } else null
         if (receipt != null) save(journal.copy(supportReceipt = receipt, support = if (receipt.status in setOf("SENT", "FAILED", "EXPIRED")) null else pending))
         projectJournal()
     }

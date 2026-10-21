@@ -19,6 +19,7 @@ data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap
 class ScreenModel(private val source: ScreenSource) : ViewModel() {
     val enabled = source.enabled
     val fixture = source.fixture
+    val supportTransfer = source.supportTransfer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(ScreenState(source.initial))
     val state = mutable.asStateFlow()

@@ -70,7 +70,7 @@
     <string name="ui_revision_0">ревизия %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">симуляция активна — это не VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">выбрано изображений: %1$s / 3 · PNG/JPEG/WebP · до 5 МБ каждое / 10 МБ всего</string>
-    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">напишите в поддержку PrettyLisaVPN. Будут отправлены только текст, адрес для ответа и выбранные изображения.</string>
+    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">напишите в поддержку PrettyLisaVPN. будут отправлены только текст, адрес для ответа и выбранные изображения.</string>
     <string name="ui_signing_in_again_removes_credentials_on_this_device_only_it_does_">повторный вход удалит данные входа только на этом устройстве. Выход на сервере не подтверждается.</string>
     <string name="ui_simulate_replacing_the_test_method_with_bank_card_the_paid_period">замена тестового способа на BANK_CARD. Оплаченный срок сохранится. Карта не привязывается.</string>
     <string name="ui_simulated_delivery_complete_no_email_was_sent">доставка симулирована — письмо не отправлялось.</string>
@@ -80,7 +80,6 @@
     <string name="ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or">тестовые снимки: %1$s / 3. По 1 КБ; без выбора и чтения личных файлов.</string>
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">тестовые данные. Письмо и вложения не покидают устройство.</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">только тестовый провайдер. Настоящие платежи недоступны.</string>
-    <string name="ui_technical_diagnostics_are_unavailable_for_android">техническая диагностика для Android недоступна.</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">тестовый код для %1$s: 123456. Письмо не отправлялось.</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">тестовый режим не защищает и не маршрутизирует трафик.</string>
     <string name="ui_test_request_accepted">тестовое обращение принято</string>
@@ -122,7 +121,6 @@
     <string name="ui_devices">устройства</string>
     <string name="ui_discard">удалить</string>
     <string name="ui_discard_draft">удалить черновик?</string>
-    <string name="ui_done">готово</string>
     <string name="ui_enter_the_code">введите код</string>
     <string name="ui_help_and_support">помощь и поддержка</string>
     <string name="ui_how_to_pay_test_preview">как оплатить — тестовый просмотр</string>
@@ -142,7 +140,6 @@
     <string name="ui_refresh_location">обновить локацию</string>
     <string name="ui_remove_and_sign_in">удалить и войти</string>
     <string name="ui_remove_local_session">удалить локальную сессию?</string>
-    <string name="ui_remove_selected_images">убрать выбранные изображения</string>
     <string name="ui_remove_test_screenshot">убрать тестовый снимок</string>
     <string name="ui_renew">продлить</string>
     <string name="ui_resend_in_0_s">повторная отправка через %1$s с</string>
@@ -181,7 +178,6 @@
     <string name="ui_stop_simulation">остановить симуляцию</string>
     <string name="ui_subscribe">оформить подписку</string>
     <string name="ui_subscription">подписка</string>
-    <string name="ui_technical_diagnostics_unavailable_on_android">техническая диагностика · недоступна на Android</string>
     <string name="ui_test_scenarios">тестовые сценарии</string>
     <string name="ui_unavailable">недоступна</string>
     <string name="ui_understood">понятно</string>
@@ -238,4 +234,32 @@
     <string name="about_support_title">помощь и поддержка</string>
     <string name="about_support_prompt">расскажите, с чем нужна помощь</string>
     <string name="about_contact_support">написать в поддержку</string>
+    <string name="dash_account">аккаунт</string>
+    <string name="dash_plan">план</string>
+    <string name="dash_devices">активные устройства</string>
+    <string name="dash_where">куда подключаемся</string>
+    <string name="dash_scenario">сценарий подключения</string>
+    <string name="dash_country">выбор страны</string>
+    <string name="dash_choose_country">выберите страну</string>
+    <string name="dash_top">лучшие локации</string>
+    <string name="dash_all_countries">все страны</string>
+    <string name="dash_no_countries">нет доступных стран</string>
+    <string name="dash_connect">подключить</string>
+    <string name="dash_preview">проверка интерфейса: эта кнопка пока не запускает VPN</string>
+    <string name="dash_region">текущий регион</string>
+    <string name="dash_all_traffic">весь трафик</string>
+    <string name="dash_include">только выбранные сайты</string>
+    <string name="dash_exclude">кроме выбранных сайтов</string>
+    <string name="dash_soon">скоро</string>
+    <string name="dash_end_session">завершить сессию на этом устройстве</string>
+    <string name="dash_added">добавлено</string>
+    <string name="dash_last_login">последний вход</string>
+    <string name="dash_reading_image">подготовка изображения…</string>
+    <string name="dash_image_error">не удалось подготовить изображение</string>
+    <string name="dash_upload_progress">отправка: %1$d%%</string>
+    <string name="dash_image_ready">готово к отправке · %1$d КБ</string>
+    <string name="dash_remove_image">убрать изображение</string>
+    <string name="dash_diagnostics">приложить технические данные</string>
+    <string name="dash_diagnostics_preview">что будет приложено</string>
+    <string name="dash_description_limit">сократите описание: вместе с техническими данными допускается 4000 символов</string>
 </resources>

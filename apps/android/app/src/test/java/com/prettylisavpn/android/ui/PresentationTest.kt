@@ -69,4 +69,23 @@ class PresentationTest {
             server.enqueue(MockResponse().setBody("""{"success":true,"country_code":{}}""")); assertNull(metadata.country())
         }
     }
+    @Test fun publicLocationValidatesEgressWithoutSendingIdentity() = runBlocking {
+        MockWebServer().use { server ->
+            val metadata=PublicMetadata(server.url("/version").toString(),server.url("/location").toString())
+            server.enqueue(MockResponse().setBody("""{"success":true,"ip":"192.0.2.10","country_code":"DE","city":"Berlin"}"""))
+            assertEquals(PublicLocation("192.0.2.10","DE","Berlin"),metadata.location())
+            val request=server.takeRequest();assertNull(request.getHeader("Authorization"));assertNull(request.getHeader("Cookie"))
+            for(ip in listOf("999.0.0.1","example.com","192.0.2.1/path")) {
+                server.enqueue(MockResponse().setBody("""{"success":true,"ip":"$ip"}"""));assertNull(metadata.location());server.takeRequest()
+            }
+        }
+    }
+    @Test fun deviceDatesUseLocalCalendarAndAbsentDatesStayAbsent() {
+        val raw="2026-10-20T23:41:10.625960Z"
+        val utc=readableDate(raw,java.util.Locale.US,java.time.ZoneId.of("UTC"))!!
+        val tokyo=readableDate(raw,java.util.Locale.US,java.time.ZoneId.of("Asia/Tokyo"))!!
+        assertTrue(utc.contains("Oct 20, 2026"));assertTrue(tokyo.contains("Oct 21, 2026"))
+        assertFalse(utc.contains("T23:"));assertNull(readableDate(null,java.util.Locale.US,java.time.ZoneId.of("UTC")))
+    }
+
 }

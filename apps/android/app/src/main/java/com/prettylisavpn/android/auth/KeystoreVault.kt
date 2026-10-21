@@ -17,6 +17,7 @@ import javax.crypto.spec.GCMParameterSpec
  * No biometric requirement: restoration must work after normal process restart.
  */
 class KeystoreVault(context: Context) : CredentialVault {
+    private val app = context.applicationContext
     private val record = AtomicFile(File(context.noBackupFilesDir, "session.enc"))
     private val installation = AtomicFile(File(context.noBackupFilesDir, "installation.id"))
     private val gson = Gson()
@@ -54,8 +55,15 @@ class KeystoreVault(context: Context) : CredentialVault {
         record.delete()
         check(!record.baseFile.exists() && !File(record.baseFile.path + ".bak").exists())
     }
+    @android.annotation.SuppressLint("HardwareIds") // Scoped Android ID only seeds the app installation UUID; never sent raw.
     @Synchronized override fun installationId(): String {
         if (installation.baseFile.exists() || File(installation.baseFile.path + ".bak").exists()) return String(installation.readFully(), Charsets.UTF_8).also { UUID.fromString(it) }
-        return UUID.randomUUID().toString().also { atomicWrite(installation, it.toByteArray(Charsets.UTF_8)) }
+        // ANDROID_ID is scoped to this signing key, Android user and device. Keep the
+        // existing installation UUID first, so upgrades never create a new server device.
+        val scoped = android.provider.Settings.Secure.getString(app.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+        val id = if (scoped != null && scoped.matches(Regex("[0-9a-fA-F]{16}")) && scoped != "9774d56d682e549c")
+            UUID.nameUUIDFromBytes((app.packageName + ":installation:v2:" + scoped).toByteArray(Charsets.UTF_8)).toString()
+        else UUID.randomUUID().toString()
+        return id.also { atomicWrite(installation, it.toByteArray(Charsets.UTF_8)) }
     }
 }

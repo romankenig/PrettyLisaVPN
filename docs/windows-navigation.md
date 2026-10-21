@@ -369,3 +369,12 @@ Android 0.6.4 уменьшает только отступы OTP-ссылок (8
 и исправляет симметрию Android знака. Ссылки используют Rubik Medium/Christalle;
 переходы, cooldown, Back guard, Windows и backend unchanged. См.
 [android-otp-icon-polish.md](android-otp-icon-polish.md).
+
+Android 0.7.0 сверяет главную/настройки с текущим Windows: сводка аккаунта,
+автопилот/страна, текущая сеть и режимы защиты. Служебные кнопки убраны с Home:
+Messages перенесены в Settings, Support по-прежнему из About. Connect — только
+UI preview без backend VPN mutation. Устройства используют edge-pull refresh;
+Settings содержит иконки и красный logout. Support сохраняет Back/draft guard,
+показывает подготовку/имена/крестик вложений и одну отправку без Done; диагностический
+техблок opt-in. Windows routes/backend unchanged; см.
+[android-home-support-polish.md](android-home-support-polish.md).

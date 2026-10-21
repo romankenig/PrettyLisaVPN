@@ -80,7 +80,6 @@
     <string name="ui_synthetic_screenshots_0_3_each_is_a_1_kb_sample_no_file_picker_or">测试截图：%1$s / 3，每张1 KB；不访问私人文件。</string>
     <string name="ui_test_data_no_support_email_or_attachment_leaves_this_device">测试数据。邮件及附件不会离开此设备。</string>
     <string name="ui_test_provider_only_real_payment_actions_are_unavailable">仅测试提供商。真实付款不可用。</string>
-    <string name="ui_technical_diagnostics_are_unavailable_for_android">Android暂不支持技术诊断。</string>
     <string name="ui_test_code_for_0_123456_nothing_was_sent">%1$s的测试验证码：123456。未发送邮件。</string>
     <string name="ui_test_mode_does_not_protect_or_route_your_traffic">测试模式不保护或路由您的流量。</string>
     <string name="ui_test_request_accepted">测试请求已接受</string>
@@ -122,7 +121,6 @@
     <string name="ui_devices">设备</string>
     <string name="ui_discard">丢弃</string>
     <string name="ui_discard_draft">丢弃草稿？</string>
-    <string name="ui_done">完成</string>
     <string name="ui_enter_the_code">输入验证码</string>
     <string name="ui_help_and_support">帮助与支持</string>
     <string name="ui_how_to_pay_test_preview">如何付款 — 测试预览</string>
@@ -142,7 +140,6 @@
     <string name="ui_refresh_location">刷新位置</string>
     <string name="ui_remove_and_sign_in">删除并登录</string>
     <string name="ui_remove_local_session">删除本地会话？</string>
-    <string name="ui_remove_selected_images">移除所选图片</string>
     <string name="ui_remove_test_screenshot">移除测试截图</string>
     <string name="ui_renew">续订</string>
     <string name="ui_resend_in_0_s">%1$s秒后可重新发送</string>
@@ -181,7 +178,6 @@
     <string name="ui_stop_simulation">停止模拟</string>
     <string name="ui_subscribe">订阅</string>
     <string name="ui_subscription">订阅</string>
-    <string name="ui_technical_diagnostics_unavailable_on_android">技术诊断 · Android不可用</string>
     <string name="ui_test_scenarios">测试场景</string>
     <string name="ui_unavailable">不可用</string>
     <string name="ui_understood">知道了</string>
@@ -238,4 +234,32 @@
     <string name="about_support_title">帮助与支持</string>
     <string name="about_support_prompt">请描述您需要的帮助</string>
     <string name="about_contact_support">联系支持</string>
+    <string name="dash_account">账户</string>
+    <string name="dash_plan">套餐</string>
+    <string name="dash_devices">活跃设备</string>
+    <string name="dash_where">连接位置</string>
+    <string name="dash_scenario">连接方案</string>
+    <string name="dash_country">选择国家</string>
+    <string name="dash_choose_country">请选择国家</string>
+    <string name="dash_top">推荐位置</string>
+    <string name="dash_all_countries">所有国家</string>
+    <string name="dash_no_countries">暂无可用国家</string>
+    <string name="dash_connect">连接</string>
+    <string name="dash_preview">界面预览：此按钮暂不启动 VPN 连接</string>
+    <string name="dash_region">当前地区</string>
+    <string name="dash_all_traffic">全部流量</string>
+    <string name="dash_include">仅选定网站</string>
+    <string name="dash_exclude">排除选定网站</string>
+    <string name="dash_soon">即将推出</string>
+    <string name="dash_end_session">结束此设备上的会话</string>
+    <string name="dash_added">添加时间</string>
+    <string name="dash_last_login">上次登录</string>
+    <string name="dash_reading_image">正在准备图片…</string>
+    <string name="dash_image_error">无法准备图片</string>
+    <string name="dash_upload_progress">正在发送：%1$d%%</string>
+    <string name="dash_image_ready">已准备发送 · %1$d KB</string>
+    <string name="dash_remove_image">移除图片</string>
+    <string name="dash_diagnostics">附加技术信息</string>
+    <string name="dash_diagnostics_preview">查看附加内容</string>
+    <string name="dash_description_limit">请缩短描述：包含技术信息后最多为 4000 个字符</string>
 </resources>

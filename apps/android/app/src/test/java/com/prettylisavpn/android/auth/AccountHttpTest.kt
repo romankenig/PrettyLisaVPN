@@ -43,4 +43,17 @@ class AccountHttpTest {
         server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"code":"invalid_session"}}"""))
         try { api.messages("synthetic");fail() } catch(e:AuthFailure) { assertEquals("invalid_access_token",e.code) }
     }
+    @Test fun countryAvailabilityAndUploadProgressUseExistingApi()=runBlocking {
+        server.enqueue(MockResponse().setBody("""{"autopilot":{"quality":80,"available":true},"countries":[{"country_code":"DE","quality":80,"available":true}]}"""))
+        assertEquals("DE",api.countries("synthetic").single().code)
+        assertEquals("/vpn/countries",server.takeRequest().path)
+        val id="20000000-0000-0000-0000-000000000005"
+        server.enqueue(MockResponse().setBody("""{"request_id":"$id","status":"ACCEPTED"}"""))
+        val events=mutableListOf<Pair<Long,Long>>()
+        val report=SupportSubmission(id,"Synthetic",supportDescription("Body","{\"platform\":\"ANDROID\"}"),"reply@example.com",listOf(SupportUpload("image/png",java.util.Base64.getEncoder().encodeToString(ByteArray(8192)))))
+        api.supportSubmit("synthetic",report) { sent,total -> events.add(sent to total) }
+        assertEquals(0L,events.first().first);assertTrue(events.last().first>8192);assertEquals(events.last().second,events.last().first)
+        val body=server.takeRequest().body.readUtf8();assertTrue(body.contains("Android diagnostics"));assertTrue(body.contains("\"diagnostics\":null"));assertFalse(body.contains("WINDOWS"))
+    }
+
 }

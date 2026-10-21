@@ -65,6 +65,8 @@ internal class LanguagePreference(saved: String?, private val persist: (String) 
     val automatic get() = !manual
 }
 
+internal data class PublicLocation(val ip: String, val country: String?, val city: String?)
+
 /** Independent public metadata only: no auth headers, email, session or installation ID. */
 internal class PublicMetadata(
     private val versionUrl: String = "https://api.prettylisavpn.com/version",
@@ -88,13 +90,23 @@ internal class PublicMetadata(
     suspend fun version(): String? = read(versionUrl)?.let { value -> runCatching {
         releaseVersion(value.get("application_version")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString)
     }.getOrNull() }
+    suspend fun location(): PublicLocation? = read(countryUrl)?.let { value -> runCatching {
+        require(value.get("success")?.asBoolean == true)
+        val ip = value.get("ip").asString
+        val ipv4 = ip.matches(Regex("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) && ip.split('.').all { it.toInt() in 0..255 }
+        val ipv6 = ip.contains(':') && ip.matches(Regex("[0-9a-fA-F:]{2,45}")) && runCatching { java.net.InetAddress.getByName(ip) is java.net.Inet6Address }.getOrDefault(false)
+        require(ipv4 || ipv6)
+        val country = value.get("country_code")?.takeUnless { it.isJsonNull }?.asString?.takeIf { it.matches(Regex("[A-Z]{2}")) }
+        val city = value.get("city")?.takeUnless { it.isJsonNull }?.asString?.trim()?.takeIf { it.length in 1..120 && it.none(Char::isISOControl) }
+        PublicLocation(ip, country, city)
+    }.getOrNull() }
     suspend fun country(): String? = read(countryUrl)?.let { value -> runCatching {
         value.takeIf { it.get("success")?.asBoolean == true }?.get("country_code")?.asString
             ?.takeIf { it.matches(Regex("[A-Z]{2}")) }
     }.getOrNull() }
 }
 
-internal class PresentationState(context: Context, network: Boolean) {
+internal class PresentationState(context: Context, private val network: Boolean) {
     private val app = context.applicationContext as android.app.Application
     private val preferences = app.getSharedPreferences("presentation", Context.MODE_PRIVATE)
     val preference = LanguagePreference(runCatching { preferences.getString("language", null) }.getOrNull()) {
@@ -102,6 +114,11 @@ internal class PresentationState(context: Context, network: Boolean) {
     }
     private val mutableVersion = MutableStateFlow<String?>(null)
     val version = mutableVersion.asStateFlow()
+    private val mutableLocation = MutableStateFlow<PublicLocation?>(null)
+    val location = mutableLocation.asStateFlow()
+    suspend fun refreshLocation() {
+        if (network) mutableLocation.value = PublicMetadata().location()
+    }
     @Suppress("DEPRECATION")
     private fun vpnActive(): Boolean = runCatching {
         val connectivity = app.getSystemService(ConnectivityManager::class.java)
