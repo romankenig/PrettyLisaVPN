@@ -12,7 +12,6 @@
     <string name="unavailable">nicht verfügbar</string>
     <string name="test_data_notice">testdaten · kein VPN-Tunnel</string>
     <string name="ui_was_0"> (zuvor %1$s)</string>
-    <string name="ui_this_device"> · dieses Gerät</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456: Erfolg · 000000: abgelaufen · andere: ungültig</string>
     <string name="ui_6_digit_code">6-stelliger Code</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">der Versand ist erst bestätigt, wenn der Server SENT meldet.</string>
@@ -47,7 +46,6 @@
     <string name="ui_manage_your_plan_and_payments">tarif und Zahlungen verwalten</string>
     <string name="ui_manually_assigned_premium_capabilities_no_purchase_needed">manuell zugewiesen. Premium-Funktionen ohne Kauf.</string>
     <string name="ui_no_vpn_tunnel_exists_no_handshake_traffic_routing_ip_change_or_in">kein VPN-Tunnel vorhanden. Kein Handshake, Routing, IP-Wechsel oder Internettest. Protokoll: WireGuard; Land: %1$s. Keine Laufzeitstatistik.</string>
-    <string name="ui_no_vpn_tunnel_is_running">es läuft kein VPN-Tunnel.</string>
     <string name="ui_no_browser_or_payment_service_will_open_no_money_is_charged">kein Browser oder Zahlungsdienst wird geöffnet. Kein Geld wird abgebucht.</string>
     <string name="ui_no_countries_found">keine Länder gefunden.</string>
     <string name="ui_no_devices_to_display">keine Geräte vorhanden.</string>
@@ -111,9 +109,7 @@
     <string name="ui_check_test_status">teststatus prüfen</string>
     <string name="ui_close">schließen</string>
     <string name="ui_confirm">bestätigen</string>
-    <string name="ui_connect_vpn_unavailable">VPN verbinden · nicht verfügbar</string>
     <string name="ui_connection_details">verbindungsdetails</string>
-    <string name="ui_contact_support">support kontaktieren</string>
     <string name="ui_continue">weiter</string>
     <string name="ui_continue_with_payment_provider">beim Zahlungsanbieter fortfahren</string>
     <string name="ui_current_device">dieses Gerät</string>
@@ -136,7 +132,6 @@
     <string name="ui_on">ein</string>
     <string name="ui_preview_payment_routes">zahlungswege ansehen</string>
     <string name="ui_refresh">aktualisieren</string>
-    <string name="ui_refresh_account">konto aktualisieren</string>
     <string name="ui_refresh_location">standort aktualisieren</string>
     <string name="ui_remove_and_sign_in">entfernen und anmelden</string>
     <string name="ui_remove_local_session">lokale Sitzung entfernen?</string>

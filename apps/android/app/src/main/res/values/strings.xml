@@ -13,7 +13,6 @@
     <string name="unavailable">unavailable</string>
     <string name="test_data_notice">test data · no VPN tunnel</string>
     <string name="ui_was_0"> (was %1$s)</string>
-    <string name="ui_this_device"> · this device</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456: success · 000000: expired · other codes: invalid</string>
     <string name="ui_6_digit_code">6-digit code</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">a delivery is not confirmed until the server reports SENT.</string>
@@ -48,7 +47,6 @@
     <string name="ui_manage_your_plan_and_payments">manage your plan and payments</string>
     <string name="ui_manually_assigned_premium_capabilities_no_purchase_needed">manually assigned. Premium capabilities; no purchase needed.</string>
     <string name="ui_no_vpn_tunnel_exists_no_handshake_traffic_routing_ip_change_or_in">no VPN tunnel exists. No handshake, traffic routing, IP change or internet verification was performed. Protocol preview: WireGuard; selected country: %1$s. Runtime statistics are unavailable.</string>
-    <string name="ui_no_vpn_tunnel_is_running">no VPN tunnel is running.</string>
     <string name="ui_no_browser_or_payment_service_will_open_no_money_is_charged">no browser or payment service will open. No money is charged.</string>
     <string name="ui_no_countries_found">no countries found.</string>
     <string name="ui_no_devices_to_display">no devices to display.</string>
@@ -113,9 +111,7 @@
     <string name="ui_check_test_status">check test status</string>
     <string name="ui_close">close</string>
     <string name="ui_confirm">confirm</string>
-    <string name="ui_connect_vpn_unavailable">connect VPN · unavailable</string>
     <string name="ui_connection_details">connection details</string>
-    <string name="ui_contact_support">contact support</string>
     <string name="ui_continue">continue</string>
     <string name="ui_continue_with_payment_provider">continue with payment provider</string>
     <string name="ui_current_device">current device</string>
@@ -138,7 +134,6 @@
     <string name="ui_on">on</string>
     <string name="ui_preview_payment_routes">preview payment routes</string>
     <string name="ui_refresh">refresh</string>
-    <string name="ui_refresh_account">refresh account</string>
     <string name="ui_refresh_location">refresh location</string>
     <string name="ui_remove_and_sign_in">remove and sign in</string>
     <string name="ui_remove_local_session">remove local session?</string>

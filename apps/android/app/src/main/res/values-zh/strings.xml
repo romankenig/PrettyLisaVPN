@@ -12,7 +12,6 @@
     <string name="unavailable">不可用</string>
     <string name="test_data_notice">测试数据 · 无VPN隧道</string>
     <string name="ui_was_0">（原价 %1$s）</string>
-    <string name="ui_this_device"> · 此设备</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456：成功 · 000000：过期 · 其他：无效</string>
     <string name="ui_6_digit_code">6位验证码</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">服务器报告SENT前，不能确认已发送。</string>
@@ -47,7 +46,6 @@
     <string name="ui_manage_your_plan_and_payments">管理套餐和付款</string>
     <string name="ui_manually_assigned_premium_capabilities_no_purchase_needed">手动分配，具备Premium功能，无需购买。</string>
     <string name="ui_no_vpn_tunnel_exists_no_handshake_traffic_routing_ip_change_or_in">不存在VPN隧道，未进行握手、路由、IP变更或联网验证。协议预览：WireGuard；所选国家：%1$s。无运行统计。</string>
-    <string name="ui_no_vpn_tunnel_is_running">VPN隧道未运行。</string>
     <string name="ui_no_browser_or_payment_service_will_open_no_money_is_charged">不会打开浏览器或支付服务，不会扣款。</string>
     <string name="ui_no_countries_found">未找到国家。</string>
     <string name="ui_no_devices_to_display">没有可显示的设备。</string>
@@ -111,9 +109,7 @@
     <string name="ui_check_test_status">检查测试状态</string>
     <string name="ui_close">关闭</string>
     <string name="ui_confirm">确认</string>
-    <string name="ui_connect_vpn_unavailable">连接VPN · 不可用</string>
     <string name="ui_connection_details">连接详情</string>
-    <string name="ui_contact_support">联系支持</string>
     <string name="ui_continue">继续</string>
     <string name="ui_continue_with_payment_provider">前往支付服务</string>
     <string name="ui_current_device">当前设备</string>
@@ -136,7 +132,6 @@
     <string name="ui_on">开启</string>
     <string name="ui_preview_payment_routes">预览支付渠道</string>
     <string name="ui_refresh">刷新</string>
-    <string name="ui_refresh_account">刷新账户</string>
     <string name="ui_refresh_location">刷新位置</string>
     <string name="ui_remove_and_sign_in">删除并登录</string>
     <string name="ui_remove_local_session">删除本地会话？</string>
