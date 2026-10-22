@@ -7,7 +7,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.prettylisavpn.android.auth.*
 import com.prettylisavpn.android.data.*
 import java.io.File
-import android.graphics.Bitmap
 import androidx.activity.compose.setContent
 import org.junit.*
 import org.junit.Assert.*
@@ -78,9 +77,14 @@ class AccountScreensTest {
     }
     private fun idle()=compose.waitUntil(10_000) { !model.state.value.busy }
     private fun screenshot(name:String) {
+        compose.runOnUiThread { compose.activity.window.decorView.invalidate() }
         compose.waitForIdle();val i=InstrumentationRegistry.getInstrumentation();i.uiAutomation.waitForIdle(500,5000)
         val dir=File(i.targetContext.getExternalFilesDir(null),"acceptance/account-api");check(dir.mkdirs()||dir.isDirectory)
-        File(dir,"$name.png").outputStream().use { checkNotNull(i.uiAutomation.takeScreenshot()).compress(Bitmap.CompressFormat.PNG,100,it) }
+        val file=File(dir,"$name.png")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(i.uiAutomation.executeShellCommand("screencap -p")).use { input -> file.outputStream().use { input.copyTo(it) } }
+        val header=ByteArray(8)
+        java.io.DataInputStream(file.inputStream()).use { it.readFully(header) }
+        check(header.contentEquals(byteArrayOf(0x89.toByte(),0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)))
     }
     @Test fun devicesRevokeUpdatesHomeAndBack() {
         click("tab_SETTINGS");screenshot("settings-windows");click("settings-devices");waitFor("live-revoke-$device")
@@ -168,12 +172,14 @@ class AccountScreensTest {
             compose.activity.setContent {
                 com.prettylisavpn.android.ui.PrettyLisaTheme {
                     com.prettylisavpn.android.ui.LocalizedApp {
+                        androidx.compose.material3.Surface(color=com.prettylisavpn.android.ui.Brand.PurpleHeart,contentColor=com.prettylisavpn.android.ui.Brand.Mercury) {
                         androidx.compose.foundation.layout.Column {
                             com.prettylisavpn.android.ui.AppHeader(false)
                             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
                                 com.prettylisavpn.android.ui.LiveSupport(model,draft) {}
                             }
                             com.prettylisavpn.android.ui.AppVersionFooter()
+                        }
                         }
                     }
                 }

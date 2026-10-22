@@ -93,7 +93,10 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
                 Text(device.name, style = MaterialTheme.typography.titleMedium)
                 if (device.current) Text(tr(R.string.ui_current_device), style = MaterialTheme.typography.bodySmall, color = Brand.Christalle)
                 Text(if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
-                DetailValue("id", device.id)
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("id", style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                    Text(device.id, style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace))
+                }
                 DetailValue(tr(R.string.dash_added), readableDate(device.added, locale, java.time.ZoneId.systemDefault()) ?: tr(R.string.unavailable))
                 DetailValue(tr(R.string.dash_last_login), readableDate(device.lastLogin, locale, java.time.ZoneId.systemDefault()) ?: tr(R.string.ui_no_data))
                 BrandActionButton(tr(R.string.ui_revoke_access_26), { model.clearError(); target = device.id }, Modifier.testTag("live-revoke-${device.id}"), enabled = device.active && !state.busy && state.loads[Area.DEVICES]?.phase == LoadPhase.READY)
