@@ -22,13 +22,14 @@ class VpnRestartCheck {
         assertFalse(encrypted.contains(id));assertFalse(encrypted.contains(owner))
         var current: VpnSession?=VpnSession(id,"DE",Instant.now(),null,null)
         val directory=File(app.getExternalFilesDir(null),"acceptance/vpn")
+        val bridge=File(app.filesDir,"vpn-test-peer").apply { mkdirs() }
         val api=object:VpnApi {
             override suspend fun current()=current
             override suspend fun create(country:String,publicKey:String):VpnSession=error("restart must not POST")
             override suspend fun delete(id:String) {
                 assertEquals(current!!.id,id)
-                File(directory,"peer-removed").delete();File(directory,"remove-peer").writeText("remove")
-                withTimeout(10_000) { while(!File(directory,"peer-removed").exists())delay(100) }
+                File(bridge,"peer-removed").delete();File(bridge,"remove-peer").writeText("remove")
+                withTimeout(10_000) { while(!File(bridge,"peer-removed").exists())delay(100) }
                 current=null
             }
         }

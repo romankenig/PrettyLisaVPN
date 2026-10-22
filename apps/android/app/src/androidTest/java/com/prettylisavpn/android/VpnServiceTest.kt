@@ -52,6 +52,7 @@ class VpnServiceTest {
         val sessions = SessionCoordinator(auth,vault,"isolated emulator")
         runBlocking { sessions.restore() }
         val directory=File(app.getExternalFilesDir(null),"acceptance/vpn").apply { mkdirs() }
+        val bridge=File(app.filesDir,"vpn-test-peer").apply { mkdirs() }
         var realPeer = false
         var posts = 0; var deletes = 0; var current: VpnSession? = null
         val api = object : VpnApi {
@@ -59,11 +60,11 @@ class VpnServiceTest {
             override suspend fun create(country: String, publicKey: String): VpnSession {
                 assertEquals("DE",country); assertTrue(publicKey.length==44); posts++
                 val serverKey = if (realPeer) {
-                    File(directory,"peer-ready").delete()
-                    File(directory,"client-public-key.tmp").writeText(publicKey)
-                    check(File(directory,"client-public-key.tmp").renameTo(File(directory,"client-public-key")))
-                    withTimeout(10_000) { while(!File(directory,"peer-ready").exists()) delay(100) }
-                    File(directory,"server-public-key").readText().trim()
+                    File(bridge,"peer-ready").delete()
+                    File(bridge,"client-public-key.tmp").writeText(publicKey)
+                    check(File(bridge,"client-public-key.tmp").renameTo(File(bridge,"client-public-key")))
+                    withTimeout(10_000) { while(!File(bridge,"peer-ready").exists()) delay(100) }
+                    File(bridge,"server-public-key").readText().trim()
                 } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
                 return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("10.0.2.2",51820,
                     serverKey,"10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
@@ -71,9 +72,9 @@ class VpnServiceTest {
             override suspend fun delete(id: String) {
                 assertEquals(sessionId,id); deletes++
                 if (realPeer) {
-                    File(directory,"peer-removed").delete()
-                    File(directory,"remove-peer").writeText("remove")
-                    withTimeout(10_000) { while(!File(directory,"peer-removed").exists()) delay(100) }
+                    File(bridge,"peer-removed").delete()
+                    File(bridge,"remove-peer").writeText("remove")
+                    withTimeout(10_000) { while(!File(bridge,"peer-removed").exists()) delay(100) }
                 }
                 current=null
             }

@@ -52,8 +52,8 @@ for attempt in $(seq 1 50); do
   sleep 0.2
 done
 [[ -s /tmp/prettylisa-test-peer-public ]]
-adb shell mkdir -p "/sdcard/Android/data/$package/files/acceptance/vpn"
-adb push /tmp/prettylisa-test-peer-public "/sdcard/Android/data/$package/files/acceptance/vpn/server-public-key" > /dev/null
+adb shell run-as "$package" mkdir -p files/vpn-test-peer
+adb shell run-as "$package" tee files/vpn-test-peer/server-public-key < /tmp/prettylisa-test-peer-public > /dev/null
 
 # Production VpnService + actual WireGuard JNI/TUN. Isolated unresponsive peer, never real OTP.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest \
