@@ -30,14 +30,14 @@ package=com.prettylisavpn.android.dev
 peer_dir=files/vpn-test-peer
 # The emulator exchanges public keys/ack markers only. No private key leaves either peer.
 while true; do
-  if adb shell run-as "$package" test -f "$peer_dir/client-public-key" 2>/dev/null; then
+  if adb shell run-as "$package" ls "$peer_dir/client-public-key" >/dev/null 2>&1; then
     client_public=$(adb shell run-as "$package" cat "$peer_dir/client-public-key" | tr -d '\r\n')
     [[ "$client_public" =~ ^[A-Za-z0-9+/]{43}=$ ]] || exit 1
     sudo wg set wgplci peer "$client_public" allowed-ips 10.77.0.2/32
     adb shell run-as "$package" rm "$peer_dir/client-public-key"
     adb shell run-as "$package" touch "$peer_dir/peer-ready"
   fi
-  if adb shell run-as "$package" test -f "$peer_dir/remove-peer" 2>/dev/null; then
+  if adb shell run-as "$package" ls "$peer_dir/remove-peer" >/dev/null 2>&1; then
     if [[ -n "${client_public:-}" ]]; then sudo wg set wgplci peer "$client_public" remove; fi
     adb shell run-as "$package" rm "$peer_dir/remove-peer"
     adb shell run-as "$package" touch "$peer_dir/peer-removed"

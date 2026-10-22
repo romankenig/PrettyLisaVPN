@@ -109,8 +109,8 @@ class VpnServiceTest {
         compose.waitUntil(10_000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         val network = manager.allNetworks.first { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true }
         assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
-        val notifications=app.getSystemService(NotificationManager::class.java).activeNotifications
-        assertTrue(notifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" })
+        val notifications=app.getSystemService(NotificationManager::class.java)
+        compose.waitUntil(10_000) { notifications.activeNotifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" } }
         compose.waitForIdle()
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"verifying-real-tun.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         // Explicit stop of the failed peer must remove native state and the server session.
