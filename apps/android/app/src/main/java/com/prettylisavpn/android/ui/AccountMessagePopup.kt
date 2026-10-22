@@ -40,13 +40,14 @@ internal fun AccountMessagePopup(model: ScreenModel, blocked: Boolean, navigate:
     }
     var now by remember { mutableStateOf(Instant.now()) }
     val message = remember(state.data.messages, seen, now) { model.messageVisit.next(state.data.messages, Instant.now()) }
-    LaunchedEffect(message?.expiresAt) {
+    LaunchedEffect(message?.expiresAt, started) {
+        if (!started) return@LaunchedEffect
         val expiry = message?.expiresAt ?: return@LaunchedEffect
         val deadline = Instant.parse(expiry)
         while (Instant.now().isBefore(deadline)) delay(java.time.Duration.between(Instant.now(), deadline).toMillis().coerceIn(1, 86_400_000))
         now = Instant.now()
     }
-    if (message == null || !started || blocked || (LocalModalPresence.current?.count ?: 0) > 0) return
+    if (message == null || !MessageVisit.fresh(message, Instant.now()) || !started || blocked || (LocalModalPresence.current?.count ?: 0) > 0) return
     val tr = strings()
     fun later() { model.messageVisit.defer(message); model.clearError() }
     fun acknowledge(destination: String? = null) {

@@ -35,7 +35,8 @@ logout/revoke/billing/discard, не накладываясь на подтвер
 Проверки: каталоги/placeholder parity и shell syntax локально. SDK/эмулятора в
 workspace нет: debug/release builds/lint/JVM и native API26/35/36 — Actions.
 Добавлены pure visit expiry/revision/reset тесты, HTTP expiry projection;
-native popup ACK failure/retry/action, later/rotation/no-inbox, modal priority;
+native popup ACK failure/retry/action, later/rotation/no-inbox, modal priority
+и expiry после background/resume;
 существующий native OTP тест теперь проверяет полный 60s deadline.
 Писем OTP/поддержки, реальных платежей и VPN в автоматизации нет.
 

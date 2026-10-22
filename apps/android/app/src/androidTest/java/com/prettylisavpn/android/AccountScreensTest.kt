@@ -24,6 +24,7 @@ class AccountScreensTest {
     private var active=true
     private var ackFail=false
     private var messages=false
+    private var messageExpiry:String?=null
     private var starts=0
     private var sends=0
     private var deviceReads=0
@@ -44,7 +45,7 @@ class AccountScreensTest {
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
         override suspend fun locations(token:String)=LocationOptions(countries(token),80)
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
-        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION"))else emptyList()
+        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION",expiresAt=messageExpiry))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
         override suspend fun overview(token:String)=BillingOverview(revision,mode,true,"PREMIUM","ACTIVE","2030-01-01T00:00:00Z",true,"Test card","RUB 100.00",routeIds.map { PaymentRoute(it,it,setOf("RUB","USD"),emptySet()) },emptyList(),billingActions,null)
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;return OperationReceipt(device,"PENDING") }
@@ -136,6 +137,16 @@ class AccountScreensTest {
         compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
         click("dismiss-dialog");waitFor("account-message-popup");click("messages-later")
         assertTrue(model.state.value.data.signedIn)
+    }
+    @Test fun expiredPopupDoesNotReturnFromBackground() {
+        messages=true;messageExpiry=java.time.Instant.now().plusSeconds(3).toString()
+        compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        Thread.sleep(3_500)
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        waitFor("live-account")
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+        assertTrue("expiry must not send ACK",messages)
     }
     @Test fun disabledAndSandboxActionsRemainDisabled() {
         click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")
