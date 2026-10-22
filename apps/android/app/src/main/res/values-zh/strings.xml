@@ -233,9 +233,6 @@
     <string name="dash_plan">套餐</string>
     <string name="dash_devices">活跃设备</string>
     <string name="dash_where">连接位置</string>
-    <string name="dash_scenario">连接方案</string>
-    <string name="dash_country">选择国家</string>
-    <string name="dash_choose_country">请选择国家</string>
     <string name="dash_top">推荐位置</string>
     <string name="dash_all_countries">所有国家</string>
     <string name="dash_no_countries">暂无可用国家</string>

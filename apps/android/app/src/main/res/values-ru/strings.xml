@@ -233,9 +233,6 @@
     <string name="dash_plan">план</string>
     <string name="dash_devices">активные устройства</string>
     <string name="dash_where">куда подключаемся</string>
-    <string name="dash_scenario">сценарий подключения</string>
-    <string name="dash_country">выбор страны</string>
-    <string name="dash_choose_country">выберите страну</string>
     <string name="dash_top">лучшие локации</string>
     <string name="dash_all_countries">все страны</string>
     <string name="dash_no_countries">нет доступных стран</string>

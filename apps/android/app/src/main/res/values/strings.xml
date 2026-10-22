@@ -239,9 +239,6 @@
     <string name="dash_plan">plan</string>
     <string name="dash_devices">active devices</string>
     <string name="dash_where">where to connect</string>
-    <string name="dash_scenario">connection scenario</string>
-    <string name="dash_country">choose a country</string>
-    <string name="dash_choose_country">select a country</string>
     <string name="dash_top">top locations</string>
     <string name="dash_all_countries">all countries</string>
     <string name="dash_no_countries">no available countries</string>

@@ -233,9 +233,6 @@
     <string name="dash_plan">offre</string>
     <string name="dash_devices">appareils actifs</string>
     <string name="dash_where">où se connecter</string>
-    <string name="dash_scenario">mode de connexion</string>
-    <string name="dash_country">choisir un pays</string>
-    <string name="dash_choose_country">sélectionnez un pays</string>
     <string name="dash_top">meilleures destinations</string>
     <string name="dash_all_countries">tous les pays</string>
     <string name="dash_no_countries">aucun pays disponible</string>

@@ -233,9 +233,6 @@
     <string name="dash_plan">tarif</string>
     <string name="dash_devices">aktive geräte</string>
     <string name="dash_where">verbindungsziel</string>
-    <string name="dash_scenario">verbindungsmodus</string>
-    <string name="dash_country">land auswählen</string>
-    <string name="dash_choose_country">land auswählen</string>
     <string name="dash_top">beste standorte</string>
     <string name="dash_all_countries">alle länder</string>
     <string name="dash_no_countries">keine länder verfügbar</string>
