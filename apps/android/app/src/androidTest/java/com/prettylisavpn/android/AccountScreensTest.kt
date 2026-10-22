@@ -27,6 +27,8 @@ class AccountScreensTest {
     private var starts=0
     private var sends=0
     private var deviceReads=0
+    private var uploadGate:kotlinx.coroutines.CompletableDeferred<Unit>?=null
+    private var submitted:SupportSubmission?=null
     private var receipt:SupportReceipt?=null
     private lateinit var model:ScreenModel
     private val api=object:AuthApi {
@@ -47,7 +49,10 @@ class AccountScreensTest {
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
         override suspend fun supportStatus(token:String,id:String)=receipt
-        override suspend fun supportSubmit(token:String,report:SupportSubmission):SupportReceipt { sends++;return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
+        override suspend fun supportSubmit(token:String,report:SupportSubmission,progress:(Long,Long)->Unit):SupportReceipt {
+            progress(50,100);uploadGate?.await();return supportSubmit(token,report)
+        }
+        override suspend fun supportSubmit(token:String,report:SupportSubmission):SupportReceipt { submitted=report;sends++;return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
     }
     @Before fun launch() {
         val vault=object:CredentialVault {
@@ -60,7 +65,7 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         compose.waitForIdle();instrumentation.waitForIdleSync();instrumentation.uiAutomation.waitForIdle(500,5_000)
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
-        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test"),accounts)
+        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test"),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
     }
@@ -155,6 +160,9 @@ class AccountScreensTest {
     }
 
     @Test fun supportPreparesNamedAttachmentAndRemovesItWithACross() {
+        val uri="content://com.prettylisavpn.android.test.images/sample"
+        val info=kotlinx.coroutines.runBlocking { supportImageInfo(compose.activity,uri) }
+        assertEquals("test-screen.png",info.name)
         val draft=androidx.lifecycle.SavedStateHandle(mapOf("subject" to "Synthetic report", "description" to "No email will be sent", "selected" to arrayListOf("content://com.prettylisavpn.android.test.images/sample")))
         compose.runOnUiThread {
             compose.activity.setContent {
@@ -188,6 +196,24 @@ class AccountScreensTest {
         click("support-remove-0")
         compose.onNodeWithTag("support-image-0").assertDoesNotExist()
         assertEquals(0,sends)
+        compose.runOnUiThread { draft["selected"]=arrayListOf(uri) }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("ready to send",substring=true).fetchSemanticsNodes().isNotEmpty() }
+        uploadGate=kotlinx.coroutines.CompletableDeferred()
+        try {
+            click("live-support-send")
+            compose.waitUntil(10_000) { model.state.value.busy && compose.onAllNodesWithText("sending: 50%").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("support-remove-0").assertIsNotEnabled()
+            compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            compose.onNodeWithTag("confirmation-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("live-support-screen").assertExists()
+            screenshot("support-upload-progress")
+        } finally { uploadGate?.complete(Unit) }
+        waitFor("live-support-receipt");idle()
+        assertEquals(1,sends)
+        assertEquals(1,submitted!!.uploads.size)
+        assertTrue(submitted!!.description.contains("Android diagnostics"));assertTrue(submitted!!.description.contains("ANDROID"))
+        compose.onNodeWithText("done").assertDoesNotExist()
+        screenshot("support-attachment-accepted")
     }
 
 }
