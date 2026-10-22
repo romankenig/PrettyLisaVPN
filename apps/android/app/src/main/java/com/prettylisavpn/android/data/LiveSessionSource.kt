@@ -105,9 +105,10 @@ class LiveSessionSource(
             }
             is Command.Revoke -> {
                 UUID.fromString(command.id)
-                if (snapshot.devices.any { it.id == command.id && it.current }) vpn?.controller?.beforeLogout()
+                if (snapshot.devices.any { it.id == command.id && it.current }) vpn?.controller?.beforeForget()
                 val result = sessions.request { api().revoke(it, command.id) }
                 if (result.current) {
+                    vpn?.controller?.confirmedDeviceRevocation()
                     sessions.forgetLocalSession(); snapshot = Snapshot(); disk { journalStore.clear() }
                 } else {
                     snapshot = initial.copy(devices = snapshot.devices.map { if (it.id == result.id) result else it })

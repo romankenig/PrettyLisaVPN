@@ -416,8 +416,9 @@ Home connect теперь запускает системный VPN consent, з�
 permission и production WireGuard VpnService. Отказ не создаёт backend session.
 Кнопка становится disconnect в connecting/verifying/connected; после сбоя доступны
 ошибка и повтор cleanup. Connected только после VPN-bound проверки, не по UP.
-Logout/current-device revoke сначала прекращают VPN и очищают backend session;
-неподтверждённый cleanup сохраняет credentials для повтора. Back/tab/rotation не
+Logout сначала прекращает VPN и очищает backend session; неподтверждённый cleanup
+сохраняет credentials для повтора. При current-device revoke local stop обязателен,
+затем подтверждённый RPC передаёт durable termination серверу и завершает вход. Back/tab/rotation не
 повторяют POST и не владеют lifetime туннеля; stop есть в постоянном уведомлении.
 Отдельные fixture-маршруты по-прежнему явно симулированы, release их не содержит.
 Windows navigation/backend unchanged; [handoff](android-vpn-runtime.md).

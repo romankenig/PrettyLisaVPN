@@ -60,8 +60,10 @@ Handshake без canary и canary без tunnel counters недостаточн�
 Повторная проверка каждые 15 секунд, плюс backend current/expiry; потеря проверки,
 отзыв/stop сервиса и expiry прекращают Connected и ведут к local stop → DELETE.
 Переход Wi-Fi/mobile обслуживает штатный GoBackend; бесшовность не обещается,
-неуспешная проверка безопасно разрывает попытку. При logout/current-device revoke
-cleanup выполняется перед потерей bearer; неподтверждённый cleanup блокирует logout.
+неуспешная проверка безопасно разрывает попытку. При logout cleanup выполняется перед потерей bearer; неподтверждённый cleanup
+блокирует logout. Current-device revoke сначала гарантирует local stop, затем
+подтверждённый backend revoke передаёт durable cleanup серверу и снимает локальный
+uncertain intent. Это способ разрешить неизвестный create без повторного POST.
 Явное удаление локальных auth credentials останавливает local VPN и сохраняет
 неразрешённый cleanup для следующего входа того же аккаунта. Backend device revoke
 сам выполняет durable termination; приложение не сообщает успешный DELETE без ответа.
@@ -80,7 +82,7 @@ current; найденная сессия удаляется. Null current не �
 Повтор cleanup через кнопку, каждые 15 секунд в живом процессе и после restart.
 При offline нет ложного обещания удаления peer; UI явно показывает pending cleanup.
 Если сервер так и не опубликовал результат, требуется серверная reconciliation /
-отзыв устройства владельцем; Android не обходит это новой сессией/ключом.
+подтверждённый отзыв текущего устройства владельцем; Android не обходит это новой сессией/ключом.
 
 ## Проверки и пределы приёмки
 

@@ -24,7 +24,7 @@ class VpnApiTest {
         assertNull(parseVpnSession(first).config)
     }
     @Test fun invalidRoutesDnsKeysCountryAndPortAreRejectedButIdIsRetained() {
-        for (variant in listOf(raw.replace("0.0.0.0/0", "0.0.0.0/1"), raw.replace("1.1.1.1", "::1"), raw.replace("10.77.0.2/32", "10.77.0.2/24"), raw.replace("203.0.113.1", "host.invalid"), raw.replace("\"mtu\":1280", "\"mtu\":1400"), raw.replace("AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="))) {
+        for (variant in listOf(raw.replace("\"port\":51820", "\"port\":51820.5"), raw.replace("\"mtu\":1280", "\"future_required_feature\":true,\"mtu\":1280"), raw.replace("0.0.0.0/0", "0.0.0.0/1"), raw.replace("1.1.1.1", "::1"), raw.replace("10.77.0.2/32", "10.77.0.2/24"), raw.replace("203.0.113.1", "host.invalid"), raw.replace("\"mtu\":1280", "\"mtu\":1400"), raw.replace("AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="))) {
             val session = parseVpnSession(variant); assertNotNull(session.id); assertNull(session.config)
         }
     }

@@ -52,6 +52,7 @@ class VpnController(
     private var operation: Job? = null
     private var active: VpnSession? = null
     private var activeOwner: String? = null
+    private val cleanupKnown = mutableMapOf<String, String>()
     private var deadline = Long.MAX_VALUE
     private var retry: Job? = null
     private var expiry: Job? = null
@@ -95,7 +96,7 @@ class VpnController(
                         throw e
                     }
                     // Persist a received UUID even if stop/consent revoke raced with the response.
-                    withContext(NonCancellable) { active = session; save(id, PendingVpn(session.id)) }
+                    withContext(NonCancellable) { active = session; cleanupKnown[id] = session.id; save(id, PendingVpn(session.id)) }
                     ensureActive()
                     val config = session.config ?: throw VpnFailure(VpnError.UNSUPPORTED)
                     deadline = session.expiresAt?.let { elapsed() + Duration.between(session.serverTime, it).toMillis().coerceAtLeast(0) } ?: Long.MAX_VALUE
@@ -160,6 +161,19 @@ class VpnController(
             if (active != null) throw failure
         }
     }
+    /** Call only after a successful current-device revoke RPC. The server now owns
+     * durable termination, including any late create reserved for this device.
+     */
+    suspend fun confirmedDeviceRevocation() {
+        operation?.cancelAndJoin()
+        mutex.withLock {
+            val id = activeOwner ?: owner()
+            runtime.stop()
+            active = null; expiry?.cancel(); expiry = null
+            if (id != null) { save(id, null); cleanupKnown.remove(id) }
+            activeOwner = null; set(VpnPhase.DISCONNECTED); serviceIdle()
+        }
+    }
     /** Force-stop/restart never resurrects a remembered Connected state or POST. */
     suspend fun recover() = mutex.withLock {
         if (operation?.isActive == true || active != null) return@withLock
@@ -183,16 +197,20 @@ class VpnController(
     }
     private suspend fun cleanup(id: String): Boolean {
         if (owner() != id) return false // Never send the old account's UUID under a new account.
+        // A storage failure after receiving a UUID must not prevent best-effort DELETE.
+        val known = cleanupKnown[id]
+        known?.let { api.delete(it) }
         val pending = read(id)
-        pending?.id?.let { api.delete(it) }
+        pending?.id?.takeIf { it != known }?.let { api.delete(it) }
         val current = api.current()
         if (current != null) {
-            save(id, PendingVpn(current.id))
-            api.delete(current.id)
+            cleanupKnown[id] = current.id
+            try { save(id, PendingVpn(current.id)) } finally { api.delete(current.id) }
         }
         // Null current cannot disprove a timed-out POST still provisioning in the background.
-        if (pending?.uncertain == true && current == null) return false
+        if (pending?.uncertain == true && current == null && known == null) return false
         save(id, null)
+        cleanupKnown.remove(id)
         return true
     }
     private fun scheduleRetry() {

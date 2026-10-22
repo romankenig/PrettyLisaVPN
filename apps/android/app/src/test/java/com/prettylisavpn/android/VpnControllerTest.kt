@@ -14,8 +14,9 @@ class VpnControllerTest {
     private class Store : VpnJournal {
         var pending: PendingVpn? = null
         var fail = false
+        var writes = 0; var failAt = -1
         override fun read(owner: String) = pending
-        override fun write(owner: String, value: PendingVpn?) { if (fail) error("disk"); pending = value }
+        override fun write(owner: String, value: PendingVpn?) { writes++; if (fail || writes == failAt) error("disk"); pending = value }
     }
     private inner class Api : VpnApi {
         var value: VpnSession? = null
@@ -139,6 +140,22 @@ class VpnControllerTest {
         c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }; api.failDelete=true
         c.beforeForget()
         assertFalse(runtime.up); assertEquals(sessionId,store.pending!!.id); assertEquals(VpnPhase.CLEANUP_PENDING,c.status.value.phase)
+    }
+    @Test fun confirmedDeviceRevocationResolvesUnknownCreateWithoutReplayingPost() = scenario {
+        val api=Api();api.failCreate="network_uncertain";val runtime=Runtime();val store=Store();val c=controller(api,runtime,store,this)
+        c.connect("AUTO");await { c.status.value.phase==VpnPhase.CLEANUP_PENDING }
+        c.beforeForget();assertNotNull(store.pending)
+        // The caller has confirmed a successful server-side current-device revoke.
+        c.confirmedDeviceRevocation()
+        assertNull(store.pending);assertFalse(runtime.up);assertEquals(1,api.posts);assertEquals(VpnPhase.DISCONNECTED,c.status.value.phase)
+    }
+    @Test fun storageFailureAfterAllocationStillDeletesKnownServerSession() = scenario {
+        val api=Api();val runtime=Runtime();val store=Store()
+        // Initial reconcile + durable create intent succeed; persisting the received UUID fails.
+        store.failAt=3
+        val c=controller(api,runtime,store,this);c.connect("AUTO")
+        await { c.status.value.phase==VpnPhase.FAILED }
+        assertEquals(1,api.posts);assertTrue(api.deletes>0);assertNull(api.value);assertNull(store.pending);assertFalse(runtime.up)
     }
     @Test fun expiryUsesServerDurationRatherThanDeviceWallClock() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store()
