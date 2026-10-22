@@ -17,10 +17,11 @@ import kotlinx.coroutines.*
  */
 class PrettyVpnService : GoBackend.VpnService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var observer: Job? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         val host = AndroidVpnHost.instance
-        if (host == null || intent?.action !in setOf(CONNECT, DISCONNECT)) { stopSelf(); return START_NOT_STICKY }
+        if (host == null || intent == null || intent.action !in setOf(CONNECT, DISCONNECT)) { stopSelf(); return START_NOT_STICKY }
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL, "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
         val initial = notification(VpnStatus(VpnPhase.CONNECTING))
@@ -29,7 +30,8 @@ class PrettyVpnService : GoBackend.VpnService() {
         if (intent.action == DISCONNECT) host.disconnect()
         else if (android.net.VpnService.prepare(this) == null) host.controller.connect(intent.getStringExtra("country") ?: "AUTO")
         else { host.disconnect(); stopSelf() }
-        scope.launch { host.status.collect { manager.notify(ID, notification(it)) } }
+        observer?.cancel()
+        observer = scope.launch { host.status.collect { manager.notify(ID, notification(it)) } }
         return START_NOT_STICKY
     }
     private fun notification(status: VpnStatus): Notification {

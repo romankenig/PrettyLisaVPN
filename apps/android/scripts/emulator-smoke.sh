@@ -6,6 +6,7 @@ api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 [[ "$api_level" =~ ^[0-9]+$ ]]
 mkdir -p evidence
 cleanup() {
+  if [[ -n "${vpn_peer_pid:-}" ]]; then kill "$vpn_peer_pid" 2>/dev/null || true; wait "$vpn_peer_pid" 2>/dev/null || true; fi
   # Preserve framework/IME evidence too: a System UI ANR must not look like an app-input failure.
   adb logcat -d -b events > evidence/android-events.txt 2>&1 || true
   adb shell dumpsys activity lastanr > evidence/last-anr.txt 2>&1 || true
@@ -98,6 +99,18 @@ assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_F
 ACCOUNT_CHECK
 done
 
+# The disposable host peer is owned only by this emulator job; keys are never artifacts.
+bash apps/android/scripts/vpn-test-peer.sh > /tmp/prettylisa-peer-log 2>&1 &
+vpn_peer_pid=$!
+for attempt in $(seq 1 50); do
+  if [[ -s /tmp/prettylisa-test-peer-public ]]; then break; fi
+  if ! kill -0 "$vpn_peer_pid" 2>/dev/null; then cat /tmp/prettylisa-peer-log; exit 1; fi
+  sleep 0.2
+done
+[[ -s /tmp/prettylisa-test-peer-public ]]
+adb shell mkdir -p "/sdcard/Android/data/$package/files/acceptance/vpn"
+adb push /tmp/prettylisa-test-peer-public "/sdcard/Android/data/$package/files/acceptance/vpn/server-public-key" > /dev/null
+
 # Production VpnService + actual WireGuard JNI/TUN. Isolated unresponsive peer, never real OTP.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-instrumentation.txt
@@ -107,6 +120,9 @@ result = pathlib.Path('evidence/vpn-instrumentation.txt').read_text()
 assert re.search(r'OK \(1 test\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 VPN_CHECK
+kill "$vpn_peer_pid"
+wait "$vpn_peer_pid" || true
+vpn_peer_pid=
 
 # Full fixture flows use the same installed APK, real Android Back and native dialogs.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest \

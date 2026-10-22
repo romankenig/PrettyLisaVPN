@@ -8,7 +8,7 @@ backend 0.10.0 и schema0026 не изменяются. Отдельная ве�
 
 ## Границы
 
-Официальный `com.wireguard.android:tunnel:1.0.20250531`, userspace GoBackend без root.
+Официальный `com.wireguard.android:tunnel:1.0.20260102`, userspace GoBackend без root.
 Версия закреплена; CI должен подтвердить разрешение Maven и совместимость API.
 В manifest один `.vpn.PrettyVpnService`, наследник `GoBackend.VpnService`.
 Исходный сервис библиотеки удаляется manifest merger. `super.onCreate()` передаёт
@@ -82,7 +82,9 @@ JVM: HTTP contract/header, first candidate, malformed transport, single-flight,
 startup failure, no premature Connected, uncertain POST, cancellation, cleanup retry,
 restart, owner isolation, revocation/health loss и storage-before-POST.
 Native API26/35/36: реальный consent/отказ, production foreground VpnService,
-WireGuard JNI/TUN, notification, unresponsive isolated peer (НЕ Connected), revoke
+WireGuard JNI/TUN, notification, unresponsive isolated peer (НЕ Connected),
+затем ephemeral kernel WireGuard peer на том же CI runner (handshake + DNS/HTTPS
+через NAT, CONNECTED), disconnect/revoke
 и cleanup. Скриншот снимается screencap без обработки. Автотесты не отправляют OTP,
 письма поддержки, платежи и не создают реальный backend peer.
 

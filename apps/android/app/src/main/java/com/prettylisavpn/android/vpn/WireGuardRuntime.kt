@@ -74,7 +74,7 @@ internal class WireGuardRuntime(private val context: Context, private val lost: 
             if (peer.latestHandshakeEpochMillis() <= 0 || age !in -5_000..180_000) return@withLock false
             val pool = ConnectionPool(0, 1, TimeUnit.SECONDS)
             val client = OkHttpClient.Builder().socketFactory(network.socketFactory)
-                .dns(Dns { host -> network.getAllByName(host).filterIsInstance<Inet4Address>().also { if (it.isEmpty()) throw java.net.UnknownHostException() } })
+                .dns(object : Dns { override fun lookup(hostname: String): List<java.net.InetAddress> = network.getAllByName(hostname).filterIsInstance<Inet4Address>().also { if (it.isEmpty()) throw java.net.UnknownHostException() } })
                 .connectionPool(pool).followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
                 .connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS).callTimeout(8, TimeUnit.SECONDS).build()
             try {

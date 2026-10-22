@@ -74,7 +74,7 @@ dependencies {
 
     implementation(libs.okhttp.core)
     implementation(libs.gson)
-    implementation("com.wireguard.android:tunnel:1.0.20250531")
+    implementation("com.wireguard.android:tunnel:1.0.20260102")
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)

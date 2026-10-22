@@ -17,6 +17,8 @@ import com.prettylisavpn.android.auth.*
 import com.prettylisavpn.android.ui.*
 import com.prettylisavpn.android.vpn.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -49,15 +51,31 @@ class VpnServiceTest {
         }
         val sessions = SessionCoordinator(auth,vault,"isolated emulator")
         runBlocking { sessions.restore() }
+        val directory=File(app.getExternalFilesDir(null),"acceptance/vpn").apply { mkdirs() }
+        var realPeer = false
         var posts = 0; var deletes = 0; var current: VpnSession? = null
         val api = object : VpnApi {
             override suspend fun current() = current
             override suspend fun create(country: String, publicKey: String): VpnSession {
                 assertEquals("DE",country); assertTrue(publicKey.length==44); posts++
+                val serverKey = if (realPeer) {
+                    File(directory,"peer-ready").delete()
+                    File(directory,"client-public-key").writeText(publicKey)
+                    withTimeout(10_000) { while(!File(directory,"peer-ready").exists()) delay(100) }
+                    File(directory,"server-public-key").readText().trim()
+                } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
                 return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("10.0.2.2",51820,
-                    "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=","10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
+                    serverKey,"10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
             }
-            override suspend fun delete(id: String) { assertEquals(sessionId,id); deletes++; current=null }
+            override suspend fun delete(id: String) {
+                assertEquals(sessionId,id); deletes++
+                if (realPeer) {
+                    File(directory,"peer-removed").delete()
+                    File(directory,"remove-peer").writeText("remove")
+                    withTimeout(10_000) { while(!File(directory,"peer-removed").exists()) delay(100) }
+                }
+                current=null
+            }
         }
         val journal = EncryptedVpnJournal(app)
         journal.write(owner,null)
@@ -91,15 +109,26 @@ class VpnServiceTest {
         assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
         val notifications=app.getSystemService(NotificationManager::class.java).activeNotifications
         assertTrue(notifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" })
-        val directory=File(app.getExternalFilesDir(null),"acceptance/vpn").apply { mkdirs() }
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"verifying-real-tun.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
+        // Explicit stop of the failed peer must remove native state and the server session.
+        click()
+        compose.waitUntil(15_000) { host.status.value.phase == VpnPhase.DISCONNECTED }
+        assertNull(current); assertNull(journal.read(owner))
+        compose.waitUntil(10_000) { manager.allNetworks.none { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
+        // A real ephemeral WireGuard peer on this CI runner now serves DNS/HTTPS through NAT.
+        realPeer = true
+        click()
+        compose.waitUntil(35_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
+        assertEquals(VpnPhase.CONNECTED,host.status.value.phase)
+        assertEquals(2,posts)
+        instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"connected-real-peer.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         // System revocation is delivered to the production service via onRevoke.
         device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN deny")
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.DISCONNECTED,VpnPhase.FAILED) }
         assertTrue(deletes>0); assertNull(current); assertNull(journal.read(owner))
         compose.waitUntil(10_000) { manager.allNetworks.none { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         assertNotEquals(VpnPhase.CONNECTED,host.status.value.phase)
-        File(directory,"result.txt").writeText("source_sha=${BuildConfig.SOURCE_SHA}\nreal_consent=true\nreal_foreground_service=true\nreal_jni_tun=true\npeer=isolated_unresponsive\nconnected=false\nserver_cleanup=true\nrevoke=true\n")
+        File(directory,"result.txt").writeText("source_sha=${BuildConfig.SOURCE_SHA}\nreal_consent=true\nreal_foreground_service=true\nreal_jni_tun=true\nunresponsive_peer_connected=false\nreal_ephemeral_peer_connected=true\nVPN_bound_DNS_HTTPS=true\nserver_cleanup=true\nrevoke=true\n")
         device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN default")
     }
 }
