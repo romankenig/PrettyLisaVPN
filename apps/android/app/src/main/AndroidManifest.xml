@@ -15,8 +15,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PrettyLisaVPN">
         <service android:name="com.wireguard.android.backend.GoBackend$VpnService" tools:node="remove" />
+        <!-- Approved VPN apps qualify through OP_ACTIVATE_VPN, not exact alarms.
+             Lint's manifest-only check models only the alarm branch. Consent is checked
+             before startForeground; API35/36 native acceptance checks the actual exemption. -->
         <service android:name=".vpn.PrettyVpnService" android:permission="android.permission.BIND_VPN_SERVICE"
-            android:exported="false" android:foregroundServiceType="systemExempted">
+            android:exported="false" android:foregroundServiceType="systemExempted" tools:ignore="ForegroundServicePermission">
             <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
             <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="false" />
         </service>

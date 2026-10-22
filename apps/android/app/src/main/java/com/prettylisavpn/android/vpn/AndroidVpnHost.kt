@@ -11,7 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 
 /** The service and Activity use the same process-wide coordinator and auth rotation owner. */
 class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, api: VpnApi, journal: VpnJournal) : VpnActions {
-    private val app = context.applicationContext
+    private val app = context.applicationContext as android.app.Application
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val controller: VpnController
     init {
@@ -23,6 +23,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     override val status get() = controller.status
     override fun connect(country: String) {
         try {
+            if (country != "AUTO" && !country.matches(Regex("[A-Z]{2}"))) { controller.rejected(VpnError.UNSUPPORTED); return }
             if (VpnService.prepare(app) != null) { controller.rejected(VpnError.PERMISSION); return }
             app.startForegroundService(Intent(app, PrettyVpnService::class.java).setAction(PrettyVpnService.CONNECT).putExtra("country", country))
         } catch (_: Exception) { controller.rejected(VpnError.UNKNOWN) }

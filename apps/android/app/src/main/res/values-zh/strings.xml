@@ -235,7 +235,6 @@
     <string name="dash_all_countries">所有国家</string>
     <string name="dash_no_countries">暂无可用国家</string>
     <string name="dash_connect">连接</string>
-    <string name="dash_preview">界面预览：此按钮暂不启动 VPN 连接</string>
     <string name="dash_region">当前地区</string>
     <string name="dash_all_traffic">全部流量</string>
     <string name="dash_include">仅选定网站</string>

@@ -235,7 +235,6 @@
     <string name="dash_all_countries">все страны</string>
     <string name="dash_no_countries">нет доступных стран</string>
     <string name="dash_connect">подключить</string>
-    <string name="dash_preview">проверка интерфейса: эта кнопка пока не запускает VPN</string>
     <string name="dash_region">текущий регион</string>
     <string name="dash_all_traffic">весь трафик</string>
     <string name="dash_include">только выбранные сайты</string>

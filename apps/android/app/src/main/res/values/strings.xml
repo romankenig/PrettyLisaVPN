@@ -241,7 +241,6 @@
     <string name="dash_all_countries">all countries</string>
     <string name="dash_no_countries">no available countries</string>
     <string name="dash_connect">connect</string>
-    <string name="dash_preview">interface preview: this button does not start a VPN connection</string>
     <string name="dash_region">current region</string>
     <string name="dash_all_traffic">all traffic</string>
     <string name="dash_include">only selected sites</string>

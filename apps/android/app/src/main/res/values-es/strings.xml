@@ -235,7 +235,6 @@
     <string name="dash_all_countries">todos los países</string>
     <string name="dash_no_countries">no hay países disponibles</string>
     <string name="dash_connect">conectar</string>
-    <string name="dash_preview">vista previa: este botón aún no inicia una conexión VPN</string>
     <string name="dash_region">región actual</string>
     <string name="dash_all_traffic">todo el tráfico</string>
     <string name="dash_include">solo sitios seleccionados</string>
