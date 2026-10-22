@@ -378,3 +378,17 @@ Settings содержит иконки и красный logout. Support сох�
 показывает подготовку/имена/крестик вложений и одну отправку без Done; диагностический
 техблок opt-in. Windows routes/backend unchanged; см.
 [android-home-support-polish.md](android-home-support-polish.md).
+
+
+### Android 0.7.1: локации, устройства и связь
+
+Home использует один dropdown автопилот → топ-3 → все доступные страны с флагами
+и фактическим quality из GET /vpn/countries. Текущие регион/IP находятся внутри
+карточки подключения. Connect остаётся активным UI preview без VPN/session POST.
+Devices показывает только ACTIVE, текущее устройство первым с яркой отметкой;
+отзыв текущего устройства по-прежнему завершает сессию. Settings → уведомления
+сервиса сохраняет серверные ACK revision/navigation guards и отличается от поддержки.
+Общая полоса потери связи доступна на всех live-маршрутах, включая auth, над footer.
+При возвращении validated default network проверяется public GET /version;
+при остановке Activity callback/опрос освобождаются. Windows/backend не изменены.
+См. [Android handoff](android-location-connectivity-polish.md).

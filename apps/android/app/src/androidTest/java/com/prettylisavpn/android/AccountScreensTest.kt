@@ -17,6 +17,7 @@ class AccountScreensTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private val owner="30000000-0000-0000-0000-000000000001"
     private val device="30000000-0000-0000-0000-000000000002"
+    private val current="30000000-0000-0000-0000-000000000004"
     private val message="30000000-0000-0000-0000-000000000003"
     private var mode="DISABLED"
     private var revision="r1"
@@ -39,8 +40,9 @@ class AccountScreensTest {
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
-        override suspend fun devices(token:String): List<Device> { deviceReads++; return listOf(Device(device,"Test phone",false,"2026-10-20T00:00:00Z",null,active)) }
-        override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).single() }
+        override suspend fun devices(token:String): List<Device> { deviceReads++; return listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active), Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
+        override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
+        override suspend fun locations(token:String)=LocationOptions(countries(token),80)
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
         override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION"))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
@@ -93,12 +95,18 @@ class AccountScreensTest {
         val reads=deviceReads
         compose.onNodeWithTag("live-devices-screen").performTouchInput { swipeDown() }
         compose.waitUntil(10_000) { deviceReads>reads && model.state.value.loads[Area.DEVICES]?.phase==LoadPhase.READY }
+        compose.onNodeWithTag("live-revoke-$device").performScrollTo()
         val afterDown=deviceReads
         compose.onNodeWithTag("live-devices-screen").performTouchInput { swipeUp() }
         compose.waitUntil(10_000) { deviceReads>afterDown && model.state.value.loads[Area.DEVICES]?.phase==LoadPhase.READY }
-        screenshot("devices-readable")
-        click("live-revoke-$device");click("confirm-dialog");idle()
-        compose.onNodeWithText("revoked").assertExists();screenshot("devices-revoked")
+        val badge=compose.onNodeWithTag("current-device-badge").fetchSemanticsNode().boundsInRoot
+        val other=compose.onNodeWithTag("device-$device").fetchSemanticsNode().boundsInRoot
+        assertTrue("current device must be first",badge.top < other.top)
+        compose.onNodeWithTag("current-device-badge").performScrollTo()
+        screenshot("devices-current-first")
+        click("live-revoke-$device")
+        click("confirm-dialog");idle()
+        compose.onNodeWithTag("device-$device").assertDoesNotExist();compose.onNodeWithTag("current-device-badge").assertExists();screenshot("devices-revoked")
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
     }
@@ -155,7 +163,12 @@ class AccountScreensTest {
         click("home-connect")
         assertFalse(model.state.value.data.simulatedConnection)
         assertEquals(0,starts)
-        click("home-manual");click("home-country")
+        compose.onNodeWithTag("home-manual").assertDoesNotExist()
+        click("home-country")
+        compose.onNodeWithTag("home-country-AUTO").assertExists()
+        compose.onNodeWithTag("home-top-DE").assertExists()
+        compose.onAllNodesWithContentDescription("availability 80 out of 100").assertAny(hasText("80"))
+        screenshot("home-location-dropdown")
         compose.waitUntil(10_000) { model.state.value.data.countries.size==2 }
         click("home-country-DE")
         compose.onNodeWithTag("home-country").assertTextContains("Germany", substring=true)

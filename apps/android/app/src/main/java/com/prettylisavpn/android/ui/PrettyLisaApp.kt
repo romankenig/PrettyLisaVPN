@@ -82,6 +82,7 @@ fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) {
             Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) {
                 if (model.fixture) FeatureApp(model) else SessionApp(model)
             }
+            ServerConnectionNotice(enabled = !model.fixture)
             AppVersionFooter()
         }
     }

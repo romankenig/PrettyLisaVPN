@@ -46,7 +46,7 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
                 SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
-                SettingsOption(tr(R.string.ui_account_messages), tr(R.string.ui_messages_0, state.data.messages.size), R.drawable.nav_messages, "settings-messages") { go("MESSAGES") }
+                SettingsOption(tr(R.string.ui_account_messages), tr(R.string.notifications_detail, state.data.messages.size), R.drawable.nav_messages, "settings-messages") { go("MESSAGES") }
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
@@ -88,10 +88,13 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
     PhoneScreen("live-devices-screen", onRefresh = { model.load(Area.DEVICES) }, refreshing = state.loads[Area.DEVICES]?.phase == LoadPhase.LOADING) {
         ScreenHeading(tr(R.string.ui_devices), back)
         LiveLoad(model, Area.DEVICES) {
-            if (state.data.devices.isEmpty()) BrandCard { Text(tr(R.string.ui_no_devices_to_display)) }
-            state.data.devices.forEach { device -> BrandCard {
+            val devices = state.data.devices.filter { it.active }.sortedByDescending { it.current }
+            if (devices.isEmpty()) BrandCard { Text(tr(R.string.ui_no_devices_to_display)) }
+            devices.forEach { device -> BrandCard(Modifier.testTag("device-${device.id}")) {
                 Text(device.name, style = MaterialTheme.typography.titleMedium)
-                if (device.current) Text(tr(R.string.ui_current_device), style = MaterialTheme.typography.bodySmall, color = Brand.Christalle)
+                if (device.current) Surface(color = Brand.Viking, contentColor = Brand.Christalle, shape = MaterialTheme.shapes.small) {
+                    Text(tr(R.string.ui_current_device), Modifier.padding(horizontal = 12.dp, vertical = 6.dp).testTag("current-device-badge"), style = MaterialTheme.typography.titleMedium)
+                }
                 Text(if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text("id", style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
@@ -115,6 +118,7 @@ private fun LiveMessages(model: ScreenModel, back: () -> Unit, navigate: (String
     val state by model.state.collectAsState()
     PhoneScreen("live-messages-screen") {
         ScreenHeading(tr(R.string.ui_account_messages), back)
+        Text(tr(R.string.notifications_explanation), style = MaterialTheme.typography.bodySmall)
         LiveLoad(model, Area.MESSAGES) {
             if (state.data.messages.isEmpty()) BrandCard { Text(tr(R.string.ui_no_unread_messages)) }
             state.data.messages.forEach { message -> BrandCard {

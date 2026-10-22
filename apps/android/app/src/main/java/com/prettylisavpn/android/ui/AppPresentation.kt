@@ -87,6 +87,7 @@ internal class PublicMetadata(
             }
         }.getOrNull()
     }
+    suspend fun reachable(): Boolean = read(versionUrl) != null
     suspend fun version(): String? = read(versionUrl)?.let { value -> runCatching {
         releaseVersion(value.get("application_version")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString)
     }.getOrNull() }
@@ -107,6 +108,7 @@ internal class PublicMetadata(
 }
 
 internal class PresentationState(context: Context, private val network: Boolean) {
+    private val metadata = PublicMetadata()
     private val app = context.applicationContext as android.app.Application
     private val preferences = app.getSharedPreferences("presentation", Context.MODE_PRIVATE)
     val preference = LanguagePreference(runCatching { preferences.getString("language", null) }.getOrNull()) {
@@ -116,8 +118,9 @@ internal class PresentationState(context: Context, private val network: Boolean)
     val version = mutableVersion.asStateFlow()
     private val mutableLocation = MutableStateFlow<PublicLocation?>(null)
     val location = mutableLocation.asStateFlow()
+    suspend fun refreshServer(): Boolean = metadata.reachable()
     suspend fun refreshLocation() {
-        if (network) mutableLocation.value = PublicMetadata().location()
+        if (network) mutableLocation.value = metadata.location()
     }
     @Suppress("DEPRECATION")
     private fun vpnActive(): Boolean = runCatching {
@@ -127,7 +130,6 @@ internal class PresentationState(context: Context, private val network: Boolean)
     init {
         if (network) {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-            val metadata = PublicMetadata()
             scope.launch { mutableVersion.value = metadata.version() }
             if (preference.automatic && !vpnActive()) scope.launch {
                 val country = metadata.country()

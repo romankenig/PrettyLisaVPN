@@ -5,6 +5,7 @@ enum class Area { SESSION, HOME, COUNTRIES, LOCATION, DEVICES, BILLING, MESSAGES
 enum class Scenario { STANDARD, SLOW, FREE, EXPIRED, PLATINUM, EMPTY, DEVICE_LIMIT, STALE, OFFLINE, FAIL_NEXT, PAYMENT_PENDING }
 data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true)
 data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
+data class LocationOptions(val countries: List<Country>, val autopilotQuality: Int? = null)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
 data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood")
 data class Snapshot(
@@ -27,6 +28,7 @@ data class Snapshot(
     val simulatedConnection: Boolean = false,
     val devices: List<Device> = emptyList(),
     val countries: List<Country> = emptyList(),
+    val autopilotQuality: Int? = null,
     val routes: List<PaymentRoute> = emptyList(),
     val messages: List<AccountMessage> = emptyList(),
     val stale: Boolean = false,

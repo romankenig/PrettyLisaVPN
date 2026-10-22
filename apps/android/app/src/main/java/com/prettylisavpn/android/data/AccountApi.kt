@@ -34,6 +34,7 @@ data class SupportSubmission(val requestId: String, val subject: String, val des
 data class SupportReceipt(val id: String, val status: String)
 interface AccountApi {
     suspend fun countries(token: String): List<Country> = emptyList()
+    suspend fun locations(token: String): LocationOptions = LocationOptions(countries(token))
     suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt = supportSubmit(token, report)
     suspend fun devices(token: String): List<Device>
     suspend fun revoke(token: String, id: String): Device
@@ -61,16 +62,21 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     private suspend fun json(path: String, token: String, body: Any? = null, method: String = if (body == null) "GET" else "POST", query: Map<String,String> = emptyMap()) =
         http.request(path, method, body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, token, query)
     private fun device(v: JsonObject) = Device(uuid(v.text("id")), v.text("device_name"), v.flag("is_current"), date(v.text("created_at"))!!, date(v.optional("last_login_at")), v.text("status").also { require(it in setOf("ACTIVE", "REVOKED")) } == "ACTIVE")
-    override suspend fun countries(token: String): List<Country> {
+    override suspend fun countries(token: String): List<Country> = locations(token).countries
+    override suspend fun locations(token: String): LocationOptions {
         val raw = json("vpn/countries", token)
         return parse {
-            raw.asJsonObject.getAsJsonArray("countries").map {
+            val auto = raw.asJsonObject.getAsJsonObject("autopilot")
+            val autoQuality = auto.get("quality").asBigDecimal.intValueExact().also { require(it in 0..100) }
+            require(auto.flag("available") == (autoQuality > 0))
+            val countries = raw.asJsonObject.getAsJsonArray("countries").map {
                 val v = it.asJsonObject
                 val code = v.text("country_code").also { c -> require(c.matches(Regex("[A-Z]{2}"))) }
                 val quality = v.get("quality").asBigDecimal.intValueExact().also { q -> require(q in 0..100) }
                 val available = v.flag("available").also { a -> require(a == (quality > 0)) }
                 Country(code, code, quality.toString(), available)
             }.also { require(it.map { c -> c.code }.distinct().size == it.size) }
+            LocationOptions(countries, autoQuality)
         }
     }
     override suspend fun devices(token: String): List<Device> { val v = json("devices", token); return parse { v.asJsonArray.map { device(it.asJsonObject) }.also { require(it.map { d -> d.id }.distinct().size == it.size) } } }

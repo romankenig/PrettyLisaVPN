@@ -12,6 +12,12 @@ class AccountHttpTest {
     private lateinit var api: HttpAccountApi
     @Before fun start() { server.start();api=HttpAccountApi(HttpAuthApi(server.url("/").toString(),true),"0.5.0") }
     @After fun stop() { server.shutdown() }
+    @Test fun invalidAutopilotScoresFailClosed()=runBlocking {
+        for(auto in listOf("{\"quality\":101,\"available\":true}", "{\"quality\":80,\"available\":false}", "{\"quality\":0.5,\"available\":true}", "{}")) {
+            server.enqueue(MockResponse().setBody("{\"autopilot\":$auto,\"countries\":[]}"))
+            try { api.locations("synthetic");fail("invalid availability accepted") } catch(e:AuthFailure) { assertEquals("invalid_response",e.code) }
+        }
+    }
     @Test fun deviceArrayAndRevokeTransport()=runBlocking {
         val id="20000000-0000-0000-0000-000000000002"
         val device="""{"id":"$id","device_name":"Phone","is_current":false,"created_at":"2026-10-20T00:00:00Z","last_login_at":null,"status":"ACTIVE"}"""
@@ -45,7 +51,7 @@ class AccountHttpTest {
     }
     @Test fun countryAvailabilityAndUploadProgressUseExistingApi()=runBlocking {
         server.enqueue(MockResponse().setBody("""{"autopilot":{"quality":80,"available":true},"countries":[{"country_code":"DE","quality":80,"available":true}]}"""))
-        assertEquals("DE",api.countries("synthetic").single().code)
+        val options=api.locations("synthetic");assertEquals("DE",options.countries.single().code);assertEquals(80,options.autopilotQuality)
         assertEquals("/vpn/countries",server.takeRequest().path)
         val id="20000000-0000-0000-0000-000000000005"
         server.enqueue(MockResponse().setBody("""{"request_id":"$id","status":"ACCEPTED"}"""))

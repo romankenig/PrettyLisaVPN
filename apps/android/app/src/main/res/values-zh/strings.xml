@@ -92,7 +92,7 @@
     <string name="ui_waiting_for_test_provider_confirmation">等待测试提供商确认。</string>
     <string name="ui_we_will_email_you_a_one_time_sign_in_code">我们将向您发送一次性登录验证码。</string>
     <string name="ui_account">账号</string>
-    <string name="ui_account_messages">账户消息</string>
+    <string name="ui_account_messages">服务通知</string>
     <string name="ui_active">活跃</string>
     <string name="ui_add_test_screenshot">添加测试截图</string>
     <string name="ui_all_except_selected_soon">排除选定流量 · 即将推出</string>
@@ -257,4 +257,8 @@
     <string name="dash_diagnostics">附加技术信息</string>
     <string name="dash_diagnostics_preview">查看附加内容</string>
     <string name="dash_description_limit">请缩短描述：包含技术信息后最多为 4000 个字符</string>
+    <string name="notifications_detail">服务动态 · 未读：%1$d</string>
+    <string name="notifications_explanation">PrettyLisaVPN 的订阅及账户通知，与支持对话分开。</string>
+    <string name="server_connection_lost">无法连接服务器，请检查网络连接</string>
+    <string name="location_quality">可用性 %1$s / 100</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.prettylisavpn.android
 
+import androidx.activity.compose.setContent
 import android.os.ParcelFileDescriptor
 import java.io.DataInputStream
 import androidx.core.content.edit
@@ -38,6 +39,17 @@ class PresentationUiTest {
     }
     private lateinit var model: ScreenModel
     private fun waitFor(tag: String) = compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    @Test fun connectionNoticeIsVisibleOfflineAndDisappearsOnRecovery() {
+        val connected=androidx.compose.runtime.mutableStateOf<Boolean?>(null)
+        compose.runOnUiThread { compose.activity.setContent {
+            PrettyLisaTheme { LocalizedApp { ConnectionNotice(connected.value) } }
+        } }
+        compose.onNodeWithTag("server-connection-notice").assertDoesNotExist()
+        compose.runOnUiThread { connected.value=false }
+        compose.onNodeWithTag("server-connection-notice").assertTextEquals("no connection to the server, check your internet connection")
+        compose.runOnUiThread { connected.value=true }
+        compose.onNodeWithTag("server-connection-notice").assertDoesNotExist()
+    }
     @Before fun launch() {
         SourceFactory.sourceForTests = LiveSessionSource(SessionCoordinator(api, vault, "Test Android"))
         compose.runOnUiThread {

@@ -20,6 +20,8 @@ for folder in ('values', 'values-ru', 'values-zh', 'values-es', 'values-de', 'va
     for key, text in read(folder).items():
         assert not text[0].isupper() or text.startswith(proper_prefixes), (folder, key, 'uppercase start')
         assert not re.match(r'[a-zа-яà-ÿ][A-ZА-ЯÀ-Ý]{2}', text), (folder, key, 'mixed initial case')
+        for word in re.findall(r'[.!?] +([A-ZА-ЯЁÀ-Ý][\w-]*)', text):
+            assert word.startswith(proper_prefixes + ('BANK_CARD', 'LIVE', 'SANDBOX', 'DISABLED', 'IP', 'ID')), (folder, key, 'uppercase sentence start', word)
         if folder in ('values-zh', 'values-es', 'values-fr', 'values-de'):
             assert not re.search(r'\bemail\b', text, re.I), (folder, key, 'unlocalized email')
 for language in ('ru', 'zh', 'es', 'de', 'fr'):
@@ -30,4 +32,4 @@ for language in ('ru', 'zh', 'es', 'de', 'fr'):
         assert sorted(re.findall(r'%\d+\$[sd]', source)) == sorted(re.findall(r'%\d+\$[sd]', translated[key])), (language, key)
         if 'PrettyLisaVPN' in source:
             assert 'PrettyLisaVPN' in translated[key], (language, key)
-print('All six catalogs: parity, placeholders, brand casing, lowercase starts and email terminology verified')
+print('All six catalogs: parity, placeholders, brand casing, lowercase sentence starts and email terminology verified')

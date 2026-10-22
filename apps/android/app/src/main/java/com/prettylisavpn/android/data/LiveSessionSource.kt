@@ -60,7 +60,10 @@ class LiveSessionSource(
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
             Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
-            Area.COUNTRIES -> snapshot = initial.copy(countries = sessions.request { api().countries(it) })
+            Area.COUNTRIES -> {
+                val options = sessions.request { api().locations(it) }
+                snapshot = initial.copy(countries = options.countries, autopilotQuality = options.autopilotQuality)
+            }
             Area.MESSAGES -> snapshot = initial.copy(messages = sessions.request { api().messages(it) })
             Area.BILLING -> { if (!journalReady) restoreJournal(); refreshBilling() }
             Area.SUPPORT -> { if (!journalReady) restoreJournal(); recoverSupport(false) }

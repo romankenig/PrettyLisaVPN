@@ -58,6 +58,14 @@ class PresentationTest {
             }
         }
     }
+    @Test fun serverReachabilityIsIndependentOfVersionFormatAndPublicLocation() = runBlocking {
+        MockWebServer().use { server ->
+            val metadata=PublicMetadata(server.url("/version").toString(),server.url("/location").toString())
+            server.enqueue(MockResponse().setResponseCode(503));assertFalse(metadata.reachable())
+            server.enqueue(MockResponse().setBody("{\"application_version\":\"future-format\"}"));assertTrue(metadata.reachable())
+            repeat(2) { val request=server.takeRequest();assertEquals("/version",request.path);assertNull(request.getHeader("Authorization"));assertNull(request.getHeader("Cookie")) }
+        }
+    }
     @Test fun invalidFailedAndOversizedMetadataFailClosed() = runBlocking {
         MockWebServer().use { server ->
             val metadata = PublicMetadata(server.url("/version").toString(), server.url("/country").toString())
