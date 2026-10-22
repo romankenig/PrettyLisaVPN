@@ -120,6 +120,20 @@ result = pathlib.Path('evidence/vpn-instrumentation.txt').read_text()
 assert re.search(r'OK \(1 test\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 VPN_CHECK
+# Keep a real connected peer/journal, kill the application, then recover in a new process.
+adb shell am force-stop "$package"
+adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest -e vpnStage seed \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-restart-seed-instrumentation.txt
+adb shell am force-stop "$package"
+adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnRestartCheck \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-restart-check-instrumentation.txt
+python3 - <<'VPN_RESTART'
+import pathlib,re
+for stage in ('seed','check'):
+    result=pathlib.Path(f'evidence/vpn-restart-{stage}-instrumentation.txt').read_text()
+    assert re.search(r'OK \(1 test\)',result),result
+    assert not any(marker in result for marker in ('FAILURES!!!','INSTRUMENTATION_FAILED','shortMsg=')),result
+VPN_RESTART
 kill "$vpn_peer_pid"
 wait "$vpn_peer_pid" || true
 vpn_peer_pid=

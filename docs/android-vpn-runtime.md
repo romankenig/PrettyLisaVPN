@@ -62,6 +62,9 @@ cleanup выполняется перед потерей bearer; неподтв�
 Явное удаление локальных auth credentials останавливает local VPN и сохраняет
 неразрешённый cleanup для следующего входа того же аккаунта. Backend device revoke
 сам выполняет durable termination; приложение не сообщает успешный DELETE без ответа.
+Ответ DELETE подтверждает termination intent; при недоступном Node Agent backend
+может удалить peer позднее своим worker. API не выдаёт peer_removed_at, поэтому
+Android не объявляет этот ответ доказательством физического удаления peer на узле.
 Force-stop/убийство процесса не гарантирует код cleanup: Android закрывает TUN,
 при следующем входе выполняется current/DELETE; серверная expiry/reconciliation
 остаётся последней гарантией. Системный lockdown/kill switch не заявляется.
@@ -85,7 +88,8 @@ Native API26/35/36: реальный consent/отказ, production foreground V
 WireGuard JNI/TUN, notification, unresponsive isolated peer (НЕ Connected),
 затем ephemeral kernel WireGuard peer на том же CI runner (handshake + DNS/HTTPS
 через NAT, CONNECTED), disconnect/revoke
-и cleanup. Скриншот снимается screencap без обработки. Автотесты не отправляют OTP,
+и cleanup. Дополнительный seed/check в двух процессах: настоящий connected peer,
+force-stop, затем cleanup сохранённого UUID без нового POST/ключа/start. Скриншот снимается screencap без обработки. Автотесты не отправляют OTP,
 письма поддержки, платежи и не создают реальный backend peer.
 
 Отдельная ручная приёмка с совместимым живым узлом должна подтвердить успешный

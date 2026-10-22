@@ -22,14 +22,16 @@ class PrettyVpnService : GoBackend.VpnService() {
         super.onStartCommand(intent, flags, startId)
         val host = AndroidVpnHost.instance
         if (host == null || intent == null || intent.action !in setOf(CONNECT, DISCONNECT)) { stopSelf(); return START_NOT_STICKY }
+        if (intent.action == DISCONNECT) { host.disconnect(); return START_NOT_STICKY }
+        if (android.net.VpnService.prepare(this) != null) { host.controller.rejected(VpnError.PERMISSION); stopSelf(); return START_NOT_STICKY }
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL, "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
         val initial = notification(VpnStatus(VpnPhase.CONNECTING))
-        if (Build.VERSION.SDK_INT >= 34) startForeground(ID, initial, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
-        else startForeground(ID, initial)
-        if (intent.action == DISCONNECT) host.disconnect()
-        else if (android.net.VpnService.prepare(this) == null) host.controller.connect(intent.getStringExtra("country") ?: "AUTO")
-        else { host.disconnect(); stopSelf() }
+        try {
+            if (Build.VERSION.SDK_INT >= 34) startForeground(ID, initial, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
+            else startForeground(ID, initial)
+        } catch (_: Exception) { host.controller.rejected(VpnError.PERMISSION); stopSelf(); return START_NOT_STICKY }
+        host.controller.connect(intent.getStringExtra("country") ?: "AUTO")
         observer?.cancel()
         observer = scope.launch { host.status.collect { manager.notify(ID, notification(it)) } }
         return START_NOT_STICKY

@@ -123,6 +123,11 @@ class VpnServiceTest {
         assertEquals(VpnPhase.CONNECTED,host.status.value.phase)
         assertEquals(2,posts)
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"connected-real-peer.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
+        if (InstrumentationRegistry.getArguments().getString("vpnStage") == "seed") {
+            assertEquals(sessionId,journal.read(owner)!!.id)
+            File(directory,"restart-seed.txt").writeText("source_sha=${BuildConfig.SOURCE_SHA}\nconnected=true\ncleanup_persisted=true\n")
+            return // CI force-stops this process, retaining the isolated server peer for the next process.
+        }
         // System revocation is delivered to the production service via onRevoke.
         compose.runOnUiThread { compose.activity.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS)) }
         val preference = device.wait(Until.findObject(By.text("PrettyLisaVPN")),10_000)

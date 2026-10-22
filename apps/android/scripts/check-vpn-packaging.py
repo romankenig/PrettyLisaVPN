@@ -12,8 +12,9 @@ result = {}
 for variant, filename in [('debug', 'app-debug.apk'), ('release', 'app-release-unsigned.apk')]:
     with ZipFile(Path('app/build/outputs/apk') / variant / filename) as apk:
         entries = {}
-        for abi in ('arm64-v8a', 'x86_64'):
-            name = f'lib/{abi}/libwg-go.so'
+        required = {f'lib/{abi}/libwg-go.so' for abi in ('arm64-v8a', 'x86_64')}
+        assert required <= set(apk.namelist())
+        for name in sorted(n for n in apk.namelist() if n.startswith(('lib/arm64-v8a/', 'lib/x86_64/')) and n.endswith('.so')):
             data = apk.read(name)
             assert data[:6] == b'\x7fELF\x02\x01', name
             offset = struct.unpack_from('<Q', data, 32)[0]
@@ -25,7 +26,7 @@ for variant, filename in [('debug', 'app-debug.apk'), ('release', 'app-release-u
                     alignments.append(header[7])
                     assert header[7] >= 16384, (name, 'ELF alignment', header[7])
             assert alignments, name
-            entries[abi] = {'sha256': hashlib.sha256(data).hexdigest(), 'load_alignments': alignments}
+            entries[name] = {'sha256': hashlib.sha256(data).hexdigest(), 'load_alignments': alignments}
         for license_name in ('WireGuard-Android-Apache-2.0.txt', 'wireguard-go-MIT.txt', 'wireguard-tools-GPL-2.0.txt'):
             assert len(apk.read('assets/licenses/' + license_name)) > 1000
         result[variant] = entries
@@ -40,5 +41,11 @@ for variant, filename in [('debug', 'app-debug.apk'), ('release', 'app-release-u
     assert vpn[0].attrib[ns+'permission'] == 'android.permission.BIND_VPN_SERVICE'
     assert vpn[0].attrib[ns+'exported'] == 'false'
     assert vpn[0].attrib[ns+'foregroundServiceType'] == 'systemExempted'
+import os
+cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home()/'.gradle')))
+aars = list((cache/'caches/modules-2/files-2.1/com.wireguard.android/tunnel/1.0.20260102').glob('*/*.aar'))
+assert len(aars) == 1, aars
+result['wireguard_aar_sha256'] = hashlib.sha256(aars[0].read_bytes()).hexdigest()
+print('WireGuard 1.0.20260102 AAR SHA256:', result['wireguard_aar_sha256'])
 (reports / 'native-packaging.json').write_text(json.dumps(result, indent=2)+'\n')
 print('Current APK: arm64/x86_64 WireGuard, 16KiB ELF, notices, single protected FGS verified')
