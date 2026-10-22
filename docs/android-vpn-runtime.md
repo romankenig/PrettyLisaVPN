@@ -9,7 +9,10 @@ backend 0.10.0 и schema0026 не изменяются. Отдельная ве�
 ## Границы
 
 Официальный `com.wireguard.android:tunnel:1.0.20260102`, userspace GoBackend без root.
-Версия закреплена; CI должен подтвердить разрешение Maven и совместимость API.
+Версия и SHA256 AAR закреплены: `2b9c16db026496123e4db695d26d03d1958a201096c7c4c89b21077dc70f3119`.
+CI проверяет digest, совместимость API и native payload текущего APK.
+Неиспользуемые root executables libwg.so/libwg-quick.so исключены из упаковки,
+VpnService использует только libwg-go.so.
 В manifest один `.vpn.PrettyVpnService`, наследник `GoBackend.VpnService`.
 Исходный сервис библиотеки удаляется manifest merger. `super.onCreate()` передаёт
 наш экземпляр библиотеке ДО setState(UP); второй TUN/service не запускается.
@@ -101,7 +104,7 @@ lock, expiry, node peer removal и процесс restart на физическ�
 ## Лицензии
 
 Tunnel library/config/crypto Java — Apache-2.0 (WireGuard LLC); native wireguard-go —
-MIT; включённые WireGuard tools — GPL-2.0. Сохранять upstream notices в распространяемом артефакте, см.
+MIT; Go/x packages — BSD-3-Clause. GPL-2.0 root tools из AAR исключены из APK. Сохранять upstream notices в распространяемом артефакте, см.
 [WireGuard Android](https://github.com/WireGuard/wireguard-android),
 [embedding](https://www.wireguard.com/embedding/). Не переносить Windows
 WireGuardNT prebuilt license на Android. CI проверяет ABI и ELF page alignment

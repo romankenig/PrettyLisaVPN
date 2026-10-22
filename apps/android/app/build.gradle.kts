@@ -58,6 +58,8 @@ android {
         informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
     packaging {
+        // VpnService uses wg-go only; do not redistribute unused root/wg-quick executables.
+        jniLibs.excludes += setOf("**/libwg.so", "**/libwg-quick.so")
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 }

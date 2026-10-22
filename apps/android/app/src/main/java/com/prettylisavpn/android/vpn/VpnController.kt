@@ -154,6 +154,12 @@ class VpnController(
             if (status.value.phase == VpnPhase.CLEANUP_PENDING) throw VpnFailure(VpnError.CLEANUP)
         }
     }
+    /** Explicit local-forget may leave remote cleanup pending, but never a live local tunnel. */
+    suspend fun beforeForget() {
+        try { beforeLogout() } catch (failure: VpnFailure) {
+            if (active != null) throw failure
+        }
+    }
     /** Force-stop/restart never resurrects a remembered Connected state or POST. */
     suspend fun recover() = mutex.withLock {
         if (operation?.isActive == true || active != null) return@withLock

@@ -98,7 +98,7 @@ class LiveSessionSource(
             is Command.RequestOtp -> { sessions.requestOtp(command.email); requestedEmail = command.email }
             is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
             Command.Logout, Command.ForgetLocalSession -> {
-                if (command == Command.Logout) vpn?.controller?.beforeLogout() else vpn?.disconnect()
+                if (command == Command.Logout) vpn?.controller?.beforeLogout() else vpn?.controller?.beforeForget()
                 if (command == Command.Logout) sessions.logout() else sessions.forgetLocalSession()
                 requestedEmail = null; snapshot = Snapshot(); owner = ""; journal = AccountJournal("")
                 disk { journalStore.clear() }

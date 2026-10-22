@@ -134,6 +134,12 @@ class VpnControllerTest {
         assertEquals(VpnError.QUOTA,c.status.value.error); assertNull(store.pending)
         delay(25); c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }; c.beforeLogout()
     }
+    @Test fun explicitLocalForgetStopsTunnelButPreservesOfflineCleanupIntent() = scenario {
+        val api=Api(); val runtime=Runtime(); val store=Store(); val c=controller(api,runtime,store,this)
+        c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }; api.failDelete=true
+        c.beforeForget()
+        assertFalse(runtime.up); assertEquals(sessionId,store.pending!!.id); assertEquals(VpnPhase.CLEANUP_PENDING,c.status.value.phase)
+    }
     @Test fun expiryUsesServerDurationRatherThanDeviceWallClock() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store()
         val remoteTime = Instant.parse("2040-01-01T00:00:00Z")

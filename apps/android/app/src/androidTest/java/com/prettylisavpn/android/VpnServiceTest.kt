@@ -102,7 +102,7 @@ class VpnServiceTest {
             device.findObject(By.res("com.android.permissioncontroller:id/permission_allow_button"))?.click()
         }
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.VERIFYING,VpnPhase.CONNECTED,VpnPhase.FAILED) }
-        assertEquals(VpnPhase.VERIFYING,host.status.value.phase)
+        assertEquals("VPN status: ${host.status.value}",VpnPhase.VERIFYING,host.status.value.phase)
         assertEquals(1,posts)
         val manager = app.getSystemService(ConnectivityManager::class.java)
         compose.waitUntil(10_000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
@@ -120,7 +120,7 @@ class VpnServiceTest {
         realPeer = true
         click()
         compose.waitUntil(35_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
-        assertEquals(VpnPhase.CONNECTED,host.status.value.phase)
+        assertEquals("VPN status: ${host.status.value}",VpnPhase.CONNECTED,host.status.value.phase)
         assertEquals(2,posts)
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"connected-real-peer.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         if (InstrumentationRegistry.getArguments().getString("vpnStage") == "seed") {

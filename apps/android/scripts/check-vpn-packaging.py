@@ -12,6 +12,7 @@ result = {}
 for variant, filename in [('debug', 'app-debug.apk'), ('release', 'app-release-unsigned.apk')]:
     with ZipFile(Path('app/build/outputs/apk') / variant / filename) as apk:
         entries = {}
+        assert not any(n.endswith(('/libwg.so', '/libwg-quick.so')) for n in apk.namelist()), 'unused root tools packaged'
         required = {f'lib/{abi}/libwg-go.so' for abi in ('arm64-v8a', 'x86_64')}
         assert required <= set(apk.namelist())
         for name in sorted(n for n in apk.namelist() if n.startswith(('lib/arm64-v8a/', 'lib/x86_64/')) and n.endswith('.so')):
@@ -27,7 +28,7 @@ for variant, filename in [('debug', 'app-debug.apk'), ('release', 'app-release-u
                     assert header[7] >= 16384, (name, 'ELF alignment', header[7])
             assert alignments, name
             entries[name] = {'sha256': hashlib.sha256(data).hexdigest(), 'load_alignments': alignments}
-        for license_name in ('WireGuard-Android-Apache-2.0.txt', 'wireguard-go-MIT.txt', 'wireguard-tools-GPL-2.0.txt'):
+        for license_name in ('WireGuard-Android-Apache-2.0.txt', 'wireguard-go-MIT.txt', 'wireguard-tools-GPL-2.0.txt', 'Go-BSD-3-Clause.txt'):
             assert len(apk.read('assets/licenses/' + license_name)) > 1000
         result[variant] = entries
     candidates = list(Path(f'app/build/intermediates/merged_manifests/{variant}').rglob('AndroidManifest.xml'))
@@ -46,6 +47,7 @@ cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home()/'.gradle')))
 aars = list((cache/'caches/modules-2/files-2.1/com.wireguard.android/tunnel/1.0.20260102').glob('*/*.aar'))
 assert len(aars) == 1, aars
 result['wireguard_aar_sha256'] = hashlib.sha256(aars[0].read_bytes()).hexdigest()
+assert result['wireguard_aar_sha256'] == '2b9c16db026496123e4db695d26d03d1958a201096c7c4c89b21077dc70f3119', 'reviewed WireGuard AAR changed'
 print('WireGuard 1.0.20260102 AAR SHA256:', result['wireguard_aar_sha256'])
 (reports / 'native-packaging.json').write_text(json.dumps(result, indent=2)+'\n')
 print('Current APK: arm64/x86_64 WireGuard, 16KiB ELF, notices, single protected FGS verified')
