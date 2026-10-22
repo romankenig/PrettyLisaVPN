@@ -62,7 +62,7 @@ class VpnServiceTest {
         val journal = EncryptedVpnJournal(app)
         journal.write(owner,null)
         val host = AndroidVpnHost.create(app,sessions,HttpAuthApi("https://unused.invalid/"),api,journal)
-        compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } }
+        compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } } }
         fun click() = compose.onNodeWithTag("home-connect").performClick()
         fun consent(accept: Boolean) {
             if (VpnService.prepare(app) == null) return

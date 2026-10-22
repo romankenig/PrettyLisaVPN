@@ -41,6 +41,8 @@ jobs:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Check language catalogs
         run: python3 scripts/check-localization.py
+      - name: Inspect published WireGuard versions
+        run: python3 -c "import urllib.request; print(urllib.request.urlopen('https://repo.maven.apache.org/maven2/com/wireguard/android/tunnel/maven-metadata.xml', timeout=20).read().decode())"
       - name: Build current checkout and instrumented tests; lint
         run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
       - name: Verify debug adapter is absent from release

@@ -21,12 +21,13 @@ class VpnControllerTest {
         var value: VpnSession? = null
         var posts = 0; var deletes = 0; var failDelete = false; var failCreate: String? = null
         var compatible = true
+        var allocated: VpnSession? = null
         var gate: CompletableDeferred<Unit>? = null
         override suspend fun current() = value
         override suspend fun create(country: String, publicKey: String): VpnSession {
             posts++; gate?.await()
             failCreate?.let { throw AuthFailure(it) }
-            return session(compatible).also { value = it }
+            return (allocated ?: session(compatible)).also { value = it }
         }
         override suspend fun delete(id: String) { deletes++; if (failDelete) throw AuthFailure("offline"); value = null }
     }
@@ -121,9 +122,10 @@ class VpnControllerTest {
         val api = Api(); val runtime = Runtime(); val store = Store()
         val remoteTime = Instant.parse("2040-01-01T00:00:00Z")
         val session = VpnSession(sessionId, "DE", remoteTime, remoteTime.plusSeconds(1), config)
-        // A current session from restart is cleaned, not adopted (regardless of clock skew).
-        api.value = session; store.pending = PendingVpn(sessionId)
-        val c = controller(api, runtime, store, this, clock = { 42L }); c.recover()
-        assertNull(api.value); assertEquals(VpnPhase.DISCONNECTED, c.status.value.phase)
+        api.allocated = session
+        val c = controller(api, runtime, store, this)
+        c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }
+        await { c.status.value.phase == VpnPhase.DISCONNECTED }
+        assertFalse(runtime.up); assertNull(api.value); assertNull(store.pending)
     }
 }

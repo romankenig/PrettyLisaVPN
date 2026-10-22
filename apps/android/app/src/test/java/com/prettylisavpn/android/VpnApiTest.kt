@@ -13,7 +13,6 @@ class VpnApiTest {
     private val raw = """{"session_id":"d84cd4d2-8aee-4c17-9772-31db1d512924","status":"ACTIVE","country_code":"DE","server_time":"2026-10-22T00:00:00Z","expires_at":null,"transport":{"endpoint":{"ipv4":"203.0.113.1","port":51820},"server_public_key":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=","client_address":"10.77.0.2/32","dns":["1.1.1.1"],"allowed_ips":["0.0.0.0/0"]},"candidates":[{"country":"DE","protocol":"WIREGUARD","transport":"UDP","port":51820,"encryption_mode":"WIREGUARD","obfuscation_mode":"NONE","mtu":1280,"dns_mode":"VPN","routing_mode":"FULL_TUNNEL"}]}"""
     @Test fun explicitDirectIpv4ProfileIsAccepted() { assertEquals(51820, parseVpnSession(raw).config!!.port) }
     @Test fun emptyMissingLegacyAndUnsupportedFirstCandidateNeverFallback() {
-        for (variant in listOf(raw.replace("\"candidates\":[{", "\"candidates\":[{"), raw)) assertNotNull(parseVpnSession(variant).config)
         val empty = JsonParser.parseString(raw).asJsonObject.apply { add("candidates", com.google.gson.JsonArray()) }
         assertNull(parseVpnSession(empty).config); empty.remove("candidates"); assertNull(parseVpnSession(empty).config)
         val legacy = raw.replace("\"UDP\"", "\"NATIVE\"").replace("\"NONE\"", "\"NATIVE\"")

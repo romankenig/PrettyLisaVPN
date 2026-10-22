@@ -8,7 +8,7 @@ backend 0.10.0 и schema0026 не изменяются. Отдельная ве�
 
 ## Границы
 
-Официальный `com.wireguard.android:tunnel:1.0.20260315`, userspace GoBackend без root.
+Официальный `com.wireguard.android:tunnel:1.0.20250531`, userspace GoBackend без root.
 Версия закреплена; CI должен подтвердить разрешение Maven и совместимость API.
 В manifest один `.vpn.PrettyVpnService`, наследник `GoBackend.VpnService`.
 Исходный сервис библиотеки удаляется manifest merger. `super.onCreate()` передаёт

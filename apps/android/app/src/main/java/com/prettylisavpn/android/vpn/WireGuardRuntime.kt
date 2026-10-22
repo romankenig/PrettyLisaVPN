@@ -63,8 +63,8 @@ internal class WireGuardRuntime(private val context: Context, private val lost: 
             val network = manager.allNetworks.singleOrNull { network ->
                 val capabilities = manager.getNetworkCapabilities(network)
                 val links = manager.getLinkProperties(network)
-                capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true &&
-                    links?.linkAddresses?.any { it.address.hostAddress == config.address.substringBefore('/') } == true &&
+                capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true && links != null &&
+                    links.linkAddresses.any { it.address.hostAddress == config.address.substringBefore('/') } == true &&
                     links.routes.any { it.isDefaultRoute && it.destination.address is Inet4Address } &&
                     links.dnsServers.mapNotNull { it.hostAddress }.containsAll(config.dns)
             } ?: return@withLock false
