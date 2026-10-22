@@ -265,7 +265,7 @@
     <string name="vpn_disconnecting">disconnecting…</string>
     <string name="vpn_disconnect">disconnect</string>
     <string name="vpn_retry_cleanup">retry cleanup</string>
-    <string name="vpn_cleanup">VPN is stopped; server cleanup is not confirmed yet. reconnecting is blocked until cleanup completes.</string>
+    <string name="vpn_cleanup">VPN disconnect cleanup is not confirmed yet. retry disconnecting; reconnecting is blocked until cleanup completes.</string>
     <string name="vpn_permission_denied">VPN permission was not granted. no server session was created.</string>
     <string name="vpn_unavailable">VPN is unavailable in this test data source.</string>
     <string name="vpn_unsupported">this server profile is not supported on Android. the session has been stopped.</string>

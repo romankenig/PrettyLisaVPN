@@ -33,10 +33,10 @@ class VpnControllerTest {
         override suspend fun delete(id: String) { deletes++; if (failDelete) throw AuthFailure("offline"); value = null }
     }
     private class Runtime : TunnelRuntime {
-        var timeout = false
+        var timeout = false; var failStop = false
         var up = false; var starts = 0; var stops = 0; var verified = true; var failStart = false
         override suspend fun start(config: VpnConfig, key: TunnelKey) { starts++; if (failStart) error("native"); up = true }
-        override suspend fun stop() { stops++; up = false }
+        override suspend fun stop() { stops++; if(failStop) error("stop failed"); up = false }
         override suspend fun verify(config: VpnConfig): Boolean { if(timeout) withTimeout(1) { delay(100) }; return up && verified }
     }
     private suspend fun await(predicate: () -> Boolean) = withTimeout(5_000) { while (!predicate()) delay(5) }
@@ -69,6 +69,15 @@ class VpnControllerTest {
         c.connect("AUTO");await { c.status.value.phase==VpnPhase.CONNECTED };runtime.timeout=true
         await { c.status.value.phase==VpnPhase.FAILED }
         assertEquals(VpnError.NETWORK,c.status.value.error);assertFalse(runtime.up);assertNull(api.value)
+    }
+    @Test fun failedLocalStopKeepsCleanupPendingAndBlocksCredentialRemovalUntilRetry() = scenario {
+        val api=Api();val runtime=Runtime();val store=Store();val c=controller(api,runtime,store,this)
+        c.connect("AUTO");await { c.status.value.phase==VpnPhase.CONNECTED };runtime.failStop=true
+        c.disconnect();await { c.status.value.phase==VpnPhase.CLEANUP_PENDING }
+        assertTrue(runtime.up);assertNotNull(store.pending);assertEquals(0,api.deletes)
+        try { c.beforeForget();fail() } catch(e:VpnFailure) { assertEquals(VpnError.CLEANUP,e.reason) }
+        runtime.failStop=false;c.beforeLogout()
+        assertFalse(runtime.up);assertNull(api.value);assertNull(store.pending)
     }
     @Test fun concurrentClicksCannotCreateTwoSessions() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store(); api.gate = CompletableDeferred()

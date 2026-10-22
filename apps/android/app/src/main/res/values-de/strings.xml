@@ -259,7 +259,7 @@
     <string name="vpn_disconnecting">verbindung wird getrennt…</string>
     <string name="vpn_disconnect">trennen</string>
     <string name="vpn_retry_cleanup">bereinigung erneut versuchen</string>
-    <string name="vpn_cleanup">VPN ist gestoppt; die bereinigung der serversitzung ist noch nicht bestätigt. erneutes verbinden ist bis zum abschluss gesperrt.</string>
+    <string name="vpn_cleanup">die bereinigung beim trennen der VPN-verbindung ist noch nicht bestätigt. bitte erneut trennen; bis zum abschluss ist keine neue verbindung möglich.</string>
     <string name="vpn_permission_denied">VPN-berechtigung wurde nicht erteilt. es wurde keine serversitzung erstellt.</string>
     <string name="vpn_unavailable">VPN ist in dieser testdatenquelle nicht verfügbar.</string>
     <string name="vpn_unsupported">Android unterstützt dieses serverprofil nicht. die sitzung wurde gestoppt.</string>

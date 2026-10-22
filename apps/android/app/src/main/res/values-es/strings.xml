@@ -259,7 +259,7 @@
     <string name="vpn_disconnecting">desconectando…</string>
     <string name="vpn_disconnect">desconectar</string>
     <string name="vpn_retry_cleanup">reintentar limpieza</string>
-    <string name="vpn_cleanup">VPN detenido; la limpieza de la sesión del servidor aún no se ha confirmado. no se puede reconectar hasta que finalice.</string>
+    <string name="vpn_cleanup">aún no se ha confirmado la limpieza al desconectar VPN. vuelve a desconectar; la reconexión está bloqueada hasta que termine.</string>
     <string name="vpn_permission_denied">no se concedió permiso de VPN. no se creó ninguna sesión del servidor.</string>
     <string name="vpn_unavailable">VPN no está disponible en esta fuente de datos de prueba.</string>
     <string name="vpn_unsupported">Android no admite este perfil del servidor. se ha detenido la sesión.</string>

@@ -259,7 +259,7 @@
     <string name="vpn_disconnecting">отключаемся…</string>
     <string name="vpn_disconnect">отключить</string>
     <string name="vpn_retry_cleanup">повторить очистку</string>
-    <string name="vpn_cleanup">VPN остановлен; очистка серверной сессии пока не подтверждена. новое подключение недоступно до завершения очистки.</string>
+    <string name="vpn_cleanup">завершение отключения VPN пока не подтверждено. повторите отключение; новое подключение недоступно до окончания очистки.</string>
     <string name="vpn_permission_denied">разрешение на VPN не получено. серверная сессия не создавалась.</string>
     <string name="vpn_unavailable">VPN недоступен в этом тестовом источнике данных.</string>
     <string name="vpn_unsupported">этот профиль сервера не поддерживается на Android. сессия остановлена.</string>

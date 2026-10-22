@@ -259,7 +259,7 @@
     <string name="vpn_disconnecting">正在断开连接…</string>
     <string name="vpn_disconnect">断开连接</string>
     <string name="vpn_retry_cleanup">重试清理</string>
-    <string name="vpn_cleanup">VPN 已停止；尚未确认服务器会话已清理。清理完成前无法重新连接。</string>
+    <string name="vpn_cleanup">尚未确认 VPN 断开清理已完成。请重试断开连接；清理完成前无法重新连接。</string>
     <string name="vpn_permission_denied">未获得 VPN 授权。未创建服务器会话。</string>
     <string name="vpn_unavailable">此测试数据源不支持 VPN。</string>
     <string name="vpn_unsupported">Android 不支持此服务器配置。会话已停止。</string>
