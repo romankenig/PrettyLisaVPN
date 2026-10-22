@@ -51,7 +51,6 @@
     <string name="ui_no_countries_found">no countries found.</string>
     <string name="ui_no_devices_to_display">no devices to display.</string>
     <string name="ui_no_devices_yet">no devices yet.</string>
-    <string name="ui_no_unread_messages">no unread messages.</string>
     <string name="ui_no_unread_test_messages">no unread test messages.</string>
     <string name="ui_one_time_test_payment_no_automatic_charges">one-time test payment; no automatic charges.</string>
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">only the test session will end. an active simulation is stopped.</string>
@@ -66,7 +65,6 @@
     <string name="ui_reference_0">reference: %1$s</string>
     <string name="ui_reply_email">reply email</string>
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">review the displayed price and currency. cancel/change method preserve your paid period. payments require an available LIVE provider.</string>
-    <string name="ui_revision_0">revision %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">simulation active — not a VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">selected images: %1$s / 3 · PNG/JPEG/WebP · 5 MB each / 10 MB total</string>
     <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">send a message to PrettyLisaVPN support. only your text, reply address and selected images are submitted.</string>
@@ -260,8 +258,6 @@
     <string name="dash_diagnostics">include technical data</string>
     <string name="dash_diagnostics_preview">what will be included</string>
     <string name="dash_description_limit">shorten the description to include technical data within 4000 characters</string>
-    <string name="notifications_detail">service updates · unread: %1$d</string>
-    <string name="notifications_explanation">subscription and account notices from PrettyLisaVPN. this is separate from support conversations.</string>
     <string name="server_connection_lost">no connection to the server, check your internet connection</string>
     <string name="location_quality">availability %1$s out of 100</string>
 </resources>

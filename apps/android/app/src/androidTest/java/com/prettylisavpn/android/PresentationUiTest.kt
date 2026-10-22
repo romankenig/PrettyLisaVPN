@@ -126,12 +126,13 @@ class PresentationUiTest {
         assertEquals(nodes.sorted(), nodes)
         screenshot("language-menu")
     }
-    @Test fun otpLinksKeepThirtySecondCooldownAndCodeDuringLanguageChanges() {
+    @Test fun otpLinksKeepSixtySecondCooldownAndCodeDuringLanguageChanges() {
         compose.onNodeWithTag("login-email").performTextInput("Acceptance.Case@example.com")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithTag("auth-submit").performScrollTo().performClick(); waitFor("screen_OTP")
         compose.onNodeWithTag("app-version-footer").assertIsDisplayed()
         val deadline = model.resendAtMillis
+        assertTrue("OTP must wait a full minute", deadline - SystemClock.elapsedRealtime() > 50_000)
         compose.onNodeWithTag("otp-resend").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithTag("otp").performScrollTo().performTextInput("123456")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
@@ -151,7 +152,7 @@ class PresentationUiTest {
         assertTrue("OTP secondary area including both gaps must fit 56dp", submit - field.bottom.value <= 57f)
         compose.onNodeWithTag("auth-submit").performScrollTo().assertIsDisplayed()
         screenshot("otp-ru")
-        compose.waitUntil(35_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
+        compose.waitUntil(65_000) { SystemClock.elapsedRealtime() >= deadline + 300 }
         compose.onNodeWithTag("otp-resend").assertIsEnabled()
         screenshot("otp-ready-ru")
         compose.onNodeWithTag("otp-resend").performClick()

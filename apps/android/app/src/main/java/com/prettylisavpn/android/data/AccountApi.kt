@@ -100,7 +100,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
                 }.joinToString("\n\n")
                 AccountMessage(uuid(m.text("id")), m.get("revision").asBigDecimal.intValueExact().also { require(it > 0) }, m.text("title"), blocks,
                     when (action?.optional("type")) { "OPEN_SUBSCRIPTION" -> "SUBSCRIPTION"; "OPEN_SETTINGS" -> "SETTINGS"; "OPEN_ABOUT" -> "ABOUT"; else -> null },
-                    action?.optional("label"), m.optional("dismiss_label") ?: "understood")
+                    action?.optional("label"), m.optional("dismiss_label") ?: "understood", date(m.optional("expires_at")))
             }.also { require(it.map { m -> m.id }.distinct().size == it.size) }
         }
     }

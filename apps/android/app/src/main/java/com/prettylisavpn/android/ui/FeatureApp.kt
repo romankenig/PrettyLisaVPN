@@ -234,7 +234,7 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
     var validation by remember { mutableStateOf<Int?>(null) }
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(otp) { while (otp) { now = SystemClock.elapsedRealtime(); delay(250) } }
-    val remaining = ((state.resendAtMillis - now + 999) / 1000).coerceIn(0L, 30L)
+    val remaining = ((state.resendAtMillis - now + 999) / 1000).coerceIn(0L, 60L)
     PhoneScreen(if (otp) "screen_OTP" else "screen_LOGIN") {
         ScreenHeading(if (otp) tr(R.string.ui_enter_the_code) else tr(R.string.ui_sign_in_by_email), if (otp) back else null)
         BrandCard {
@@ -404,6 +404,11 @@ internal fun OperationError(error: String?) {
 
 @Composable
 internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, action: () -> Unit) {
+    val modals = LocalModalPresence.current
+    DisposableEffect(modals) {
+        modals?.let { it.count++ }
+        onDispose { modals?.let { it.count-- } }
+    }
     val tr = strings()
     AlertDialog(
         modifier = Modifier.testTag("confirmation-dialog"), containerColor = Brand.Mercury,

@@ -7,7 +7,7 @@ data class Device(val id: String, val name: String, val current: Boolean, val ad
 data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
 data class LocationOptions(val countries: List<Country>, val autopilotQuality: Int? = null)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
-data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood")
+data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood", val expiresAt: String? = null)
 data class Snapshot(
     val operationsReady: Boolean = true,
     val billing: BillingOverview? = null,

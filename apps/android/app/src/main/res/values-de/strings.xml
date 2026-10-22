@@ -50,7 +50,6 @@
     <string name="ui_no_countries_found">keine Länder gefunden.</string>
     <string name="ui_no_devices_to_display">keine Geräte vorhanden.</string>
     <string name="ui_no_devices_yet">noch keine Geräte.</string>
-    <string name="ui_no_unread_messages">keine ungelesenen Nachrichten.</string>
     <string name="ui_no_unread_test_messages">keine ungelesenen Testnachrichten.</string>
     <string name="ui_one_time_test_payment_no_automatic_charges">einmalige Testzahlung ohne automatische Abbuchung.</string>
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">nur die Testsitzung wird beendet und die Simulation gestoppt.</string>
@@ -65,7 +64,6 @@
     <string name="ui_reference_0">referenz: %1$s</string>
     <string name="ui_reply_email">antwortadresse</string>
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">prüfe Preis und Währung. kündigung und Methodenwechsel erhalten den bezahlten Zeitraum. ein verfügbarer LIVE-Anbieter ist erforderlich.</string>
-    <string name="ui_revision_0">revision %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">simulation aktiv — kein VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">bilder: %1$s / 3 · PNG/JPEG/WebP · je 5 MB / insgesamt 10 MB</string>
     <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">schreibe dem PrettyLisaVPN-Support. nur Text, Antwortadresse und ausgewählte Bilder werden gesendet.</string>
@@ -254,8 +252,6 @@
     <string name="dash_diagnostics">technische daten beifügen</string>
     <string name="dash_diagnostics_preview">was wird beigefügt</string>
     <string name="dash_description_limit">beschreibung kürzen: mit technischen daten sind höchstens 4000 zeichen erlaubt</string>
-    <string name="notifications_detail">serviceneuigkeiten · ungelesen: %1$d</string>
-    <string name="notifications_explanation">mitteilungen von PrettyLisaVPN zu abonnement und konto. dies ist kein supportchat.</string>
     <string name="server_connection_lost">keine verbindung zum server, bitte internetverbindung prüfen</string>
     <string name="location_quality">verfügbarkeit %1$s von 100</string>
 </resources>

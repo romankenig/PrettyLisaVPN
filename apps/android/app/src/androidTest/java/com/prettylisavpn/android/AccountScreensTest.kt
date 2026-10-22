@@ -23,7 +23,7 @@ class AccountScreensTest {
     private var revision="r1"
     private var active=true
     private var ackFail=false
-    private var messages=true
+    private var messages=false
     private var starts=0
     private var sends=0
     private var deviceReads=0
@@ -110,10 +110,32 @@ class AccountScreensTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
     }
-    @Test fun messagesOnlyNavigateAfterSuccessfulAck() {
-        click("tab_SETTINGS");click("settings-messages");waitFor("message-action-$message");ackFail=true;click("message-action-$message");idle()
-        compose.onNodeWithTag("live-messages-screen").assertExists();assertTrue(messages)
+    @Test fun messagesPopupOnlyNavigatesAfterSuccessfulAck() {
+        messages=true;ackFail=true
+        compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
+        screenshot("message-popup")
+        click("message-action-$message");idle()
+        compose.onNodeWithTag("account-message-popup").assertExists();assertTrue(messages)
+        compose.onNodeWithTag("provider-mode").assertDoesNotExist()
         ackFail=false;click("message-action-$message");waitFor("provider-mode");assertFalse(messages)
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+    }
+    @Test fun messageLaterDoesNotAckOrCreateAnInboxAndSurvivesRotation() {
+        click("tab_SETTINGS");compose.onNodeWithTag("settings-messages").assertDoesNotExist()
+        messages=true;compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
+        click("messages-later");assertTrue(messages)
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+        compose.activityRule.scenario.recreate();waitFor("live-settings")
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+        click("tab_SETTINGS");compose.onNodeWithTag("settings-messages").assertDoesNotExist()
+        screenshot("settings-without-inbox")
+    }
+    @Test fun popupWaitsForAnotherConfirmationDialog() {
+        click("tab_SETTINGS");click("settings-logout");waitFor("confirmation-dialog")
+        messages=true;compose.runOnUiThread { model.load(Area.MESSAGES) };idle()
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+        click("dismiss-dialog");waitFor("account-message-popup");click("messages-later")
+        assertTrue(model.state.value.data.signedIn)
     }
     @Test fun disabledAndSandboxActionsRemainDisabled() {
         click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")

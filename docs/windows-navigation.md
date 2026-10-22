@@ -393,3 +393,18 @@ Devices показывает только ACTIVE, текущее устройс�
 OS VALIDATED не требуется (проверка Android может быть заблокирована при доступном API);
 при остановке Activity callback/опрос освобождаются. Windows/backend не изменены.
 См. [Android handoff](android-location-connectivity-polish.md).
+
+
+### Android 0.7.2: OTP и служебные popup
+
+Settings больше не содержит уведомлений; маршрут MESSAGES удалён из live UI.
+После авторизации Android получает GET /messages и показывает очередь по одному
+popup, подобно Windows AccountMessages. Данные очереди/отсрочки только в памяти
+текущего входа, истории/архива нет. «Позже»/Back закрывает без ACK; подтверждение
+или целевое действие отправляет ACK UUID/revision, переход — после успеха.
+Ошибка оставляет popup с retry; expiry скрывает сообщение и блокирует запоздалый
+переход; существующие подтверждения logout/revoke/payment/discard имеют приоритет.
+После перезапуска неподтверждённое сообщение может прийти снова, как в Windows.
+Пауза resend OTP — 60 секунд; текущая установка отмечена Heliotrope/Christalle.
+Backend/Windows не изменены; UI connect остаётся preview. См.
+[handoff](android-otp-popup-polish.md).

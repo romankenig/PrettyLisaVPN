@@ -25,6 +25,8 @@ internal fun SessionApp(model: ScreenModel) {
     LaunchedEffect(state.data.signedIn) { if (state.data.signedIn) otp = false else logout = false }
     // No saved email/code is sufficient to resume an OTP challenge after process death.
     LaunchedEffect(model.emailDraft) { if (model.emailDraft.isEmpty()) otp = false }
+    val modalPresence = remember { ModalPresence() }
+    CompositionLocalProvider(LocalModalPresence provides modalPresence) {
     Surface(color = Brand.PurpleHeart, contentColor = Brand.Mercury) {
         Scaffold(containerColor = Brand.PurpleHeart, contentColor = Brand.Mercury,
             modifier = Modifier.imePadding(), contentWindowInsets = WindowInsets.safeDrawing,
@@ -46,7 +48,7 @@ internal fun SessionApp(model: ScreenModel) {
                         }
                     }
                     !state.data.signedIn -> AuthScreen(model, otp, { otp = true }, { otp = false; model.clearError() })
-                    else -> LiveAccountScreens(model) { logout = true }
+                    else -> LiveAccountScreens(model, messageBlocked = logout || forget) { logout = true }
                 }
             }
         }
@@ -57,5 +59,6 @@ internal fun SessionApp(model: ScreenModel) {
     }
     if (forget) ConfirmDialog(tr(R.string.ui_remove_local_session), tr(R.string.ui_this_removes_local_credentials_and_opens_sign_in_it_does_not_conf), tr(R.string.ui_remove_and_sign_in), state, { forget = false }) {
         model.perform(Command.ForgetLocalSession) { forget = false; model.emailDraft = ""; model.load(Area.SESSION) }
+    }
     }
 }

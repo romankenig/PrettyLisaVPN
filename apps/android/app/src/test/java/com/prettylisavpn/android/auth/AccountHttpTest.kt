@@ -27,9 +27,9 @@ class AccountHttpTest {
     }
     @Test fun messagesContextBlocksAndAckReceipt()=runBlocking {
         val id="20000000-0000-0000-0000-000000000003"
-        server.enqueue(MockResponse().setBody("""{"schema_version":1,"messages":[{"id":"$id","revision":3,"title":"Title","blocks":[{"type":"paragraph","text":"Body"},{"type":"list","items":["One"]}],"fallback_text":"Fallback","primary_action":{"type":"OPEN_SUBSCRIPTION","label":"Details"},"dismiss_label":"OK"}]}"""))
+        server.enqueue(MockResponse().setBody("""{"schema_version":1,"messages":[{"id":"$id","revision":3,"title":"Title","blocks":[{"type":"paragraph","text":"Body"},{"type":"list","items":["One"]}],"fallback_text":"Fallback","primary_action":{"type":"OPEN_SUBSCRIPTION","label":"Details"},"dismiss_label":"OK","expires_at":"2030-01-01T00:00:00Z"}]}"""))
         server.enqueue(MockResponse().setBody("""{"id":"$id","revision":3,"acknowledged":true}"""))
-        val m=api.messages("synthetic").single();assertEquals("SUBSCRIPTION",m.destination);assertTrue(m.body.contains("• One"));api.acknowledge("synthetic",id,3)
+        val m=api.messages("synthetic").single();assertEquals("2030-01-01T00:00:00Z",m.expiresAt);assertEquals("SUBSCRIPTION",m.destination);assertTrue(m.body.contains("• One"));api.acknowledge("synthetic",id,3)
         assertTrue(server.takeRequest().path!!.contains("platform=ANDROID&app_version=0.5.0&locale=en&schema_version=1"));assertTrue(server.takeRequest().body.readUtf8().contains("\"revision\":3"))
     }
     @Test fun supportMultipartOmitsUnsupportedDiagnosticsAndLooksUpStatus()=runBlocking {

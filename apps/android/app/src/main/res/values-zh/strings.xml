@@ -50,7 +50,6 @@
     <string name="ui_no_countries_found">未找到国家。</string>
     <string name="ui_no_devices_to_display">没有可显示的设备。</string>
     <string name="ui_no_devices_yet">暂无设备。</string>
-    <string name="ui_no_unread_messages">没有未读消息。</string>
     <string name="ui_no_unread_test_messages">没有未读测试消息。</string>
     <string name="ui_one_time_test_payment_no_automatic_charges">一次性测试付款，无自动扣款。</string>
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">仅结束测试会话，并停止当前模拟。</string>
@@ -65,7 +64,6 @@
     <string name="ui_reference_0">请求编号：%1$s</string>
     <string name="ui_reply_email">回复电子邮箱</string>
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">请核对价格和货币。取消或更改付款方式不影响已付费期限。付款需要可用的LIVE提供商。</string>
-    <string name="ui_revision_0">修订版本 %1$s</string>
     <string name="ui_simulation_active_not_a_vpn">模拟运行中 — 非VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">已选图片：%1$s / 3 · PNG/JPEG/WebP · 每张5 MB / 总共10 MB</string>
     <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">联系PrettyLisaVPN支持。仅提交文本、回复地址和所选图片。</string>
@@ -254,8 +252,6 @@
     <string name="dash_diagnostics">附加技术信息</string>
     <string name="dash_diagnostics_preview">查看附加内容</string>
     <string name="dash_description_limit">请缩短描述：包含技术信息后最多为 4000 个字符</string>
-    <string name="notifications_detail">服务动态 · 未读：%1$d</string>
-    <string name="notifications_explanation">PrettyLisaVPN 的订阅及账户通知，与支持对话分开。</string>
     <string name="server_connection_lost">无法连接服务器，请检查网络连接</string>
     <string name="location_quality">可用性 %1$s / 100</string>
 </resources>

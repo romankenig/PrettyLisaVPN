@@ -26,7 +26,7 @@ import com.prettylisavpn.android.data.*
 import java.util.UUID
 
 @Composable
-internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
+internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = false, logout: () -> Unit) {
     val tr = strings()
     val state by model.state.collectAsState()
     val nav = rememberNavController()
@@ -42,25 +42,19 @@ internal fun LiveAccountScreens(model: ScreenModel, logout: () -> Unit) {
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable("HOME") { LiveHome(model) }
             composable("SETTINGS") { PhoneScreen("live-settings") {
-                LaunchedEffect(Unit) { model.load(Area.MESSAGES) }
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
                 SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
-                SettingsOption(tr(R.string.ui_account_messages), tr(R.string.notifications_detail, state.data.messages.size), R.drawable.nav_messages, "settings-messages") { go("MESSAGES") }
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
             composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }) }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
-            composable("MESSAGES") { messageEntry ->
-                LiveMessages(model, { nav.popBackStack() }) { destination ->
-                    if (nav.currentBackStackEntry?.id == messageEntry.id) go(destination)
-                }
-            }
             composable("SUBSCRIPTION") { LiveSubscription(model) { nav.popBackStack() } }
             composable("SUPPORT") { support -> LiveSupport(model, support.savedStateHandle) { nav.popBackStack() } }
         }
     }
+    AccountMessagePopup(model, messageBlocked) { go(it) }
     BackHandler(enabled = route in setOf("SETTINGS", "ABOUT")) { nav.popBackStack("HOME", false) }
 }
 
@@ -92,7 +86,7 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
             if (devices.isEmpty()) BrandCard { Text(tr(R.string.ui_no_devices_to_display)) }
             devices.forEach { device -> BrandCard(Modifier.testTag("device-${device.id}")) {
                 Text(device.name, style = MaterialTheme.typography.titleMedium)
-                if (device.current) Surface(color = Brand.Viking, contentColor = Brand.Christalle, shape = MaterialTheme.shapes.small) {
+                if (device.current) Surface(color = Brand.Heliotrope, contentColor = Brand.Christalle, shape = MaterialTheme.shapes.small) {
                     Text(tr(R.string.ui_current_device), Modifier.padding(horizontal = 12.dp, vertical = 6.dp).testTag("current-device-badge"), style = MaterialTheme.typography.titleMedium)
                 }
                 Text(if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
@@ -110,29 +104,6 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
     target?.let { id -> ConfirmDialog(tr(R.string.ui_revoke_access), tr(R.string.ui_this_device_will_lose_account_access_revoking_this_device_ends_it), tr(R.string.ui_revoke), state, { target = null }) {
         model.perform(Command.Revoke(id)) { target = null }
     } }
-}
-
-@Composable
-private fun LiveMessages(model: ScreenModel, back: () -> Unit, navigate: (String) -> Unit) {
-    val tr = strings()
-    val state by model.state.collectAsState()
-    PhoneScreen("live-messages-screen") {
-        ScreenHeading(tr(R.string.ui_account_messages), back)
-        Text(tr(R.string.notifications_explanation), style = MaterialTheme.typography.bodySmall)
-        LiveLoad(model, Area.MESSAGES) {
-            if (state.data.messages.isEmpty()) BrandCard { Text(tr(R.string.ui_no_unread_messages)) }
-            state.data.messages.forEach { message -> BrandCard {
-                Text(message.title, style = MaterialTheme.typography.titleLarge); Text(message.body)
-                Text(tr(R.string.ui_revision_0, message.revision), style = MaterialTheme.typography.bodySmall)
-                message.destination?.let { dest -> BrandActionButton(message.actionLabel ?: tr(R.string.ui_view_details), {
-                    model.perform(Command.Acknowledge(message.id, message.revision)) { navigate(dest) }
-                }, Modifier.testTag("message-action-${message.id}"), enabled = !state.busy && state.loads[Area.MESSAGES]?.phase == LoadPhase.READY) }
-                BrandActionButton(if (message.dismissLabel == "understood") tr(R.string.ui_understood) else message.dismissLabel, { model.perform(Command.Acknowledge(message.id, message.revision)) }, Modifier.testTag("live-ack-${message.id}"), enabled = state.loads[Area.MESSAGES]?.phase == LoadPhase.READY, loading = state.busy)
-            } }
-            OperationError(state.error)
-            BrandActionButton(tr(R.string.ui_later), back, Modifier.testTag("messages-later"))
-        }
-    }
 }
 
 private fun money(amount: Long, currency: String) = "${currency} ${java.math.BigDecimal.valueOf(amount, 2).toPlainString()}"

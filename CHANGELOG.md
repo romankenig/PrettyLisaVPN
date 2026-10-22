@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.7.2 / Windows и backend unchanged
+
+- Повторная отправка OTP доступна через 60 секунд вместо 30; monotonic deadline
+  сохраняется при повороте, смене языка и возврате к email.
+- Метка текущего устройства использует Heliotrope/Christalle вместо кнопочного Viking.
+- Уведомления убраны из настроек и отдельного экрана. Как в Windows, показываются
+  автоматически по одному popup после входа; «позже» не отправляет ACK. Подтверждение
+  и переход используют revision-aware ACK; при ошибке popup остаётся для повтора.
+  Нет локального архива; отсрочка только в памяти текущего входа, expiry соблюдается.
+- Android 0.7.1/code13 → 0.7.2/code14 (PATCH); handoff:
+  [docs/android-otp-popup-polish.md](docs/android-otp-popup-polish.md).
+
 ### Android — 0.7.1 / Windows и backend unchanged
 
 - Один выбор локации: автопилот, три лучших и все доступные страны; флаги и
