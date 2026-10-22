@@ -260,4 +260,18 @@
     <string name="dash_description_limit">shorten the description to include technical data within 4000 characters</string>
     <string name="server_connection_lost">no connection to the server, check your internet connection</string>
     <string name="location_quality">availability %1$s out of 100</string>
+    <string name="vpn_connected">connected</string>
+    <string name="vpn_connecting">connecting…</string>
+    <string name="vpn_verifying">checking the VPN connection…</string>
+    <string name="vpn_disconnecting">disconnecting…</string>
+    <string name="vpn_disconnect">disconnect</string>
+    <string name="vpn_retry_cleanup">retry cleanup</string>
+    <string name="vpn_cleanup">VPN is stopped; server cleanup is not confirmed yet. reconnecting is blocked until cleanup completes.</string>
+    <string name="vpn_permission_denied">VPN permission was not granted. no server session was created.</string>
+    <string name="vpn_unavailable">VPN is unavailable in this test data source.</string>
+    <string name="vpn_unsupported">this server profile is not supported on Android. the session has been stopped.</string>
+    <string name="vpn_verification_failed">the VPN connection could not be verified. the tunnel has been stopped.</string>
+    <string name="vpn_quota">the daily free allowance is exhausted.</string>
+    <string name="vpn_access">VPN access has ended. sign in or check your subscription.</string>
+    <string name="vpn_failed">unable to connect. check your network and try again.</string>
 </resources>

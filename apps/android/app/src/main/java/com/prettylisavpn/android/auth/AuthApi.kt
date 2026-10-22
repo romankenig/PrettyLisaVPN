@@ -68,10 +68,11 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         val value = request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access)
         return try { value.asJsonObject } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
-    internal suspend fun request(path: String, method: String = "GET", body: RequestBody? = null, access: String? = null, query: Map<String,String> = emptyMap()): JsonElement = withContext(Dispatchers.IO) {
+    internal suspend fun request(path: String, method: String = "GET", body: RequestBody? = null, access: String? = null, query: Map<String,String> = emptyMap(), headers: Map<String,String> = emptyMap()): JsonElement = withContext(Dispatchers.IO) {
         val url = base.newBuilder().addPathSegments(path).apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).method(method, body).apply {
             header("Accept", "application/json"); header("Cache-Control", "no-store")
+            headers.forEach { (name, value) -> header(name, value) }
             if (access != null) header("Authorization", "Bearer $access")
         }.build()
         try {
@@ -86,6 +87,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
                     throw AuthFailure(when {
                         path !in setOf("auth/request-otp", "auth/verify-otp", "auth/refresh", "auth/logout", "me") && response.code == 401 -> "invalid_access_token"
                         code == "AUTH_INVALID" || code == "account_unavailable" -> "invalid_session"
+                        code in setOf("VPN_SESSION_NOT_FOUND", "VPN_SESSION_ALREADY_ACTIVE", "VPN_UNAVAILABLE", "COUNTRY_UNAVAILABLE", "FREE_DAILY_LIMIT_REACHED", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "VPN_TERMINATION_UNAVAILABLE", "VPN_SESSION_STATUS_UNAVAILABLE") -> code!!
                         code in setOf("SUPPORT_NOT_FOUND", "IDEMPOTENCY_CONFLICT", "RATE_LIMITED", "ATTACHMENT_REJECTED", "INVALID_REQUEST", "MESSAGE_NOT_FOUND", "BILLING_DISABLED", "BILLING_REVISION_CHANGED", "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_IDEMPOTENCY_CONFLICT", "BILLING_OPERATION_IN_PROGRESS", "BILLING_OPERATION_NOT_FOUND", "device_not_found") -> code!!
                         code in setOf("otp_invalid_or_expired", "otp_rate_limited", "device_limit_reached", "device_revoked", "user_blocked", "invalid_refresh_token", "invalid_access_token", "invalid_session", "authentication_required") -> code!!
                         response.code == 503 -> "service_unavailable"

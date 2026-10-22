@@ -254,4 +254,18 @@
     <string name="dash_description_limit">сократите описание: вместе с техническими данными допускается 4000 символов</string>
     <string name="server_connection_lost">нет связи с сервером, проверьте подключение к интернету</string>
     <string name="location_quality">доступность %1$s из 100</string>
+    <string name="vpn_connected">подключено</string>
+    <string name="vpn_connecting">подключаемся…</string>
+    <string name="vpn_verifying">проверяем VPN-соединение…</string>
+    <string name="vpn_disconnecting">отключаемся…</string>
+    <string name="vpn_disconnect">отключить</string>
+    <string name="vpn_retry_cleanup">повторить очистку</string>
+    <string name="vpn_cleanup">VPN остановлен; очистка серверной сессии пока не подтверждена. новое подключение недоступно до завершения очистки.</string>
+    <string name="vpn_permission_denied">разрешение на VPN не получено. серверная сессия не создавалась.</string>
+    <string name="vpn_unavailable">VPN недоступен в этом тестовом источнике данных.</string>
+    <string name="vpn_unsupported">этот профиль сервера не поддерживается на Android. сессия остановлена.</string>
+    <string name="vpn_verification_failed">не удалось проверить работоспособность VPN. туннель остановлен.</string>
+    <string name="vpn_quota">дневное бесплатное время закончилось.</string>
+    <string name="vpn_access">доступ к VPN завершён. войдите снова или проверьте подписку.</string>
+    <string name="vpn_failed">не удалось подключиться. проверьте сеть и повторите попытку.</string>
 </resources>

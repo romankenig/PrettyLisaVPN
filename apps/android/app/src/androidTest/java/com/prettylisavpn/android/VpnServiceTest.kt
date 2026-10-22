@@ -1,0 +1,105 @@
+package com.prettylisavpn.android
+
+import android.app.NotificationManager
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.VpnService
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import com.prettylisavpn.android.auth.*
+import com.prettylisavpn.android.ui.*
+import com.prettylisavpn.android.vpn.*
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.*
+import org.junit.Rule
+import org.junit.Test
+import java.io.File
+import java.time.Instant
+
+/** Real user consent, foreground service, JNI/TUN and revoke. Only the server port is synthetic.
+ * An unresponsive WireGuard peer MUST NEVER produce Connected, even though Android has a VPN.
+ */
+class VpnServiceTest {
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun realConsentNativeTunnelNotificationAndRevokeCleanUpWithoutFalseConnected() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val app = instrumentation.targetContext
+        val device = UiDevice.getInstance(instrumentation)
+        val owner = "d84cd4d2-8aee-4c17-9772-31db1d512924"
+        val sessionId = "28d1564f-cb6e-4d0c-b2a6-b6db50b0fca1"
+        val vault = object : CredentialVault {
+            override fun read() = Credentials(owner,"synthetic","2040-01-01T00:00:00Z")
+            override fun write(credentials: Credentials) = Unit
+            override fun clear() = Unit
+            override fun installationId() = owner
+        }
+        val auth = object : AuthApi {
+            override suspend fun requestOtp(email: String) = error("no email allowed")
+            override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String): Tokens = error("no OTP allowed")
+            override suspend fun refresh(credentials: Credentials) = Tokens("synthetic",3600,credentials)
+            override suspend fun me(access: String) = Profile("vpn@example.com","Free",1,owner)
+            override suspend fun logout(access: String) = Unit
+        }
+        val sessions = SessionCoordinator(auth,vault,"isolated emulator")
+        runBlocking { sessions.restore() }
+        var posts = 0; var deletes = 0; var current: VpnSession? = null
+        val api = object : VpnApi {
+            override suspend fun current() = current
+            override suspend fun create(country: String, publicKey: String): VpnSession {
+                assertEquals("DE",country); assertTrue(publicKey.length==44); posts++
+                return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("10.0.2.2",51820,
+                    "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=","10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
+            }
+            override suspend fun delete(id: String) { assertEquals(sessionId,id); deletes++; current=null }
+        }
+        val journal = EncryptedVpnJournal(app)
+        journal.write(owner,null)
+        val host = AndroidVpnHost.create(app,sessions,HttpAuthApi("https://unused.invalid/"),api,journal)
+        compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } }
+        fun click() = compose.onNodeWithTag("home-connect").performClick()
+        fun consent(accept: Boolean) {
+            if (VpnService.prepare(app) == null) return
+            val name = if (accept) "android:id/button1" else "android:id/button2"
+            assertTrue("VPN consent dialog",device.wait(Until.hasObject(By.res(name)),10_000))
+            device.findObject(By.res(name)).click()
+        }
+        // First reject the actual Android VPN consent. There must be no backend allocation.
+        if (VpnService.prepare(app) != null) {
+            click(); consent(false)
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("vpn-error").fetchSemanticsNodes().isNotEmpty() }
+            assertEquals(0,posts); assertNull(current)
+        }
+        click(); consent(true)
+        // Notification consent is independent. Accept on Android 13+, if it is shown.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            device.wait(Until.hasObject(By.res("com.android.permissioncontroller:id/permission_allow_button")),3_000)
+            device.findObject(By.res("com.android.permissioncontroller:id/permission_allow_button"))?.click()
+        }
+        compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.VERIFYING,VpnPhase.CONNECTED,VpnPhase.FAILED) }
+        assertEquals(VpnPhase.VERIFYING,host.status.value.phase)
+        assertEquals(1,posts)
+        val manager = app.getSystemService(ConnectivityManager::class.java)
+        compose.waitUntil(10_000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
+        val network = manager.allNetworks.first { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true }
+        assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
+        val notifications=app.getSystemService(NotificationManager::class.java).activeNotifications
+        assertTrue(notifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" })
+        val directory=File(app.getExternalFilesDir(null),"acceptance/vpn").apply { mkdirs() }
+        instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"verifying-real-tun.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
+        // System revocation is delivered to the production service via onRevoke.
+        device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN deny")
+        compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.DISCONNECTED,VpnPhase.FAILED) }
+        assertTrue(deletes>0); assertNull(current); assertNull(journal.read(owner))
+        compose.waitUntil(10_000) { manager.allNetworks.none { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
+        assertNotEquals(VpnPhase.CONNECTED,host.status.value.phase)
+        File(directory,"result.txt").writeText("source_sha=${BuildConfig.SOURCE_SHA}\nreal_consent=true\nreal_foreground_service=true\nreal_jni_tun=true\npeer=isolated_unresponsive\nconnected=false\nserver_cleanup=true\nrevoke=true\n")
+        device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN default")
+    }
+}

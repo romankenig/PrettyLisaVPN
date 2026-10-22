@@ -17,6 +17,7 @@ class LiveSessionSource(
     private val accounts: AccountApi? = null,
     private val journalStore: JournalStore = MemoryJournal(),
     private val uploads: suspend (List<String>) -> List<SupportUpload> = { emptyList() },
+    override val vpn: com.prettylisavpn.android.vpn.AndroidVpnHost? = null,
 ) : ScreenSource {
     private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
     override val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> = transfer
@@ -30,7 +31,7 @@ class LiveSessionSource(
     private var snapshot = Snapshot()
     private var journal = AccountJournal("")
     override val initial: Snapshot get() {
-        val p = sessions.profile ?: return Snapshot().also { snapshot = it; owner = "" }
+        val p = sessions.profile ?: return Snapshot().also { vpn?.serviceLost(); snapshot = it; owner = "" }
         if (owner != p.id && p.id.isNotEmpty()) { snapshot = Snapshot(); owner = p.id }
         return snapshot.copy(operationsReady = journalReady, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices)
     }
@@ -56,7 +57,7 @@ class LiveSessionSource(
             billingRetryAvailable = journal.billing != null && journal.operation == null, billingOperation = journal.operation, paymentPending = journal.billing != null || journal.operation?.status == "PENDING")
     }
     override suspend fun read(area: Area): Snapshot = mutex.withLock {
-        if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal() }
+        if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
             Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
@@ -95,14 +96,16 @@ class LiveSessionSource(
         }
         when (command) {
             is Command.RequestOtp -> { sessions.requestOtp(command.email); requestedEmail = command.email }
-            is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal() }
+            is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
             Command.Logout, Command.ForgetLocalSession -> {
+                if (command == Command.Logout) vpn?.controller?.beforeLogout() else vpn?.disconnect()
                 if (command == Command.Logout) sessions.logout() else sessions.forgetLocalSession()
                 requestedEmail = null; snapshot = Snapshot(); owner = ""; journal = AccountJournal("")
                 disk { journalStore.clear() }
             }
             is Command.Revoke -> {
                 UUID.fromString(command.id)
+                if (snapshot.devices.any { it.id == command.id && it.current }) vpn?.controller?.beforeLogout()
                 val result = sessions.request { api().revoke(it, command.id) }
                 if (result.current) {
                     sessions.forgetLocalSession(); snapshot = Snapshot(); disk { journalStore.clear() }
@@ -192,7 +195,8 @@ object LiveSessionFactory {
     @Synchronized fun create(context: Context): ScreenSource = source ?: run {
         val app = context.applicationContext
         val http = HttpAuthApi("https://api.prettylisavpn.com/")
-        LiveSessionSource(SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255)),
-            HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) })
+        val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255))
+        val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(app, sessions, http)
+        LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn)
     }.also { source = it }
 }

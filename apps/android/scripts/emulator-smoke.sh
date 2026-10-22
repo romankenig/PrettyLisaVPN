@@ -98,6 +98,16 @@ assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_F
 ACCOUNT_CHECK
 done
 
+# Production VpnService + actual WireGuard JNI/TUN. Isolated unresponsive peer, never real OTP.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-instrumentation.txt
+python3 - <<'VPN_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/vpn-instrumentation.txt').read_text()
+assert re.search(r'OK \(1 test\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+VPN_CHECK
+
 # Full fixture flows use the same installed APK, real Android Back and native dialogs.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.ScreenFlowTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/flows-instrumentation.txt

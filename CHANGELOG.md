@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.8.0 / Windows и backend unchanged
+
+- Реальный VpnService/WireGuard adapter: системное разрешение, ephemeral key pair,
+  foreground notification, connect/disconnect и существующие backend VPN sessions.
+- Connected требует VPN-bound DNS/HTTPS, handshake, route identity и RX/TX growth;
+  неподдерживаемые профили, ошибки и revoke останавливают tunnel и удаляют session.
+- Durable account-scoped cleanup, восстановление после restart и защита от
+  повторного POST при неизвестном исходе; backend/платежи не меняются.
+- Android 0.7.2/code14 → 0.8.0/code15 (MINOR). Ограничения профилей, проверки и
+  ручная приёмка: [docs/android-vpn-runtime.md](docs/android-vpn-runtime.md).
+
 ### Android — 0.7.2 / Windows и backend unchanged
 
 - Повторная отправка OTP доступна через 60 секунд вместо 30; monotonic deadline

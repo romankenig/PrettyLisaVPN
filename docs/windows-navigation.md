@@ -408,3 +408,16 @@ popup, подобно Windows AccountMessages. Данные очереди/от�
 Пауза resend OTP — 60 секунд; текущая установка отмечена Heliotrope/Christalle.
 Backend/Windows не изменены; UI connect остаётся preview. См.
 [handoff](android-otp-popup-polish.md).
+
+
+### Android 0.8.0: настоящий VPN lifecycle
+
+Home connect теперь запускает системный VPN consent, затем отдельное notification
+permission и production WireGuard VpnService. Отказ не создаёт backend session.
+Кнопка становится disconnect в connecting/verifying/connected; после сбоя доступны
+ошибка и повтор cleanup. Connected только после VPN-bound проверки, не по UP.
+Logout/current-device revoke сначала прекращают VPN и очищают backend session;
+неподтверждённый cleanup сохраняет credentials для повтора. Back/tab/rotation не
+повторяют POST и не владеют lifetime туннеля; stop есть в постоянном уведомлении.
+Отдельные fixture-маршруты по-прежнему явно симулированы, release их не содержит.
+Windows navigation/backend unchanged; [handoff](android-vpn-runtime.md).

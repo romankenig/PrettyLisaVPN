@@ -44,7 +44,9 @@ jobs:
       - name: Build current checkout and instrumented tests; lint
         run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
       - name: Verify debug adapter is absent from release
-        run: python3 scripts/check-source-isolation.py
+        run: |
+          python3 scripts/check-source-isolation.py
+          python3 scripts/check-vpn-packaging.py
       - name: Record build identity
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}

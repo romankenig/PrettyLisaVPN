@@ -254,4 +254,18 @@
     <string name="dash_description_limit">acorta la descripción: el límite con los datos técnicos es de 4000 caracteres</string>
     <string name="server_connection_lost">sin conexión con el servidor, comprueba tu conexión a internet</string>
     <string name="location_quality">disponibilidad %1$s de 100</string>
+    <string name="vpn_connected">conectado</string>
+    <string name="vpn_connecting">conectando…</string>
+    <string name="vpn_verifying">comprobando la conexión VPN…</string>
+    <string name="vpn_disconnecting">desconectando…</string>
+    <string name="vpn_disconnect">desconectar</string>
+    <string name="vpn_retry_cleanup">reintentar limpieza</string>
+    <string name="vpn_cleanup">VPN detenido; la limpieza de la sesión del servidor aún no se ha confirmado. no se puede reconectar hasta que finalice.</string>
+    <string name="vpn_permission_denied">no se concedió permiso de VPN. no se creó ninguna sesión del servidor.</string>
+    <string name="vpn_unavailable">VPN no está disponible en esta fuente de datos de prueba.</string>
+    <string name="vpn_unsupported">Android no admite este perfil del servidor. se ha detenido la sesión.</string>
+    <string name="vpn_verification_failed">no se pudo verificar la conexión VPN. se ha detenido el túnel.</string>
+    <string name="vpn_quota">se ha agotado el tiempo gratuito diario.</string>
+    <string name="vpn_access">el acceso VPN ha terminado. inicia sesión o revisa tu suscripción.</string>
+    <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
 </resources>
