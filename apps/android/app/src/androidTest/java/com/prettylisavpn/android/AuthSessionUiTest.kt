@@ -97,9 +97,10 @@ class AuthSessionUiTest {
         launch(); waitFor("live-account")
         compose.onNodeWithTag("account-email").assertTextEquals("acceptance@example.com")
         compose.onNodeWithTag("test-banner").assertDoesNotExist()
-        compose.onNodeWithText("connect VPN · unavailable").assertIsNotEnabled()
+        compose.onNodeWithTag("home-connect").performScrollTo().assertIsEnabled()
+        assertFalse(model.state.value.data.simulatedConnection)
         compose.activityRule.scenario.recreate(); waitFor("live-account")
-        compose.onNodeWithTag("live-banner").assertIsDisplayed()
+        compose.onNodeWithTag("component-versions").assertIsDisplayed()
         screenshot("restored-account")
     }
     @Test fun offlineRestoreIsRetryable() {
@@ -111,7 +112,7 @@ class AuthSessionUiTest {
     }
     @Test fun revokedDeviceRemovesAccountAndCredentials() {
         launch(); waitFor("live-account"); api.failure = "device_revoked"
-        compose.onNodeWithTag("account-refresh").performScrollTo().performClick(); waitFor("screen_LOGIN")
+        compose.runOnUiThread { model.load(Area.HOME) }; waitFor("screen_LOGIN")
         assertNull(vault.value)
         compose.onNodeWithTag("live-account").assertDoesNotExist()
     }

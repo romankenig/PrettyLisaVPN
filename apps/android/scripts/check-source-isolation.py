@@ -10,6 +10,6 @@ for variant, filename in (("debug", "app-debug.apk"), ("release", "app-release-u
     assert present == (variant == "debug"), (variant, present)
 manifest = ET.parse("app/src/main/AndroidManifest.xml")
 permissions = {p.attrib["{http://schemas.android.com/apk/res/android}name"] for p in manifest.findall("uses-permission")}
-assert permissions == {"android.permission.INTERNET"}, permissions
+assert permissions == {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"}, permissions
 assert manifest.find("application").attrib["{http://schemas.android.com/apk/res/android}usesCleartextTraffic"] == "false"
 print("Debug fixture present; release fixture absent; main permits HTTPS auth, no VPN permission")

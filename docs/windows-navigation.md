@@ -340,3 +340,71 @@ Windows 0.12.0 остаётся без изменений; его палитра
 карточки и отдельный экран локальной формы заменяют sidebar/desktop popup.
 Это не добавляет Windows routes/API и не подтверждает Android auth/VPN интеграцию.
 См. [Android design](android-design.md) и [архитектуру](android-architecture.md).
+
+
+Android 0.6.0 переносит выбор шести языков в правый верхний угол общей мобильной
+шапки; auth/OTP и экраны аккаунта используют одну шапку с логотипом и версиями.
+Смена языка не создаёт новый маршрут и не повторяет HTTP-операции. Resend/change
+email — текстовые действия над подтверждением OTP. Windows-маршруты и backend
+не меняются; детали: [android-language-ui.md](android-language-ui.md).
+
+Android 0.6.1 уточняет общую шапку: увеличенный бренд, выровненный двуязычный
+selector, компактная фактическая backend SemVer и строчные локализованные подписи.
+При крупном шрифте selector справа сверху занимает отдельную строку. Маршруты,
+API и Windows unchanged; приёмка: [android-language-ui.md](android-language-ui.md).
+
+Android 0.6.2 переносит версии в общий footer под мобильной навигацией/экранами.
+Полоска остаётся над клавиатурой и учитывает системные отступы; флаг сближен с
+названиями языка. Маршруты, Windows и backend unchanged; детали и приёмка:
+[android-language-ui.md](android-language-ui.md).
+
+Android 0.6.3 приводит About к Windows 0.12.0: версии, пустой FAQ, помощь/обращение
+в поддержку, посвящение. На телефоне карточки вертикальные, поддержка открывается
+существующим экраном SUPPORT с прежним Back/draft guard. Fixture-only messages и
+Scenarios перенесены из About в Settings; обычный live Home сохраняет Messages.
+OTP resend/change email сгруппированы в FlowRow перед sign in, с переносом при
+нехватке ширины. Windows/backend не меняются; см. [android-about-otp-ui.md](android-about-otp-ui.md).
+
+Android 0.6.4 уменьшает только отступы OTP-ссылок (80dp → 56dp вместе с touch row)
+и исправляет симметрию Android знака. Ссылки используют Rubik Medium/Christalle;
+переходы, cooldown, Back guard, Windows и backend unchanged. См.
+[android-otp-icon-polish.md](android-otp-icon-polish.md).
+
+Android 0.7.0 сверяет главную/настройки с текущим Windows: сводка аккаунта,
+автопилот/страна, текущая сеть и режимы защиты. Служебные кнопки убраны с Home:
+Messages перенесены в Settings, Support по-прежнему из About. Connect — только
+UI preview без backend VPN mutation. Устройства используют edge-pull refresh;
+Settings содержит иконки и красный logout. Support сохраняет Back/draft guard,
+показывает подготовку/имена/крестик вложений и одну отправку без Done; диагностический
+техблок opt-in. Windows routes/backend unchanged; см.
+[android-home-support-polish.md](android-home-support-polish.md).
+
+
+### Android 0.7.1: локации, устройства и связь
+
+Home использует один dropdown автопилот → топ-3 → все доступные страны с флагами
+и фактическим quality из GET /vpn/countries. Текущие регион/IP находятся внутри
+карточки подключения. Connect остаётся активным UI preview без VPN/session POST.
+Devices показывает только ACTIVE, текущее устройство первым с яркой отметкой;
+отзыв текущего устройства по-прежнему завершает сессию. Settings → уведомления
+сервиса сохраняет серверные ACK revision/navigation guards и отличается от поддержки.
+Общая полоса потери связи доступна на всех live-маршрутах, включая auth, над footer.
+При возвращении default network с INTERNET capability проверяется public GET /version;
+OS VALIDATED не требуется (проверка Android может быть заблокирована при доступном API);
+при остановке Activity callback/опрос освобождаются. Windows/backend не изменены.
+См. [Android handoff](android-location-connectivity-polish.md).
+
+
+### Android 0.7.2: OTP и служебные popup
+
+Settings больше не содержит уведомлений; маршрут MESSAGES удалён из live UI.
+После авторизации Android получает GET /messages и показывает очередь по одному
+popup, подобно Windows AccountMessages. Данные очереди/отсрочки только в памяти
+текущего входа, истории/архива нет. «Позже»/Back закрывает без ACK; подтверждение
+или целевое действие отправляет ACK UUID/revision, переход — после успеха.
+Ошибка оставляет popup с retry; expiry скрывает сообщение и блокирует запоздалый
+переход; существующие подтверждения logout/revoke/payment/discard имеют приоритет.
+После перезапуска неподтверждённое сообщение может прийти снова, как в Windows.
+Пауза resend OTP — 60 секунд; текущая установка отмечена Heliotrope/Christalle.
+Backend/Windows не изменены; UI connect остаётся preview. См.
+[handoff](android-otp-popup-polish.md).

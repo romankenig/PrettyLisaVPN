@@ -7,6 +7,7 @@ import com.prettylisavpn.android.data.SourceFactory
 /** Fixtures are opt-in only from instrumentation; the ordinary launcher uses the API. */
 class AcceptanceRunner : AndroidJUnitRunner() {
     override fun onCreate(arguments: Bundle?) {
+        com.prettylisavpn.android.ui.PresentationStore.networkEnabled = false
         SourceFactory.useFixturesForTests = true
         super.onCreate(arguments)
     }

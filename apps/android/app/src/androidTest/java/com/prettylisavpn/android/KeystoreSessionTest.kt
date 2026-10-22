@@ -23,11 +23,23 @@ class KeystoreSessionTest {
         assertFalse(first.contentEquals(record.readBytes())) // fresh GCM nonce
     }
     @Test fun pendingRotationSurvivesRestartAndClearRetainsInstallation() {
-        val vault = KeystoreVault(context); val installation = vault.installationId()
+        val vault = KeystoreVault(context)
+        // Preserve a legacy installation first, then exercise the reinstall fallback.
+        val file = File(context.noBackupFilesDir, "installation.id")
+        val saved = file.takeIf { it.exists() }?.readBytes()
+        try {
+            file.delete()
+            val stable = vault.installationId()
+            file.delete()
+            assertEquals(stable, KeystoreVault(context).installationId())
+        } finally {
+            if (saved != null) file.writeBytes(saved)
+        }
+        val existing = vault.installationId()
         vault.write(credential.copy(rotationPending = true))
         assertTrue(KeystoreVault(context).read()!!.rotationPending)
         KeystoreVault(context).clear(); assertNull(vault.read())
-        assertEquals(installation, KeystoreVault(context).installationId())
+        assertEquals(existing, KeystoreVault(context).installationId())
     }
     @Test fun missingKeystoreKeyNeverReturnsCredentials() {
         KeystoreVault(context).write(credential)

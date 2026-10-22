@@ -90,7 +90,7 @@ class ScreenFlowTest {
         scenario(Scenario.SLOW)
         signOut()
         click("auth-submit")
-        compose.onNodeWithText("Enter a valid email.").assertExists()
+        compose.onNodeWithText("enter a valid email.").assertExists()
         enter("login-email", "test@example.invalid")
         hideKeyboard()
         compose.onNodeWithTag("login-email").assertTextEquals("test@example.invalid")
@@ -102,7 +102,7 @@ class ScreenFlowTest {
         compose.onNodeWithTag("tab_HOME").assertDoesNotExist()
         enter("otp", "000000")
         hideKeyboard(); click("auth-submit"); idle()
-        compose.onNodeWithText("Test code expired. Request a new code.").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.error_22)).assertExists()
         screenshot("otp-error")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("otp").assertTextEquals("")
@@ -131,17 +131,17 @@ class ScreenFlowTest {
         enter("country-search", "", replace = true)
         hideKeyboard(); click("country-DE"); idle(); waitFor("brand-logo")
         click("connect"); compose.onNodeWithTag("connect").assertIsNotEnabled(); idle()
-        compose.onNodeWithTag("connection-status").assertTextEquals("SIMULATION ACTIVE — NOT A VPN")
+        compose.onNodeWithTag("connection-status").assertTextEquals("simulation active — not a VPN")
         click("connection-details"); compose.onNodeWithText("simulated connection").assertExists()
         screenshot("connection-details"); back()
-        compose.onNodeWithTag("connection-status").assertTextEquals("SIMULATION ACTIVE — NOT A VPN")
+        compose.onNodeWithTag("connection-status").assertTextEquals("simulation active — not a VPN")
         click("connect"); idle()
         compose.onNodeWithTag("connection-status").assertTextEquals("not connected")
         passed = true
     }
     @Test fun deviceDialogCancelFailureRetryAndHomeRefresh() {
         click("tab_SETTINGS"); click("open-devices"); waitFor("revoke-2")
-        compose.onNodeWithText("Last login: no data").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.ui_last_login_0, compose.activity.getString(R.string.ui_no_data))).assertExists()
         click("revoke-2"); compose.onNodeWithTag("confirmation-dialog").assertIsDisplayed(); back()
         compose.onNodeWithTag("revoke-2").assertIsEnabled()
         scenario(Scenario.FAIL_NEXT)
@@ -154,7 +154,7 @@ class ScreenFlowTest {
         screenshot("devices")
         back(); compose.onNodeWithTag("screen_SETTINGS").assertIsDisplayed()
         back(); waitFor("brand-logo")
-        compose.onNodeWithTag("device-count").assertTextEquals("Active devices: 1 / 5")
+        compose.onNodeWithTag("device-count").assertTextEquals("active devices: 1 / 5")
         passed = true
     }
     @Test fun currentDeviceRevocationRemovesProtectedScreens() {
@@ -171,7 +171,7 @@ class ScreenFlowTest {
         click("open-payment"); click("currency-USD")
         compose.onNodeWithTag("route-MIR").assertIsNotEnabled()
         click("route-CRYPTO")
-        compose.onNodeWithTag("recurring-terms").assertTextEquals("One-time test payment; no automatic charges.")
+        compose.onNodeWithTag("recurring-terms").assertTextEquals("one-time test payment; no automatic charges.")
         click("currency-RUB"); screenshot("payment-routes")
         click("simulate-payment"); idle(); waitFor("screen_SUBSCRIPTION")
         assertEquals(before, compose.activity.screenModel.state.value.data.paidUntil)
@@ -197,7 +197,14 @@ class ScreenFlowTest {
         repeat(3) { click("support-attach") }
         compose.onNodeWithTag("support-attach").assertIsNotEnabled()
         hideKeyboard()
-        back(); compose.onNodeWithTag("confirmation-dialog").assertExists(); back()
+        back()
+        // A native Dialog can register before its container enters the merged tree.
+        // Inspect the container marker directly, then require real visible bounds.
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("confirmation-dialog", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("confirmation-dialog", useUnmergedTree = true).assertIsDisplayed()
+        back()
         compose.onNodeWithTag("support-subject").assertTextEquals("Test issue")
         scenario(Scenario.FAIL_NEXT)
         click("support-send")
@@ -206,7 +213,7 @@ class ScreenFlowTest {
         click("support-send"); idle(); waitFor("support-receipt")
         screenshot("support-receipt")
         click("support-status"); idle()
-        compose.onNodeWithText("Simulated delivery complete — no email was sent.").assertExists()
+        compose.onNodeWithText(compose.activity.getString(R.string.ui_simulated_delivery_complete_no_email_was_sent)).assertExists()
         back(); compose.onNodeWithTag("screen_ABOUT").assertIsDisplayed()
         passed = true
     }

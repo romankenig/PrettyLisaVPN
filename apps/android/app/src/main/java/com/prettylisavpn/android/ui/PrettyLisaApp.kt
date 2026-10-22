@@ -43,6 +43,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +55,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.selected
@@ -73,7 +75,18 @@ internal enum class Destination(val label: Int, val icon: ImageVector) {
     ABOUT(R.string.about, Icons.Outlined.Info),
 }
 @Composable
-fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) = if (model.fixture) FeatureApp(model) else SessionApp(model)
+fun PrettyLisaApp(model: com.prettylisavpn.android.data.ScreenModel) {
+    LocalizedApp {
+        Column(Modifier.fillMaxSize().background(Brand.PurpleHeart).imePadding().testTag("app-root")) {
+            // The footer owns bottom safe drawing; nested navigation must not reserve it again.
+            Box(Modifier.weight(1f).consumeWindowInsets(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) {
+                if (model.fixture) FeatureApp(model) else SessionApp(model)
+            }
+            ServerConnectionNotice(enabled = !model.fixture)
+            AppVersionFooter()
+        }
+    }
+}
 
 /** No fixed height: tab labels grow and wrap with the user's font size. */
 @Composable
@@ -103,7 +116,7 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
                         Icon(destination.icon, null, tint = if (active) Brand.Black else Brand.Mercury)
                     }
                     Text(
-                        stringResource(destination.label), modifier = Modifier.weight(1f),
+                        appString(destination.label), modifier = Modifier.weight(1f),
                         color = if (active) Brand.Viking else Brand.Mercury,
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -135,7 +148,7 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
                     Icon(destination.icon, contentDescription = null, tint = if (active) Brand.Black else Brand.Mercury)
                 }
                 Text(
-                    stringResource(destination.label),
+                    appString(destination.label),
                     color = if (active) Brand.Viking else Brand.Mercury,
                     style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center,
@@ -145,14 +158,43 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
     }
 }
 
+/** Edge pull in either direction: down at the start or up at the end of a list. */
 @Composable
-internal fun PhoneScreen(tag: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshing: Boolean = false, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val refresh by androidx.compose.runtime.rememberUpdatedState(onRefresh)
+    val busy by androidx.compose.runtime.rememberUpdatedState(refreshing)
+    val threshold = with(LocalDensity.current) { 64.dp.toPx() }
+    var pull by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0f) }
+    val connection = androidx.compose.runtime.remember(scroll, threshold) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (refresh != null && !busy && source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+                    if ((scroll.value == 0 && available.y > 0) || (scroll.value == scroll.maxValue && available.y < 0)) pull += kotlin.math.abs(available.y)
+                    else if (consumed.y != 0f) pull = 0f
+                }
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                val trigger = pull >= threshold && !busy
+                pull = 0f
+                if (trigger) refresh?.invoke()
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+    val refreshLabel = appString(R.string.ui_refresh)
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
             modifier = Modifier.widthIn(max = 600.dp).fillMaxSize().testTag(tag)
-                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 20.dp),
+                .then(if (onRefresh == null) Modifier else Modifier.nestedScroll(connection).semantics {
+                    customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(refreshLabel) { if (!busy) refresh?.invoke(); true })
+                })
+                .verticalScroll(scroll).padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) { content() }
+        if (refreshing || pull > threshold / 3) androidx.compose.material3.CircularProgressIndicator(
+            Modifier.padding(8.dp).size(28.dp).testTag("pull-refresh-indicator"), color = Brand.Viking)
     }
 }
 
@@ -161,7 +203,7 @@ internal fun ScreenHeading(title: String, onBack: (() -> Unit)? = null) {
     if (onBack == null) Text(title, style = MaterialTheme.typography.headlineLarge, color = Brand.Mercury)
     else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         IconButton(onClick = onBack, modifier = Modifier.size(48.dp).testTag("support-back")) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), tint = Brand.Mercury)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, appString(R.string.back), tint = Brand.Mercury)
         }
         Text(title, style = MaterialTheme.typography.headlineLarge, color = Brand.Mercury)
     }

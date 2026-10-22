@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider android:name="com.prettylisavpn.android.SupportTestProvider" android:authorities="com.prettylisavpn.android.test.images" android:exported="true" />
+    </application>
+</manifest>

@@ -6,6 +6,116 @@
 
 ## Unreleased
 
+### Android — 0.7.2 / Windows и backend unchanged
+
+- Повторная отправка OTP доступна через 60 секунд вместо 30; monotonic deadline
+  сохраняется при повороте, смене языка и возврате к email.
+- Метка текущего устройства использует Heliotrope/Christalle вместо кнопочного Viking.
+- Уведомления убраны из настроек и отдельного экрана. Как в Windows, показываются
+  автоматически по одному popup после входа; «позже» не отправляет ACK. Подтверждение
+  и переход используют revision-aware ACK; при ошибке popup остаётся для повтора.
+  Нет локального архива; отсрочка только в памяти текущего входа, expiry соблюдается.
+- Android 0.7.1/code13 → 0.7.2/code14 (PATCH); handoff:
+  [docs/android-otp-popup-polish.md](docs/android-otp-popup-polish.md).
+
+### Android — 0.7.1 / Windows и backend unchanged
+
+- Один выбор локации: автопилот, три лучших и все доступные страны; флаги и
+  серверный рейтинг 0–100, включая ранее потерянный рейтинг автопилота.
+- Текущие регион/IP компактно внутри блока подключения; кнопка остаётся UI preview.
+- Отозванные устройства скрыты, текущая установка первая с яркой крупной отметкой.
+- «Сообщения аккаунта» уточнены как уведомления сервиса; добавлено пояснение.
+- Исправлены начала предложений во всех шести каталогах, расширена проверка текста.
+- Общая полоса потери связи над версиями: Android default-network callback и
+  ограниченный публичный GET /version; автоматическое восстановление, только foreground.
+- Android 0.7.0/code12 → 0.7.1/code13 (PATCH). Handoff:
+  [docs/android-location-connectivity-polish.md](docs/android-location-connectivity-polish.md).
+
+### Android — 0.7.0 / Windows и backend unchanged
+
+- Главная приведена к Windows: сводка аккаунта, автопилот/страна с фактическими
+  странами API, текущие регион/IP, режимы защиты трафика. Кнопка подключения
+  активна как UI preview и не запускает VPN; цепочка служебных кнопок убрана.
+- Настройки получили значки Windows, подписи и красный выход; сообщения доступны
+  в настройках, поддержка — из About. Устройства обновляются жестом на краю списка,
+  даты показываются локально в читаемом виде, текущая установка помечена.
+- Постоянная публичная debug-подпись и scoped installation fallback предотвращают
+  новые устройства при дальнейших обновлениях/переустановке с тем же ключом.
+  Уже существующий installation UUID сохраняется. Старые серверные записи не
+  скрываются и не отзываются по совпадению имени. При переходе со старого debug
+  APK требуется однократная переустановка из-за прежних случайных CI-ключей.
+- Поддержка показывает имена/подготовку файлов, удаление по крестику и реальный
+  прогресс записи multipart. Одна отправка, без «готово»; Back/draft guard сохранён.
+  Opt-in Android диагностика с preview добавляется к тексту обращения: серверный
+  structured diagnostics остаётся WINDOWS-only, Android не выдаётся за Windows.
+- Android 0.6.5/code11 → 0.7.0/code12 (MINOR). Handoff:
+  [docs/android-home-support-polish.md](docs/android-home-support-polish.md).
+
+### Android — 0.6.5 / Windows и backend unchanged
+
+- Фон значка APK изменён с Viking на Purple Heart `#5f22d9`; замок использует
+  Mercury `#e4e4e4` для контраста. Исправленная симметрия и размеры сохранены.
+- Android 0.6.4/code10 → 0.6.5/code11 (PATCH); handoff:
+  [docs/android-otp-icon-polish.md](docs/android-otp-icon-polish.md); CI/artifacts — PR #25.
+
+### Android — 0.6.4 / Windows и backend unchanged
+
+- Область OTP-ссылок с отступами уменьшена с 80dp до 56dp при стандартном шрифте;
+  48dp touch targets, перенос и 30-секундный resend сохранены. Rubik Medium,
+  Christalle и подчёркивание согласуют ссылки с оформлением приложения.
+- По замечанию владельца исправлена симметрия Android замка-сердца: дужка,
+  сердечко и скважина имеют общую ось; launcher центрирован. Шапка и полный
+  Android логотип используют исправленную геометрию, надпись не меняется.
+- Android 0.6.3/code9 → 0.6.4/code10 (PATCH); handoff:
+  [docs/android-otp-icon-polish.md](docs/android-otp-icon-polish.md), CI/artifacts — PR #25.
+
+### Android — 0.6.3 / Windows и backend unchanged
+
+- OTP resend/change email оформлены как подчёркнутые фиолетовые ссылки в компактном
+  FlowRow над sign in, с переносом при крупном шрифте. Размер текста и 48dp touch
+  targets сохранены; 30-секундный монотонный resend deadline не меняется.
+- Общий About для live/fixture повторяет Windows 0.12.0: версии frontend/backend,
+  FAQ-карточка, помощь с кнопкой обращения и исходное английское посвящение внизу.
+  Две desktop-карточки адаптированы в вертикальные мобильные; build SHA и сообщения
+  убраны из About. Fixture-инструменты доступны из Settings, build — в Scenarios.
+- Android 0.6.2/code8 → 0.6.3/code9 (PATCH). Контракт и приёмка:
+  [docs/android-about-otp-ui.md](docs/android-about-otp-ui.md); SHA/CI/artifacts — PR #25.
+
+### Android — 0.6.2 / Windows и backend unchanged
+
+- Версии frontend/backend перенесены из шапки в общую тонкую нижнюю полоску
+  Christalle; она есть на auth/OTP и экранах аккаунта, под навигацией.
+- Нижние safe drawing/IME отступы учитываются общим контейнером без повторного
+  отступа внутри навигации. При клавиатуре полоска остаётся над ней.
+- Флаг и центрированные English/native names сближены в selector и меню;
+  приглушённый native name, порядок языков и сохранение выбора не меняются.
+- Android 0.6.1/code7 → 0.6.2/code8 (PATCH). Handoff:
+  [docs/android-language-ui.md](docs/android-language-ui.md); CI/SHA/artifacts — PR #25.
+
+### Android — 0.6.1 / Windows и backend unchanged
+
+- В общей шапке показана только проверенная числовая часть фактической backend
+  SemVer: `0.10.0-dev.<run>+g<sha>` → `0.10.0`. Серверный runtime не меняется.
+- Увеличены знак и PrettyLisaVPN; языки центрированы в отдельных колонках,
+  native name приглушено. Узкие экраны и крупный шрифт используют две строки.
+- Исправлены native-термины электронной почты и начальные строчные буквы во всех
+  шести каталогах. Введённый текст, бренды, протоколы и данные API не преобразуются.
+- Android 0.6.0/code6 → 0.6.1/code7 (PATCH); handoff и приёмка:
+  [docs/android-language-ui.md](docs/android-language-ui.md), актуальные SHA/CI — в PR #25.
+
+### Android — 0.6.0 / Windows и backend unchanged
+
+- Добавлен выбор Chinese/English/French/German/Russian/Spanish с флагами и обоими
+  названиями языка в правом верхнем углу общей шапки. Ручной выбор сохраняется;
+  без него English, для подтверждённой RU-локации до VPN — Russian.
+- Общая шапка на auth/OTP и остальных экранах: исходный знак, PrettyLisaVPN,
+  frontend BuildConfig.VERSION_NAME и фактическая backend-версия GET /version
+  либо локализованное «недоступна». Прежний development banner удалён.
+- OTP resend/change email оформлены вторичными текстовыми ссылками над sign in;
+  30-секундный монотонный cooldown сохранён без сброса при смене языка.
+- Android 0.5.0/code5 → 0.6.0/code6. Контракты и приёмка:
+  [docs/android-language-ui.md](docs/android-language-ui.md); SHA/run/artifacts — в task PR.
+
 ### Android — 0.5.0 / Windows и backend unchanged
 
 - Подключены profile/devices/messages/subscription/support API и мобильная навигация.

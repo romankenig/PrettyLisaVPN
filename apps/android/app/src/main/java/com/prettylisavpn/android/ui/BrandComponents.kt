@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -41,7 +41,20 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.font.FontWeight
 import com.prettylisavpn.android.R
+
+/** Secondary OTP actions retain a 48dp touch target without a filled button surface. */
+@Composable
+internal fun OtpLink(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    TextButton(onClick = onClick, enabled = enabled, modifier = modifier.sizeIn(minHeight = 48.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = Brand.Christalle, disabledContentColor = Brand.DustyGray)) {
+        Text(label, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+            textDecoration = if (enabled) TextDecoration.Underline else TextDecoration.None)
+    }
+}
 
 @Composable
 fun BrandCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
@@ -85,7 +98,7 @@ fun BrandActionButton(
             if (loading) CircularProgressIndicator(
                 modifier = Modifier.size(20.dp), color = Brand.PurpleHeart, strokeWidth = 2.dp,
             )
-            Text(if (loading) stringResource(R.string.processing) else label, style = MaterialTheme.typography.labelLarge)
+            Text(if (loading) appString(R.string.processing) else label, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

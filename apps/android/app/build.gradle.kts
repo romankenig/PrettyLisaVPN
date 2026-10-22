@@ -15,10 +15,19 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 14
+        versionName = "0.7.2"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
+    }
+    // Public development key only. Never use this identity for release signing.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
     buildTypes {
         debug {
@@ -29,6 +38,7 @@ android {
             isMinifyEnabled = false
         }
     }
+    bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
         compose = true
         buildConfig = true

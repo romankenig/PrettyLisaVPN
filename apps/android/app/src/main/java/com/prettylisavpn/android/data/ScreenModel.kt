@@ -13,19 +13,20 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class LoadPhase { IDLE, LOADING, READY, ERROR }
 data class Load(val phase: LoadPhase = LoadPhase.IDLE, val error: String? = null)
-data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap(), val busy: Boolean = false, val error: String? = null)
+data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap(), val busy: Boolean = false, val error: String? = null, val resendAtMillis: Long = 0L)
 
 /** Activity ViewModel owns operations, so rotation never repeats a mutation. Process death resets fixtures. */
 class ScreenModel(private val source: ScreenSource) : ViewModel() {
     val enabled = source.enabled
     val fixture = source.fixture
+    val supportTransfer = source.supportTransfer
+    val messageVisit = MessageVisit()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(ScreenState(source.initial))
     val state = mutable.asStateFlow()
     private var epoch = 0
     var emailDraft = ""
-    var resendAtMillis = 0L
-        private set
+    val resendAtMillis: Long get() = mutable.value.resendAtMillis
     init { if (!fixture) load(Area.SESSION) }
     fun load(area: Area) {
         if (!enabled || mutable.value.loads[area]?.phase == LoadPhase.LOADING) return
@@ -36,7 +37,7 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                 val data = source.read(area)
                 if (owner == epoch) {
                     val changed = data.signedIn != mutable.value.data.signedIn
-                    if (changed) epoch++
+                    if (changed) { epoch++; messageVisit.reset() }
                     mutable.value = mutable.value.copy(data = data, loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads + (area to Load(LoadPhase.READY)))
                 }
             } catch (failure: Exception) {
@@ -45,7 +46,7 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                     val data = if (fixture) mutable.value.data else source.initial
                     val ended = !fixture && failure is AuthFailure && failure.code in setOf("reauth_required", "invalid_refresh_token", "invalid_session", "device_revoked", "user_blocked")
                     val changed = data.signedIn != mutable.value.data.signedIn
-                    if (changed) epoch++
+                    if (changed) { epoch++; messageVisit.reset() }
                     mutable.value = mutable.value.copy(data = data, busy = if (changed) false else mutable.value.busy,
                         error = if (!fixture && !data.signedIn) failure.message else mutable.value.error,
                         loads = (if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads) + (area to Load(if (ended) LoadPhase.READY else LoadPhase.ERROR, failure.message)))
@@ -62,7 +63,7 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                 val data = source.execute(command)
                 if (owner == epoch) {
                     val changed = data.signedIn != mutable.value.data.signedIn
-                    if (changed) epoch++
+                    if (changed) { epoch++; messageVisit.reset() }
                     val completedArea = when (command) {
                         is Command.Support, Command.SupportStatus, Command.NewSupport -> Area.SUPPORT
                         is Command.Payment, Command.ConfirmPayment -> Area.BILLING
@@ -71,8 +72,8 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
                         else -> null
                     }
                     val loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads
-                    mutable.value = mutable.value.copy(data = data, loads = if (completedArea == null) loads else loads + (completedArea to Load(LoadPhase.READY)), busy = false, error = null)
-                    if (command is Command.RequestOtp) resendAtMillis = android.os.SystemClock.elapsedRealtime() + 30_000
+                    mutable.value = mutable.value.copy(data = data, loads = if (completedArea == null) loads else loads + (completedArea to Load(LoadPhase.READY)), busy = false, error = null,
+                        resendAtMillis = if (command is Command.RequestOtp) android.os.SystemClock.elapsedRealtime() + 60_000 else mutable.value.resendAtMillis)
                     onSuccess()
                 }
             } catch (failure: Exception) {

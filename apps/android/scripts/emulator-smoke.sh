@@ -62,6 +62,16 @@ assert re.search(r'OK \(5 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 AUTH_UI_CHECK
 
+# Shared header, six locales and the real monotonic OTP cooldown; all APIs are synthetic.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.PresentationUiTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/presentation-ui-instrumentation.txt
+python3 - <<'PRESENTATION_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/presentation-ui-instrumentation.txt').read_text()
+assert re.search(r'OK \(4 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+PRESENTATION_CHECK
+
 # Two independent Android processes prove encrypted state survives force-stop.
 for stage in Seed Check; do
   adb shell am force-stop "$package"
@@ -76,7 +86,7 @@ RESTART_CHECK
 done
 
 # Live account screens and encrypted operation journal use isolated API ports only.
-for spec in AccountScreensTest:6 AccountJournalTest:2; do
+for spec in AccountScreensTest:11 AccountJournalTest:2; do
   test_class=${spec%:*}; test_count=${spec#*:}
   adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
     "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"
@@ -200,3 +210,8 @@ ANR_CHECK
 cp apk/build-identity.json evidence/
 adb shell getprop ro.build.version.sdk > evidence/emulator-api.txt
 adb shell getprop ro.product.cpu.abi > evidence/emulator-abi.txt
+
+# Capture the installed package icon on the native Android app-info screen.
+adb shell am start -W -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:$package" > evidence/app-info-launch.txt
+sleep 2
+adb exec-out screencap -p > evidence/app-info-icon.png

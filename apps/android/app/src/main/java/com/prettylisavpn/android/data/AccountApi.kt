@@ -8,6 +8,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.time.Instant
 import java.util.UUID
+import okio.buffer
 
 val routeIds = setOf("MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO")
 val billingActions = setOf("SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL")
@@ -32,6 +33,9 @@ data class SupportSubmission(val requestId: String, val subject: String, val des
 }
 data class SupportReceipt(val id: String, val status: String)
 interface AccountApi {
+    suspend fun countries(token: String): List<Country> = emptyList()
+    suspend fun locations(token: String): LocationOptions = LocationOptions(countries(token))
+    suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt = supportSubmit(token, report)
     suspend fun devices(token: String): List<Device>
     suspend fun revoke(token: String, id: String): Device
     suspend fun messages(token: String): List<AccountMessage>
@@ -58,6 +62,23 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     private suspend fun json(path: String, token: String, body: Any? = null, method: String = if (body == null) "GET" else "POST", query: Map<String,String> = emptyMap()) =
         http.request(path, method, body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, token, query)
     private fun device(v: JsonObject) = Device(uuid(v.text("id")), v.text("device_name"), v.flag("is_current"), date(v.text("created_at"))!!, date(v.optional("last_login_at")), v.text("status").also { require(it in setOf("ACTIVE", "REVOKED")) } == "ACTIVE")
+    override suspend fun countries(token: String): List<Country> = locations(token).countries
+    override suspend fun locations(token: String): LocationOptions {
+        val raw = json("vpn/countries", token)
+        return parse {
+            val auto = raw.asJsonObject.getAsJsonObject("autopilot")
+            val autoQuality = auto.get("quality").asBigDecimal.intValueExact().also { require(it in 0..100) }
+            require(auto.flag("available") == (autoQuality > 0))
+            val countries = raw.asJsonObject.getAsJsonArray("countries").map {
+                val v = it.asJsonObject
+                val code = v.text("country_code").also { c -> require(c.matches(Regex("[A-Z]{2}"))) }
+                val quality = v.get("quality").asBigDecimal.intValueExact().also { q -> require(q in 0..100) }
+                val available = v.flag("available").also { a -> require(a == (quality > 0)) }
+                Country(code, code, quality.toString(), available)
+            }.also { require(it.map { c -> c.code }.distinct().size == it.size) }
+            LocationOptions(countries, autoQuality)
+        }
+    }
     override suspend fun devices(token: String): List<Device> { val v = json("devices", token); return parse { v.asJsonArray.map { device(it.asJsonObject) }.also { require(it.map { d -> d.id }.distinct().size == it.size) } } }
     override suspend fun revoke(token: String, id: String): Device {
         uuid(id); val v = json("devices/$id", token, method = "DELETE")
@@ -79,7 +100,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
                 }.joinToString("\n\n")
                 AccountMessage(uuid(m.text("id")), m.get("revision").asBigDecimal.intValueExact().also { require(it > 0) }, m.text("title"), blocks,
                     when (action?.optional("type")) { "OPEN_SUBSCRIPTION" -> "SUBSCRIPTION"; "OPEN_SETTINGS" -> "SETTINGS"; "OPEN_ABOUT" -> "ABOUT"; else -> null },
-                    action?.optional("label"), m.optional("dismiss_label") ?: "understood")
+                    action?.optional("label"), m.optional("dismiss_label") ?: "understood", date(m.optional("expires_at")))
             }.also { require(it.map { m -> m.id }.distinct().size == it.size) }
         }
     }
@@ -135,11 +156,32 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     override suspend fun supportStatus(token: String, id: String): SupportReceipt? {
         uuid(id); return try { support(json("support/requests/$id", token), id) } catch (e: AuthFailure) { if (e.code == "SUPPORT_NOT_FOUND") null else throw e }
     }
-    override suspend fun supportSubmit(token: String, report: SupportSubmission): SupportReceipt {
+    override suspend fun supportSubmit(token: String, report: SupportSubmission): SupportReceipt = supportSubmit(token, report) { _, _ -> }
+    override suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt {
         val value = mapOf("request_id" to report.requestId, "subject" to report.subject, "description" to report.description, "reply_email" to report.email, "diagnostics" to null)
         val form = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("report", gson.toJson(value)).apply {
             report.uploads.forEachIndexed { i, upload -> addFormDataPart("screenshots", "screenshot-${i+1}", upload.bytes().toRequestBody(upload.media.toMediaType())) }
         }.build()
-        return support(http.request("support/requests", "POST", form, token), report.requestId)
+        return support(http.request("support/requests", "POST", ProgressBody(form, progress), token), report.requestId)
+    }
+}
+
+/** Reports bytes actually written, including multipart metadata; no content is logged. */
+private class ProgressBody(private val body: okhttp3.RequestBody, private val progress: (Long, Long) -> Unit) : okhttp3.RequestBody() {
+    override fun contentType() = body.contentType()
+    override fun contentLength() = body.contentLength()
+    override fun writeTo(sink: okio.BufferedSink) {
+        val total = contentLength()
+        var written = 0L
+        progress(0, total)
+        val counting = object : okio.ForwardingSink(sink) {
+            override fun write(source: okio.Buffer, byteCount: Long) {
+                super.write(source, byteCount)
+                written += byteCount
+                progress(written, total)
+            }
+        }.buffer()
+        body.writeTo(counting)
+        counting.flush()
     }
 }
