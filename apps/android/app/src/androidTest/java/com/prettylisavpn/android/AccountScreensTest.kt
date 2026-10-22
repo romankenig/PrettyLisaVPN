@@ -102,7 +102,7 @@ class AccountScreensTest {
         val badge=compose.onNodeWithTag("current-device-badge").fetchSemanticsNode().boundsInRoot
         val other=compose.onNodeWithTag("device-$device").fetchSemanticsNode().boundsInRoot
         assertTrue("current device must be first",badge.top < other.top)
-        compose.onNodeWithTag("current-device-badge").performScrollTo()
+        compose.onNodeWithTag("device-$current").performScrollTo()
         screenshot("devices-current-first")
         click("live-revoke-$device")
         click("confirm-dialog");idle()

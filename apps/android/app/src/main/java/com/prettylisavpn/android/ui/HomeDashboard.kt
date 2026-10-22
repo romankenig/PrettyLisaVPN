@@ -88,13 +88,14 @@ internal fun LiveHome(model: ScreenModel) {
         BrandCard {
             Text(tr(R.string.dash_where), style = MaterialTheme.typography.titleMedium)
             val selectedCountry = countries.find { it.code == selected }
-            Box {
+            BoxWithConstraints {
+                val menuWidth = maxWidth
                 OutlinedButton({ expanded = true }, Modifier.fillMaxWidth().testTag("home-country")) {
                     LocationLabel(selectedCountry?.code, selectedCountry?.let { Locale("", it.code).getDisplayCountry(locale) } ?: tr(R.string.ui_autopilot),
                         selectedCountry?.quality?.toIntOrNull() ?: state.data.autopilotQuality, Modifier.weight(1f))
                     Text("⌄", Modifier.padding(start = 8.dp))
                 }
-                DropdownMenu(expanded, { expanded = false }, Modifier.heightIn(max = 360.dp).widthIn(max = 340.dp)) {
+                DropdownMenu(expanded, { expanded = false }, Modifier.width(menuWidth).heightIn(max = 360.dp)) {
                     DropdownMenuItem({ LocationLabel(null, tr(R.string.ui_autopilot), state.data.autopilotQuality) },
                         { selected = "AUTO"; expanded = false }, Modifier.testTag("home-country-AUTO"))
                     HorizontalDivider()
