@@ -48,7 +48,11 @@ class PrettyVpnService : GoBackend.VpnService() {
             .setCategory(Notification.CATEGORY_SERVICE).setOnlyAlertOnce(true)
             .addAction(Notification.Action.Builder(null, getString(R.string.vpn_disconnect), stop).build()).build()
     }
-    override fun onRevoke() { AndroidVpnHost.instance?.serviceLost(); super.onRevoke() }
+    override fun onRevoke() {
+        // Serialize GoBackend DOWN before stopSelf/onDestroy; super would stop the service
+        // immediately while a start/statistics JNI call may still be in flight.
+        AndroidVpnHost.instance?.serviceLost() ?: stopSelf()
+    }
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy() // Native handle/routes are closed even if cleanup cannot reach backend.

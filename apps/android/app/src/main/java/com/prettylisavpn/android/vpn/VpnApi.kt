@@ -20,21 +20,33 @@ interface VpnApi {
     suspend fun delete(id: String)
 }
 
+/** A confirmed rejection or failure before the authenticated HTTP action was entered. */
+class VpnCreateRejected(val failure: AuthFailure) : Exception("VPN create rejected")
+
 class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoordinator) : VpnApi {
     override suspend fun current(): VpnSession? = sessions.request { token ->
         val json = http.request("vpn/sessions/current", access = token, headers = mapOf("X-VPN-Candidates" to "1")).asJsonObject
         val value = json.get("session") ?: throw AuthFailure("invalid_response")
         if (value.isJsonNull) null else parseVpnSession(value.asJsonObject)
     }
-    override suspend fun create(country: String, publicKey: String): VpnSession = sessions.request { token ->
-        require(country == "AUTO" || country.matches(Regex("[A-Z]{2}")))
-        val body = JsonObject().apply {
-            addProperty("mode", if (country == "AUTO") "AUTO" else "COUNTRY")
-            if (country != "AUTO") addProperty("country_code", country)
-            addProperty("public_key", publicKey)
+    override suspend fun create(country: String, publicKey: String): VpnSession {
+        var entered = false
+        try {
+            return sessions.request { token ->
+                entered = true
+                require(country == "AUTO" || country.matches(Regex("[A-Z]{2}")))
+                val body = JsonObject().apply {
+                    addProperty("mode", if (country == "AUTO") "AUTO" else "COUNTRY")
+                    if (country != "AUTO") addProperty("country_code", country)
+                    addProperty("public_key", publicKey)
+                }
+                parseVpnSession(http.request("vpn/sessions", "POST", body.toString().toRequestBody("application/json".toMediaType()), token,
+                    headers = mapOf("X-VPN-Candidates" to "1")).asJsonObject)
+            }
+        } catch (failure: AuthFailure) {
+            if (!entered || failure.code in setOf("offline", "FREE_DAILY_LIMIT_REACHED", "COUNTRY_UNAVAILABLE", "VPN_UNAVAILABLE", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "invalid_access_token", "invalid_session", "invalid_refresh_token", "reauth_required", "device_revoked", "user_blocked")) throw VpnCreateRejected(failure)
+            throw failure
         }
-        parseVpnSession(http.request("vpn/sessions", "POST", body.toString().toRequestBody("application/json".toMediaType()), token,
-            headers = mapOf("X-VPN-Candidates" to "1")).asJsonObject)
     }
     override suspend fun delete(id: String) {
         UUID.fromString(id)

@@ -60,6 +60,7 @@ class VpnController(
     private suspend fun save(id: String, value: PendingVpn?) = withContext(Dispatchers.IO) { journal.write(id, value) }
     private fun set(phase: VpnPhase, error: VpnError? = null) { mutable.value = VpnStatus(phase, error) }
     private fun error(e: Exception): VpnError = when (e) {
+        is VpnCreateRejected -> error(e.failure)
         is VpnFailure -> e.reason
         is AuthFailure -> when(e.code) {
             "FREE_DAILY_LIMIT_REACHED" -> VpnError.QUOTA
@@ -86,13 +87,16 @@ class VpnController(
                     val material = key()
                     save(id, PendingVpn(uncertain = true))
                     set(VpnPhase.CONNECTING)
-                    val session = try { api.create(country, material.publicKey) } catch(e: AuthFailure) {
+                    val session = try { api.create(country, material.publicKey) } catch(e: VpnCreateRejected) {
+                        save(id, null); throw e
+                    } catch(e: AuthFailure) {
                         // Only explicit rejection proves the POST did not allocate a session.
                         if (e.code in setOf("FREE_DAILY_LIMIT_REACHED", "COUNTRY_UNAVAILABLE", "VPN_UNAVAILABLE", "VPN_ADDRESS_POOL_EXHAUSTED")) save(id, null)
                         throw e
                     }
-                    active = session
-                    save(id, PendingVpn(session.id))
+                    // Persist a received UUID even if stop/consent revoke raced with the response.
+                    withContext(NonCancellable) { active = session; save(id, PendingVpn(session.id)) }
+                    ensureActive()
                     val config = session.config ?: throw VpnFailure(VpnError.UNSUPPORTED)
                     deadline = session.expiresAt?.let { elapsed() + Duration.between(session.serverTime, it).toMillis().coerceAtLeast(0) } ?: Long.MAX_VALUE
                     if (elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)

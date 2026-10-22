@@ -60,7 +60,8 @@ class VpnServiceTest {
                 assertEquals("DE",country); assertTrue(publicKey.length==44); posts++
                 val serverKey = if (realPeer) {
                     File(directory,"peer-ready").delete()
-                    File(directory,"client-public-key").writeText(publicKey)
+                    File(directory,"client-public-key.tmp").writeText(publicKey)
+                    check(File(directory,"client-public-key.tmp").renameTo(File(directory,"client-public-key")))
                     withTimeout(10_000) { while(!File(directory,"peer-ready").exists()) delay(100) }
                     File(directory,"server-public-key").readText().trim()
                 } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
@@ -123,12 +124,18 @@ class VpnServiceTest {
         assertEquals(2,posts)
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"connected-real-peer.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         // System revocation is delivered to the production service via onRevoke.
-        device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN deny")
+        compose.runOnUiThread { compose.activity.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS)) }
+        val preference = device.wait(Until.findObject(By.text("PrettyLisaVPN")),10_000)
+        assertNotNull("system VPN settings list",preference)
+        preference.click()
+        val revoke = device.wait(Until.findObject(By.text(java.util.regex.Pattern.compile("(?i)(disconnect|forget)"))),5_000)
+        assertNotNull("system disconnect action",revoke)
+        revoke.click()
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.DISCONNECTED,VpnPhase.FAILED) }
         assertTrue(deletes>0); assertNull(current); assertNull(journal.read(owner))
         compose.waitUntil(10_000) { manager.allNetworks.none { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         assertNotEquals(VpnPhase.CONNECTED,host.status.value.phase)
         File(directory,"result.txt").writeText("source_sha=${BuildConfig.SOURCE_SHA}\nreal_consent=true\nreal_foreground_service=true\nreal_jni_tun=true\nunresponsive_peer_connected=false\nreal_ephemeral_peer_connected=true\nVPN_bound_DNS_HTTPS=true\nserver_cleanup=true\nrevoke=true\n")
-        device.executeShellCommand("appops set ${app.packageName} ACTIVATE_VPN default")
+        device.pressBack()
     }
 }

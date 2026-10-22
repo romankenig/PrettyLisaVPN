@@ -29,7 +29,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     }
     override fun disconnect() { controller.disconnect() }
     fun serviceLost() {
-        if (status.value.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CONNECTING, VpnPhase.VERIFYING)) controller.disconnect()
+        if (status.value.phase in setOf(VpnPhase.RECONCILING, VpnPhase.CONNECTED, VpnPhase.CONNECTING, VpnPhase.VERIFYING)) controller.disconnect()
     }
     companion object {
         @Volatile var instance: AndroidVpnHost? = null

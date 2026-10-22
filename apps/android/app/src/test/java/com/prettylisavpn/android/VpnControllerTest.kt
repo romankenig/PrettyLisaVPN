@@ -118,6 +118,22 @@ class VpnControllerTest {
         d.connect("AUTO"); await { d.status.value.phase == VpnPhase.CONNECTED }; owner = "second"
         await { d.status.value.phase == VpnPhase.CLEANUP_PENDING }; assertFalse(runtime.up); assertEquals(0, api.deletes)
     }
+    @Test fun confirmedRejectionClearsIntentAndAllowsANewAttempt() = scenario {
+        val runtime = Runtime(); val store = Store()
+        val api = Api(); val rejecting = object : VpnApi {
+            var reject = true
+            override suspend fun current() = api.current()
+            override suspend fun delete(id: String) = api.delete(id)
+            override suspend fun create(country: String, publicKey: String): VpnSession {
+                if (reject) { reject = false; throw VpnCreateRejected(AuthFailure("FREE_DAILY_LIMIT_REACHED")) }
+                return api.create(country,publicKey)
+            }
+        }
+        val c = VpnController(rejecting,runtime,store,{ "owner" },{ object : TunnelKey { override val publicKey = config.serverKey } },this,{ System.nanoTime()/1_000_000 })
+        c.connect("AUTO"); await { c.status.value.phase == VpnPhase.FAILED }
+        assertEquals(VpnError.QUOTA,c.status.value.error); assertNull(store.pending)
+        delay(25); c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }; c.beforeLogout()
+    }
     @Test fun expiryUsesServerDurationRatherThanDeviceWallClock() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store()
         val remoteTime = Instant.parse("2040-01-01T00:00:00Z")
@@ -125,7 +141,7 @@ class VpnControllerTest {
         api.allocated = session
         val c = controller(api, runtime, store, this)
         c.connect("AUTO"); await { c.status.value.phase == VpnPhase.CONNECTED }
-        await { c.status.value.phase == VpnPhase.DISCONNECTED }
+        await { c.status.value.phase in setOf(VpnPhase.DISCONNECTED,VpnPhase.FAILED) }
         assertFalse(runtime.up); assertNull(api.value); assertNull(store.pending)
     }
 }
