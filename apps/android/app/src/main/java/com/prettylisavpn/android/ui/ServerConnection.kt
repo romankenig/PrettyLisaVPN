@@ -25,13 +25,13 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
-/** Recheck the default route, including replacement networks and captive portals. */
+/** Observe the default route; public /version, not Android validation probes, decides reachability. */
 private fun internet(context: Context): Flow<Boolean> = callbackFlow {
     val manager = context.getSystemService(ConnectivityManager::class.java)
     fun update() {
         val capabilities = manager.getNetworkCapabilities(manager.activeNetwork)
-        trySend(capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
-            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+        // Captive portals and blocked OS validation are resolved by the bounded HTTPS probe.
+        trySend(capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true)
     }
     val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) = update()

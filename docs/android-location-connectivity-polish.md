@@ -27,9 +27,11 @@ Windows 0.12.0 и backend 0.10.0/schema0026 не изменены; API обра�
   пользовательские значения и серверное содержимое не преобразуются в runtime.
 - Над нижней полосой версий на всех live-маршрутах показывается предупреждение
   «нет связи с сервером, проверьте подключение к интернету». Android следит за
-  validated default network, включая captive portals/смену сети; public /version
+  default network с INTERNET capability, включая смену сети; public /version
   проверяется сразу и каждые 15 секунд при STARTED Activity, timeout 5 секунд,
-  без redirect/retry/auth/cookies. Геолокация не определяет доступность backend.
+  без redirect/retry/auth/cookies. VALIDATED не требуется: системная проверка Android
+  может быть заблокирована при доступном API; captive portal не пройдёт HTTPS-пробу.
+  Геолокация не определяет доступность backend.
   Потеря сети отменяет опрос; восстановление перепроверяет сервер и скрывает
   полосу. В фоне callback/опрос освобождаются. Не выполняются фоновые mutations.
 

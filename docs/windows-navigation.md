@@ -389,6 +389,7 @@ Devices показывает только ACTIVE, текущее устройс�
 отзыв текущего устройства по-прежнему завершает сессию. Settings → уведомления
 сервиса сохраняет серверные ACK revision/navigation guards и отличается от поддержки.
 Общая полоса потери связи доступна на всех live-маршрутах, включая auth, над footer.
-При возвращении validated default network проверяется public GET /version;
+При возвращении default network с INTERNET capability проверяется public GET /version;
+OS VALIDATED не требуется (проверка Android может быть заблокирована при доступном API);
 при остановке Activity callback/опрос освобождаются. Windows/backend не изменены.
 См. [Android handoff](android-location-connectivity-polish.md).
