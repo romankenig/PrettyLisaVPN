@@ -86,8 +86,8 @@ class VpnServiceTest {
         fun consent(accept: Boolean) {
             if (VpnService.prepare(app) == null) return
             val name = if (accept) "android:id/button1" else "android:id/button2"
-            assertTrue("VPN consent dialog",device.wait(Until.hasObject(By.res(name)),10_000))
-            device.findObject(By.res(name)).click()
+            assertTrue("VPN consent dialog",device.wait(Until.hasObject(By.pkg("com.android.vpndialogs").res(name)),10_000))
+            device.findObject(By.pkg("com.android.vpndialogs").res(name)).click()
         }
         // First reject the actual Android VPN consent. There must be no backend allocation.
         if (VpnService.prepare(app) != null) {
