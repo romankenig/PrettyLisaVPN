@@ -8,6 +8,7 @@ mkdir -p evidence
 cleanup() {
   if [[ -n "${vpn_peer_pid:-}" ]]; then kill "$vpn_peer_pid" 2>/dev/null || true; wait "$vpn_peer_pid" 2>/dev/null || true; fi
   adb logcat -d -s WireGuard/GoBackend AndroidRuntime > evidence/vpn-runtime-log.txt 2>&1 || true
+  if [[ -f /tmp/prettylisa-peer-log ]]; then cp /tmp/prettylisa-peer-log evidence/vpn-peer-log.txt; fi
   # Preserve framework/IME evidence too: a System UI ANR must not look like an app-input failure.
   adb logcat -d -b events > evidence/android-events.txt 2>&1 || true
   adb shell dumpsys activity lastanr > evidence/last-anr.txt 2>&1 || true

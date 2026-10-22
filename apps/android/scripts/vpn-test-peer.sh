@@ -16,6 +16,8 @@ sudo iptables -t nat -A POSTROUTING -s 10.77.0.0/24 -j MASQUERADE
 sudo iptables -I FORWARD -i wgplci -j ACCEPT
 sudo iptables -I FORWARD -o wgplci -j ACCEPT
 cleanup() {
+  sudo wg show wgplci latest-handshakes || true
+  sudo wg show wgplci transfer || true
   sudo ip link delete wgplci || true
   sudo iptables -t nat -D POSTROUTING -s 10.77.0.0/24 -j MASQUERADE || true
   sudo iptables -D FORWARD -i wgplci -j ACCEPT || true

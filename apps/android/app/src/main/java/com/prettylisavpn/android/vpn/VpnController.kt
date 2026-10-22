@@ -118,7 +118,8 @@ class VpnController(
                 } catch(e: CancellationException) {
                     // Stop/logout owns cancellation cleanup after this mutex is released.
                     // Publishing Disconnected here would race the queued stop and swallow a reconnect.
-                    throw e
+                    if (!currentCoroutineContext().isActive) throw e
+                    withContext(NonCancellable) { finish(id, VpnError.NETWORK) }
                 } catch(e: Exception) {
                     withContext(NonCancellable) { finish(id, error(e)) }
                 }
@@ -137,7 +138,9 @@ class VpnController(
                     if (api.current()?.id != session.id) throw VpnFailure(VpnError.ACCESS)
                 }
             }
-        } catch(e: CancellationException) { throw e
+        } catch(e: CancellationException) {
+            if (!currentCoroutineContext().isActive) throw e
+            mutex.withLock { activeOwner?.let { finish(it, VpnError.NETWORK) } }
         } catch(e: Exception) { mutex.withLock { activeOwner?.let { finish(it, error(e)) } } }
     }
     /** Stop publishes immediately; then waits for the current create/start before compensation. */

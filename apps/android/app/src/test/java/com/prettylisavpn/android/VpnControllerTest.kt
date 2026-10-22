@@ -33,10 +33,11 @@ class VpnControllerTest {
         override suspend fun delete(id: String) { deletes++; if (failDelete) throw AuthFailure("offline"); value = null }
     }
     private class Runtime : TunnelRuntime {
+        var timeout = false
         var up = false; var starts = 0; var stops = 0; var verified = true; var failStart = false
         override suspend fun start(config: VpnConfig, key: TunnelKey) { starts++; if (failStart) error("native"); up = true }
         override suspend fun stop() { stops++; up = false }
-        override suspend fun verify(config: VpnConfig) = up && verified
+        override suspend fun verify(config: VpnConfig): Boolean { if(timeout) withTimeout(1) { delay(100) }; return up && verified }
     }
     private suspend fun await(predicate: () -> Boolean) = withTimeout(5_000) { while (!predicate()) delay(5) }
     private fun controller(api: Api, runtime: Runtime, store: Store, scope: CoroutineScope, owner: () -> String? = { "owner" }, clock: () -> Long = { System.nanoTime()/1_000_000 }) = VpnController(api, runtime, store, owner,
@@ -62,6 +63,12 @@ class VpnControllerTest {
         // A UI frame can now offer connect again; there must be no queued cleanup to swallow it.
         delay(10);runtime.verified=true;c.connect("AUTO")
         await { c.status.value.phase==VpnPhase.CONNECTED };assertEquals(2,api.posts);c.beforeLogout()
+    }
+    @Test fun providerTimeoutCannotSilentlyCancelMonitoringAndLeaveConnected() = scenario {
+        val api=Api();val runtime=Runtime();val store=Store();val c=controller(api,runtime,store,this)
+        c.connect("AUTO");await { c.status.value.phase==VpnPhase.CONNECTED };runtime.timeout=true
+        await { c.status.value.phase==VpnPhase.FAILED }
+        assertEquals(VpnError.NETWORK,c.status.value.error);assertFalse(runtime.up);assertNull(api.value)
     }
     @Test fun concurrentClicksCannotCreateTwoSessions() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store(); api.gate = CompletableDeferred()
