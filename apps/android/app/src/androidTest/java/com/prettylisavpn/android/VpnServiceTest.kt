@@ -98,9 +98,12 @@ class VpnServiceTest {
         }
         click(); consent(true)
         // Notification consent is independent. Accept on Android 13+, if it is shown.
-        if (android.os.Build.VERSION.SDK_INT >= 33) {
-            device.wait(Until.hasObject(By.res("com.android.permissioncontroller:id/permission_allow_button")),3_000)
-            device.findObject(By.res("com.android.permissioncontroller:id/permission_allow_button"))?.click()
+        if (android.os.Build.VERSION.SDK_INT >= 33 && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            // Google system images may use a different resource namespace from AOSP.
+            val allow = device.wait(Until.findObject(By.res(java.util.regex.Pattern.compile(".*:id/permission_allow_button"))),10_000)
+            assertNotNull("notification permission dialog",allow)
+            allow.click()
+            compose.waitUntil(10_000) { app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED }
         }
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.VERIFYING,VpnPhase.CONNECTED,VpnPhase.FAILED) }
         assertEquals("VPN status: ${host.status.value}",VpnPhase.VERIFYING,host.status.value.phase)
