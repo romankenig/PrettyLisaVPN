@@ -32,6 +32,12 @@ identity = json.loads((directory / 'build-identity.json').read_text())
 assert identity['source_sha'] == os.environ['GITHUB_SHA']
 assert hashlib.sha256((directory / identity['apk']).read_bytes()).hexdigest() == identity['apk_sha256']
 PY
+# boot_completed alone does not mean the Google launcher owns a responsive window.
+# Warm its first launch before ActivityScenario starts opening/closing target activities.
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME > evidence/launcher-preflight.txt
+adb shell uiautomator dump /sdcard/prettylisa-launcher-ready.xml >> evidence/launcher-preflight.txt
 adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1

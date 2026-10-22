@@ -82,7 +82,7 @@ class VpnServiceTest {
         journal.write(owner,null)
         val host = AndroidVpnHost.create(app,sessions,HttpAuthApi("https://unused.invalid/"),api,journal)
         compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } } }
-        fun click() = compose.onNodeWithTag("home-connect").performClick()
+        fun click() { compose.waitForIdle(); compose.onNodeWithTag("home-connect").performClick() }
         fun consent(accept: Boolean) {
             if (VpnService.prepare(app) == null) return
             val name = if (accept) "android:id/button1" else "android:id/button2"
@@ -110,6 +110,7 @@ class VpnServiceTest {
         assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
         val notifications=app.getSystemService(NotificationManager::class.java).activeNotifications
         assertTrue(notifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" })
+        compose.waitForIdle()
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"verifying-real-tun.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         // Explicit stop of the failed peer must remove native state and the server session.
         click()
@@ -118,10 +119,15 @@ class VpnServiceTest {
         compose.waitUntil(10_000) { manager.allNetworks.none { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         // A real ephemeral WireGuard peer on this CI runner now serves DNS/HTTPS through NAT.
         realPeer = true
+        compose.waitForIdle()
+        compose.onNodeWithTag("home-connect").assertTextEquals(compose.activity.getString(R.string.dash_connect))
         click()
+        compose.waitUntil(10_000) { posts == 2 || host.status.value.error != null }
+        assertEquals("second start: ${host.status.value}",2,posts)
         compose.waitUntil(35_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
         assertEquals("VPN status: ${host.status.value}",VpnPhase.CONNECTED,host.status.value.phase)
         assertEquals(2,posts)
+        compose.waitForIdle()
         instrumentation.uiAutomation.executeShellCommand("screencap -p").use { fd -> File(directory,"connected-real-peer.png").outputStream().use { out -> android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).copyTo(out) } }
         if (InstrumentationRegistry.getArguments().getString("vpnStage") == "seed") {
             assertEquals(sessionId,journal.read(owner)!!.id)

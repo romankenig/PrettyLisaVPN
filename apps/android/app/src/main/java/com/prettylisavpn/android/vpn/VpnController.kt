@@ -115,12 +115,12 @@ class VpnController(
                     ensureActive()
                     if (elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
                     set(VpnPhase.CONNECTED)
+                } catch(e: CancellationException) {
+                    // Stop/logout owns cancellation cleanup after this mutex is released.
+                    // Publishing Disconnected here would race the queued stop and swallow a reconnect.
+                    throw e
                 } catch(e: Exception) {
-                    withContext(NonCancellable) {
-                        val reason = if (e is CancellationException) null else error(e)
-                        finish(id, reason)
-                    }
-                    if (e is CancellationException) throw e
+                    withContext(NonCancellable) { finish(id, error(e)) }
                 }
             }
             if (active != null) monitor()
@@ -142,6 +142,7 @@ class VpnController(
     }
     /** Stop publishes immediately; then waits for the current create/start before compensation. */
     fun disconnect() {
+        if (status.value.phase == VpnPhase.DISCONNECTING) return
         set(VpnPhase.DISCONNECTING)
         operation?.cancel()
         operation = scope.launch { mutex.withLock { (activeOwner ?: owner())?.let { finish(it, null) } ?: run { runtime.stop(); set(VpnPhase.DISCONNECTED); serviceIdle() } } }

@@ -54,6 +54,15 @@ class VpnControllerTest {
         c.disconnect(); await { c.status.value.phase == VpnPhase.DISCONNECTED }
         assertEquals(1, api.posts); assertTrue(api.deletes >= 1); assertFalse(runtime.up); assertNull(store.pending)
     }
+    @Test fun cancelVerificationThenReconnectDoesNotRaceASecondCleanup() = scenario {
+        val api=Api();val runtime=Runtime();val store=Store();runtime.verified=false
+        val c=controller(api,runtime,store,this)
+        c.connect("AUTO");await { c.status.value.phase==VpnPhase.VERIFYING }
+        repeat(3) { c.disconnect() };await { c.status.value.phase==VpnPhase.DISCONNECTED }
+        // A UI frame can now offer connect again; there must be no queued cleanup to swallow it.
+        delay(10);runtime.verified=true;c.connect("AUTO")
+        await { c.status.value.phase==VpnPhase.CONNECTED };assertEquals(2,api.posts);c.beforeLogout()
+    }
     @Test fun concurrentClicksCannotCreateTwoSessions() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store(); api.gate = CompletableDeferred()
         val c = controller(api, runtime, store, this)
