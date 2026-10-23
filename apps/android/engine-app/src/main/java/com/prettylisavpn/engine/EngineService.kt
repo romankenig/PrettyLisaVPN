@@ -1,0 +1,126 @@
+package com.prettylisavpn.engine
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.VpnService
+import android.os.Build
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.ParcelFileDescriptor
+import android.os.Process
+import com.prettylisavpn.enginecore.mobile.Mobile
+import com.prettylisavpn.enginecore.mobile.Platform
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+
+/** Owns the one TUN and the one Go runtime in this separately installed process. */
+class EngineService : VpnService() {
+    private val worker = Executors.newSingleThreadExecutor()
+    private val epoch = AtomicLong()
+    private val handler = Handler(Looper.getMainLooper())
+    private val engine = Mobile.newEngine()
+    @Volatile private var tun: ParcelFileDescriptor? = null
+    @Volatile private var owner: IBinder? = null
+    @Volatile private var underlying: Network? = null
+    @Volatile var running = false
+        private set
+    private val death = IBinder.DeathRecipient { requestStop() }
+    private val networks by lazy { getSystemService(ConnectivityManager::class.java) }
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onLost(network: Network) { if (network == underlying) requestStop() }
+    }
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+        networks.registerNetworkCallback(android.net.NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build(), networkCallback)
+    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (prepare(this) != null) { stopSelf(); return START_NOT_STICKY }
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(NotificationChannel("engine", "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
+        val notification = Notification.Builder(this, "engine")
+            .setSmallIcon(android.R.drawable.ic_lock_lock).setContentTitle("PrettyLisaVPN")
+            .setOngoing(true).setCategory(Notification.CATEGORY_SERVICE).build()
+        try {
+            if (Build.VERSION.SDK_INT >= 34) startForeground(42, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
+            else startForeground(42, notification)
+        } catch (_: Exception) { stopSelf() }
+        handler.postDelayed({ if (owner == null && !running) stopSelf() }, 60_000)
+        return START_NOT_STICKY
+    }
+    fun startProfile(profile: String, client: IBinder): String {
+        val generation = epoch.get()
+        return bounded("ENGINE_START_FAILED") {
+            if (generation != epoch.get() || prepare(this) != null) return@bounded "PERMISSION_REQUIRED"
+            if (running || owner != null) return@bounded "ENGINE_ALREADY_RUNNING"
+            try {
+                client.linkToDeath(death, 0)
+                owner = client
+                underlying = networks.allNetworks.firstOrNull { network -> networks.getNetworkCapabilities(network)?.let {
+                    it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) && it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                } == true } ?: throw IllegalStateException()
+                setUnderlyingNetworks(arrayOf(underlying!!))
+                engine.start(profile, platform)
+                if (generation != epoch.get() || !client.isBinderAlive) { closeOwned(); return@bounded "ENGINE_START_FAILED" }
+                running = true
+                "RUNNING"
+            } catch (_: Exception) { closeOwned(); "ENGINE_START_FAILED" }
+        }
+    }
+    fun stopProfile(): Boolean { epoch.incrementAndGet(); return bounded(false) { closeOwned(); true } }
+    fun requestStop() {
+        epoch.incrementAndGet()
+        // A stuck native operation must not leave traffic alive after parent death.
+        val killer = Runnable { Process.killProcess(Process.myPid()) }
+        handler.postDelayed(killer, 5_000)
+        worker.execute {
+            closeOwned()
+            handler.removeCallbacks(killer)
+            handler.post { stopSelf() }
+        }
+    }
+    private fun closeOwned() {
+        try {
+            engine.stop()
+            tun?.close(); tun = null
+            try { owner?.unlinkToDeath(death, 0) } catch (_: NoSuchElementException) { /* Already dead. */ }
+            owner = null; underlying = null; running = false
+        } catch (_: Exception) {
+            Process.killProcess(Process.myPid())
+            throw IllegalStateException("ENGINE_STOP_FAILED")
+        }
+    }
+    private fun <T> bounded(failed: T, action: () -> T): T = try {
+        worker.submit<T> { action() }.get(30, TimeUnit.SECONDS)
+    } catch (_: Exception) { requestStop(); failed }
+    private val platform = object : Platform {
+        override fun protect(fd: Int): Boolean = this@EngineService.protect(fd)
+        override fun openTun(): Int {
+            if (tun != null || prepare(this@EngineService) != null) throw IllegalStateException("TUN_UNAVAILABLE")
+            return Builder().setSession("PrettyLisaVPN").setMtu(1280)
+                .addAddress("172.30.255.1", 30).addAddress("fd7a:115c:a1e0::1", 126)
+                .addDnsServer("1.1.1.1").addRoute("0.0.0.0", 0).addRoute("::", 0)
+                .establish()?.also { tun = it }?.fd ?: throw IllegalStateException("TUN_UNAVAILABLE")
+        }
+    }
+    override fun onRevoke() { requestStop(); stopSelf() }
+    override fun onDestroy() {
+        instance = null
+        networks.unregisterNetworkCallback(networkCallback)
+        requestStop()
+        worker.shutdown()
+        super.onDestroy()
+    }
+    companion object {
+        @Volatile var instance: EngineService? = null
+            private set
+    }
+}

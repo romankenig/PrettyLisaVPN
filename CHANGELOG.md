@@ -17,6 +17,18 @@
   Scope, current limits and owner decisions:
   [docs/vpn-methods-from-article.md](docs/vpn-methods-from-article.md).
 
+### Managed engine component — 0.1.0, in development
+
+- Separate process and Android companion sources, pinned Xray MPL-2.0 core, typed
+  private profiles and closed status/error responses. No raw engine config,
+  traffic logs, direct DNS fallback or unverified Connected result. The unpublished
+  sing-box prototype was replaced following the owner's license decision.
+- Constructors accept 21 method/transport combinations with the pinned Xray
+  core. Windows/Android dependency license checks exclude GPL/AGPL/LGPL; the
+  REALITY limiter uses a separately tested MIT implementation.
+- Main-client wiring, full article coverage, server credential lifecycle and real DE/US
+  device acceptance are still pending; nothing new is enabled by the catalog.
+
 ### Backend — 0.13.0 / Windows — 0.12.1 / Android — 0.8.1 (code16)
 
 - Opt-in DELETE confirmation distinguishes persisted termination intent from
