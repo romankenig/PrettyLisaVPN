@@ -4,7 +4,18 @@ from datetime import UTC, date, datetime
 from ipaddress import IPv4Address
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, String, func, text
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    LargeBinary,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column
@@ -16,6 +27,55 @@ from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+class VpnCredentialRecord(Base):
+    """Durable signing intent and revocation; no client private key or CSR stored."""
+
+    __tablename__ = "vpn_credentials"
+    __table_args__ = (
+        CheckConstraint("authority_sha256 ~ '^[0-9a-f]{64}$'", name="ck_vpn_credentials_authority"),
+        CheckConstraint("request_sha256 ~ '^[0-9a-f]{64}$'", name="ck_vpn_credentials_request"),
+        CheckConstraint("expires_at > created_at", name="ck_vpn_credentials_lifetime"),
+        CheckConstraint(
+            "(certificate_pem IS NULL) = (issued_at IS NULL)",
+            name="ck_vpn_credentials_issuance",
+        ),
+        CheckConstraint(
+            "certificate_pem IS NULL OR octet_length(certificate_pem) BETWEEN 1 AND 16384",
+            name="ck_vpn_credentials_certificate_size",
+        ),
+        CheckConstraint(
+            "issued_at IS NULL OR (issued_at >= created_at AND issued_at < expires_at)",
+            name="ck_vpn_credentials_issued_time",
+        ),
+        CheckConstraint(
+            "revoked_at IS NULL OR revoked_at >= created_at",
+            name="ck_vpn_credentials_revoked_time",
+        ),
+        CheckConstraint(
+            "node_removed_at IS NULL OR (revoked_at IS NOT NULL AND node_removed_at >= revoked_at)",
+            name="ck_vpn_credentials_removal",
+        ),
+        Index("ix_vpn_credentials_session", "session_id"),
+        Index("ix_vpn_credentials_authority", "vpn_node_id", "authority_sha256"),
+        Index(
+            "ix_vpn_credentials_pending_revocation",
+            "vpn_node_id",
+            postgresql_where=text("revoked_at IS NOT NULL AND node_removed_at IS NULL"),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    session_id: Mapped[UUID] = mapped_column(ForeignKey("vpn_sessions.id", ondelete="RESTRICT"))
+    vpn_node_id: Mapped[UUID] = mapped_column(ForeignKey("vpn_nodes.id", ondelete="RESTRICT"))
+    authority_sha256: Mapped[str] = mapped_column(String(64))
+    request_sha256: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    certificate_pem: Mapped[bytes | None] = mapped_column(LargeBinary)
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    node_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class VpnSessionRecord(Base):

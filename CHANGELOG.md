@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Backend — 0.12.0 / клиенты unchanged
+
+- Миграция 0027 и PostgreSQL-реестр OpenVPN credentials: неизменяемая привязка
+  запроса, точный сохранённый сертификат для повторной доставки, устойчивый intent
+  отзыва и отдельное подтверждение удаления на узле.
+- Конкурирующие повторы не перезаписывают результат; поздняя выдача после отзыва
+  запрещена. Полный CRL snapshot сохраняет уже подтверждённые отзывы.
+- Реестр пока не подключён к публичному API, signer worker и node-agent.
+  WireGuard sessions работают по прежнему пути. Handoff:
+  [docs/openvpn-credential-ledger.md](docs/openvpn-credential-ledger.md).
+
 ### Backend — 0.11.0 / клиенты unchanged
 
 - Первый этап OpenVPN TCP fallback: изолированный модуль подписания клиентского
