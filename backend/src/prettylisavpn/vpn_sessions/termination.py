@@ -33,6 +33,7 @@ class VpnTerminationUnavailableError(RuntimeError):
 class TerminatedVpnSession:
     session_id: UUID
     status: VpnSessionStatus
+    cleanup_confirmed: bool = False
 
 
 class VpnTerminationHandler(Protocol):
@@ -82,9 +83,10 @@ class VpnSessionTerminationService:
         except SQLAlchemyError:
             raise VpnTerminationUnavailableError from None
 
-        if current.peer_removed_at is None:
-            await remove_and_record_peer(self._postgres, self._agent, current, node)
-        return TerminatedVpnSession(current.id, current.status)
+        confirmed = current.peer_removed_at is not None
+        if not confirmed:
+            confirmed = await remove_and_record_peer(self._postgres, self._agent, current, node)
+        return TerminatedVpnSession(current.id, current.status, confirmed)
 
 
 class UnavailableVpnTerminationService:
@@ -177,22 +179,26 @@ async def remove_and_record_peer(
     agent: NodeAgentPeerPort,
     vpn_session: VpnSession,
     node: VpnNode,
-) -> None:
+) -> bool:
     try:
         async with postgres.session() as database_session:
             async with database_session.begin():
                 repository = VpnSessionRepository(database_session)
                 current = await repository.get_for_update(vpn_session.id)
-                if current is None or current.peer_removed_at is not None:
-                    return
+                if current is None:
+                    return False
+                if current.peer_removed_at is not None:
+                    return True
                 if current.status in (VpnSessionStatus.PENDING, VpnSessionStatus.ACTIVE):
-                    return
+                    return False
                 await repository.acquire_peer_lock(current.client_wireguard_public_key)
                 try:
                     await agent.remove_peer(node, current.client_wireguard_public_key)
                 except NodeAgentUnavailableError:
-                    return  # Intent is committed already; retry after node recovery.
+                    return False  # Intent is committed already; retry after node recovery.
                 now = datetime.now(UTC)
                 await repository.update(replace(current, peer_removed_at=now, updated_at=now))
+        return True  # Confirmation requires the transaction commit to succeed.
     except SQLAlchemyError:
         logger.error("vpn_session_peer_cleanup_persistence_unavailable")
+        return False
