@@ -57,6 +57,9 @@ before all these lifecycle paths have working adapters and acceptance coverage.
 ## Validation and release
 
 Unit tests reject malformed identities/fingerprints/times before storage access.
+The native review now locates versions within their labelled Frontend/Backend row;
+equal component version numbers must not produce ambiguous text matches. This is
+a CI selector correction only, with Windows product version unchanged.
 Real PostgreSQL tests exercise concurrent retry and conflicting results, reconnect,
 rollback, late signing completion, expiry, scoped acknowledgement, retained CRL
 entries and database constraints. CI also checks Alembic against ORM metadata,
