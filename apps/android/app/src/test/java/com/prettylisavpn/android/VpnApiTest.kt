@@ -48,7 +48,12 @@ class VpnApiTest {
             val request=server.takeRequest(); assertEquals("/vpn/sessions",request.path); assertEquals("1",request.getHeader("X-VPN-Candidates")); assertEquals("Bearer synthetic-access",request.getHeader("Authorization"))
             val body=JsonParser.parseString(request.body.readUtf8()).asJsonObject; assertEquals(setOf("mode","country_code","public_key"),body.keySet()); assertEquals("COUNTRY",body.get("mode").asString)
             server.enqueue(MockResponse().setBody("{\"session\":$raw}")); assertEquals(created.id,api.current()!!.id); assertEquals("1",server.takeRequest().getHeader("X-VPN-Candidates"))
-            server.enqueue(MockResponse().setBody("""{"session_id":"${created.id}","status":"DISCONNECTED"}""")); api.delete(created.id); assertEquals("DELETE",server.takeRequest().method)
+            for (confirmation in listOf("", ",\"cleanup_confirmed\":false", ",\"cleanup_confirmed\":\"true\"", ",\"cleanup_confirmed\":null", ",\"cleanup_confirmed\":1")) {
+                server.enqueue(MockResponse().setBody("""{"session_id":"${created.id}","status":"DISCONNECTED"$confirmation}"""))
+                try { api.delete(created.id); fail("Unconfirmed cleanup must remain pending") } catch (failure: AuthFailure) { assertEquals("VPN_CLEANUP_PENDING", failure.code) }
+                assertEquals("1", server.takeRequest().getHeader("X-VPN-Cleanup"))
+            }
+            server.enqueue(MockResponse().setBody("""{"session_id":"${created.id}","status":"DISCONNECTED","cleanup_confirmed":true}""")); api.delete(created.id); assertEquals("DELETE",server.takeRequest().method)
             server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":{"code":"VPN_SESSION_NOT_FOUND"}}""")); api.delete(created.id)
         } finally { server.shutdown() }
     }

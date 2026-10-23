@@ -245,11 +245,13 @@ async function main() {
   if ((await page.locator("#login-help").innerText()).endsWith("."))
     throw new Error("Login helper must have no trailing dot");
   await page
-    .locator(".sidebar-versions")
+    .locator(".sidebar-versions > div")
+    .filter({ has: page.locator("dt", { hasText: /^Frontend$/ }) })
     .getByText(frontendVersion, { exact: true })
     .waitFor();
   await page
-    .locator(".sidebar-versions")
+    .locator(".sidebar-versions > div")
+    .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
     .getByText(deviceEvidence?.version.application_version || "недоступна", {
       exact: true,
     })
@@ -788,7 +790,8 @@ async function main() {
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
   await page
-    .locator("main")
+    .locator(".about-versions > div")
+    .filter({ has: page.locator("dt", { hasText: /^frontend$/ }) })
     .getByText(frontendVersion, { exact: true })
     .waitFor();
   await screenshot("08-about");

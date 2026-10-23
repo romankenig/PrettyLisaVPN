@@ -210,21 +210,30 @@ def test_endpoint_requires_authentication_and_valid_target_shape():
     assert invalid_country.status_code == 422
 
 
-def test_disconnect_endpoint_returns_terminal_state_and_is_transport_free():
+@pytest.mark.parametrize("confirmed", [False, True])
+@pytest.mark.parametrize("header", [None, "0", "1"])
+def test_disconnect_endpoint_returns_terminal_state_and_is_transport_free(confirmed, header):
     service = AsyncMock()
     session_id = uuid4()
     service.disconnect.return_value = TerminatedVpnSession(
-        session_id, VpnSessionStatus.DISCONNECTED
+        session_id, VpnSessionStatus.DISCONNECTED, confirmed
     )
     with api_client(AsyncMock()) as client:
         client.app.state.vpn_termination = service
         response = client.delete(
             f"/vpn/sessions/{session_id}",
-            headers={"Authorization": "Bearer token"},
+            headers={
+                "Authorization": "Bearer token",
+                **({"X-VPN-Cleanup": header} if header else {}),
+            },
         )
 
     assert response.status_code == 200
-    assert response.json() == {"session_id": str(session_id), "status": "DISCONNECTED"}
+    assert response.json() == {
+        "session_id": str(session_id),
+        "status": "DISCONNECTED",
+        **({"cleanup_confirmed": confirmed} if header == "1" else {}),
+    }
     service.disconnect.assert_awaited_once_with("token", session_id)
 
 

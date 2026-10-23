@@ -34,6 +34,10 @@ accepted as a production authority.
 
 ## Required next integration
 
+The subsequent [credential ledger](openvpn-credential-ledger.md) implements the
+storage boundary of item 1; it does not yet wire authorization, signer delivery
+or node cleanup into public sessions.
+
 1. Persist credential UUID, session/node identity, CSR key fingerprint, exact signed
    certificate and terminal/revocation state. Authorize access before issuance.
    Retries must return the saved certificate; never reuse a credential UUID for

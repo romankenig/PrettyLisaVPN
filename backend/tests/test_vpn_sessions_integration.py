@@ -434,10 +434,19 @@ async def test_manual_disconnect_enforces_ownership_and_is_idempotent():
             await termination.disconnect("other-device-token", active.session_id)
 
         authentication.authenticate.return_value = identity
+        agent.remove_peer.side_effect = NodeAgentUnavailableError
+        pending = await termination.disconnect("token", active.session_id)
+        assert pending.status is VpnSessionStatus.DISCONNECTED
+        assert not pending.cleanup_confirmed
+        async with postgres.session() as session:
+            pending_record = await VpnSessionRepository(session).get(active.session_id)
+        assert pending_record is not None and pending_record.peer_removed_at is None
+        agent.remove_peer.reset_mock(side_effect=True)
         first = await termination.disconnect("token", active.session_id)
         duplicate = await termination.disconnect("token", active.session_id)
 
         assert first.status is duplicate.status is VpnSessionStatus.DISCONNECTED
+        assert first.cleanup_confirmed and duplicate.cleanup_confirmed
         agent.remove_peer.assert_awaited_once()
         async with postgres.session() as session:
             persisted = await VpnSessionRepository(session).get(active.session_id)

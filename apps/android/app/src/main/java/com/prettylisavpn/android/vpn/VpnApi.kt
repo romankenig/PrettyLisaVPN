@@ -52,8 +52,10 @@ class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoo
         UUID.fromString(id)
         try {
             sessions.request { token ->
-                val json = http.request("vpn/sessions/$id", "DELETE", access = token).asJsonObject
+                val json = http.request("vpn/sessions/$id", "DELETE", access = token, headers = mapOf("X-VPN-Cleanup" to "1")).asJsonObject
                 if (json.get("session_id")?.asString != id || json.get("status")?.asString !in setOf("DISCONNECTED", "EXPIRED", "FAILED")) throw AuthFailure("invalid_response")
+                val confirmation = json.get("cleanup_confirmed")
+                if (confirmation == null || !confirmation.isJsonPrimitive || !confirmation.asJsonPrimitive.isBoolean || !confirmation.asBoolean) throw AuthFailure("VPN_CLEANUP_PENDING")
             }
         } catch (failure: AuthFailure) { if (failure.code != "VPN_SESSION_NOT_FOUND") throw failure }
     }

@@ -121,6 +121,7 @@ class ActiveVpnSessionResponse(BaseModel):
 class TerminatedVpnSessionResponse(BaseModel):
     session_id: UUID
     status: Literal["EXPIRED", "DISCONNECTED", "FAILED"]
+    cleanup_confirmed: bool = False
 
 
 class CurrentVpnSessionResponse(BaseModel):
@@ -306,6 +307,7 @@ async def create_vpn_session(
 @router.delete(
     "/sessions/{session_id}",
     response_model=TerminatedVpnSessionResponse,
+    response_model_exclude_unset=True,
     responses={
         401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
         403: {"model": ErrorResponse, "description": "User or current device is blocked"},
@@ -337,4 +339,10 @@ async def disconnect_vpn_session(
         return error_response("VPN_SESSION_NOT_FOUND", 404)
     except VpnTerminationUnavailableError:
         return error_response("VPN_TERMINATION_UNAVAILABLE", 503)
+    if request.headers.get("X-VPN-Cleanup") == "1":
+        return TerminatedVpnSessionResponse(
+            session_id=result.session_id,
+            status=result.status,
+            cleanup_confirmed=result.cleanup_confirmed,
+        )
     return TerminatedVpnSessionResponse(session_id=result.session_id, status=result.status)

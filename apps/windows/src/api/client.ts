@@ -491,11 +491,17 @@ export function createApiClient(
         `/vpn/sessions/${encodeURIComponent(vpnSessionId)}`,
         {
           method: "DELETE",
-          headers: { authorization: `Bearer ${accessToken}` },
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "x-vpn-cleanup": "1",
+          },
         },
         signal,
       );
-      if (!isTerminatedVpnSessionResponse(value)) {
+      if (
+        !isTerminatedVpnSessionResponse(value) ||
+        value.session_id !== vpnSessionId
+      ) {
         throw new ApiError("INVALID_RESPONSE");
       }
       return value;
@@ -534,7 +540,8 @@ function isTerminatedVpnSessionResponse(
   value: unknown,
 ): value is TerminatedVpnSessionResponse {
   return (
-    hasOnlyKeys(value, ["session_id", "status"]) &&
+    hasOnlyKeys(value, ["session_id", "status", "cleanup_confirmed"]) &&
+    value.cleanup_confirmed === true &&
     isUuid(value.session_id) &&
     ["EXPIRED", "DISCONNECTED", "FAILED"].includes(String(value.status))
   );

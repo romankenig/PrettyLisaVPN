@@ -287,7 +287,11 @@ describe("typed API client", () => {
         allowed_ips: ["0.0.0.0/0"],
       },
     };
-    const terminated = { session_id: sessionId, status: "DISCONNECTED" };
+    const terminated = {
+      session_id: sessionId,
+      status: "DISCONNECTED",
+      cleanup_confirmed: true,
+    };
     const transport = vi
       .fn<HttpTransport>()
       .mockResolvedValueOnce(jsonResponse(created))
@@ -320,8 +324,50 @@ describe("typed API client", () => {
     expect(transport).toHaveBeenNthCalledWith(
       2,
       `https://api.example.invalid/vpn/sessions/${sessionId}`,
-      expect.objectContaining({ method: "DELETE" }),
+      expect.objectContaining({
+        method: "DELETE",
+        headers: { authorization: "Bearer access-token", "x-vpn-cleanup": "1" },
+      }),
     );
+  });
+
+  it.each([undefined, false, "true", null, 1])(
+    "retains cleanup for unconfirmed deletion (%s)",
+    async (confirmation) => {
+      const sessionId = "123e4567-e89b-42d3-a456-426614174020";
+      const transport = vi.fn<HttpTransport>().mockResolvedValue(
+        jsonResponse({
+          session_id: sessionId,
+          status: "DISCONNECTED",
+          cleanup_confirmed: confirmation,
+        }),
+      );
+      const api = createApiClient(
+        "https://api.example.invalid",
+        transport,
+        5000,
+      );
+      await expect(
+        api.disconnectVpnSession("access-token", sessionId),
+      ).rejects.toEqual(new ApiError("INVALID_RESPONSE"));
+    },
+  );
+
+  it("rejects cleanup confirmation for a different session", async () => {
+    const transport = vi.fn<HttpTransport>().mockResolvedValue(
+      jsonResponse({
+        session_id: "123e4567-e89b-42d3-a456-426614174021",
+        status: "DISCONNECTED",
+        cleanup_confirmed: true,
+      }),
+    );
+    const api = createApiClient("https://api.example.invalid", transport, 5000);
+    await expect(
+      api.disconnectVpnSession(
+        "access-token",
+        "123e4567-e89b-42d3-a456-426614174020",
+      ),
+    ).rejects.toEqual(new ApiError("INVALID_RESPONSE"));
   });
 
   it.each([
