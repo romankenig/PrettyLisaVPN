@@ -80,6 +80,30 @@ class VpnControllerTest {
         c.connect("DE"); await { c.status.value.phase == VpnPhase.CLEANUP_PENDING }
         assertEquals(listOf(51820), attempted); assertEquals(0, api.deletes); assertNull(c.status.value.method)
     }
+    @Test fun attemptProgressIsPublishedBeforeStartAndClearedAfterStop() = scenario {
+        val api = Api(); val store = Store()
+        api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))
+        val entered = listOf(CompletableDeferred<Unit>(), CompletableDeferred<Unit>())
+        val release = listOf(CompletableDeferred<Unit>(), CompletableDeferred<Unit>())
+        var index = 0
+        val runtime = object : TunnelRuntime {
+            override suspend fun start(config: VpnConfig, key: TunnelKey) {
+                val current = index++; entered[current].complete(Unit); release[current].await()
+                if (current == 0) error("private transport detail")
+            }
+            override suspend fun stop() {}
+            override suspend fun verify(config: VpnConfig) = true
+        }
+        val c = VpnController(api, runtime, store, { "owner" }, { object : TunnelKey { override val publicKey = config.serverKey } }, this, { System.nanoTime()/1_000_000 })
+        c.connect("DE"); withTimeout(5_000) { entered[0].await() }
+        assertEquals(VpnAttempt(VpnMethod.WIREGUARD_UDP), c.status.value.attempt)
+        release[0].complete(Unit); withTimeout(5_000) { entered[1].await() }
+        assertEquals(VpnAttempt(VpnMethod.WIREGUARD_UDP, VpnMethod.WIREGUARD_UDP), c.status.value.attempt)
+        assertNull(c.status.value.method)
+        release[1].complete(Unit); await { c.status.value.phase == VpnPhase.CONNECTED }
+        assertNull(c.status.value.attempt)
+        c.beforeLogout(); assertNull(c.status.value.attempt)
+    }
     @Test fun verificationTimeoutMovesOnAndMonitoringUsesTheWinningCandidate() = scenario {
         val api = Api(); val store = Store(); val attempted = mutableListOf<Int>()
         api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))

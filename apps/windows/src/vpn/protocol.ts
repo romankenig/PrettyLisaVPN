@@ -2,6 +2,7 @@ import type { ConnectionProfile } from "./profiles";
 import type { ActiveVpnSessionResponse } from "../api/client";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
+import { methodName, type ConnectionAttempt } from "./attempt";
 
 /** Operational configuration. Never expose this through product/UI models. */
 export interface ConnectionConfig {
@@ -118,12 +119,17 @@ export async function connectCandidates(
   candidates: readonly ProtocolConfiguration[],
   progress?: (phase: VerificationPhase) => void,
   mayContinue: () => boolean = () => true,
+  onAttempt?: (attempt: ConnectionAttempt) => void,
 ): Promise<ProtocolConfiguration> {
   if (candidates.length > 64)
     throw new ProtocolConnectionError("UNSUPPORTED_CONFIGURATION");
   let failure: ProtocolFailure = "UNSUPPORTED_CONFIGURATION";
+  let previousMethod: ConnectionAttempt["method"] = null;
+  let retry = false;
   for (const candidate of candidates) {
     if (!mayContinue()) throw new ProtocolConnectionError("CONNECTION_FAILED");
+    const method = methodName(candidate);
+    onAttempt?.({ method, previousMethod, retry });
     try {
       const result = await protocol.connect(candidate, (phase) => {
         if (mayContinue()) progress?.(phase);
@@ -142,6 +148,8 @@ export async function connectCandidates(
       /* redacted */
     }
     if (!stopped) throw new ProtocolConnectionError("CONNECTION_FAILED");
+    previousMethod = method;
+    retry = true;
   }
   throw new ProtocolConnectionError(failure, candidates.length > 0);
 }

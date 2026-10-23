@@ -16,6 +16,7 @@ import {
 } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
+import type { ConnectionAttempt } from "./attempt";
 
 export interface ConnectedVpnSession {
   readonly sessionId: string;
@@ -26,8 +27,10 @@ export interface ConnectedVpnSession {
 export type VpnConnectionState =
   | {
       readonly phase: "RECONCILING" | "CONNECTING";
-      readonly backend: "UNKNOWN";
-      readonly tunnel: "UNKNOWN";
+      readonly backend: "UNKNOWN" | "ACTIVE";
+      readonly tunnel: "UNKNOWN" | "DOWN";
+      readonly session?: ConnectedVpnSession;
+      readonly attempt?: ConnectionAttempt;
     }
   | {
       readonly phase: "DISCONNECTING";
@@ -54,6 +57,7 @@ export type VpnConnectionState =
       readonly tunnel: ProtocolStatus | "UNAVAILABLE";
       readonly session: ConnectedVpnSession;
       readonly failure_code?: ProtocolFailure;
+      readonly attempt?: ConnectionAttempt;
     }
   | {
       readonly phase: "UNAVAILABLE";
@@ -109,6 +113,7 @@ export function createVpnConnectionManager(
   let inFlight = false;
   let checking = false;
   let healthFailures = 0;
+  let attempt: ConnectionAttempt | undefined;
   let disconnectInFlight: Promise<void> | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
   let countdownTimer: ReturnType<typeof setInterval> | undefined;
@@ -207,13 +212,27 @@ export function createVpnConnectionManager(
   const progress =
     (run: number, session: ActiveVpnSessionResponse) =>
     (phase: VerificationPhase) => {
-      if (run === generation)
+      if (run === generation && desiredConnected)
         emit({
           phase,
           backend: "ACTIVE",
           tunnel: "UP",
           session: productSession(session),
+          attempt,
         });
+    };
+  const trying =
+    (run: number, session: ActiveVpnSessionResponse) =>
+    (next: ConnectionAttempt) => {
+      if (run !== generation || !desiredConnected) return;
+      attempt = next;
+      emit({
+        phase: "CONNECTING",
+        backend: "ACTIVE",
+        tunnel: "DOWN",
+        session: productSession(session),
+        attempt,
+      });
     };
   const fail = async (
     accessToken: string,
@@ -361,6 +380,7 @@ export function createVpnConnectionManager(
       if (inFlight) return;
       healthFailures = 0;
       const run = ++generation;
+      attempt = undefined;
       stopMonitor();
       clearSessionTimers();
       emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
@@ -445,6 +465,7 @@ export function createVpnConnectionManager(
             provisioner.candidates(backendSession),
             progress(run, backendSession),
             () => run === generation && desiredConnected,
+            trying(run, backendSession),
           );
         } catch (error) {
           if (run === generation)
@@ -481,6 +502,7 @@ export function createVpnConnectionManager(
       desiredConnected = true;
       inFlight = true;
       const run = ++generation;
+      attempt = undefined;
       const previousTunnel = state.tunnel;
       healthFailures = 0;
       stopMonitor();
@@ -500,6 +522,7 @@ export function createVpnConnectionManager(
             provisioner.candidates(backendSession),
             progress(run, backendSession),
             () => run === generation && desiredConnected,
+            trying(run, backendSession),
           );
         } catch (error) {
           const code =

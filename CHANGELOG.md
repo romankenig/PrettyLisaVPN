@@ -11,6 +11,8 @@
 - Ordered candidates are tried until independent Internet verification succeeds;
   failed attempts must stop before the next starts. Cancellation stops the loop.
 - Android monitors the selected candidate and shows its verified method.
+- Windows and Android show brief localized attempt comments, including switching
+  after a failed method; verification and completion clear the attempt message.
 - This is not yet delivery of the additional article protocols or managed engines.
   Scope, current limits and owner decisions:
   [docs/vpn-methods-from-article.md](docs/vpn-methods-from-article.md).

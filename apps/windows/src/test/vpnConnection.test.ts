@@ -584,6 +584,7 @@ describe("strict Internet verification transitions", () => {
     );
     expect(phases).toEqual([
       "CONNECTING",
+      "CONNECTING", // The authorized method is now available to the UI.
       "TUNNEL_ESTABLISHED",
       "VERIFYING_INTERNET",
     ]);

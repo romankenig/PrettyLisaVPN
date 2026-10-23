@@ -1032,6 +1032,11 @@ main dd {
 .connection-card .field-help:empty {
   display: none;
 }
+.connection-card .connection-attempt {
+  color: var(--color-scorpion);
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
 .current-location {
   position: relative;
   flex-shrink: 0;

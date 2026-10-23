@@ -14,6 +14,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import com.prettylisavpn.android.R
 import com.prettylisavpn.android.vpn.*
 
@@ -61,7 +64,14 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         VpnPhase.DISCONNECTING -> R.string.vpn_disconnecting
         VpnPhase.CLEANUP_PENDING -> R.string.vpn_cleanup
         else -> R.string.ui_not_connected
-    }), Modifier.testTag("vpn-status"), style = MaterialTheme.typography.titleMedium)
+    }), Modifier.testTag("vpn-status").semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.titleMedium)
+    if (status.phase == VpnPhase.CONNECTING) status.attempt?.let { attempt ->
+        Text(when (attempt.previousMethod) {
+            null -> tr(R.string.vpn_trying_method, attempt.method.shortLabel)
+            attempt.method -> tr(R.string.vpn_retrying_method, attempt.method.shortLabel)
+            else -> tr(R.string.vpn_switching_method, attempt.previousMethod.shortLabel, attempt.method.shortLabel)
+        }, Modifier.testTag("vpn-attempt").semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodySmall)
+    }
     if (status.phase == VpnPhase.CONNECTED && status.method != null)
         Text(status.method!!.label, Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
     val error = when {

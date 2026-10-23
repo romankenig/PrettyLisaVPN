@@ -13,6 +13,13 @@ export function createReviewVpnConnection(api: ApiClient) {
   let up = false;
   const tunnel: WireGuardTunnelController = {
     async start() {
+      // Bounded capture gate, only in this explicitly selected synthetic adapter.
+      for (
+        let i = 0;
+        i < 400 && document.documentElement.dataset.vpnReviewHold === "true";
+        i++
+      )
+        await new Promise((resolve) => setTimeout(resolve, 50));
       up = true;
       return "UP";
     },

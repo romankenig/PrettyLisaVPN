@@ -11,8 +11,9 @@ import java.time.Duration
 /** UI observes only this safe projection. UP is never mapped directly to CONNECTED. */
 enum class VpnPhase { DISCONNECTED, RECONCILING, CONNECTING, VERIFYING, CONNECTED, DISCONNECTING, CLEANUP_PENDING, FAILED }
 enum class VpnError { PERMISSION, UNSUPPORTED, VERIFICATION, NETWORK, QUOTA, ACCESS, STORAGE, CLEANUP, UNKNOWN }
-enum class VpnMethod(val label: String) { WIREGUARD_UDP("WireGuard · UDP") }
-data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null)
+enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard") }
+data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
+data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
 interface VpnActions {
     val status: kotlinx.coroutines.flow.StateFlow<VpnStatus>
     /** Called only after system consent, from a foreground UI. */
@@ -62,8 +63,8 @@ class VpnController(
     fun rejected(reason: VpnError) { if (active == null && operation?.isActive != true) set(VpnPhase.FAILED, reason) }
     private suspend fun read(id: String) = withContext(Dispatchers.IO) { journal.read(id) }
     private suspend fun save(id: String, value: PendingVpn?) = withContext(Dispatchers.IO) { journal.write(id, value) }
-    private fun set(phase: VpnPhase, error: VpnError? = null) {
-        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED && activeConfig != null) VpnMethod.WIREGUARD_UDP else null)
+    private fun set(phase: VpnPhase, error: VpnError? = null, attempt: VpnAttempt? = null) {
+        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED && activeConfig != null) VpnMethod.WIREGUARD_UDP else null, attempt)
     }
     private fun error(e: Exception): VpnError = when (e) {
         is VpnCreateRejected -> error(e.failure)
@@ -108,14 +109,16 @@ class VpnController(
                     if (elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
                     expiry = scope.launch { if (deadline != Long.MAX_VALUE) { delay((deadline - elapsed()).coerceAtLeast(0)); disconnect() } }
                     activeConfig = null
+                    var previousMethod: VpnMethod? = null
                     for (candidate in session.candidates) {
                         ensureActive()
                         if (owner() != id || elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
-                        set(VpnPhase.CONNECTING)
+                        val attempt = VpnAttempt(VpnMethod.WIREGUARD_UDP, previousMethod)
+                        set(VpnPhase.CONNECTING, attempt = attempt)
                         val verified = try {
                             withTimeoutOrNull(attemptMillis) {
                                 runtime.start(candidate, material)
-                                set(VpnPhase.VERIFYING)
+                                set(VpnPhase.VERIFYING, attempt = attempt)
                                 while (!runtime.verify(candidate)) { delay(1_000) }
                                 true
                             } == true
@@ -126,6 +129,7 @@ class VpnController(
                         if (verified) { activeConfig = candidate; break }
                         // A failed stop aborts the entire loop; never overlap tunnels.
                         runtime.stop()
+                        previousMethod = attempt.method
                     }
                     if (activeConfig == null) throw VpnFailure(VpnError.VERIFICATION)
                     ensureActive()

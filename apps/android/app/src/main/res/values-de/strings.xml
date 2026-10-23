@@ -267,4 +267,7 @@
     <string name="vpn_quota">das tägliche freikontingent ist aufgebraucht.</string>
     <string name="vpn_access">der VPN-zugriff ist beendet. bitte anmelden oder das abonnement prüfen.</string>
     <string name="vpn_failed">verbindung fehlgeschlagen. bitte netzwerk prüfen und erneut versuchen.</string>
+    <string name="vpn_trying_method">versuche %1$s…</string>
+    <string name="vpn_retrying_method">versuche eine andere %1$s-Variante…</string>
+    <string name="vpn_switching_method">%1$s hat nicht verbunden. versuche %2$s…</string>
 </resources>

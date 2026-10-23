@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { connectCandidates, type VpnProtocol } from "../vpn/protocol";
 import { wireGuardDefaults } from "../vpn/wireguard";
+import { attemptMessage, methodName } from "../vpn/attempt";
+import { translate } from "../i18n";
 
 const candidates = [51820, 443, 5443].map((port) => ({
   ...wireGuardDefaults("DE", port),
@@ -23,6 +25,45 @@ function runtime() {
   } as unknown as VpnProtocol;
 }
 describe("verified candidate fallback", () => {
+  it("reports a failed method only after confirmed cleanup, without private data", async () => {
+    const protocol = runtime();
+    const events: string[] = [];
+    vi.mocked(protocol.connect)
+      .mockResolvedValueOnce(failed as never)
+      .mockResolvedValueOnce(verified as never);
+    vi.mocked(protocol.disconnect).mockImplementation(async () => {
+      events.push("stopped");
+      return "DOWN";
+    });
+    await connectCandidates(
+      protocol,
+      [candidates[0], { ...candidates[1], protocol: "OPENVPN" }],
+      undefined,
+      undefined,
+      (attempt) => events.push(attemptMessage(attempt)),
+    );
+    expect(events).toEqual([
+      "Пробую WireGuard…",
+      "stopped",
+      "WireGuard не подключился, пробую OpenVPN…",
+    ]);
+    expect(
+      methodName({ ...candidates[0], protocol: "secret-from-server" }),
+    ).toBeNull();
+    expect(
+      attemptMessage({ method: null, previousMethod: null, retry: false }),
+    ).not.toContain("secret");
+    expect(
+      attemptMessage({
+        method: "WireGuard",
+        previousMethod: "WireGuard",
+        retry: true,
+      }),
+    ).toBe("Пробую другой вариант WireGuard…");
+    expect(translate(events[2], "en")).toBe(
+      "WireGuard did not connect. Trying OpenVPN…",
+    );
+  });
   it("stops failed attempts in order and stops trying after verified Internet", async () => {
     const protocol = runtime();
     vi.mocked(protocol.connect)
