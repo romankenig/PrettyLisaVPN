@@ -65,7 +65,16 @@ export function createWireGuardProvisioner(
             session.transport.endpoint.port,
           ),
         ]
-      ).map((config) => ({ ...config, parameters: session.transport }));
+      ).map((config) => ({
+        ...config,
+        parameters:
+          config.protocol === "WIREGUARD"
+            ? {
+                ...session.transport,
+                endpoint: { ...session.transport.endpoint, port: config.port },
+              }
+            : null,
+      }));
     },
   };
 }

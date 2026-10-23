@@ -12,7 +12,7 @@ import org.junit.Test
 class VpnApiTest {
     private val raw = """{"session_id":"d84cd4d2-8aee-4c17-9772-31db1d512924","status":"ACTIVE","country_code":"DE","server_time":"2026-10-22T00:00:00Z","expires_at":null,"transport":{"endpoint":{"ipv4":"203.0.113.1","port":51820},"server_public_key":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=","client_address":"10.77.0.2/32","dns":["1.1.1.1"],"allowed_ips":["0.0.0.0/0"]},"candidates":[{"country":"DE","protocol":"WIREGUARD","transport":"UDP","port":51820,"encryption_mode":"WIREGUARD","obfuscation_mode":"NONE","mtu":1280,"dns_mode":"VPN","routing_mode":"FULL_TUNNEL"}]}"""
     @Test fun explicitDirectIpv4ProfileIsAccepted() { assertEquals(51820, parseVpnSession(raw).config!!.port) }
-    @Test fun emptyMissingLegacyAndUnsupportedFirstCandidateNeverFallback() {
+    @Test fun emptyMissingAndLegacyStayUnsupportedButLaterCandidatesCanWork() {
         val empty = JsonParser.parseString(raw).asJsonObject.apply { add("candidates", com.google.gson.JsonArray()) }
         assertNull(parseVpnSession(empty).config); empty.remove("candidates"); assertNull(parseVpnSession(empty).config)
         val legacy = raw.replace("\"UDP\"", "\"NATIVE\"").replace("\"NONE\"", "\"NATIVE\"")
@@ -21,7 +21,15 @@ class VpnApiTest {
         val supported = first.getAsJsonArray("candidates")[0].deepCopy()
         first.getAsJsonArray("candidates")[0].asJsonObject.addProperty("protocol", "OPENVPN")
         first.getAsJsonArray("candidates").add(supported)
-        assertNull(parseVpnSession(first).config)
+        assertEquals(51820, parseVpnSession(first).config!!.port)
+        assertEquals(1, parseVpnSession(first).candidates.size)
+    }
+    @Test fun candidateOrderAndPortsArePreservedAndDuplicatesAreNotRetried() {
+        val json = JsonParser.parseString(raw).asJsonObject
+        val candidates = json.getAsJsonArray("candidates")
+        val second = candidates[0].deepCopy().asJsonObject.apply { addProperty("port", 443) }
+        candidates.add(second); candidates.add(second.deepCopy())
+        assertEquals(listOf(51820, 443), parseVpnSession(json).candidates.map { it.port })
     }
     @Test fun invalidRoutesDnsKeysCountryAndPortAreRejectedButIdIsRetained() {
         for (variant in listOf(raw.replace("\"port\":51820", "\"port\":51820.5"), raw.replace("\"mtu\":1280", "\"future_required_feature\":true,\"mtu\":1280"), raw.replace("0.0.0.0/0", "0.0.0.0/1"), raw.replace("1.1.1.1", "::1"), raw.replace("10.77.0.2/32", "10.77.0.2/24"), raw.replace("203.0.113.1", "host.invalid"), raw.replace("\"mtu\":1280", "\"mtu\":1400"), raw.replace("AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="))) {

@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Windows — 0.13.0 / Android — 0.9.0 (code17), transport task in progress
+
+- Ordered candidates are tried until independent Internet verification succeeds;
+  failed attempts must stop before the next starts. Cancellation stops the loop.
+- Android monitors the selected candidate and shows its verified method.
+- This is not yet delivery of the additional article protocols or managed engines.
+  Scope, current limits and owner decisions:
+  [docs/vpn-methods-from-article.md](docs/vpn-methods-from-article.md).
+
 ### Backend — 0.13.0 / Windows — 0.12.1 / Android — 0.8.1 (code16)
 
 - Opt-in DELETE confirmation distinguishes persisted termination intent from

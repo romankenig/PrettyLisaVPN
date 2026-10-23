@@ -85,7 +85,10 @@ export interface VpnSessionProvisioner {
 }
 
 export class ProtocolConnectionError extends Error {
-  constructor(readonly code: ProtocolFailure) {
+  constructor(
+    readonly code: ProtocolFailure,
+    readonly localStopped = false,
+  ) {
     super(code);
     this.name = "ProtocolConnectionError";
   }
@@ -103,4 +106,42 @@ export async function connectFirstCandidate(
     throw new ProtocolConnectionError(
       result.failure_code ?? "CONNECTION_FAILED",
     );
+}
+
+/** Try the finite, server-authorized list in order. A failed attempt must be
+ * fully stopped before another engine/route can start. The owner supplies the
+ * cancellation/entitlement predicate; a late result cannot resurrect a session.
+ * Runtimes own bounded startup and must settle before disconnect can complete.
+ */
+export async function connectCandidates(
+  protocol: VpnProtocol,
+  candidates: readonly ProtocolConfiguration[],
+  progress?: (phase: VerificationPhase) => void,
+  mayContinue: () => boolean = () => true,
+): Promise<ProtocolConfiguration> {
+  if (candidates.length > 64)
+    throw new ProtocolConnectionError("UNSUPPORTED_CONFIGURATION");
+  let failure: ProtocolFailure = "UNSUPPORTED_CONFIGURATION";
+  for (const candidate of candidates) {
+    if (!mayContinue()) throw new ProtocolConnectionError("CONNECTION_FAILED");
+    try {
+      const result = await protocol.connect(candidate, (phase) => {
+        if (mayContinue()) progress?.(phase);
+      });
+      if (mayContinue() && isVerified(result)) return candidate;
+      failure = result.failure_code ?? "INTERNET_UNVERIFIED";
+    } catch (error) {
+      failure =
+        error instanceof ProtocolConnectionError ? error.code : "UNKNOWN";
+    }
+    // Do not swallow cleanup failure: overlapping tunnels invalidate verification.
+    let stopped = false;
+    try {
+      stopped = (await protocol.disconnect()) === "DOWN";
+    } catch {
+      /* redacted */
+    }
+    if (!stopped) throw new ProtocolConnectionError("CONNECTION_FAILED");
+  }
+  throw new ProtocolConnectionError(failure, candidates.length > 0);
 }

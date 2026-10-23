@@ -5,7 +5,7 @@ import {
   type ApiClient,
 } from "../api/client";
 import {
-  connectFirstCandidate,
+  connectCandidates,
   isVerified,
   type ProtocolFailure,
   type VerificationPhase,
@@ -220,6 +220,7 @@ export function createVpnConnectionManager(
     session: ConnectedVpnSession,
     code: ProtocolFailure,
     run: number,
+    localStopped = false,
   ) => {
     if (run !== generation) return;
     inFlight = true;
@@ -232,17 +233,22 @@ export function createVpnConnectionManager(
       session,
       failure_code: code,
     });
-    let down = false;
-    try {
-      down = (await tunnel.disconnect()) === "DOWN";
-    } catch {
-      /* Keep teardown available. */
+    let down = localStopped;
+    if (!down) {
+      try {
+        down = (await tunnel.disconnect()) === "DOWN";
+      } catch {
+        /* Keep teardown available. */
+      }
     }
-    let backend: "NONE" | "UNAVAILABLE" = "NONE";
-    try {
-      await api.disconnectVpnSession(accessToken, session.sessionId);
-    } catch {
-      backend = "UNAVAILABLE";
+    let backend: "ACTIVE" | "NONE" | "UNAVAILABLE" = "ACTIVE";
+    if (down) {
+      try {
+        await api.disconnectVpnSession(accessToken, session.sessionId);
+        backend = "NONE";
+      } catch {
+        backend = "UNAVAILABLE";
+      }
     }
     if (run === generation)
       emit({
@@ -434,10 +440,11 @@ export function createVpnConnectionManager(
           return;
         }
         try {
-          await connectFirstCandidate(
+          await connectCandidates(
             tunnel,
             provisioner.candidates(backendSession),
             progress(run, backendSession),
+            () => run === generation && desiredConnected,
           );
         } catch (error) {
           if (run === generation)
@@ -446,6 +453,7 @@ export function createVpnConnectionManager(
               productSession(backendSession),
               error instanceof ProtocolConnectionError ? error.code : "UNKNOWN",
               run,
+              error instanceof ProtocolConnectionError && error.localStopped,
             );
           return;
         }
@@ -487,16 +495,29 @@ export function createVpnConnectionManager(
           return;
         }
         try {
-          await connectFirstCandidate(
+          await connectCandidates(
             tunnel,
             provisioner.candidates(backendSession),
             progress(run, backendSession),
+            () => run === generation && desiredConnected,
           );
         } catch (error) {
           const code =
             error instanceof ProtocolConnectionError ? error.code : "UNKNOWN";
+          if (run !== generation) {
+            await api
+              .disconnectVpnSession(accessToken, backendSession.session_id)
+              .catch(() => undefined);
+            return;
+          }
           if (run === generation)
-            await fail(accessToken, productSession(backendSession), code, run);
+            await fail(
+              accessToken,
+              productSession(backendSession),
+              code,
+              run,
+              error instanceof ProtocolConnectionError && error.localStopped,
+            );
           throw new VpnConnectionError(code);
         }
 

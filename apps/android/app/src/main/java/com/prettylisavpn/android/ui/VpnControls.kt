@@ -62,6 +62,8 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         VpnPhase.CLEANUP_PENDING -> R.string.vpn_cleanup
         else -> R.string.ui_not_connected
     }), Modifier.testTag("vpn-status"), style = MaterialTheme.typography.titleMedium)
+    if (status.phase == VpnPhase.CONNECTED && status.method != null)
+        Text(status.method!!.label, Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
     val error = when {
         denied -> R.string.vpn_permission_denied
         actions == null -> R.string.vpn_unavailable

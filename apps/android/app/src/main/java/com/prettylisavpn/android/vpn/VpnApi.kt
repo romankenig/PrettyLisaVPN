@@ -13,7 +13,7 @@ import java.util.UUID
 
 /** No private material or bearer is exposed by these control-plane DTOs. */
 data class VpnConfig(val endpoint: String, val port: Int, val serverKey: String, val address: String, val dns: List<String>, val mtu: Int = 1280)
-data class VpnSession(val id: String, val country: String, val serverTime: Instant, val expiresAt: Instant?, val config: VpnConfig?)
+data class VpnSession(val id: String, val country: String, val serverTime: Instant, val expiresAt: Instant?, val config: VpnConfig?, val candidates: List<VpnConfig> = listOfNotNull(config))
 interface VpnApi {
     suspend fun current(): VpnSession?
     suspend fun create(country: String, publicKey: String): VpnSession
@@ -71,7 +71,7 @@ internal fun ipv4Cidr(value: String): Boolean = value.split('/').let { it.size =
 internal fun publicKey(value: String): Boolean = runCatching { value.matches(Regex("[A-Za-z0-9+/]{43}=")) && Base64.getDecoder().decode(value).let { it.size == 32 && it.any { b -> b != 0.toByte() } } }.getOrDefault(false)
 
 /** Preserve the ID even for an unsupported/malformed transport so DELETE can compensate.
- * Only the first ordered candidate is considered. Legacy NATIVE is deliberately unsupported.
+ * Preserve server order while skipping unsupported candidates. Legacy NATIVE is unsupported.
  */
 internal fun parseVpnSession(json: JsonObject): VpnSession = try {
     val id = json.get("session_id").asString.also { UUID.fromString(it) }
@@ -80,29 +80,34 @@ internal fun parseVpnSession(json: JsonObject): VpnSession = try {
     val time = Instant.parse(json.get("server_time").asString)
     require(json.has("expires_at"))
     val expiry = json.get("expires_at").let { if (it == null || it.isJsonNull) null else Instant.parse(it.asString) }
-    val config = runCatching {
+    val candidates = runCatching {
         val transport = json.getAsJsonObject("transport")
         require(transport.keySet() == setOf("endpoint", "server_public_key", "client_address", "dns", "allowed_ips"))
         val endpoint = transport.getAsJsonObject("endpoint")
         require(endpoint.keySet() == setOf("ipv4", "port"))
         val ip = endpoint.get("ipv4").asString.also { require(ipv4(it) && it != "0.0.0.0" && !it.startsWith("127.")) }
-        val port = integer(endpoint, "port").also { require(it in 1..65535) }
+        require(integer(endpoint, "port") in 1..65535)
         val key = transport.get("server_public_key").asString.also { require(publicKey(it)) }
         val address = transport.get("client_address").asString.also { require(ipv4Cidr(it) && it.endsWith("/32")) }
         val dns = transport.getAsJsonArray("dns").map { it.asString }.also { require(it.size in 1..4 && it.all(::ipv4)) }
         // A single IPv4 default route makes GoBackend block the unconfigured IPv6 family.
         require(transport.getAsJsonArray("allowed_ips").map { it.asString } == listOf("0.0.0.0/0"))
-        val c = json.getAsJsonArray("candidates").first().asJsonObject
+        val rawCandidates = json.getAsJsonArray("candidates")
+        require(rawCandidates.size() <= 64)
+        rawCandidates.mapNotNull { candidate -> runCatching {
+        val c = candidate.asJsonObject
         require(c.keySet().all { it in setOf("country", "protocol", "transport", "port", "encryption_mode", "obfuscation_mode", "mtu", "dns_mode", "routing_mode", "obfuscation_version", "transport_parameters") })
-        require(c.get("country").asString == country && integer(c, "port") == port)
+        require(c.get("country").asString == country)
+        val candidatePort = integer(c, "port").also { require(it in 1..65535) }
         require(c.get("protocol").asString == "WIREGUARD" && c.get("transport").asString == "UDP")
         require(c.get("encryption_mode").asString == "WIREGUARD" && c.get("obfuscation_mode").asString == "NONE")
         require(integer(c, "mtu") == 1280 && c.get("dns_mode").asString == "VPN" && c.get("routing_mode").asString == "FULL_TUNNEL")
         require(c.get("obfuscation_version").let { it == null || it.isJsonNull })
         require(c.get("transport_parameters").let { it == null || it.isJsonNull || it.asJsonObject.size() == 0 })
-        VpnConfig(ip, port, key, address, dns)
-    }.getOrNull()
-    VpnSession(id, country, time, expiry, config)
+        VpnConfig(ip, candidatePort, key, address, dns)
+        }.getOrNull() }.distinct()
+    }.getOrDefault(emptyList())
+    VpnSession(id, country, time, expiry, candidates.firstOrNull(), candidates)
 } catch (_: Exception) { throw AuthFailure("invalid_response") }
 
 internal fun parseVpnSession(raw: String): VpnSession = parseVpnSession(JsonParser.parseString(raw).asJsonObject)
