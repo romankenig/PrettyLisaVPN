@@ -235,7 +235,6 @@
     <string name="dash_all_countries">alle länder</string>
     <string name="dash_no_countries">keine länder verfügbar</string>
     <string name="dash_connect">verbinden</string>
-    <string name="dash_preview">oberflächenvorschau: diese taste startet noch keine VPN-verbindung</string>
     <string name="dash_region">aktuelle region</string>
     <string name="dash_all_traffic">gesamter datenverkehr</string>
     <string name="dash_include">nur ausgewählte webseiten</string>
@@ -254,4 +253,18 @@
     <string name="dash_description_limit">beschreibung kürzen: mit technischen daten sind höchstens 4000 zeichen erlaubt</string>
     <string name="server_connection_lost">keine verbindung zum server, bitte internetverbindung prüfen</string>
     <string name="location_quality">verfügbarkeit %1$s von 100</string>
+    <string name="vpn_connected">verbunden</string>
+    <string name="vpn_connecting">verbindung wird hergestellt…</string>
+    <string name="vpn_verifying">VPN-verbindung wird geprüft…</string>
+    <string name="vpn_disconnecting">verbindung wird getrennt…</string>
+    <string name="vpn_disconnect">trennen</string>
+    <string name="vpn_retry_cleanup">bereinigung erneut versuchen</string>
+    <string name="vpn_cleanup">die bereinigung beim trennen der VPN-verbindung ist noch nicht bestätigt. bitte erneut trennen; bis zum abschluss ist keine neue verbindung möglich.</string>
+    <string name="vpn_permission_denied">VPN-berechtigung wurde nicht erteilt. es wurde keine serversitzung erstellt.</string>
+    <string name="vpn_unavailable">VPN ist in dieser testdatenquelle nicht verfügbar.</string>
+    <string name="vpn_unsupported">Android unterstützt dieses serverprofil nicht. die sitzung wurde gestoppt.</string>
+    <string name="vpn_verification_failed">die VPN-verbindung konnte nicht bestätigt werden. der tunnel wurde gestoppt.</string>
+    <string name="vpn_quota">das tägliche freikontingent ist aufgebraucht.</string>
+    <string name="vpn_access">der VPN-zugriff ist beendet. bitte anmelden oder das abonnement prüfen.</string>
+    <string name="vpn_failed">verbindung fehlgeschlagen. bitte netzwerk prüfen und erneut versuchen.</string>
 </resources>

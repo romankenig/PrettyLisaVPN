@@ -235,7 +235,6 @@
     <string name="dash_all_countries">tous les pays</string>
     <string name="dash_no_countries">aucun pays disponible</string>
     <string name="dash_connect">connecter</string>
-    <string name="dash_preview">aperçu : ce bouton ne démarre pas encore de connexion VPN</string>
     <string name="dash_region">région actuelle</string>
     <string name="dash_all_traffic">tout le trafic</string>
     <string name="dash_include">uniquement les sites sélectionnés</string>
@@ -254,4 +253,18 @@
     <string name="dash_description_limit">raccourcissez la description : la limite avec les données techniques est de 4000 caractères</string>
     <string name="server_connection_lost">connexion au serveur impossible, vérifiez votre connexion internet</string>
     <string name="location_quality">disponibilité %1$s sur 100</string>
+    <string name="vpn_connected">connecté</string>
+    <string name="vpn_connecting">connexion en cours…</string>
+    <string name="vpn_verifying">vérification de la connexion VPN…</string>
+    <string name="vpn_disconnecting">déconnexion en cours…</string>
+    <string name="vpn_disconnect">déconnecter</string>
+    <string name="vpn_retry_cleanup">réessayer le nettoyage</string>
+    <string name="vpn_cleanup">le nettoyage de la déconnexion VPN reste à confirmer. réessayez de déconnecter ; la reconnexion est bloquée jusque-là.</string>
+    <string name="vpn_permission_denied">autorisation VPN refusée. aucune session serveur n’a été créée.</string>
+    <string name="vpn_unavailable">VPN indisponible avec cette source de données de test.</string>
+    <string name="vpn_unsupported">Android ne prend pas en charge ce profil serveur. la session a été arrêtée.</string>
+    <string name="vpn_verification_failed">impossible de vérifier la connexion VPN. le tunnel a été arrêté.</string>
+    <string name="vpn_quota">le temps gratuit quotidien est épuisé.</string>
+    <string name="vpn_access">l’accès VPN est terminé. reconnectez-vous ou vérifiez votre abonnement.</string>
+    <string name="vpn_failed">connexion impossible. vérifiez le réseau et réessayez.</string>
 </resources>

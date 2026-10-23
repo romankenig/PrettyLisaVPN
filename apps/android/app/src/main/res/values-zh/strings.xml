@@ -235,7 +235,6 @@
     <string name="dash_all_countries">所有国家</string>
     <string name="dash_no_countries">暂无可用国家</string>
     <string name="dash_connect">连接</string>
-    <string name="dash_preview">界面预览：此按钮暂不启动 VPN 连接</string>
     <string name="dash_region">当前地区</string>
     <string name="dash_all_traffic">全部流量</string>
     <string name="dash_include">仅选定网站</string>
@@ -254,4 +253,18 @@
     <string name="dash_description_limit">请缩短描述：包含技术信息后最多为 4000 个字符</string>
     <string name="server_connection_lost">无法连接服务器，请检查网络连接</string>
     <string name="location_quality">可用性 %1$s / 100</string>
+    <string name="vpn_connected">已连接</string>
+    <string name="vpn_connecting">正在连接…</string>
+    <string name="vpn_verifying">正在检查 VPN 连接…</string>
+    <string name="vpn_disconnecting">正在断开连接…</string>
+    <string name="vpn_disconnect">断开连接</string>
+    <string name="vpn_retry_cleanup">重试清理</string>
+    <string name="vpn_cleanup">尚未确认 VPN 断开清理已完成。请重试断开连接；清理完成前无法重新连接。</string>
+    <string name="vpn_permission_denied">未获得 VPN 授权。未创建服务器会话。</string>
+    <string name="vpn_unavailable">此测试数据源不支持 VPN。</string>
+    <string name="vpn_unsupported">Android 不支持此服务器配置。会话已停止。</string>
+    <string name="vpn_verification_failed">无法验证 VPN 连接。隧道已停止。</string>
+    <string name="vpn_quota">今日免费时长已用完。</string>
+    <string name="vpn_access">VPN 访问已结束。请重新登录或检查订阅。</string>
+    <string name="vpn_failed">无法连接。请检查网络后重试。</string>
 </resources>

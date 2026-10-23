@@ -189,11 +189,11 @@ class AccountScreensTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("confirmation-dialog")
         click("dismiss-dialog");compose.onNodeWithTag("live-support-screen").assertExists();assertEquals(0,sends)
     }
-    @Test fun homeMatchesWindowsAndConnectRemainsOnlyAPreview() {
+    @Test fun homeMatchesWindowsAndMissingVpnPortCannotConnect() {
         compose.onNodeWithTag("account-email").assertTextEquals("screens@example.com")
         for(tag in listOf("live-devices","live-subscription","live-messages","live-support","account-refresh","live-logout")) compose.onNodeWithTag(tag).assertDoesNotExist()
         screenshot("home-account-summary")
-        click("home-connect")
+        compose.onNodeWithTag("home-connect").performScrollTo().assertIsNotEnabled()
         assertFalse(model.state.value.data.simulatedConnection)
         assertEquals(0,starts)
         compose.onNodeWithTag("home-manual").assertDoesNotExist()

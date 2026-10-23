@@ -187,7 +187,8 @@ internal fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () -
     val presentation = LocalPresentation.current
     val language by presentation.preference.language.collectAsState()
     val version by presentation.version.collectAsState()
-    val diagnostics = remember(version, language, state.data.plan) { androidDiagnostics(context, version, language.code, state.data.plan) }
+    val vpnStatus = model.vpn?.status?.collectAsState()?.value
+    val diagnostics = remember(version, language, state.data.plan, vpnStatus) { androidDiagnostics(context, version, language.code, state.data.plan, vpnStatus) }
     val reportDescription = supportDescription(description, if (includeDiagnostics) diagnostics else null)
     LaunchedEffect(selected) {
         validating = true

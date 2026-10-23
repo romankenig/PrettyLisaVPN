@@ -97,7 +97,7 @@ class AuthSessionUiTest {
         launch(); waitFor("live-account")
         compose.onNodeWithTag("account-email").assertTextEquals("acceptance@example.com")
         compose.onNodeWithTag("test-banner").assertDoesNotExist()
-        compose.onNodeWithTag("home-connect").performScrollTo().assertIsEnabled()
+        compose.onNodeWithTag("home-connect").performScrollTo().assertIsNotEnabled()
         assertFalse(model.state.value.data.simulatedConnection)
         compose.activityRule.scenario.recreate(); waitFor("live-account")
         compose.onNodeWithTag("component-versions").assertIsDisplayed()
