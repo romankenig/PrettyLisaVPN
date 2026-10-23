@@ -109,7 +109,7 @@ describe("verified candidate fallback", () => {
     });
     await expect(
       connectCandidates(protocol, candidates, undefined, () => current),
-    ).rejects.toBeDefined();
+    ).rejects.toMatchObject({ localStopped: true });
     expect(protocol.disconnect).toHaveBeenCalledTimes(1);
     expect(protocol.connect).toHaveBeenCalledTimes(1);
   });

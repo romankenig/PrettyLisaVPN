@@ -126,8 +126,11 @@ export async function connectCandidates(
   let failure: ProtocolFailure = "UNSUPPORTED_CONFIGURATION";
   let previousMethod: ConnectionAttempt["method"] = null;
   let retry = false;
+  let localStopped = false;
   for (const candidate of candidates) {
-    if (!mayContinue()) throw new ProtocolConnectionError("CONNECTION_FAILED");
+    if (!mayContinue())
+      throw new ProtocolConnectionError("CONNECTION_FAILED", localStopped);
+    localStopped = false;
     const method = methodName(candidate);
     onAttempt?.({ method, previousMethod, retry });
     try {
@@ -148,8 +151,9 @@ export async function connectCandidates(
       /* redacted */
     }
     if (!stopped) throw new ProtocolConnectionError("CONNECTION_FAILED");
+    localStopped = true;
     previousMethod = method;
     retry = true;
   }
-  throw new ProtocolConnectionError(failure, candidates.length > 0);
+  throw new ProtocolConnectionError(failure, localStopped);
 }

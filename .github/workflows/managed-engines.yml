@@ -69,7 +69,8 @@ jobs:
           go install golang.org/x/mobile/cmd/gobind@v0.0.0-20261011034528-197770444867
           mkdir -p ../../apps/android/engine-app/libs
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.0.13004108"
-          gomobile bind -target android/arm64,android/amd64 -androidapi 26 -javapkg com.prettylisavpn.enginecore -trimpath -o ../../apps/android/engine-app/libs/managed.aar ./mobile
+          # Matches XTLS/libXray's Android linker settings for anet and 16 KiB pages.
+          gomobile bind -target android/arm64,android/amd64 -androidapi 26 -javapkg com.prettylisavpn.enginecore -trimpath -ldflags='-checklinkname=0 -extldflags=-Wl,-z,max-page-size=16384' -o ../../apps/android/engine-app/libs/managed.aar ./mobile
       - name: Enforce Android dependency licenses
         working-directory: engines/managed
         run: |

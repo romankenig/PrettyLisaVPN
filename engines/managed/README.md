@@ -47,6 +47,11 @@ BSD/Apache/ISC licenses, failing on GPL/AGPL or unknown licenses. It does not
 replace redistribution obligations: ship the exact dependency notices and
 corresponding MPL source with a binary release, including any modified files.
 The current workflow builds and tests; it does not publish a release.
+Android linker options follow [libXray's Android builder](https://github.com/XTLS/libXray/blob/main/build/app/android.py):
+the pinned anet dependency references Go's internal IPv6 zone cache, requiring
+`-checklinkname=0`, and native libraries use 16 KiB page alignment. Changes to the
+Go version must repeat native ABI/device checks; package-only compilation is
+not sufficient to verify linkage.
 
 The companion source is in `apps/android/engine-app`. Its separate Go runtime
 shares one VpnService consent, protects every outgoing socket and duplicates the

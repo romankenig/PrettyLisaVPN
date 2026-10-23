@@ -477,6 +477,109 @@ describe("Windows VPN connection orchestration", () => {
     vi.useRealTimers();
   });
 
+  it("charges failed startup and fallback against the original server deadline", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    const provisioner = createWireGuardProvisioner(api, keys);
+    const candidate = provisioner.candidates(backendSession)[0];
+    vi.spyOn(provisioner, "candidates").mockReturnValue([candidate, candidate]);
+    vi.mocked(tunnel.start).mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve("UP"), 5_000)),
+    );
+    vi.mocked(tunnel.verify).mockResolvedValueOnce({
+      tunnel_established: true,
+      internet_verified: false,
+      failure_code: "DNS_FAILED",
+    });
+    const connection = createVpnConnectionManager(
+      api,
+      provisioner,
+      createWireGuardProtocol(tunnel),
+      2_000_000,
+    );
+    try {
+      const pending = connection.connect("token", { mode: "AUTO" });
+      await vi.advanceTimersByTimeAsync(10_000);
+      await pending;
+      expect(connection.current()).toMatchObject({
+        phase: "CONNECTED",
+        session: { remainingSeconds: 890 },
+      });
+      expect(tunnel.start).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(890_000);
+      expect(connection.current().phase).toBe("DISCONNECTED");
+      expect(tunnel.stop).toHaveBeenCalledTimes(2);
+      expect(api.createVpnSession).toHaveBeenCalledOnce();
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejects late verification after expiry and never starts the next candidate", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.createVpnSession).mockResolvedValue({
+      ...backendSession,
+      expires_at: "2026-09-16T10:00:01Z",
+    });
+    const provisioner = createWireGuardProvisioner(api, keys);
+    const candidate = provisioner.candidates(backendSession)[0];
+    vi.spyOn(provisioner, "candidates").mockReturnValue([candidate, candidate]);
+    vi.mocked(tunnel.start).mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve("UP"), 5_000)),
+    );
+    const connection = createVpnConnectionManager(
+      api,
+      provisioner,
+      createWireGuardProtocol(tunnel),
+    );
+    const phases: string[] = [];
+    connection.subscribe(() => phases.push(connection.current().phase));
+    try {
+      const pending = expect(
+        connection.connect("token", { mode: "AUTO" }),
+      ).rejects.toBeInstanceOf(VpnConnectionError);
+      await vi.advanceTimersByTimeAsync(5_000);
+      await pending;
+      expect(phases).not.toContain("CONNECTED");
+      expect(tunnel.start).toHaveBeenCalledOnce();
+      expect(tunnel.stop).toHaveBeenCalledOnce();
+      expect(api.disconnectVpnSession).toHaveBeenCalledOnce();
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("counts native reconciliation delay from receipt of the backend response", async () => {
+    vi.useFakeTimers();
+    const { api, keys, tunnel } = dependencies();
+    vi.mocked(api.getCurrentVpnSession).mockResolvedValue({
+      session: backendSession,
+    });
+    vi.mocked(tunnel.state).mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(() => resolve("UP"), 5_000)),
+    );
+    const connection = createVpnConnectionManager(
+      api,
+      createWireGuardProvisioner(api, keys),
+      createWireGuardProtocol(tunnel),
+    );
+    try {
+      const pending = connection.reconcile("token");
+      await vi.advanceTimersByTimeAsync(5_000);
+      await pending;
+      expect(connection.current()).toMatchObject({
+        phase: "CONNECTED",
+        session: { remainingSeconds: 895 },
+      });
+    } finally {
+      connection.dispose();
+      vi.useRealTimers();
+    }
+  });
+
   it("stops an expired tunnel promptly after a sleep-sized timer jump without granting another session", async () => {
     vi.useFakeTimers();
     const { api, keys, tunnel } = dependencies();
@@ -838,6 +941,46 @@ it("a late initial verification cannot restore CONNECTED after user disconnect",
     await pending;
     expect(connection.current().phase).toBe("DISCONNECTED");
     expect(phases).not.toContain("CONNECTED");
+  } finally {
+    connection.dispose();
+  }
+});
+
+it("a canceled attempt retains backend ownership if every local stop fails", async () => {
+  const { api, keys, tunnel } = dependencies();
+  let complete!: (value: Awaited<ReturnType<typeof tunnel.verify>>) => void;
+  vi.mocked(tunnel.verify).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  vi.mocked(tunnel.stop).mockRejectedValue(new Error("private native failure"));
+  const connection = createVpnConnectionManager(
+    api,
+    createWireGuardProvisioner(api, keys),
+    createWireGuardProtocol(tunnel),
+  );
+  try {
+    const pending = connection.connect("token", { mode: "AUTO" });
+    await vi.waitFor(() =>
+      expect(connection.current().phase).toBe("VERIFYING_INTERNET"),
+    );
+    await expect(connection.disconnect("token")).rejects.toEqual(
+      new VpnConnectionError("LOCAL_TUNNEL_STOP_FAILED"),
+    );
+    complete({
+      tunnel_established: true,
+      internet_verified: true,
+      failure_code: null,
+    });
+    await pending;
+    expect(api.disconnectVpnSession).not.toHaveBeenCalled();
+    expect(connection.current()).toMatchObject({
+      phase: "UNAVAILABLE",
+      backend: "ACTIVE",
+      tunnel: "UP",
+    });
   } finally {
     connection.dispose();
   }

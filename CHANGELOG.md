@@ -13,6 +13,9 @@
 - Android monitors the selected candidate and shows its verified method.
 - Windows and Android show brief localized attempt comments, including switching
   after a failed method; verification and completion clear the attempt message.
+- Windows fallback consumes the original server allowance during startup and
+  verification. Expired attempts cannot connect or try another candidate;
+  canceled attempts retain backend ownership when local cleanup fails.
 - This is not yet delivery of the additional article protocols or managed engines.
   Scope, current limits and owner decisions:
   [docs/vpn-methods-from-article.md](docs/vpn-methods-from-article.md).
