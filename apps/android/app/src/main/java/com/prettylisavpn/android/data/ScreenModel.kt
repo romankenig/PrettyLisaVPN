@@ -19,6 +19,7 @@ data class ScreenState(val data: Snapshot, val loads: Map<Area, Load> = emptyMap
 class ScreenModel(private val source: ScreenSource) : ViewModel() {
     val enabled = source.enabled
     val fixture = source.fixture
+    val vpn = source.vpn
     val supportTransfer = source.supportTransfer
     val messageVisit = MessageVisit()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

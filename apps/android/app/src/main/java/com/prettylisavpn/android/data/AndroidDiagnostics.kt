@@ -10,7 +10,7 @@ import java.time.Instant
 import java.util.TimeZone
 
 /** Explicit allowlist. No credentials, identifiers, IP, SSID, paths or traffic history. */
-fun androidDiagnostics(context: Context, backendVersion: String?, language: String, plan: String): String {
+fun androidDiagnostics(context: Context, backendVersion: String?, language: String, plan: String, vpn: com.prettylisavpn.android.vpn.VpnStatus? = null): String {
     val connectivity = context.getSystemService(ConnectivityManager::class.java)
     val capabilities = runCatching { connectivity.getNetworkCapabilities(connectivity.activeNetwork) }.getOrNull()
     val network = when {
@@ -27,7 +27,7 @@ fun androidDiagnostics(context: Context, backendVersion: String?, language: Stri
         "backend_version" to backendVersion, "android_api" to Build.VERSION.SDK_INT,
         "language" to language, "timezone" to TimeZone.getDefault().id,
         "plan" to plan.uppercase(java.util.Locale.ROOT).takeIf { it in setOf("FREE", "PREMIUM", "PLATINUM") },
-        "network" to network, "vpn_runtime" to "unavailable", "vpn_tunnel" to "not_started",
+        "network" to network, "vpn_runtime" to if (vpn == null) "unavailable" else "wireguard_go", "vpn_tunnel" to (vpn?.phase?.name?.lowercase(java.util.Locale.ROOT) ?: "not_started"),
     ))
 }
 

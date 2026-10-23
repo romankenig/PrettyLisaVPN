@@ -235,7 +235,6 @@
     <string name="dash_all_countries">todos los países</string>
     <string name="dash_no_countries">no hay países disponibles</string>
     <string name="dash_connect">conectar</string>
-    <string name="dash_preview">vista previa: este botón aún no inicia una conexión VPN</string>
     <string name="dash_region">región actual</string>
     <string name="dash_all_traffic">todo el tráfico</string>
     <string name="dash_include">solo sitios seleccionados</string>
@@ -254,4 +253,18 @@
     <string name="dash_description_limit">acorta la descripción: el límite con los datos técnicos es de 4000 caracteres</string>
     <string name="server_connection_lost">sin conexión con el servidor, comprueba tu conexión a internet</string>
     <string name="location_quality">disponibilidad %1$s de 100</string>
+    <string name="vpn_connected">conectado</string>
+    <string name="vpn_connecting">conectando…</string>
+    <string name="vpn_verifying">comprobando la conexión VPN…</string>
+    <string name="vpn_disconnecting">desconectando…</string>
+    <string name="vpn_disconnect">desconectar</string>
+    <string name="vpn_retry_cleanup">reintentar limpieza</string>
+    <string name="vpn_cleanup">aún no se ha confirmado la limpieza al desconectar VPN. vuelve a desconectar; la reconexión está bloqueada hasta que termine.</string>
+    <string name="vpn_permission_denied">no se concedió permiso de VPN. no se creó ninguna sesión del servidor.</string>
+    <string name="vpn_unavailable">VPN no está disponible en esta fuente de datos de prueba.</string>
+    <string name="vpn_unsupported">Android no admite este perfil del servidor. se ha detenido la sesión.</string>
+    <string name="vpn_verification_failed">no se pudo verificar la conexión VPN. se ha detenido el túnel.</string>
+    <string name="vpn_quota">se ha agotado el tiempo gratuito diario.</string>
+    <string name="vpn_access">el acceso VPN ha terminado. inicia sesión o revisa tu suscripción.</string>
+    <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
 </resources>

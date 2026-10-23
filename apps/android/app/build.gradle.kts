@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.7.2"
+        versionCode = 15
+        versionName = "0.8.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -58,6 +58,8 @@ android {
         informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
     packaging {
+        // VpnService uses wg-go only; do not redistribute unused root/wg-quick executables.
+        jniLibs.excludes += setOf("**/libwg.so", "**/libwg-quick.so")
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 }
@@ -74,6 +76,7 @@ dependencies {
 
     implementation(libs.okhttp.core)
     implementation(libs.gson)
+    implementation(libs.wireguard.tunnel)
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
@@ -83,4 +86,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)
+    androidTestImplementation(libs.androidx.test.uiautomator)
 }

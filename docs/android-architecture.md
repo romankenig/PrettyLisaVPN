@@ -449,3 +449,13 @@ page size, VPN-bound verification и соответствие реального
 [android-porting-plan.md](android-porting-plan.md).
 Историческая приёмка Windows и её ограничения:
 [windows-development-acceptance.md](windows-development-acceptance.md).
+
+
+## Реализация Android 0.8.0
+
+Этап native adapter/lifecycle реализуется в отдельном
+[handoff Android VPN](android-vpn-runtime.md). Текущая интеграция принимает явный
+первый WireGuard UDP/NONE IPv4 full-tunnel, отклоняет legacy NATIVE и остальные
+профили. Сервис — наследник GoBackend.VpnService, исходный service исключён merger.
+Это дополняет архитектурный план; перечни выше, помеченные как предлагаемые,
+не являются заявлением о проверке живого Android data plane.

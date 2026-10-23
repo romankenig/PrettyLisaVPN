@@ -41,10 +41,14 @@ jobs:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Check language catalogs
         run: python3 scripts/check-localization.py
+      - name: Inspect published WireGuard versions
+        run: python3 -c "import urllib.request; print(urllib.request.urlopen('https://repo.maven.apache.org/maven2/com/wireguard/android/tunnel/maven-metadata.xml', timeout=20).read().decode())"
       - name: Build current checkout and instrumented tests; lint
         run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
       - name: Verify debug adapter is absent from release
-        run: python3 scripts/check-source-isolation.py
+        run: |
+          python3 scripts/check-source-isolation.py
+          python3 scripts/check-vpn-packaging.py
       - name: Record build identity
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -101,6 +105,8 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      - name: Install isolated VPN test peer tools
+        run: sudo apt-get update -qq && sudo apt-get install -y wireguard-tools
       - name: Launch, design, keyboard and font-scale acceptance
         uses: reactivecircus/android-emulator-runner@v2
         with:

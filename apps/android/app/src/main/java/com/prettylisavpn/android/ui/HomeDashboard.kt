@@ -113,9 +113,7 @@ internal fun LiveHome(model: ScreenModel) {
             }
             if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.LOADING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Brand.PurpleHeart)
             OperationError(state.loads[Area.COUNTRIES]?.error)
-            BrandActionButton(tr(R.string.dash_connect), {}, Modifier.testTag("home-connect"))
-            Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.titleMedium)
-            Text(tr(R.string.dash_preview), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+            VpnControls(model.vpn, selected, state.data.signedIn)
             HorizontalDivider(color = Brand.DustyGray)
             Row(Modifier.fillMaxWidth().testTag("home-network"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(countryFlag(location?.country), style = MaterialTheme.typography.bodyMedium)

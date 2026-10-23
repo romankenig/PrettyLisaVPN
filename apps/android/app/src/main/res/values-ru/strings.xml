@@ -235,7 +235,6 @@
     <string name="dash_all_countries">все страны</string>
     <string name="dash_no_countries">нет доступных стран</string>
     <string name="dash_connect">подключить</string>
-    <string name="dash_preview">проверка интерфейса: эта кнопка пока не запускает VPN</string>
     <string name="dash_region">текущий регион</string>
     <string name="dash_all_traffic">весь трафик</string>
     <string name="dash_include">только выбранные сайты</string>
@@ -254,4 +253,18 @@
     <string name="dash_description_limit">сократите описание: вместе с техническими данными допускается 4000 символов</string>
     <string name="server_connection_lost">нет связи с сервером, проверьте подключение к интернету</string>
     <string name="location_quality">доступность %1$s из 100</string>
+    <string name="vpn_connected">подключено</string>
+    <string name="vpn_connecting">подключаемся…</string>
+    <string name="vpn_verifying">проверяем VPN-соединение…</string>
+    <string name="vpn_disconnecting">отключаемся…</string>
+    <string name="vpn_disconnect">отключить</string>
+    <string name="vpn_retry_cleanup">повторить очистку</string>
+    <string name="vpn_cleanup">завершение отключения VPN пока не подтверждено. повторите отключение; новое подключение недоступно до окончания очистки.</string>
+    <string name="vpn_permission_denied">разрешение на VPN не получено. серверная сессия не создавалась.</string>
+    <string name="vpn_unavailable">VPN недоступен в этом тестовом источнике данных.</string>
+    <string name="vpn_unsupported">этот профиль сервера не поддерживается на Android. сессия остановлена.</string>
+    <string name="vpn_verification_failed">не удалось проверить работоспособность VPN. туннель остановлен.</string>
+    <string name="vpn_quota">дневное бесплатное время закончилось.</string>
+    <string name="vpn_access">доступ к VPN завершён. войдите снова или проверьте подписку.</string>
+    <string name="vpn_failed">не удалось подключиться. проверьте сеть и повторите попытку.</string>
 </resources>

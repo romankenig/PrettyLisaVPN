@@ -151,6 +151,7 @@ internal class Strings(private val context: Context) {
     operator fun invoke(id: Int, vararg arguments: Any?): String = context.getString(id, *arguments)
     fun error(message: String): String {
         val id = when (message) {
+            "CLEANUP" -> R.string.vpn_cleanup
             "No network connection. Check your connection and retry." -> R.string.error_0
             "The code is invalid or expired. Request a new code." -> R.string.error_1
             "Too many requests. Please wait before requesting another code." -> R.string.error_2
