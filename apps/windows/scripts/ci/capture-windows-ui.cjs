@@ -790,7 +790,8 @@ async function main() {
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
   await page
-    .locator("main")
+    .locator(".about-versions > div")
+    .filter({ has: page.locator("dt", { hasText: /^frontend$/ }) })
     .getByText(frontendVersion, { exact: true })
     .waitFor();
   await screenshot("08-about");
