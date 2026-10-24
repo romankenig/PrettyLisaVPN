@@ -11,7 +11,8 @@ product/build SHA, run/attempt and artifacts belong in PR #29.
 - Backend 0.13.0 → 0.14.0: opt-in authenticated managed access, migration 0028.
 - Node agent 0.1.0 → 0.2.0: isolated native authorization lifecycle.
 - Android remains 0.9.0/code17 and companion 0.1.0 within the unfinished transport
-  task; Binder protocol v2 requires both APKs from this task, signed identically.
+  task; Binder protocol v3 requires both APKs from this task, signed identically.
+  Both APKs must be updated together: the earlier v2 preview is rejected safely.
 - Windows remains 0.13.0. Its managed-engine integration is still pending.
 
 Deploy node agent/binary and migrate the backend before installing the companion.
@@ -66,6 +67,17 @@ default route and DNS server. A fresh IPv4 DNS lookup and HTTPS 204 request bind
 to that network with no proxy, pool reuse or physical fallback. The main client
 publishes Connected plus VLESS/REALITY only after this succeeds and its backend
 session still exists. Consent is obtained through the real Android dialog.
+
+The attempt comment remains visible during verification, until a final result.
+The development APK displays only a closed diagnostic code on verification failure
+(for example DNS_FAILED or HTTPS_FAILED), allowing manual acceptance without USB.
+Profiles, exception text, DNS names and destinations are never displayed or logged.
+
+2026-10-24 trial: source/build 52825743544286ac5b1b6f7e6c238452d43e5977
+was installed and matched by APK SHA-256. Two DE sessions at 05:24:50 and 05:25:31
+UTC failed verification after about 32 seconds. Both credentials were revoked
+and node/WG removal acknowledged. Count: **2/3**, no verified success. The third
+attempt is reserved for the owner after updating both APKs; USB is disconnected.
 
 Managed-engine CI produces the current-source companion APK, Linux server binary,
 node-agent wheel, dependency notices and corresponding Go/vendor sources. These

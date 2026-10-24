@@ -13,7 +13,8 @@
 - Isolated Xray processes enforce bounded authorization and close established
   connections on revoke. Existing WireGuard cleanup cannot bypass managed cleanup.
 - Android 0.9.0/code17 now controls the separately installed, identically signed
-  companion through Binder v2, including real consent and tunnel-bound DNS/HTTPS.
+  companion through Binder v3, including real consent and tunnel-bound DNS/HTTPS.
+  Update both preview APKs together; the earlier Binder v2 pair is incompatible.
   Windows remains 0.13.0; its new-engine wiring is still pending.
 - This source change does not claim a deployed or verified real connection.
   Bounded trial and rollout: [docs/managed-vpn-acceptance.md](docs/managed-vpn-acceptance.md).
@@ -24,7 +25,9 @@
   failed attempts must stop before the next starts. Cancellation stops the loop.
 - Android monitors the selected candidate and shows its verified method.
 - Windows and Android show brief localized attempt comments, including switching
-  after a failed method; verification and completion clear the attempt message.
+  after a failed method. Android keeps the comment visible during verification;
+  completion clears it. Development engine diagnostics expose only closed stage
+  codes, never destinations, DNS names, profiles or exception messages.
 - Windows fallback consumes the original server allowance during startup and
   verification. Expired attempts cannot connect or try another candidate;
   canceled attempts retain backend ownership when local cleanup fails.

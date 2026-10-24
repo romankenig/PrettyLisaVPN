@@ -5,5 +5,5 @@ interface IEngineControl {
     String start(String profile, IBinder owner);
     boolean stop();
     String state();
-    boolean verify();
+    String verify();
 }

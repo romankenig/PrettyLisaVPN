@@ -33,6 +33,7 @@ class VpnControllerTest {
         override suspend fun delete(id: String) { deletes++; if (failDelete) throw AuthFailure("offline"); value = null }
     }
     private class Runtime : TunnelRuntime {
+        override var diagnostic: VpnDiagnostic? = null
         var timeout = false; var failStop = false
         var failPort: Int? = null
         val attemptedPorts = mutableListOf<Int>()
@@ -56,6 +57,22 @@ class VpnControllerTest {
         runtime.verified = true; await { c.status.value.phase == VpnPhase.CONNECTED }
         c.disconnect(); await { c.status.value.phase == VpnPhase.DISCONNECTED }
         assertEquals(1, api.posts); assertTrue(api.deletes >= 1); assertFalse(runtime.up); assertNull(store.pending)
+    }
+    @Test fun failedVerificationKeepsOnlyClosedDiagnosticAndDisconnectClearsIt() = scenario {
+        val api = Api(); val runtime = Runtime(); val store = Store()
+        runtime.verified = false
+        runtime.diagnostic = VpnDiagnostic.DNS_FAILED
+        val c = VpnController(api, runtime, store, { "owner" },
+            { object : TunnelKey { override val publicKey = config.serverKey } },
+            this, { System.nanoTime()/1_000_000 }, attemptMillis = 50)
+        c.connect("DE"); await { c.status.value.phase == VpnPhase.FAILED }
+        assertEquals(VpnDiagnostic.DNS_FAILED, c.status.value.diagnostic)
+        assertNull(api.value); assertFalse(runtime.up); assertNull(store.pending)
+        c.disconnect(); await { c.status.value.phase == VpnPhase.DISCONNECTED }
+        assertNull(c.status.value.diagnostic)
+        assertNull(VpnDiagnostic.parse("private profile, key or destination"))
+        assertNull(VpnDiagnostic.parse("VERIFIED"))
+        assertEquals(VpnDiagnostic.HTTPS_FAILED, VpnDiagnostic.parse("HTTPS_FAILED"))
     }
     @Test fun failedFirstCandidateFallsBackWithinOneSessionAndPublishesTheMethod() = scenario {
         val api = Api(); val runtime = Runtime(); val store = Store()

@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.prettylisavpn.android.R
+import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.vpn.*
 
 @Composable
@@ -67,7 +68,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         VpnPhase.CLEANUP_PENDING -> R.string.vpn_cleanup
         else -> R.string.ui_not_connected
     }), Modifier.testTag("vpn-status").semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.titleMedium)
-    if (status.phase == VpnPhase.CONNECTING) status.attempt?.let { attempt ->
+    if (status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.VERIFYING)) status.attempt?.let { attempt ->
         Text(when (attempt.previousMethod) {
             null -> tr(R.string.vpn_trying_method, attempt.method.shortLabel)
             attempt.method -> tr(R.string.vpn_retrying_method, attempt.method.shortLabel)
@@ -91,4 +92,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         }
     }
     if (error != null) Text(tr(error), Modifier.testTag("vpn-error"), style = MaterialTheme.typography.bodySmall, color = Brand.PersianRed)
+    if (BuildConfig.DEBUG && status.phase == VpnPhase.FAILED) status.diagnostic?.let {
+        Text(it.name, Modifier.testTag("vpn-diagnostic"), style = MaterialTheme.typography.bodySmall)
+    }
 }

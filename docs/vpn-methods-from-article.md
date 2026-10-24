@@ -42,7 +42,7 @@ Outline — реализация Shadowsocks. Xray/V2Ray/V2Fly/sing-box — дв
 
 ## Текущее состояние работы
 
-Дополнение 2026-10-24: реализованы Android Binder v2 и opt-in выдача
+Дополнение 2026-10-24: реализованы Android Binder v3 и opt-in выдача
 VLESS/REALITY через backend 0.14.0 / node-agent 0.2.0, миграция 0028.
 Текущий ограниченный план испытаний и критерий остановки:
 [managed-vpn-acceptance.md](managed-vpn-acceptance.md).

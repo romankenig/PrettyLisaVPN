@@ -26,6 +26,8 @@ internal class ManagedTunnelClient(private val context: Context, private val los
     private var connection: ServiceConnection? = null
     private var control: IEngineControl? = null
     @Volatile private var owned = false
+    @Volatile override var diagnostic: VpnDiagnostic? = null
+        private set
     var consented = false
         private set
     fun installed(): Boolean = context.packageManager.checkSignatures(context.packageName, packageName) == PackageManager.SIGNATURE_MATCH
@@ -70,12 +72,13 @@ internal class ManagedTunnelClient(private val context: Context, private val los
         }
     }
     override suspend fun start(config: VpnConfig, key: TunnelKey) = mutex.withLock {
+        diagnostic = null
         val profile = config.managed ?: throw VpnFailure(VpnError.UNSUPPORTED)
         if (!consented) throw VpnFailure(VpnError.PERMISSION)
         val remote = bind()
         // A synchronous Binder call completes before cancellation cleanup may start.
         withContext(Dispatchers.IO) {
-            if (remote.protocolVersion() != 2) throw VpnFailure(VpnError.UNSUPPORTED)
+            if (remote.protocolVersion() != 3) throw VpnFailure(VpnError.UNSUPPORTED)
             owned = true // A lost response still requires confirmed cleanup.
             if (remote.start(profile.privateJson(), owner) != "RUNNING") throw VpnFailure(VpnError.NETWORK)
         }
@@ -87,13 +90,20 @@ internal class ManagedTunnelClient(private val context: Context, private val los
         }
         val remote = bind()
         withContext(Dispatchers.IO) {
-            if (remote.protocolVersion() != 2 || !remote.stop() || remote.state() != "DOWN") throw VpnFailure(VpnError.CLEANUP)
+            if (remote.protocolVersion() != 3 || !remote.stop() || remote.state() != "DOWN") throw VpnFailure(VpnError.CLEANUP)
             owned = false
         }
     }
     override suspend fun verify(config: VpnConfig): Boolean = mutex.withLock {
         val remote = control ?: return@withLock false
-        withContext(Dispatchers.IO) { runCatching { owned && remote.state() == "RUNNING" && remote.verify() && remote.state() == "RUNNING" }.getOrDefault(false) }
+        withContext(Dispatchers.IO) {
+            runCatching {
+                if (!owned || remote.state() != "RUNNING") return@runCatching false
+                val result = remote.verify()
+                diagnostic = VpnDiagnostic.parse(result)
+                result == "VERIFIED" && remote.state() == "RUNNING"
+            }.getOrElse { diagnostic = VpnDiagnostic.ENGINE_UNAVAILABLE; false }
+        }
     }
     fun release() {
         connection?.let { runCatching { context.unbindService(it) } }

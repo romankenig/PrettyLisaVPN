@@ -13,7 +13,15 @@ enum class VpnPhase { DISCONNECTED, RECONCILING, CONNECTING, VERIFYING, CONNECTE
 enum class VpnError { PERMISSION, UNSUPPORTED, VERIFICATION, NETWORK, QUOTA, ACCESS, STORAGE, CLEANUP, UNKNOWN }
 enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard"), VLESS_REALITY("VLESS · REALITY · TCP", "VLESS/REALITY") }
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
-data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
+enum class VpnDiagnostic {
+    NOT_RUNNING, VPN_NETWORK_MISSING, VPN_OWNER_MISMATCH, VPN_ROUTE_MISMATCH,
+    DNS_FAILED, HTTPS_FAILED, HTTPS_REJECTED, STATE_CHANGED, VERIFY_TIMEOUT,
+    UPLINK_PROTECTION_FAILED, ENGINE_UNAVAILABLE;
+    companion object {
+        fun parse(value: String): VpnDiagnostic? = entries.firstOrNull { it.name == value }
+    }
+}
+data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null, val attempt: VpnAttempt? = null, val diagnostic: VpnDiagnostic? = null)
 interface VpnActions {
     val status: kotlinx.coroutines.flow.StateFlow<VpnStatus>
     /** Called only after system consent, from a foreground UI. */
@@ -25,6 +33,7 @@ interface VpnActions {
     val ownsNotifications: Boolean get() = true
 }
 interface TunnelRuntime {
+    val diagnostic: VpnDiagnostic? get() = null
     suspend fun start(config: VpnConfig, key: TunnelKey)
     suspend fun stop()
     /** Requires current handshake + VPN-bound DNS/HTTPS + counter growth; no physical fallback. */
@@ -68,7 +77,8 @@ class VpnController(
     private suspend fun read(id: String) = withContext(Dispatchers.IO) { journal.read(id) }
     private suspend fun save(id: String, value: PendingVpn?) = withContext(Dispatchers.IO) { journal.write(id, value) }
     private fun set(phase: VpnPhase, error: VpnError? = null, attempt: VpnAttempt? = null) {
-        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED) activeConfig?.method else null, attempt)
+        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED) activeConfig?.method else null, attempt,
+            if (phase == VpnPhase.FAILED && error == VpnError.VERIFICATION) runtime.diagnostic else null)
     }
     private fun error(e: Exception): VpnError = when (e) {
         is VpnCreateRejected -> error(e.failure)
