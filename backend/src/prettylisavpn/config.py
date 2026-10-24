@@ -85,6 +85,11 @@ class Settings(BaseSettings):
             raise ValueError("VALKEY_URL must use redis or rediss")
         return value
 
+    @field_validator("vpn_managed_secret", mode="before")
+    @classmethod
+    def empty_managed_secret_is_disabled(cls, value: object) -> object:
+        return None if value == "" else value
+
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
         if self.vpn_managed_nodes and (

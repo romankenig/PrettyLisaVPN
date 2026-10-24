@@ -41,6 +41,7 @@ def test_lease_never_extends_existing_deadline_and_preview_is_opt_in():
     assert lease_deadline(now, None) == now + timedelta(minutes=15)
     assert lease_deadline(now, now + timedelta(seconds=10)) == now + timedelta(seconds=10)
     assert not Settings(_env_file=None).vpn_managed_nodes
+    assert Settings(_env_file=None, vpn_managed_secret="").vpn_managed_secret is None
     for environment, secret in (("production", "x" * 32), ("development", None)):
         with pytest.raises(ValidationError):
             Settings(

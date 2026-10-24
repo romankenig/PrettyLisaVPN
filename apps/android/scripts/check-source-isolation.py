@@ -8,9 +8,12 @@ for variant, filename in (("debug", "app-debug.apk"), ("release", "app-release-u
         dex = b"".join(apk.read(name) for name in apk.namelist() if name.endswith(".dex"))
     present = b"Lcom/prettylisavpn/android/data/FixtureSource;" in dex
     assert present == (variant == "debug"), (variant, present)
+    assert b"Lcom/prettylisavpn/enginecore/" not in dex, "native managed engine linked into main APK"
 manifest = ET.parse("app/src/main/AndroidManifest.xml")
 permissions = {p.attrib["{http://schemas.android.com/apk/res/android}name"] for p in manifest.findall("uses-permission")}
-assert permissions == {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED", "android.permission.POST_NOTIFICATIONS"}, permissions
+assert permissions == {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED", "android.permission.POST_NOTIFICATIONS", "${enginePackage}.CONTROL"}, permissions
+companion = ET.parse("engine-app/src/main/AndroidManifest.xml")
+assert companion.find("permission").attrib["{http://schemas.android.com/apk/res/android}protectionLevel"] == "signature"
 services = manifest.find("application").findall("service")
 service = next(s for s in services if s.attrib["{http://schemas.android.com/apk/res/android}name"] == ".vpn.PrettyVpnService")
 assert service.attrib["{http://schemas.android.com/apk/res/android}permission"] == "android.permission.BIND_VPN_SERVICE"
