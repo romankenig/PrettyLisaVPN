@@ -126,6 +126,10 @@
     state: present
   notify: restart vpn node agent
 
+- name: Provision optional managed transport
+  ansible.builtin.include_tasks: managed.yml
+  when: vpn_node_agent_managed_enabled
+
 - name: Install protected node agent environment
   ansible.builtin.template:
     src: agent.env.j2

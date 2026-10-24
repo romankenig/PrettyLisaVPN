@@ -3,7 +3,6 @@ package com.prettylisavpn.android.ui
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
-import android.net.VpnService
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,12 +30,13 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     var denied by rememberSaveable { mutableStateOf(false) }
     val start: () -> Unit = {
         waiting = false
-        if (latestSignedIn && VpnService.prepare(context) == null) actions?.connect(selected)
+        if (latestSignedIn && actions?.permissionReady(context) == true) actions.connect(selected)
     }
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { start() }
     val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK && latestSignedIn && VpnService.prepare(context) == null) {
-            if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+        actions?.permissionResult(result.resultCode == Activity.RESULT_OK)
+        if (result.resultCode == Activity.RESULT_OK && latestSignedIn && actions?.permissionReady(context) == true) {
+            if (actions.ownsNotifications && Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                 notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
             else start()
         } else { waiting = false; denied = true }
@@ -47,14 +47,16 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         denied = false
         if (active || status.phase == VpnPhase.CLEANUP_PENDING) actions?.disconnect()
         else {
+            try {
             selected = country
-            val intent = VpnService.prepare(context)
+            val intent = actions?.permissionIntent(context)
             if (intent == null) {
                 waiting = true
-                if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                if (actions?.ownsNotifications == true && Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 else start()
             } else { waiting = true; consent.launch(intent) }
+            } catch (_: Exception) { waiting = false; denied = true }
         }
     }, Modifier.testTag("home-connect"), enabled = actions != null && signedIn && !waiting && status.phase != VpnPhase.DISCONNECTING)
     Text(tr(when(status.phase) {

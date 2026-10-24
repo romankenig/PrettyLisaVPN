@@ -78,6 +78,26 @@ class VpnCredentialRecord(Base):
     node_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class ManagedVpnLeaseRecord(Base):
+    """One bounded managed authorization; secrets are derived, never persisted here."""
+
+    __tablename__ = "vpn_managed_leases"
+    __table_args__ = (
+        CheckConstraint("expires_at > created_at", name="ck_managed_lease_lifetime"),
+        CheckConstraint(
+            "node_removed_at IS NULL OR revoked_at IS NOT NULL", name="ck_managed_lease_removal"
+        ),
+    )
+    session_id: Mapped[UUID] = mapped_column(
+        ForeignKey("vpn_sessions.id", ondelete="RESTRICT"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    node_removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class VpnSessionRecord(Base):
     __tablename__ = "vpn_sessions"
     __table_args__ = (

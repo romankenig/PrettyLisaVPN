@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.14.0 / node agent — 0.2.0, development acceptance in progress
+
+- Authenticated, opt-in VLESS/REALITY leases for owned DE/US sessions; migration
+  0028 persists issuance/revocation intent and node removal acknowledgement.
+- Isolated Xray processes enforce bounded authorization and close established
+  connections on revoke. Existing WireGuard cleanup cannot bypass managed cleanup.
+- Android 0.9.0/code17 now controls the separately installed, identically signed
+  companion through Binder v2, including real consent and tunnel-bound DNS/HTTPS.
+  Windows remains 0.13.0; its new-engine wiring is still pending.
+- This source change does not claim a deployed or verified real connection.
+  Bounded trial and rollout: [docs/managed-vpn-acceptance.md](docs/managed-vpn-acceptance.md).
+
 ### Windows — 0.13.0 / Android — 0.9.0 (code17), transport task in progress
 
 - Ordered candidates are tried until independent Internet verification succeeds;
@@ -29,8 +41,9 @@
 - Constructors accept 21 method/transport combinations with the pinned Xray
   core. Windows/Android dependency license checks exclude GPL/AGPL/LGPL; the
   REALITY limiter uses a separately tested MIT implementation.
-- Main-client wiring, full article coverage, server credential lifecycle and real DE/US
-  device acceptance are still pending; nothing new is enabled by the catalog.
+- Android wiring and development server authorization are implemented in this
+  task; Windows wiring, full article coverage and real device acceptance remain
+  tracked in [docs/managed-vpn-acceptance.md](docs/managed-vpn-acceptance.md).
 
 ### Backend — 0.13.0 / Windows — 0.12.1 / Android — 0.8.1 (code16)
 

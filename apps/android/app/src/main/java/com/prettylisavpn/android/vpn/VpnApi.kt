@@ -12,7 +12,14 @@ import java.util.Base64
 import java.util.UUID
 
 /** No private material or bearer is exposed by these control-plane DTOs. */
-data class VpnConfig(val endpoint: String, val port: Int, val serverKey: String, val address: String, val dns: List<String>, val mtu: Int = 1280)
+data class VpnConfig(val endpoint: String, val port: Int, val serverKey: String, val address: String, val dns: List<String>, val mtu: Int = 1280, val managed: ManagedProfile? = null) {
+    val method get() = if (managed != null) VpnMethod.VLESS_REALITY else VpnMethod.WIREGUARD_UDP
+    override fun toString() = "VpnConfig([redacted])"
+}
+class ManagedProfile(private val content: String) {
+    internal fun privateJson() = content
+    override fun toString() = "ManagedProfile([redacted])"
+}
 data class VpnSession(val id: String, val country: String, val serverTime: Instant, val expiresAt: Instant?, val config: VpnConfig?, val candidates: List<VpnConfig> = listOfNotNull(config))
 interface VpnApi {
     suspend fun current(): VpnSession?
@@ -23,7 +30,7 @@ interface VpnApi {
 /** A confirmed rejection or failure before the authenticated HTTP action was entered. */
 class VpnCreateRejected(val failure: AuthFailure) : Exception("VPN create rejected")
 
-class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoordinator) : VpnApi {
+class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoordinator, private val managed: Boolean = false) : VpnApi {
     override suspend fun current(): VpnSession? = sessions.request { token ->
         val json = http.request("vpn/sessions/current", access = token, headers = mapOf("X-VPN-Candidates" to "1")).asJsonObject
         val value = json.get("session") ?: throw AuthFailure("invalid_response")
@@ -31,8 +38,9 @@ class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoo
     }
     override suspend fun create(country: String, publicKey: String): VpnSession {
         var entered = false
+        var allocated = false
         try {
-            return sessions.request { token ->
+            val session = sessions.request { token ->
                 entered = true
                 require(country == "AUTO" || country.matches(Regex("[A-Z]{2}")))
                 val body = JsonObject().apply {
@@ -43,8 +51,15 @@ class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoo
                 parseVpnSession(http.request("vpn/sessions", "POST", body.toString().toRequestBody("application/json".toMediaType()), token,
                     headers = mapOf("X-VPN-Candidates" to "1")).asJsonObject)
             }
+            allocated = true
+            if (!managed) return session
+            // Separate authenticated actions: refreshing a token for this idempotent
+            // lease request must NEVER replay POST /vpn/sessions.
+            return sessions.request { token ->
+                parseManagedSession(http.request("vpn/sessions/${session.id}/managed", "POST", "".toRequestBody(null), token).asJsonObject, session)
+            }
         } catch (failure: AuthFailure) {
-            if (!entered || failure.code in setOf("offline", "FREE_DAILY_LIMIT_REACHED", "COUNTRY_UNAVAILABLE", "VPN_UNAVAILABLE", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "invalid_access_token", "invalid_session", "invalid_refresh_token", "reauth_required", "device_revoked", "user_blocked")) throw VpnCreateRejected(failure)
+            if (!allocated && (!entered || failure.code in setOf("offline", "FREE_DAILY_LIMIT_REACHED", "COUNTRY_UNAVAILABLE", "VPN_UNAVAILABLE", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "invalid_access_token", "invalid_session", "invalid_refresh_token", "reauth_required", "device_revoked", "user_blocked"))) throw VpnCreateRejected(failure)
             throw failure
         }
     }
@@ -111,3 +126,25 @@ internal fun parseVpnSession(json: JsonObject): VpnSession = try {
 } catch (_: Exception) { throw AuthFailure("invalid_response") }
 
 internal fun parseVpnSession(raw: String): VpnSession = parseVpnSession(JsonParser.parseString(raw).asJsonObject)
+
+internal fun parseManagedSession(json: JsonObject, session: VpnSession): VpnSession = try {
+    require(json.keySet() == setOf("profile", "expires_at", "server_time"))
+    val p = json.getAsJsonObject("profile")
+    require(p.keySet() == setOf("version", "session", "country", "method", "server", "port", "secret", "server_name", "public_key", "short_id"))
+    require(integer(p, "version") == 1 && p.get("session").asString == session.id)
+    require(session.country in setOf("DE", "US") && p.get("country").asString == session.country)
+    require(p.get("method").asString == "VLESS_REALITY")
+    val existing = session.config ?: throw AuthFailure("invalid_response")
+    require(p.get("server").asString == existing.endpoint)
+    val port = integer(p, "port").also { require(it in 1024..65535) }
+    require(UUID.fromString(p.get("secret").asString).toString() == p.get("secret").asString)
+    require(p.get("public_key").asString.matches(Regex("[A-Za-z0-9_-]{43}")))
+    require(p.get("short_id").asString.matches(Regex("(?:[0-9a-f]{2}){1,8}")))
+    require(p.get("server_name").asString.matches(Regex("[a-zA-Z0-9][a-zA-Z0-9.-]{1,251}[a-zA-Z0-9]")))
+    val time = Instant.parse(json.get("server_time").asString)
+    val expiry = Instant.parse(json.get("expires_at").asString)
+    require(expiry > time && java.time.Duration.between(time, expiry).seconds <= 1200)
+    require(session.expiresAt == null || expiry <= session.expiresAt)
+    val candidate = existing.copy(port = port, managed = ManagedProfile(p.toString()))
+    session.copy(serverTime = time, expiresAt = expiry, config = candidate, candidates = listOf(candidate))
+} catch (_: Exception) { throw AuthFailure("invalid_response") }

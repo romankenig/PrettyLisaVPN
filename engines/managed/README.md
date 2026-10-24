@@ -9,10 +9,11 @@ implemented MIT adapter in `compat/ratelimit` (only the two required methods).
 NAT-PMP is pinned to Apache-2.0 commit `2c56765bf4dfd2c849263d5f1b4eeef8fea74214`
 with its complete license text.
 
-This is **not yet an enabled client connection method**. Main-client wiring,
-server authorization/revocation, packaging, tunnel-bound verification and DE/US
-device acceptance remain pending. Linux builds check portability; automatic
-desktop routing in this component targets Windows, not a Linux product release.
+Android wiring and opt-in development VLESS/REALITY authorization are implemented;
+real device acceptance and Windows wiring remain pending. See
+[the rollout and bounded acceptance record](../../docs/managed-vpn-acceptance.md).
+Linux builds include the isolated server binary; automatic desktop client routing
+targets Windows, not a Linux product release.
 
 The private protocol is newline-delimited JSON on inherited stdin/stdout:
 `version`, `start` with a typed `profile`, `status`, `stop`. No listening API,

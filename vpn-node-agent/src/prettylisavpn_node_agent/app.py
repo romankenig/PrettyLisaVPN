@@ -5,11 +5,16 @@ from hmac import compare_digest
 from ipaddress import IPv4Address
 from time import monotonic
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict, field_validator
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ConfigDict, SecretStr, field_validator
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from prettylisavpn_node_agent.config import AgentSettings
+from prettylisavpn_node_agent.managed import ManagedController, ManagedLease
 from prettylisavpn_node_agent.wireguard import (
     PeerConflictError,
     PeerState,
@@ -67,6 +72,12 @@ class MetricsResponse(BaseModel):
     interface_up: bool
 
 
+class ManagedLeaseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    secret: SecretStr
+    expires: int
+
+
 def _peer_response(peer: PeerState, created: bool | None = None) -> PeerResponse:
     return PeerResponse(
         public_key=peer.public_key,
@@ -76,7 +87,11 @@ def _peer_response(peer: PeerState, created: bool | None = None) -> PeerResponse
     )
 
 
-def create_app(settings: AgentSettings, controller: WireGuardController) -> FastAPI:
+def create_app(
+    settings: AgentSettings,
+    controller: WireGuardController,
+    managed: ManagedController | None = None,
+) -> FastAPI:
     application_started = monotonic()
 
     def authenticate(authorization: Annotated[str | None, Header()] = None) -> None:
@@ -93,6 +108,27 @@ def create_app(settings: AgentSettings, controller: WireGuardController) -> Fast
             )
 
     router = APIRouter(prefix="/v1", dependencies=[Depends(authenticate)])
+
+    @router.put("/managed/{lease_id}")
+    def issue_managed(lease_id: UUID, body: ManagedLeaseRequest) -> dict[str, object]:
+        if managed is None:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"})
+        try:
+            return managed.issue(
+                ManagedLease(lease_id, body.secret.get_secret_value(), body.expires)
+            )
+        except Exception:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"}) from None
+
+    @router.delete("/managed/{lease_id}")
+    def remove_managed(lease_id: UUID) -> dict[str, bool]:
+        if managed is None:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"})
+        try:
+            managed.remove(lease_id)
+        except Exception:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"}) from None
+        return {"removed": True}
 
     @router.put("/peers", response_model=PeerResponse)
     def add_peer(request: PeerRequest) -> PeerResponse:
@@ -191,10 +227,16 @@ def create_app(settings: AgentSettings, controller: WireGuardController) -> Fast
 
     app = FastAPI(
         title="PrettyLisaVPN Node Agent",
-        version="0.1.0",
+        version="0.2.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
     )
     app.include_router(router)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, error: RequestValidationError) -> JSONResponse:
+        # FastAPI's default validation response can echo private profile values.
+        return JSONResponse({"detail": {"code": "NODE_AGENT_INVALID_REQUEST"}}, status_code=422)
+
     return app

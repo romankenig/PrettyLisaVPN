@@ -17,6 +17,13 @@ The API is public-address reachable only because the current Backend and Droplet
 
 ## API
 
+Version 0.2.0 optionally supports `PUT /v1/managed/{session_id}` (private UUID
+credential and fixed deadline) and `DELETE /v1/managed/{session_id}` (confirmed
+process removal). Both use the same mTLS/bearer boundary. Without
+`NODE_AGENT_MANAGED_CONFIG` they return 503. The optional process receives private
+configuration only through stdin. See [managed acceptance](../docs/managed-vpn-acceptance.md)
+for the development-only rollout, isolated high-port range and rollback order.
+
 All requests require a trusted client certificate and bearer token.
 
 | Method | Path | Purpose |

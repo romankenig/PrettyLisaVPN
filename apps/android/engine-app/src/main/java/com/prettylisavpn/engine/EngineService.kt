@@ -20,6 +20,10 @@ import com.prettylisavpn.enginecore.mobile.Platform
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import okhttp3.ConnectionPool
+import okhttp3.Dns
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /** Owns the one TUN and the one Go runtime in this separately installed process. */
 class EngineService : VpnService() {
@@ -97,6 +101,38 @@ class EngineService : VpnService() {
             Process.killProcess(Process.myPid())
             throw IllegalStateException("ENGINE_STOP_FAILED")
         }
+    }
+    fun verifyInternet(): Boolean = bounded(false) {
+        if (!running || tun == null || prepare(this) != null || owner?.isBinderAlive != true) return@bounded false
+        val generation = epoch.get()
+        val network = networks.allNetworks.singleOrNull { candidate ->
+            val caps = networks.getNetworkCapabilities(candidate)
+            val links = networks.getLinkProperties(candidate)
+            caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true &&
+                (Build.VERSION.SDK_INT < 30 || caps.ownerUid == Process.myUid()) &&
+                links != null && links.linkAddresses.any { it.address.hostAddress == "172.30.255.1" } &&
+                links.routes.any { it.isDefaultRoute && it.destination.address is java.net.Inet4Address } &&
+                links.dnsServers.any { it.hostAddress == "1.1.1.1" }
+        } ?: return@bounded false
+        // Both resolution and HTTPS are bound to THIS VPN. Never protect this socket.
+        // A fixed public canary carries no account credentials or user browsing data.
+        val pool = ConnectionPool(0, 1, TimeUnit.SECONDS)
+        val client = OkHttpClient.Builder().socketFactory(network.socketFactory)
+            .dns(object : Dns { override fun lookup(hostname: String): List<java.net.InetAddress> =
+                network.getAllByName(hostname).filterIsInstance<java.net.Inet4Address>().also {
+                    if (it.isEmpty()) throw java.net.UnknownHostException()
+                } })
+            .proxy(java.net.Proxy.NO_PROXY).connectionPool(pool)
+            .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
+            .connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS)
+            .callTimeout(8, TimeUnit.SECONDS).build()
+        try {
+            val success = client.newCall(Request.Builder()
+                .url("https://connectivitycheck.gstatic.com/generate_204")
+                .header("Cache-Control", "no-store").build()).execute().use { it.code == 204 }
+            success && generation == epoch.get() && running && tun != null && prepare(this) == null &&
+                networks.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+        } catch (_: Exception) { false } finally { pool.evictAll(); client.dispatcher.executorService.shutdown() }
     }
     private fun <T> bounded(failed: T, action: () -> T): T = try {
         worker.submit<T> { action() }.get(30, TimeUnit.SECONDS)

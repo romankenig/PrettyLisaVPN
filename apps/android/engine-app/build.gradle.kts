@@ -36,6 +36,7 @@ android {
     }
 }
 dependencies {
+    implementation(libs.okhttp.core)
     // Built from ../../engines/managed, never linked into the main :app APK.
     implementation(files("libs/managed.aar"))
 }

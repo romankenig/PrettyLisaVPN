@@ -11,7 +11,7 @@ import java.time.Duration
 /** UI observes only this safe projection. UP is never mapped directly to CONNECTED. */
 enum class VpnPhase { DISCONNECTED, RECONCILING, CONNECTING, VERIFYING, CONNECTED, DISCONNECTING, CLEANUP_PENDING, FAILED }
 enum class VpnError { PERMISSION, UNSUPPORTED, VERIFICATION, NETWORK, QUOTA, ACCESS, STORAGE, CLEANUP, UNKNOWN }
-enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard") }
+enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard"), VLESS_REALITY("VLESS · REALITY · TCP", "VLESS/REALITY") }
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
 data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
 interface VpnActions {
@@ -19,6 +19,10 @@ interface VpnActions {
     /** Called only after system consent, from a foreground UI. */
     fun connect(country: String)
     fun disconnect()
+    fun permissionIntent(context: android.content.Context): android.content.Intent? = android.net.VpnService.prepare(context)
+    fun permissionResult(accepted: Boolean) {}
+    fun permissionReady(context: android.content.Context): Boolean = android.net.VpnService.prepare(context) == null
+    val ownsNotifications: Boolean get() = true
 }
 interface TunnelRuntime {
     suspend fun start(config: VpnConfig, key: TunnelKey)
@@ -64,7 +68,7 @@ class VpnController(
     private suspend fun read(id: String) = withContext(Dispatchers.IO) { journal.read(id) }
     private suspend fun save(id: String, value: PendingVpn?) = withContext(Dispatchers.IO) { journal.write(id, value) }
     private fun set(phase: VpnPhase, error: VpnError? = null, attempt: VpnAttempt? = null) {
-        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED && activeConfig != null) VpnMethod.WIREGUARD_UDP else null, attempt)
+        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED) activeConfig?.method else null, attempt)
     }
     private fun error(e: Exception): VpnError = when (e) {
         is VpnCreateRejected -> error(e.failure)
@@ -113,7 +117,7 @@ class VpnController(
                     for (candidate in session.candidates) {
                         ensureActive()
                         if (owner() != id || elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
-                        val attempt = VpnAttempt(VpnMethod.WIREGUARD_UDP, previousMethod)
+                        val attempt = VpnAttempt(candidate.method, previousMethod)
                         set(VpnPhase.CONNECTING, attempt = attempt)
                         val verified = try {
                             withTimeoutOrNull(attemptMillis) {

@@ -32,17 +32,21 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".dev"
+            manifestPlaceholders["enginePackage"] = "com.prettylisavpn.engine.dev"
         }
         release {
+            manifestPlaceholders["enginePackage"] = "com.prettylisavpn.engine"
             // Signing/release distribution are a separate task.
             isMinifyEnabled = false
         }
     }
     bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
+        aidl = true
         compose = true
         buildConfig = true
     }
+    sourceSets.getByName("main").aidl.srcDir("../engine-app/src/main/aidl")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

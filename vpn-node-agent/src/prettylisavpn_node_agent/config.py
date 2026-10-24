@@ -25,6 +25,7 @@ class AgentSettings:
     tls_private_key: Path = Path("/etc/prettylisavpn-agent/tls/server.key")
     tls_client_ca: Path = Path("/etc/prettylisavpn-agent/tls/client-ca.crt")
     recent_handshake_seconds: int = 180
+    managed_config: Path | None = None
 
     def __post_init__(self) -> None:
         if len(self.auth_token) < 32:
@@ -79,4 +80,7 @@ class AgentSettings:
                 )
             ),
             recent_handshake_seconds=int(os.getenv("NODE_AGENT_RECENT_HANDSHAKE_SECONDS", "180")),
+            managed_config=Path(os.environ["NODE_AGENT_MANAGED_CONFIG"])
+            if os.getenv("NODE_AGENT_MANAGED_CONFIG")
+            else None,
         )

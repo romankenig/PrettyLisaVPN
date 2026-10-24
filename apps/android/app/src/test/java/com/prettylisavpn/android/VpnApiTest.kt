@@ -12,6 +12,17 @@ import org.junit.Test
 class VpnApiTest {
     private val raw = """{"session_id":"d84cd4d2-8aee-4c17-9772-31db1d512924","status":"ACTIVE","country_code":"DE","server_time":"2026-10-22T00:00:00Z","expires_at":null,"transport":{"endpoint":{"ipv4":"203.0.113.1","port":51820},"server_public_key":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=","client_address":"10.77.0.2/32","dns":["1.1.1.1"],"allowed_ips":["0.0.0.0/0"]},"candidates":[{"country":"DE","protocol":"WIREGUARD","transport":"UDP","port":51820,"encryption_mode":"WIREGUARD","obfuscation_mode":"NONE","mtu":1280,"dns_mode":"VPN","routing_mode":"FULL_TUNNEL"}]}"""
     @Test fun explicitDirectIpv4ProfileIsAccepted() { assertEquals(51820, parseVpnSession(raw).config!!.port) }
+    private val managed = """{"profile":{"version":1,"session":"d84cd4d2-8aee-4c17-9772-31db1d512924","country":"DE","method":"VLESS_REALITY","server":"203.0.113.1","port":18443,"secret":"463bb488-74b1-46dd-af0b-95fe7b476194","server_name":"api.prettylisavpn.com","public_key":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE","short_id":"abcd"},"server_time":"2026-10-22T00:00:00Z","expires_at":"2026-10-22T00:15:00Z"}"""
+    @Test fun managedProfileIsBoundToAllocatedSessionAndRedacted() {
+        val result = parseManagedSession(JsonParser.parseString(managed).asJsonObject, parseVpnSession(raw))
+        assertEquals(VpnMethod.VLESS_REALITY, result.config!!.method)
+        assertEquals(1, result.candidates.size)
+        assertFalse(result.toString().contains("463bb488"))
+        for (bad in listOf(managed.replace("203.0.113.1", "203.0.113.2"), managed.replace("\"DE\"", "\"US\""), managed.replace("00:15:00", "00:21:00"), managed.replace("\"version\":1", "\"version\":2"), managed.replace("d84cd4d2", "a84cd4d2"), managed.replace("\"port\":18443", "\"port\":22"))) {
+            try { parseManagedSession(JsonParser.parseString(bad).asJsonObject, parseVpnSession(raw)); fail("invalid managed profile accepted") }
+            catch (failure: AuthFailure) { assertEquals("invalid_response", failure.code) }
+        }
+    }
     @Test fun emptyMissingAndLegacyStayUnsupportedButLaterCandidatesCanWork() {
         val empty = JsonParser.parseString(raw).asJsonObject.apply { add("candidates", com.google.gson.JsonArray()) }
         assertNull(parseVpnSession(empty).config); empty.remove("candidates"); assertNull(parseVpnSession(empty).config)
@@ -63,6 +74,14 @@ class VpnApiTest {
             }
             server.enqueue(MockResponse().setBody("""{"session_id":"${created.id}","status":"DISCONNECTED","cleanup_confirmed":true}""")); api.delete(created.id); assertEquals("DELETE",server.takeRequest().method)
             server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":{"code":"VPN_SESSION_NOT_FOUND"}}""")); api.delete(created.id)
+            server.takeRequest()
+            val managedApi = HttpVpnApi(HttpAuthApi(server.url("/").toString(),true), sessions, managed = true)
+            server.enqueue(MockResponse().setBody(raw))
+            server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"code":"invalid_access_token"}}"""))
+            server.enqueue(MockResponse().setBody(managed))
+            assertEquals(VpnMethod.VLESS_REALITY, managedApi.create("DE", "test-public").config!!.method)
+            assertEquals("/vpn/sessions", server.takeRequest().path)
+            repeat(2) { assertEquals("/vpn/sessions/${created.id}/managed", server.takeRequest().path) }
         } finally { server.shutdown() }
     }
 }
