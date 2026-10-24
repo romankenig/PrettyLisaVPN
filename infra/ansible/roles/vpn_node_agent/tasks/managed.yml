@@ -44,7 +44,7 @@
       - ufw
       - allow
       - in
-      - on
+      - 'on'
       - "{{ wireguard_egress_interface }}"
       - proto
       - tcp
