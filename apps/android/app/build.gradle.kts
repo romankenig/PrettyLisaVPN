@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.8.1"
+        versionCode = 17
+        versionName = "0.9.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -32,17 +32,21 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".dev"
+            manifestPlaceholders["enginePackage"] = "com.prettylisavpn.engine.dev"
         }
         release {
+            manifestPlaceholders["enginePackage"] = "com.prettylisavpn.engine"
             // Signing/release distribution are a separate task.
             isMinifyEnabled = false
         }
     }
     bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
+        aidl = true
         compose = true
         buildConfig = true
     }
+    sourceSets.getByName("main").aidl.srcDir("../engine-app/src/main/aidl")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

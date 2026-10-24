@@ -7,6 +7,7 @@ import uvicorn
 from prettylisavpn_node_agent.app import create_app
 from prettylisavpn_node_agent.config import AgentSettings
 from prettylisavpn_node_agent.logging import LOG_CONFIG
+from prettylisavpn_node_agent.managed import load_managed_controller
 from prettylisavpn_node_agent.wireguard import WireGuardController
 
 
@@ -18,7 +19,11 @@ def main() -> None:
         settings.gateway,
     )
     uvicorn.run(
-        create_app(settings, controller),
+        create_app(
+            settings,
+            controller,
+            load_managed_controller(settings.managed_config) if settings.managed_config else None,
+        ),
         host=settings.bind_host,
         port=settings.bind_port,
         access_log=False,

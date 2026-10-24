@@ -4,10 +4,11 @@ import ssl
 from dataclasses import dataclass
 from datetime import datetime
 from ipaddress import IPv4Address
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
+from uuid import UUID
 
 import httpx
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from prettylisavpn.config import Settings
 from prettylisavpn.vpn_nodes.domain import VpnNode
@@ -38,6 +39,22 @@ class NodeAgentPeerPort(Protocol):
 
 class NodeAgentPort(NodeAgentHealthPort, NodeAgentPeerPort, Protocol):
     pass
+
+
+class ManagedNodeProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    port: int = Field(ge=1024, le=65535)
+    public_key: str = Field(pattern=r"^[A-Za-z0-9_-]{43}$")
+    server_name: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9.-]{1,251}[a-zA-Z0-9]$")
+    short_id: str = Field(pattern=r"^(?:[0-9a-f]{2}){1,8}$")
+
+
+@runtime_checkable
+class ManagedNodePort(Protocol):
+    async def issue_managed(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodeProfile: ...
+    async def remove_managed(self, node: VpnNode, session_id: UUID) -> None: ...
 
 
 class _AgentHealthResponse(BaseModel):
@@ -155,6 +172,32 @@ class HttpNodeAgentClient:
 
     def _url(self, node: VpnNode, path: str) -> str:
         return f"https://{node.public_ipv4}:{self._agent_port}{path}"
+
+    async def issue_managed(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodeProfile:
+        try:
+            response = await self._client.put(
+                self._url(node, f"/v1/managed/{session_id}"),
+                headers=self._headers(),
+                json={"secret": secret, "expires": int(expires.timestamp())},
+                timeout=12,
+            )
+            response.raise_for_status()
+            return ManagedNodeProfile.model_validate(response.json())
+        except (httpx.HTTPError, ValueError):
+            raise NodeAgentUnavailableError("managed authorization unavailable") from None
+
+    async def remove_managed(self, node: VpnNode, session_id: UUID) -> None:
+        try:
+            response = await self._client.delete(
+                self._url(node, f"/v1/managed/{session_id}"), headers=self._headers(), timeout=12
+            )
+            response.raise_for_status()
+            if response.json() != {"removed": True}:
+                raise ValueError("unconfirmed managed cleanup")
+        except (httpx.HTTPError, ValueError):
+            raise NodeAgentUnavailableError("managed cleanup unavailable") from None
 
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._auth_token}"}

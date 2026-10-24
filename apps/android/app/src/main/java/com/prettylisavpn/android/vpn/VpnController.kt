@@ -11,14 +11,29 @@ import java.time.Duration
 /** UI observes only this safe projection. UP is never mapped directly to CONNECTED. */
 enum class VpnPhase { DISCONNECTED, RECONCILING, CONNECTING, VERIFYING, CONNECTED, DISCONNECTING, CLEANUP_PENDING, FAILED }
 enum class VpnError { PERMISSION, UNSUPPORTED, VERIFICATION, NETWORK, QUOTA, ACCESS, STORAGE, CLEANUP, UNKNOWN }
-data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null)
+enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard"), VLESS_REALITY("VLESS · REALITY · TCP", "VLESS/REALITY") }
+data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
+enum class VpnDiagnostic {
+    NOT_RUNNING, VPN_NETWORK_MISSING, VPN_OWNER_MISMATCH, VPN_ROUTE_MISMATCH,
+    DNS_FAILED, HTTPS_FAILED, HTTPS_REJECTED, STATE_CHANGED, VERIFY_TIMEOUT,
+    UPLINK_PROTECTION_FAILED, ENGINE_UNAVAILABLE;
+    companion object {
+        fun parse(value: String): VpnDiagnostic? = entries.firstOrNull { it.name == value }
+    }
+}
+data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null, val method: VpnMethod? = null, val attempt: VpnAttempt? = null, val diagnostic: VpnDiagnostic? = null)
 interface VpnActions {
     val status: kotlinx.coroutines.flow.StateFlow<VpnStatus>
     /** Called only after system consent, from a foreground UI. */
     fun connect(country: String)
     fun disconnect()
+    fun permissionIntent(context: android.content.Context): android.content.Intent? = android.net.VpnService.prepare(context)
+    fun permissionResult(accepted: Boolean) {}
+    fun permissionReady(context: android.content.Context): Boolean = android.net.VpnService.prepare(context) == null
+    val ownsNotifications: Boolean get() = true
 }
 interface TunnelRuntime {
+    val diagnostic: VpnDiagnostic? get() = null
     suspend fun start(config: VpnConfig, key: TunnelKey)
     suspend fun stop()
     /** Requires current handshake + VPN-bound DNS/HTTPS + counter growth; no physical fallback. */
@@ -45,12 +60,14 @@ class VpnController(
     private val elapsed: () -> Long,
     private val serviceIdle: () -> Unit = {},
     private val monitorMillis: Long = 15_000,
+    private val attemptMillis: Long = 30_000,
 ) {
     private val mutex = Mutex()
     private val mutable = MutableStateFlow(VpnStatus())
     val status = mutable.asStateFlow()
     private var operation: Job? = null
     private var active: VpnSession? = null
+    private var activeConfig: VpnConfig? = null
     private var activeOwner: String? = null
     private val cleanupKnown = mutableMapOf<String, String>()
     private var deadline = Long.MAX_VALUE
@@ -59,7 +76,10 @@ class VpnController(
     fun rejected(reason: VpnError) { if (active == null && operation?.isActive != true) set(VpnPhase.FAILED, reason) }
     private suspend fun read(id: String) = withContext(Dispatchers.IO) { journal.read(id) }
     private suspend fun save(id: String, value: PendingVpn?) = withContext(Dispatchers.IO) { journal.write(id, value) }
-    private fun set(phase: VpnPhase, error: VpnError? = null) { mutable.value = VpnStatus(phase, error) }
+    private fun set(phase: VpnPhase, error: VpnError? = null, attempt: VpnAttempt? = null) {
+        mutable.value = VpnStatus(phase, error, if (phase == VpnPhase.CONNECTED) activeConfig?.method else null, attempt,
+            if (phase == VpnPhase.FAILED && error == VpnError.VERIFICATION) runtime.diagnostic else null)
+    }
     private fun error(e: Exception): VpnError = when (e) {
         is VpnCreateRejected -> error(e.failure)
         is VpnFailure -> e.reason
@@ -98,17 +118,34 @@ class VpnController(
                     // Persist a received UUID even if stop/consent revoke raced with the response.
                     withContext(NonCancellable) { active = session; cleanupKnown[id] = session.id; save(id, PendingVpn(session.id)) }
                     ensureActive()
-                    val config = session.config ?: throw VpnFailure(VpnError.UNSUPPORTED)
+                    if (session.candidates.isEmpty()) throw VpnFailure(VpnError.UNSUPPORTED)
                     deadline = session.expiresAt?.let { elapsed() + Duration.between(session.serverTime, it).toMillis().coerceAtLeast(0) } ?: Long.MAX_VALUE
                     if (elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
                     expiry = scope.launch { if (deadline != Long.MAX_VALUE) { delay((deadline - elapsed()).coerceAtLeast(0)); disconnect() } }
-                    runtime.start(config, material)
-                    set(VpnPhase.VERIFYING)
-                    val verified = withTimeoutOrNull(30_000) {
-                        while (!runtime.verify(config)) { delay(1_000) }
-                        true
-                    } == true
-                    if (!verified) throw VpnFailure(VpnError.VERIFICATION)
+                    activeConfig = null
+                    var previousMethod: VpnMethod? = null
+                    for (candidate in session.candidates) {
+                        ensureActive()
+                        if (owner() != id || elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
+                        val attempt = VpnAttempt(candidate.method, previousMethod)
+                        set(VpnPhase.CONNECTING, attempt = attempt)
+                        val verified = try {
+                            withTimeoutOrNull(attemptMillis) {
+                                runtime.start(candidate, material)
+                                set(VpnPhase.VERIFYING, attempt = attempt)
+                                while (!runtime.verify(candidate)) { delay(1_000) }
+                                true
+                            } == true
+                        } catch (e: CancellationException) {
+                            if (!currentCoroutineContext().isActive) throw e
+                            false
+                        } catch (_: Exception) { false }
+                        if (verified) { activeConfig = candidate; break }
+                        // A failed stop aborts the entire loop; never overlap tunnels.
+                        runtime.stop()
+                        previousMethod = attempt.method
+                    }
+                    if (activeConfig == null) throw VpnFailure(VpnError.VERIFICATION)
                     ensureActive()
                     if (owner() != id || elapsed() >= deadline) throw VpnFailure(VpnError.ACCESS)
                     if (api.current()?.id != session.id) throw VpnFailure(VpnError.ACCESS)
@@ -134,7 +171,7 @@ class VpnController(
                 mutex.withLock {
                     val session = active ?: return
                     if (elapsed() >= deadline || owner() != activeOwner) throw VpnFailure(VpnError.ACCESS)
-                    if (!runtime.verify(session.config!!) ) throw VpnFailure(VpnError.VERIFICATION)
+                    if (!runtime.verify(activeConfig ?: throw VpnFailure(VpnError.VERIFICATION))) throw VpnFailure(VpnError.VERIFICATION)
                     if (api.current()?.id != session.id) throw VpnFailure(VpnError.ACCESS)
                 }
             }
@@ -173,7 +210,7 @@ class VpnController(
         mutex.withLock {
             val id = activeOwner ?: owner()
             runtime.stop()
-            active = null; expiry?.cancel(); expiry = null
+            active = null; activeConfig = null; expiry?.cancel(); expiry = null
             if (id != null) { save(id, null); cleanupKnown.remove(id) }
             activeOwner = null; set(VpnPhase.DISCONNECTED); serviceIdle()
         }
@@ -192,6 +229,7 @@ class VpnController(
         try { runtime.stop() } catch (_: Exception) { set(VpnPhase.CLEANUP_PENDING, VpnError.CLEANUP); scheduleRetry(); return }
         expiry?.cancel(); expiry = null
         active = null
+        activeConfig = null
         val clean = try { cleanup(id) } catch (_: Exception) { false }
         if (clean) {
             activeOwner = null

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <permission android:name="${applicationId}.CONTROL" android:protectionLevel="signature" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <application android:allowBackup="false" android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@drawable/ic_launcher"
+        android:label="PrettyLisaVPN Engines" android:usesCleartextTraffic="false"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name=".ConsentActivity" android:exported="true" android:permission="${applicationId}.CONTROL" />
+        <service android:name=".ControlService" android:exported="true" android:permission="${applicationId}.CONTROL" />
+        <service android:name=".EngineService" android:exported="false" android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="systemExempted" tools:ignore="ForegroundServicePermission">
+            <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
+            <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="false" />
+        </service>
+    </application>
+</manifest>

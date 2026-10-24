@@ -267,4 +267,7 @@
     <string name="vpn_quota">se ha agotado el tiempo gratuito diario.</string>
     <string name="vpn_access">el acceso VPN ha terminado. inicia sesión o revisa tu suscripción.</string>
     <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
+    <string name="vpn_trying_method">probando %1$s…</string>
+    <string name="vpn_retrying_method">probando otra opción de %1$s…</string>
+    <string name="vpn_switching_method">%1$s no se conectó. probando %2$s…</string>
 </resources>

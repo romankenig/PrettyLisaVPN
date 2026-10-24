@@ -53,7 +53,7 @@ from prettylisavpn.support.delivery import (
 )
 from prettylisavpn.support.router import router as support_router
 from prettylisavpn.support.service import SupportService
-from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient, NodeAgentPort
+from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient, ManagedNodePort, NodeAgentPort
 from prettylisavpn.vpn_nodes.countries import (
     DatabaseVpnCountryCatalog,
     VpnCountryAvailabilityHandler,
@@ -66,6 +66,7 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnConnectionHandler,
     VpnConnectionService,
 )
+from prettylisavpn.vpn_sessions.managed import ManagedVpnService
 from prettylisavpn.vpn_sessions.status import VpnSessionStatusHandler, VpnSessionStatusService
 from prettylisavpn.vpn_sessions.termination import (
     UnavailableVpnTerminationService,
@@ -271,6 +272,12 @@ def create_app(
                         cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                         config,
                     )
+                )
+                app.state.managed_vpn = ManagedVpnService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    active_agent if isinstance(active_agent, ManagedNodePort) else None,
+                    config,
                 )
                 app.state.vpn_termination = (
                     vpn_termination

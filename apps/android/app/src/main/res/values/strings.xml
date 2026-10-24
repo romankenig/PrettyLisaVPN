@@ -273,4 +273,7 @@
     <string name="vpn_quota">the daily free allowance is exhausted.</string>
     <string name="vpn_access">VPN access has ended. sign in or check your subscription.</string>
     <string name="vpn_failed">unable to connect. check your network and try again.</string>
+    <string name="vpn_trying_method">trying %1$s…</string>
+    <string name="vpn_retrying_method">trying another %1$s option…</string>
+    <string name="vpn_switching_method">%1$s did not connect. trying %2$s…</string>
 </resources>

@@ -5,7 +5,9 @@ conditional TLS-carrier capabilities.
 
 Profiles describe implementation capabilities, not UI controls. Users still choose
 Autopilot or country. Nodes and profile preferences are operational concerns. No
-automatic fallback or retry across profiles is implemented.
+node selection is performed by clients. Windows 0.13.0 tries authorized candidates
+in order, stopping each failed attempt before moving on. Missing engines cannot
+produce a successful connection. See [the ongoing transport task](vpn-methods-from-article.md).
 
 | Profile | Transport / ports | Security | Runtime in this repository |
 | --- | --- | --- | --- |

@@ -18,7 +18,9 @@ CONNECTED/DEGRADED -> DISCONNECTED on explicit disconnect or session expiry
 Existing RECONCILING, DISCONNECTING and UNAVAILABLE states remain for session
 restoration, teardown, and control-plane errors. They never render Connected.
 Failure clears the success state before teardown; failed teardown stays visible
-and permits another disconnect attempt. There is no protocol/node fallback.
+and permits another disconnect attempt. Windows 0.13.0 and Android 0.9.0 try
+the next authorized supported candidate after confirmed local teardown. There
+is no allocation of additional nodes; a missing runtime is never considered working.
 
 ## Native Windows implementation
 

@@ -17,6 +17,7 @@ import { CurrentLocation } from "./CurrentLocation";
 import { ConnectionInfo } from "./ConnectionInfo";
 import { TrafficMode } from "./TrafficMode";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
+import { attemptMessage } from "../vpn/attempt";
 
 type ProfileState =
   | { phase: "loading" }
@@ -189,6 +190,12 @@ export function Home() {
             <h2 className="connection-status" aria-live="polite">
               {t(connectionHeading(connectionState))}
             </h2>
+            {connectionState.phase === "CONNECTING" &&
+            connectionState.attempt ? (
+              <p className="connection-attempt" role="status">
+                {t(attemptMessage(connectionState.attempt))}
+              </p>
+            ) : null}
             {connectionState.phase === "CONNECTED" ? (
               <ConnectionInfo sessionId={connectionState.session.sessionId} />
             ) : null}

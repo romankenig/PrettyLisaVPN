@@ -6,6 +6,48 @@
 
 ## Unreleased
 
+### Backend — 0.14.0 / node agent — 0.2.0, development acceptance in progress
+
+- Authenticated, opt-in VLESS/REALITY leases for owned DE/US sessions; migration
+  0028 persists issuance/revocation intent and node removal acknowledgement.
+- Isolated Xray processes enforce bounded authorization and close established
+  connections on revoke. Existing WireGuard cleanup cannot bypass managed cleanup.
+- Android 0.9.0/code17 now controls the separately installed, identically signed
+  companion through Binder v3, including real consent and tunnel-bound DNS/HTTPS.
+  Update both preview APKs together; the earlier Binder v2 pair is incompatible.
+  Windows remains 0.13.0; its new-engine wiring is still pending.
+- This source change does not claim a deployed or verified real connection.
+  Bounded trial and rollout: [docs/managed-vpn-acceptance.md](docs/managed-vpn-acceptance.md).
+
+### Windows — 0.13.0 / Android — 0.9.0 (code17), transport task in progress
+
+- Ordered candidates are tried until independent Internet verification succeeds;
+  failed attempts must stop before the next starts. Cancellation stops the loop.
+- Android monitors the selected candidate and shows its verified method.
+- Windows and Android show brief localized attempt comments, including switching
+  after a failed method. Android keeps the comment visible during verification;
+  completion clears it. Development engine diagnostics expose only closed stage
+  codes, never destinations, DNS names, profiles or exception messages.
+- Windows fallback consumes the original server allowance during startup and
+  verification. Expired attempts cannot connect or try another candidate;
+  canceled attempts retain backend ownership when local cleanup fails.
+- This is not yet delivery of the additional article protocols or managed engines.
+  Scope, current limits and owner decisions:
+  [docs/vpn-methods-from-article.md](docs/vpn-methods-from-article.md).
+
+### Managed engine component — 0.1.0, in development
+
+- Separate process and Android companion sources, pinned Xray MPL-2.0 core, typed
+  private profiles and closed status/error responses. No raw engine config,
+  traffic logs, direct DNS fallback or unverified Connected result. The unpublished
+  sing-box prototype was replaced following the owner's license decision.
+- Constructors accept 21 method/transport combinations with the pinned Xray
+  core. Windows/Android dependency license checks exclude GPL/AGPL/LGPL; the
+  REALITY limiter uses a separately tested MIT implementation.
+- Android wiring and development server authorization are implemented in this
+  task; Windows wiring, full article coverage and real device acceptance remain
+  tracked in [docs/managed-vpn-acceptance.md](docs/managed-vpn-acceptance.md).
+
 ### Backend — 0.13.0 / Windows — 0.12.1 / Android — 0.8.1 (code16)
 
 - Opt-in DELETE confirmation distinguishes persisted termination intent from

@@ -267,4 +267,7 @@
     <string name="vpn_quota">le temps gratuit quotidien est épuisé.</string>
     <string name="vpn_access">l’accès VPN est terminé. reconnectez-vous ou vérifiez votre abonnement.</string>
     <string name="vpn_failed">connexion impossible. vérifiez le réseau et réessayez.</string>
+    <string name="vpn_trying_method">essai de %1$s…</string>
+    <string name="vpn_retrying_method">essai d’une autre option %1$s…</string>
+    <string name="vpn_switching_method">%1$s n’a pas pu se connecter. essai de %2$s…</string>
 </resources>

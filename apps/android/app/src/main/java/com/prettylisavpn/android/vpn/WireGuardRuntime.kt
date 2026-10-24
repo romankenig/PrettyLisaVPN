@@ -35,9 +35,10 @@ internal class WireGuardKey : TunnelKey {
 internal class WireGuardRuntime(private val context: Context, private val lost: () -> Unit) : TunnelRuntime {
     private val mutex = Mutex()
     private var backend: GoBackend? = null
+    @Volatile private var stopping = false
     private val tunnel = object : Tunnel {
         override fun getName() = "PrettyLisaVPN"
-        override fun onStateChange(state: Tunnel.State) { if (state == Tunnel.State.DOWN) lost() }
+        override fun onStateChange(state: Tunnel.State) { if (state == Tunnel.State.DOWN && !stopping) lost() }
     }
     override suspend fun start(config: VpnConfig, key: TunnelKey) = withContext(Dispatchers.IO) {
         mutex.withLock {
@@ -52,7 +53,11 @@ internal class WireGuardRuntime(private val context: Context, private val lost: 
         }
     }
     override suspend fun stop() = withContext(Dispatchers.IO) {
-        mutex.withLock { backend?.setState(tunnel, Tunnel.State.DOWN, null); Unit }
+        mutex.withLock {
+            stopping = true
+            try { backend?.let { check(it.setState(tunnel, Tunnel.State.DOWN, null) == Tunnel.State.DOWN) }; Unit }
+            finally { stopping = false }
+        }
     }
     override suspend fun verify(config: VpnConfig): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {

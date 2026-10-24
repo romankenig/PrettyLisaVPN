@@ -35,6 +35,12 @@ from prettylisavpn.vpn_sessions.connection import (
     VpnSetupFailedError,
     VpnUnavailableError,
 )
+from prettylisavpn.vpn_sessions.managed import (
+    ManagedVpnNotFound,
+    ManagedVpnPort,
+    ManagedVpnResponse,
+    ManagedVpnUnavailable,
+)
 from prettylisavpn.vpn_sessions.service import DeviceAlreadyHasLiveVpnSessionError
 from prettylisavpn.vpn_sessions.status import (
     VpnSessionStatusHandler,
@@ -47,6 +53,31 @@ from prettylisavpn.vpn_sessions.termination import (
 )
 
 router = APIRouter(prefix="/vpn", tags=["vpn"])
+
+
+@router.post("/sessions/{session_id}/managed", response_model=ManagedVpnResponse)
+async def issue_managed_vpn(
+    session_id: UUID, request: Request, token: Annotated[str | None, Depends(bearer_token)]
+) -> ManagedVpnResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    try:
+        result = await cast(ManagedVpnPort, request.app.state.managed_vpn).issue(token, session_id)
+    except InvalidAccessTokenError:
+        return error_response("invalid_access_token", 401)
+    except InvalidSessionError:
+        return error_response("invalid_session", 401)
+    except BlockedUserError:
+        return error_response("user_blocked", 403)
+    except RevokedDeviceError:
+        return error_response("device_revoked", 403)
+    except AuthServiceUnavailableError:
+        return error_response("auth_service_unavailable", 503)
+    except ManagedVpnNotFound:
+        return error_response("VPN_SESSION_NOT_FOUND", 404)
+    except ManagedVpnUnavailable:
+        return error_response("VPN_MANAGED_UNAVAILABLE", 503)
+    return JSONResponse(result.model_dump(mode="json"), headers={"Cache-Control": "no-store"})
 
 
 class AutopilotAvailabilityResponse(BaseModel):

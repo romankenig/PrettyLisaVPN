@@ -11,3 +11,6 @@ vpn_node_agent_port: 8443
 vpn_node_agent_tls_certificate: /etc/prettylisavpn-agent/tls/server.crt
 vpn_node_agent_tls_private_key: /etc/prettylisavpn-agent/tls/server.key
 vpn_node_agent_tls_client_ca: /etc/prettylisavpn-agent/tls/client-ca.crt
+vpn_node_agent_managed_enabled: false
+vpn_node_agent_managed_binary: null
+vpn_node_agent_managed_config: null

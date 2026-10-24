@@ -84,11 +84,27 @@ class VpnServiceTest {
         val host = AndroidVpnHost.create(app,sessions,HttpAuthApi("https://unused.invalid/"),api,journal)
         compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } } }
         fun click() { compose.waitForIdle(); compose.onNodeWithTag("home-connect").performClick() }
+        fun clickSystemDialog(selector: androidx.test.uiautomator.BySelector) {
+            val button = device.wait(Until.findObject(selector.enabled(true).clickable(true)),10_000)
+            assertNotNull("system consent button",button)
+            val packageName = button.applicationPackage
+            // Accessibility exposes the button before WindowManager finishes making its
+            // window focusable. A click in that interval is silently lost on API 35/36.
+            compose.waitUntil(10_000) {
+                instrumentation.uiAutomation.windows.any {
+                    it.isFocused && it.root?.packageName?.toString() == packageName
+                }
+            }
+            device.waitForIdle()
+            val ready = device.findObject(selector)
+            assertNotNull("focused system consent button",ready)
+            ready.click()
+            assertTrue("system consent dialog dismissed",device.wait(Until.gone(selector),10_000))
+        }
         fun consent(accept: Boolean) {
             if (VpnService.prepare(app) == null) return
             val name = if (accept) "android:id/button1" else "android:id/button2"
-            assertTrue("VPN consent dialog",device.wait(Until.hasObject(By.pkg("com.android.vpndialogs").res(name)),10_000))
-            device.findObject(By.pkg("com.android.vpndialogs").res(name)).click()
+            clickSystemDialog(By.pkg("com.android.vpndialogs").res(name))
         }
         // First reject the actual Android VPN consent. There must be no backend allocation.
         if (VpnService.prepare(app) != null) {
@@ -100,9 +116,7 @@ class VpnServiceTest {
         // Notification consent is independent. Accept on Android 13+, if it is shown.
         if (android.os.Build.VERSION.SDK_INT >= 33 && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             // Google system images may use a different resource namespace from AOSP.
-            val allow = device.wait(Until.findObject(By.res(java.util.regex.Pattern.compile(".*:id/permission_allow_button"))),10_000)
-            assertNotNull("notification permission dialog",allow)
-            allow.click()
+            clickSystemDialog(By.res(java.util.regex.Pattern.compile(".*:id/permission_allow_button")))
             compose.waitUntil(10_000) { app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED }
         }
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.VERIFYING,VpnPhase.CONNECTED,VpnPhase.FAILED) }

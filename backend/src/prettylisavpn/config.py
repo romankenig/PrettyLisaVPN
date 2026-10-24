@@ -3,6 +3,7 @@
 from ipaddress import IPv4Address, IPv4Network
 from pathlib import Path
 from typing import Literal, Self
+from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.13.0", min_length=1)
+    application_version: str = Field(default="0.14.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox"] = "disabled"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
     vpn_node_agent_tls_ca: Path | None = None
     vpn_node_agent_tls_client_certificate: Path | None = None
     vpn_node_agent_tls_client_key: Path | None = None
+    vpn_managed_nodes: list[UUID] = Field(default_factory=list)
+    vpn_managed_secret: SecretStr | None = Field(default=None, min_length=32)
     otp_hmac_secret: SecretStr = Field(
         default=SecretStr(DEVELOPMENT_OTP_HMAC_SECRET), min_length=32
     )
@@ -82,8 +85,17 @@ class Settings(BaseSettings):
             raise ValueError("VALKEY_URL must use redis or rediss")
         return value
 
+    @field_validator("vpn_managed_secret", mode="before")
+    @classmethod
+    def empty_managed_secret_is_disabled(cls, value: object) -> object:
+        return None if value == "" else value
+
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.vpn_managed_nodes and (
+            self.environment not in ("development", "test") or self.vpn_managed_secret is None
+        ):
+            raise ValueError("Managed VPN preview requires development/test and VPN_MANAGED_SECRET")
         if self.billing_provider == "sandbox" and self.environment not in ("development", "test"):
             raise ValueError("Sandbox billing requires development or test environment")
         if self.vpn_client_subnet.version != 4:
