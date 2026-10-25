@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
 
-/** This APK owns Android consent for every transport; profiles never enter intents. */
+/** Internal activity of the single APK; profiles never enter intents. */
 @Suppress("DEPRECATION")
 class ConsentActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {

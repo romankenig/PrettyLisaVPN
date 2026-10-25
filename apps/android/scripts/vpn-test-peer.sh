@@ -2,6 +2,7 @@
 # Isolated ephemeral CI WireGuard node. No application backend or credentials are used.
 set -euo pipefail
 [[ "${GITHUB_ACTIONS:-}" == true ]] || { echo 'CI-only test peer' >&2; exit 1; }
+sudo ip address add 198.18.0.1/32 dev lo
 sudo ip link add wgplci type wireguard
 vpn_peer_private=$(mktemp)
 chmod 600 "$vpn_peer_private"
@@ -19,6 +20,7 @@ cleanup() {
   sudo wg show wgplci latest-handshakes || true
   sudo wg show wgplci transfer || true
   sudo ip link delete wgplci || true
+  sudo ip address del 198.18.0.1/32 dev lo || true
   sudo iptables -t nat -D POSTROUTING -s 10.77.0.0/24 -j MASQUERADE || true
   sudo iptables -D FORWARD -i wgplci -j ACCEPT || true
   sudo iptables -D FORWARD -o wgplci -j ACCEPT || true

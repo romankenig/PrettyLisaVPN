@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 const CoreVersion = "26.10.21"
 const MaxProfileBytes = 64 * 1024
 
@@ -23,20 +23,21 @@ var ErrProfile = errors.New("UNSUPPORTED_CONFIGURATION")
 // Profile is a private payload from the authorized client, never an arbitrary
 // Xray config. No file paths, scripts, log options, custom routes or insecure TLS.
 type Profile struct {
-	Version    int    `json:"version"`
-	Session    string `json:"session"`
-	Country    string `json:"country"`
-	Method     string `json:"method"`
-	Server     string `json:"server"`
-	Port       uint16 `json:"port"`
-	Secret     string `json:"secret"`
-	ServerName string `json:"server_name,omitempty"`
-	PublicKey  string `json:"public_key,omitempty"`
-	ShortID    string `json:"short_id,omitempty"`
-	ObfsSecret string `json:"obfs_secret,omitempty"`
-	Transport  string `json:"transport,omitempty"`
-	Path       string `json:"path,omitempty"`
-	Address    string `json:"address,omitempty"`
+	Version        int    `json:"version"`
+	Session        string `json:"session"`
+	Country        string `json:"country"`
+	Method         string `json:"method"`
+	Server         string `json:"server"`
+	Port           uint16 `json:"port"`
+	Secret         string `json:"secret"`
+	ServerName     string `json:"server_name,omitempty"`
+	PublicKey      string `json:"public_key,omitempty"`
+	ShortID        string `json:"short_id,omitempty"`
+	ObfsSecret     string `json:"obfs_secret,omitempty"`
+	Transport      string `json:"transport,omitempty"`
+	Path           string `json:"path,omitempty"`
+	Address        string `json:"address,omitempty"`
+	CertificatePin string `json:"certificate_pin,omitempty"`
 }
 
 func (p Profile) String() string   { return "Profile([redacted])" }
@@ -128,6 +129,9 @@ func (p Profile) Validate() error {
 	if !tlsRequired && p.ServerName != "" {
 		return ErrProfile
 	}
+	if p.CertificatePin != "" && (!tlsRequired || p.Method == "VLESS_REALITY" || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(p.CertificatePin)) {
+		return ErrProfile
+	}
 	if p.Transport == "" {
 		if p.Path != "" {
 			return ErrProfile
@@ -165,6 +169,9 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 	settings := obj{"address": p.Server, "port": p.Port}
 	out := obj{"tag": "vpn", "settings": settings}
 	stream := obj{"network": "raw", "security": "tls", "tlsSettings": obj{"serverName": p.ServerName, "minVersion": "1.2", "allowInsecure": false, "fingerprint": "chrome"}}
+	if p.CertificatePin != "" {
+		stream["tlsSettings"].(obj)["pinnedPeerCertSha256"] = p.CertificatePin
+	}
 	switch p.Method {
 	case "WIREGUARD":
 		out["protocol"] = "wireguard"

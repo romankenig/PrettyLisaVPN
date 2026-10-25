@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "PrettyLisaVPN"
 include(":app")
-include(":engine-app")

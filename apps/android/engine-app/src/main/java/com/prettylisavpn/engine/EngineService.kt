@@ -25,7 +25,7 @@ import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-/** Owns the one TUN and the one Go runtime in this separately installed process. */
+/** Owns the one TUN and the one Go runtime in this APK's private :engine process. */
 class EngineService : VpnService() {
     // Closed results are safe to show without USB; never include exception text.
     private enum class Verification {
@@ -135,11 +135,10 @@ class EngineService : VpnService() {
         val pool = ConnectionPool(0, 1, TimeUnit.SECONDS)
         var dnsSucceeded = false
         val client = OkHttpClient.Builder().socketFactory(network.socketFactory)
-            .dns(object : Dns { override fun lookup(hostname: String): List<java.net.InetAddress> =
-                network.getAllByName(hostname).filterIsInstance<java.net.Inet4Address>().also {
-                    if (it.isEmpty()) throw java.net.UnknownHostException()
-                    dnsSucceeded = true
-                } })
+            .dns(object : Dns { override fun lookup(hostname: String): List<java.net.InetAddress> {
+                if (hostname != TunnelDns.HOST) throw java.net.UnknownHostException()
+                return TunnelDns.resolve(network).also { dnsSucceeded = true }
+            } })
             .proxy(java.net.Proxy.NO_PROXY).connectionPool(pool)
             .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
             .connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS)

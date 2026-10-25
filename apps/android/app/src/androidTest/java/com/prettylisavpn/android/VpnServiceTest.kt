@@ -66,7 +66,7 @@ class VpnServiceTest {
                     withTimeout(10_000) { while(!File(bridge,"peer-ready").exists()) delay(100) }
                     File(bridge,"server-public-key").readText().trim()
                 } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
-                return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("10.0.2.2",51820,
+                return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("198.18.0.1",51820,
                     serverKey,"10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
             }
             override suspend fun delete(id: String) {
@@ -125,7 +125,7 @@ class VpnServiceTest {
         val manager = app.getSystemService(ConnectivityManager::class.java)
         compose.waitUntil(10_000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         val network = manager.allNetworks.first { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true }
-        assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
+        assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="172.30.255.1" })
         val notifications=app.getSystemService(NotificationManager::class.java)
         compose.waitUntil(10_000) { notifications.activeNotifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" } }
         compose.waitForIdle()

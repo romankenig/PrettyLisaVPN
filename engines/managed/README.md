@@ -1,6 +1,6 @@
 # PrettyLisaVPN managed engine (in development)
 
-Separate executable, version 0.1.0. Xray-core 26.10.21 is pinned to source commit
+Isolated engine, version 0.2.0. Xray-core 26.10.21 is pinned to source commit
 `1b1647cd9ddf0abc34b981d4611fc03bcac1ca74` in go.mod/go.sum. The adapter is MIT;
 Xray is MPL-2.0. The unpublished sing-box implementation was removed following
 the owner's decision. No sing-box, sing-openvpn or sing-openconnect is linked.
@@ -54,7 +54,9 @@ the pinned anet dependency references Go's internal IPv6 zone cache, requiring
 Go version must repeat native ABI/device checks; package-only compilation is
 not sufficient to verify linkage.
 
-The companion source is in `apps/android/engine-app`. Its separate Go runtime
-shares one VpnService consent, protects every outgoing socket and duplicates the
-application-owned TUN descriptor. It never loads a native Go library into the
-main PrettyLisaVPN Android process.
+The Android service source remains in `apps/android/engine-app` but is compiled
+into the single `:app` APK; it is no longer a second Gradle application. Its private
+`:engine` process owns one VpnService, protects uplink sockets and duplicates the
+application-owned TUN descriptor. The UI process never loads a native Go library.
+The 20-profile server plan and real TCP/UDP integration checks are documented in
+[single APK plan](../../docs/android-single-apk-plan.md).

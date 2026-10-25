@@ -11,7 +11,28 @@ import java.time.Duration
 /** UI observes only this safe projection. UP is never mapped directly to CONNECTED. */
 enum class VpnPhase { DISCONNECTED, RECONCILING, CONNECTING, VERIFYING, CONNECTED, DISCONNECTING, CLEANUP_PENDING, FAILED }
 enum class VpnError { PERMISSION, UNSUPPORTED, VERIFICATION, NETWORK, QUOTA, ACCESS, STORAGE, CLEANUP, UNKNOWN }
-enum class VpnMethod(val label: String, val shortLabel: String) { WIREGUARD_UDP("WireGuard · UDP", "WireGuard"), VLESS_REALITY("VLESS · REALITY · TCP", "VLESS/REALITY") }
+data class VpnMethod(val label: String, val shortLabel: String) {
+    companion object {
+        val WIREGUARD_UDP = VpnMethod("WireGuard · UDP", "WireGuard")
+        val VLESS_REALITY = VpnMethod("VLESS · REALITY · TCP", "VLESS/REALITY")
+        fun managed(method: String, transport: String?): VpnMethod {
+            if (method == "VLESS_REALITY") return VLESS_REALITY
+            val name = when (method) {
+                "VLESS_TLS" -> "VLESS/TLS"
+                "VMESS_TLS" -> "VMess/TLS"
+                "TROJAN_TLS" -> "Trojan/TLS"
+                "SHADOWSOCKS" -> "Shadowsocks"
+                "SHADOWSOCKS_2022" -> "Shadowsocks 2022"
+                "HYSTERIA2_TLS" -> "Hysteria 2"
+                "HYSTERIA2_SALAMANDER" -> "Hysteria 2/Salamander"
+                else -> throw IllegalArgumentException("unsupported method")
+            }
+            val suffix = when (transport) { null -> ""; "ws" -> "WebSocket"; "grpc" -> "gRPC"; "httpupgrade" -> "HTTPUpgrade"; "xhttp" -> "XHTTP"; else -> throw IllegalArgumentException("unsupported transport") }
+            val label = if (suffix.isEmpty()) name else "$name · $suffix"
+            return VpnMethod(label, label)
+        }
+    }
+}
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
 enum class VpnDiagnostic {
     NOT_RUNNING, VPN_NETWORK_MISSING, VPN_OWNER_MISMATCH, VPN_ROUTE_MISMATCH,
@@ -131,7 +152,7 @@ class VpnController(
                         set(VpnPhase.CONNECTING, attempt = attempt)
                         val verified = try {
                             withTimeoutOrNull(attemptMillis) {
-                                runtime.start(candidate, material)
+                                runtime.start(candidate.copy(sessionId = session.id, country = session.country), material)
                                 set(VpnPhase.VERIFYING, attempt = attempt)
                                 while (!runtime.verify(candidate)) { delay(1_000) }
                                 true

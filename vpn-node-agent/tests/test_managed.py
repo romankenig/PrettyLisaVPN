@@ -1,7 +1,9 @@
 """Managed authorization lifetimes, isolation, crash recovery and HTTP boundaries."""
 
+import json
 from dataclasses import replace
 from ipaddress import IPv4Interface, IPv4Network
+from pathlib import Path
 from unittest.mock import Mock
 from uuid import uuid4
 
@@ -156,3 +158,65 @@ def test_api_authentication_validation_and_closed_errors(managed):
     controller.remove = Mock(side_effect=RuntimeError(original.secret))
     response = client.delete(path, headers=AUTH_HEADERS)
     assert response.status_code == 503 and original.secret not in response.text
+
+
+def test_complete_plan_is_idempotent_isolated_and_revoked_together(managed):
+    controller, launches, _, _ = managed
+    fixture = json.loads(
+        (Path(__file__).parents[2] / "engines/managed/testdata/plan-v1.json").read_text()
+    )
+    first = fixture["profiles"][0]
+    controller.node.update(
+        public_key=first["public_key"],
+        server_name=first["server_name"],
+        short_id=first["short_id"],
+        certificate_pin="ab" * 32,
+        tls_certificate="test",
+        tls_key="test",
+        port_last=18482,
+    )
+    original = replace(lease(), secret=first["secret"])
+    response = controller.issue_plan(original)
+    expected = [
+        {k: v for k, v in p.items() if k not in ("version", "session", "country", "server")}
+        for p in fixture["profiles"]
+    ]
+    assert response["profiles"] == expected
+    assert controller.issue_plan(original) == response and len(launches) == 1
+    other = lease()
+    assert controller.issue_plan(other)["profiles"][0]["port"] == 18463
+    with pytest.raises(ManagedUnavailable):
+        controller.issue_plan(lease())
+    controller.remove(original.id)
+    assert launches[0][1].dead and not launches[1][1].dead
+    with pytest.raises(ManagedUnavailable):
+        controller.issue_plan(original)
+    assert controller.issue_plan(lease())["profiles"][0]["port"] == 18443
+
+
+def test_plan_endpoint_requires_authentication_and_configured_catalog(managed):
+    controller, _, _, _ = managed
+    client = TestClient(
+        create_app(
+            AgentSettings(
+                auth_token=AUTH_TOKEN,
+                client_subnet=IPv4Network("10.77.0.0/16"),
+                gateway=IPv4Interface("10.77.0.1/16"),
+            ),
+            Mock(),
+            controller,
+        )
+    )
+    original = lease()
+    path = f"/v1/managed/{original.id}/plan"
+    body = dict(secret=original.secret, expires=original.expires)
+    assert client.put(path, json=body).status_code == 401
+    assert client.put(path, json=body, headers=AUTH_HEADERS).status_code == 503
+    controller.node.update(
+        tls_certificate="test", tls_key="test", certificate_pin="ab" * 32, port_last=18482
+    )
+    assert len(client.put(path, json=body, headers=AUTH_HEADERS).json()["profiles"]) == 20
+    assert client.delete(f"/v1/managed/{original.id}", headers=AUTH_HEADERS).json() == {
+        "removed": True
+    }
+    assert client.put(path, json=body, headers=AUTH_HEADERS).status_code == 503

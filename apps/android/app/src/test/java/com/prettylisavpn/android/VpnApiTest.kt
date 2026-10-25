@@ -78,10 +78,10 @@ class VpnApiTest {
             val managedApi = HttpVpnApi(HttpAuthApi(server.url("/").toString(),true), sessions, managed = true)
             server.enqueue(MockResponse().setBody(raw))
             server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"code":"invalid_access_token"}}"""))
-            server.enqueue(MockResponse().setBody(managed))
-            assertEquals(VpnMethod.VLESS_REALITY, managedApi.create("DE", "test-public").config!!.method)
+            server.enqueue(MockResponse().setBody(managed.replace("\"profile\":{", "\"profiles\":[{").replace("},\"server_time\"", "}],\"server_time\"")))
+            assertEquals(listOf(VpnMethod.WIREGUARD_UDP, VpnMethod.VLESS_REALITY), managedApi.create("DE", "test-public").candidates.map { it.method })
             assertEquals("/vpn/sessions", server.takeRequest().path)
-            repeat(2) { assertEquals("/vpn/sessions/${created.id}/managed", server.takeRequest().path) }
+            repeat(2) { assertEquals("/vpn/sessions/${created.id}/managed-plan", server.takeRequest().path) }
         } finally { server.shutdown() }
     }
 }

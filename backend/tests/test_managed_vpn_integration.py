@@ -13,7 +13,11 @@ from test_vpn_sessions_integration import clean_up, create_dependencies, make_se
 from prettylisavpn.auth.session_service import AccessIdentity
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
-from prettylisavpn.vpn_nodes.agent import ManagedNodeProfile, NodeAgentUnavailableError
+from prettylisavpn.vpn_nodes.agent import (
+    ManagedNodePlan,
+    ManagedNodeProfile,
+    NodeAgentUnavailableError,
+)
 from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 from prettylisavpn.vpn_sessions.managed import (
     ManagedVpnNotFound,
@@ -33,8 +37,8 @@ pytestmark = [
 ]
 
 
-@pytest.fixture
-async def context():
+@pytest.fixture(params=[False, True])
+async def context(request):
     pg = Postgres(Settings())
     user, device, node = await create_dependencies(pg)
     vpn = replace(make_session(user, device, node), status=VpnSessionStatus.ACTIVE)
@@ -47,12 +51,26 @@ async def context():
     )
     agent = AsyncMock()
     agent.issue_managed = AsyncMock()
+    agent.issue_managed_plan = AsyncMock()
     agent.remove_managed = AsyncMock()
     agent.issue_managed.return_value = ManagedNodeProfile(
         port=18443, public_key="a" * 43, server_name="api.prettylisavpn.com", short_id="ab"
     )
+    plan = request.param
+    agent.issue_managed_plan.return_value = ManagedNodePlan(
+        profiles=[
+            dict(
+                method="VLESS_REALITY",
+                secret=str(uuid4()),
+                **agent.issue_managed.return_value.model_dump(),
+            )
+        ]
+    )
     settings = Settings(environment="test", vpn_managed_nodes=[node], vpn_managed_secret="x" * 32)
     service = ManagedVpnService(pg, auth, agent, settings)
+    if plan:
+        service.issue = service.issue_plan
+        agent.issue_managed = agent.issue_managed_plan
     try:
         yield pg, vpn, service, auth, agent, settings
     finally:
@@ -69,7 +87,8 @@ async def test_retries_share_lease_then_revoke_requires_node_ack(context):
     pg, vpn, service, auth, agent, _ = context
     replies = await asyncio.gather(*(service.issue("token", vpn.id) for _ in range(3)))
     assert all(
-        r.profile == replies[0].profile and r.expires_at == replies[0].expires_at for r in replies
+        r.model_dump(exclude={"server_time"}) == replies[0].model_dump(exclude={"server_time"})
+        for r in replies
     )
     async with pg.session() as db:
         stored = await VpnSessionRepository(db).get(vpn.id)

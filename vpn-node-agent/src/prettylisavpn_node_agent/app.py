@@ -109,6 +109,17 @@ def create_app(
 
     router = APIRouter(prefix="/v1", dependencies=[Depends(authenticate)])
 
+    @router.put("/managed/{lease_id}/plan")
+    def issue_plan(lease_id: UUID, body: ManagedLeaseRequest) -> dict[str, object]:
+        if managed is None:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"})
+        try:
+            return managed.issue_plan(
+                ManagedLease(lease_id, body.secret.get_secret_value(), body.expires)
+            )
+        except Exception:
+            raise HTTPException(503, detail={"code": "NODE_AGENT_MANAGED_UNAVAILABLE"}) from None
+
     @router.put("/managed/{lease_id}")
     def issue_managed(lease_id: UUID, body: ManagedLeaseRequest) -> dict[str, object]:
         if managed is None:
@@ -227,7 +238,7 @@ def create_app(
 
     app = FastAPI(
         title="PrettyLisaVPN Node Agent",
-        version="0.2.0",
+        version="0.3.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,

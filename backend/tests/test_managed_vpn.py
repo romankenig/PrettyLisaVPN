@@ -1,6 +1,8 @@
 """Closed managed-profile API and bounded, purpose-separated credentials."""
 
+import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -10,6 +12,7 @@ from test_vpn_session_api import api_client
 
 from prettylisavpn.config import Settings
 from prettylisavpn.vpn_sessions.managed import (
+    ManagedPlanResponse,
     ManagedProfileResponse,
     ManagedVpnNotFound,
     ManagedVpnResponse,
@@ -94,3 +97,32 @@ def test_managed_endpoint_auth_scoping_and_no_store(outcome, status, code):
     else:
         assert response.json()["error"]["code"] == code
         assert password not in response.text
+
+
+@pytest.mark.parametrize(
+    "outcome,status", [(None, 200), (ManagedVpnNotFound(), 404), (ManagedVpnUnavailable(), 503)]
+)
+def test_plan_endpoint_keeps_closed_profiles_private_and_scoped(outcome, status):
+    fixture = json.loads(
+        (Path(__file__).parents[2] / "engines/managed/testdata/plan-v1.json").read_text()
+    )
+    result = ManagedPlanResponse.model_validate(fixture)
+    identifier = result.profiles[0].session
+    service = AsyncMock()
+    service.issue_plan.return_value = result
+    service.issue_plan.side_effect = outcome
+    with api_client(AsyncMock()) as client:
+        client.app.state.managed_vpn = service
+        path = f"/vpn/sessions/{identifier}/managed-plan"
+        assert client.post(path).status_code == 401
+        service.issue_plan.assert_not_awaited()
+        response = client.post(path, headers={"Authorization": "Bearer access-token"})
+    assert response.status_code == status
+    service.issue_plan.assert_awaited_once_with("access-token", identifier)
+    service.issue.assert_not_awaited()
+    assert result.profiles[0].secret not in repr(result)
+    if outcome is None:
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.json() == fixture
+    else:
+        assert result.profiles[0].secret not in response.text

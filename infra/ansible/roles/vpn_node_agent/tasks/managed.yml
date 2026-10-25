@@ -47,12 +47,13 @@
       - 'on'
       - "{{ wireguard_egress_interface }}"
       - proto
-      - tcp
+      - "{{ item }}"
       - to
       - "{{ vpn_node_agent_bind_ipv4 }}"
       - port
       - "{{ vpn_node_agent_managed_config.port_first }}:{{ vpn_node_agent_managed_config.port_last }}"
       - comment
-      - PrettyLisaVPN managed REALITY
+      - PrettyLisaVPN managed transports
+  loop: [tcp, udp]
   register: managed_firewall
   changed_when: "'Rule added' in managed_firewall.stdout"

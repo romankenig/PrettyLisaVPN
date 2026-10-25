@@ -6,12 +6,29 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf/serial"
 )
+
+func TestSharedPlanContract(t *testing.T) {
+	raw, err := os.ReadFile("testdata/plan-v1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var plan struct {
+		Profiles []Profile `json:"profiles"`
+	}
+	if json.Unmarshal(raw, &plan) != nil || len(plan.Profiles) != 20 {
+		t.Fatal("invalid shared plan")
+	}
+	for _, p := range plan.Profiles {
+		checkCore(t, p)
+	}
+}
 
 func sample(method string) Profile {
 	key := base64.StdEncoding.EncodeToString(append([]byte{1}, make([]byte, 31)...))

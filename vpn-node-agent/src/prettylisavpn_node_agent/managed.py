@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Protocol
 from uuid import UUID
 
+from prettylisavpn_node_agent.catalog import PLAN_PORTS, profiles
+
 
 class ManagedUnavailable(RuntimeError):
     pass
@@ -152,12 +154,21 @@ class ManagedController:
                 if row[0] != fingerprint or row[2] or child is None or child.poll() is not None:
                     raise ManagedUnavailable("managed lease unavailable")
                 return self._public(row[1])
-            used = {r[0] for r in self.db.execute("SELECT port FROM leases WHERE revoked=0")}
+            width = PLAN_PORTS if "tls_certificate" in self.node else 1
+            used = {
+                p
+                for r in self.db.execute(
+                    "SELECT port FROM leases WHERE revoked=0 OR pid IS NOT NULL"
+                )
+                for p in range(r[0], r[0] + width)
+            }
             port = next(
                 (
                     p
-                    for p in range(self.node["port_first"], self.node["port_last"] + 1)
-                    if p not in used
+                    for p in range(
+                        self.node["port_first"], self.node["port_last"] - width + 2, width
+                    )
+                    if not used.intersection(range(p, p + width))
                 ),
                 None,
             )
@@ -180,6 +191,15 @@ class ManagedController:
                         "server_name": self.node["server_name"],
                         "target": self.node["target"],
                         "short_id": self.node["short_id"],
+                        **(
+                            {
+                                "plan": True,
+                                "tls_certificate": self.node["tls_certificate"],
+                                "tls_key": self.node["tls_key"],
+                            }
+                            if width > 1
+                            else {}
+                        ),
                     }
                 )
                 self.children[identifier] = child
@@ -189,6 +209,13 @@ class ManagedController:
                 self.remove(lease.id)
                 raise ManagedUnavailable("managed engine unavailable") from None
             return self._public(port)
+
+    def issue_plan(self, lease: ManagedLease) -> dict[str, Any]:
+        if "tls_certificate" not in self.node:
+            raise ManagedUnavailable("managed plan unavailable")
+        with self.lock:
+            result = self.issue(lease)
+            return {"profiles": profiles(self.node, result["port"], lease.secret)}
 
     def _public(self, port: int) -> dict[str, Any]:
         return {
@@ -230,7 +257,7 @@ class ManagedController:
 
 def load_managed_controller(config_path: Path) -> ManagedController:
     config = json.loads(config_path.read_text())
-    if set(config) != {
+    base = {
         "listen",
         "private_key",
         "public_key",
@@ -239,13 +266,16 @@ def load_managed_controller(config_path: Path) -> ManagedController:
         "short_id",
         "port_first",
         "port_last",
-    }:
+    }
+    if set(config) not in (base, base | {"tls_certificate", "tls_key", "certificate_pin"}):
         raise ValueError("invalid managed node configuration")
     if (
         not 1024 <= config["port_first"] <= config["port_last"] <= 65535
         or config["port_last"] - config["port_first"] > 63
     ):
         raise ValueError("invalid managed port range")
+    if "tls_certificate" in config and config["port_last"] - config["port_first"] + 1 < PLAN_PORTS:
+        raise ValueError("managed range cannot hold a complete plan")
     launcher = ProcessLauncher(Path("/usr/local/lib/prettylisavpn/pl-node-engine"))
     return ManagedController(
         Path("/var/lib/prettylisavpn-agent/managed.sqlite3"),

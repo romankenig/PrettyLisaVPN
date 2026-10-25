@@ -1,5 +1,12 @@
 # PrettyLisaVPN для Android
 
+Current packaging: **Android 0.10.0 / code18**. Build and install only `:app`
+(`app-debug.apk`). The engine service is included in its private process; no
+companion APK is needed. Build `managed.aar` from the same commit before Gradle,
+following `.github/workflows/android.yml`. See the
+[connection plan and bounded acceptance](../../docs/android-single-apk-plan.md).
+The remaining sections retain historical instructions for earlier versions.
+
 Android **0.5.0 / versionCode 5** — auth/session и profile/devices/messages/billing/
 support API существующего development-backend. Windows 0.12.0 и backend 0.10.0/schema0026
 unchanged. [Контракты, восстановление и ограничения](../../docs/android-account-api.md).

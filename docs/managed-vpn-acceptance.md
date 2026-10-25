@@ -1,5 +1,11 @@
 # Managed VPN development acceptance
 
+**Superseded packaging and new acceptance round:** the owner now requires one
+APK and complete fallback. See [Android 0.10.0 plan](android-single-apk-plan.md).
+The older two-APK round below ended at 3/3 failed, including e012594 at 06:30:56
+UTC on 2026-10-24 (DNS_FAILED, server cleanup confirmed). New counter is 0/3.
+The following records describe the earlier 0.9.0/0.14.0 preview, not current packaging.
+
 Owner target (2026-10-24): at least one real Android **or** Windows connection,
 verified by DNS and HTTPS through the owned tunnel. Stop after the first verified
 success or after three real client attempts. Builds, unit tests and server

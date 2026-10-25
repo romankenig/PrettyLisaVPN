@@ -14,7 +14,7 @@ import (
 
 func run() int {
 	input := bufio.NewScanner(os.Stdin)
-	input.Buffer(make([]byte, 1024), 8192)
+	input.Buffer(make([]byte, 1024), 65536)
 	if !input.Scan() {
 		return 1
 	}

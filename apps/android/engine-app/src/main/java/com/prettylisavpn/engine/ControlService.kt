@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import com.prettylisavpn.engine.ipc.IEngineControl
 
-/** The signature permission is complemented by a package/UID check on every IPC. */
+/** Unexported service, same UID checked on every IPC; no external control API. */
 class ControlService : Service() {
     private val control = object : IEngineControl.Stub() {
         override fun protocolVersion(): Int { Access.requireClient(this@ControlService); return 3 }

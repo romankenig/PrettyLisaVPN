@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Android — 0.10.0 (code18), backend — 0.15.0, node agent — 0.3.0, engines — 0.2.0
+
+- One Android APK with a private engine process; the separate companion is no
+  longer required. One native VPN service handles WireGuard and managed methods.
+- Preserve WireGuard candidates, then try the complete authenticated 20-profile
+  server catalog, with bounded verification, confirmed stop and method comments.
+- Add backward-compatible managed-plan issuance, isolated per-session listener
+  blocks and pinned-CA TLS. Every access is revoked together on stop or expiry.
+- Bounded VPN-bound DNS/HTTPS verification prevents a stalled system DNS lookup
+  from blocking fallback. Tests exercise real encrypted TCP/UDP on every managed
+  variant; live DE/US acceptance is separate and limited to three new attempts.
+- Schema remains 0028; Windows remains 0.13.0. Scope and rollout evidence:
+  [single APK plan](docs/android-single-apk-plan.md).
+
 ### Backend — 0.14.0 / node agent — 0.2.0, development acceptance in progress
 
 - Authenticated, opt-in VLESS/REALITY leases for owned DE/US sessions; migration

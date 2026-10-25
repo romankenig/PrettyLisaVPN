@@ -1,5 +1,10 @@
 # Android VPN runtime — 0.8.0
 
+Current work: [Android 0.10.0 single APK and complete managed plan](android-single-apk-plan.md)
+replaces the GoBackend runtime described below. One private `:engine` process
+and one VpnService now own every native transport. The remaining sections retain
+the historical 0.8.0 implementation/acceptance record.
+
 Update in progress: 0.8.1/code16 → 0.9.0/code17 introduces ordered candidate
 fallback and the verified method label. The direct adapter below still supports
 only WIREGUARD/UDP/NONE, but skips unsupported candidates and tries all supported

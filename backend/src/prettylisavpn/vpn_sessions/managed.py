@@ -15,7 +15,11 @@ from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.repository import DeviceRepository
-from prettylisavpn.vpn_nodes.agent import ManagedNodePort, NodeAgentUnavailableError
+from prettylisavpn.vpn_nodes.agent import (
+    ManagedNodeCandidate,
+    ManagedNodePort,
+    NodeAgentUnavailableError,
+)
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
 from prettylisavpn.vpn_sessions.model import ManagedVpnLeaseRecord
@@ -49,8 +53,22 @@ class ManagedVpnResponse(BaseModel):
     server_time: datetime
 
 
+class ManagedPlanProfile(ManagedNodeCandidate):
+    version: Literal[1] = 1
+    session: UUID
+    country: Literal["DE", "US"]
+    server: IPv4Address
+
+
+class ManagedPlanResponse(BaseModel):
+    profiles: list[ManagedPlanProfile] = Field(repr=False)
+    expires_at: datetime
+    server_time: datetime
+
+
 class ManagedVpnPort(Protocol):
     async def issue(self, access_token: str, session_id: UUID) -> ManagedVpnResponse: ...
+    async def issue_plan(self, access_token: str, session_id: UUID) -> ManagedPlanResponse: ...
 
 
 def credential(secret: str, session_id: UUID, node_id: UUID) -> str:
@@ -83,6 +101,18 @@ class ManagedVpnService:
         self.secret = settings.vpn_managed_secret
 
     async def issue(self, access_token: str, session_id: UUID) -> ManagedVpnResponse:
+        result = await self._issue(access_token, session_id, plan=False)
+        assert isinstance(result, ManagedVpnResponse)
+        return result
+
+    async def issue_plan(self, access_token: str, session_id: UUID) -> ManagedPlanResponse:
+        result = await self._issue(access_token, session_id, plan=True)
+        assert isinstance(result, ManagedPlanResponse)
+        return result
+
+    async def _issue(
+        self, access_token: str, session_id: UUID, *, plan: bool
+    ) -> ManagedVpnResponse | ManagedPlanResponse:
         identity = await self.auth.authenticate(access_token)
         if self.agent is None or self.secret is None or not self.nodes:
             raise ManagedVpnUnavailable
@@ -143,8 +173,27 @@ class ManagedVpnService:
                         raise ManagedVpnUnavailable
                     password = credential(self.secret.get_secret_value(), session.id, node.id)
                     # Same session lock as revoke; a late create cannot pass a confirmed removal.
-                    result = await self.agent.issue_managed(node, session.id, password, expires)
+                    if plan:
+                        candidates = await self.agent.issue_managed_plan(
+                            node, session.id, password, expires
+                        )
+                    else:
+                        result = await self.agent.issue_managed(node, session.id, password, expires)
                     lease.issued_at = now
+                if plan:
+                    return ManagedPlanResponse(
+                        expires_at=expires,
+                        server_time=datetime.now(UTC),
+                        profiles=[
+                            ManagedPlanProfile(
+                                session=session.id,
+                                country=node.country_code,
+                                server=node.public_ipv4,
+                                **p.model_dump(),
+                            )
+                            for p in candidates.profiles
+                        ],
+                    )
                 return ManagedVpnResponse(
                     expires_at=expires,
                     server_time=datetime.now(UTC),

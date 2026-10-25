@@ -12,11 +12,12 @@ import java.util.Base64
 import java.util.UUID
 
 /** No private material or bearer is exposed by these control-plane DTOs. */
-data class VpnConfig(val endpoint: String, val port: Int, val serverKey: String, val address: String, val dns: List<String>, val mtu: Int = 1280, val managed: ManagedProfile? = null) {
-    val method get() = if (managed != null) VpnMethod.VLESS_REALITY else VpnMethod.WIREGUARD_UDP
+data class VpnConfig(val endpoint: String, val port: Int, val serverKey: String, val address: String, val dns: List<String>, val mtu: Int = 1280, val managed: ManagedProfile? = null, val sessionId: String? = null, val country: String? = null) {
+    val method get() = managed?.method ?: VpnMethod.WIREGUARD_UDP
     override fun toString() = "VpnConfig([redacted])"
 }
 class ManagedProfile(private val content: String) {
+    val method: VpnMethod get() = JsonParser.parseString(content).asJsonObject.let { VpnMethod.managed(it.get("method").asString, it.get("transport")?.asString) }
     internal fun privateJson() = content
     override fun toString() = "ManagedProfile([redacted])"
 }
@@ -56,7 +57,7 @@ class HttpVpnApi(private val http: HttpAuthApi, private val sessions: SessionCoo
             // Separate authenticated actions: refreshing a token for this idempotent
             // lease request must NEVER replay POST /vpn/sessions.
             return sessions.request { token ->
-                parseManagedSession(http.request("vpn/sessions/${session.id}/managed", "POST", "".toRequestBody(null), token).asJsonObject, session)
+                parseManagedPlan(http.request("vpn/sessions/${session.id}/managed-plan", "POST", "".toRequestBody(null), token).asJsonObject, session)
             }
         } catch (failure: AuthFailure) {
             if (!allocated && (!entered || failure.code in setOf("offline", "FREE_DAILY_LIMIT_REACHED", "COUNTRY_UNAVAILABLE", "VPN_UNAVAILABLE", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "invalid_access_token", "invalid_session", "invalid_refresh_token", "reauth_required", "device_revoked", "user_blocked"))) throw VpnCreateRejected(failure)
