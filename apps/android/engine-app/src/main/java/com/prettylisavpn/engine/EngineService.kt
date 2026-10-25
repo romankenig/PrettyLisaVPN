@@ -15,6 +15,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.os.Process
+import com.prettylisavpn.android.R
 import com.prettylisavpn.enginecore.mobile.Mobile
 import com.prettylisavpn.enginecore.mobile.Platform
 import java.util.concurrent.Executors
@@ -37,6 +38,7 @@ class EngineService : VpnService() {
     private val worker = Executors.newSingleThreadExecutor()
     private val epoch = AtomicLong()
     private val handler = Handler(Looper.getMainLooper())
+    private val ownerlessStop = Runnable { if (owner == null && !running) stopSelf() }
     private val engine = Mobile.newEngine()
     @Volatile private var tun: ParcelFileDescriptor? = null
     @Volatile private var owner: IBinder? = null
@@ -58,13 +60,13 @@ class EngineService : VpnService() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("engine", "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
         val notification = Notification.Builder(this, "engine")
-            .setSmallIcon(android.R.drawable.ic_lock_lock).setContentTitle("PrettyLisaVPN")
+            .setSmallIcon(R.drawable.ic_vpn_notification).setContentTitle("PrettyLisaVPN")
             .setOngoing(true).setCategory(Notification.CATEGORY_SERVICE).build()
         try {
             if (Build.VERSION.SDK_INT >= 34) startForeground(42, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
             else startForeground(42, notification)
         } catch (_: Exception) { stopSelf() }
-        handler.postDelayed({ if (owner == null && !running) stopSelf() }, 60_000)
+        handler.postDelayed(ownerlessStop, 60_000)
         return START_NOT_STICKY
     }
     fun startProfile(profile: String, client: IBinder): String {
@@ -72,6 +74,9 @@ class EngineService : VpnService() {
         return bounded("ENGINE_START_FAILED") {
             if (generation != epoch.get() || prepare(this) != null) return@bounded "PERMISSION_REQUIRED"
             if (running || owner != null) return@bounded "ENGINE_ALREADY_RUNNING"
+            // The coordinator now owns lifecycle. Its stop between candidates is
+            // intentional; the consent watchdog must not interrupt a long plan.
+            handler.removeCallbacks(ownerlessStop)
             protectionFailed = false
             try {
                 client.linkToDeath(death, 0)
@@ -178,6 +183,7 @@ class EngineService : VpnService() {
     }
     override fun onRevoke() { requestStop(); stopSelf() }
     override fun onDestroy() {
+        handler.removeCallbacks(ownerlessStop)
         instance = null
         networks.unregisterNetworkCallback(networkCallback)
         requestStop()

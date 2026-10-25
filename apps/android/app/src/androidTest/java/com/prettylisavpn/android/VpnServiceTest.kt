@@ -66,8 +66,10 @@ class VpnServiceTest {
                     withTimeout(10_000) { while(!File(bridge,"peer-ready").exists()) delay(100) }
                     File(bridge,"server-public-key").readText().trim()
                 } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
-                return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("198.18.0.1",51820,
-                    serverKey,"10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
+                val working = VpnConfig("198.18.0.1",51820,serverKey,"10.77.0.2/32",listOf("1.1.1.1"))
+                // Exercise real native stop/restart before a later candidate wins.
+                val candidates = if (realPeer) listOf(working.copy(port=51821),working) else listOf(working)
+                return VpnSession(sessionId,"DE",Instant.now(),null,candidates.first(),candidates).also { current = it }
             }
             override suspend fun delete(id: String) {
                 assertEquals(sessionId,id); deletes++
@@ -142,7 +144,7 @@ class VpnServiceTest {
         click()
         compose.waitUntil(10_000) { posts == 2 || host.status.value.error != null }
         assertEquals("second start: ${host.status.value}",2,posts)
-        compose.waitUntil(35_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
+        compose.waitUntil(75_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
         assertEquals("VPN status: ${host.status.value}",VpnPhase.CONNECTED,host.status.value.phase)
         assertEquals(2,posts)
         compose.waitForIdle()
