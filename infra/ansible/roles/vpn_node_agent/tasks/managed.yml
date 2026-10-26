@@ -1,0 +1,59 @@
+---
+- name: Validate isolated managed engine inputs
+  ansible.builtin.assert:
+    that:
+      - vpn_node_agent_managed_binary is string
+      - vpn_node_agent_managed_config is mapping
+      - vpn_node_agent_managed_config.port_first | int >= 1024
+      - vpn_node_agent_managed_config.port_last | int <= 65535
+      - vpn_node_agent_managed_config.port_last | int >= vpn_node_agent_managed_config.port_first | int
+      - vpn_node_agent_managed_config.port_last | int - vpn_node_agent_managed_config.port_first | int < 64
+      - vpn_node_agent_port | int < vpn_node_agent_managed_config.port_first | int or vpn_node_agent_port | int > vpn_node_agent_managed_config.port_last | int
+  no_log: true
+
+- name: Create fixed executable directory
+  ansible.builtin.file:
+    path: /usr/local/lib/prettylisavpn
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install pinned managed engine
+  ansible.builtin.copy:
+    src: "{{ vpn_node_agent_managed_binary }}"
+    dest: /usr/local/lib/prettylisavpn/pl-node-engine
+    owner: root
+    group: root
+    mode: '0755'
+  notify: restart vpn node agent
+
+- name: Install private REALITY node configuration
+  ansible.builtin.copy:
+    content: "{{ vpn_node_agent_managed_config | to_json }}"
+    dest: "{{ vpn_node_agent_config_root }}/reality.json"
+    owner: root
+    group: "{{ vpn_node_agent_group }}"
+    mode: '0640'
+  no_log: true
+  notify: restart vpn node agent
+
+- name: Allow only the isolated transport port range
+  ansible.builtin.command:
+    argv:
+      - ufw
+      - allow
+      - in
+      - 'on'
+      - "{{ wireguard_egress_interface }}"
+      - proto
+      - "{{ item }}"
+      - to
+      - "{{ vpn_node_agent_bind_ipv4 }}"
+      - port
+      - "{{ vpn_node_agent_managed_config.port_first }}:{{ vpn_node_agent_managed_config.port_last }}"
+      - comment
+      - PrettyLisaVPN managed transports
+  loop: [tcp, udp]
+  register: managed_firewall
+  changed_when: "'Rule added' in managed_firewall.stdout"

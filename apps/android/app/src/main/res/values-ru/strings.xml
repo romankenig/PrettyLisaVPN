@@ -267,4 +267,7 @@
     <string name="vpn_quota">дневное бесплатное время закончилось.</string>
     <string name="vpn_access">доступ к VPN завершён. войдите снова или проверьте подписку.</string>
     <string name="vpn_failed">не удалось подключиться. проверьте сеть и повторите попытку.</string>
+    <string name="vpn_trying_method">пробую %1$s…</string>
+    <string name="vpn_retrying_method">пробую другой вариант %1$s…</string>
+    <string name="vpn_switching_method">%1$s не подключился, пробую %2$s…</string>
 </resources>

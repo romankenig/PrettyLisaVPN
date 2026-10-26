@@ -117,7 +117,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.PresentationUiT
 python3 - <<'PRESENTATION_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/presentation-ui-instrumentation.txt').read_text()
-assert re.search(r'OK \(4 tests\)', result), result
+assert re.search(r'OK \(5 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PRESENTATION_CHECK
 

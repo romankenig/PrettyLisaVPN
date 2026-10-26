@@ -423,8 +423,18 @@ async function main() {
   if (!(await combo.textContent()).includes("Германия"))
     throw new Error("Country choice failed");
   await screenshot("04b-home-country");
+  await page.evaluate(() => {
+    document.documentElement.dataset.vpnReviewHold = "true";
+  });
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByText("Пробую WireGuard…", { exact: true }).waitFor();
+  await screenshot("04b-home-trying-wireguard-fixture");
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.vpnReviewHold;
+  });
   await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
+  if (await page.locator(".connection-attempt").count())
+    throw new Error("Attempt progress must disappear after verification");
   await page.getByText("198.51.100.42", { exact: true }).waitFor();
   await page.getByLabel("способ подключения", { exact: true }).waitFor();
   const metadata = await page

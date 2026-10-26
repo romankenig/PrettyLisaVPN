@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: MIT
+package managed
+
+import (
+	"io"
+	"log"
+
+	_ "github.com/xtls/xray-core/app/dispatcher"
+	_ "github.com/xtls/xray-core/app/log"
+	_ "github.com/xtls/xray-core/app/proxyman/inbound"
+	_ "github.com/xtls/xray-core/app/proxyman/outbound"
+	_ "github.com/xtls/xray-core/app/router"
+	clog "github.com/xtls/xray-core/common/log"
+	_ "github.com/xtls/xray-core/proxy/blackhole"
+	_ "github.com/xtls/xray-core/proxy/hysteria"
+	_ "github.com/xtls/xray-core/proxy/shadowsocks"
+	_ "github.com/xtls/xray-core/proxy/shadowsocks_2022"
+	_ "github.com/xtls/xray-core/proxy/trojan"
+	_ "github.com/xtls/xray-core/proxy/tun"
+	_ "github.com/xtls/xray-core/proxy/vless/outbound"
+	_ "github.com/xtls/xray-core/proxy/vmess/outbound"
+	_ "github.com/xtls/xray-core/proxy/wireguard"
+	_ "github.com/xtls/xray-core/transport/internet/grpc"
+	_ "github.com/xtls/xray-core/transport/internet/httpupgrade"
+	_ "github.com/xtls/xray-core/transport/internet/hysteria"
+	_ "github.com/xtls/xray-core/transport/internet/reality"
+	_ "github.com/xtls/xray-core/transport/internet/splithttp"
+	_ "github.com/xtls/xray-core/transport/internet/tagged/taggedimpl"
+	_ "github.com/xtls/xray-core/transport/internet/tcp"
+	_ "github.com/xtls/xray-core/transport/internet/tls"
+	_ "github.com/xtls/xray-core/transport/internet/udp"
+	_ "github.com/xtls/xray-core/transport/internet/websocket"
+)
+
+type discardLog struct{}
+
+func (discardLog) Handle(clog.Message)     {}
+func (discardLog) Severity() clog.Severity { return clog.Severity_Error }
+
+func init() {
+	// Also silence constructor diagnostics before the no-log config takes effect.
+	log.SetOutput(io.Discard)
+	clog.RegisterHandler(discardLog{})
+}

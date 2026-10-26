@@ -4,10 +4,11 @@ import ssl
 from dataclasses import dataclass
 from datetime import datetime
 from ipaddress import IPv4Address
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
+from uuid import UUID
 
 import httpx
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from prettylisavpn.config import Settings
 from prettylisavpn.vpn_nodes.domain import VpnNode
@@ -38,6 +39,96 @@ class NodeAgentPeerPort(Protocol):
 
 class NodeAgentPort(NodeAgentHealthPort, NodeAgentPeerPort, Protocol):
     pass
+
+
+class ManagedNodeProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    port: int = Field(ge=1024, le=65535)
+    public_key: str = Field(pattern=r"^[A-Za-z0-9_-]{43}$")
+    server_name: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9.-]{1,251}[a-zA-Z0-9]$")
+    short_id: str = Field(pattern=r"^(?:[0-9a-f]{2}){1,8}$")
+
+
+class ManagedNodeCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    method: Literal[
+        "VLESS_REALITY",
+        "VLESS_TLS",
+        "VMESS_TLS",
+        "TROJAN_TLS",
+        "SHADOWSOCKS",
+        "SHADOWSOCKS_2022",
+        "HYSTERIA2_TLS",
+        "HYSTERIA2_SALAMANDER",
+    ]
+    port: int = Field(ge=1024, le=65535)
+    secret: str = Field(repr=False, min_length=16, max_length=128, pattern=r"^[^\r\n\x00]+$")
+    server_name: str | None = Field(
+        default=None, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9.-]{1,251}[a-zA-Z0-9]$"
+    )
+    public_key: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{43}$")
+    short_id: str | None = Field(default=None, pattern=r"^(?:[0-9a-f]{2}){1,8}$")
+    certificate_pin: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    transport: Literal["ws", "grpc", "httpupgrade", "xhttp"] | None = None
+    path: Literal["plvpn", "/plvpn"] | None = None
+    obfs_secret: str | None = Field(default=None, repr=False, min_length=16, max_length=128)
+
+    @model_validator(mode="after")
+    def validate_method(self) -> "ManagedNodeCandidate":
+        reality = self.method == "VLESS_REALITY"
+        tls = self.method in (
+            "VLESS_TLS",
+            "VMESS_TLS",
+            "TROJAN_TLS",
+            "HYSTERIA2_TLS",
+            "HYSTERIA2_SALAMANDER",
+        )
+        if (self.server_name is not None) != (reality or tls):
+            raise ValueError("invalid server identity")
+        if (
+            (self.certificate_pin is not None) != tls
+            or (self.public_key is not None) != reality
+            or (self.short_id is not None) != reality
+        ):
+            raise ValueError("invalid server authentication")
+        if self.transport is not None and self.method not in (
+            "VLESS_TLS",
+            "VMESS_TLS",
+            "TROJAN_TLS",
+        ):
+            raise ValueError("invalid transport")
+        expected_path = (
+            None if self.transport is None else "plvpn" if self.transport == "grpc" else "/plvpn"
+        )
+        if self.path != expected_path or (self.obfs_secret is not None) != (
+            self.method == "HYSTERIA2_SALAMANDER"
+        ):
+            raise ValueError("invalid transport parameters")
+        return self
+
+
+class ManagedNodePlan(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    profiles: list[ManagedNodeCandidate] = Field(repr=False, min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def unique(self) -> "ManagedNodePlan":
+        if len({(p.method, p.transport) for p in self.profiles}) != len(self.profiles) or len(
+            {p.port for p in self.profiles}
+        ) != len(self.profiles):
+            raise ValueError("duplicate managed candidate")
+        return self
+
+
+@runtime_checkable
+class ManagedNodePort(Protocol):
+    async def issue_managed(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodeProfile: ...
+    async def issue_managed_plan(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodePlan: ...
+    async def remove_managed(self, node: VpnNode, session_id: UUID) -> None: ...
 
 
 class _AgentHealthResponse(BaseModel):
@@ -155,6 +246,47 @@ class HttpNodeAgentClient:
 
     def _url(self, node: VpnNode, path: str) -> str:
         return f"https://{node.public_ipv4}:{self._agent_port}{path}"
+
+    async def issue_managed(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodeProfile:
+        try:
+            response = await self._client.put(
+                self._url(node, f"/v1/managed/{session_id}"),
+                headers=self._headers(),
+                json={"secret": secret, "expires": int(expires.timestamp())},
+                timeout=12,
+            )
+            response.raise_for_status()
+            return ManagedNodeProfile.model_validate(response.json())
+        except (httpx.HTTPError, ValueError):
+            raise NodeAgentUnavailableError("managed authorization unavailable") from None
+
+    async def remove_managed(self, node: VpnNode, session_id: UUID) -> None:
+        try:
+            response = await self._client.delete(
+                self._url(node, f"/v1/managed/{session_id}"), headers=self._headers(), timeout=12
+            )
+            response.raise_for_status()
+            if response.json() != {"removed": True}:
+                raise ValueError("unconfirmed managed cleanup")
+        except (httpx.HTTPError, ValueError):
+            raise NodeAgentUnavailableError("managed cleanup unavailable") from None
+
+    async def issue_managed_plan(
+        self, node: VpnNode, session_id: UUID, secret: str, expires: datetime
+    ) -> ManagedNodePlan:
+        try:
+            response = await self._client.put(
+                self._url(node, f"/v1/managed/{session_id}/plan"),
+                headers=self._headers(),
+                json={"secret": secret, "expires": int(expires.timestamp())},
+                timeout=12,
+            )
+            response.raise_for_status()
+            return ManagedNodePlan.model_validate(response.json())
+        except (httpx.HTTPError, ValueError):
+            raise NodeAgentUnavailableError("managed plan unavailable") from None
 
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._auth_token}"}

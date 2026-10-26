@@ -1,5 +1,17 @@
 # Android VPN runtime — 0.8.0
 
+Current work: [Android 0.10.0 single APK and complete managed plan](android-single-apk-plan.md)
+replaces the GoBackend runtime described below. One private `:engine` process
+and one VpnService now own every native transport. The remaining sections retain
+the historical 0.8.0 implementation/acceptance record.
+
+Update in progress: 0.8.1/code16 → 0.9.0/code17 introduces ordered candidate
+fallback and the verified method label. The direct adapter below still supports
+only WIREGUARD/UDP/NONE, but skips unsupported candidates and tries all supported
+entries in order within one server session. It requires confirmed stop between
+attempts and monitors the winning configuration. Managed engines are tracked in
+[the transport task](vpn-methods-from-article.md); they are not yet delivered.
+
 Android 0.7.2/code14 → **0.8.0/code15 (MINOR)**. Windows 0.12.0,
 backend 0.10.0 и schema0026 не изменяются. Отдельная ветка
 `feat/android-wireguard-vpn` от develop `f9fd9ae0dd2ee7063e887fedf4e0174f7670a30b`.
@@ -21,10 +33,11 @@ FGS запускается из foreground после системного conse
 POST_NOTIFICATIONS запрашивается отдельно на API33+; отказ не подменяет VPN consent.
 START_NOT_STICKY, always-on/boot restart не включены. Нет обхода background limits.
 
-Поддерживается только **первый явный WIREGUARD/UDP/WIREGUARD/NONE** candidate,
+Поддерживается **явный WIREGUARD/UDP/WIREGUARD/NONE** candidate,
 MTU1280, VPN DNS, FULL_TUNNEL, IPv4 endpoint/client /32, ровно `0.0.0.0/0`.
-Country/port должны совпадать с bootstrap. Empty, missing, legacy NATIVE,
-обфускация, OpenVPN и MASQUE отклоняются с DELETE сессии; fallback не выполняется.
+Country должен совпадать с сессией; порт берётся из авторизованного кандидата.
+Empty, missing, legacy NATIVE, обфускация, OpenVPN и MASQUE не поддерживаются
+этим adapter; если не остаётся рабочих кандидатов, сессия удаляется.
 Windows legacy-секреты/переменные окружения не копируются. Если development node
 выдаёт только legacy NATIVE, настоящий connect останется недоступным для этого узла
 до отдельной настройки совместимого профиля; backend здесь не меняется.

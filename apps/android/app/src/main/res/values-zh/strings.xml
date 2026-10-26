@@ -267,4 +267,7 @@
     <string name="vpn_quota">今日免费时长已用完。</string>
     <string name="vpn_access">VPN 访问已结束。请重新登录或检查订阅。</string>
     <string name="vpn_failed">无法连接。请检查网络后重试。</string>
+    <string name="vpn_trying_method">正在尝试 %1$s…</string>
+    <string name="vpn_retrying_method">正在尝试其他 %1$s 选项…</string>
+    <string name="vpn_switching_method">%1$s 未能连接，正在尝试 %2$s…</string>
 </resources>

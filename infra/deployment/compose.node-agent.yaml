@@ -8,5 +8,7 @@ services:
       VPN_NODE_AGENT_TLS_CA: /run/secrets/node-agent/server-ca.crt
       VPN_NODE_AGENT_TLS_CLIENT_CERTIFICATE: /run/secrets/node-agent/backend-client.crt
       VPN_NODE_AGENT_TLS_CLIENT_KEY: /run/secrets/node-agent/backend-client.key
+      VPN_MANAGED_NODES: ${VPN_MANAGED_NODES:-[]}
+      VPN_MANAGED_SECRET: ${VPN_MANAGED_SECRET:-}
     volumes:
       - ${VPN_NODE_AGENT_TLS_DIRECTORY:?Set the protected Backend mTLS directory}:/run/secrets/node-agent:ro

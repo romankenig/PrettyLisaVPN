@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -114,6 +115,46 @@ async function renderFresh(api: ApiClient) {
 beforeEach(() => localStorage.clear());
 
 describe("authenticated Home", () => {
+  it("shows concise attempt progress and clears it when checking the tunnel", async () => {
+    let state: ReturnType<VpnConnectionManager["current"]> = {
+      phase: "CONNECTING",
+      backend: "ACTIVE",
+      tunnel: "DOWN",
+      attempt: { method: "OpenVPN", previousMethod: "WireGuard", retry: true },
+    };
+    const listeners = new Set<() => void>();
+    renderRestored(mockApi(), createTestCredentialStorage(), {
+      ...createTestVpnConnection(),
+      current: () => state,
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    });
+    expect(
+      await screen.findByText("WireGuard не подключился, пробую OpenVPN…"),
+    ).toBeVisible();
+    state = {
+      phase: "VERIFYING_INTERNET",
+      backend: "ACTIVE",
+      tunnel: "UP",
+      session: {
+        sessionId: "session",
+        countryCode: "DE",
+        expiresAt: null,
+        remainingSeconds: null,
+      },
+    };
+    act(() => listeners.forEach((listener) => listener()));
+    expect(
+      screen.queryByText("WireGuard не подключился, пробую OpenVPN…"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("способ подключения"),
+    ).not.toBeInTheDocument();
+  });
   it("shows public connection details only after confirmation", async () => {
     const connectedState: ReturnType<VpnConnectionManager["current"]> = {
       phase: "CONNECTED",

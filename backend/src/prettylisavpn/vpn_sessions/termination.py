@@ -12,10 +12,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
-from prettylisavpn.vpn_nodes.agent import NodeAgentPeerPort, NodeAgentUnavailableError
+from prettylisavpn.vpn_nodes.agent import (
+    ManagedNodePort,
+    NodeAgentPeerPort,
+    NodeAgentUnavailableError,
+)
 from prettylisavpn.vpn_nodes.domain import VpnNode
 from prettylisavpn.vpn_nodes.repository import VpnNodeRepository
 from prettylisavpn.vpn_sessions.domain import VpnSession, VpnSessionStatus
+from prettylisavpn.vpn_sessions.model import ManagedVpnLeaseRecord
 from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 
 logger = logging.getLogger(__name__)
@@ -162,11 +167,13 @@ class VpnSessionReconciler:
                     current = await repository.get_for_update(session_id)
                     if current is None or current.status is not VpnSessionStatus.ACTIVE:
                         return
+                    managed = await database_session.get(ManagedVpnLeaseRecord, current.id)
                     await repository.update(
                         replace(
                             current,
                             status=VpnSessionStatus.FAILED,
-                            peer_removed_at=now,
+                            # A missing WG peer does not prove a managed credential was removed.
+                            peer_removed_at=now if managed is None else None,
                             updated_at=now,
                         )
                     )
@@ -193,6 +200,15 @@ async def remove_and_record_peer(
                     return False
                 await repository.acquire_peer_lock(current.client_wireguard_public_key)
                 try:
+                    lease = await database_session.get(
+                        ManagedVpnLeaseRecord, current.id, with_for_update=True
+                    )
+                    if lease is not None and lease.node_removed_at is None:
+                        if not isinstance(agent, ManagedNodePort):
+                            return False
+                        lease.revoked_at = lease.revoked_at or datetime.now(UTC)
+                        await agent.remove_managed(node, current.id)
+                        lease.node_removed_at = datetime.now(UTC)
                     await agent.remove_peer(node, current.client_wireguard_public_key)
                 except NodeAgentUnavailableError:
                     return False  # Intent is committed already; retry after node recovery.

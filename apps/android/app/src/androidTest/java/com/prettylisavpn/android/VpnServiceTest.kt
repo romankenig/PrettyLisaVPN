@@ -66,8 +66,10 @@ class VpnServiceTest {
                     withTimeout(10_000) { while(!File(bridge,"peer-ready").exists()) delay(100) }
                     File(bridge,"server-public-key").readText().trim()
                 } else "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
-                return VpnSession(sessionId,"DE",Instant.now(),null,VpnConfig("10.0.2.2",51820,
-                    serverKey,"10.77.0.2/32",listOf("1.1.1.1"))).also { current = it }
+                val working = VpnConfig("198.18.0.1",51820,serverKey,"10.77.0.2/32",listOf("1.1.1.1"))
+                // Exercise real native stop/restart before a later candidate wins.
+                val candidates = if (realPeer) listOf(working.copy(port=51821),working) else listOf(working)
+                return VpnSession(sessionId,"DE",Instant.now(),null,candidates.first(),candidates).also { current = it }
             }
             override suspend fun delete(id: String) {
                 assertEquals(sessionId,id); deletes++
@@ -84,11 +86,27 @@ class VpnServiceTest {
         val host = AndroidVpnHost.create(app,sessions,HttpAuthApi("https://unused.invalid/"),api,journal)
         compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { Column { VpnControls(host,"DE",true) } } } } }
         fun click() { compose.waitForIdle(); compose.onNodeWithTag("home-connect").performClick() }
+        fun clickSystemDialog(selector: androidx.test.uiautomator.BySelector) {
+            val button = device.wait(Until.findObject(selector.enabled(true).clickable(true)),10_000)
+            assertNotNull("system consent button",button)
+            val packageName = button.applicationPackage
+            // Accessibility exposes the button before WindowManager finishes making its
+            // window focusable. A click in that interval is silently lost on API 35/36.
+            compose.waitUntil(10_000) {
+                instrumentation.uiAutomation.windows.any {
+                    it.isFocused && it.root?.packageName?.toString() == packageName
+                }
+            }
+            device.waitForIdle()
+            val ready = device.findObject(selector)
+            assertNotNull("focused system consent button",ready)
+            ready.click()
+            assertTrue("system consent dialog dismissed",device.wait(Until.gone(selector),10_000))
+        }
         fun consent(accept: Boolean) {
             if (VpnService.prepare(app) == null) return
             val name = if (accept) "android:id/button1" else "android:id/button2"
-            assertTrue("VPN consent dialog",device.wait(Until.hasObject(By.pkg("com.android.vpndialogs").res(name)),10_000))
-            device.findObject(By.pkg("com.android.vpndialogs").res(name)).click()
+            clickSystemDialog(By.pkg("com.android.vpndialogs").res(name))
         }
         // First reject the actual Android VPN consent. There must be no backend allocation.
         if (VpnService.prepare(app) != null) {
@@ -100,9 +118,7 @@ class VpnServiceTest {
         // Notification consent is independent. Accept on Android 13+, if it is shown.
         if (android.os.Build.VERSION.SDK_INT >= 33 && app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             // Google system images may use a different resource namespace from AOSP.
-            val allow = device.wait(Until.findObject(By.res(java.util.regex.Pattern.compile(".*:id/permission_allow_button"))),10_000)
-            assertNotNull("notification permission dialog",allow)
-            allow.click()
+            clickSystemDialog(By.res(java.util.regex.Pattern.compile(".*:id/permission_allow_button")))
             compose.waitUntil(10_000) { app.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED }
         }
         compose.waitUntil(15_000) { host.status.value.phase in setOf(VpnPhase.VERIFYING,VpnPhase.CONNECTED,VpnPhase.FAILED) }
@@ -111,7 +127,7 @@ class VpnServiceTest {
         val manager = app.getSystemService(ConnectivityManager::class.java)
         compose.waitUntil(10_000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true } }
         val network = manager.allNetworks.first { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN)==true }
-        assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="10.77.0.2" })
+        assertTrue(manager.getLinkProperties(network)!!.linkAddresses.any { it.address.hostAddress=="172.30.255.1" })
         val notifications=app.getSystemService(NotificationManager::class.java)
         compose.waitUntil(10_000) { notifications.activeNotifications.any { it.notification.extras.getString("android.title")=="PrettyLisaVPN" } }
         compose.waitForIdle()
@@ -128,7 +144,7 @@ class VpnServiceTest {
         click()
         compose.waitUntil(10_000) { posts == 2 || host.status.value.error != null }
         assertEquals("second start: ${host.status.value}",2,posts)
-        compose.waitUntil(35_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
+        compose.waitUntil(75_000) { host.status.value.phase in setOf(VpnPhase.CONNECTED,VpnPhase.FAILED,VpnPhase.CLEANUP_PENDING) }
         assertEquals("VPN status: ${host.status.value}",VpnPhase.CONNECTED,host.status.value.phase)
         assertEquals(2,posts)
         compose.waitForIdle()

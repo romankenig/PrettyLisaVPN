@@ -5,7 +5,7 @@ import {
   type ApiClient,
 } from "../api/client";
 import {
-  connectFirstCandidate,
+  connectCandidates,
   isVerified,
   type ProtocolFailure,
   type VerificationPhase,
@@ -16,6 +16,7 @@ import {
 } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
+import type { ConnectionAttempt } from "./attempt";
 
 export interface ConnectedVpnSession {
   readonly sessionId: string;
@@ -26,8 +27,10 @@ export interface ConnectedVpnSession {
 export type VpnConnectionState =
   | {
       readonly phase: "RECONCILING" | "CONNECTING";
-      readonly backend: "UNKNOWN";
-      readonly tunnel: "UNKNOWN";
+      readonly backend: "UNKNOWN" | "ACTIVE";
+      readonly tunnel: "UNKNOWN" | "DOWN";
+      readonly session?: ConnectedVpnSession;
+      readonly attempt?: ConnectionAttempt;
     }
   | {
       readonly phase: "DISCONNECTING";
@@ -54,6 +57,7 @@ export type VpnConnectionState =
       readonly tunnel: ProtocolStatus | "UNAVAILABLE";
       readonly session: ConnectedVpnSession;
       readonly failure_code?: ProtocolFailure;
+      readonly attempt?: ConnectionAttempt;
     }
   | {
       readonly phase: "UNAVAILABLE";
@@ -109,10 +113,45 @@ export function createVpnConnectionManager(
   let inFlight = false;
   let checking = false;
   let healthFailures = 0;
+  let attempt: ConnectionAttempt | undefined;
   let disconnectInFlight: Promise<void> | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
   let countdownTimer: ReturnType<typeof setInterval> | undefined;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+  // Capture the server's remaining duration when the response arrives. Engine
+  // startup and fallback consume the same allowance as an established tunnel.
+  const deadlines = new WeakMap<ActiveVpnSessionResponse, number | null>();
+  const received = (session: ActiveVpnSessionResponse) => {
+    const duration =
+      session.expires_at === null
+        ? null
+        : Date.parse(session.expires_at) - Date.parse(session.server_time);
+    deadlines.set(
+      session,
+      duration === null
+        ? null
+        : performance.now() +
+            (Number.isFinite(duration) ? Math.max(0, duration) : 0),
+    );
+  };
+  const remainingMs = (session: ActiveVpnSessionResponse) => {
+    const deadline = deadlines.get(session);
+    return deadline === null
+      ? null
+      : Math.max(0, (deadline ?? 0) - performance.now());
+  };
+  const productSession = (session: ActiveVpnSessionResponse) => {
+    const remaining = remainingMs(session);
+    return {
+      sessionId: session.session_id,
+      countryCode: session.country_code,
+      expiresAt: session.expires_at,
+      remainingSeconds:
+        remaining === null ? null : Math.ceil(remaining / 1_000),
+    };
+  };
+  const mayContinue = (run: number, session: ActiveVpnSessionResponse) =>
+    run === generation && desiredConnected && remainingMs(session) !== 0;
   const listeners = new Set<() => void>();
   const emit = (next: VpnConnectionState) => {
     state = next;
@@ -180,10 +219,12 @@ export function createVpnConnectionManager(
     accessToken: string,
   ) => {
     clearSessionTimers();
+    const remaining = remainingMs(backendSession);
+    if (remaining === 0) return false;
     const session = productSession(backendSession);
     emit({ phase: "CONNECTED", backend: "ACTIVE", tunnel: "UP", session });
-    if (session.remainingSeconds !== null) {
-      const deadline = performance.now() + session.remainingSeconds * 1_000;
+    if (remaining !== null) {
+      const deadline = deadlines.get(backendSession)!;
       countdownTimer = setInterval(() => {
         if (
           (state.phase !== "CONNECTED" && state.phase !== "DEGRADED") ||
@@ -199,27 +240,43 @@ export function createVpnConnectionManager(
       }, 1_000);
       expiryTimer = setTimeout(
         () => void manager.disconnect(accessToken),
-        session.remainingSeconds * 1_000,
+        remaining,
       );
     }
     monitor(accessToken);
+    return true;
   };
   const progress =
     (run: number, session: ActiveVpnSessionResponse) =>
     (phase: VerificationPhase) => {
-      if (run === generation)
+      if (mayContinue(run, session))
         emit({
           phase,
           backend: "ACTIVE",
           tunnel: "UP",
           session: productSession(session),
+          attempt,
         });
+    };
+  const trying =
+    (run: number, session: ActiveVpnSessionResponse) =>
+    (next: ConnectionAttempt) => {
+      if (!mayContinue(run, session)) return;
+      attempt = next;
+      emit({
+        phase: "CONNECTING",
+        backend: "ACTIVE",
+        tunnel: "DOWN",
+        session: productSession(session),
+        attempt,
+      });
     };
   const fail = async (
     accessToken: string,
     session: ConnectedVpnSession,
     code: ProtocolFailure,
     run: number,
+    localStopped = false,
   ) => {
     if (run !== generation) return;
     inFlight = true;
@@ -232,17 +289,22 @@ export function createVpnConnectionManager(
       session,
       failure_code: code,
     });
-    let down = false;
-    try {
-      down = (await tunnel.disconnect()) === "DOWN";
-    } catch {
-      /* Keep teardown available. */
+    let down = localStopped;
+    if (!down) {
+      try {
+        down = (await tunnel.disconnect()) === "DOWN";
+      } catch {
+        /* Keep teardown available. */
+      }
     }
-    let backend: "NONE" | "UNAVAILABLE" = "NONE";
-    try {
-      await api.disconnectVpnSession(accessToken, session.sessionId);
-    } catch {
-      backend = "UNAVAILABLE";
+    let backend: "ACTIVE" | "NONE" | "UNAVAILABLE" = "ACTIVE";
+    if (down) {
+      try {
+        await api.disconnectVpnSession(accessToken, session.sessionId);
+        backend = "NONE";
+      } catch {
+        backend = "UNAVAILABLE";
+      }
     }
     if (run === generation)
       emit({
@@ -308,8 +370,10 @@ export function createVpnConnectionManager(
           await manager.disconnect(accessToken);
           return;
         }
+        received(current.session);
         healthFailures = 0;
-        activate(current.session, accessToken);
+        if (!activate(current.session, accessToken))
+          await manager.disconnect(accessToken);
       } catch {
         if (run !== generation) return;
         healthFailures += 1;
@@ -355,11 +419,15 @@ export function createVpnConnectionManager(
       if (inFlight) return;
       healthFailures = 0;
       const run = ++generation;
+      attempt = undefined;
       stopMonitor();
       clearSessionTimers();
       emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       const [backendResult, tunnelResult] = await Promise.allSettled([
-        api.getCurrentVpnSession(accessToken),
+        api.getCurrentVpnSession(accessToken).then((response) => {
+          if (response.session) received(response.session);
+          return response;
+        }),
         tunnel.status(),
       ]);
       if (run !== generation) return;
@@ -434,10 +502,12 @@ export function createVpnConnectionManager(
           return;
         }
         try {
-          await connectFirstCandidate(
+          await connectCandidates(
             tunnel,
             provisioner.candidates(backendSession),
             progress(run, backendSession),
+            () => mayContinue(run, backendSession),
+            trying(run, backendSession),
           );
         } catch (error) {
           if (run === generation)
@@ -446,6 +516,7 @@ export function createVpnConnectionManager(
               productSession(backendSession),
               error instanceof ProtocolConnectionError ? error.code : "UNKNOWN",
               run,
+              error instanceof ProtocolConnectionError && error.localStopped,
             );
           return;
         }
@@ -465,7 +536,13 @@ export function createVpnConnectionManager(
       }
 
       if (run === generation) {
-        activate(backendSession, accessToken);
+        if (!activate(backendSession, accessToken))
+          await fail(
+            accessToken,
+            productSession(backendSession),
+            "TRANSPORT_TIMEOUT",
+            run,
+          );
       }
     },
     async connect(accessToken, selection) {
@@ -473,6 +550,7 @@ export function createVpnConnectionManager(
       desiredConnected = true;
       inFlight = true;
       const run = ++generation;
+      attempt = undefined;
       const previousTunnel = state.tunnel;
       healthFailures = 0;
       stopMonitor();
@@ -480,6 +558,7 @@ export function createVpnConnectionManager(
       emit({ phase: "CONNECTING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       try {
         const backendSession = await provisioner.create(accessToken, selection);
+        received(backendSession);
         if (run !== generation) {
           await api
             .disconnectVpnSession(accessToken, backendSession.session_id)
@@ -487,28 +566,52 @@ export function createVpnConnectionManager(
           return;
         }
         try {
-          await connectFirstCandidate(
+          await connectCandidates(
             tunnel,
             provisioner.candidates(backendSession),
             progress(run, backendSession),
+            () => mayContinue(run, backendSession),
+            trying(run, backendSession),
           );
         } catch (error) {
           const code =
             error instanceof ProtocolConnectionError ? error.code : "UNKNOWN";
+          if (run !== generation) {
+            if (error instanceof ProtocolConnectionError && error.localStopped)
+              await api
+                .disconnectVpnSession(accessToken, backendSession.session_id)
+                .catch(() => undefined);
+            return;
+          }
           if (run === generation)
-            await fail(accessToken, productSession(backendSession), code, run);
+            await fail(
+              accessToken,
+              productSession(backendSession),
+              code,
+              run,
+              error instanceof ProtocolConnectionError && error.localStopped,
+            );
           throw new VpnConnectionError(code);
         }
 
         if (run !== generation) {
-          await tunnel.disconnect().catch(() => undefined);
-          await api
-            .disconnectVpnSession(accessToken, backendSession.session_id)
-            .catch(() => undefined);
+          const stopped = await tunnel.disconnect().catch(() => "UP" as const);
+          if (stopped === "DOWN")
+            await api
+              .disconnectVpnSession(accessToken, backendSession.session_id)
+              .catch(() => undefined);
           return;
         }
         if (run === generation) {
-          activate(backendSession, accessToken);
+          if (!activate(backendSession, accessToken)) {
+            await fail(
+              accessToken,
+              productSession(backendSession),
+              "TRANSPORT_TIMEOUT",
+              run,
+            );
+            throw new VpnConnectionError("TRANSPORT_TIMEOUT");
+          }
         }
       } catch (error) {
         const mapped = mapError(error);
@@ -616,26 +719,6 @@ export function createVpnConnectionManager(
   return manager;
 }
 
-function productSession(
-  session: ActiveVpnSessionResponse,
-): ConnectedVpnSession {
-  return {
-    sessionId: session.session_id,
-    countryCode: session.country_code,
-    expiresAt: session.expires_at,
-    remainingSeconds:
-      session.expires_at === null
-        ? null
-        : Math.max(
-            0,
-            Math.ceil(
-              (Date.parse(session.expires_at) -
-                Date.parse(session.server_time)) /
-                1_000,
-            ),
-          ),
-  };
-}
 function mapError(error: unknown) {
   if (error instanceof VpnConnectionError) return error;
   if (

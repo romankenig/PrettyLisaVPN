@@ -41,7 +41,8 @@ by constructing the equivalent single WireGuard configuration.
 
 For this stage the backend returns exactly one candidate: the already provisioned
 WireGuard session. Additional nodes are not provisioned. An explicit empty list
-fails; the client attempts only the first candidate and never retries another.
+fails; Windows 0.13.0 tries the finite list in order, requiring confirmed local
+stop between failed attempts. Cancellation aborts the loop. No new node is allocated.
 The legacy `transport` payload supplies that candidate's WireGuard bootstrap data.
 Node profile declarations now have their own migration; see the profile guide.
 
@@ -59,8 +60,8 @@ or protocol settings.
 2. Add its backend provisioning and validated bootstrap payload contract. Extend
    the currently WireGuard-specific API bootstrap schema and supply that payload
    through a `VpnSessionProvisioner`; keep credentials out of common orchestration.
-3. Wire the implementation at the composition root, selecting by the first
+3. Wire the implementation at the composition root, selecting by each
    candidate's protocol and retaining the active implementation for status and
    disconnect. The manager and UI do not need protocol-specific branches.
-4. Add adapter and contract tests. Any policy for trying subsequent candidates
-   requires a separate stage; profile adapters do not implement fallback.
+4. Add adapter and contract tests. The shared candidate loop handles fallback;
+   profile adapters own bounded startup, independent verification and confirmed stop.

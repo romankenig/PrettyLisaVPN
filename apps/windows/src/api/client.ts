@@ -526,6 +526,7 @@ function isActiveVpnSessionResponse(
     ]) &&
     (value.candidates === undefined ||
       (Array.isArray(value.candidates) &&
+        value.candidates.length <= 64 &&
         value.candidates.every(isConnectionConfig))) &&
     isUuid(value.session_id) &&
     value.status === "ACTIVE" &&

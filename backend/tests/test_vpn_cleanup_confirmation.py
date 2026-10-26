@@ -39,7 +39,7 @@ async def test_cleanup_acknowledges_only_durable_removal(monkeypatch, outcome):
 
     @asynccontextmanager
     async def session():
-        yield SimpleNamespace(begin=begin)
+        yield SimpleNamespace(begin=begin, get=AsyncMock(return_value=None))
 
     agent = AsyncMock()
     if outcome == "node_failure":

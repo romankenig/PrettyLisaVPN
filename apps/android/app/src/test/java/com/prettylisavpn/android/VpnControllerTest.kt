@@ -33,9 +33,12 @@ class VpnControllerTest {
         override suspend fun delete(id: String) { deletes++; if (failDelete) throw AuthFailure("offline"); value = null }
     }
     private class Runtime : TunnelRuntime {
+        override var diagnostic: VpnDiagnostic? = null
         var timeout = false; var failStop = false
+        var failPort: Int? = null
+        val attemptedPorts = mutableListOf<Int>()
         var up = false; var starts = 0; var stops = 0; var verified = true; var failStart = false
-        override suspend fun start(config: VpnConfig, key: TunnelKey) { starts++; if (failStart) error("native"); up = true }
+        override suspend fun start(config: VpnConfig, key: TunnelKey) { check(!up); starts++; attemptedPorts.add(config.port); if (failStart || config.port == failPort) error("native"); up = true }
         override suspend fun stop() { stops++; if(failStop) error("stop failed"); up = false }
         override suspend fun verify(config: VpnConfig): Boolean { if(timeout) withTimeout(1) { delay(100) }; return up && verified }
     }
@@ -54,6 +57,83 @@ class VpnControllerTest {
         runtime.verified = true; await { c.status.value.phase == VpnPhase.CONNECTED }
         c.disconnect(); await { c.status.value.phase == VpnPhase.DISCONNECTED }
         assertEquals(1, api.posts); assertTrue(api.deletes >= 1); assertFalse(runtime.up); assertNull(store.pending)
+    }
+    @Test fun failedVerificationKeepsOnlyClosedDiagnosticAndDisconnectClearsIt() = scenario {
+        val api = Api(); val runtime = Runtime(); val store = Store()
+        runtime.verified = false
+        runtime.diagnostic = VpnDiagnostic.DNS_FAILED
+        val c = VpnController(api, runtime, store, { "owner" },
+            { object : TunnelKey { override val publicKey = config.serverKey } },
+            this, { System.nanoTime()/1_000_000 }, attemptMillis = 50)
+        c.connect("DE"); await { c.status.value.phase == VpnPhase.FAILED }
+        assertEquals(VpnDiagnostic.DNS_FAILED, c.status.value.diagnostic)
+        assertNull(api.value); assertFalse(runtime.up); assertNull(store.pending)
+        c.disconnect(); await { c.status.value.phase == VpnPhase.DISCONNECTED }
+        assertNull(c.status.value.diagnostic)
+        assertNull(VpnDiagnostic.parse("private profile, key or destination"))
+        assertNull(VpnDiagnostic.parse("VERIFIED"))
+        assertEquals(VpnDiagnostic.HTTPS_FAILED, VpnDiagnostic.parse("HTTPS_FAILED"))
+    }
+    @Test fun failedFirstCandidateFallsBackWithinOneSessionAndPublishesTheMethod() = scenario {
+        val api = Api(); val runtime = Runtime(); val store = Store()
+        api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))
+        runtime.failPort = 51820
+        val c = controller(api, runtime, store, this)
+        c.connect("DE"); await { c.status.value.phase == VpnPhase.CONNECTED }
+        assertEquals(listOf(51820, 443), runtime.attemptedPorts)
+        assertEquals(1, api.posts); assertEquals(0, api.deletes)
+        assertEquals(VpnMethod.WIREGUARD_UDP, c.status.value.method)
+        c.beforeLogout(); assertNull(c.status.value.method); assertFalse(runtime.up)
+    }
+    @Test fun failedCleanupAbortsFallbackBeforeStartingAnotherCandidate() = scenario {
+        val api = Api(); val store = Store(); val attempted = mutableListOf<Int>()
+        api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))
+        val runtime = object : TunnelRuntime {
+            override suspend fun start(config: VpnConfig, key: TunnelKey) { attempted.add(config.port); error("failed transport") }
+            override suspend fun stop() { if (attempted.isNotEmpty()) error("unconfirmed cleanup") }
+            override suspend fun verify(config: VpnConfig) = false
+        }
+        val c = VpnController(api, runtime, store, { "owner" }, { object : TunnelKey { override val publicKey = config.serverKey } }, this, { System.nanoTime()/1_000_000 })
+        c.connect("DE"); await { c.status.value.phase == VpnPhase.CLEANUP_PENDING }
+        assertEquals(listOf(51820), attempted); assertEquals(0, api.deletes); assertNull(c.status.value.method)
+    }
+    @Test fun attemptProgressIsPublishedBeforeStartAndClearedAfterStop() = scenario {
+        val api = Api(); val store = Store()
+        api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))
+        val entered = listOf(CompletableDeferred<Unit>(), CompletableDeferred<Unit>())
+        val release = listOf(CompletableDeferred<Unit>(), CompletableDeferred<Unit>())
+        var index = 0
+        val runtime = object : TunnelRuntime {
+            override suspend fun start(config: VpnConfig, key: TunnelKey) {
+                val current = index++; entered[current].complete(Unit); release[current].await()
+                if (current == 0) error("private transport detail")
+            }
+            override suspend fun stop() {}
+            override suspend fun verify(config: VpnConfig) = true
+        }
+        val c = VpnController(api, runtime, store, { "owner" }, { object : TunnelKey { override val publicKey = config.serverKey } }, this, { System.nanoTime()/1_000_000 })
+        c.connect("DE"); withTimeout(5_000) { entered[0].await() }
+        assertEquals(VpnAttempt(VpnMethod.WIREGUARD_UDP), c.status.value.attempt)
+        release[0].complete(Unit); withTimeout(5_000) { entered[1].await() }
+        assertEquals(VpnAttempt(VpnMethod.WIREGUARD_UDP, VpnMethod.WIREGUARD_UDP), c.status.value.attempt)
+        assertNull(c.status.value.method)
+        release[1].complete(Unit); await { c.status.value.phase == VpnPhase.CONNECTED }
+        assertNull(c.status.value.attempt)
+        c.beforeLogout(); assertNull(c.status.value.attempt)
+    }
+    @Test fun verificationTimeoutMovesOnAndMonitoringUsesTheWinningCandidate() = scenario {
+        val api = Api(); val store = Store(); val attempted = mutableListOf<Int>()
+        api.allocated = session().copy(candidates = listOf(config, config.copy(port = 443)))
+        var up = false
+        val runtime = object : TunnelRuntime {
+            override suspend fun start(config: VpnConfig, key: TunnelKey) { check(!up); up = true; attempted.add(config.port) }
+            override suspend fun stop() { up = false }
+            override suspend fun verify(config: VpnConfig) = up && config.port == 443
+        }
+        val c = VpnController(api, runtime, store, { "owner" }, { object : TunnelKey { override val publicKey = config.serverKey } }, this, { System.nanoTime()/1_000_000 }, monitorMillis = 25, attemptMillis = 50)
+        c.connect("DE"); await { c.status.value.phase == VpnPhase.CONNECTED }; delay(100)
+        assertEquals(VpnPhase.CONNECTED, c.status.value.phase); assertEquals(listOf(51820, 443), attempted)
+        c.beforeLogout()
     }
     @Test fun cancelVerificationThenReconnectDoesNotRaceASecondCleanup() = scenario {
         val api=Api();val runtime=Runtime();val store=Store();runtime.verified=false
