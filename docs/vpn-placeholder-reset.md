@@ -102,3 +102,58 @@ the user download). Sign in, check account/devices/settings/subscription/support
 then press Connect once: watch the 14 methods fail and test Cancel on a second
 run. This verifies the replacement shell, not a real VPN connection. The previous
 three-attempt real-VPN acceptance goal is superseded by this reset.
+
+## Development retirement evidence — 2026-10-26
+
+PR #29 merge `dc3789904cb903eb100b9e35a3bea436146a753a` was deployed by
+Backend run `40310081716`, attempt 2. Its previous manual release had root-owned
+files that blocked the deployment user; ownership was repaired without changing
+secret contents or weakening mode 0600.
+
+The reset backend was built from committed source
+`55643dacce7fae69ce3199a34004c97373963b80` on the development host and deployed
+at 11:56 UTC. This was a manual SSH build, not an Actions-produced binary.
+Backend validation runs `40318257073` (push) and `40318264955` (PR), attempt 1,
+passed before deployment. Runtime:
+`0.16.0-dev.20261026115620+g55643dacce7fae69ce3199a34004c97373963b80`.
+Release directory:
+`/opt/prettylisavpn/releases/55643dacce7fae69ce3199a34004c97373963b80-manual-reset-20261026115620`.
+The release retains previous.env, previous-release, previous-image-id,
+runtime-identity.json and image-id. Canonical env remains mode 0600 and belongs
+to prettylisa-deploy. The first manual attempt encountered Windows line endings
+before deployment and successfully verified rollback to the previous release;
+the completed attempt normalized the shell script to LF.
+
+Fresh checks after deployment: health and readiness OK, PostgreSQL/Valkey ready,
+exact runtime version confirmed, POST /vpn/sessions returns 404. Before and after:
+1 account, 6 historical device rows, 63 terminal VPN session rows, zero unremoved
+sessions/credentials/managed leases. No account, device or history rows were deleted.
+
+DE and US agent databases also had zero active/unremoved managed leases before
+retirement. Project services were disabled/stopped, then configs, managed binaries,
+agent virtualenvs, WireGuard keys/profiles, obfuscators, service units and owned
+firewall/NAT rules were removed. The owner separately authorized US x-ui removal;
+its service, binaries and database were included. SSH remained reachable; no VPN
+listeners remained (only SSH and loopback host services). Base OS packages and the
+US swap file were retained; they do not start a tunnel.
+
+Private archives remain only on their respective hosts, under root mode 0700
+folders, with archive/files mode 0600; never publish them because they contain
+old keys and credentials:
+
+- DE: `/root/prettylisavpn-retired-20261026T120110Z`, 78,041,162-byte archive,
+  SHA-256 `cc445b2de9991c6dac101f0c6214e9e4f3324f457b945ff487060ac407119091`.
+- US: `/root/prettylisavpn-retired-20261026T120152Z`, 176,911,733-byte archive,
+  SHA-256 `31bb6e5d69339bfab2b7247ac086e70b06a888dd2f066dfb61f32e7539cd2cd2`.
+
+Each archive has its exact path manifest, original unit enablement and pre-cleanup
+firewall snapshot. An operator rollback must restore the matching node archive,
+owned rules, services, backend release and client together; do not restore all
+firewall rules blindly over later host changes. The reset PR remains separate
+from the already merged PR #29.
+
+Old diagnostic containers `pl-fleet-cross-netcup` (US), `pl-fleet-nyc` and
+`pl-fleet-netcup` (backend) were removed. Unused backend node-agent mTLS files were
+removed from the active secrets directory after a private archive was retained at
+`/root/prettylisavpn-retired-20261026T120457Z` on the backend host. Its archive
+SHA-256 is `b922efb459ca966dc050c14573a07e10deb3c8370588841b22ae5122a736107e`.

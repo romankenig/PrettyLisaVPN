@@ -51,10 +51,11 @@ fs.writeFileSync(
     "Announcements and acknowledgements use --simulate-messages; real cross-device delivery is not tested.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
-    "Tunnel dependencies, keys and session API are synthetic fixtures; no real tunnel was started or verified.",
+    "The shipped placeholder executor invokes 14 adapters, each failing after 3 seconds; fallback and cancellation are verified.",
+    "No VPN engine, keys or session API are used; no real tunnel was started or verified.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
-    "WebView2 Runtime is required. WireGuard DLL is intentionally not packaged.",
+    "WebView2 Runtime is required. VPN engine binaries are removed.",
     "No installer or code signing is included.",
   ].join("\n") + "\n",
 );
@@ -973,8 +974,9 @@ async function main() {
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
-        injectedVpnFixture: true,
-        connectionDetailsVerifiedWithFixtures: true,
+        injectedVpnFixture: false,
+        shippedPlaceholderExecutorVerified: true,
+        placeholderFallbackAndCancellationVerified: true,
         trafficModeUiVerified: true,
         screenshots: fs
           .readdirSync(output)

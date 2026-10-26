@@ -80,7 +80,7 @@ class PresentationUiTest {
         compose.onNodeWithTag("vpn-attempt").assertDoesNotExist()
         compose.runOnUiThread { state.value = VpnStatus(VpnPhase.FAILED, error = VpnError.METHODS_EXHAUSTED, method = VpnMethod("hysteria", "Hysteria / Hysteria 2")) }
         compose.onNodeWithTag("vpn-attempt").assertDoesNotExist()
-        compose.onNodeWithTag("vpn-error").assertTextContains("All methods tried", substring = true)
+        compose.onNodeWithTag("vpn-error").assertTextContains("all methods tried", substring = true)
         screenshot("vpn-failed-diagnostic-en")
         compose.runOnUiThread { state.value = VpnStatus(VpnPhase.DISCONNECTED) }
         compose.onNodeWithTag("vpn-diagnostic").assertDoesNotExist()
