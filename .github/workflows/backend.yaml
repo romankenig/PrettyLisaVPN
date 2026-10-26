@@ -250,7 +250,7 @@ jobs:
           } > "$TRANSFER_DIRECTORY/development.env"
 
           tar -czf "$TRANSFER_DIRECTORY/deployment.tar.gz" \
-            -C infra/deployment Caddyfile compose.yaml compose.node-agent.yaml deploy.sh
+            -C infra/deployment Caddyfile compose.yaml deploy.sh
           cp runtime-identity.json "$TRANSFER_DIRECTORY/runtime-identity.json"
           docker save "$DEPLOY_IMAGE" | gzip -1 > "$TRANSFER_DIRECTORY/backend-image.tar.gz"
 
@@ -291,12 +291,6 @@ jobs:
           incoming_directory="${deployment_root}/incoming/${revision}"
           release_directory="${deployment_root}/releases/${revision}"
           environment_file="${deployment_root}/secrets/deployment.env"
-
-          node_agent_environment="${deployment_root}/secrets/node-agent.env"
-          if [[ -f "$node_agent_environment" ]]; then
-            grep -E '^VPN_NODE_(AGENT_AUTH_TOKEN|AGENT_TLS_DIRECTORY|AGENT_PORT|STALE_TIMEOUT_SECONDS|HEALTH_POLL_INTERVAL_SECONDS)=' \
-              "$node_agent_environment" >> "${incoming_directory}/development.env" || true
-          fi
 
           cleanup() {
             rm -f \

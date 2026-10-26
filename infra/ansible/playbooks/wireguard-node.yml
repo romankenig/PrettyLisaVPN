@@ -1,9 +1,0 @@
----
-- name: Configure PrettyLisaVPN WireGuard data-plane nodes
-  hosts: vpn_nodes
-  become: true
-  gather_facts: true
-  serial: 1
-
-  roles:
-    - role: wireguard_node

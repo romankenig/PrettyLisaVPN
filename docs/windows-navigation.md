@@ -1,3 +1,27 @@
+## Current location and backend label — Windows 0.14.1 / Android 0.11.1
+
+Home current location uses the actual public egress with a bounded HTTPS fallback
+if the primary provider fails. Android refresh is independent of account metadata.
+Windows Backend label displays only the validated SemVer core from GET /version,
+matching Android; invalid/unavailable responses display unavailable. UI routes,
+auth guards and the 14 VPN placeholders remain unchanged. See
+[location/version handoff](client-location-fix.md) for evidence and limitations.
+
+## VPN reset — Windows 0.14.0
+
+Home Connect now starts the shipped 14-method placeholder executor. Each method
+waits 3 seconds and fails; the status names the current and previous method.
+The button changes to Cancel during the sequence and immediately cancels the timer.
+All failures leave Home disconnected with an explicit placeholder message.
+Country metadata still loads from `/vpn/countries`; unavailable countries may be
+selected for placeholder tests. No session/credential API call or system VPN prompt
+occurs. Account change/logout cancels the executor. Other routes and external
+payment/support/auth flows retain their existing contracts.
+
+Future adapters plug into the same executor and must return verified success;
+only then will the existing connection details appear. That integration is pending.
+See [handoff](vpn-placeholder-reset.md).
+
 # Windows: экраны, окна и переходы
 
 Android 0.10.0: Home → внутренняя ConsentActivity → системное VPN-разрешение →

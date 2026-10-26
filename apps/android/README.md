@@ -1,49 +1,22 @@
-# PrettyLisaVPN для Android
+# PrettyLisaVPN Android
 
-Current packaging: **Android 0.10.0 / code18**. Build and install only `:app`
-(`app-debug.apk`). The engine service is included in its private process; no
-companion APK is needed. Build `managed.aar` from the same commit before Gradle,
-following `.github/workflows/android.yml`. See the
-[connection plan and bounded acceptance](../../docs/android-single-apk-plan.md).
-The remaining sections retain historical instructions for earlier versions.
+Android 0.11.0 (versionCode 19) is a single APK with no VPN engine, Binder companion,
+VpnService, native tunnel library, VPN consent or foreground-service permission.
+Connect invokes 14 adapters in order; each currently delays three seconds and fails.
+Cancel interrupts the active delay. All failures end disconnected after about 42 seconds.
 
-Android **0.5.0 / versionCode 5** — auth/session и profile/devices/messages/billing/
-support API существующего development-backend. Windows 0.12.0 и backend 0.10.0/schema0026
-unchanged. [Контракты, восстановление и ограничения](../../docs/android-account-api.md).
+Build with JDK 17 and Android SDK 36:
 
-Обычный launcher: настоящий email OTP, защищённая сессия, данные аккаунта, отзыв устройств,
-ACK сообщений, overview подписки, обращение в поддержку и status receipt. При первом
-запуске письма/обращения не отправляются автоматически. Поддержка отправляется явной
-кнопкой Send; вложения выбираются системным SAF. Диагностика Android пока недоступна.
-
-При DISABLED/SANDBOX платежи недоступны; действия допускаются только по LIVE capabilities
-и свежей price revision. Реальный provider не настраивался. VPN runtime ещё отсутствует.
-[Auth/session 0.4.0](../../docs/android-auth-session.md) и [fixture screens](../../docs/android-fixture-screens.md)
-сохранены как этапы. FixtureSource включается только instrumentation; release его не содержит.
-Шесть языков — будущая отдельная задача.
-
-## Сборка и CI
-
-JDK17, Android SDK36, minSdk26, targetSdk36, Gradle8.13/AGP8.11.1/Kotlin2.1.21.
-Pinned зависимости — [libs.versions.toml](gradle/libs.versions.toml).
-
-```bash
-cd apps/android
+```sh
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
+python3 scripts/check-localization.py
 python3 scripts/check-source-isolation.py
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -W -n com.prettylisavpn.android.dev/com.prettylisavpn.android.MainActivity
+python3 scripts/check-vpn-packaging.py
 ```
 
-[Android debug workflow](../../.github/workflows/android.yml) собирает текущий SHA,
-проверяет debug/release isolation, JVM tests и lint. Тот же debug APK устанавливается
-на API26/35/36: 3 navigation + 9 flow tests + 3 design tests ×6конфигураций =
-30 instrumented tests/API. Сохраняются native PNG baseline/flows/design, JSON
-viewport/fontScale/IME/source и runtime/ANR diagnostics. Source SHA, PR merge SHA,
-run/attempt и APK SHA-256 — в build-identity.json; после завершения — в task PR.
-Артефакты APK/native evidence хранятся14дней. Проверки не доказывают настоящий VPN.
+No Go, NDK, AAR or engine source build is needed. CI checks the installed APK on
+API 26/35/36, the actual 42-second sequence, cancellation, account flows and screenshots.
+The debug signature and application ID are unchanged; install over the existing app
+to retain the login. The old separate Engines APK can be uninstalled.
 
-Прежний [дизайн0.2.0](../../docs/android-design.md), [архитектура](../../docs/android-architecture.md),
-[план](../../docs/android-porting-plan.md), [требования локализации](../../docs/android-localization.md).
-Rubik/OFL: [лицензия](app/src/main/assets/licenses/Rubik-OFL.txt).
-Release signing/store publication/auth/API/VPN/SAF/TalkBack и device E2E — будущие задачи.
+See [adapter contract, scope and rollback](../../docs/vpn-placeholder-reset.md).

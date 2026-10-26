@@ -6,9 +6,6 @@ api_level=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 [[ "$api_level" =~ ^[0-9]+$ ]]
 mkdir -p evidence
 cleanup() {
-  if [[ -n "${vpn_peer_pid:-}" ]]; then kill "$vpn_peer_pid" 2>/dev/null || true; wait "$vpn_peer_pid" 2>/dev/null || true; fi
-  adb logcat -d -s WireGuard/GoBackend AndroidRuntime > evidence/vpn-runtime-log.txt 2>&1 || true
-  if [[ -f /tmp/prettylisa-peer-log ]]; then cp /tmp/prettylisa-peer-log evidence/vpn-peer-log.txt; fi
   # Preserve framework/IME evidence too: a System UI ANR must not look like an app-input failure.
   adb logcat -d -b events > evidence/android-events.txt 2>&1 || true
   adb shell dumpsys activity lastanr > evidence/last-anr.txt 2>&1 || true
@@ -43,44 +40,15 @@ adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
 
-# The disposable host peer is owned only by this emulator job; keys are never artifacts.
-bash apps/android/scripts/vpn-test-peer.sh > /tmp/prettylisa-peer-log 2>&1 &
-vpn_peer_pid=$!
-for attempt in $(seq 1 50); do
-  if [[ -s /tmp/prettylisa-test-peer-public ]]; then break; fi
-  if ! kill -0 "$vpn_peer_pid" 2>/dev/null; then cat /tmp/prettylisa-peer-log; exit 1; fi
-  sleep 0.2
-done
-[[ -s /tmp/prettylisa-test-peer-public ]]
-adb shell run-as "$package" mkdir -p files/vpn-test-peer
-adb shell run-as "$package" tee files/vpn-test-peer/server-public-key < /tmp/prettylisa-test-peer-public > /dev/null
-
-# Production VpnService + actual WireGuard JNI/TUN. Isolated unresponsive peer, never real OTP.
-adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest \
-  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-instrumentation.txt
-python3 - <<'VPN_CHECK'
+# The installed app executes all 14 real three-second placeholders, then cancellation.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.PlaceholderConnectionTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/placeholder-instrumentation.txt
+python3 - <<'PLACEHOLDER_CHECK'
 import pathlib, re
-result = pathlib.Path('evidence/vpn-instrumentation.txt').read_text()
+result = pathlib.Path('evidence/placeholder-instrumentation.txt').read_text()
 assert re.search(r'OK \(1 test\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
-VPN_CHECK
-# Keep a real connected peer/journal, kill the application, then recover in a new process.
-adb shell am force-stop "$package"
-adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnServiceTest -e vpnStage seed \
-  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-restart-seed-instrumentation.txt
-adb shell am force-stop "$package"
-adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnRestartCheck \
-  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-restart-check-instrumentation.txt
-python3 - <<'VPN_RESTART'
-import pathlib,re
-for stage in ('seed','check'):
-    result=pathlib.Path(f'evidence/vpn-restart-{stage}-instrumentation.txt').read_text()
-    assert re.search(r'OK \(1 test\)',result),result
-    assert not any(marker in result for marker in ('FAILURES!!!','INSTRUMENTATION_FAILED','shortMsg=')),result
-VPN_RESTART
-kill "$vpn_peer_pid"
-wait "$vpn_peer_pid" || true
-vpn_peer_pid=
+PLACEHOLDER_CHECK
 
 adb shell am instrument -w -r -e class com.prettylisavpn.android.NavigationTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/instrumentation.txt

@@ -4,7 +4,6 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
 from typing import cast
 
 from fastapi import FastAPI, Request
@@ -42,6 +41,7 @@ from prettylisavpn.devices.management import DeviceManagementHandler, DeviceMana
 from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
 from prettylisavpn.emailing.timeweb import TimewebEmailProvider
+from prettylisavpn.locations import router as locations_router
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.readiness import Dependency, Readiness
@@ -53,28 +53,6 @@ from prettylisavpn.support.delivery import (
 )
 from prettylisavpn.support.router import router as support_router
 from prettylisavpn.support.service import SupportService
-from prettylisavpn.vpn_nodes.agent import HttpNodeAgentClient, ManagedNodePort, NodeAgentPort
-from prettylisavpn.vpn_nodes.countries import (
-    DatabaseVpnCountryCatalog,
-    VpnCountryAvailabilityHandler,
-    VpnCountryAvailabilityService,
-)
-from prettylisavpn.vpn_nodes.monitor import NodeHealthMonitorPort, VpnNodeHealthMonitor
-from prettylisavpn.vpn_nodes.router import router as vpn_router
-from prettylisavpn.vpn_sessions.connection import (
-    UnavailableVpnConnectionService,
-    VpnConnectionHandler,
-    VpnConnectionService,
-)
-from prettylisavpn.vpn_sessions.managed import ManagedVpnService
-from prettylisavpn.vpn_sessions.status import VpnSessionStatusHandler, VpnSessionStatusService
-from prettylisavpn.vpn_sessions.termination import (
-    UnavailableVpnTerminationService,
-    VpnSessionReconciler,
-    VpnSessionReconcilerPort,
-    VpnSessionTerminationService,
-    VpnTerminationHandler,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -131,13 +109,6 @@ def create_app(
     login_service: LoginHandler | None = None,
     authenticated_sessions: AuthenticatedSessionHandler | None = None,
     device_management: DeviceManagementHandler | None = None,
-    node_health_monitor: NodeHealthMonitorPort | None = None,
-    vpn_country_availability: VpnCountryAvailabilityHandler | None = None,
-    vpn_connection: VpnConnectionHandler | None = None,
-    vpn_session_status: VpnSessionStatusHandler | None = None,
-    node_agent: NodeAgentPort | None = None,
-    vpn_termination: VpnTerminationHandler | None = None,
-    vpn_session_reconciler: VpnSessionReconcilerPort | None = None,
     support_mailer: SupportMailPort | None = None,
     support_worker: SupportWorkerPort | None = None,
     billing: BillingOverviewPort | None = None,
@@ -219,24 +190,6 @@ def create_app(
                     cast(Postgres, pg), support_mailer or SupportSmtpMailer.from_settings(config)
                 )
                 app.state.support_worker = active_support_worker
-                app.state.vpn_country_availability = (
-                    vpn_country_availability
-                    if vpn_country_availability is not None
-                    else VpnCountryAvailabilityService(
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                        DatabaseVpnCountryCatalog(
-                            cast(Postgres, pg),
-                            timedelta(seconds=config.vpn_node_stale_timeout_seconds),
-                        ),
-                    )
-                )
-                app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
-                monitor = node_health_monitor
-                agent_client: HttpNodeAgentClient | None = None
-                active_agent = node_agent
-                if active_agent is None and config.vpn_node_agent_is_configured():
-                    agent_client = HttpNodeAgentClient.from_settings(config)
-                    active_agent = agent_client
                 app.state.device_management = (
                     device_management
                     if device_management is not None
@@ -245,65 +198,10 @@ def create_app(
                         cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                         cast(ProductEventSink, app.state.product_events),
                         config,
-                        active_agent,
                     )
                 )
-                if monitor is None and active_agent is not None:
-                    monitor = VpnNodeHealthMonitor(cast(Postgres, pg), active_agent, config)
-                app.state.vpn_connection = (
-                    vpn_connection
-                    if vpn_connection is not None
-                    else VpnConnectionService(
-                        cast(Postgres, pg),
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                        active_agent,
-                        config,
-                    )
-                    if active_agent is not None
-                    else UnavailableVpnConnectionService(
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
-                    )
-                )
-                app.state.vpn_session_status = (
-                    vpn_session_status
-                    if vpn_session_status is not None
-                    else VpnSessionStatusService(
-                        cast(Postgres, pg),
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                        config,
-                    )
-                )
-                app.state.managed_vpn = ManagedVpnService(
-                    cast(Postgres, pg),
-                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                    active_agent if isinstance(active_agent, ManagedNodePort) else None,
-                    config,
-                )
-                app.state.vpn_termination = (
-                    vpn_termination
-                    if vpn_termination is not None
-                    else VpnSessionTerminationService(
-                        cast(Postgres, pg),
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
-                        active_agent,
-                    )
-                    if active_agent is not None
-                    else UnavailableVpnTerminationService(
-                        cast(AuthenticatedSessionHandler, app.state.authenticated_sessions)
-                    )
-                )
-                reconciler = vpn_session_reconciler
-                if reconciler is None and active_agent is not None:
-                    reconciler = VpnSessionReconciler(cast(Postgres, pg), active_agent, config)
                 monitor_stop = asyncio.Event()
-                monitor_task = (
-                    asyncio.create_task(monitor.run(monitor_stop)) if monitor is not None else None
-                )
-                reconciler_task = (
-                    asyncio.create_task(reconciler.run(monitor_stop))
-                    if reconciler is not None
-                    else None
-                )
+                app.state.readiness = Readiness(pg, cache, config.dependency_timeout_seconds)
                 support_task = (
                     asyncio.create_task(active_support_worker.run(monitor_stop))
                     if isinstance(pg, Postgres)
@@ -323,14 +221,6 @@ def create_app(
                         await billing_task
                     if support_task is not None:
                         await support_task
-                    if monitor_task is not None:
-                        monitor_stop.set()
-                        await monitor_task
-                    if reconciler_task is not None:
-                        monitor_stop.set()
-                        await reconciler_task
-                    if agent_client is not None:
-                        await agent_client.close()
             finally:
                 await cache.close()
         finally:
@@ -344,7 +234,7 @@ def create_app(
     app.include_router(auth_router)
     app.include_router(account_router)
     app.include_router(devices_router)
-    app.include_router(vpn_router)
+    app.include_router(locations_router)
     app.include_router(messages_router)
     app.include_router(support_router)
     app.include_router(billing_router)

@@ -1,24 +1,14 @@
 [package]
 name = "prettylisavpn-windows"
-version = "0.13.0"
+version = "0.14.1"
 edition = "2021"
 rust-version = "1.85"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
-base64 = "0.22"
-chacha20poly1305 = "0.10"
-ipnet = "2"
-hickory-proto = { version = "0.24", default-features = false }
-httparse = "1"
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
-socket2 = "0.6"
 url = "2"
 serde_json = "1"
-webpki-roots = "1"
-rand_core = { version = "0.6", features = ["getrandom"] }
 serde = { version = "1", features = ["derive"] }
-sha2 = "0.10"
 tauri = { version = "2", features = [] }
 tauri-plugin-http = "2"
 uuid = { version = "1", features = ["v4"] }
@@ -27,14 +17,6 @@ windows-sys = { version = "0.61", features = [
   "Win32_Graphics_Gdi",
   "Win32_UI_WindowsAndMessaging",
   "Win32_UI_Shell",
-  "Win32_NetworkManagement_IpHelper",
-  "Win32_NetworkManagement_Ndis",
-  "Win32_Networking_WinSock",
   "Win32_Security_Credentials",
-  "Win32_System_JobObjects",
-  "Win32_System_Threading",
-  "Win32_System_Diagnostics_ToolHelp",
 ] }
-wireguard-nt = "0.5"
-x25519-dalek = { version = "2", features = ["static_secrets", "zeroize"] }
 zeroize = "1"

@@ -255,19 +255,13 @@
     <string name="location_quality">disponibilidad %1$s de 100</string>
     <string name="vpn_connected">conectado</string>
     <string name="vpn_connecting">conectando…</string>
-    <string name="vpn_verifying">comprobando la conexión VPN…</string>
     <string name="vpn_disconnecting">desconectando…</string>
     <string name="vpn_disconnect">desconectar</string>
-    <string name="vpn_retry_cleanup">reintentar limpieza</string>
     <string name="vpn_cleanup">aún no se ha confirmado la limpieza al desconectar VPN. vuelve a desconectar; la reconexión está bloqueada hasta que termine.</string>
-    <string name="vpn_permission_denied">no se concedió permiso de VPN. no se creó ninguna sesión del servidor.</string>
-    <string name="vpn_unavailable">VPN no está disponible en esta fuente de datos de prueba.</string>
-    <string name="vpn_unsupported">Android no admite este perfil del servidor. se ha detenido la sesión.</string>
-    <string name="vpn_verification_failed">no se pudo verificar la conexión VPN. se ha detenido el túnel.</string>
-    <string name="vpn_quota">se ha agotado el tiempo gratuito diario.</string>
-    <string name="vpn_access">el acceso VPN ha terminado. inicia sesión o revisa tu suscripción.</string>
     <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
     <string name="vpn_trying_method">probando %1$s…</string>
-    <string name="vpn_retrying_method">probando otra opción de %1$s…</string>
     <string name="vpn_switching_method">%1$s no se conectó. probando %2$s…</string>
+    <string name="vpn_cancel">cancelar</string>
+    <string name="vpn_placeholder_notice">modo de prueba: las conexiones VPN aún no están implementadas.</string>
+    <string name="vpn_placeholder_exhausted">%1$s no se conectó. se probaron todos los métodos; VPN aún no está implementado.</string>
 </resources>

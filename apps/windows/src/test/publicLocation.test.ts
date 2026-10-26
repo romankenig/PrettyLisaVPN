@@ -62,7 +62,7 @@ it("bounds a provider that ignores AbortSignal", async () => {
   const assertion = expect(result).rejects.toThrow(
     "PUBLIC_LOCATION_UNAVAILABLE",
   );
-  await vi.advanceTimersByTimeAsync(8000);
+  await vi.advanceTimersByTimeAsync(17000);
   await assertion;
   expect(transport.mock.calls[0][1]?.signal?.aborted).toBe(true);
 });

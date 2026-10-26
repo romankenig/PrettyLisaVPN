@@ -51,10 +51,11 @@ fs.writeFileSync(
     "Announcements and acknowledgements use --simulate-messages; real cross-device delivery is not tested.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
-    "Tunnel dependencies, keys and session API are synthetic fixtures; no real tunnel was started or verified.",
+    "The shipped placeholder executor invokes 14 adapters, each failing after 3 seconds; fallback and cancellation are verified.",
+    "No VPN engine, keys or session API are used; no real tunnel was started or verified.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
-    "WebView2 Runtime is required. WireGuard DLL is intentionally not packaged.",
+    "WebView2 Runtime is required. VPN engine binaries are removed.",
     "No installer or code signing is included.",
   ].join("\n") + "\n",
 );
@@ -69,7 +70,7 @@ fs.copyFileSync(
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
 const api = spawn(
   "python",
-  ["scripts/ci/mock-ui-api.py", "--simulate-vpn", "--simulate-messages"],
+  ["scripts/ci/mock-ui-api.py", "--simulate-billing", "--simulate-messages"],
   {
     stdio: ["ignore", log, log],
   },
@@ -252,9 +253,12 @@ async function main() {
   await page
     .locator(".sidebar-versions > div")
     .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
-    .getByText(deviceEvidence?.version.application_version || "недоступна", {
-      exact: true,
-    })
+    .getByText(
+      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.16.0",
+      {
+        exact: true,
+      },
+    )
     .waitFor();
   const navigation = await page
     .getByRole("navigation")
@@ -423,45 +427,27 @@ async function main() {
   if (!(await combo.textContent()).includes("Германия"))
     throw new Error("Country choice failed");
   await screenshot("04b-home-country");
-  await page.evaluate(() => {
-    document.documentElement.dataset.vpnReviewHold = "true";
-  });
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByText("Пробую WireGuard…", { exact: true }).waitFor();
-  await screenshot("04b-home-trying-wireguard-fixture");
-  await page.evaluate(() => {
-    delete document.documentElement.dataset.vpnReviewHold;
-  });
-  await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
-  if (await page.locator(".connection-attempt").count())
-    throw new Error("Attempt progress must disappear after verification");
-  await page.getByText("198.51.100.42", { exact: true }).waitFor();
-  await page.getByLabel("способ подключения", { exact: true }).waitFor();
-  const metadata = await page
-    .getByLabel("способ подключения", { exact: true })
-    .evaluate((node) => ({
-      color: getComputedStyle(node).color,
-      size: parseFloat(getComputedStyle(node).fontSize),
-      text: node.innerText,
-    }));
+  await screenshot("04b-home-trying-wireguard");
+  await page
+    .getByText("WireGuard не подключился, пробую AmneziaWG…", { exact: true })
+    .waitFor();
+  await screenshot("04c-home-next-method");
+  await page
+    .getByText(/Hysteria \/ Hysteria 2 не подключился. Все способы проверены/)
+    .waitFor({ timeout: 50_000 });
   if (
-    !metadata.text.includes("192.0.2.20:51820") ||
-    metadata.size > 12 ||
-    !metadata.color.startsWith("rgba(")
+    await page.getByRole("heading", { name: "Connected", exact: true }).count()
   )
-    throw new Error("Expected muted runtime connection facts");
-  await screenshot("04c-home-connected-fixture");
-  await page.getByText("параметры подключения", { exact: true }).click();
-  await page.getByText("публичный ключ сервера", { exact: true }).waitFor();
-  await page.locator(".connection-info dd").first().scrollIntoViewIfNeeded();
-  await screenshot("04d-home-connection-details-fixture");
-  await page.getByText("параметры подключения", { exact: true }).click();
-  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+    throw new Error("Placeholders must never report Connected");
+  await screenshot("04d-home-all-methods-failed");
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByRole("button", { name: "Отменить", exact: true }).click();
   await page
     .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
-  if (await page.getByLabel("способ подключения", { exact: true }).count())
-    throw new Error("Connection facts must disappear after disconnect");
+  await screenshot("04e-home-cancelled");
 
   await page
     .getByRole("navigation")
@@ -982,7 +968,7 @@ async function main() {
         realAccountMessageSyncTested: false,
         supportEmailDeliveryTested: false,
         realPaymentsTested: false,
-        backendVersionFallbackVerified: !deviceEvidence,
+        backendReleaseCoreVerified: true,
         recordedDeviceBackendEvidence: deviceEvidence,
         recordedBillingBackendEvidence: billingEvidence,
         readonlyBillingBackendVerified: Boolean(billingEvidence),
@@ -991,8 +977,9 @@ async function main() {
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
-        injectedVpnFixture: true,
-        connectionDetailsVerifiedWithFixtures: true,
+        injectedVpnFixture: false,
+        shippedPlaceholderExecutorVerified: true,
+        placeholderFallbackAndCancellationVerified: true,
         trafficModeUiVerified: true,
         screenshots: fs
           .readdirSync(output)

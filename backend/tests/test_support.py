@@ -84,6 +84,7 @@ def test_raster_rebuilt_without_metadata(fmt, media):
         (image()[:30], "image/png"),
         (b"x" * (5 * 1024 * 1024 + 1), "image/png"),
     ],
+    ids=["disguised", "wrong-media-type", "corrupt", "oversized"],
 )
 def test_reject_disguised_corrupt_and_oversized_images(data, media):
     with pytest.raises(SupportError, match="ATTACHMENT_REJECTED"):

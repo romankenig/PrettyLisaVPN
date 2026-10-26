@@ -52,7 +52,7 @@ class PresentationUiTest {
         compose.onNodeWithTag("server-connection-notice").assertDoesNotExist()
     }
     @Test fun vpnAttemptCommentsFollowTheCurrentAttemptAndDisappearOnSuccess() {
-        val state = kotlinx.coroutines.flow.MutableStateFlow(VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod.WIREGUARD_UDP)))
+        val state = kotlinx.coroutines.flow.MutableStateFlow(VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod("wireguard", "WireGuard"))))
         val actions = object : VpnActions {
             override val status = state
             override fun connect(country: String) {}
@@ -63,24 +63,24 @@ class PresentationUiTest {
         } }
         compose.onNodeWithTag("vpn-attempt").assertTextEquals("trying WireGuard…")
         screenshot("vpn-trying-en")
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod.WIREGUARD_UDP, VpnMethod.WIREGUARD_UDP)) }
-        compose.onNodeWithTag("vpn-attempt").assertTextEquals("trying another WireGuard option…")
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod("wireguard", "WireGuard"), VpnMethod("wireguard", "WireGuard"))) }
+        compose.onNodeWithTag("vpn-attempt").assertTextEquals("WireGuard did not connect. trying WireGuard…")
         screenshot("vpn-retrying-en")
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.VERIFYING, attempt = VpnAttempt(VpnMethod.WIREGUARD_UDP)) }
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod("wireguard", "WireGuard"))) }
         compose.onNodeWithTag("vpn-attempt").assertTextEquals("trying WireGuard…")
         screenshot("vpn-verifying-en")
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod.VLESS_REALITY, VpnMethod.WIREGUARD_UDP)) }
-        compose.onNodeWithTag("vpn-attempt").assertTextEquals("WireGuard did not connect. trying VLESS/REALITY…")
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.VERIFYING, attempt = VpnAttempt(VpnMethod.VLESS_REALITY, VpnMethod.WIREGUARD_UDP)) }
-        compose.onNodeWithTag("vpn-attempt").assertTextEquals("WireGuard did not connect. trying VLESS/REALITY…")
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod("vless", "VLESS"), VpnMethod("wireguard", "WireGuard"))) }
+        compose.onNodeWithTag("vpn-attempt").assertTextEquals("WireGuard did not connect. trying VLESS…")
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(VpnMethod("vless", "VLESS"), VpnMethod("wireguard", "WireGuard"))) }
+        compose.onNodeWithTag("vpn-attempt").assertTextEquals("WireGuard did not connect. trying VLESS…")
         screenshot("vpn-switch-verifying-en")
         compose.onNodeWithTag("vpn-method").assertDoesNotExist()
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTED, method = VpnMethod.WIREGUARD_UDP) }
-        compose.onNodeWithTag("vpn-method").assertTextEquals("WireGuard · UDP")
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.CONNECTED, method = VpnMethod("wireguard", "WireGuard")) }
+        compose.onNodeWithTag("vpn-method").assertTextEquals("WireGuard")
         compose.onNodeWithTag("vpn-attempt").assertDoesNotExist()
-        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.FAILED, error = VpnError.VERIFICATION, attempt = VpnAttempt(VpnMethod.VLESS_REALITY), diagnostic = VpnDiagnostic.DNS_FAILED) }
+        compose.runOnUiThread { state.value = VpnStatus(VpnPhase.FAILED, error = VpnError.METHODS_EXHAUSTED, method = VpnMethod("hysteria", "Hysteria / Hysteria 2")) }
         compose.onNodeWithTag("vpn-attempt").assertDoesNotExist()
-        compose.onNodeWithTag("vpn-diagnostic").assertTextEquals("DNS_FAILED")
+        compose.onNodeWithTag("vpn-error").assertTextContains("all methods tried", substring = true)
         screenshot("vpn-failed-diagnostic-en")
         compose.runOnUiThread { state.value = VpnStatus(VpnPhase.DISCONNECTED) }
         compose.onNodeWithTag("vpn-diagnostic").assertDoesNotExist()

@@ -13,11 +13,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from prettylisavpn.auth.session_service import AccessIdentity, AuthenticatedSessionHandler
 from prettylisavpn.auth_sessions.model import AuthSessionRecord
 from prettylisavpn.connections import Postgres
+from prettylisavpn.legacy_vpn.sessions import VpnSessionRecord
 from prettylisavpn.support.domain import Receipt, Report, Status, SupportError
 from prettylisavpn.support.images import TOTAL_BYTES, Screenshot
 from prettylisavpn.support.model import SupportAttachmentRecord, SupportRequestRecord
 from prettylisavpn.users.model import UserRecord
-from prettylisavpn.vpn_sessions.model import VpnSessionRecord
 
 
 def fingerprint(report: Report, files: list[tuple[bytes, str]]) -> bytes:

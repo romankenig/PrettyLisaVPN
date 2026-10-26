@@ -66,16 +66,6 @@ fi
 compose=(docker compose --project-name "$project_name" \
     --env-file "$environment_file" --file "$deployment_dir/compose.yaml")
 
-node_agent_token="$(read_environment_value VPN_NODE_AGENT_AUTH_TOKEN)"
-if [[ -n "$node_agent_token" ]]; then
-    node_agent_compose="$deployment_dir/compose.node-agent.yaml"
-    if [[ ! -f "$node_agent_compose" ]]; then
-        printf 'Node agent is configured but deployment override is missing.\n' >&2
-        exit 1
-    fi
-    compose+=(--file "$node_agent_compose")
-fi
-
 "${compose[@]}" config --quiet
 if [[ "$deploy_mode" == "rollback" ]]; then
     # A rollback must use an already retained artifact and must not rebuild or pull.

@@ -9,10 +9,10 @@ from uuid import UUID, uuid4
 import pytest
 from billing_fake import TestBillingProvider
 from httpx import ASGITransport, AsyncClient
+from legacy_data import clean_up
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from test_subscription_access_integration import access_state as _access_state
-from test_vpn_sessions_integration import clean_up
 
 from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository

@@ -44,7 +44,8 @@ export function createPublicLocationProvider(
         });
         if (controller.signal.aborted) rejectAbort();
       });
-      const timer = globalThis.setTimeout(() => controller.abort(), 8000);
+      // Native Windows tries two fixed providers, each bounded to eight seconds.
+      const timer = globalThis.setTimeout(() => controller.abort(), 17000);
       try {
         return await Promise.race([
           (async () => {

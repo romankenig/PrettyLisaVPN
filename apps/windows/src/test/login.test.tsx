@@ -39,9 +39,6 @@ function renderLogin(requestOtp: RequestOtp) {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
-    createVpnSession: vi.fn(),
-    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
-    disconnectVpnSession: vi.fn(),
   };
   return render(
     <ApplicationProvider
@@ -161,9 +158,6 @@ describe("email login", () => {
         autopilot: { quality: 90, available: true },
         countries: [],
       }),
-      createVpnSession: vi.fn(),
-      getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
-      disconnectVpnSession: vi.fn(),
     };
     render(
       <ApplicationProvider

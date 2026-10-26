@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.ui
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.*
@@ -47,7 +48,7 @@ class PresentationTest {
     @Test fun publicMetadataUsesActualVersionAndCountryWithoutCredentials() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("""{"application_version":"0.10.0-dev.39206276137+g69ab8d1d3d3c5680fc72bb23980776242606a104","environment":"development"}"""))
-            server.enqueue(MockResponse().setBody("""{"success":true,"country_code":"RU"}"""))
+            server.enqueue(MockResponse().setBody("""{"success":true,"ip":"192.0.2.10","country_code":"RU"}"""))
             val metadata = PublicMetadata(server.url("/version").toString(), server.url("/country").toString())
             assertEquals("0.10.0", metadata.version()); assertEquals("RU", metadata.country())
             repeat(2) {
@@ -87,6 +88,38 @@ class PresentationTest {
                 server.enqueue(MockResponse().setBody("""{"success":true,"ip":"$ip"}"""));assertNull(metadata.location());server.takeRequest()
             }
         }
+    }
+    @Test fun publicLocationFallsBackOnHttpDnsOrInvalidResponseAndStopsOnSuccess() = runBlocking {
+        MockWebServer().use { primary -> MockWebServer().use { secondary ->
+            val fallback = secondary.url("/json").toString()
+            val metadata = PublicMetadata(primary.url("/version").toString(), primary.url("/location").toString(), fallback)
+            for (response in listOf(MockResponse().setResponseCode(429), MockResponse().setBody("{\"success\":false}"), MockResponse().setBody("{\"success\":true,\"ip\":\"invalid\"}"))) {
+                primary.enqueue(response)
+                secondary.enqueue(MockResponse().setBody("""{"ip":"192.0.2.10","country":"NL","city":"Amsterdam","loc":"ignored"}"""))
+                assertEquals(PublicLocation("192.0.2.10", "NL", "Amsterdam"), metadata.location())
+                val request = secondary.takeRequest()
+                assertNull(request.getHeader("Authorization")); assertNull(request.getHeader("Cookie"))
+                assertEquals("/json", request.path)
+            }
+            primary.enqueue(MockResponse().setBody("""{"success":true,"ip":"192.0.2.20","country_code":"DE"}"""))
+            assertEquals("DE", metadata.country()); assertEquals(3, secondary.requestCount)
+            primary.enqueue(MockResponse().setResponseCode(503)); secondary.enqueue(MockResponse().setBody("""{"ip":"bad"}"""))
+            assertNull(metadata.location())
+            // .invalid is reserved and cannot resolve; fallback still uses the caller's route.
+            secondary.enqueue(MockResponse().setBody("""{"ip":"2001:db8::1","country":"NL"}"""))
+            assertEquals("NL", PublicMetadata(primary.url("/version").toString(), "https://unresolvable.invalid/", fallback).country())
+        } }
+    }
+    @Test fun cancelledLocationDoesNotStartFallback() = runBlocking {
+        MockWebServer().use { primary -> MockWebServer().use { secondary ->
+            primary.enqueue(MockResponse().setBody("{\"success\":false}").setBodyDelay(300, java.util.concurrent.TimeUnit.MILLISECONDS))
+            val job = launch(kotlinx.coroutines.Dispatchers.Default) {
+                PublicMetadata(primary.url("/version").toString(), primary.url("/location").toString(), secondary.url("/json").toString()).location()
+            }
+            assertNotNull(primary.takeRequest(2, java.util.concurrent.TimeUnit.SECONDS))
+            job.cancel(); job.join()
+            assertEquals(1, primary.requestCount); assertEquals(0, secondary.requestCount)
+        } }
     }
     @Test fun deviceDatesUseLocalCalendarAndAbsentDatesStayAbsent() {
         val raw="2026-10-20T23:41:10.625960Z"

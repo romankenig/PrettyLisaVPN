@@ -75,10 +75,14 @@ internal fun LiveHome(model: ScreenModel) {
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         model.load(Area.HOME)
-        while (true) { model.load(Area.COUNTRIES); presentation.refreshLocation(); delay(60_000) }
+        while (true) { model.load(Area.COUNTRIES); delay(60_000) }
+    }
+    // Public egress does not depend on an authenticated backend refresh succeeding.
+    LaunchedEffect(presentation) {
+        while (true) { presentation.refreshLocation(); delay(60_000) }
     }
     val collator = remember(locale) { java.text.Collator.getInstance(locale) }
-    val countries = state.data.countries.filter { it.available }.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
+    val countries = state.data.countries.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
     LaunchedEffect(countries, state.loads[Area.COUNTRIES]?.phase) {
         if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected }) selected = "AUTO"
     }

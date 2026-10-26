@@ -3,21 +3,22 @@
 import asyncio
 import os
 import sys
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
+from legacy_data import create_dependencies, public_key
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
-from test_vpn_sessions_integration import create_dependencies, make_session
 
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.legacy_vpn.enums import VpnSessionStatus
+from prettylisavpn.legacy_vpn.quota import LegacyQuotaRepository
+from prettylisavpn.legacy_vpn.sessions import VpnSessionRecord
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
-from prettylisavpn.vpn_sessions.domain import VpnSessionStatus
-from prettylisavpn.vpn_sessions.repository import VpnSessionRepository
 
 pytestmark = [
     pytest.mark.integration,
@@ -55,9 +56,14 @@ async def test_upgrade_preserves_canceled_paid_dates_and_backfills_utc_free_usag
         user_id, device_id, node_id = await create_dependencies(postgres)
         start = datetime(2026, 10, 16, 23, 30, tzinfo=UTC)
         end = start + timedelta(hours=1)
-        legacy = make_session(user_id, device_id, node_id, 90)
-        legacy = replace(
-            legacy,
+        legacy = VpnSessionRecord(
+            id=uuid4(),
+            user_id=user_id,
+            device_id=device_id,
+            vpn_node_id=node_id,
+            client_wireguard_public_key=public_key(90),
+            allocated_client_ipv4="10.88.0.90",
+            plan_snapshot=SubscriptionPlan.FREE,
             started_at=start,
             created_at=start,
             updated_at=end,
@@ -67,7 +73,7 @@ async def test_upgrade_preserves_canceled_paid_dates_and_backfills_utc_free_usag
         )
         paid_until = datetime.now(UTC) + timedelta(days=20)
         async with postgres.session() as session, session.begin():
-            await VpnSessionRepository(session).add(legacy)
+            session.add(legacy)
             await session.execute(
                 text("""
                 UPDATE subscriptions SET plan='PREMIUM', status='CANCELED',
@@ -83,7 +89,7 @@ async def test_upgrade_preserves_canceled_paid_dates_and_backfills_utc_free_usag
             assert paid.current_period_end == paid_until
             assert not paid.auto_renew
             assert paid.is_active(datetime.now(UTC))
-            repository = VpnSessionRepository(session)
+            repository = LegacyQuotaRepository(session)
             assert await repository.remaining_free_seconds(user_id, start) == 1800
             assert await repository.remaining_free_seconds(user_id, end) == 1800
     finally:

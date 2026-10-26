@@ -255,19 +255,13 @@
     <string name="location_quality">доступность %1$s из 100</string>
     <string name="vpn_connected">подключено</string>
     <string name="vpn_connecting">подключаемся…</string>
-    <string name="vpn_verifying">проверяем VPN-соединение…</string>
     <string name="vpn_disconnecting">отключаемся…</string>
     <string name="vpn_disconnect">отключить</string>
-    <string name="vpn_retry_cleanup">повторить очистку</string>
     <string name="vpn_cleanup">завершение отключения VPN пока не подтверждено. повторите отключение; новое подключение недоступно до окончания очистки.</string>
-    <string name="vpn_permission_denied">разрешение на VPN не получено. серверная сессия не создавалась.</string>
-    <string name="vpn_unavailable">VPN недоступен в этом тестовом источнике данных.</string>
-    <string name="vpn_unsupported">этот профиль сервера не поддерживается на Android. сессия остановлена.</string>
-    <string name="vpn_verification_failed">не удалось проверить работоспособность VPN. туннель остановлен.</string>
-    <string name="vpn_quota">дневное бесплатное время закончилось.</string>
-    <string name="vpn_access">доступ к VPN завершён. войдите снова или проверьте подписку.</string>
     <string name="vpn_failed">не удалось подключиться. проверьте сеть и повторите попытку.</string>
     <string name="vpn_trying_method">пробую %1$s…</string>
-    <string name="vpn_retrying_method">пробую другой вариант %1$s…</string>
     <string name="vpn_switching_method">%1$s не подключился, пробую %2$s…</string>
+    <string name="vpn_cancel">отменить</string>
+    <string name="vpn_placeholder_notice">режим заглушек: VPN пока не подключается.</string>
+    <string name="vpn_placeholder_exhausted">%1$s не подключился. все способы проверены; VPN пока не реализован.</string>
 </resources>

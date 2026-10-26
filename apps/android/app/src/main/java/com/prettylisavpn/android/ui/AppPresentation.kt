@@ -71,6 +71,7 @@ internal data class PublicLocation(val ip: String, val country: String?, val cit
 internal class PublicMetadata(
     private val versionUrl: String = "https://api.prettylisavpn.com/version",
     private val countryUrl: String = "https://ipwho.is/",
+    private val fallbackCountryUrl: String? = if (countryUrl == "https://ipwho.is/") "https://ipinfo.io/json" else null,
 ) {
     private val client = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).callTimeout(5, TimeUnit.SECONDS).build()
@@ -91,20 +92,26 @@ internal class PublicMetadata(
     suspend fun version(): String? = read(versionUrl)?.let { value -> runCatching {
         releaseVersion(value.get("application_version")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString)
     }.getOrNull() }
-    suspend fun location(): PublicLocation? = read(countryUrl)?.let { value -> runCatching {
-        require(value.get("success")?.asBoolean == true)
-        val ip = value.get("ip").asString
+    suspend fun location(): PublicLocation? {
+        for ((url, fallback) in listOfNotNull(countryUrl to false, fallbackCountryUrl?.let { it to true })) {
+            currentCoroutineContext().ensureActive()
+            val value = read(url) ?: continue
+            parseLocation(value, fallback)?.let { return it }
+        }
+        return null
+    }
+    private fun parseLocation(value: com.google.gson.JsonObject, fallback: Boolean): PublicLocation? = runCatching {
+        if (!fallback) require(value.get("success")?.asBoolean == true)
+        require(!value.has("error") && value.get("bogon")?.asBoolean != true)
+        val ip = value.get("ip").takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString ?: return null
         val ipv4 = ip.matches(Regex("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) && ip.split('.').all { it.toInt() in 0..255 }
         val ipv6 = ip.contains(':') && ip.matches(Regex("[0-9a-fA-F:]{2,45}")) && runCatching { java.net.InetAddress.getByName(ip) is java.net.Inet6Address }.getOrDefault(false)
         require(ipv4 || ipv6)
-        val country = value.get("country_code")?.takeUnless { it.isJsonNull }?.asString?.takeIf { it.matches(Regex("[A-Z]{2}")) }
+        val country = value.get(if (fallback) "country" else "country_code")?.takeUnless { it.isJsonNull }?.asString?.takeIf { it.matches(Regex("[A-Z]{2}")) }
         val city = value.get("city")?.takeUnless { it.isJsonNull }?.asString?.trim()?.takeIf { it.length in 1..120 && it.none(Char::isISOControl) }
         PublicLocation(ip, country, city)
-    }.getOrNull() }
-    suspend fun country(): String? = read(countryUrl)?.let { value -> runCatching {
-        value.takeIf { it.get("success")?.asBoolean == true }?.get("country_code")?.asString
-            ?.takeIf { it.matches(Regex("[A-Z]{2}")) }
-    }.getOrNull() }
+    }.getOrNull()
+    suspend fun country(): String? = location()?.country
 }
 
 internal class PresentationState(context: Context, private val network: Boolean) {

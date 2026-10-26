@@ -70,9 +70,6 @@ function mockApi(): ApiClient {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
-    createVpnSession: vi.fn(),
-    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
-    disconnectVpnSession: vi.fn(),
   };
 }
 

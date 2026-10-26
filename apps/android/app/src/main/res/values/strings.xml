@@ -261,19 +261,14 @@
     <string name="location_quality">availability %1$s out of 100</string>
     <string name="vpn_connected">connected</string>
     <string name="vpn_connecting">connecting…</string>
-    <string name="vpn_verifying">checking the VPN connection…</string>
     <string name="vpn_disconnecting">disconnecting…</string>
     <string name="vpn_disconnect">disconnect</string>
-    <string name="vpn_retry_cleanup">retry cleanup</string>
     <string name="vpn_cleanup">VPN disconnect cleanup is not confirmed yet. retry disconnecting; reconnecting is blocked until cleanup completes.</string>
-    <string name="vpn_permission_denied">VPN permission was not granted. no server session was created.</string>
-    <string name="vpn_unavailable">VPN is unavailable in this test data source.</string>
-    <string name="vpn_unsupported">this server profile is not supported on Android. the session has been stopped.</string>
-    <string name="vpn_verification_failed">the VPN connection could not be verified. the tunnel has been stopped.</string>
-    <string name="vpn_quota">the daily free allowance is exhausted.</string>
-    <string name="vpn_access">VPN access has ended. sign in or check your subscription.</string>
     <string name="vpn_failed">unable to connect. check your network and try again.</string>
     <string name="vpn_trying_method">trying %1$s…</string>
-    <string name="vpn_retrying_method">trying another %1$s option…</string>
     <string name="vpn_switching_method">%1$s did not connect. trying %2$s…</string>
+    <!-- Product typography uses lowercase for in-app actions, not system dialogs. -->
+    <string name="vpn_cancel" tools:ignore="ButtonCase">cancel</string>
+    <string name="vpn_placeholder_notice">placeholder mode: VPN connections are not implemented yet.</string>
+    <string name="vpn_placeholder_exhausted">%1$s did not connect. all methods tried; VPN is not implemented yet.</string>
 </resources>

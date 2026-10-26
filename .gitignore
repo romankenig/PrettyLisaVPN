@@ -26,3 +26,8 @@ apps/windows/src-tauri/gen/
 apps/android/engine-app/libs/*.aar
 apps/android/app/src/main/assets/engine-licenses/
 engines/managed/vendor/
+# Local outputs from the retired runtime remain untracked for rollback inspection.
+server-profiles/rendered/
+server-profiles/runtime/
+server-profiles/masque/masque
+server-profiles/masque/masque-test

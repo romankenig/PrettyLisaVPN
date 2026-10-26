@@ -6,6 +6,33 @@
 
 ## Unreleased
 
+### Android — 0.11.1 / Windows — 0.14.1
+
+- Fix current location when the primary geolocation provider cannot resolve or
+  returns an error: native Windows and Android fall back to IPinfo over HTTPS.
+  Android public location refresh no longer waits for account/country API calls.
+- Windows displays the validated backend SemVer core from GET /version, like
+  Android (for example, `0.16.0`); unavailable/invalid versions stay unavailable.
+- Backend remains 0.16.0, schema unchanged. The 14 VPN placeholders remain in place.
+  Build evidence and limitations: [location fix handoff](docs/client-location-fix.md).
+
+### Android — 0.11.0 / Windows — 0.14.0 / Backend — 0.16.0
+
+- BREAKING: remove the real VPN connection implementation, managed Xray engine,
+  WireGuard runtime/keys, node agent, server profiles, obfuscators and provisioning.
+  Old session/credential endpoints no longer exist. Upgrade clients together;
+  do not use older clients to connect to the retired DE/US data plane.
+- Keep a sequential executor with 14 independent adapter slots. Every shipped
+  adapter waits 3 seconds and fails. Show current/previous method, support Cancel,
+  stop after verified success when a future real adapter replaces its placeholder.
+- Android remains one APK; no VPN/foreground consent or native engine dependency.
+  Windows no longer requests administrator rights or a VPN DLL.
+- Preserve authentication, account/devices, billing, support, locale and UI routes.
+  Historical database mappings/quota accounting and migrations through 0028 stay;
+  there is no schema/data deletion. Country metadata reports no live availability.
+- Migration/rollback and exact build evidence: [reset handoff](docs/vpn-placeholder-reset.md).
+
+
 ### Android — 0.10.0 (code18), backend — 0.15.0, node agent — 0.3.0, engines — 0.2.0
 
 - One Android APK with a private engine process; the separate companion is no

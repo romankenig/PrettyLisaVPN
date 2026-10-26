@@ -28,8 +28,7 @@ const report = {
   real_payment_provider: false,
   real_payments: false,
   support_email_delivery: "not sent",
-  vpn_tunnel:
-    "not tested: no signed WireGuard distribution/runtime on hosted runner",
+  vpn_tunnel: "removed: clients use timed placeholder adapters",
   smtp_authentication: account.smtp_authentication,
 };
 let app, browser, page;
@@ -145,7 +144,7 @@ async function main() {
   const version = await get("/version", false);
   if (
     version.environment !== "development" ||
-    !version.application_version.startsWith("0.10.0-dev.")
+    !/^0\.16\.0-dev\./.test(version.application_version)
   )
     throw new Error("Unexpected runtime identity");
   report.runtime_version = version.application_version;
@@ -182,7 +181,6 @@ async function main() {
   report.device_response_keys = Object.keys(devices);
   const countries = await get("/vpn/countries");
   report.country_count = countries.countries.length;
-  await get("/vpn/sessions/current");
   await get(
     "/messages?platform=WINDOWS&app_version=" +
       report.frontend +
@@ -375,7 +373,7 @@ async function main() {
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
   await page
-    .getByText(version.application_version, { exact: true })
+    .getByText(version.application_version.split(/[+-]/)[0], { exact: true })
     .last()
     .waitFor();
   await page
