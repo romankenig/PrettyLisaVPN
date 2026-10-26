@@ -7,6 +7,7 @@ report = {}
 for variant, filename in (("debug", "app-debug.apk"), ("release", "app-release-unsigned.apk")):
     path = Path("app/build/outputs/apk") / variant / filename
     with ZipFile(path) as apk:
+        assert len(apk.read("assets/licenses/Rubik-OFL.txt")) > 1000
         assert not any(name.endswith(("libgojni.so", "libwg.so", "libwg-go.so", "libwg-quick.so")) for name in apk.namelist())
         assert not any(name.startswith("assets/engine-licenses/") for name in apk.namelist())
     report[variant] = {"apk_bytes": path.stat().st_size, "vpn_engine_present": False}
