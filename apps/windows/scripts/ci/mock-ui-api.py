@@ -35,10 +35,7 @@ BILLING_SCENARIO = "active"
 BILLING_OPERATION = None
 BILLING_LAST_COMMAND = None
 BILLING_REQUESTS = {}
-SIMULATE_VPN = False
-DEMO_SESSION = None
-DEMO_VPN_ID = "66666666-6666-4666-8666-666666666666"
-DEMO_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+SIMULATE_BILLING = False
 SIMULATE_MESSAGES = False
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
@@ -65,7 +62,7 @@ MESSAGE_FIXTURES = [
 
 
 def fixture(method, path, body):
-    global DEMO_SESSION, BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
+    global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
     if BILLING_SCENARIO.startswith("server-") and BILLING_EVIDENCE:
         if method == "GET" and urlsplit(path).path == "/billing/overview":
@@ -98,7 +95,7 @@ def fixture(method, path, body):
         return 200, {"id": message_id, "revision": body["revision"], "acknowledged": True}
     if SIMULATE_MESSAGES and method == "GET" and path == "/ui-review/message-receipts":
         return 200, {"acknowledged": len(MESSAGE_RECEIPTS), "attempts": MESSAGE_ACK_ATTEMPTS}
-    if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-scenario":
+    if SIMULATE_BILLING and method == "POST" and path == "/ui-review/billing-scenario":
         scenario = body.get("scenario")
         if scenario not in (*BILLING_FIXTURES, "error", *(["server-" + key for key in BILLING_EVIDENCE["snapshots"]] if BILLING_EVIDENCE else [])):
             return 400, {"error": {"code": "INVALID_SCENARIO"}}
@@ -107,19 +104,19 @@ def fixture(method, path, body):
         BILLING_LAST_COMMAND = None
         BILLING_REQUESTS.clear()
         return 200, {"status": "ok"}
-    if SIMULATE_VPN and method == "POST" and path == "/ui-review/billing-confirm":
+    if SIMULATE_BILLING and method == "POST" and path == "/ui-review/billing-confirm":
         if BILLING_OPERATION:
             BILLING_OPERATION["status"] = "SUCCEEDED"
             BILLING_OPERATION["redirect_url"] = None
             BILLING_SCENARIO = "active"
         return 200, {"status": "ok"}
-    if SIMULATE_VPN and method == "GET" and path == "/ui-review/billing-last-command":
+    if SIMULATE_BILLING and method == "GET" and path == "/ui-review/billing-last-command":
         return 200, BILLING_LAST_COMMAND
     if method == "GET" and path == "/billing/overview":
         if BILLING_SCENARIO == "error":
             return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
         return 200, {**BILLING_FIXTURES[BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
-    if SIMULATE_VPN and method == "POST" and path == "/billing/operations":
+    if SIMULATE_BILLING and method == "POST" and path == "/billing/operations":
         request_id = body.get("request_id")
         if request_id in BILLING_REQUESTS:
             return 200, BILLING_REQUESTS[request_id]
@@ -142,18 +139,6 @@ def fixture(method, path, body):
         return 200, BILLING_OPERATION
     if method == "GET" and path == "/billing/operations/billing-review-operation" and BILLING_OPERATION:
         return 200, BILLING_OPERATION
-    if SIMULATE_VPN and method == "POST" and path == "/vpn/sessions":
-        DEMO_SESSION = {
-            "session_id": DEMO_VPN_ID, "status": "ACTIVE", "country_code": "DE",
-            "expires_at": None, "server_time": DATE,
-            "transport": {"endpoint": {"ipv4": "192.0.2.20", "port": 51820},
-                          "server_public_key": DEMO_KEY, "client_address": "10.77.0.2/32",
-                          "dns": ["1.1.1.1"], "allowed_ips": ["0.0.0.0/0"]},
-        }
-        return 200, DEMO_SESSION
-    if SIMULATE_VPN and method == "DELETE" and path == "/vpn/sessions/" + DEMO_VPN_ID:
-        DEMO_SESSION = None
-        return 200, {"session_id": DEMO_VPN_ID, "status": "DISCONNECTED"}
     if method == "POST" and path == "/auth/request-otp":
         return 200, {"status": "accepted"}
     if method == "POST" and path == "/auth/refresh":
@@ -184,8 +169,6 @@ def fixture(method, path, body):
             "subscription": {"plan": "PREMIUM", "status": "ACTIVE"},
         }
     if method == "GET" and path == "/public-location":
-        if SIMULATE_VPN and DEMO_SESSION:
-            return 200, {"success": True, "ip": "198.51.100.42", "country_code": "DE", "city": "Berlin"}
         return 200, {"success": True, "ip": "203.0.113.42", "country_code": "RU", "city": "Москва"}
     if method == "GET" and path == "/me":
         return 200, {
@@ -217,8 +200,6 @@ def fixture(method, path, body):
                 {"country_code": "FR", "quality": 84, "available": True},
             ],
         }
-    if method == "GET" and path == "/vpn/sessions/current":
-        return 200, {"session": DEMO_SESSION if SIMULATE_VPN else None}
     if method == "POST" and path == "/auth/logout":
         return 200, {"status": "logged_out"}
     # Fail closed: no VPN session creation or device mutation.
@@ -300,7 +281,7 @@ def self_test():
         assert fixture("POST", "/auth/refresh", {})[0] == 401
         assert fixture("POST", "/vpn/sessions", {})[0] == 404
         assert fixture("DELETE", "/devices/" + DEVICE_ID, {})[0] == 404
-        assert fixture("GET", "/vpn/sessions/current", {}) == (200, {"session": None})
+        assert fixture("GET", "/vpn/sessions/current", {})[0] == 404
         print("Loopback fixture checks passed")
     finally:
         server.shutdown()
@@ -311,10 +292,10 @@ def self_test():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true")
-    parser.add_argument("--simulate-vpn", action="store_true", help="Synthetic session data only; requires mocked native IPC")
+    parser.add_argument("--simulate-billing", action="store_true", help="Synthetic payment operations only; never charges money")
     parser.add_argument("--simulate-messages", action="store_true", help="Synthetic announcements and account receipts; never a real backend")
     args = parser.parse_args()
-    SIMULATE_VPN = args.simulate_vpn
+    SIMULATE_BILLING = args.simulate_billing
     SIMULATE_MESSAGES = args.simulate_messages
     if args.self_test:
         self_test()

@@ -1,2 +1,0 @@
-# Go formatter is byte-exact on CI, including the Windows checkout.
-engines/**/*.go text eol=lf

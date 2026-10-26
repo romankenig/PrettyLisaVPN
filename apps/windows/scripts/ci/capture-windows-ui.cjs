@@ -70,7 +70,7 @@ fs.copyFileSync(
 const log = fs.openSync(path.join(output, "capture-process.log"), "w");
 const api = spawn(
   "python",
-  ["scripts/ci/mock-ui-api.py", "--simulate-vpn", "--simulate-messages"],
+  ["scripts/ci/mock-ui-api.py", "--simulate-billing", "--simulate-messages"],
   {
     stdio: ["ignore", log, log],
   },
