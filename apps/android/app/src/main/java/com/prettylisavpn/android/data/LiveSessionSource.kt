@@ -197,7 +197,7 @@ object LiveSessionFactory {
         val app = context.applicationContext
         val http = HttpAuthApi("https://api.prettylisavpn.com/")
         val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255))
-        val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(app, sessions, http)
+        val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(sessions)
         LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn)
     }.also { source = it }
 }

@@ -78,7 +78,7 @@ internal fun LiveHome(model: ScreenModel) {
         while (true) { model.load(Area.COUNTRIES); presentation.refreshLocation(); delay(60_000) }
     }
     val collator = remember(locale) { java.text.Collator.getInstance(locale) }
-    val countries = state.data.countries.filter { it.available }.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
+    val countries = state.data.countries.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
     LaunchedEffect(countries, state.loads[Area.COUNTRIES]?.phase) {
         if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected }) selected = "AUTO"
     }

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prettylisavpn-backend"
-version = "0.15.0"
+version = "0.16.0"
 description = "PrettyLisaVPN control-plane backend"
 requires-python = ">=3.13,<3.14"
 dependencies = [
@@ -22,7 +22,6 @@ dependencies = [
     "pyjwt>=2.10,<3",
     "python-multipart>=0.0.22,<1",
     "pillow>=12.3,<13",
-    "cryptography>=46.0.6,<51",
 ]
 
 [dependency-groups]

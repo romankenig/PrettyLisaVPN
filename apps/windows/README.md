@@ -1,3 +1,9 @@
+> Current implementation (Android 0.11.0, Windows 0.14.0, backend 0.16.0):
+> real VPN connections and engines have been removed. Connect runs 14 placeholders,
+> each failing after three seconds. See [reset handoff](../../docs/vpn-placeholder-reset.md).
+
+The older runtime sections below describe the pre-reset implementation retained in Git history. Do not install WireGuard DLLs or follow those setup commands for this version.
+
 # PrettyLisaVPN для Windows
 
 Приёмка Windows 0.11.1 с backend 0.10.0 описана в

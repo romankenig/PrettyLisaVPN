@@ -260,7 +260,10 @@
     "не удалось запустить": "не удалось запустить",
     "проверьте конфигурацию приложения.": "проверьте конфигурацию приложения.",
     "язык интерфейса": "язык интерфейса",
-    "выберите язык": "выберите язык"
+    "выберите язык": "выберите язык",
+    "Отменить": "Отменить",
+    "Режим заглушек: VPN пока не подключается.": "Режим заглушек: VPN пока не подключается.",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} не подключился. Все способы проверены; VPN пока не реализован."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -523,7 +526,10 @@
     "не удалось запустить": "could not start",
     "проверьте конфигурацию приложения.": "check the app configuration.",
     "язык интерфейса": "interface language",
-    "выберите язык": "choose language"
+    "выберите язык": "choose language",
+    "Отменить": "cancel",
+    "Режим заглушек: VPN пока не подключается.": "Placeholder mode: VPN connections are not implemented yet.",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} did not connect. All methods tried; VPN is not implemented yet."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -786,7 +792,10 @@
     "не удалось запустить": "无法启动",
     "проверьте конфигурацию приложения.": "请检查应用配置。",
     "язык интерфейса": "界面语言",
-    "выберите язык": "选择语言"
+    "выберите язык": "选择语言",
+    "Отменить": "取消",
+    "Режим заглушек: VPN пока не подключается.": "占位模式：尚未实现 VPN 连接。",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} 未能连接。已尝试所有方式；尚未实现 VPN。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1049,7 +1058,10 @@
     "не удалось запустить": "no se pudo iniciar",
     "проверьте конфигурацию приложения.": "comprueba la configuración de la aplicación.",
     "язык интерфейса": "idioma de la interfaz",
-    "выберите язык": "elegir idioma"
+    "выберите язык": "elegir idioma",
+    "Отменить": "cancelar",
+    "Режим заглушек: VPN пока не подключается.": "Modo de prueba: las conexiones VPN aún no están implementadas.",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} no se conectó. Se probaron todos los métodos; VPN aún no está implementado."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1312,7 +1324,10 @@
     "не удалось запустить": "konnte nicht gestartet werden",
     "проверьте конфигурацию приложения.": "App-Konfiguration prüfen.",
     "язык интерфейса": "Sprache der Oberfläche",
-    "выберите язык": "Sprache auswählen"
+    "выберите язык": "Sprache auswählen",
+    "Отменить": "abbrechen",
+    "Режим заглушек: VPN пока не подключается.": "Platzhaltermodus: VPN-Verbindungen sind noch nicht implementiert.",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} hat nicht verbunden. Alle Methoden versucht; VPN ist noch nicht implementiert."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1575,6 +1590,9 @@
     "не удалось запустить": "impossible de démarrer",
     "проверьте конфигурацию приложения.": "vérifiez la configuration de l’application.",
     "язык интерфейса": "langue de l’interface",
-    "выберите язык": "choisir la langue"
+    "выберите язык": "choisir la langue",
+    "Отменить": "annuler",
+    "Режим заглушек: VPN пока не подключается.": "Mode de test : les connexions VPN ne sont pas encore implémentées.",
+    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} n’a pas pu se connecter. Toutes les méthodes ont été essayées ; VPN n’est pas encore implémenté."
   }
 }

@@ -270,4 +270,7 @@
     <string name="vpn_trying_method">probando %1$s…</string>
     <string name="vpn_retrying_method">probando otra opción de %1$s…</string>
     <string name="vpn_switching_method">%1$s no se conectó. probando %2$s…</string>
+    <string name="vpn_cancel">cancelar</string>
+    <string name="vpn_placeholder_notice">modo de prueba: las conexiones VPN aún no están implementadas.</string>
+    <string name="vpn_placeholder_exhausted">%1$s no se conectó. se probaron todos los métodos; VPN aún no está implementado.</string>
 </resources>

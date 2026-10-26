@@ -1,4 +1,3 @@
-import type { ConnectionConfig } from "../vpn/protocol";
 import type { HttpTransport } from "../native/http";
 
 export interface BackendHealth {
@@ -107,39 +106,6 @@ export interface VpnCountriesResponse {
   }[];
 }
 
-export type CreateVpnSessionRequest =
-  | { readonly mode: "AUTO"; readonly public_key: string }
-  | {
-      readonly mode: "COUNTRY";
-      readonly country_code: string;
-      readonly public_key: string;
-    };
-
-export interface ActiveVpnSessionResponse {
-  readonly candidates?: readonly ConnectionConfig[];
-  readonly session_id: string;
-  readonly status: "ACTIVE";
-  readonly country_code: string;
-  readonly expires_at: string | null;
-  readonly server_time: string;
-  readonly transport: {
-    readonly endpoint: { readonly ipv4: string; readonly port: number };
-    readonly server_public_key: string;
-    readonly client_address: string;
-    readonly dns: readonly string[];
-    readonly allowed_ips: readonly string[];
-  };
-}
-
-export interface TerminatedVpnSessionResponse {
-  readonly session_id: string;
-  readonly status: "EXPIRED" | "DISCONNECTED" | "FAILED";
-}
-
-export interface CurrentVpnSessionResponse {
-  readonly session: ActiveVpnSessionResponse | null;
-}
-
 export type ApiErrorCode =
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -186,20 +152,6 @@ export interface ApiClient {
     accessToken: string,
     signal?: AbortSignal,
   ): Promise<VpnCountriesResponse>;
-  createVpnSession(
-    accessToken: string,
-    body: CreateVpnSessionRequest,
-    signal?: AbortSignal,
-  ): Promise<ActiveVpnSessionResponse>;
-  getCurrentVpnSession(
-    accessToken: string,
-    signal?: AbortSignal,
-  ): Promise<CurrentVpnSessionResponse>;
-  disconnectVpnSession(
-    accessToken: string,
-    vpnSessionId: string,
-    signal?: AbortSignal,
-  ): Promise<TerminatedVpnSessionResponse>;
 }
 
 export function createApiClient(
@@ -446,106 +398,7 @@ export function createApiClient(
       }
       return value;
     },
-    async createVpnSession(accessToken, body, signal) {
-      const value = await requestJson(
-        "/vpn/sessions",
-        {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            "x-vpn-candidates": "1",
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(body),
-        },
-        signal,
-      );
-      if (!isActiveVpnSessionResponse(value)) {
-        throw new ApiError("INVALID_RESPONSE");
-      }
-      return value;
-    },
-    async getCurrentVpnSession(accessToken, signal) {
-      const value = await requestJson(
-        "/vpn/sessions/current",
-        {
-          method: "GET",
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            "x-vpn-candidates": "1",
-          },
-        },
-        signal,
-      );
-      if (
-        !hasOnlyKeys(value, ["session"]) ||
-        (value.session !== null && !isActiveVpnSessionResponse(value.session))
-      ) {
-        throw new ApiError("INVALID_RESPONSE");
-      }
-      return { session: value.session };
-    },
-    async disconnectVpnSession(accessToken, vpnSessionId, signal) {
-      if (!isUuid(vpnSessionId)) throw new ApiError("INVALID_RESPONSE");
-      const value = await requestJson(
-        `/vpn/sessions/${encodeURIComponent(vpnSessionId)}`,
-        {
-          method: "DELETE",
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            "x-vpn-cleanup": "1",
-          },
-        },
-        signal,
-      );
-      if (
-        !isTerminatedVpnSessionResponse(value) ||
-        value.session_id !== vpnSessionId
-      ) {
-        throw new ApiError("INVALID_RESPONSE");
-      }
-      return value;
-    },
   };
-}
-
-function isActiveVpnSessionResponse(
-  value: unknown,
-): value is ActiveVpnSessionResponse {
-  return (
-    hasOnlyKeys(value, [
-      "session_id",
-      "status",
-      "country_code",
-      "expires_at",
-      "server_time",
-      "transport",
-      ...(isRecord(value) && Object.hasOwn(value, "candidates")
-        ? ["candidates"]
-        : []),
-    ]) &&
-    (value.candidates === undefined ||
-      (Array.isArray(value.candidates) &&
-        value.candidates.length <= 64 &&
-        value.candidates.every(isConnectionConfig))) &&
-    isUuid(value.session_id) &&
-    value.status === "ACTIVE" &&
-    /^[A-Z]{2}$/.test(String(value.country_code)) &&
-    (value.expires_at === null || isIsoDate(value.expires_at)) &&
-    isIsoDate(value.server_time) &&
-    isWireGuardTransport(value.transport)
-  );
-}
-
-function isTerminatedVpnSessionResponse(
-  value: unknown,
-): value is TerminatedVpnSessionResponse {
-  return (
-    hasOnlyKeys(value, ["session_id", "status", "cleanup_confirmed"]) &&
-    value.cleanup_confirmed === true &&
-    isUuid(value.session_id) &&
-    ["EXPIRED", "DISCONNECTED", "FAILED"].includes(String(value.status))
-  );
 }
 
 function isVpnCountriesResponse(value: unknown): value is VpnCountriesResponse {
@@ -682,57 +535,6 @@ function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
 
-function isPort(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= 65535
-  );
-}
-
-function isIpv4(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-  const parts = value.split(".");
-  return (
-    parts.length === 4 &&
-    parts.every(
-      (part) =>
-        /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255,
-    )
-  );
-}
-
-function isIpv4Cidr(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-  const [address, prefix, extra] = value.split("/");
-  return (
-    extra === undefined &&
-    isIpv4(address) &&
-    /^\d{1,2}$/.test(prefix ?? "") &&
-    Number(prefix) <= 32
-  );
-}
-
-function isIpCidr(value: unknown): value is string {
-  return (
-    isIpv4Cidr(value) ||
-    (typeof value === "string" &&
-      /^[0-9a-f:]+\/(?:\d|[1-9]\d|1[01]\d|12[0-8])$/i.test(value))
-  );
-}
-
-function isWireGuardPublicKey(value: unknown): value is string {
-  return typeof value === "string" && /^[A-Za-z0-9+/]{43}=$/.test(value);
-}
-
-function isStringArray(
-  value: unknown,
-  predicate: (item: unknown) => item is string,
-): value is string[] {
-  return Array.isArray(value) && value.every(predicate);
-}
-
 function isIsoDate(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
@@ -749,80 +551,4 @@ async function readErrorCode(response: Response): Promise<unknown> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-export function isWireGuardTransport(
-  value: unknown,
-): value is ActiveVpnSessionResponse["transport"] {
-  return (
-    hasOnlyKeys(value, [
-      "endpoint",
-      "server_public_key",
-      "client_address",
-      "dns",
-      "allowed_ips",
-    ]) &&
-    hasOnlyKeys(value.endpoint, ["ipv4", "port"]) &&
-    isIpv4(value.endpoint.ipv4) &&
-    isPort(value.endpoint.port) &&
-    isWireGuardPublicKey(value.server_public_key) &&
-    isIpv4Cidr(value.client_address) &&
-    isStringArray(value.dns, isIpv4) &&
-    value.dns.length > 0 &&
-    isStringArray(value.allowed_ips, isIpCidr) &&
-    value.allowed_ips.length > 0
-  );
-}
-
-function isConnectionConfig(value: unknown): value is ConnectionConfig {
-  return (
-    hasOnlyKeys(value, [
-      "country",
-      "protocol",
-      "transport",
-      "port",
-      "encryption_mode",
-      "obfuscation_mode",
-      "mtu",
-      "dns_mode",
-      "routing_mode",
-      ...(isRecord(value) && Object.hasOwn(value, "obfuscation_version")
-        ? ["obfuscation_version"]
-        : []),
-      ...(isRecord(value) && Object.hasOwn(value, "transport_parameters")
-        ? ["transport_parameters"]
-        : []),
-    ]) &&
-    (value.obfuscation_version === undefined ||
-      (typeof value.obfuscation_version === "number" &&
-        Number.isInteger(value.obfuscation_version) &&
-        value.obfuscation_version >= 0)) &&
-    (value.transport_parameters === undefined ||
-      (isRecord(value.transport_parameters) &&
-        Object.keys(value.transport_parameters).every(
-          (key) => key === "max_datagram_size",
-        ) &&
-        Object.values(value.transport_parameters).every(
-          (item) =>
-            typeof item === "number" &&
-            Number.isInteger(item) &&
-            item >= 1320 &&
-            item <= 65507,
-        ))) &&
-    typeof value.country === "string" &&
-    /^[A-Z]{2}$/.test(value.country) &&
-    [
-      value.protocol,
-      value.transport,
-      value.encryption_mode,
-      value.obfuscation_mode,
-      value.dns_mode,
-      value.routing_mode,
-    ].every(isNonEmptyString) &&
-    isPort(value.port) &&
-    typeof value.mtu === "number" &&
-    Number.isInteger(value.mtu) &&
-    value.mtu >= 576 &&
-    value.mtu <= 65535
-  );
 }

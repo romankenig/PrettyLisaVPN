@@ -27,11 +27,13 @@ export function ConnectionLocationSelector({
   onSelectionChange,
   onConnectabilityChange,
   disabled = false,
+  allowUnavailable = false,
 }: {
   readonly selection: VpnLocationSelection;
   readonly onSelectionChange: (selection: VpnLocationSelection) => void;
   readonly onConnectabilityChange: (available: boolean) => void;
   readonly disabled?: boolean;
+  readonly allowUnavailable?: boolean;
 }) {
   useLanguage();
   const { api, session } = useApplication();
@@ -87,12 +89,13 @@ export function ConnectionLocationSelector({
     if (
       !state.data.countries.some(
         (country) =>
-          country.country_code === selection.country_code && country.available,
+          country.country_code === selection.country_code &&
+          (allowUnavailable || country.available),
       )
     ) {
       onSelectionChange({ mode: "AUTO" });
     }
-  }, [disabled, onSelectionChange, selection, state]);
+  }, [allowUnavailable, disabled, onSelectionChange, selection, state]);
 
   useEffect(() => {
     onConnectabilityChange(
@@ -126,7 +129,7 @@ export function ConnectionLocationSelector({
   const countries =
     "data" in state
       ? state.data.countries
-          .filter((country) => country.available)
+          .filter((country) => allowUnavailable || country.available)
           .map((country): Choice => ({
             key: country.country_code,
             selection: { mode: "COUNTRY", country_code: country.country_code },
@@ -147,7 +150,8 @@ export function ConnectionLocationSelector({
     selection: { mode: "AUTO" },
     name: "автопилот",
     quality: "data" in state ? state.data.autopilot.quality : 0,
-    available: "data" in state && state.data.autopilot.available,
+    available:
+      allowUnavailable || ("data" in state && state.data.autopilot.available),
   };
   const groups = [
     { name: "автопилот", choices: [autopilot] },

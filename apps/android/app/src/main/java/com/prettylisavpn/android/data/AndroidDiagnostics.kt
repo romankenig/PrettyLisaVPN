@@ -27,7 +27,7 @@ fun androidDiagnostics(context: Context, backendVersion: String?, language: Stri
         "backend_version" to backendVersion, "android_api" to Build.VERSION.SDK_INT,
         "language" to language, "timezone" to TimeZone.getDefault().id,
         "plan" to plan.uppercase(java.util.Locale.ROOT).takeIf { it in setOf("FREE", "PREMIUM", "PLATINUM") },
-        "network" to network, "vpn_runtime" to if (vpn == null) "unavailable" else "wireguard_go", "vpn_tunnel" to (vpn?.phase?.name?.lowercase(java.util.Locale.ROOT) ?: "not_started"),
+        "network" to network, "vpn_runtime" to if (vpn == null) "unavailable" else "placeholders", "vpn_tunnel" to (vpn?.phase?.name?.lowercase(java.util.Locale.ROOT) ?: "not_started"),
     ))
 }
 

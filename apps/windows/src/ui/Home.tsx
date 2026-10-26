@@ -41,7 +41,7 @@ export function Home() {
     useState<VpnLocationSelection>(() =>
       readLocationSelection(activeSession?.userId ?? ""),
     );
-  const [locationConnectable, setLocationConnectable] = useState(false);
+  const [, setLocationConnectable] = useState(false);
   const connectionState = useSyncExternalStore(
     vpnConnection.subscribe,
     vpnConnection.current,
@@ -89,7 +89,6 @@ export function Home() {
 
   async function connect() {
     if (
-      !locationConnectable ||
       connectionState.phase === "CONNECTED" ||
       connectionState.phase === "CONNECTING" ||
       connectionState.phase === "TUNNEL_ESTABLISHED" ||
@@ -141,6 +140,7 @@ export function Home() {
       <div className="home-workspace">
         <div className="home-connect-panel">
           <ConnectionLocationSelector
+            allowUnavailable
             selection={locationSelection}
             onSelectionChange={(selection) => {
               setLocationSelection(selection);
@@ -161,14 +161,7 @@ export function Home() {
           <div className="connection-card">
             <button
               type="button"
-              disabled={
-                connectionState.phase === "CONNECTING" ||
-                connectionState.phase === "TUNNEL_ESTABLISHED" ||
-                connectionState.phase === "VERIFYING_INTERNET" ||
-                connectionState.phase === "RECONCILING" ||
-                connectionState.phase === "DISCONNECTING" ||
-                (!canDisconnect(connectionState) && !locationConnectable)
-              }
+              disabled={connectionState.phase === "DISCONNECTING"}
               aria-describedby="connection-unavailable"
               onClick={() =>
                 void (canDisconnect(connectionState) ? disconnect() : connect())
@@ -177,11 +170,8 @@ export function Home() {
               {t(
                 connectionState.phase === "DISCONNECTING"
                   ? "DISCONNECTING"
-                  : connectionState.phase === "CONNECTING" ||
-                      connectionState.phase === "TUNNEL_ESTABLISHED" ||
-                      connectionState.phase === "VERIFYING_INTERNET" ||
-                      connectionState.phase === "RECONCILING"
-                    ? "CONNECTING"
+                  : connectionState.phase === "CONNECTING"
+                    ? "Отменить"
                     : canDisconnect(connectionState)
                       ? "DISCONNECT"
                       : "CONNECT",
@@ -209,12 +199,7 @@ export function Home() {
               </p>
             ) : null}
             <p id="connection-unavailable" className="field-help">
-              {t(
-                connectionState.phase === "DISCONNECTED" &&
-                  (!locationConnectable
-                    ? "Сейчас подключение недоступно."
-                    : "Готово к подключению."),
-              )}
+              {t("Режим заглушек: VPN пока не подключается.")}
             </p>
             {connectionErrorMessage !== null ||
             ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
@@ -329,6 +314,8 @@ function unavailableMessage(
 }
 
 function connectionUnavailableMessage(state: VpnConnectionState) {
+  if (state.phase === "FAILED" && state.failure_code === "METHODS_EXHAUSTED")
+    return `${state.attempt?.method ?? ""} не подключился. Все способы проверены; VPN пока не реализован.`;
   if (state.phase === "FAILED" || state.phase === "DEGRADED")
     return `Доступ в Интернет через VPN не подтверждён (${state.failure_code ?? "UNKNOWN"}).`;
   return state.phase === "UNAVAILABLE" ? unavailableMessage(state.reason) : "";
@@ -337,6 +324,7 @@ function connectionUnavailableMessage(state: VpnConnectionState) {
 function canDisconnect(state: VpnConnectionState) {
   return (
     state.phase === "CONNECTED" ||
+    state.phase === "CONNECTING" ||
     state.phase === "DEGRADED" ||
     (state.phase === "FAILED" &&
       (state.tunnel !== "DOWN" || state.backend !== "NONE")) ||

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { AppConfig } from "../config/config";
 import type { createApiClient } from "../api/client";
 import type { AuthenticationSession } from "../auth/session";
@@ -33,6 +33,12 @@ export function ApplicationProvider({
   value: ApplicationState;
   children: ReactNode;
 }) {
+  useEffect(() => {
+    const syncOwner = () =>
+      value.vpnConnection.setOwner?.(value.session.current()?.userId ?? null);
+    syncOwner();
+    return value.session.subscribe(syncOwner);
+  }, [value.session, value.vpnConnection]);
   return (
     <ApplicationContext.Provider value={value}>
       {children}

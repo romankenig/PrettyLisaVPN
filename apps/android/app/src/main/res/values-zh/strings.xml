@@ -270,4 +270,7 @@
     <string name="vpn_trying_method">正在尝试 %1$s…</string>
     <string name="vpn_retrying_method">正在尝试其他 %1$s 选项…</string>
     <string name="vpn_switching_method">%1$s 未能连接，正在尝试 %2$s…</string>
+    <string name="vpn_cancel">取消</string>
+    <string name="vpn_placeholder_notice">占位模式：尚未实现 VPN 连接。</string>
+    <string name="vpn_placeholder_exhausted">%1$s 未能连接。已尝试所有方式；尚未实现 VPN。</string>
 </resources>

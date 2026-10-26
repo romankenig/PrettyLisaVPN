@@ -1,8 +1,0 @@
----
-- name: Deploy explicitly reviewed PrettyLisaVPN profiles
-  hosts: vpn_nodes
-  become: true
-  gather_facts: true
-  serial: 1
-  roles:
-    - vpn_profiles

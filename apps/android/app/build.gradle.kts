@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.10.0"
+        versionCode = 19
+        versionName = "0.11.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -40,13 +40,9 @@ android {
     }
     bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
-        aidl = true
         compose = true
         buildConfig = true
     }
-    sourceSets.getByName("main").aidl.srcDir("../engine-app/src/main/aidl")
-    sourceSets.getByName("main").java.srcDir("../engine-app/src/main/java")
-    sourceSets.getByName("test").resources.srcDir("../../../engines/managed/testdata")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -80,8 +76,6 @@ dependencies {
 
     implementation(libs.okhttp.core)
     implementation(libs.gson)
-    implementation(libs.wireguard.tunnel)
-    implementation(files("../engine-app/libs/managed.aar"))
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)

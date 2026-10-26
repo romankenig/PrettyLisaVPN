@@ -1,0 +1,71 @@
+name: Windows development client
+
+on:
+  push:
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml']
+  pull_request:
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-client-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: apps/windows
+        shell: pwsh
+    env:
+      VITE_APP_ENVIRONMENT: development
+      VITE_BACKEND_BASE_URL: https://api.prettylisavpn.com
+      VITE_UI_REVIEW_VPN: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/windows/package.json
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/windows/src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - name: Build downloadable client using the real development API
+        run: pnpm tauri build --debug --no-bundle
+      - name: Record exact binary identity and size
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          New-Item -ItemType Directory -Force artifacts/client | Out-Null
+          Copy-Item src-tauri/target/debug/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          $binary = Get-Item artifacts/client/PrettyLisaVPN.exe
+          @{
+            source_sha = '${{ github.sha }}'
+            pr_head_sha = $env:PR_HEAD_SHA
+            run_id = '${{ github.run_id }}'
+            run_attempt = '${{ github.run_attempt }}'
+            version = (Get-Content package.json | ConvertFrom-Json).version
+            bytes = $binary.Length
+            sha256 = (Get-FileHash -Algorithm SHA256 $binary.FullName).Hash.ToLowerInvariant()
+            backend = 'https://api.prettylisavpn.com'
+            mode = '14 placeholders, 3 seconds each; no VPN engine'
+          } | ConvertTo-Json | Set-Content -Encoding utf8 artifacts/client/build-identity.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrettyLisaVPN-windows-development-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/windows/artifacts/client/
+          if-no-files-found: error
+          retention-days: 14

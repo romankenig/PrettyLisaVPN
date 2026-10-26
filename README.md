@@ -1,3 +1,7 @@
+> Current implementation (Android 0.11.0, Windows 0.14.0, backend 0.16.0):
+> real VPN connections and engines have been removed. Connect runs 14 placeholders,
+> each failing after three seconds. See [reset handoff](docs/vpn-placeholder-reset.md).
+
 <p align="center">
   <img src="docs/assets/prettylisavpn-logo.svg" alt="Логотип PrettyLisaVPN" width="320">
 </p>

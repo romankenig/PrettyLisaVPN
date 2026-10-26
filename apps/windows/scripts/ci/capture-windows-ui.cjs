@@ -423,45 +423,27 @@ async function main() {
   if (!(await combo.textContent()).includes("Германия"))
     throw new Error("Country choice failed");
   await screenshot("04b-home-country");
-  await page.evaluate(() => {
-    document.documentElement.dataset.vpnReviewHold = "true";
-  });
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByText("Пробую WireGuard…", { exact: true }).waitFor();
-  await screenshot("04b-home-trying-wireguard-fixture");
-  await page.evaluate(() => {
-    delete document.documentElement.dataset.vpnReviewHold;
-  });
-  await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
-  if (await page.locator(".connection-attempt").count())
-    throw new Error("Attempt progress must disappear after verification");
-  await page.getByText("198.51.100.42", { exact: true }).waitFor();
-  await page.getByLabel("способ подключения", { exact: true }).waitFor();
-  const metadata = await page
-    .getByLabel("способ подключения", { exact: true })
-    .evaluate((node) => ({
-      color: getComputedStyle(node).color,
-      size: parseFloat(getComputedStyle(node).fontSize),
-      text: node.innerText,
-    }));
+  await screenshot("04b-home-trying-wireguard");
+  await page
+    .getByText("WireGuard не подключился, пробую AmneziaWG…", { exact: true })
+    .waitFor();
+  await screenshot("04c-home-next-method");
+  await page
+    .getByText(/Hysteria \/ Hysteria 2 не подключился. Все способы проверены/)
+    .waitFor({ timeout: 50_000 });
   if (
-    !metadata.text.includes("192.0.2.20:51820") ||
-    metadata.size > 12 ||
-    !metadata.color.startsWith("rgba(")
+    await page.getByRole("heading", { name: "Connected", exact: true }).count()
   )
-    throw new Error("Expected muted runtime connection facts");
-  await screenshot("04c-home-connected-fixture");
-  await page.getByText("параметры подключения", { exact: true }).click();
-  await page.getByText("публичный ключ сервера", { exact: true }).waitFor();
-  await page.locator(".connection-info dd").first().scrollIntoViewIfNeeded();
-  await screenshot("04d-home-connection-details-fixture");
-  await page.getByText("параметры подключения", { exact: true }).click();
-  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+    throw new Error("Placeholders must never report Connected");
+  await screenshot("04d-home-all-methods-failed");
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByRole("button", { name: "Отменить", exact: true }).click();
   await page
     .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
-  if (await page.getByLabel("способ подключения", { exact: true }).count())
-    throw new Error("Connection facts must disappear after disconnect");
+  await screenshot("04e-home-cancelled");
 
   await page
     .getByRole("navigation")

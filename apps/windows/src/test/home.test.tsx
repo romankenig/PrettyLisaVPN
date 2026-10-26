@@ -44,9 +44,6 @@ function mockApi(): ApiClient {
       autopilot: { quality: 90, available: true },
       countries: [],
     }),
-    createVpnSession: vi.fn(),
-    getCurrentVpnSession: vi.fn().mockResolvedValue({ session: null }),
-    disconnectVpnSession: vi.fn(),
   };
 }
 
@@ -254,7 +251,7 @@ describe("authenticated Home", () => {
     expect(screen.getByText(profile.email)).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Not connected")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "CONNECT" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled();
     expect(
       screen.getByText("загружаем доступные локации…"),
     ).toBeInTheDocument();
@@ -415,8 +412,7 @@ describe("authenticated Home", () => {
     await waitFor(() => expect(connectButton).toBeEnabled());
 
     fireEvent.click(connectButton);
-    expect(screen.getByRole("button", { name: "CONNECTING" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "CONNECTING" }));
+    expect(screen.getByRole("button", { name: "Отменить" })).toBeEnabled();
     expect(vpnConnection.connect).toHaveBeenCalledOnce();
 
     finishConnection();
@@ -436,77 +432,22 @@ describe("authenticated Home", () => {
   });
 });
 
-it("UI never shows Connected when WireGuard handshake succeeds but Internet does not work", async () => {
+it("executes placeholders in the actual Home and cancels from its button", async () => {
   const { createVpnConnectionManager } = await import("../vpn/connection");
-  const { createWireGuardProtocol, wireGuardDefaults } =
-    await import("../vpn/wireguard");
-  const api = mockApi();
-  const transport = {
-    endpoint: { ipv4: "192.0.2.1", port: 51820 },
-    server_public_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-    client_address: "10.77.0.2/32",
-    dns: ["1.1.1.1"],
-    allowed_ips: ["0.0.0.0/0"],
-  };
-  const backendSession = {
-    session_id: "123e4567-e89b-42d3-a456-426614174020",
-    status: "ACTIVE" as const,
-    country_code: "DE",
-    expires_at: null,
-    server_time: "2026-09-21T00:00:00Z",
-    transport,
-  };
-  let finishProbe!: (
-    value: import("../native/wireguardTransport").InternetVerification,
-  ) => void;
-  const tunnel = {
-    start: vi.fn().mockResolvedValue("UP"),
-    stop: vi.fn().mockResolvedValue("DOWN"),
-    state: vi.fn().mockResolvedValue("UP"),
-    diagnostics: vi.fn().mockResolvedValue(null),
-    verify: vi.fn().mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          finishProbe = resolve;
-        }),
-    ),
-  };
-  const connection = createVpnConnectionManager(
-    api,
-    {
-      create: async () => backendSession,
-      candidates: () => [
-        { ...wireGuardDefaults("DE", 51820), parameters: transport },
-      ],
-    },
-    createWireGuardProtocol(tunnel),
+  const connection = createVpnConnectionManager();
+  renderRestored(mockApi(), createTestCredentialStorage(), connection);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled(),
   );
-  const phases: string[] = [];
-  connection.subscribe(() => phases.push(connection.current().phase));
-  renderRestored(api, createTestCredentialStorage(), connection);
-  try {
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "CONNECT" }));
-    await screen.findByRole("heading", { name: "VERIFYING INTERNET" });
-    expect(tunnel.start).toHaveResolvedWith("UP");
-    expect(
-      screen.queryByRole("heading", { name: "Connected" }),
-    ).not.toBeInTheDocument();
-    finishProbe({
-      tunnel_established: true,
-      internet_verified: false,
-      failure_code: "HTTPS_CHECK_FAILED",
-    });
-    await screen.findByRole("heading", { name: "FAILED" });
-    expect(
-      screen.queryByRole("heading", { name: "Connected" }),
-    ).not.toBeInTheDocument();
-    expect(phases).not.toContain("CONNECTED");
-  } finally {
-    connection.dispose();
-  }
+  fireEvent.click(screen.getByRole("button", { name: "CONNECT" }));
+  expect(await screen.findByText("Пробую WireGuard…")).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "Connected" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Отменить" }));
+  await waitFor(() => expect(connection.current().phase).toBe("DISCONNECTED"));
+  expect(screen.queryByText("Пробую WireGuard…")).not.toBeInTheDocument();
+  connection.dispose();
 });
 
 it("uses icon navigation in Home, Settings, About order and keeps Settings active for devices", async () => {

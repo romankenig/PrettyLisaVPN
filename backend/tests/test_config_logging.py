@@ -30,11 +30,6 @@ def test_environment_configuration(monkeypatch):
         {"email_smtp_tls_mode": "none"},
         {"email_connection_timeout_seconds": 0},
         {"email_send_timeout_seconds": 0},
-        {"vpn_node_stale_timeout_seconds": 9},
-        {"vpn_node_health_poll_interval_seconds": 90},
-        {"vpn_client_allowed_ips": ["10.0.0.0/8"]},
-        {"vpn_client_allowed_ips": ["0.0.0.0/0", "10.0.0.0/8"]},
-        {"vpn_node_agent_auth_token": "a" * 32},
         {
             "email_smtp_username": "auth@prettylisavpn.com",
             "email_from_address": "other@prettylisavpn.com",
@@ -61,19 +56,6 @@ def test_smtp_credential_is_redacted_from_settings_repr():
     settings = Settings(_env_file=None, email_smtp_password="private-mailbox-password")
 
     assert "private-mailbox-password" not in repr(settings)
-
-
-def test_node_agent_credential_is_redacted_and_requires_complete_mtls_configuration():
-    settings = Settings(
-        _env_file=None,
-        vpn_node_agent_auth_token="private-node-machine-token-value",
-        vpn_node_agent_tls_ca="/run/secrets/server-ca.crt",
-        vpn_node_agent_tls_client_certificate="/run/secrets/backend-client.crt",
-        vpn_node_agent_tls_client_key="/run/secrets/backend-client.key",
-    )
-
-    assert settings.vpn_node_agent_is_configured()
-    assert "private-node-machine-token-value" not in repr(settings)
 
 
 def test_logging_discards_access_urls():
