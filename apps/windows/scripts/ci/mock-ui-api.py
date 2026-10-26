@@ -82,6 +82,8 @@ def fixture(method, path, body):
         if method == "DELETE" and path == "/devices/" + DEVICE_EVIDENCE["revoked_response"]["device"]["id"]:
             DEVICE_REVOKED = True
             return 200, DEVICE_EVIDENCE["revoked_response"]
+    if method == "GET" and path == "/version":
+        return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.16.0-dev.40321791718+g177a078abd4f1e60fcba49f8acc849da622939f7", "environment": "test"}
     if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
         return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
     if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):

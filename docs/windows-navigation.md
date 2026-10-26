@@ -1,3 +1,12 @@
+## Current location and backend label — Windows 0.14.1 / Android 0.11.1
+
+Home current location uses the actual public egress with a bounded HTTPS fallback
+if the primary provider fails. Android refresh is independent of account metadata.
+Windows Backend label displays only the validated SemVer core from GET /version,
+matching Android; invalid/unavailable responses display unavailable. UI routes,
+auth guards and the 14 VPN placeholders remain unchanged. See
+[location/version handoff](client-location-fix.md) for evidence and limitations.
+
 ## VPN reset — Windows 0.14.0
 
 Home Connect now starts the shipped 14-method placeholder executor. Each method

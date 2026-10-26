@@ -482,7 +482,8 @@ it("shows the backend version from /version without refetching on navigation", a
   const api = mockApi();
   vi.mocked(api.getVersion).mockResolvedValue({
     application_name: "PrettyLisaVPN",
-    application_version: "2.3.4",
+    application_version:
+      "2.3.4-dev.40321791718+g177a078abd4f1e60fcba49f8acc849da622939f7",
     environment: "test",
   });
   renderRestored(api);

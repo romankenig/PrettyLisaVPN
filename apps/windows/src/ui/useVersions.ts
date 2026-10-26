@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApplication } from "../state/application";
+import { releaseVersion } from "./releaseVersion";
 
 export function useVersions() {
   const { api, desktop } = useApplication();
@@ -23,7 +24,7 @@ export function useVersions() {
       .then(() => api.getVersion(controller.signal))
       .then((value) => {
         if (active)
-          setBackend(value.application_version.trim() || "недоступна");
+          setBackend(releaseVersion(value.application_version) ?? "недоступна");
       })
       .catch(() => {
         if (active) setBackend("недоступна");

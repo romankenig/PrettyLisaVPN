@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Android — 0.11.1 / Windows — 0.14.1
+
+- Fix current location when the primary geolocation provider cannot resolve or
+  returns an error: native Windows and Android fall back to IPinfo over HTTPS.
+  Android public location refresh no longer waits for account/country API calls.
+- Windows displays the validated backend SemVer core from GET /version, like
+  Android (for example, `0.16.0`); unavailable/invalid versions stay unavailable.
+- Backend remains 0.16.0, schema unchanged. The 14 VPN placeholders remain in place.
+  Build evidence and limitations: [location fix handoff](docs/client-location-fix.md).
+
 ### Android — 0.11.0 / Windows — 0.14.0 / Backend — 0.16.0
 
 - BREAKING: remove the real VPN connection implementation, managed Xray engine,

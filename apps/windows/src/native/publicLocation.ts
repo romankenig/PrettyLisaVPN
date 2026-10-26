@@ -2,7 +2,7 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { createHttpTransport, type HttpTransport } from "./http";
 
 // The public provider rejects browser Origin headers. The native command is
-// restricted to this one endpoint; general HTTP keeps its existing protections.
+// restricted to two built-in providers with fallback; it accepts no destination.
 export function createPublicLocationTransport(): HttpTransport {
   const fallback = createHttpTransport();
   return async (input, init) => {

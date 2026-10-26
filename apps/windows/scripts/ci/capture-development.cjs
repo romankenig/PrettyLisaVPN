@@ -373,7 +373,7 @@ async function main() {
     .getByRole("heading", { name: "о приложении", exact: true })
     .waitFor();
   await page
-    .getByText(version.application_version, { exact: true })
+    .getByText(version.application_version.split(/[+-]/)[0], { exact: true })
     .last()
     .waitFor();
   await page

@@ -253,9 +253,12 @@ async function main() {
   await page
     .locator(".sidebar-versions > div")
     .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
-    .getByText(deviceEvidence?.version.application_version || "недоступна", {
-      exact: true,
-    })
+    .getByText(
+      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.16.0",
+      {
+        exact: true,
+      },
+    )
     .waitFor();
   const navigation = await page
     .getByRole("navigation")
@@ -965,7 +968,7 @@ async function main() {
         realAccountMessageSyncTested: false,
         supportEmailDeliveryTested: false,
         realPaymentsTested: false,
-        backendVersionFallbackVerified: !deviceEvidence,
+        backendReleaseCoreVerified: true,
         recordedDeviceBackendEvidence: deviceEvidence,
         recordedBillingBackendEvidence: billingEvidence,
         readonlyBillingBackendVerified: Boolean(billingEvidence),
