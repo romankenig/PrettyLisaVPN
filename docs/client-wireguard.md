@@ -57,6 +57,11 @@ No companion APK is required. The app requests Android VPN consent, keeps a
 private foreground service, and binds DNS and HTTPS verification to the VPN
 Network whose address matches the lease. A fresh WireGuard handshake is required.
 Heartbeat failure, expiry and system VPN revocation stop the connection.
+The foreground lifetime uses Android's documented approved-VPN `systemExempted`
+eligibility, after the VPN is established and with a runtime consent check.
+AGP 8.11's alarm-only static permission check is narrowly annotated on that service
+and its startup; all other lint checks remain enforced. No unrelated exact-alarm
+permission is added. See [Android's eligibility criteria](https://developer.android.com/develop/background-work/services/fgs/service-types#system-exempted).
 
 Windows manages the separately installed [official WireGuard client](https://www.wireguard.com/install/).
 It never bundles a GPL driver. Native commands generate keys, restrict local

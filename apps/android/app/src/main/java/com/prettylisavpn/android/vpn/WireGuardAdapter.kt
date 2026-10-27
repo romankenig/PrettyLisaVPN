@@ -86,13 +86,13 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
             PersistentKeepalive = 25
         """.trimIndent()
         val parsed = Config.parse(ByteArrayInputStream(text.toByteArray(Charsets.UTF_8)))
-        context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
         val started = System.currentTimeMillis() - 1_000
         withContext(Dispatchers.IO) {
             val engine = backend ?: GoBackend(context).also { backend = it }
             expectingUp = true
             engine.setState(tunnel, Tunnel.State.UP, parsed)
         }
+        context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
         val network = withTimeout(10_000) {
             while (true) {
                 vpnNetwork(config.address.substringBefore('/'))?.let { return@withTimeout it }

@@ -9,14 +9,18 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.annotation.SuppressLint
+import android.net.VpnService
 import com.prettylisavpn.android.MainActivity
 import com.prettylisavpn.android.R
 
 /** Keeps the single-APK tunnel process alive while the screen is off. */
 class TunnelForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
+    @SuppressLint("ForegroundServicePermission") // Approved VPN is a documented systemExempted alternative to alarm permissions.
     override fun onCreate() {
         super.onCreate()
+        if (VpnService.prepare(this) != null) { stopSelf(); return }
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel("vpn", "WireGuard", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
