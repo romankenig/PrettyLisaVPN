@@ -13,6 +13,8 @@
 - Add staggered hourly cross-node VPN checks, passive observations, seven-day
   history and plan-aware country ratings. Full success requires handshake, DNS,
   HTTPS, expected egress IP and confirmed temporary-peer cleanup.
+- Run scheduling and acceptance reporting on the main server independently of
+  Codex/ChatGPT; node-local timers expire temporary access even if the worker stops.
 - Migration 0029 adds independent fleet tables; legacy records remain untouched.
   Windows 0.14.1 and Android 0.11.1 remain placeholders; no client tunnels enabled.
 - Private Sites monitoring and real DE/US acceptance are tracked separately from

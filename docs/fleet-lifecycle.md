@@ -1,6 +1,6 @@
-# Server lifecycle and monitoring вЂ” backend 0.17.0
+# Server lifecycle and monitoring — backend 0.17.0
 
-Base: develop `227704b044f0b5a6ea67b4f64d6142a813eddec0`. Backend 0.16.0 в†’ 0.17.0,
+Base: develop `227704b044f0b5a6ea67b4f64d6142a813eddec0`. Backend 0.16.0 → 0.17.0,
 migration 0029; Ubuntu helper starts at 0.1.0. Windows remains 0.14.1 and Android
 0.11.1; their VPN adapters remain placeholders. Legacy credential endpoints stay removed.
 
@@ -30,7 +30,7 @@ Only implemented methods are accepted. Registration takes name, country_code, pu
 host, credential_ref, expected_egress_ips, capacity and is_available_for_free.
 Configuration example: `{"address":"10.88.1.1/24","listen_port":51820,"mtu":1380}`.
 
-Use distinct RFC1918 /24вЂ¦/28 subnets and the first usable address for the server.
+Use distinct RFC1918 /24…/28 subnets and the first usable address for the server.
 The last usable address is reserved for the monitoring peer. Configuration is
 immutable after successful setup; a subnet/port migration is a separate future task.
 Repeating the same request preserves keys and user peers. Registration alone never
@@ -51,7 +51,7 @@ operation, preserving shared OS packages and previously committed configuration.
 
 Every configured target gets one hourly slot, evenly spread with bounded stable
 jitter. Origins rotate over the other configured nodes, covering all origins in
-Nв€’1 hours for a stable roster: O(N) tests/hour. New configured nodes join both roles.
+N−1 hours for a stable roster: O(N) tests/hour. New configured nodes join both roles.
 Database tokens fence results and node leases prevent overlapping source/target
 checks. Retries keep the operation UUID and are bounded. Missed hours are not replayed
 as a burst. Local timers independently expire monitoring peers and namespaces.
