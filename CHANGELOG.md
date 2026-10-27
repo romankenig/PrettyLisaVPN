@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Fleet dashboard — 0.1.0
+
+- Serve the separate monitoring dashboard on the main server at `/dashboard/`,
+  protected by an operator login/password over HTTPS. ChatGPT sign-in is not used.
+- Protect both assets and metric responses; keep the read-only monitoring token
+  out of the browser. Preserve credentials and the site across backend deploys.
+- Backend remains 0.17.0; Windows 0.14.1 and Android 0.11.1 are unchanged in this
+  dashboard change. Client WireGuard integration is the next step in this task.
+
 ### Backend — 0.17.0 / Ubuntu fleet helper — 0.1.0
 
 - Add an explicit administrator API and durable Ubuntu WireGuard provisioning

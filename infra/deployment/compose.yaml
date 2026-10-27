@@ -105,6 +105,7 @@ services:
       - "${HTTPS_BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${DASHBOARD_DIR:-/etc/prettylisavpn/dashboard}:/etc/caddy/dashboard:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

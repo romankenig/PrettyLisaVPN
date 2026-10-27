@@ -94,9 +94,14 @@ evidence, unverified setup or unconfirmed cleanup makes the node unavailable.
 Full capacity also prevents availability. Country scores are capacity-weighted over
 eligible nodes; Free sees only free nodes. Premium and Platinum use the full fleet.
 
-The separate private Sites project checks platform identity server-side and holds
-only the read-only monitoring token. The browser sees aggregate data, never tokens
-or SSH keys. It provides overall/per-node views, hourly history and stage evidence.
+The owner-approved standalone dashboard is in `sites/fleet-dashboard/` and served
+at `https://api.prettylisavpn.com/dashboard/` on the main server. HTTPS Basic Auth
+protects assets and metrics; only Caddy holds the read-only monitoring token.
+Credentials and the built site live in the operator-managed `secrets/dashboard/`
+directory and survive backend deployments. The browser receives aggregate data,
+never tokens or SSH keys. It provides overall/per-node views, hourly history and
+stage evidence. The earlier Sites-hosted prototype is unpublished and unused.
+See the [dashboard deployment instructions](../sites/fleet-dashboard/README.md).
 
 ## Deployment and acceptance
 

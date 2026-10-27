@@ -68,6 +68,7 @@ compose=(docker compose --project-name "$project_name" \
 
 # Owner-managed enrollment is separate from CI-generated deployment credentials.
 # It survives a routine development release without copying secrets into CI.
+export DASHBOARD_DIR="${DASHBOARD_DIR:-$(dirname "$environment_file")/dashboard}"
 export FLEET_ENV_FILE="${FLEET_ENV_FILE:-$(dirname "$environment_file")/fleet.env}"
 export FLEET_CREDENTIALS_DIR="${FLEET_CREDENTIALS_DIR:-$(dirname "$environment_file")/fleet}"
 if [[ -f "$FLEET_ENV_FILE" ]]; then

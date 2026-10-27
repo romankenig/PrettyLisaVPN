@@ -1,0 +1,27 @@
+name: Fleet dashboard
+on:
+  push:
+    paths: ["sites/fleet-dashboard/**", ".github/workflows/fleet-dashboard.yml"]
+  pull_request:
+    paths: ["sites/fleet-dashboard/**", ".github/workflows/fleet-dashboard.yml"]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: sites/fleet-dashboard/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: sites/fleet-dashboard
+      - run: npm run build
+        working-directory: sites/fleet-dashboard
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fleet-dashboard-${{ github.sha }}
+          path: sites/fleet-dashboard/dist/
+          retention-days: 14
