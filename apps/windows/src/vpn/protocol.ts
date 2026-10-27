@@ -1,5 +1,6 @@
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
+import type { ConnectedVpnSession } from "./connection";
 
 export type ProtocolStatus = "UP" | "DOWN";
 export type ConnectionResult =
@@ -8,6 +9,7 @@ export type ConnectionResult =
       readonly connected: true;
       readonly internetVerified: true;
       readonly details: ConnectionDetails;
+      readonly session?: ConnectedVpnSession;
     };
 
 /** An adapter owns its resources. Failure and cancellation must finish cleanup

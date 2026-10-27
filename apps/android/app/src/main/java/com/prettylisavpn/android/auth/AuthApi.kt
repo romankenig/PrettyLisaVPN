@@ -3,6 +3,7 @@ package com.prettylisavpn.android.auth
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonElement
+import com.prettylisavpn.android.network.RoutedHttpClient
 import okhttp3.RequestBody
 import java.io.IOException
 import java.net.ConnectException
@@ -60,9 +61,9 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         require(it.username.isEmpty() && it.password.isEmpty() && it.query == null && it.fragment == null)
         require(it.isHttps || (allowLoopbackForTests && it.host in setOf("localhost", "127.0.0.1", "::1")))
     }
-    private val client = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+    private val client = RoutedHttpClient(OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build()
+        .readTimeout(15, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build())
     private val gson = Gson()
     private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject {
         val value = request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access)
@@ -76,7 +77,8 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
             if (access != null) header("Authorization", "Bearer $access")
         }.build()
         try {
-            val requestClient = if (path.startsWith("support/")) client.newBuilder().readTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS).build() else client
+            val routed = client.current()
+            val requestClient = if (path.startsWith("support/")) routed.newBuilder().readTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS).build() else routed
             requestClient.newCall(request).execute().use { response ->
                 val responseBody = response.body ?: throw AuthFailure("invalid_response")
                 val bytes = responseBody.source().apply { request(65_537) }.buffer

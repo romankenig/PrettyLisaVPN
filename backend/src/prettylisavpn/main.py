@@ -35,6 +35,8 @@ from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.sandbox import SandboxBillingProvider
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
 from prettylisavpn.billing.worker import BillingWorkerPort
+from prettylisavpn.client_vpn.router import router as client_vpn_router
+from prettylisavpn.client_vpn.service import ClientVpnService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
@@ -118,6 +120,7 @@ def create_app(
     billing_provider: BillingProvider | None = None,
     billing_worker: BillingWorkerPort | None = None,
     fleet: FleetService | None = None,
+    client_vpn: ClientVpnService | None = None,
 ) -> FastAPI:
     validate_provider(billing_provider)
     config = settings if settings is not None else Settings()
@@ -176,6 +179,12 @@ def create_app(
                 app.state.account_messages = AccountMessagesService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                )
+                app.state.client_vpn = client_vpn or ClientVpnService(
+                    cast(Postgres, pg),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    config,
+                    cast(FleetService, app.state.fleet),
                 )
                 app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
@@ -238,6 +247,7 @@ def create_app(
     )
     app.add_middleware(SafeExceptionMiddleware)
     app.include_router(auth_router)
+    app.include_router(client_vpn_router)
     app.include_router(account_router)
     app.include_router(devices_router)
     app.include_router(locations_router)

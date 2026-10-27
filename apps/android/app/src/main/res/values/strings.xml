@@ -269,6 +269,6 @@
     <string name="vpn_switching_method">%1$s did not connect. trying %2$s…</string>
     <!-- Product typography uses lowercase for in-app actions, not system dialogs. -->
     <string name="vpn_cancel" tools:ignore="ButtonCase">cancel</string>
-    <string name="vpn_placeholder_notice">placeholder mode: VPN connections are not implemented yet.</string>
-    <string name="vpn_placeholder_exhausted">%1$s did not connect. all methods tried; VPN is not implemented yet.</string>
+    <string name="vpn_placeholder_notice">WireGuard is available. other methods are still in development.</string>
+    <string name="vpn_placeholder_exhausted">%1$s did not connect. all methods tried; connection failed.</string>
 </resources>

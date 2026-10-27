@@ -45,7 +45,7 @@ try {
     config.environment === "test" && import.meta.env.VITE_UI_REVIEW_VPN === "1";
   const vpnConnection = reviewVpn
     ? createReviewVpnConnection()
-    : createDefaultVpnConnection();
+    : createDefaultVpnConnection(config.backendBaseUrl, session, api);
   if (reviewVpn) document.documentElement.dataset.vpnReview = "synthetic";
   root.render(
     <StrictMode>

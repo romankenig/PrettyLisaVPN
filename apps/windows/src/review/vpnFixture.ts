@@ -1,2 +1,2 @@
 // Native review exercises the shipped placeholder executor, never synthetic success.
-export { createDefaultVpnConnection as createReviewVpnConnection } from "../vpn/defaultConnection";
+export { createVpnConnectionManager as createReviewVpnConnection } from "../vpn/connection";

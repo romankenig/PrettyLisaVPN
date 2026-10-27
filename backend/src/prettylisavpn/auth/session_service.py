@@ -17,11 +17,11 @@ from prettylisavpn.auth_sessions.domain import (
 )
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
+from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import Device, DeviceStatus
 from prettylisavpn.devices.repository import DeviceRepository
-from prettylisavpn.legacy_vpn.quota import LegacyQuotaRepository
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 from prettylisavpn.subscriptions.entitlements import free_quota_resets_at
@@ -187,7 +187,7 @@ class AuthenticatedSessionService:
                 remaining = None
                 resets_at = None
                 if plan is SubscriptionPlan.FREE:
-                    remaining = await LegacyQuotaRepository(session).remaining_free_seconds(
+                    remaining = await ClientQuotaRepository(session).remaining_free_seconds(
                         user.id, now
                     )
                     resets_at = free_quota_resets_at(now)

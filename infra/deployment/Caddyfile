@@ -6,6 +6,9 @@
 {$API_DOMAIN} {
 	encode zstd gzip
 
+	# Optional owner-managed password-protected monitoring site.
+	import /etc/caddy/dashboard/*.caddy
+
 	@support path /support/requests
 	request_body @support {
 		max_size 11MB

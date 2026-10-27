@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.google.gson.JsonParser
 import com.prettylisavpn.android.BuildConfig
 import com.prettylisavpn.android.R
+import com.prettylisavpn.android.network.RoutedHttpClient
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,11 +74,11 @@ internal class PublicMetadata(
     private val countryUrl: String = "https://ipwho.is/",
     private val fallbackCountryUrl: String? = if (countryUrl == "https://ipwho.is/") "https://ipinfo.io/json" else null,
 ) {
-    private val client = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
-        .retryOnConnectionFailure(false).callTimeout(5, TimeUnit.SECONDS).build()
+    private val client = RoutedHttpClient(OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+        .retryOnConnectionFailure(false).callTimeout(5, TimeUnit.SECONDS).build())
     private suspend fun read(url: String) = withContext(Dispatchers.IO) {
         runCatching {
-            client.newCall(Request.Builder().url(url).header("Accept", "application/json").build()).execute().use {
+            client.current().newCall(Request.Builder().url(url).header("Accept", "application/json").build()).execute().use {
                 if (!it.isSuccessful) return@use null
                 val body = it.body ?: return@use null
                 if (body.contentLength() > 16_384) return@use null

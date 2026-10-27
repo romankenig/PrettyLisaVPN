@@ -6,6 +6,45 @@
 
 ## Unreleased
 
+### Android — 0.12.1 / Windows unchanged 0.15.0
+
+- После включения WireGuard API, heartbeat и проверка доступности сервера используют
+  VPN-сеть и свежие HTTP-пулы, без переиспользования соединений прежнего маршрута.
+- Временный сбой heartbeat повторяется в ограниченном окне; отзыв доступа,
+  окончание сессии и ошибки авторизации по-прежнему останавливают VPN.
+- Реальная проверка расширена до двух минут и нескольких heartbeat; прежний
+  короткий тест 0.12.0 не подтверждал длительную устойчивость подключения.
+
+### Backend — 0.18.1 / клиенты unchanged
+
+- Исправлена первичная установка WireGuard на Ubuntu 26.04: firewall запускается
+  отдельными шагами systemd, без Python hooks внутри AppArmor-профиля wg-quick.
+  Ограничения AppArmor сохраняются; rollback удаляет только собственный drop-in.
+- Добавление `timeweb-rus-001` (RU, все тарифы) проходит через существующие admin API,
+  inventory и серверный планировщик; фактическая проверка и deploy — в handoff.
+
+### Backend — 0.18.0 / Windows — 0.15.0 / Android — 0.12.0
+
+- Restore real WireGuard through a new authenticated customer lease API and the
+  main-server worker. Preserve Free daily quota, paid access, device revocation,
+  confirmed cleanup and short node deadlines; add migration 0030.
+- Android uses one APK with WireGuard, system VPN consent and foreground lifetime.
+  Windows manages the official installed WireGuard client through UAC and detects
+  conflicts with another VPN without disabling it.
+- Confirm tunnel-bound DNS/HTTPS and expected server egress before Connected;
+  preserve automatic fallback/progress for the remaining placeholder methods.
+- See [client handoff](docs/client-wireguard.md) and PR #32 for exact build,
+  deployment and real-connection acceptance evidence.
+
+### Fleet dashboard — 0.1.0
+
+- Serve the separate monitoring dashboard on the main server at `/dashboard/`,
+  protected by an operator login/password over HTTPS. ChatGPT sign-in is not used.
+- Protect both assets and metric responses; keep the read-only monitoring token
+  out of the browser. Preserve credentials and the site across backend deploys.
+- Backend remains 0.17.0; Windows 0.14.1 and Android 0.11.1 are unchanged in this
+  dashboard change. Client WireGuard integration is the next step in this task.
+
 ### Backend — 0.17.0 / Ubuntu fleet helper — 0.1.0
 
 - Add an explicit administrator API and durable Ubuntu WireGuard provisioning

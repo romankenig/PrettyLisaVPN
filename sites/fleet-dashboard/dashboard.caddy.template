@@ -1,0 +1,29 @@
+redir /dashboard /dashboard/ 308
+handle /dashboard/* {
+    route {
+        basic_auth bcrypt PrettyLisaVPN {
+            @@USERNAME@@ @@PASSWORD_HASH@@
+        }
+        header {
+            Cache-Control "private, no-store"
+            X-Content-Type-Options nosniff
+            Referrer-Policy no-referrer
+            Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+        }
+        @availability {
+            path /dashboard/api/availability
+            method GET
+        }
+        handle @availability {
+            rewrite * /admin/monitoring/availability?days=7
+            reverse_proxy backend:8000 {
+                header_up Authorization "Bearer @@MONITOR_TOKEN@@"
+            }
+        }
+        handle {
+            uri strip_prefix /dashboard
+            root * /etc/caddy/dashboard/site
+            file_server
+        }
+    }
+}

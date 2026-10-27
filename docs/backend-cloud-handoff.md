@@ -1,6 +1,44 @@
 # Backend: актуальный статус и журнал продолжения
 
-## Актуальный срез — 2026-10-19
+## Актуальный срез — 2026-10-27
+
+PR #31 слит в develop: `86831bc0a6afbc63fc2221f4810b16ae42b23604`.
+Дашборд размещён на основном сервере по адресу
+https://api.prettylisavpn.com/dashboard/ с отдельным логином-паролем.
+Планировщик, worker, очистка доступов и отложенный суточный отчёт работают на
+сервере независимо от Codex/ChatGPT.
+
+Для клиентского WireGuard в development развёрнут source
+`33a096e807f0905dffca93e7078a4f117d54570b` из PR #32: backend **0.18.0**,
+schema **0030**, manual build `20261027105359`, attempt 1; это не CI deploy.
+Runtime `0.18.0-dev.20261027105359+g33a096e807f0905dffca93e7078a4f117d54570b`,
+health/readiness и выдача/удаление клиентских peers DE/US подтверждены.
+Исходники клиентов: Windows **0.15.0**, Android **0.12.0**, один APK.
+Проверки клиентов, границы доказательств, точные сборки и откат описаны в
+[client-wireguard.md](client-wireguard.md) и PR #32. Сам факт deployment не
+доказывает успешное подключение приложения. Прежние записи ниже исторические.
+
+## RU enrollment follow-up — 2026-10-27
+
+Backend source **0.18.0 → 0.18.1**, schema unchanged 0030. Development now runs
+`0.18.1-dev.20261027122224+g92d0b5c2fa3652f7fe28cfa75d80ba7183e994db`:
+manual build `20261027122224`, attempt 1, no GitHub deployment run. Source and RU
+helper match that SHA. The immutable previous release is retained; reverting to
+0.18.0 would lose support for first-time Ubuntu 26.04 node setup/probe keys.
+No migration downgrade is required. Keep the enrolled RU inventory and pinned
+host key when updating or rolling back; do not recreate a DE/US-only inventory.
+
+`timeweb-rus-001` (RU, all plans) is configured and verified in both directions:
+US → RU and RU → DE. Hourly monitoring, weekly dashboard history and country
+ratings include all three nodes. See [fleet lifecycle evidence](fleet-lifecycle.md).
+
+Android source **0.12.0 → 0.12.1**, code 22, fixes control/public HTTP routing after
+VPN startup and bounded heartbeat retry. Windows remains 0.15.0. Runtime/API
+contracts remain compatible. New client build and sustained acceptance results
+must be checked independently; previous 0.12.0 evidence covered only startup.
+Final source/build/run/attempt/download evidence is recorded in PR #32.
+
+## Исторический срез — 2026-10-19
 
 Актуальные функции, границы проверки и backlog собраны в
 [project-status.md](project-status.md): backend **0.10.0**, Windows **0.11.1**,

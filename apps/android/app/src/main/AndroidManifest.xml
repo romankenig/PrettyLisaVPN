@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <application
         android:usesCleartextTraffic="false"
         android:allowBackup="false"
@@ -11,6 +13,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.PrettyLisaVPN">
+        <!-- Android documents approved VPN apps as systemExempted. AGP 8.11 lint
+             only models the alternative alarm permissions. Runtime consent is
+             checked in the service; unrelated alarm permissions are not requested.
+             https://developer.android.com/develop/background-work/services/fgs/service-types#system-exempted -->
+        <service android:name=".vpn.TunnelForegroundService" android:exported="false"
+            android:foregroundServiceType="systemExempted" tools:ignore="ForegroundServicePermission" />
         <activity
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize"

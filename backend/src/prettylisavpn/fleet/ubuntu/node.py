@@ -29,6 +29,7 @@ ROOT = Path("/etc/prettylisavpn-fleet")
 RUN = Path("/run/prettylisavpn-fleet")
 WG = "pl-wg0"
 HELPER = "/usr/local/lib/prettylisavpn-fleet/node.py"
+FIREWALL_UNIT = Path("/etc/systemd/system/wg-quick@pl-wg0.service.d/50-prettylisavpn-firewall.conf")
 MAX_BYTES = 8 * 1024 * 1024
 KEY = re.compile(r"^[A-Za-z0-9+/]{43}=$")
 BLOCKED = (
@@ -290,10 +291,20 @@ def configure(payload: dict[str, Any]) -> dict[str, Any]:
         (
             f"[Interface]\nAddress = {config['address']}\n"
             f"ListenPort = {config['listen_port']}\nPrivateKey = {key}\n"
-            f"MTU = {config['mtu']}\nPostUp = /usr/bin/python3 {HELPER} firewall-up\n"
-            f"PostDown = /usr/bin/python3 {HELPER} firewall-down\n"
+            f"MTU = {config['mtu']}\n"
         ),
     )
+    # Ubuntu 26.04 confines wg-quick with AppArmor: Python hooks cannot inherit
+    # that profile. systemd starts our fixed helper separately, with no profile
+    # relaxation. StopPost also removes owned rules when startup fails.
+    FIREWALL_UNIT.parent.mkdir(parents=True, exist_ok=True)
+    write(
+        FIREWALL_UNIT,
+        f"[Service]\nExecStartPost=/usr/bin/python3 {HELPER} firewall-up\n"
+        f"ExecStopPost=/usr/bin/python3 {HELPER} firewall-down\n",
+        0o644,
+    )
+    cmd(["systemctl", "daemon-reload"])
     write(Path("/etc/sysctl.d/90-prettylisavpn-fleet.conf"), "net.ipv4.ip_forward=1\n", 0o644)
     cmd(["sysctl", "-w", "net.ipv4.ip_forward=1"])
     if not (ROOT / "measure.key").exists():
@@ -349,6 +360,8 @@ def rollback(operation: str) -> dict[str, Any]:
     cmd(["systemctl", "disable", "--now", "prettylisa-fleet-measure"], check=False, timeout=30)
     firewall(False)
     Path("/etc/wireguard/" + WG + ".conf").unlink(missing_ok=True)
+    FIREWALL_UNIT.unlink(missing_ok=True)
+    cmd(["systemctl", "daemon-reload"])
     Path("/etc/sysctl.d/90-prettylisavpn-fleet.conf").unlink(missing_ok=True)
     cmd(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_forward"]])
     (ROOT / "state.json").unlink()
@@ -356,6 +369,8 @@ def rollback(operation: str) -> dict[str, Any]:
 
 
 def grant(access: dict[str, Any]) -> dict[str, Any]:
+    if access.get("purpose") == "client":
+        return grant_client(access)
     identifier, key = uid(access["id"]), str(access["public_key"])
     config = read(ROOT / "state.json")["configuration"]
     reserved = str(ipaddress.IPv4Interface(config["address"]).network.broadcast_address - 1) + "/32"
@@ -381,16 +396,87 @@ def grant(access: dict[str, Any]) -> dict[str, Any]:
     return {"granted": True}
 
 
-def revoke(identifier: str) -> dict[str, Any]:
-    path = RUN / ("lease-" + uid(identifier) + ".json")
+def revoke(identifier: str, purpose: str = "monitor") -> dict[str, Any]:
+    if purpose not in ("monitor", "client"):
+        raise Failure("ACCESS_INVALID")
+    path = (
+        (ROOT / "clients" / (uid(identifier) + ".json"))
+        if purpose == "client"
+        else RUN / ("lease-" + uid(identifier) + ".json")
+    )
     row = read(path)
     if row:
         if cmd(["ip", "link", "show", WG], check=False):
             cmd(["wg", "set", WG, "peer", row["public_key"], "remove"])
             if row["public_key"] in peers():
                 return {"removed": False}
+        if purpose == "client":
+            client_firewall(identifier, row["address"], None)
         path.unlink()
     return {"removed": True}
+
+
+def client_firewall(identifier: str, address: str, expiry: float | None) -> None:
+    # Kernel UTC deadline: traffic stops even if both worker and cleanup timer fail.
+    chain = "PLU_" + UUID(identifier).hex[:20]
+    base = ["iptables", "-w", "5"]
+    hooks = [["-i", WG, "-s", address, "-j", chain], ["-o", WG, "-d", address, "-j", chain]]
+    if expiry is None:
+        for hook in hooks:
+            cmd(base + ["-D", "PLF_FORWARD"] + hook, check=False)
+        cmd(base + ["-F", chain], check=False)
+        cmd(base + ["-X", chain], check=False)
+        if cmd(base + ["-S", chain], check=False):
+            raise Failure("CLIENT_FIREWALL_CLEANUP_FAILED")
+        return
+    # xt_time uses UTC unless --kerneltz is requested. Never allow beyond the deadline.
+    until = datetime.fromtimestamp(expiry - 1, UTC).strftime("%Y-%m-%dT%H:%M:%S")
+    cmd(
+        ["iptables-restore", "-w", "5", "--noflush"],
+        data=(
+            f"*filter\n:{chain} - [0:0]\n-F {chain}\n"
+            f"-A {chain} -m time --datestop {until} -j RETURN\n-A {chain} -j DROP\nCOMMIT\n"
+        ),
+    )
+    rules = cmd(base + ["-S", "PLF_FORWARD"]).splitlines()
+    for hook in hooks:
+        if not any(line.endswith("-j " + chain) and f"{hook[0]} {WG} " in line for line in rules):
+            cmd(base + ["-I", "PLF_FORWARD", "1"] + hook)
+
+
+def grant_client(access: dict[str, Any]) -> dict[str, Any]:
+    identifier, key = uid(access["id"]), str(access["public_key"])
+    config = read(ROOT / "state.json")["configuration"]
+    subnet = ipaddress.IPv4Interface(config["address"]).network
+    address = ipaddress.IPv4Interface(access["address"])
+    expiry = datetime.fromisoformat(access["expires_at"]).timestamp()
+    if (
+        not KEY.fullmatch(key)
+        or address.network.prefixlen != 32
+        or not subnet.network_address + 2 <= address.ip <= subnet.broadcast_address - 2
+        or not time.time() < expiry <= time.time() + 185
+    ):
+        raise Failure("ACCESS_INVALID")
+    directory = ROOT / "clients"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    path = directory / (identifier + ".json")
+    existing = read(path)
+    if existing and (existing["public_key"] != key or existing["address"] != str(address)):
+        raise Failure("ACCESS_CONFLICT")
+    for other in directory.glob("*.json"):
+        row = read(other)
+        if other != path and (row["public_key"] == key or row["address"] == str(address)):
+            raise Failure("ACCESS_CONFLICT")
+    # Monitor and customer namespaces cannot take ownership of each other's peer.
+    for other in RUN.glob("lease-*.json"):
+        if read(other)["public_key"] == key:
+            raise Failure("ACCESS_CONFLICT")
+    if not existing and key in peers():
+        raise Failure("ACCESS_CONFLICT")
+    write(path, json.dumps({"public_key": key, "address": str(address), "expires": expiry}))
+    client_firewall(identifier, str(address), expiry)
+    cmd(["wg", "set", WG, "peer", key, "allowed-ips", str(address)])
+    return {"granted": True}
 
 
 def observation(status: str, mode: str, code: str, **values: Any) -> dict[str, Any]:
@@ -574,7 +660,7 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
                 "set",
                 interface,
                 "private-key",
-                str(RUN / ("probe-" + identifier + ".key")),
+                "/dev/stdin",
                 "peer",
                 key,
                 "endpoint",
@@ -583,7 +669,10 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
                 "0.0.0.0/0",
                 "persistent-keepalive",
                 "15",
-            ]
+            ],
+            # Keep the key in a pipe: Ubuntu's wg AppArmor profile deliberately
+            # cannot open our private journal directory. Never put it in argv.
+            data=(RUN / ("probe-" + identifier + ".key")).read_text(encoding="utf-8"),
         )
         cmd(["ip", "-n", namespace, "addr", "add", address, "dev", interface])
         cmd(["ip", "-n", namespace, "link", "set", "lo", "up"])
@@ -602,6 +691,9 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def cleanup() -> dict[str, Any]:
+    for path in (ROOT / "clients").glob("*.json"):
+        if read(path).get("expires", 0) <= time.time():
+            revoke(path.stem, "client")
     for path in RUN.glob("lease-*.json"):
         if read(path).get("expires", 0) <= time.time():
             revoke(path.stem.removeprefix("lease-"))
@@ -702,7 +794,7 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
     if action == "grant":
         return grant(payload["access"])
     if action == "revoke":
-        return revoke(payload["access_id"])
+        return revoke(payload["access_id"], payload.get("purpose", "monitor"))
     if action == "observe":
         return observe()
     if action == "prepare":

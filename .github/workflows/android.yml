@@ -10,6 +10,11 @@ on:
       - 'apps/android/**'
       - '.github/workflows/android.yml'
   workflow_dispatch:
+    inputs:
+      live_wireguard:
+        description: One real WireGuard attempt using an expiring disposable account
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,6 +24,57 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  live-wireguard:
+    name: Real WireGuard on isolated Android
+    if: github.event_name == 'workflow_dispatch' && inputs.live_wireguard
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-apk
+      - name: Prepare private, expiring acceptance credential
+        env:
+          ACCEPTANCE_CREDENTIAL: ${{ secrets.WIREGUARD_ACCEPTANCE_CREDENTIAL }}
+        run: |
+          umask 077
+          test -n "$ACCEPTANCE_CREDENTIAL"
+          printf '%s' "$ACCEPTANCE_CREDENTIAL" > "$RUNNER_TEMP/pl-wg-credentials.json"
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: One real client attempt
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -memory 4096 -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash apps/android/scripts/live-wireguard.sh
+      - name: Remove temporary credential
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pl-wg-credentials.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-live-wireguard-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: wireguard-evidence/
+          if-no-files-found: error
+          retention-days: 7
+
   build:
     name: Debug APK and lint
     runs-on: ubuntu-latest

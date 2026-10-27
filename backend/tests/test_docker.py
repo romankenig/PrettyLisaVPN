@@ -1,7 +1,9 @@
 """Opt-in checks of the built runtime and standalone deployment configuration."""
 
+import base64
 import json
 import os
+import runpy
 import subprocess
 import time
 from pathlib import Path
@@ -21,6 +23,75 @@ def docker(*args, env=None, check=True):
     return subprocess.run(
         ["docker", *args], capture_output=True, text=True, check=check, env=env, timeout=60
     )
+
+
+def test_dashboard_assets_and_metrics_require_password(tmp_path):
+    image = (
+        "caddy:2.10.2-alpine@sha256:"
+        "4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d"
+    )
+    source = ROOT / "sites/fleet-dashboard"
+    render = runpy.run_path(str(source / "install.py"))["render"]
+    password = "dashboard-test-only-password"
+    digest = docker(
+        "run", "--rm", image, "caddy", "hash-password", "--plaintext", password
+    ).stdout.strip()
+    token = "dashboard-monitor-test-only-token-32-characters"
+    route = render((source / "dashboard.caddy.template").read_text(), "admin", digest, token)
+    route = route.replace("backend:8000", "127.0.0.1:8000")
+    (tmp_path / "site").mkdir()
+    (tmp_path / "site/index.html").write_text("PrettyLisaVPN private dashboard")
+    (tmp_path / "Caddyfile").write_text(
+        ":8080 {\n" + route + "\nhandle {\nrespond 404\n}\n}\n:8000 {\n"
+        "@authorized {\npath /admin/monitoring/availability\nquery days=7\n"
+        f'header Authorization "Bearer {token}"\n}}\n'
+        'respond @authorized "monitoring-authorized" 200\nrespond 403\n}\n'
+    )
+    name = "prettylisa-dashboard-test-" + uuid4().hex[:10]
+    docker(
+        "run",
+        "-d",
+        "--name",
+        name,
+        "--network=none",
+        "-v",
+        f"{tmp_path}:/etc/caddy/dashboard:ro",
+        image,
+        "caddy",
+        "run",
+        "--config",
+        "/etc/caddy/dashboard/Caddyfile",
+        "--adapter",
+        "caddyfile",
+    )
+    try:
+
+        def request(path, credential=None):
+            args = ["exec", name, "wget", "-S", "-O", "-"]
+            if credential:
+                args += [
+                    "--header",
+                    "Authorization: Basic " + base64.b64encode(credential.encode()).decode(),
+                ]
+            return docker(*args, "http://127.0.0.1:8080" + path, check=False)
+
+        for _ in range(30):
+            if "401 Unauthorized" in request("/dashboard/").stderr:
+                break
+            time.sleep(0.2)
+        for path in ("/dashboard/", "/dashboard/api/availability"):
+            assert "401 Unauthorized" in request(path).stderr
+            assert "401 Unauthorized" in request(path, "admin:wrong").stderr
+        page = request("/dashboard/", "admin:" + password)
+        assert page.returncode == 0 and "PrettyLisaVPN private dashboard" in page.stdout
+        metrics = request("/dashboard/api/availability?days=1", "admin:" + password)
+        assert metrics.returncode == 0 and metrics.stdout == "monitoring-authorized"
+        assert "private, no-store" in metrics.stderr
+        assert token not in page.stdout + page.stderr + metrics.stdout + metrics.stderr
+        assert request("/dashboard/monitoring.caddy", "admin:" + password).returncode != 0
+        assert request("/dashboard/../monitoring.caddy", "admin:" + password).returncode != 0
+    finally:
+        docker("rm", "-f", name, check=False)
 
 
 def test_runtime_image_configuration():

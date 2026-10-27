@@ -7,12 +7,14 @@ on:
       - "backend/**"
       - "infra/docker/**"
       - "infra/deployment/**"
+      - "sites/fleet-dashboard/**"
       - ".github/workflows/backend.yaml"
   pull_request:
     paths:
       - "backend/**"
       - "infra/docker/**"
       - "infra/deployment/**"
+      - "sites/fleet-dashboard/**"
       - ".github/workflows/backend.yaml"
 
 permissions:
@@ -336,6 +338,7 @@ jobs:
           docker image inspect --format '{{.Id}}' "$expected_image" > "${release_directory}/image-id"
 
           SKIP_BACKEND_PULL=1 \
+            DASHBOARD_DIR="${deployment_root}/secrets/dashboard" \
             FLEET_ENV_FILE="${deployment_root}/secrets/fleet.env" \
             FLEET_CREDENTIALS_DIR="${deployment_root}/secrets/fleet" \
             "${release_directory}/deploy.sh" "${incoming_directory}/development.env"

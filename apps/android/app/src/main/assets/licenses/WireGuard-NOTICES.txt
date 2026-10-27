@@ -1,0 +1,15 @@
+PrettyLisaVPN Android WireGuard runtime
+
+The Android tunnel wrapper is Apache-2.0; wireguard-go and the Go JNI bridge
+are MIT. The Go runtime and golang.org/x/{sys,crypto,net} use the Go Authors'
+BSD-3-Clause license. License texts are included alongside this notice.
+The GPL command-line libwg and libwg-quick libraries are excluded from the APK.
+
+Pinned wrapper and dependency source:
+https://github.com/WireGuard/wireguard-android/tree/1.0.20260102/tunnel
+https://github.com/WireGuard/wireguard-android/blob/1.0.20260102/tunnel/tools/libwg-go/go.mod
+https://github.com/WireGuard/wireguard-go/tree/f333402bd9cb
+https://github.com/golang/go/blob/go1.23.1/LICENSE
+
+Copyright 2017-2025 WireGuard LLC. All Rights Reserved.
+Copyright 2009 The Go Authors. All rights reserved.

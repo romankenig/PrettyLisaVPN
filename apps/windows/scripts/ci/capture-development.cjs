@@ -28,7 +28,8 @@ const report = {
   real_payment_provider: false,
   real_payments: false,
   support_email_delivery: "not sent",
-  vpn_tunnel: "removed: clients use timed placeholder adapters",
+  vpn_tunnel:
+    "not exercised by account acceptance; separate real WireGuard acceptance required",
   smtp_authentication: account.smtp_authentication,
 };
 let app, browser, page;
