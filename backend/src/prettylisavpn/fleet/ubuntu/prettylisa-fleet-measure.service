@@ -1,0 +1,26 @@
+[Unit]
+Description=PrettyLisaVPN bounded HTTPS measurement endpoint
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=prettylisa-fleet
+Group=prettylisa-fleet
+ExecStart=/usr/bin/python3 /usr/local/lib/prettylisavpn-fleet/node.py measure
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX
+MemoryMax=96M
+TasksMax=8
+UMask=0077
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

@@ -13,6 +13,8 @@ RUN uv sync --frozen --no-dev --no-install-project --no-cache
 
 FROM base AS runtime
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH=/app/src
 RUN groupadd --gid 10001 backend \

@@ -1,0 +1,11 @@
+[Unit]
+Description=PrettyLisaVPN monitoring lease expiry
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=20s
+AccuracySec=1s
+Unit=prettylisa-fleet-cleanup.service
+
+[Install]
+WantedBy=timers.target

@@ -14,9 +14,16 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.16.0", min_length=1)
+    application_version: str = Field(default="0.17.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox"] = "disabled"
+    fleet_enabled: bool = False
+    fleet_admin_token: SecretStr | None = None
+    fleet_monitor_token: SecretStr | None = None
+    fleet_inventory_path: str = "/run/fleet/inventory.json"
+    fleet_speed_target_mbps: float = Field(default=100, gt=0, le=10000)
+    fleet_connection_target_ms: float = Field(default=1000, gt=0, le=60000)
+    fleet_quality_weights: tuple[float, float, float, float] = (0.50, 0.20, 0.15, 0.15)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     postgres_url: SecretStr = SecretStr(
         "postgresql+asyncpg://prettylisa:local-development-only@localhost:5432/prettylisa"
@@ -65,6 +72,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.fleet_enabled:
+            tokens = (self.fleet_admin_token, self.fleet_monitor_token)
+            if any(token is None or len(token.get_secret_value()) < 32 for token in tokens):
+                raise ValueError("Fleet requires separate administrator and monitoring tokens")
+            if self.fleet_admin_token == self.fleet_monitor_token:
+                raise ValueError("Fleet administrator and monitoring tokens must differ")
+        if (
+            any(weight < 0 for weight in self.fleet_quality_weights)
+            or abs(sum(self.fleet_quality_weights) - 1) > 0.000001
+        ):
+            raise ValueError("Fleet quality weights must be non-negative and sum to one")
         if self.billing_provider == "sandbox" and self.environment not in ("development", "test"):
             raise ValueError("Sandbox billing requires development or test environment")
         if (

@@ -202,3 +202,32 @@ def test_caddyfile_is_valid():
         "--config",
         "/etc/caddy/Caddyfile",
     )
+
+
+def test_fleet_profile_mounts_credentials_only_in_worker(tmp_path):
+    fleet_env = tmp_path / "fleet.env"
+    fleet_env.write_text(
+        "FLEET_ENABLED=true\n"
+        "FLEET_ADMIN_TOKEN=administrator-test-token-32-characters\n"
+        "FLEET_MONITOR_TOKEN=monitoring-test-token-distinct-32-characters\n"
+    )
+    result = docker(
+        "compose",
+        "--profile",
+        "fleet",
+        "-f",
+        str(ROOT / "infra/deployment/compose.yaml"),
+        "config",
+        "--format",
+        "json",
+        env={**deployment_env(), "FLEET_ENV_FILE": str(fleet_env)},
+    )
+    services = json.loads(result.stdout)["services"]
+    assert set(services) == {"backend", "caddy", "fleet-worker"}
+    assert "volumes" not in services["backend"]
+    worker = services["fleet-worker"]
+    assert worker["command"] == ["python", "-m", "prettylisavpn.fleet.worker"]
+    assert worker["read_only"] and worker["cap_drop"] == ["ALL"]
+    assert worker["volumes"][0]["target"] == "/run/fleet"
+    assert worker["volumes"][0]["read_only"]
+    assert "ports" not in worker
