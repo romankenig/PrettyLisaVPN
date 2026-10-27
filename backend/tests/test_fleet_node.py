@@ -167,3 +167,38 @@ def test_configuration_runs_firewall_outside_confined_wg_quick_and_rolls_back(
     assert not unit.exists() and foreign.exists()
     assert not (paths / "etc/wireguard/pl-wg0.conf").exists()
     assert not (root / "state.json").exists()
+
+
+def test_probe_key_uses_pipe_without_relaxing_apparmor(helper, monkeypatch, tmp_path):
+    _, run = helper
+    identifier = str(uuid4())
+    private = "disposable-private-fixture"
+    node.write(run / f"probe-{identifier}.json", json.dumps({"expires": time.time() + 240}))
+    node.write(run / f"probe-{identifier}.key", private)
+    monkeypatch.setattr(node, "Path", lambda _: tmp_path / "netns")
+    disposed, keys = [], []
+    monkeypatch.setattr(node, "dispose", lambda value: disposed.append(value))
+
+    def command(args, **kwargs):
+        assert private not in str(args)
+        if "private-key" in args:
+            assert args[args.index("private-key") + 1] == "/dev/stdin"
+            keys.append(kwargs["data"])
+            raise node.Failure("PROBE_INTERRUPTED")
+        return ""
+
+    monkeypatch.setattr(node, "cmd", command)
+    with pytest.raises(node.Failure, match="PROBE_INTERRUPTED"):
+        node.probe(
+            {
+                "check_id": identifier,
+                "public_key": PUBKEY,
+                "endpoint": "5.181.49.183",
+                "listen_port": 51820,
+                "address": "10.88.1.254/32",
+                "mtu": 1380,
+                "expected_egress_ips": ["5.181.49.183"],
+            }
+        )
+    assert keys == [private]
+    assert disposed == [identifier]

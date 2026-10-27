@@ -155,4 +155,3 @@ The first RU configuration rolled back after NODE_COMMAND_FAILED; a new
 configuration operation and full cross-node verification are required before
 claiming this node ready. Exact deployed SHA and results are recorded below
 and in the task PR after verification. Client versions unchanged for enrollment.
-

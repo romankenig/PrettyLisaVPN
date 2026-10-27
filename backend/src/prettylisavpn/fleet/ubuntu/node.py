@@ -660,7 +660,7 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
                 "set",
                 interface,
                 "private-key",
-                str(RUN / ("probe-" + identifier + ".key")),
+                "/dev/stdin",
                 "peer",
                 key,
                 "endpoint",
@@ -669,7 +669,10 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
                 "0.0.0.0/0",
                 "persistent-keepalive",
                 "15",
-            ]
+            ],
+            # Keep the key in a pipe: Ubuntu's wg AppArmor profile deliberately
+            # cannot open our private journal directory. Never put it in argv.
+            data=(RUN / ("probe-" + identifier + ".key")).read_text(encoding="utf-8"),
         )
         cmd(["ip", "-n", namespace, "addr", "add", address, "dev", interface])
         cmd(["ip", "-n", namespace, "link", "set", "lo", "up"])
