@@ -61,7 +61,7 @@ jobs:
             bytes = $binary.Length
             sha256 = (Get-FileHash -Algorithm SHA256 $binary.FullName).Hash.ToLowerInvariant()
             backend = 'https://api.prettylisavpn.com'
-            mode = '14 placeholders, 3 seconds each; no VPN engine'
+            mode = 'Managed official WireGuard; 13 remaining placeholder adapters'
           } | ConvertTo-Json | Set-Content -Encoding utf8 artifacts/client/build-identity.json
       - uses: actions/upload-artifact@v4
         with:

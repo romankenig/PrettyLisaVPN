@@ -103,7 +103,9 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         // Network-bound DNS and sockets cannot silently fall back to Wi-Fi or mobile Internet.
         val verified = sessions.request { token -> withContext(Dispatchers.IO) {
             val client = OkHttpClient.Builder().socketFactory(network.socketFactory)
-                .dns { hostname -> network.getAllByName(hostname).toList() }
+                .dns(object : okhttp3.Dns {
+                    override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
+                })
                 .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
             try {

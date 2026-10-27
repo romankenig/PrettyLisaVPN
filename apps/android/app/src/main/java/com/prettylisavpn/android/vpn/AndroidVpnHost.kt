@@ -9,12 +9,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
-    private val wireguard = WireGuardAdapter(context, sessions, http) { disconnect() }
-    val controller = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http) { disconnect() }
+    val controller: VpnController = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
         placeholderAdapters().map { if (it.method.id == "wireguard") wireguard else it })
     override val status get() = controller.status
     override fun connect(country: String) = controller.connect(country)
-    override fun disconnect() = controller.disconnect()
+    override fun disconnect(): Unit = controller.disconnect()
     fun serviceLost() { if (wireguard.isRunning) disconnect() }
     companion object {
         @Volatile private var instance: AndroidVpnHost? = null
