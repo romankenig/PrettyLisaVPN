@@ -977,8 +977,8 @@ async function main() {
         fontWeightsVerified: [400, 600, 700],
         syntheticApi: true,
         vpnTested: false,
-        injectedVpnFixture: false,
-        shippedPlaceholderExecutorVerified: true,
+        injectedVpnFixture: true,
+        connectionExecutorWithFixturesVerified: true,
         placeholderFallbackAndCancellationVerified: true,
         trafficModeUiVerified: true,
         screenshots: fs

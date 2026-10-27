@@ -43,7 +43,7 @@ class LiveWireGuardTest {
                 assertTrue("Disposable account restoration failed", signedIn)
                 scenario.onActivity { requireNotNull(AndroidVpnHost.current()).connect(country) }
                 device.wait(Until.findObject(By.res("android", "button1")), 10_000)?.click()
-                val deadline = SystemClock.elapsedRealtime() + 150_000
+                val deadline = SystemClock.elapsedRealtime() + 240_000
                 while (SystemClock.elapsedRealtime() < deadline) {
                     val phase = requireNotNull(AndroidVpnHost.current()).status.value.phase
                     if (phase in setOf(VpnPhase.CONNECTED, VpnPhase.FAILED, VpnPhase.DISCONNECTED)) break

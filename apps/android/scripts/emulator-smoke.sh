@@ -40,7 +40,8 @@ adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
 
-# The installed app executes all 14 real three-second placeholders, then cancellation.
+# The UI fixture replaces WireGuard; exercise all 14 three-second adapters and cancellation.
+# Real shipping WireGuard requires the separate, opt-in live-wireguard acceptance job.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.PlaceholderConnectionTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/placeholder-instrumentation.txt
 python3 - <<'PLACEHOLDER_CHECK'

@@ -126,6 +126,14 @@ connection is claimed by that run. Subsequent evidence includes only fixed stage
 HTTP status and aggregate WireGuard counters/handshake, without destinations,
 keys, tokens or exception messages. Tunnel proof explicitly bypasses HTTP proxies.
 
+Attempt 2 [40495655538](https://github.com/romankenig/PrettyLisaVPN/actions/runs/40495655538),
+source/build `eeebce4b9ba3314925decefbffd46ebfaf05005d`, reported a SocketException
+at HTTPS startup, no handshake, 148 transmitted / 0 received bytes. The server
+observed the peer briefly without a handshake and confirmed removal. The adapter
+now allows up to 20 seconds for the initial WireGuard handshake, then makes at
+most two network-bound verification probes on the same tunnel. It never declares
+Connected from interface presence alone. These probes do not create new leases.
+
 Acceptance accounts are disposable, with credentials held only in protected files
 and a temporary Actions secret. A persistent main-server timer revokes the account
 after two hours, including rotated sessions; manual cleanup runs after acceptance.

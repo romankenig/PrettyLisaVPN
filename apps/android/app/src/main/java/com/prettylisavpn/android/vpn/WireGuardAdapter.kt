@@ -35,16 +35,17 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     val isRunning get() = expectingUp
     private var acquired = false
     // In-memory acceptance evidence only: fixed stages, counters, no keys/addresses/URLs.
-    data class Diagnostic(val stage: String, val failure: String?, val httpStatus: Int?,
+    data class Diagnostic(val stage: String, val failure: String?, val socketCode: String?, val httpStatus: Int?,
         val handshake: Boolean, val rxBytes: Long, val txBytes: Long)
     @Volatile private var stage = "IDLE"
     private var failure: String? = null
+    private var socketCode: String? = null
     private var httpStatus: Int? = null
     private var handshakeObserved = false
     private var rxBytes = 0L
     private var txBytes = 0L
     private var startedAt = 0L
-    fun diagnostic() = Diagnostic(stage, failure, httpStatus, handshakeObserved, rxBytes, txBytes)
+    fun diagnostic() = Diagnostic(stage, failure, socketCode, httpStatus, handshakeObserved, rxBytes, txBytes)
     private val tunnel = object : Tunnel {
         override fun getName() = "PrettyLisaVPN"
         override fun onStateChange(state: Tunnel.State) {
@@ -53,12 +54,15 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     }
 
     override suspend fun connect(country: String): ConnectionResult {
-        stage = "CONSENT"; failure = null; httpStatus = null
+        stage = "CONSENT"; failure = null; socketCode = null; httpStatus = null
         handshakeObserved = false; rxBytes = 0; txBytes = 0; startedAt = 0
         try {
             return connectTunnel(country)
         } catch (error: Exception) {
             failure = error.javaClass.simpleName
+            socketCode = generateSequence(error as Throwable) { it.cause }.take(6)
+                .flatMap { cause -> sequenceOf("EPERM", "EACCES", "ENONET", "ENETUNREACH", "EHOSTUNREACH", "ECONNREFUSED", "EINVAL").filter { code -> cause.message.orEmpty().contains(code) } }
+                .firstOrNull()
             throw error
         } finally {
             withContext(NonCancellable + Dispatchers.IO) {
@@ -92,10 +96,10 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                 catch (_: Exception) { lost(); return@launch }
             }
         }
-        val ready = withTimeout(60_000) {
+        val ready = vpnDeadline(60_000) {
             while (true) {
                 val row = api.get(requireNotNull(lease).id)
-                if (row.status == "READY") return@withTimeout row
+                if (row.status == "READY") return@vpnDeadline row
                 check(row.status == "PROVISIONING")
                 delay(1_000)
             }
@@ -127,16 +131,46 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
             engine.setState(tunnel, Tunnel.State.UP, parsed)
         }
         context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
+        // establish() returns before network routing/first WireGuard response settle.
+        // Keep this one tunnel alive through the protocol's initial handshake retries.
+        stage = "HANDSHAKE"
+        vpnDeadline(20_000) {
+            while (!freshHandshake(started)) delay(250)
+        }
         stage = "NETWORK"
-        val network = withTimeout(10_000) {
+        val network = vpnDeadline(10_000) {
             while (true) {
-                vpnNetwork(config.address.substringBefore('/'))?.let { return@withTimeout it }
+                vpnNetwork(config.address.substringBefore('/'))?.let { return@vpnDeadline it }
                 delay(100)
             }
             @Suppress("UNREACHABLE_CODE") error("VPN_NETWORK_MISSING")
         }
         // Network-bound DNS and sockets cannot silently fall back to Wi-Fi or mobile Internet.
-        val verified = sessions.request { token -> withContext(Dispatchers.IO) {
+        var verified = false
+        for (attempt in 0..1) {
+            try {
+                verified = verify(network, ready, config)
+                break
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (error: java.io.IOException) {
+                if (attempt == 1 || !expectingUp) throw error
+                delay(1_000)
+            }
+        }
+        stage = if (verified) "HANDSHAKE" else "EGRESS_MISMATCH"
+        return if (verified && freshHandshake(started) && expectingUp) {
+            stage = "VERIFIED"
+            ConnectionResult.Verified
+        } else ConnectionResult.Failed
+    }
+
+    private suspend fun freshHandshake(started: Long): Boolean = withContext(Dispatchers.IO) {
+        val stats = requireNotNull(backend).getStatistics(tunnel)
+        stats.peers().any { key -> stats.peer(key)?.latestHandshakeEpochMillis()?.let { it >= started } == true }
+    }
+
+    private suspend fun verify(network: Network, ready: WireGuardLease, config: WireGuardConfiguration): Boolean =
+        sessions.request { token -> withContext(Dispatchers.IO) {
             val client = OkHttpClient.Builder().socketFactory(network.socketFactory).proxy(Proxy.NO_PROXY)
                 .dns(object : okhttp3.Dns {
                     override fun lookup(hostname: String): List<java.net.InetAddress> {
@@ -158,16 +192,6 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                 }
             } finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
         } }
-        stage = if (verified) "HANDSHAKE" else "EGRESS_MISMATCH"
-        val handshake = withContext(Dispatchers.IO) {
-            val stats = requireNotNull(backend).getStatistics(tunnel)
-            stats.peers().any { key -> stats.peer(key)?.latestHandshakeEpochMillis()?.let { it >= started } == true }
-        }
-        return if (verified && handshake && expectingUp) {
-            stage = "VERIFIED"
-            ConnectionResult.Verified
-        } else ConnectionResult.Failed
-    }
 
     @Suppress("DEPRECATION") // Enumerate VPN networks and match our exact allocated address.
     private fun vpnNetwork(address: String): Network? {
@@ -191,7 +215,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         lease = current
         if (current.status != "CLOSED") {
             api.revoke(current.id)
-            withTimeout(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
+            vpnDeadline(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
         }
         lease = null
         acquired = false
