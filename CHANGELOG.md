@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.17.0 / Ubuntu fleet helper — 0.1.0
+
+- Add an explicit administrator API and durable Ubuntu WireGuard provisioning
+  operations, executed by a separate worker with a pinned SSH inventory.
+- Add staggered hourly cross-node VPN checks, passive observations, seven-day
+  history and plan-aware country ratings. Full success requires handshake, DNS,
+  HTTPS, expected egress IP and confirmed temporary-peer cleanup.
+- Migration 0029 adds independent fleet tables; legacy records remain untouched.
+  Windows 0.14.1 and Android 0.11.1 remain placeholders; no client tunnels enabled.
+- Private Sites monitoring and real DE/US acceptance are tracked separately from
+  automated tests: [fleet lifecycle handoff](docs/fleet-lifecycle.md).
+
 ### Android — 0.11.1 / Windows — 0.14.1
 
 - Fix current location when the primary geolocation provider cannot resolve or

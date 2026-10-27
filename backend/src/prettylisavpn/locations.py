@@ -15,7 +15,10 @@ from prettylisavpn.auth.session_service import (
     RevokedDeviceError,
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
+from prettylisavpn.config import Settings
+from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.main_errors import error_response
+from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
 
 router = APIRouter(prefix="/vpn", tags=["locations"])
 
@@ -42,6 +45,12 @@ async def countries(
         return error_response("authentication_required", 401)
     auth = cast(AuthenticatedSessionHandler, request.app.state.authenticated_sessions)
     try:
+        if cast(Settings, request.app.state.fleet_settings).fleet_enabled:
+            account = await auth.me(token)
+            snapshot = await cast(FleetService, request.app.state.fleet).countries(
+                free_only=entitlements_for_plan(account.plan).free_nodes_only
+            )
+            return Countries.model_validate(snapshot)
         await auth.authenticate(token)
     except InvalidAccessTokenError:
         return error_response("invalid_access_token", 401)

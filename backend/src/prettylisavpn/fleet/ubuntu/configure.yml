@@ -1,0 +1,59 @@
+---
+- name: Install PrettyLisaVPN WireGuard node tooling
+  hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Require supported Ubuntu and systemd
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - ansible_facts['distribution_major_version'] | int >= 24
+          - ansible_facts['service_mgr'] == 'systemd'
+    - name: Install distribution-maintained network tools
+      ansible.builtin.apt:
+        name: [wireguard-tools, iproute2, iptables, iputils-ping, dnsutils, openssl, ca-certificates]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 120
+    - name: Load WireGuard kernel module
+      ansible.builtin.command: modprobe wireguard
+      changed_when: false
+    - name: Create measurement service account
+      ansible.builtin.user:
+        name: prettylisa-fleet
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+    - name: Create helper directory
+      ansible.builtin.file:
+        path: /usr/local/lib/prettylisavpn-fleet
+        state: directory
+        owner: root
+        mode: '0755'
+    - name: Install bounded node helper
+      ansible.builtin.copy:
+        src: node.py
+        dest: /usr/local/lib/prettylisavpn-fleet/node.py
+        owner: root
+        mode: '0644'
+    - name: Install measurement service
+      ansible.builtin.copy:
+        src: prettylisa-fleet-measure.service
+        dest: /etc/systemd/system/prettylisa-fleet-measure.service
+        owner: root
+        mode: '0644'
+    - name: Install autonomous cleanup units
+      ansible.builtin.copy:
+        src: '{{ item }}'
+        dest: '/etc/systemd/system/{{ item }}'
+        owner: root
+        mode: '0644'
+      loop: [prettylisa-fleet-cleanup.service, prettylisa-fleet-cleanup.timer]
+    - name: Enable cleanup independently of the backend
+      ansible.builtin.systemd_service:
+        name: prettylisa-fleet-cleanup.timer
+        enabled: true
+        state: started
+        daemon_reload: true

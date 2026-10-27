@@ -66,6 +66,18 @@ fi
 compose=(docker compose --project-name "$project_name" \
     --env-file "$environment_file" --file "$deployment_dir/compose.yaml")
 
+# Owner-managed enrollment is separate from CI-generated deployment credentials.
+# It survives a routine development release without copying secrets into CI.
+export FLEET_ENV_FILE="${FLEET_ENV_FILE:-$(dirname "$environment_file")/fleet.env}"
+export FLEET_CREDENTIALS_DIR="${FLEET_CREDENTIALS_DIR:-$(dirname "$environment_file")/fleet}"
+if [[ -f "$FLEET_ENV_FILE" ]]; then
+    if [[ "$(stat -c '%a' "$FLEET_ENV_FILE")" != "600" ]]; then
+        printf 'Fleet environment file must have mode 600.\n' >&2
+        exit 1
+    fi
+    compose+=(--profile fleet)
+fi
+
 "${compose[@]}" config --quiet
 if [[ "$deploy_mode" == "rollback" ]]; then
     # A rollback must use an already retained artifact and must not rebuild or pull.

@@ -1,0 +1,7 @@
+[Unit]
+Description=PrettyLisaVPN expired monitoring access cleanup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/prettylisavpn-fleet/node.py cleanup
+UMask=0077

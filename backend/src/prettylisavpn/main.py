@@ -41,6 +41,9 @@ from prettylisavpn.devices.management import DeviceManagementHandler, DeviceMana
 from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
 from prettylisavpn.emailing.timeweb import TimewebEmailProvider
+from prettylisavpn.fleet.domain import FleetError
+from prettylisavpn.fleet.router import router as fleet_router
+from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.locations import router as locations_router
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
@@ -114,6 +117,7 @@ def create_app(
     billing: BillingOverviewPort | None = None,
     billing_provider: BillingProvider | None = None,
     billing_worker: BillingWorkerPort | None = None,
+    fleet: FleetService | None = None,
 ) -> FastAPI:
     validate_provider(billing_provider)
     config = settings if settings is not None else Settings()
@@ -131,6 +135,8 @@ def create_app(
             cache = valkey if valkey is not None else Valkey(config)
             try:
                 app.state.postgres = pg
+                app.state.fleet_settings = config
+                app.state.fleet = fleet or FleetService(cast(Postgres, pg), config)
                 app.state.valkey = cache
                 app.state.otp_service = (
                     otp_service if otp_service is not None else cast(Valkey, cache).otp
@@ -238,6 +244,11 @@ def create_app(
     app.include_router(messages_router)
     app.include_router(support_router)
     app.include_router(billing_router)
+    app.include_router(fleet_router)
+
+    @app.exception_handler(FleetError)
+    async def fleet_error(request: Request, exc: FleetError) -> JSONResponse:
+        return error_response(exc.code, exc.status)
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
