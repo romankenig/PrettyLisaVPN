@@ -143,3 +143,16 @@ The independent rollback timer removed the fault and no peer remained. This
 motivated SSH reuse; repeat fault/recovery and 24-hour acceptance are tracked in
 PR #31. Source, deployment and acceptance are separate claims. Exact final product
 SHA, manual build identity, Sites deployment and CI evidence belong in the PR.
+
+## RU enrollment and Ubuntu 26.04 — 2026-10-27
+
+Requested node: timeweb-rus-001, 45.153.68.12, RU, Free/Premium/Platinum.
+Ubuntu 26.04.1 uses an enforcing wg-quick AppArmor profile that rejects Python
+PostUp/PostDown hooks. Backend 0.18.0 → 0.18.1 moves new configurations' firewall
+hooks to the owned systemd instance drop-in; AppArmor remains enforced.
+Existing committed DE/US configurations and API/schema 0030 remain compatible.
+The first RU configuration rolled back after NODE_COMMAND_FAILED; a new
+configuration operation and full cross-node verification are required before
+claiming this node ready. Exact deployed SHA and results are recorded below
+and in the task PR after verification. Client versions unchanged for enrollment.
+

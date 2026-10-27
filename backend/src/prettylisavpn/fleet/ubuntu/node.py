@@ -29,6 +29,7 @@ ROOT = Path("/etc/prettylisavpn-fleet")
 RUN = Path("/run/prettylisavpn-fleet")
 WG = "pl-wg0"
 HELPER = "/usr/local/lib/prettylisavpn-fleet/node.py"
+FIREWALL_UNIT = Path("/etc/systemd/system/wg-quick@pl-wg0.service.d/50-prettylisavpn-firewall.conf")
 MAX_BYTES = 8 * 1024 * 1024
 KEY = re.compile(r"^[A-Za-z0-9+/]{43}=$")
 BLOCKED = (
@@ -290,10 +291,20 @@ def configure(payload: dict[str, Any]) -> dict[str, Any]:
         (
             f"[Interface]\nAddress = {config['address']}\n"
             f"ListenPort = {config['listen_port']}\nPrivateKey = {key}\n"
-            f"MTU = {config['mtu']}\nPostUp = /usr/bin/python3 {HELPER} firewall-up\n"
-            f"PostDown = /usr/bin/python3 {HELPER} firewall-down\n"
+            f"MTU = {config['mtu']}\n"
         ),
     )
+    # Ubuntu 26.04 confines wg-quick with AppArmor: Python hooks cannot inherit
+    # that profile. systemd starts our fixed helper separately, with no profile
+    # relaxation. StopPost also removes owned rules when startup fails.
+    FIREWALL_UNIT.parent.mkdir(parents=True, exist_ok=True)
+    write(
+        FIREWALL_UNIT,
+        f"[Service]\nExecStartPost=/usr/bin/python3 {HELPER} firewall-up\n"
+        f"ExecStopPost=/usr/bin/python3 {HELPER} firewall-down\n",
+        0o644,
+    )
+    cmd(["systemctl", "daemon-reload"])
     write(Path("/etc/sysctl.d/90-prettylisavpn-fleet.conf"), "net.ipv4.ip_forward=1\n", 0o644)
     cmd(["sysctl", "-w", "net.ipv4.ip_forward=1"])
     if not (ROOT / "measure.key").exists():
@@ -349,6 +360,8 @@ def rollback(operation: str) -> dict[str, Any]:
     cmd(["systemctl", "disable", "--now", "prettylisa-fleet-measure"], check=False, timeout=30)
     firewall(False)
     Path("/etc/wireguard/" + WG + ".conf").unlink(missing_ok=True)
+    FIREWALL_UNIT.unlink(missing_ok=True)
+    cmd(["systemctl", "daemon-reload"])
     Path("/etc/sysctl.d/90-prettylisavpn-fleet.conf").unlink(missing_ok=True)
     cmd(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_forward"]])
     (ROOT / "state.json").unlink()

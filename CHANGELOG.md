@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Backend — 0.18.1 / клиенты unchanged
+
+- Исправлена первичная установка WireGuard на Ubuntu 26.04: firewall запускается
+  отдельными шагами systemd, без Python hooks внутри AppArmor-профиля wg-quick.
+  Ограничения AppArmor сохраняются; rollback удаляет только собственный drop-in.
+- Добавление `timeweb-rus-001` (RU, все тарифы) проходит через существующие admin API,
+  inventory и серверный планировщик; фактическая проверка и deploy — в handoff.
+
 ### Backend — 0.18.0 / Windows — 0.15.0 / Android — 0.12.0
 
 - Restore real WireGuard through a new authenticated customer lease API and the
