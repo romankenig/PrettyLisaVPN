@@ -155,3 +155,38 @@ The first RU configuration rolled back after NODE_COMMAND_FAILED; a new
 configuration operation and full cross-node verification are required before
 claiming this node ready. Exact deployed SHA and results are recorded below
 and in the task PR after verification. Client versions unchanged for enrollment.
+
+The worker inventory now contains alias `timeweb-rus-001`, root SSH on port 22,
+subnet `10.88.3.1/24`, UDP 51820, MTU 1380, capacity 100 (configured admission
+limit, not a load-test result). The password remains only in the ignored local
+credential file; worker SSH uses its existing key and pinned host key. Provider
+Zabbix and unrelated services were preserved.
+
+Configuration `db9a98b6-13d8-4ecb-88bf-1b64c2b9910f` succeeded at 12:20:33 UTC.
+US → RU check `241c9225-2c7d-4196-8ff2-0f8412cf9cbe` passed handshake, DNS,
+HTTPS, expected egress 45.153.68.12 and cleanup at 12:21 UTC. Measured download /
+upload 13.10 / 15.20 Mbps are one cross-node sample, not an advertised capacity.
+`GET /vpn/countries` with a disposable Free account returned RU available; the
+same country service includes RU for paid plans. The test account was revoked.
+
+RU as probe origin exposed another Ubuntu AppArmor boundary: `wg` cannot read
+our private journal directory. The helper now passes the temporary key on stdin,
+without secrets in argv or relaxing AppArmor. Backend 0.18.1 source
+`92d0b5c2fa3652f7fe28cfa75d80ba7183e994db` is deployed manually in development,
+build `20261027122224`, attempt 1, schema 0030; no GitHub deploy run. The RU helper
+is updated from that exact source under its node lock. Existing DE/US helpers
+remain compatible. Backend unit/integration suite before the stdin refinement:
+535 passed, one intentional SMTP-send skip; final focused suite: 27 passed.
+Final CI results and download artifacts belong to PR #32's current head.
+
+The three-node hourly roster was recalculated using the existing scheduler:
+US :05:57, DE :32:33, RU :49:12 UTC (rotating origins over two hours). Main-server
+fleet-worker owns recurring checks and customer lease renewal. Dashboard shows
+all three nodes and still requires Basic Auth (anonymous 401, authenticated 200).
+The independent 24-hour acceptance timer remains active; its future report is
+not an already-passed acceptance result.
+
+RU → DE check `78eb36e5-98ba-43f5-a101-b64f0cf6b9a8` passed at 12:26:40 UTC,
+including cleanup, with RU recorded as the source. Thus the new node is proven
+in both roles. All three nodes were READY/available at 12:27 UTC. Earlier UNKNOWN
+from the source-side AppArmor error remains visible in history; it was not erased.

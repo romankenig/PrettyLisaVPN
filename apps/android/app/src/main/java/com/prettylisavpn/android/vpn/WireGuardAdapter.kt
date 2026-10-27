@@ -8,6 +8,7 @@ import android.net.NetworkCapabilities
 import com.google.gson.JsonParser
 import com.prettylisavpn.android.auth.HttpAuthApi
 import com.prettylisavpn.android.auth.SessionCoordinator
+import com.prettylisavpn.android.network.HttpRoutes
 import com.wireguard.android.backend.GoBackend
 import com.wireguard.android.backend.Tunnel
 import com.wireguard.config.Config
@@ -36,7 +37,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private var acquired = false
     // In-memory acceptance evidence only: fixed stages, counters, no keys/addresses/URLs.
     data class Diagnostic(val stage: String, val failure: String?, val socketCode: String?, val httpStatus: Int?,
-        val handshake: Boolean, val rxBytes: Long, val txBytes: Long)
+        val handshake: Boolean, val rxBytes: Long, val txBytes: Long, val heartbeats: Int)
     @Volatile private var stage = "IDLE"
     private var failure: String? = null
     private var socketCode: String? = null
@@ -45,7 +46,8 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private var rxBytes = 0L
     private var txBytes = 0L
     private var startedAt = 0L
-    fun diagnostic() = Diagnostic(stage, failure, socketCode, httpStatus, handshakeObserved, rxBytes, txBytes)
+    @Volatile private var heartbeats = 0
+    fun diagnostic() = Diagnostic(stage, failure, socketCode, httpStatus, handshakeObserved, rxBytes, txBytes, heartbeats)
     private val tunnel = object : Tunnel {
         override fun getName() = "PrettyLisaVPN"
         override fun onStateChange(state: Tunnel.State) {
@@ -55,7 +57,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
 
     override suspend fun connect(country: String): ConnectionResult {
         stage = "CONSENT"; failure = null; socketCode = null; httpStatus = null
-        handshakeObserved = false; rxBytes = 0; txBytes = 0; startedAt = 0
+        handshakeObserved = false; rxBytes = 0; txBytes = 0; startedAt = 0; heartbeats = 0
         try {
             return connectTunnel(country)
         } catch (error: Exception) {
@@ -85,16 +87,13 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString())
         armDeadline(requireNotNull(lease))
         heartbeat = scope.launch {
-            while (isActive) {
-                delay(30_000)
-                try {
+            maintainLeaseHeartbeat(renew = {
                     val row = api.heartbeat(requireNotNull(lease).id)
                     lease = row
                     armDeadline(row)
-                    if (row.status !in setOf("PROVISIONING", "READY") || !Instant.parse(row.expires_at).isAfter(Instant.now())) { lost(); return@launch }
-                } catch (cancel: CancellationException) { throw cancel }
-                catch (_: Exception) { lost(); return@launch }
-            }
+                    heartbeats++
+                    row.status in setOf("PROVISIONING", "READY") && Instant.parse(row.expires_at).isAfter(Instant.now())
+                }, lost = lost)
         }
         val ready = vpnDeadline(60_000) {
             while (true) {
@@ -145,6 +144,11 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
             }
             @Suppress("UNREACHABLE_CODE") error("VPN_NETWORK_MISSING")
         }
+        // API renewal and public metadata must use the same working VPN route
+        // as verification, with fresh pools instead of pre-tunnel TCP sessions.
+        HttpRoutes.vpn(network.socketFactory, object : okhttp3.Dns {
+            override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
+        })
         // Network-bound DNS and sockets cannot silently fall back to Wi-Fi or mobile Internet.
         var verified = false
         for (attempt in 0..1) {
@@ -226,6 +230,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         deadline?.cancel(); deadline = null
         expectingUp = false
         withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) }
+        HttpRoutes.default()
         context.stopService(Intent(context, TunnelForegroundService::class.java))
         if (acquired || lease != null) closeRemote()
     }

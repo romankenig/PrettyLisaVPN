@@ -17,6 +17,13 @@ import org.junit.Test
 import java.io.File
 import java.io.FileInputStream
 import android.os.SystemClock
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.prettylisavpn.android.ui.PublicMetadata
+import kotlinx.coroutines.runBlocking
+import java.net.URL
+import java.net.Proxy
+import javax.net.ssl.HttpsURLConnection
 
 /** Explicit dispatch only, with an expiring disposable account. No VPN mocks. */
 class LiveWireGuardTest {
@@ -49,15 +56,40 @@ class LiveWireGuardTest {
                     if (phase in setOf(VpnPhase.CONNECTED, VpnPhase.FAILED, VpnPhase.DISCONNECTED)) break
                     SystemClock.sleep(200)
                 }
+                val sustainedStart = SystemClock.elapsedRealtime()
+                while (AndroidVpnHost.current()?.status?.value?.phase == VpnPhase.CONNECTED &&
+                    SystemClock.elapsedRealtime() - sustainedStart < 120_000) SystemClock.sleep(200)
+                val sustainedSeconds = (SystemClock.elapsedRealtime() - sustainedStart) / 1_000
                 val state = requireNotNull(AndroidVpnHost.current()).status.value
+                val publicApi = state.phase == VpnPhase.CONNECTED && runBlocking { PublicMetadata().reachable() }
+                @Suppress("DEPRECATION")
+                val vpn = context.getSystemService(ConnectivityManager::class.java).let { manager ->
+                    manager.allNetworks.firstOrNull { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
+                }
+                val tunnelHttps = state.phase == VpnPhase.CONNECTED && vpn != null && runCatching {
+                    val connection = vpn.openConnection(URL("https://api.prettylisavpn.com/health"), Proxy.NO_PROXY) as HttpsURLConnection
+                    try {
+                        connection.connectTimeout = 8_000; connection.readTimeout = 8_000
+                        connection.instanceFollowRedirects = false
+                        connection.responseCode == 200 && connection.inputStream.bufferedReader().use { it.readText().contains("ok") }
+                    } finally { connection.disconnect() }
+                }.getOrDefault(false)
+                val noticeVisible = device.hasObject(By.text(context.getString(R.string.server_connection_lost)))
                 val output = requireNotNull(context.getExternalFilesDir(null))
                 device.takeScreenshot(File(output, "wireguard-proof.png"))
                 File(output, "wireguard-proof.json").writeText(Gson().toJson(mapOf(
                     "source_sha" to BuildConfig.SOURCE_SHA, "version" to BuildConfig.VERSION_NAME,
                     "country" to country, "phase" to state.phase.name, "method" to state.method?.id,
+                    "sustained_seconds" to sustainedSeconds, "public_api_reachable" to publicApi,
+                    "tunnel_https_rechecked" to tunnelHttps, "notice_visible" to noticeVisible,
                     "error" to state.error?.name, "wireguard" to AndroidVpnHost.current()?.wireguardDiagnostic())))
                 assertEquals("Real tunnel-bound verification did not pass", VpnPhase.CONNECTED, state.phase)
                 assertEquals("wireguard", state.method?.id)
+                assertTrue("Tunnel did not survive two minutes", sustainedSeconds >= 120)
+                assertTrue("At least three lease renewals must reach the API", requireNotNull(AndroidVpnHost.current()?.wireguardDiagnostic()).heartbeats >= 3)
+                assertTrue("Public server notice probe must work over VPN", publicApi)
+                assertTrue("HTTPS through the VPN must still work", tunnelHttps)
+                assertFalse("App must not show a false connection-loss notice", noticeVisible)
             } finally {
                 scenario.onActivity { AndroidVpnHost.current()?.disconnect() }
                 val cleanupDeadline = SystemClock.elapsedRealtime() + 45_000

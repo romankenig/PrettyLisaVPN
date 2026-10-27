@@ -18,6 +18,26 @@ health/readiness и выдача/удаление клиентских peers DE/
 [client-wireguard.md](client-wireguard.md) и PR #32. Сам факт deployment не
 доказывает успешное подключение приложения. Прежние записи ниже исторические.
 
+## RU enrollment follow-up — 2026-10-27
+
+Backend source **0.18.0 → 0.18.1**, schema unchanged 0030. Development now runs
+`0.18.1-dev.20261027122224+g92d0b5c2fa3652f7fe28cfa75d80ba7183e994db`:
+manual build `20261027122224`, attempt 1, no GitHub deployment run. Source and RU
+helper match that SHA. The immutable previous release is retained; reverting to
+0.18.0 would lose support for first-time Ubuntu 26.04 node setup/probe keys.
+No migration downgrade is required. Keep the enrolled RU inventory and pinned
+host key when updating or rolling back; do not recreate a DE/US-only inventory.
+
+`timeweb-rus-001` (RU, all plans) is configured and verified in both directions:
+US → RU and RU → DE. Hourly monitoring, weekly dashboard history and country
+ratings include all three nodes. See [fleet lifecycle evidence](fleet-lifecycle.md).
+
+Android source **0.12.0 → 0.12.1**, code 22, fixes control/public HTTP routing after
+VPN startup and bounded heartbeat retry. Windows remains 0.15.0. Runtime/API
+contracts remain compatible. New client build and sustained acceptance results
+must be checked independently; previous 0.12.0 evidence covered only startup.
+Final source/build/run/attempt/download evidence is recorded in PR #32.
+
 ## Исторический срез — 2026-10-19
 
 Актуальные функции, границы проверки и backlog собраны в

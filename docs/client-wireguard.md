@@ -56,7 +56,7 @@ MIT wireguard-go); GPL command-line libraries are excluded and packaging checked
 No companion APK is required. The app requests Android VPN consent, keeps a
 private foreground service, and binds DNS and HTTPS verification to the VPN
 Network whose address matches the lease. A fresh WireGuard handshake is required.
-Heartbeat failure, expiry and system VPN revocation stop the connection.
+A terminal heartbeat failure, exhausted renewal budget, expiry or system VPN revocation stops the connection.
 The foreground lifetime uses Android's documented approved-VPN `systemExempted`
 eligibility, after the VPN is established and with a runtime consent check.
 AGP 8.11's alarm-only static permission check is narrowly annotated on that service
@@ -139,3 +139,35 @@ and a temporary Actions secret. A persistent main-server timer revokes the accou
 after two hours, including rotated sessions; manual cleanup runs after acceptance.
 The independent fleet 24-hour window ends 2026-10-28 09:42:10 UTC; its main-server
 report timer is scheduled for 09:52:10 UTC. It is not yet a completed 24-hour result.
+
+## Android 0.12.1 / code 22 — sustained connection fix
+
+The owner's phone confirmed working VPN egress but then showed the server-loss
+notice and disconnected. Server evidence from 12:01–12:05 UTC on 2026-10-27:
+DE/US tunnel probes returned 200 through the correct egress; no heartbeat was
+acknowledged, and both leases were removed with VPN_CLIENT_LOST after ~90 seconds.
+The earlier 0.12.0 emulator success lasted only ~20 seconds and did not exercise
+renewal. The observed old-route heartbeat request is consistent with reuse of
+pre-tunnel HTTP connections; no packet contents or browsing history were captured.
+
+0.12.1 binds both authenticated API requests and public metadata/notice requests
+to the same Android VPN Network used for successful initial verification. Each
+route change gets separate connection pools and VPN-bound DNS/sockets; disconnect
+restores a fresh default-route pool. There is no process-wide network binding and
+no automatic replay of OTP, refresh, billing or other mutations. See Android's
+[Network socket/DNS contract](https://developer.android.com/reference/android/net/Network).
+
+Lease renewal alone retries offline/network_uncertain/service_unavailable within
+70 seconds including its normal 30-second interval. The backend keeps its 90-second
+heartbeat timeout; at most one 15-second blocking call can unwind after cancellation.
+Invalid authorization, ambiguous token rotation, remote revocation and session
+expiry still stop the tunnel. Unit regressions cover route/pool replacement,
+no fallback to pre-VPN sockets, both API consumers, transient recovery, sustained
+outage, terminal failure and cancellation.
+
+Real acceptance now holds the connection for at least 120 seconds, requires at
+least three acknowledged heartbeats, checks public API reachability, repeats HTTPS
+through the VPN, checks the rendered server-loss notice is absent, and confirms
+remote cleanup. This test uses one disposable account and one real connect attempt
+per explicit workflow dispatch. The current task's exact result and artifacts
+are recorded in PR #32; phone stability still requires the owner's manual retest.
