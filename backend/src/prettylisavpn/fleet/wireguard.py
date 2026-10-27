@@ -60,7 +60,9 @@ class WireGuardMethod(VpnMethod):
         await self.transport.call(node, "grant", {"access": access.model_dump(mode="json")})
 
     async def revoke_access(self, node: Node, access: Access) -> bool:
-        result = await self.transport.call(node, "revoke", {"access_id": str(access.id)})
+        result = await self.transport.call(
+            node, "revoke", {"access_id": str(access.id), "purpose": access.purpose}
+        )
         return result.get("removed") is True
 
     async def observe(self, node: Node) -> Observation:

@@ -16,7 +16,7 @@ interface VpnActions {
     fun disconnect()
 }
 
-/** One executor for placeholders and future verified adapters. No API or native runtime. */
+/** One executor for real verified adapters and the remaining method placeholders. */
 class VpnController(
     private val owner: () -> String?,
     private val scope: CoroutineScope,

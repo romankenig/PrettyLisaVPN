@@ -245,7 +245,7 @@ class FleetWorker:
                 assert isinstance(state, dict)
                 method.configuration = claim.parameters
                 method.public_key = str(state["public_key"])
-                method.configured_at = now
+                method.configured_at = method.configured_at or now
                 # Idempotent configure preserves prior validation, otherwise awaits a real probe.
                 if method.state != "READY":
                     method.state = "AWAITING_VERIFICATION"
@@ -310,6 +310,7 @@ class FleetWorker:
 
 
 async def main() -> None:
+    from prettylisavpn.client_vpn.worker import ClientVpnWorker
     from prettylisavpn.fleet.ssh import SshTransport
     from prettylisavpn.fleet.wireguard import WireGuardMethod
 
@@ -325,7 +326,12 @@ async def main() -> None:
     transport = None
     try:
         transport = SshTransport.from_file(settings.fleet_inventory_path)
-        await FleetWorker(postgres, {"wireguard": WireGuardMethod(transport)}).run(stop)
+        method = WireGuardMethod(transport)
+        async with asyncio.TaskGroup() as group:
+            group.create_task(FleetWorker(postgres, {"wireguard": method}).run(stop))
+            group.create_task(
+                ClientVpnWorker(postgres, method, enabled=settings.client_vpn_enabled).run(stop)
+            )
     finally:
         if transport is not None:
             await transport.close()

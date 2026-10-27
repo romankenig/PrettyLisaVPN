@@ -14,10 +14,11 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.17.0", min_length=1)
+    application_version: str = Field(default="0.18.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox"] = "disabled"
     fleet_enabled: bool = False
+    client_vpn_enabled: bool = False
     fleet_admin_token: SecretStr | None = None
     fleet_monitor_token: SecretStr | None = None
     fleet_inventory_path: str = "/run/fleet/inventory.json"
@@ -72,6 +73,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.client_vpn_enabled and not self.fleet_enabled:
+            raise ValueError("Client VPN requires the fleet worker")
         if self.fleet_enabled:
             tokens = (self.fleet_admin_token, self.fleet_monitor_token)
             if any(token is None or len(token.get_secret_value()) < 32 for token in tokens):

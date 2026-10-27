@@ -262,6 +262,6 @@
     <string name="vpn_trying_method">essai de %1$s…</string>
     <string name="vpn_switching_method">%1$s n’a pas pu se connecter. essai de %2$s…</string>
     <string name="vpn_cancel">annuler</string>
-    <string name="vpn_placeholder_notice">mode de test : les connexions VPN ne sont pas encore implémentées.</string>
-    <string name="vpn_placeholder_exhausted">%1$s n’a pas pu se connecter. toutes les méthodes ont été essayées ; VPN n’est pas encore implémenté.</string>
+    <string name="vpn_placeholder_notice">WireGuard est disponible. les autres méthodes sont encore en développement.</string>
+    <string name="vpn_placeholder_exhausted">%1$s n’a pas pu se connecter. toutes les méthodes ont été essayées sans succès.</string>
 </resources>

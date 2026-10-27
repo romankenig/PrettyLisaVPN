@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Backend — 0.18.0 / Windows — 0.15.0 / Android — 0.12.0
+
+- Restore real WireGuard through a new authenticated customer lease API and the
+  main-server worker. Preserve Free daily quota, paid access, device revocation,
+  confirmed cleanup and short node deadlines; add migration 0030.
+- Android uses one APK with WireGuard, system VPN consent and foreground lifetime.
+  Windows manages the official installed WireGuard client through UAC and detects
+  conflicts with another VPN without disabling it.
+- Confirm tunnel-bound DNS/HTTPS and expected server egress before Connected;
+  preserve automatic fallback/progress for the remaining placeholder methods.
+- See [client handoff](docs/client-wireguard.md) and PR #32 for exact build,
+  deployment and real-connection acceptance evidence.
+
 ### Fleet dashboard — 0.1.0
 
 - Serve the separate monitoring dashboard on the main server at `/dashboard/`,

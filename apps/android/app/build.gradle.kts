@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "0.11.1"
+        versionCode = 21
+        versionName = "0.12.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -58,13 +58,14 @@ android {
         informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
     packaging {
-        // WireGuard key utilities are Java; the isolated Xray process owns all native tunnels.
-        jniLibs.excludes += setOf("**/libwg.so", "**/libwg-quick.so", "**/libwg-go.so")
+        // Use the Apache-2.0 wrapper and MIT wireguard-go; exclude GPL command-line utilities.
+        jniLibs.excludes += setOf("**/libwg.so", "**/libwg-quick.so")
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 }
 
 dependencies {
+    implementation("com.wireguard.android:tunnel:1.0.20260102")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.preview)

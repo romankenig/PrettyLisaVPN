@@ -126,6 +126,7 @@ class MethodState(Value):
 
 
 class Access(Value):
+    purpose: Literal["monitor", "client"] = "monitor"
     id: UUID
     public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
     address: str

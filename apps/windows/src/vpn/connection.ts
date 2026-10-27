@@ -65,6 +65,7 @@ export interface VpnConnectionManager {
   disconnect(accessToken: string): Promise<void>;
   setOwner?(owner: string | null): void;
   dispose(): void;
+  connectionLost?(): Promise<void>;
 }
 
 export class VpnConnectionError extends Error {
@@ -84,7 +85,7 @@ export class VpnConnectionError extends Error {
   }
 }
 
-/** The same sequential executor is used for placeholders and future adapters. */
+/** Real adapters and placeholders share one sequential executor and cleanup boundary. */
 export function createVpnConnectionManager(
   adapters: readonly ConnectionAdapter[] = placeholderAdapters(),
 ): VpnConnectionManager {
@@ -153,7 +154,7 @@ export function createVpnConnectionManager(
     setOwner(value) {
       if (owner !== value) {
         owner = value;
-        void disconnect();
+        void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       }
     },
     async connect(_accessToken, selection) {
@@ -165,6 +166,7 @@ export function createVpnConnectionManager(
       run = current;
       current.done = (async () => {
         let previousMethod: string | null = null;
+        let firstFailure: string | null = null;
         for (const adapter of adapters) {
           if (current.controller.signal.aborted) return;
           emit({
@@ -193,7 +195,7 @@ export function createVpnConnectionManager(
                 phase: "CONNECTED",
                 backend: "ACTIVE",
                 tunnel: "UP",
-                session: {
+                session: result.session ?? {
                   sessionId: adapter.id,
                   countryCode:
                     selection.mode === "COUNTRY"
@@ -205,7 +207,14 @@ export function createVpnConnectionManager(
               });
               return;
             }
-          } catch {
+          } catch (error) {
+            const code =
+              error instanceof Error
+                ? error.message
+                : typeof error === "string"
+                  ? error
+                  : "";
+            if (/^[A-Z_]{1,64}$/.test(code)) firstFailure ??= code;
             /* An individual adapter failure continues after cleanup. */
           }
           try {
@@ -217,7 +226,7 @@ export function createVpnConnectionManager(
           if (current.controller.signal.aborted) return;
           previousMethod = adapter.name;
         }
-        fail(previousMethod ?? "", "METHODS_EXHAUSTED");
+        fail(previousMethod ?? "", firstFailure ?? "METHODS_EXHAUSTED");
       })();
       try {
         await current.done;
@@ -232,9 +241,17 @@ export function createVpnConnectionManager(
       }
     },
     disconnect,
+    async connectionLost() {
+      try {
+        await disconnect();
+        fail("WireGuard", "VPN_CONNECTION_LOST");
+      } catch {
+        fail("WireGuard", "CLEANUP_FAILED");
+      }
+    },
     dispose() {
       disposed = true;
-      void disconnect();
+      void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       listeners.clear();
     },
   };

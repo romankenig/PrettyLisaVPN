@@ -30,7 +30,7 @@ export function Settings() {
 
 function SettingsOverview() {
   useLanguage();
-  const { api, session } = useApplication();
+  const { api, session, vpnConnection } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
     session.current,
@@ -46,7 +46,9 @@ function SettingsOverview() {
     logoutInFlight.current = true;
     setLogoutState("submitting");
     try {
-      await api.logout(activeSession.accessToken);
+      const token = await session.bearer(api);
+      await vpnConnection.disconnect(token);
+      await api.logout(token);
       await session.clear();
     } catch (error) {
       if (

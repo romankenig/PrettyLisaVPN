@@ -5,6 +5,7 @@ mod payment_browser;
 mod public_location;
 mod refresh_credentials;
 mod window_frame;
+mod wireguard;
 
 use tauri::Manager;
 
@@ -17,6 +18,7 @@ fn main() {
             let installation_id = installation_id::InstallationIdState::load(&app_config_dir)?;
             app.manage(installation_id);
             app.manage(refresh_credentials::RefreshCredentialState::new());
+            app.manage(wireguard::WireGuardState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -27,6 +29,11 @@ fn main() {
             refresh_credentials::load_refresh_credential,
             refresh_credentials::replace_refresh_credential,
             refresh_credentials::delete_refresh_credential,
+            wireguard::wg_prepare,
+            wireguard::wg_start,
+            wireguard::wg_stop,
+            wireguard::wg_is_up,
+            wireguard::wg_verify,
         ])
         .run(tauri::generate_context!())
         .expect("Unable to start PrettyLisaVPN");

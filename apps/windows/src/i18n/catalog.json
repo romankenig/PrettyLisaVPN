@@ -262,8 +262,11 @@
     "язык интерфейса": "язык интерфейса",
     "выберите язык": "выберите язык",
     "Отменить": "Отменить",
-    "Режим заглушек: VPN пока не подключается.": "Режим заглушек: VPN пока не подключается.",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} не подключился. Все способы проверены; VPN пока не реализован."
+    "Доступен WireGuard. Другие способы пока в разработке.": "Доступен WireGuard. Другие способы пока в разработке.",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} не подключился. Все способы проверены; подключиться не удалось.",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "Установите официальный WireGuard для Windows и повторите подключение.",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Для WireGuard нужно подтвердить системный запрос Windows."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -528,8 +531,11 @@
     "язык интерфейса": "interface language",
     "выберите язык": "choose language",
     "Отменить": "cancel",
-    "Режим заглушек: VPN пока не подключается.": "Placeholder mode: VPN connections are not implemented yet.",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} did not connect. All methods tried; VPN is not implemented yet."
+    "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard is available. Other methods are still in development.",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} did not connect. All methods tried; connection failed.",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "Install the official WireGuard for Windows and try again.",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Another VPN is active. Disconnect it before connecting PrettyLisaVPN.",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Approve the Windows system prompt to start WireGuard."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -794,8 +800,11 @@
     "язык интерфейса": "界面语言",
     "выберите язык": "选择语言",
     "Отменить": "取消",
-    "Режим заглушек: VPN пока не подключается.": "占位模式：尚未实现 VPN 连接。",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} 未能连接。已尝试所有方式；尚未实现 VPN。"
+    "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard 已可用，其他连接方式仍在开发中。",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} 未能连接。已尝试所有方式，连接失败。",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "请安装官方 WireGuard Windows 客户端后重试。",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "另一个 VPN 正在运行。连接 PrettyLisaVPN 前请先断开它。",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "请确认 Windows 系统提示以启动 WireGuard。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1060,8 +1069,11 @@
     "язык интерфейса": "idioma de la interfaz",
     "выберите язык": "elegir idioma",
     "Отменить": "cancelar",
-    "Режим заглушек: VPN пока не подключается.": "Modo de prueba: las conexiones VPN aún no están implementadas.",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} no se conectó. Se probaron todos los métodos; VPN aún no está implementado."
+    "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard está disponible. Los demás métodos siguen en desarrollo.",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} no se conectó. Se probaron todos los métodos; la conexión falló.",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "Instala el cliente oficial WireGuard para Windows e inténtalo de nuevo.",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Hay otra VPN activa. Desconéctala antes de conectar PrettyLisaVPN.",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirma la solicitud del sistema Windows para iniciar WireGuard."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1326,8 +1338,11 @@
     "язык интерфейса": "Sprache der Oberfläche",
     "выберите язык": "Sprache auswählen",
     "Отменить": "abbrechen",
-    "Режим заглушек: VPN пока не подключается.": "Platzhaltermodus: VPN-Verbindungen sind noch nicht implementiert.",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} hat nicht verbunden. Alle Methoden versucht; VPN ist noch nicht implementiert."
+    "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard ist verfügbar. Weitere Methoden werden noch entwickelt.",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} konnte keine Verbindung herstellen. Alle Methoden wurden versucht.",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "Installieren Sie den offiziellen WireGuard-Client für Windows und versuchen Sie es erneut.",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Ein anderes VPN ist aktiv. Trennen Sie es, bevor Sie PrettyLisaVPN verbinden.",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Bestätigen Sie die Windows-Systemabfrage, um WireGuard zu starten."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1592,7 +1607,10 @@
     "язык интерфейса": "langue de l’interface",
     "выберите язык": "choisir la langue",
     "Отменить": "annuler",
-    "Режим заглушек: VPN пока не подключается.": "Mode de test : les connexions VPN ne sont pas encore implémentées.",
-    "{0} не подключился. Все способы проверены; VPN пока не реализован.": "{0} n’a pas pu se connecter. Toutes les méthodes ont été essayées ; VPN n’est pas encore implémenté."
+    "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard est disponible. Les autres méthodes sont encore en développement.",
+    "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} n’a pas pu se connecter. Toutes les méthodes ont été essayées sans succès.",
+    "Установите официальный WireGuard для Windows и повторите подключение.": "Installez le client officiel WireGuard pour Windows et réessayez.",
+    "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Un autre VPN est actif. Déconnectez-le avant de connecter PrettyLisaVPN.",
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirmez la demande système Windows pour démarrer WireGuard."
   }
 }

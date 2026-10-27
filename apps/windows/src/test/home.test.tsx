@@ -520,7 +520,7 @@ it("does not submit logout twice while the request is pending", async () => {
   fireEvent.click(button);
   expect(button).toBeDisabled();
   fireEvent.click(button);
-  expect(api.logout).toHaveBeenCalledOnce();
+  await waitFor(() => expect(api.logout).toHaveBeenCalledOnce());
   finish({ status: "logged_out" });
   await waitFor(() => expect(session.current()).toBeNull());
 });

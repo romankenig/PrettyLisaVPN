@@ -58,11 +58,16 @@ async def test_locations_are_authenticated_metadata_with_no_live_availability(
         }
 
 
-async def test_no_session_or_credential_issuance_paths_exist():
+async def test_old_session_and_managed_engine_paths_remain_removed():
     app = create_app(Settings(_env_file=None), postgres=AsyncMock(), valkey=AsyncMock())
-    assert [path for path in app.openapi()["paths"] if path.startswith("/vpn/")] == [
-        "/vpn/countries"
-    ]
+    assert set(path for path in app.openapi()["paths"] if path.startswith("/vpn/")) == {
+        "/vpn/countries",
+        "/vpn/wireguard/sessions",
+        "/vpn/wireguard/sessions/current",
+        "/vpn/wireguard/sessions/{identifier}",
+        "/vpn/wireguard/sessions/{identifier}/heartbeat",
+        "/vpn/wireguard/sessions/{identifier}/probe",
+    }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         for method, path in [
             ("POST", "/vpn/sessions"),

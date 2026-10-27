@@ -356,6 +356,8 @@ def rollback(operation: str) -> dict[str, Any]:
 
 
 def grant(access: dict[str, Any]) -> dict[str, Any]:
+    if access.get("purpose") == "client":
+        return grant_client(access)
     identifier, key = uid(access["id"]), str(access["public_key"])
     config = read(ROOT / "state.json")["configuration"]
     reserved = str(ipaddress.IPv4Interface(config["address"]).network.broadcast_address - 1) + "/32"
@@ -381,16 +383,87 @@ def grant(access: dict[str, Any]) -> dict[str, Any]:
     return {"granted": True}
 
 
-def revoke(identifier: str) -> dict[str, Any]:
-    path = RUN / ("lease-" + uid(identifier) + ".json")
+def revoke(identifier: str, purpose: str = "monitor") -> dict[str, Any]:
+    if purpose not in ("monitor", "client"):
+        raise Failure("ACCESS_INVALID")
+    path = (
+        (ROOT / "clients" / (uid(identifier) + ".json"))
+        if purpose == "client"
+        else RUN / ("lease-" + uid(identifier) + ".json")
+    )
     row = read(path)
     if row:
         if cmd(["ip", "link", "show", WG], check=False):
             cmd(["wg", "set", WG, "peer", row["public_key"], "remove"])
             if row["public_key"] in peers():
                 return {"removed": False}
+        if purpose == "client":
+            client_firewall(identifier, row["address"], None)
         path.unlink()
     return {"removed": True}
+
+
+def client_firewall(identifier: str, address: str, expiry: float | None) -> None:
+    # Kernel UTC deadline: traffic stops even if both worker and cleanup timer fail.
+    chain = "PLU_" + UUID(identifier).hex[:20]
+    base = ["iptables", "-w", "5"]
+    hooks = [["-i", WG, "-s", address, "-j", chain], ["-o", WG, "-d", address, "-j", chain]]
+    if expiry is None:
+        for hook in hooks:
+            cmd(base + ["-D", "PLF_FORWARD"] + hook, check=False)
+        cmd(base + ["-F", chain], check=False)
+        cmd(base + ["-X", chain], check=False)
+        if cmd(base + ["-S", chain], check=False):
+            raise Failure("CLIENT_FIREWALL_CLEANUP_FAILED")
+        return
+    # xt_time uses UTC unless --kerneltz is requested. Never allow beyond the deadline.
+    until = datetime.fromtimestamp(expiry - 1, UTC).strftime("%Y-%m-%dT%H:%M:%S")
+    cmd(
+        ["iptables-restore", "-w", "5", "--noflush"],
+        data=(
+            f"*filter\n:{chain} - [0:0]\n-F {chain}\n"
+            f"-A {chain} -m time --datestop {until} -j RETURN\n-A {chain} -j DROP\nCOMMIT\n"
+        ),
+    )
+    rules = cmd(base + ["-S", "PLF_FORWARD"]).splitlines()
+    for hook in hooks:
+        if not any(line.endswith("-j " + chain) and f"{hook[0]} {WG} " in line for line in rules):
+            cmd(base + ["-I", "PLF_FORWARD", "1"] + hook)
+
+
+def grant_client(access: dict[str, Any]) -> dict[str, Any]:
+    identifier, key = uid(access["id"]), str(access["public_key"])
+    config = read(ROOT / "state.json")["configuration"]
+    subnet = ipaddress.IPv4Interface(config["address"]).network
+    address = ipaddress.IPv4Interface(access["address"])
+    expiry = datetime.fromisoformat(access["expires_at"]).timestamp()
+    if (
+        not KEY.fullmatch(key)
+        or address.network.prefixlen != 32
+        or not subnet.network_address + 2 <= address.ip <= subnet.broadcast_address - 2
+        or not time.time() < expiry <= time.time() + 185
+    ):
+        raise Failure("ACCESS_INVALID")
+    directory = ROOT / "clients"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    path = directory / (identifier + ".json")
+    existing = read(path)
+    if existing and (existing["public_key"] != key or existing["address"] != str(address)):
+        raise Failure("ACCESS_CONFLICT")
+    for other in directory.glob("*.json"):
+        row = read(other)
+        if other != path and (row["public_key"] == key or row["address"] == str(address)):
+            raise Failure("ACCESS_CONFLICT")
+    # Monitor and customer namespaces cannot take ownership of each other's peer.
+    for other in RUN.glob("lease-*.json"):
+        if read(other)["public_key"] == key:
+            raise Failure("ACCESS_CONFLICT")
+    if not existing and key in peers():
+        raise Failure("ACCESS_CONFLICT")
+    write(path, json.dumps({"public_key": key, "address": str(address), "expires": expiry}))
+    client_firewall(identifier, str(address), expiry)
+    cmd(["wg", "set", WG, "peer", key, "allowed-ips", str(address)])
+    return {"granted": True}
 
 
 def observation(status: str, mode: str, code: str, **values: Any) -> dict[str, Any]:
@@ -602,6 +675,9 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def cleanup() -> dict[str, Any]:
+    for path in (ROOT / "clients").glob("*.json"):
+        if read(path).get("expires", 0) <= time.time():
+            revoke(path.stem, "client")
     for path in RUN.glob("lease-*.json"):
         if read(path).get("expires", 0) <= time.time():
             revoke(path.stem.removeprefix("lease-"))
@@ -702,7 +778,7 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
     if action == "grant":
         return grant(payload["access"])
     if action == "revoke":
-        return revoke(payload["access_id"])
+        return revoke(payload["access_id"], payload.get("purpose", "monitor"))
     if action == "observe":
         return observe()
     if action == "prepare":

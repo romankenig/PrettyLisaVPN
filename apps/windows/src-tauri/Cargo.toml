@@ -1,6 +1,6 @@
 [package]
 name = "prettylisavpn-windows"
-version = "0.14.1"
+version = "0.15.0"
 edition = "2021"
 rust-version = "1.85"
 [build-dependencies]
@@ -18,5 +18,8 @@ windows-sys = { version = "0.61", features = [
   "Win32_UI_WindowsAndMessaging",
   "Win32_UI_Shell",
   "Win32_Security_Credentials",
+  "Win32_System_Registry",
+  "Win32_System_Services",
+  "Win32_System_Threading",
 ] }
 zeroize = "1"

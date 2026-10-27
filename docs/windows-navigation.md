@@ -1,3 +1,18 @@
+# WireGuard connection — Windows 0.15.0 / Android 0.12.0
+
+Home Connect now attempts real WireGuard before the remaining placeholders.
+Windows may show a UAC prompt for the official WireGuard tunnel service; if the
+official client is missing or another VPN is active, Home displays a short reason.
+Android shows the system VPN permission prompt and requires no second APK.
+The existing progress text remains visible during provisioning and verification.
+Connected and protocol details require a successful tunnel-bound Internet check.
+Cancel/Disconnect completes local and server cleanup; Settings Logout now stops
+the VPN before revoking authentication. Existing routes, auth guards, subscription,
+support and payment navigation are unchanged. Native screenshot/build/live evidence
+belongs in PR #32; implementation alone does not establish acceptance. See
+[client handoff](client-wireguard.md).
+
+
 ## Current location and backend label — Windows 0.14.1 / Android 0.11.1
 
 Home current location uses the actual public egress with a bounded HTTPS fallback
