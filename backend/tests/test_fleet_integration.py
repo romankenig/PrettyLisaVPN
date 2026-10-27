@@ -9,7 +9,7 @@ from sqlalchemy import delete, select
 from test_fleet import healthy, settings
 
 from prettylisavpn.connections import Postgres
-from prettylisavpn.fleet.domain import FleetError, NodeInput, WireGuardConfig
+from prettylisavpn.fleet.domain import FleetError, NodeInput, Observation, WireGuardConfig
 from prettylisavpn.fleet.model import (
     FleetMethodRecord,
     FleetNodeRecord,
@@ -156,6 +156,28 @@ async def test_hourly_schedule_does_not_replay_outage_and_enrolls_new_nodes(flee
             )
         ).all()
         assert all(row.next_check_at > now for row in methods)
+
+
+async def test_passive_observation_has_no_fictitious_source(fleet_state):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids)
+    await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
+    worker = FleetWorker(postgres, {})
+    claim = await worker.claim(datetime.now(UTC))
+    assert claim is not None and claim.source is not None
+    passive = Observation(
+        status="UNKNOWN",
+        mode="PASSIVE",
+        code="PASSIVE_EVIDENCE_INSUFFICIENT",
+        observed_at=datetime.now(UTC),
+    )
+    await worker.finish(claim, {}, passive)
+    async with postgres.session() as session:
+        observation = await session.scalar(
+            select(FleetObservationRecord).where(FleetObservationRecord.operation_id == claim.id)
+        )
+        assert observation.source_id is None
+        assert (await session.get(FleetOperationRecord, claim.id)).source_id is None
 
 
 async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_state):

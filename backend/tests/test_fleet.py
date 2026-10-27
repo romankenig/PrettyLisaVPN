@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError
 
 from prettylisavpn.config import Settings
+from prettylisavpn.fleet.acceptance import assess
 from prettylisavpn.fleet.domain import (
     FleetError,
     MethodState,
@@ -316,3 +317,40 @@ async def test_unknown_cleanup_cannot_report_healthy():
     transport.call.side_effect = call
     result = await WireGuardMethod(transport).probe(node(), node(), uuid4())
     assert result.status == "UNKNOWN" and result.cleanup_confirmed is False
+
+
+async def test_ssh_reuses_connection_without_weakening_host_validation(tmp_path, monkeypatch):
+    key, hosts = tmp_path / "key", tmp_path / "hosts"
+    key.write_text("test fixture, not a private key")
+    hosts.write_text("test fixture")
+    command = AsyncMock(return_value=b'{"installed": false}')
+    monkeypatch.setattr("prettylisavpn.fleet.ssh.process", command)
+    transport = SshTransport(
+        {"test": Credential(host="1.1.1.1", user="root", key_file=str(key), known_hosts=str(hosts))}
+    )
+    target = node()
+    await transport.call(target, "inspect")
+    await transport.call(target, "observe")
+    first, second = (item.args[0] for item in command.await_args_list)
+    assert first == second
+    assert "ControlMaster=auto" in first and "ControlPersist=60" in first
+    assert "StrictHostKeyChecking=yes" in first and "IdentitiesOnly=yes" in first
+    assert f"UserKnownHostsFile={hosts}" in first
+    await transport.close()
+    assert command.await_args.args[0][-3:-1] == ["-O", "exit"]
+
+
+def test_acceptance_report_requires_complete_evidence_not_elapsed_time():
+    good = healthy().model_dump(mode="json")
+    assert assess(24, [good] * 24, 0)["passed"]
+    assert not assess(24, [good] * 23, 0)["passed"]
+    assert not assess(24, [good] * 24, 1)["passed"]
+    failed = {
+        **good,
+        "status": "UNKNOWN",
+        "code": "CLEANUP_UNCONFIRMED",
+        "cleanup_confirmed": False,
+    }
+    result = assess(24, [good] * 23 + [failed], 0)
+    assert not result["passed"] and result["failure_codes"] == ["CLEANUP_UNCONFIRMED"]
+    assert not assess(0, [], 0)["passed"]

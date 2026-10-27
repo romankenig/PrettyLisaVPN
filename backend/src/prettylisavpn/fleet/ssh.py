@@ -1,6 +1,7 @@
 """Pinned inventory is worker-only. API input cannot select arbitrary SSH credentials."""
 
 import asyncio
+import contextlib
 import json
 import os
 import re
@@ -60,6 +61,8 @@ async def process(
 class SshTransport:
     def __init__(self, inventory: dict[str, Credential]) -> None:
         self.inventory = inventory
+        self.control_directory = tempfile.TemporaryDirectory(prefix="pl-fleet-ssh-")
+        self.connections: dict[str, list[str]] = {}
 
     @classmethod
     def from_file(cls, path: str) -> "SshTransport":
@@ -86,6 +89,12 @@ class SshTransport:
         command = [
             "ssh",
             "-o",
+            "ControlMaster=auto",
+            "-o",
+            "ControlPersist=60",
+            "-o",
+            f"ControlPath={self.control_directory.name}/{node.id.hex}",
+            "-o",
             "BatchMode=yes",
             "-o",
             "IdentitiesOnly=yes",
@@ -106,6 +115,7 @@ class SshTransport:
             f"{entry.user}@{entry.host}",
             "sudo -n /usr/bin/python3 /usr/local/lib/prettylisavpn-fleet/node.py",
         ]
+        self.connections[str(node.id)] = command[:-1]
         data = await process(
             command,
             json.dumps({"action": action, **(payload or {})}).encode(),
@@ -123,6 +133,12 @@ class SshTransport:
             return response
         except (ValueError, UnicodeDecodeError):
             raise FleetError("NODE_RESPONSE_INVALID") from None
+
+    async def close(self) -> None:
+        for command in self.connections.values():
+            with contextlib.suppress(FleetError):
+                await process(command[:-1] + ["-O", "exit", command[-1]], command_timeout=5)
+        self.control_directory.cleanup()
 
     async def bootstrap(self, node: Node) -> None:
         entry = self.credential(node)

@@ -251,6 +251,8 @@ class FleetWorker:
                     method.state = "AWAITING_VERIFICATION"
                 method.next_check_at = None
             if observation is not None:
+                if observation.mode != "SYNTHETIC":
+                    job.source_id = None
                 job.result = {**job.result, "observation": observation.model_dump(mode="json")}
                 session.add(
                     FleetObservationRecord(
@@ -320,10 +322,13 @@ async def main() -> None:
     loop = asyncio.get_running_loop()
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stop.set)
+    transport = None
     try:
         transport = SshTransport.from_file(settings.fleet_inventory_path)
         await FleetWorker(postgres, {"wireguard": WireGuardMethod(transport)}).run(stop)
     finally:
+        if transport is not None:
+            await transport.close()
         await postgres.close()
 
 

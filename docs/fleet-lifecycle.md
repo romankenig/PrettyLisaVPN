@@ -1,6 +1,6 @@
-# Server lifecycle and monitoring — backend 0.17.0
+# Server lifecycle and monitoring вЂ” backend 0.17.0
 
-Base: develop `227704b044f0b5a6ea67b4f64d6142a813eddec0`. Backend 0.16.0 → 0.17.0,
+Base: develop `227704b044f0b5a6ea67b4f64d6142a813eddec0`. Backend 0.16.0 в†’ 0.17.0,
 migration 0029; Ubuntu helper starts at 0.1.0. Windows remains 0.14.1 and Android
 0.11.1; their VPN adapters remain placeholders. Legacy credential endpoints stay removed.
 
@@ -30,7 +30,7 @@ Only implemented methods are accepted. Registration takes name, country_code, pu
 host, credential_ref, expected_egress_ips, capacity and is_available_for_free.
 Configuration example: `{"address":"10.88.1.1/24","listen_port":51820,"mtu":1380}`.
 
-Use distinct RFC1918 /24…/28 subnets and the first usable address for the server.
+Use distinct RFC1918 /24вЂ¦/28 subnets and the first usable address for the server.
 The last usable address is reserved for the monitoring peer. Configuration is
 immutable after successful setup; a subnet/port migration is a separate future task.
 Repeating the same request preserves keys and user peers. Registration alone never
@@ -51,7 +51,7 @@ operation, preserving shared OS packages and previously committed configuration.
 
 Every configured target gets one hourly slot, evenly spread with bounded stable
 jitter. Origins rotate over the other configured nodes, covering all origins in
-N−1 hours for a stable roster: O(N) tests/hour. New configured nodes join both roles.
+Nв€’1 hours for a stable roster: O(N) tests/hour. New configured nodes join both roles.
 Database tokens fence results and node leases prevent overlapping source/target
 checks. Retries keep the operation UUID and are bounded. Missed hours are not replayed
 as a burst. Local timers independently expire monitoring peers and namespaces.
@@ -109,8 +109,32 @@ Rollback preserves migration 0029 and historical data. Stop the worker before
 reverting to an image without this module. Node expiry continues independently;
 removing configured gateways is a separate explicit operation.
 
-Automated evidence so far: isolated Linux run 505 passed, 1 skipped, 8 Docker tests
-deselected; Alembic upgrade/check and strict mypy passed. Later changes need fresh
-validation. Real deployment, exact product/build SHA/run/attempt, Sites URL, DE→US
-and US→DE proof, controlled failures and 24-hour acceptance remain pending. Record
-final evidence in the task PR; do not infer deployment from source or test success.
+The worker runs on the main development server, `95.140.152.42`, with Docker
+`restart: unless-stopped`; Docker starts with the host. PostgreSQL owns scheduling,
+leases and observations. Nodes run independent systemd cleanup timers. Sites is
+only a read-only view. Closing Codex/ChatGPT does not stop any recurring process.
+SSH control sessions are reused within each operation so the existing node SSH
+rate limit remains intact.
+
+`python -m prettylisavpn.fleet.acceptance --since <UTC ISO> --until <UTC ISO>`
+produces a read-only JSON report for a completed observation interval. It checks
+hourly scheduled jobs (manual tests do not fill missing hourly coverage), requires
+all expected samples, successful observations and confirmed cleanup. A host
+systemd timer runs this command for the 24-hour acceptance window and saves its
+result under `/opt/prettylisavpn/fleet-acceptance/`; no assistant callback is used.
+
+Validation: latest isolated Linux run: 508 passed, 1 skipped, 9 Docker tests
+excluded; Ruff, strict mypy and Alembic upgrade/check passed. The separate Docker
+suite passed 9 tests before the SSH reuse/report follow-up. Real explicit API setup
+completed on Ubuntu 24.04 DE and US. DE→US and US→DE both passed handshake,
+DNS, HTTPS, expected exit IP and cleanup on 2026-10-27 at 09:10 and 09:11 UTC.
+Observed handshake times were about 113 ms; bounded down/up samples were
+19.4/29.2 and 23.6/22.9 Mbps respectively.
+
+An independent expiry test stopped the worker: the node timer removed the test
+peer before the worker restarted. An initial controlled UDP fault also hit the
+existing US SSH rate limit; it truthfully recorded UNKNOWN/CLEANUP_UNCONFIRMED.
+The independent rollback timer removed the fault and no peer remained. This
+motivated SSH reuse; repeat fault/recovery and 24-hour acceptance are tracked in
+PR #31. Source, deployment and acceptance are separate claims. Exact final product
+SHA, manual build identity, Sites deployment and CI evidence belong in the PR.
