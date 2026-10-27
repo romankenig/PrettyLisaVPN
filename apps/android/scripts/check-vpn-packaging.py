@@ -11,7 +11,7 @@ for variant, filename in (("debug", "app-debug.apk"), ("release", "app-release-u
         assert not any(name.endswith(("libgojni.so", "libwg.so", "libwg-quick.so")) for name in apk.namelist())
         for abi in ("arm64-v8a", "armeabi-v7a", "x86", "x86_64"):
             assert f"lib/{abi}/libwg-go.so" in apk.namelist()
-        for license in ("WireGuard-Android-Apache-2.0.txt", "WireGuard-Go-MIT.txt"):
+        for license in ("WireGuard-Android-Apache-2.0.txt", "WireGuard-Go-MIT.txt", "Go-BSD-3-Clause.txt"):
             assert len(apk.read("assets/licenses/" + license)) > 1000
         assert not any(name.startswith("assets/engine-licenses/") for name in apk.namelist())
     report[variant] = {"apk_bytes": path.stat().st_size, "vpn_engine": "wireguard-go", "companion_apk_required": False}

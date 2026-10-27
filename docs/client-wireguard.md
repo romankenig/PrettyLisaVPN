@@ -3,8 +3,8 @@
 This task follows PR #31 (merged at `86831bc0a6afbc63fc2221f4810b16ae42b23604`).
 Dashboard source `39a2b6b346ecdd1cbbe19125cba2da8d82d1d296` is already deployed
 on the main server at https://api.prettylisavpn.com/dashboard/ with operator
-login/password. Its backend runtime is 0.17.0; that deployment does not prove
-the client changes below. PR #32 records subsequent exact build/deploy evidence.
+login/password. The initial dashboard deployment used backend 0.17.0; the current
+development runtime and client acceptance evidence are recorded below and in PR #32.
 
 ## Versions and compatibility
 
@@ -91,6 +91,43 @@ records. Client rollback does not remove the official Windows WireGuard install.
 Keep the password-protected dashboard and server-owned hourly processes running.
 
 Implementation and automated tests are not proof of a phone or Windows Internet
-connection. Until PR evidence records a successful live client run, that acceptance
-is pending. The owner's PC VPN must remain enabled; use an isolated runner for
+connection. PR #32 records the final status and exact artifacts for each live
+attempt. The owner's PC VPN must remain enabled; use an isolated runner for
 real full-route Windows tests. Phone tests use downloadable APKs without USB.
+
+## Development evidence — 2026-10-27
+
+Backend source `33a096e807f0905dffca93e7078a4f117d54570b`, manual development
+build `20261027105359`, attempt 1 (no GitHub deployment run), is running as
+`0.18.0-dev.20261027105359+g33a096e807f0905dffca93e7078a4f117d54570b`.
+Migration 0030, health/readiness/version and dashboard HTTP authentication were
+verified. Both Ubuntu helpers were upgraded through the administrator API;
+CLIENT_VPN_ENABLED is true for API and the main-server worker.
+
+The new customer-grant path was exercised in isolated namespaces on both nodes:
+US→DE at 10:58:11 UTC and DE→US at 10:58:23 UTC passed handshake, DNS, HTTPS,
+expected egress, speed transfer and confirmed peer/namespace cleanup. This is
+server data-plane evidence, not a client-app acceptance result.
+
+Local/isolated validation: backend 534 passed, 1 skipped (Docker tests separately
+covered by Backend CI), Ruff, strict mypy and Alembic drift checks; Windows 260
+TypeScript tests and 12 native tests, typecheck/lint/format and native clippy.
+Windows native UI review [40493619491](https://github.com/romankenig/PrettyLisaVPN/actions/runs/40493619491)
+passed for PR head `c98f912186a8461ee34f1485835e3ddc654c0066`, temporary merge build
+`db897cdac2dd9a427dd7a1d516571d87021bc28f`, attempt 1. It uses UI fixtures,
+not a real Windows tunnel.
+
+The first isolated Android live attempt
+[40493854618](https://github.com/romankenig/PrettyLisaVPN/actions/runs/40493854618)
+used source/build `c98f912186a8461ee34f1485835e3ddc654c0066`, attempt 1.
+Authentication/provisioning succeeded, but VPN verification failed; all placeholders
+then failed as designed. Server removal was confirmed. No successful client
+connection is claimed by that run. Subsequent evidence includes only fixed stages,
+HTTP status and aggregate WireGuard counters/handshake, without destinations,
+keys, tokens or exception messages. Tunnel proof explicitly bypasses HTTP proxies.
+
+Acceptance accounts are disposable, with credentials held only in protected files
+and a temporary Actions secret. A persistent main-server timer revokes the account
+after two hours, including rotated sessions; manual cleanup runs after acceptance.
+The independent fleet 24-hour window ends 2026-10-28 09:42:10 UTC; its main-server
+report timer is scheduled for 09:52:10 UTC. It is not yet a completed 24-hour result.

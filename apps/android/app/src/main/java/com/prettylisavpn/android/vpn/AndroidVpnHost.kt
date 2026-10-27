@@ -16,6 +16,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     override fun connect(country: String) = controller.connect(country)
     override fun disconnect(): Unit = controller.disconnect()
     fun serviceLost() { if (wireguard.isRunning) disconnect() }
+    fun wireguardDiagnostic() = wireguard.diagnostic()
     companion object {
         @Volatile private var instance: AndroidVpnHost? = null
         fun current() = instance

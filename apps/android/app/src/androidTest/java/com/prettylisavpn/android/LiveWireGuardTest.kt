@@ -6,6 +6,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.google.gson.JsonParser
+import com.google.gson.Gson
 import com.prettylisavpn.android.auth.Credentials
 import com.prettylisavpn.android.auth.KeystoreVault
 import com.prettylisavpn.android.vpn.AndroidVpnHost
@@ -51,7 +52,10 @@ class LiveWireGuardTest {
                 val state = requireNotNull(AndroidVpnHost.current()).status.value
                 val output = requireNotNull(context.getExternalFilesDir(null))
                 device.takeScreenshot(File(output, "wireguard-proof.png"))
-                File(output, "wireguard-proof.json").writeText("""{"source_sha":"${BuildConfig.SOURCE_SHA}","version":"${BuildConfig.VERSION_NAME}","country":"$country","phase":"${state.phase}","method":"${state.method?.id}","error":"${state.error}"}""")
+                File(output, "wireguard-proof.json").writeText(Gson().toJson(mapOf(
+                    "source_sha" to BuildConfig.SOURCE_SHA, "version" to BuildConfig.VERSION_NAME,
+                    "country" to country, "phase" to state.phase.name, "method" to state.method?.id,
+                    "error" to state.error?.name, "wireguard" to AndroidVpnHost.current()?.wireguardDiagnostic())))
                 assertEquals("Real tunnel-bound verification did not pass", VpnPhase.CONNECTED, state.phase)
                 assertEquals("wireguard", state.method?.id)
             } finally {

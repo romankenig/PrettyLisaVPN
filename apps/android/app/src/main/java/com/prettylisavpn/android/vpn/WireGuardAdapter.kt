@@ -16,6 +16,7 @@ import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.ByteArrayInputStream
+import java.net.Proxy
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -33,6 +34,17 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private var expectingUp = false
     val isRunning get() = expectingUp
     private var acquired = false
+    // In-memory acceptance evidence only: fixed stages, counters, no keys/addresses/URLs.
+    data class Diagnostic(val stage: String, val failure: String?, val httpStatus: Int?,
+        val handshake: Boolean, val rxBytes: Long, val txBytes: Long)
+    @Volatile private var stage = "IDLE"
+    private var failure: String? = null
+    private var httpStatus: Int? = null
+    private var handshakeObserved = false
+    private var rxBytes = 0L
+    private var txBytes = 0L
+    private var startedAt = 0L
+    fun diagnostic() = Diagnostic(stage, failure, httpStatus, handshakeObserved, rxBytes, txBytes)
     private val tunnel = object : Tunnel {
         override fun getName() = "PrettyLisaVPN"
         override fun onStateChange(state: Tunnel.State) {
@@ -41,10 +53,30 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     }
 
     override suspend fun connect(country: String): ConnectionResult {
+        stage = "CONSENT"; failure = null; httpStatus = null
+        handshakeObserved = false; rxBytes = 0; txBytes = 0; startedAt = 0
+        try {
+            return connectTunnel(country)
+        } catch (error: Exception) {
+            failure = error.javaClass.simpleName
+            throw error
+        } finally {
+            withContext(NonCancellable + Dispatchers.IO) {
+                runCatching { backend?.getStatistics(tunnel)?.let { stats ->
+                    handshakeObserved = startedAt > 0 && stats.peers().any { key -> stats.peer(key)?.latestHandshakeEpochMillis()?.let { it >= startedAt } == true }
+                    rxBytes = stats.totalRx(); txBytes = stats.totalTx()
+                } }
+            }
+        }
+    }
+
+    private suspend fun connectTunnel(country: String): ConnectionResult {
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
+        stage = "RECOVERY"
         // Recover an abandoned reservation from a previous process before creating a fresh key.
         closeRemote()
         val keys = KeyPair()
+        stage = "PROVISIONING"
         acquired = true // A timed-out POST can still have allocated a remote peer.
         lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString())
         armDeadline(requireNotNull(lease))
@@ -87,12 +119,15 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         """.trimIndent()
         val parsed = Config.parse(ByteArrayInputStream(text.toByteArray(Charsets.UTF_8)))
         val started = System.currentTimeMillis() - 1_000
+        startedAt = started
+        stage = "START"
         withContext(Dispatchers.IO) {
             val engine = backend ?: GoBackend(context).also { backend = it }
             expectingUp = true
             engine.setState(tunnel, Tunnel.State.UP, parsed)
         }
         context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
+        stage = "NETWORK"
         val network = withTimeout(10_000) {
             while (true) {
                 vpnNetwork(config.address.substringBefore('/'))?.let { return@withTimeout it }
@@ -102,15 +137,19 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         }
         // Network-bound DNS and sockets cannot silently fall back to Wi-Fi or mobile Internet.
         val verified = sessions.request { token -> withContext(Dispatchers.IO) {
-            val client = OkHttpClient.Builder().socketFactory(network.socketFactory)
+            val client = OkHttpClient.Builder().socketFactory(network.socketFactory).proxy(Proxy.NO_PROXY)
                 .dns(object : okhttp3.Dns {
-                    override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
+                    override fun lookup(hostname: String): List<java.net.InetAddress> {
+                        stage = "DNS"
+                        return network.getAllByName(hostname).toList().also { stage = "HTTPS" }
+                    }
                 })
                 .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
             try {
                 client.newCall(Request.Builder().url("https://api.prettylisavpn.com/vpn/wireguard/sessions/${ready.id}/probe")
                     .header("Authorization", "Bearer $token").header("Cache-Control", "no-store").build()).execute().use { response ->
+                    httpStatus = response.code
                     check(response.isSuccessful)
                     val body = requireNotNull(response.body).string()
                     check(body.length < 4096)
@@ -119,11 +158,15 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                 }
             } finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
         } }
+        stage = if (verified) "HANDSHAKE" else "EGRESS_MISMATCH"
         val handshake = withContext(Dispatchers.IO) {
             val stats = requireNotNull(backend).getStatistics(tunnel)
             stats.peers().any { key -> stats.peer(key)?.latestHandshakeEpochMillis()?.let { it >= started } == true }
         }
-        return if (verified && handshake && expectingUp) ConnectionResult.Verified else ConnectionResult.Failed
+        return if (verified && handshake && expectingUp) {
+            stage = "VERIFIED"
+            ConnectionResult.Verified
+        } else ConnectionResult.Failed
     }
 
     @Suppress("DEPRECATION") // Enumerate VPN networks and match our exact allocated address.
