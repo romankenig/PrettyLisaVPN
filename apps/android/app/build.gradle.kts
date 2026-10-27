@@ -65,7 +65,7 @@ android {
 }
 
 dependencies {
-    implementation("com.wireguard.android:tunnel:1.0.20260102")
+    implementation(libs.wireguard.tunnel)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.preview)
