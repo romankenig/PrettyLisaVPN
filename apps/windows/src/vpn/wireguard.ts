@@ -47,7 +47,7 @@ export function createWireGuardAdapter(options: {
 }): ConnectionAdapter {
   const native = options.native ?? wireGuardNative;
   const method = options.viaRelay ? "wireguard_relay" : "wireguard";
-  const name = options.viaRelay ? "WireGuard через RU" : "WireGuard";
+  const name = options.viaRelay ? "WireGuard+" : "WireGuard";
   const base = new URL("/vpn/wireguard/sessions", options.baseUrl);
   let lease: Lease | null = null;
   let allocated = false;
@@ -115,6 +115,19 @@ export function createWireGuardAdapter(options: {
     lease = null;
     allocated = false;
   }
+  async function cleanup(recover = false) {
+    let localError: unknown;
+    try {
+      await native.stop();
+      local = false;
+    } catch (error) {
+      localError = error;
+    }
+    // Revocation is required even after a native/UAC failure. Otherwise the
+    // server keeps renewing an abandoned grant and charging the whole account.
+    if (recover || allocated || lease) await closeRemote();
+    if (localError) throw localError;
+  }
   function armDeadline(row: Lease) {
     clearTimeout(expiry);
     expiry = setTimeout(
@@ -149,12 +162,11 @@ export function createWireGuardAdapter(options: {
   return {
     id: method,
     name,
+    recover: () => cleanup(true),
     async connect(selection, signal) {
-      await native.stop(); // Recover only PrettyLisaVPN's tunnel after a previous process died.
+      await cleanup(true); // Recover only our local tunnel and this device's remote grant.
       check(signal);
       const publicKey = await native.prepare();
-      check(signal);
-      await closeRemote();
       check(signal);
       allocated = true; // An ambiguous POST still requires lookup and confirmed removal.
       lease = await call(
@@ -234,9 +246,7 @@ export function createWireGuardAdapter(options: {
       clearTimeout(heartbeat);
       clearTimeout(expiry);
       // Also stop an install that succeeded while its caller was being cancelled.
-      await native.stop();
-      local = false;
-      if (allocated || lease) await closeRemote();
+      await cleanup();
     },
   };
 }

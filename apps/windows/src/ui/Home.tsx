@@ -172,7 +172,6 @@ export function Home() {
             <button
               type="button"
               disabled={connectionState.phase === "DISCONNECTING"}
-              aria-describedby="connection-unavailable"
               onClick={() =>
                 void (canDisconnect(connectionState) ? disconnect() : connect())
               }
@@ -208,15 +207,13 @@ export function Home() {
               <ConnectionInfo sessionId={connectionState.session.sessionId} />
             ) : null}
             {connectionState.phase === "CONNECTING" ? (
-              <p className="field-help" data-testid="connection-duration-hint">
+              <p
+                className="field-help connection-duration-hint"
+                data-testid="connection-duration-hint"
+              >
                 {t("Первое подключение может занять пару минут.")}
               </p>
             ) : null}
-            <p id="connection-unavailable" className="field-help">
-              {t(
-                "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.",
-              )}
-            </p>
             {connectionErrorMessage !== null ||
             ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
               connectionState.phase,
@@ -355,7 +352,9 @@ function canDisconnect(state: VpnConnectionState) {
     state.phase === "CONNECTING" ||
     state.phase === "DEGRADED" ||
     (state.phase === "FAILED" &&
-      (state.tunnel !== "DOWN" || state.backend !== "NONE")) ||
+      (state.failure_code === "CLEANUP_FAILED" ||
+        state.tunnel !== "DOWN" ||
+        state.backend !== "NONE")) ||
     (state.phase === "UNAVAILABLE" && state.tunnel !== "DOWN") ||
     (state.phase === "UNAVAILABLE" && state.backend === "ACTIVE")
   );

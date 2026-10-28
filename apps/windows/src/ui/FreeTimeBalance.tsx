@@ -21,7 +21,7 @@ export function freeTimeRemaining(
     return null;
   const elapsed = Math.max(
     0,
-    Math.floor((now - (profile.quotaReceivedAt ?? now)) / 1000),
+    Math.min(60, Math.floor((now - (profile.quotaReceivedAt ?? now)) / 1000)),
   );
   return Math.max(0, seconds - elapsed * running);
 }

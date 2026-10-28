@@ -47,7 +47,12 @@ class ClientQuotaRepository:
             )
         )
         consumed = sum(
-            reserved_seconds(row.created_at, row.expires_at, row.activated_at, row.removed_at)
+            reserved_seconds(
+                row.created_at,
+                row.quota_reserved_until or row.expires_at,
+                row.activated_at,
+                row.removed_at,
+            )
             for row in rows
         )
         return max(0, remaining - consumed)
@@ -66,7 +71,9 @@ class ClientQuotaRepository:
                 )
             )
         ).all()
+        live = [row for row in running if (row.quota_reserved_until or row.expires_at) > at]
         usable = remaining + sum(
-            max(0, int((row.expires_at - at).total_seconds())) for row in running
+            max(0, int(((row.quota_reserved_until or row.expires_at) - at).total_seconds()))
+            for row in live
         )
-        return FreeQuotaSnapshot(remaining, min(3600, usable), len(running))
+        return FreeQuotaSnapshot(remaining, min(3600, usable), len(live))

@@ -5,7 +5,7 @@ import java.time.Instant
 
 /** Read-only account balance. The backend remains authoritative for admission/expiry. */
 data class FreeTime(val seconds: Int, val running: Int, val resetsAt: String, val receivedAtMillis: Long) {
-    fun remaining(nowMillis: Long): Int = (seconds - ((nowMillis - receivedAtMillis).coerceAtLeast(0) / 1000) * running).coerceIn(0, 3600).toInt()
+    fun remaining(nowMillis: Long): Int = (seconds - ((nowMillis - receivedAtMillis).coerceAtLeast(0) / 1000).coerceAtMost(60) * running).coerceIn(0, 3600).toInt()
 }
 
 internal fun readFreeTime(json: JsonObject, nowMillis: Long = System.currentTimeMillis()): FreeTime? = runCatching {

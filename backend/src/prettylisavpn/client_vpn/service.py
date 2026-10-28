@@ -1,6 +1,6 @@
 """Authenticated, account-serialized reservations. SSH belongs exclusively to the worker."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -11,6 +11,7 @@ from prettylisavpn.auth.session_service import AccessIdentity, AuthenticatedSess
 from prettylisavpn.auth_sessions.model import AuthSessionRecord
 from prettylisavpn.client_vpn.domain import (
     HEARTBEAT_SECONDS,
+    NODE_TTL_SECONDS,
     ConnectRequest,
     allocate_address,
     deadline,
@@ -145,12 +146,14 @@ class ClientVpnService:
             subscription = await SubscriptionRepository(session).get_by_user_id(identity.user_id)
             if subscription is None:
                 raise FleetError("ACCOUNT_UNAVAILABLE", 403)
-            remaining = (
-                await ClientQuotaRepository(session).remaining_free_seconds(identity.user_id, now)
+            quota = (
+                await ClientQuotaRepository(session).display(identity.user_id, now)
                 if subscription.effective_plan(now) == SubscriptionPlan.FREE
-                else 0
+                else None
             )
-            is_free, expires = deadline(subscription, now, remaining)
+            is_free, expires = deadline(subscription, now, quota.usable_seconds if quota else 0)
+            if quota and quota.available_seconds <= 0:
+                raise FleetError("FREE_QUOTA_RESERVED", 409)
             # Acquire the small candidate roster in UUID order. Exit/relay capacity
             # reservations and administrative group changes share these locks.
             locked = (
@@ -237,6 +240,12 @@ class ClientVpnService:
                     is_free=is_free,
                     created_at=now,
                     expires_at=expires,
+                    quota_reserved_until=min(
+                        expires,
+                        now + timedelta(seconds=min(NODE_TTL_SECONDS, quota.available_seconds)),
+                    )
+                    if quota
+                    else None,
                     heartbeat_at=now,
                     next_attempt_at=now,
                 )
@@ -275,13 +284,16 @@ class ClientVpnService:
                 row.status, row.next_attempt_at = "REVOKING", now
             if action == "probe":
                 node = await session.get(FleetNodeRecord, row.node_id)
+                verified = bool(
+                    row.status == "READY"
+                    and row.expires_at > now
+                    and node
+                    and observed_ip in node.expected_egress_ips
+                )
+                if verified and row.verified_at is None:
+                    row.verified_at = now
                 return {
-                    "verified": bool(
-                        row.status == "READY"
-                        and row.expires_at > now
-                        and node
-                        and observed_ip in node.expected_egress_ips
-                    ),
+                    "verified": verified,
                     "ip": observed_ip,
                 }
             return await view(session, row)

@@ -14,25 +14,25 @@ export default function HistoryChart({ nodes, roster, end, onSelect }: { nodes: 
   const start = Date.parse(nodes[0]?.history[0]?.at ?? "");
   const finish = end ? Date.parse(end) : NaN;
   const valid = points.length > 0 && Number.isFinite(start) && finish > start;
-  const maximum = metric === "rating" ? 100 : Math.max(1, Math.ceil(Math.max(0, ...points.map(point => point.value)) / 10) * 10);
+  const maximum = metric === "active" ? Math.max(4, Math.ceil(Math.max(0, ...points.map(point => point.value)) / 4) * 4) : metric === "rating" ? 100 : Math.max(1, Math.ceil(Math.max(0, ...points.map(point => point.value)) / 10) * 10);
   const x = (time: number) => 58 + 880 * (time - start) / (finish - start);
   const y = (value: number) => 238 - 210 * value / maximum;
-  return <section className="panel history-chart" aria-label="График скорости и рейтинга">
-    <div className="section-title"><div><h2>{metric === "speed" ? "Скорость VPN" : "Рейтинг серверов"}</h2><p>За последние 7 дней · {TIME_ZONE_LABEL} · нажмите на точку, чтобы открыть проверку</p></div><div className="chart-switch" role="group" aria-label="Показатель графика"><button aria-pressed={metric === "speed"} onClick={() => setMetric("speed")}>Скорость</button><button aria-pressed={metric === "rating"} onClick={() => setMetric("rating")}>Рейтинг</button></div></div>
+  return <section className="panel history-chart" aria-label="История скорости, рейтинга и активных устройств">
+    <div className="section-title"><div><h2>{metric === "active" ? "Активные устройства" : metric === "speed" ? "Скорость VPN" : "Рейтинг серверов"}</h2><p>За последние 7 дней · {TIME_ZONE_LABEL} · нажмите на точку, чтобы открыть проверку</p></div><div className="chart-switch" role="group" aria-label="Показатель графика"><button aria-pressed={metric === "speed"} onClick={() => setMetric("speed")}>Скорость</button><button aria-pressed={metric === "rating"} onClick={() => setMetric("rating")}>Рейтинг</button><button aria-pressed={metric === "active"} onClick={() => setMetric("active")}>Активные устройства</button></div></div>
     {valid ? <>
-      <div className="chart-scroll"><svg className="chart-svg" viewBox="0 0 960 285" role="group" aria-label={metric === "speed" ? "Скорость загрузки и отдачи, Мбит/с" : "Рейтинг от 0 до 100"}>
-        <text x="58" y="14" className="chart-axis">{metric === "speed" ? "Мбит/с" : "баллы / 100"}</text>
+      <div className="chart-scroll"><svg className="chart-svg" viewBox="0 0 960 285" role="group" aria-label={metric === "active" ? "Количество активных VPN-подключений" : metric === "speed" ? "Скорость загрузки и отдачи, Мбит/с" : "Рейтинг от 0 до 100"}>
+        <text x="58" y="14" className="chart-axis">{metric === "active" ? "устройства" : metric === "speed" ? "Мбит/с" : "баллы / 100"}</text>
         {[0, 1, 2, 3, 4].map(index => <g key={index}><line x1="58" x2="938" y1={y(maximum * index / 4)} y2={y(maximum * index / 4)} className="chart-grid" /><text x="48" y={y(maximum * index / 4) + 4} textAnchor="end" className="chart-axis">{number(maximum * index / 4)}</text></g>)}
         {[0, 1, 2, 3, 4, 5, 6].map(index => { const time = start + (finish - start) * index / 6; return <text key={index} x={x(time)} y="264" textAnchor={index === 0 ? "start" : index === 6 ? "end" : "middle"} className="chart-axis">{date(new Date(time).toISOString(), false)}</text>; })}
         {series.map(line => <g key={`${line.nodeId}-${line.direction}`} stroke={color(line.nodeId)}>{line.segments.map((segment, index) => <g key={index}><polyline fill="none" strokeWidth="2.2" strokeDasharray={line.direction === "upload" ? "6 4" : undefined} points={segment.map(point => `${x(point.time)},${y(point.value)}`).join(" ")} />{segment.map((point, item) => {
           const timestamp = new Date(point.time).toISOString();
-          const label = `${line.nodeName}, ${date(timestamp)} ${TIME_ZONE_LABEL}: ${line.direction === "rating" ? "рейтинг" : line.direction === "download" ? "загрузка" : "отдача"} ${number(point.value)} ${metric === "speed" ? "Мбит/с" : "из 100"}`;
+          const label = `${line.nodeName}, ${date(timestamp)} ${TIME_ZONE_LABEL}: ${line.direction === "active" ? "активные устройства" : line.direction === "rating" ? "рейтинг" : line.direction === "download" ? "загрузка" : "отдача"} ${number(point.value)} ${metric === "active" ? "" : metric === "speed" ? "Мбит/с" : "из 100"}`;
           const select = () => onSelect({ at: new Date(Math.floor(point.time / 3600000) * 3600000).toISOString(), nodeId: line.nodeId });
           return <circle key={item} cx={x(point.time)} cy={y(point.value)} r="3.5" fill="white" strokeWidth="2" role="button" tabIndex={0} aria-label={label} onClick={select} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } }}><title>{label}</title></circle>;
         })}</g>)}</g>)}
       </svg></div>
       <div className="chart-legend">{nodes.filter(node => series.some(line => line.nodeId === node.id && line.segments.length)).map(node => <span key={node.id}><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" fill={color(node.id)} /></svg>{node.name}</span>)}{metric === "speed" && <span className="chart-directions">Сплошная — загрузка ↓ · пунктир — отдача ↑</span>}</div>
-      <p className="history-note">Каждая точка — сохранённый замер. Пропуски не заполняются; линия обрывается при отсутствии замера или перерыве более 75 минут.</p>
-    </> : <div className="empty"><h3>{metric === "rating" ? "История рейтинга ещё не накоплена" : "Нет замеров скорости за выбранный период"}</h3><p>Данные появятся после проверки выбранных серверов. Неизвестные значения не заменяются нулями.</p></div>}
+      <p className="history-note">{metric === "active" && "Количество активных VPN-подключений на узле в момент проверки. Подключение через посредника учитывается на обоих узлах; это не число уникальных устройств во всём сервисе. "}Каждая точка — сохранённый замер. Пропуски не заполняются; линия обрывается при отсутствии замера или перерыве более 75 минут.</p>
+    </> : <div className="empty"><h3>{metric === "active" ? "История активных устройств ещё не накоплена" : metric === "rating" ? "История рейтинга ещё не накоплена" : "Нет замеров скорости за выбранный период"}</h3><p>Данные появятся после проверки выбранных серверов. Неизвестные значения не заменяются нулями.</p></div>}
   </section>;
 }

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 /** Keys stay in this process; success requires fresh handshake and HTTPS through our VPN Network. */
 class WireGuardAdapter(private val context: Context, private val sessions: SessionCoordinator,
     http: HttpAuthApi, private val viaRelay: Boolean = false, private val lost: () -> Unit) : ConnectionAdapter {
-    override val method = if (viaRelay) VpnMethod("wireguard_relay", "WireGuard via RU") else VpnMethod("wireguard", "WireGuard")
+    override val method = if (viaRelay) VpnMethod("wireguard_relay", "WireGuard+") else VpnMethod("wireguard", "WireGuard")
     private val api = WireGuardApi(http, sessions)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var backend: GoBackend? = null
@@ -215,7 +215,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     }
 
     private suspend fun closeRemote() {
-        val current = lease ?: api.current() ?: return
+        val current = lease ?: api.current() ?: run { acquired = false; return }
         lease = current
         if (current.status != "CLOSED") {
             api.revoke(current.id)
@@ -225,13 +225,21 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         acquired = false
     }
 
+    override suspend fun recover() {
+        acquired = true
+        disconnect()
+    }
+
     override suspend fun disconnect() {
         heartbeat?.cancel(); heartbeat = null
         deadline?.cancel(); deadline = null
         expectingUp = false
-        withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) }
-        HttpRoutes.default()
-        context.stopService(Intent(context, TunnelForegroundService::class.java))
-        if (acquired || lease != null) closeRemote()
+        withContext(NonCancellable) {
+            disconnectCleanup(stopLocal = {
+                try { withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) } }
+                finally { HttpRoutes.default() }
+            }, revokeRemote = { if (acquired || lease != null) closeRemote() })
+            context.stopService(Intent(context, TunnelForegroundService::class.java))
+        }
     }
 }

@@ -16,7 +16,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http) { disconnect() }
     private val relay: WireGuardAdapter = WireGuardAdapter(context, sessions, http, viaRelay = true) { disconnect() }
     val controller: VpnController = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-        listOf(wireguard, relay) + placeholderAdapters().filter { it.method.id != "wireguard" }, preference)
+        listOf(wireguard, relay) + placeholderAdapters().filter { it.method.id != "wireguard" }, preference, recovery = wireguard)
     override val status get() = controller.status
     override fun connect(country: String) = controller.connect(country)
     override fun disconnect(): Unit = controller.disconnect()

@@ -103,6 +103,7 @@ export function createVpnConnectionManager(
   let run: { controller: AbortController; done: Promise<void> } | null = null;
   let stopping: Promise<void> | null = null;
   let disposed = false;
+  let recoveredOwner: string | null = null;
   const listeners = new Set<() => void>();
   const emit = (value: VpnConnectionState) => {
     state = value;
@@ -135,6 +136,9 @@ export function createVpnConnectionManager(
     })();
     try {
       await stopping;
+    } catch (error) {
+      fail("", "CLEANUP_FAILED");
+      throw error;
     } finally {
       stopping = null;
     }
@@ -152,7 +156,35 @@ export function createVpnConnectionManager(
     async connectionDetails() {
       return details;
     },
-    async reconcile() {},
+    async reconcile() {
+      if (
+        !owner ||
+        recoveredOwner === owner ||
+        active ||
+        run ||
+        stopping ||
+        disposed
+      )
+        return;
+      const adapter = adapters.find((item) => item.recover);
+      if (!adapter) return;
+      active = adapter;
+      const account = owner;
+      emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
+      stopping = (async () => {
+        try {
+          await adapter.recover!();
+          active = null;
+          recoveredOwner = account;
+          emit(idle());
+        } catch {
+          fail(adapter.name, "CLEANUP_FAILED");
+        } finally {
+          stopping = null;
+        }
+      })();
+      await stopping;
+    },
     setOwner(value) {
       if (owner !== value) {
         owner = value;

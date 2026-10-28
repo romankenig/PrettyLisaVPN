@@ -81,9 +81,7 @@ it("falls back through the actual relay adapter only after direct cleanup", asyn
       relay.requests.find((request) => request.method === "POST")!.body!,
     ).method,
   ).toBe("wireguard_relay");
-  expect(progress.some((state) => state.includes("WireGuard через RU"))).toBe(
-    true,
-  );
+  expect(progress.some((state) => state.includes("WireGuard+"))).toBe(true);
   await manager.disconnect("");
 });
 it("publishes real session only after native tunnel-bound proof and releases it", async () => {
@@ -137,11 +135,42 @@ it("does not reserve remote access when an existing VPN conflicts", async () => 
   vi.mocked(native.prepare).mockRejectedValue("VPN_CONFLICT");
   const manager = createVpnConnectionManager([adapter]);
   await manager.connect("", selection);
-  expect(requests).toEqual([]);
+  expect(requests.every((request) => request.method === "GET")).toBe(true);
   expect(manager.current()).toMatchObject({
     phase: "FAILED",
     failure_code: "VPN_CONFLICT",
   });
+});
+it("revokes the remote grant even when stopping the native service fails", async () => {
+  const { adapter, native, row, requests } = setup();
+  const connecting = adapter.connect(selection, new AbortController().signal);
+  await vi.advanceTimersByTimeAsync(2500);
+  await connecting;
+  vi.mocked(native.stop).mockRejectedValueOnce(new Error("VPN_CLEANUP_FAILED"));
+  await expect(adapter.disconnect()).rejects.toThrow("VPN_CLEANUP_FAILED");
+  expect(row.status).toBe("CLOSED");
+  expect(
+    requests.filter((request) => request.method === "DELETE"),
+  ).toHaveLength(1);
+  await adapter.disconnect();
+  expect(
+    requests.filter((request) => request.method === "DELETE"),
+  ).toHaveLength(1);
+});
+it("cleans an abandoned device grant on startup once and leaves a new connection alone", async () => {
+  const { adapter, row, requests } = setup();
+  const previous = adapter.connect(selection, new AbortController().signal);
+  await vi.advanceTimersByTimeAsync(2500);
+  await previous;
+  const manager = createVpnConnectionManager([adapter]);
+  manager.setOwner?.("owner");
+  await Promise.resolve();
+  await Promise.resolve();
+  await manager.reconcile("");
+  expect(row.status).toBe("CLOSED");
+  const count = requests.length;
+  await manager.reconcile("");
+  expect(requests).toHaveLength(count);
 });
 it("serializes refresh and never replays an ambiguously consumed refresh credential", async () => {
   const storage = createTestCredentialStorage();

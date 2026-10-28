@@ -145,9 +145,15 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, &'static str> {
 fn stop(app: &AppHandle) -> Result<(), &'static str> {
     if service_state()?.is_some() {
         elevate(&format!("/uninstalltunnelservice {NAME}"))?;
-    }
-    if service_state()?.is_some() {
-        return Err("VPN_CLEANUP_FAILED");
+        // SCM deletion can finish after wireguard.exe exits. Do not mistake
+        // that short transition for a permanently failed cleanup.
+        let until = std::time::Instant::now() + Duration::from_secs(10);
+        while service_state() != Ok(None) {
+            if std::time::Instant::now() >= until {
+                return Err("VPN_CLEANUP_FAILED");
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
     }
     let path = config_path(app)?;
     if path.exists() {

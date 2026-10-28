@@ -18,7 +18,7 @@ const profile: MeResponse = {
 };
 it("includes reserved time on other devices and counts down the account balance", () => {
   expect(freeTimeRemaining(profile, 31000)).toBe(540);
-  expect(freeTimeRemaining(profile, 400000)).toBe(0);
+  expect(freeTimeRemaining(profile, 400000)).toBe(480);
   expect(freeTimeRemaining(profile, 0)).toBe(600);
   const idle = {
     ...profile,

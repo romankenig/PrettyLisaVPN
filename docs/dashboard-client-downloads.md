@@ -135,3 +135,14 @@ Bootstrap candidates (must retain their original build identities): develop
 `c1f9b18bcebc43aec96abc4f43a21eecb5b3f4a7`, Android run 40687449383/1,
 Windows run 40687449446/1. Both workflows completed successfully. These are not
 builds of the new dashboard commit. See the task PR for final published identities.
+
+## Active device history (same dashboard 0.3.0 task)
+
+The chart switch also includes active devices, using each stored observation's
+active_connections. Counts are per-node VPN connections at check time, not
+registered devices or a globally deduplicated count. A relay connection appears
+on both participating nodes. Integer zero is retained, missing values and gaps
+are not filled, and server/group filters and point-to-hour details apply equally.
+Final client patches in this PR are Android 0.14.2 and Windows 0.17.2; backend
+0.21.1 includes quota/cleanup migration 0034 after the history migration 0033.
+See [quota/cleanup handoff](free-quota-cleanup.md).

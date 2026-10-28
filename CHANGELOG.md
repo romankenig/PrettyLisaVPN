@@ -6,6 +6,25 @@
 
 ## Unreleased
 
+### Backend — 0.21.1 / Android — 0.14.2 / Windows — 0.17.2
+
+- Fix account-wide Free quota admission: reserve renewable grants of at most 180
+  seconds, allowing multiple devices to share the hour instead of reserving it all
+  for the first device. Preserve summed device time, UTC reset and confirmed cleanup.
+- Revoke unverified setup automatically after 90 seconds, retry uncertain removal
+  durably, and preserve confirmed sleeping-device connections. Migration 0034.
+- Attempt remote revocation even when local tunnel shutdown fails; recover this
+  device's abandoned grant on client startup and allow cleanup retry in the UI.
+  Windows waits for asynchronous service deletion. Freeze stale balance estimates
+  after 60 seconds without a fresh account response.
+- See [quota/cleanup handoff](docs/free-quota-cleanup.md).
+
+### Android — 0.14.1 / Windows — 0.17.1 (included in the following patch builds)
+
+- Name the relay method **WireGuard+** in every language, preserving method IDs
+  and fallback preferences. Remove the implementation-status banner and display
+  the first-connection hint with 60% text opacity.
+
 ### Dashboard — 0.3.0 / Backend — 0.21.0 / Android and Windows unchanged
 
 - Permanent Android APK and Windows EXE download links on the private dashboard.
@@ -16,7 +35,9 @@
 - Preserve rating at each completed probe (migration 0033) and expose individual
   historical download/upload speeds, rating and active connections on hour selection.
   Legacy speeds remain available; missing historical ratings stay unknown.
-- Add a speed/rating chart switch respecting server/group selection and missing data.
+- Add a speed/rating/active-devices chart switch respecting server/group selection
+  and missing data. Devices count observed active VPN connections per node;
+  relay routes appear on both nodes, not as unique devices across the service.
 - Set new-node capacity to 20 and speed-rating target to 30 Mbps; allow capacity
   changes through the existing admin PATCH while preserving omitted values.
 - See [deployment and verification handoff](docs/dashboard-client-downloads.md).

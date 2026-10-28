@@ -12,6 +12,7 @@ interface ConnectionAdapter {
     val method: VpnMethod
     suspend fun connect(country: String): ConnectionResult
     suspend fun disconnect()
+    suspend fun recover() {}
 }
 const val PLACEHOLDER_DELAY_MILLIS = 3_000L
 fun placeholder(id: String, name: String) = object : ConnectionAdapter {
