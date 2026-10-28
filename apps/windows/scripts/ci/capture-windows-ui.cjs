@@ -409,6 +409,26 @@ async function main() {
   if ((await page.locator(".account-summary").innerText()).includes("статус"))
     throw new Error("Account status must be removed");
   await screenshot("04-home");
+  await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: true }),
+  });
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page
+    .getByRole("timer", { name: "Остаток Free" })
+    .filter({ hasText: "10:15" })
+    .waitFor();
+  await screenshot("04-home-free-balance");
+  await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: false }),
+  });
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page.getByText("Premium", { exact: true }).waitFor();
   const combo = page.locator(".location-trigger");
   await combo.click();
   await page.getByRole("listbox").waitFor();

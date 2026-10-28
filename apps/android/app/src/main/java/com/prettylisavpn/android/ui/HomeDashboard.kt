@@ -45,6 +45,21 @@ internal fun AccountSummary(data: Snapshot) {
             DetailValue(tr(R.string.dash_plan), data.plan)
             DetailValue(tr(R.string.dash_devices), "${data.activeDeviceCount} / 5", Modifier.testTag("account-device-count"))
         }
+        if (data.plan == "Free") FreeTimeBalance(data.freeTime)
+    }
+}
+
+@Composable
+internal fun FreeTimeBalance(balance: com.prettylisavpn.android.auth.FreeTime?) {
+    val tr = strings()
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(balance) { while (true) { now = System.currentTimeMillis(); delay(1_000) } }
+    val remaining = balance?.remaining(now)
+    val formatted = remaining?.let { "%02d:%02d".format(Locale.ROOT, it / 60, it % 60) } ?: "—"
+    DetailValue(tr(R.string.free_time_remaining), formatted, Modifier.testTag("free-time-balance"))
+    val language by LocalPresentation.current.preference.language.collectAsState()
+    balance?.let { readableDate(it.resetsAt, Locale.forLanguageTag(language.code), ZoneId.systemDefault()) }?.let {
+        Text(tr(R.string.free_time_resets, it), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
     }
 }
 
@@ -73,8 +88,11 @@ internal fun LiveHome(model: ScreenModel) {
     val locale = Locale.forLanguageTag(language.code)
     var selected by rememberSaveable { mutableStateOf("AUTO") }
     var expanded by remember { mutableStateOf(false) }
+    val vpn by (model.vpn?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(com.prettylisavpn.android.vpn.VpnStatus()) }).collectAsState()
+    LaunchedEffect(vpn.phase) {
+        while (true) { model.load(Area.HOME); delay(30_000) }
+    }
     LaunchedEffect(Unit) {
-        model.load(Area.HOME)
         while (true) { model.load(Area.COUNTRIES); delay(60_000) }
     }
     // Public egress does not depend on an authenticated backend refresh succeeding.

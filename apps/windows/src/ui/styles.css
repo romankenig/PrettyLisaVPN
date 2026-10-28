@@ -652,6 +652,25 @@ h1 {
 .account-home h1 {
   margin-bottom: 10px;
 }
+.free-time-balance {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.free-time-balance p {
+  margin: 0;
+}
+.free-time-balance .field-help {
+  color: inherit;
+}
+.free-time-balance strong {
+  font-variant-numeric: tabular-nums;
+}
 .account-summary {
   flex-shrink: 0;
   margin-top: 0;

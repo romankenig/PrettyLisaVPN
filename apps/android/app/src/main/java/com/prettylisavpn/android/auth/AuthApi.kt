@@ -47,7 +47,7 @@ data class Credentials(val sessionId: String, val refreshToken: String, val expi
 data class Tokens(val access: String, val ttlSeconds: Long, val credentials: Credentials) {
     override fun toString() = "Tokens([redacted])"
 }
-data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "")
+data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "", val freeTime: FreeTime? = null)
 interface AuthApi {
     suspend fun requestOtp(email: String)
     suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String): Tokens
@@ -121,7 +121,8 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         return try {
             val count = json.get("active_device_count").asInt; require(count in 0..5)
             val plan = json.text("plan"); require(plan in setOf("FREE", "PREMIUM", "PLATINUM"))
-            Profile(json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) })
+            Profile(json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) },
+                if (plan == "FREE") readFreeTime(json) else null)
         } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
     override suspend fun logout(access: String) {

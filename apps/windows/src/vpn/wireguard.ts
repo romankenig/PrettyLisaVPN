@@ -43,8 +43,11 @@ export function createWireGuardAdapter(options: {
   bearer: () => Promise<string>;
   lost: () => void;
   native?: WireGuardNative;
+  viaRelay?: boolean;
 }): ConnectionAdapter {
   const native = options.native ?? wireGuardNative;
+  const method = options.viaRelay ? "wireguard_relay" : "wireguard";
+  const name = options.viaRelay ? "WireGuard через RU" : "WireGuard";
   const base = new URL("/vpn/wireguard/sessions", options.baseUrl);
   let lease: Lease | null = null;
   let allocated = false;
@@ -144,8 +147,8 @@ export function createWireGuardAdapter(options: {
     }, 30_000);
   }
   return {
-    id: "wireguard",
-    name: "WireGuard",
+    id: method,
+    name,
     async connect(selection, signal) {
       await native.stop(); // Recover only PrettyLisaVPN's tunnel after a previous process died.
       check(signal);
@@ -159,6 +162,7 @@ export function createWireGuardAdapter(options: {
         "POST",
         {
           public_key: publicKey,
+          method,
           country:
             selection.mode === "COUNTRY" ? selection.country_code : "AUTO",
         },
@@ -211,7 +215,7 @@ export function createWireGuardAdapter(options: {
         internetVerified: true,
         session,
         details: {
-          protocol: "WireGuard",
+          protocol: name,
           transport: "UDP",
           server: configuration.endpoint,
           encryption: "ChaCha20-Poly1305",

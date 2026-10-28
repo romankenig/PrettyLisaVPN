@@ -12,7 +12,7 @@
           - ansible_facts['service_mgr'] == 'systemd'
     - name: Install distribution-maintained network tools
       ansible.builtin.apt:
-        name: [wireguard-tools, iproute2, iptables, iputils-ping, dnsutils, openssl, ca-certificates]
+        name: [wireguard-tools, iproute2, iptables, conntrack, iputils-ping, dnsutils, openssl, ca-certificates]
         state: present
         update_cache: true
         cache_valid_time: 3600

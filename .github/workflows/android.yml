@@ -15,6 +15,10 @@ on:
         description: One real WireGuard attempt using an expiring disposable account
         type: boolean
         default: false
+      force_relay:
+        description: Block direct WireGuard on the isolated runner and verify automatic RU fallback
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -55,6 +59,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: One real client attempt
+        env:
+          FORCE_RELAY: ${{ inputs.force_relay }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35

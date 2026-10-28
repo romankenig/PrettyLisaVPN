@@ -10,19 +10,19 @@ export function createDefaultVpnConnection(
   session: AuthenticationSession,
   api: ApiClient,
 ) {
-  const adapter = createWireGuardAdapter({
+  const options = {
     baseUrl,
     transport: createHttpTransport(),
     bearer: () => session.bearer(api),
     lost: () => {
       void manager.connectionLost?.();
     },
-  });
-  const manager = createVpnConnectionManager(
-    placeholderAdapters().map((item) =>
-      item.id === "wireguard" ? adapter : item,
-    ),
-  );
+  };
+  const manager = createVpnConnectionManager([
+    createWireGuardAdapter(options),
+    createWireGuardAdapter({ ...options, viaRelay: true }),
+    ...placeholderAdapters().filter((item) => item.id !== "wireguard"),
+  ]);
   manager.localTunnelStatus = async () =>
     (await wireGuardNative.isUp()) ? "UP" : "DOWN";
   return manager;

@@ -266,7 +266,12 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} не подключился. Все способы проверены; подключиться не удалось.",
     "Установите официальный WireGuard для Windows и повторите подключение.": "Установите официальный WireGuard для Windows и повторите подключение.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Для WireGuard нужно подтвердить системный запрос Windows."
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Для WireGuard нужно подтвердить системный запрос Windows.",
+    "Осталось сегодня:": "Осталось сегодня:",
+    "Обновится: {0}": "Обновится: {0}",
+    "WireGuard через RU": "WireGuard через RU",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.",
+    "Остаток Free": "Остаток Free"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -535,7 +540,12 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} did not connect. All methods tried; connection failed.",
     "Установите официальный WireGuard для Windows и повторите подключение.": "Install the official WireGuard for Windows and try again.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Another VPN is active. Disconnect it before connecting PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Approve the Windows system prompt to start WireGuard."
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Approve the Windows system prompt to start WireGuard.",
+    "Осталось сегодня:": "Time left today:",
+    "Обновится: {0}": "Resets: {0}",
+    "WireGuard через RU": "WireGuard via RU",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard and WireGuard via a relay are available. Other methods are still in development.",
+    "Остаток Free": "Free time remaining"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -804,7 +814,12 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} 未能连接。已尝试所有方式，连接失败。",
     "Установите официальный WireGuard для Windows и повторите подключение.": "请安装官方 WireGuard Windows 客户端后重试。",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "另一个 VPN 正在运行。连接 PrettyLisaVPN 前请先断开它。",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "请确认 Windows 系统提示以启动 WireGuard。"
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "请确认 Windows 系统提示以启动 WireGuard。",
+    "Осталось сегодня:": "今日剩余时间:",
+    "Обновится: {0}": "重置时间：{0}",
+    "WireGuard через RU": "经俄罗斯中继的 WireGuard",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "可使用 WireGuard 直连和中继连接。其他连接方式仍在开发中。",
+    "Остаток Free": "Free 剩余时间"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1073,7 +1088,12 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} no se conectó. Se probaron todos los métodos; la conexión falló.",
     "Установите официальный WireGuard для Windows и повторите подключение.": "Instala el cliente oficial WireGuard para Windows e inténtalo de nuevo.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Hay otra VPN activa. Desconéctala antes de conectar PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirma la solicitud del sistema Windows para iniciar WireGuard."
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirma la solicitud del sistema Windows para iniciar WireGuard.",
+    "Осталось сегодня:": "Tiempo restante hoy:",
+    "Обновится: {0}": "Se renueva: {0}",
+    "WireGuard через RU": "WireGuard vía RU",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard y WireGuard mediante un servidor intermediario están disponibles. Los demás métodos siguen en desarrollo.",
+    "Остаток Free": "Tiempo Free restante"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1342,7 +1362,12 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} konnte keine Verbindung herstellen. Alle Methoden wurden versucht.",
     "Установите официальный WireGuard для Windows и повторите подключение.": "Installieren Sie den offiziellen WireGuard-Client für Windows und versuchen Sie es erneut.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Ein anderes VPN ist aktiv. Trennen Sie es, bevor Sie PrettyLisaVPN verbinden.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Bestätigen Sie die Windows-Systemabfrage, um WireGuard zu starten."
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Bestätigen Sie die Windows-Systemabfrage, um WireGuard zu starten.",
+    "Осталось сегодня:": "Heute verbleibende Zeit:",
+    "Обновится: {0}": "Erneuerung: {0}",
+    "WireGuard через RU": "WireGuard über RU",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard und WireGuard über einen Zwischenserver sind verfügbar. Weitere Methoden sind in Entwicklung.",
+    "Остаток Free": "Verbleibende Free-Zeit"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1611,6 +1636,11 @@
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} n’a pas pu se connecter. Toutes les méthodes ont été essayées sans succès.",
     "Установите официальный WireGuard для Windows и повторите подключение.": "Installez le client officiel WireGuard pour Windows et réessayez.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Un autre VPN est actif. Déconnectez-le avant de connecter PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirmez la demande système Windows pour démarrer WireGuard."
+    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirmez la demande système Windows pour démarrer WireGuard.",
+    "Осталось сегодня:": "Temps restant aujourd’hui:",
+    "Обновится: {0}": "Renouvellement : {0}",
+    "WireGuard через RU": "WireGuard via RU",
+    "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard et WireGuard via un relais sont disponibles. Les autres méthodes sont en développement.",
+    "Остаток Free": "Temps Free restant"
   }
 }

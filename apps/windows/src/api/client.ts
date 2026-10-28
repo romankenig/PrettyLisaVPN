@@ -60,6 +60,14 @@ export interface MeResponse {
   readonly email: string;
   readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
   readonly active_device_count: number;
+  readonly entitlements?: {
+    readonly free_seconds_remaining?: number | null;
+    readonly free_seconds_usable?: number | null;
+    readonly free_running_sessions?: number | null;
+    readonly free_quota_resets_at?: string | null;
+  } | null;
+  /** Local receipt time for a read-only countdown; never sent to the backend. */
+  readonly quotaReceivedAt?: number;
 }
 
 export interface LogoutResponse {
@@ -336,7 +344,9 @@ export function createApiClient(
         signal,
       );
       if (!isMeResponse(value)) throw new ApiError("INVALID_RESPONSE");
-      return value;
+      return value.entitlements
+        ? { ...value, quotaReceivedAt: Date.now() }
+        : value;
     },
     async logout(accessToken, signal) {
       const value = await requestJson(

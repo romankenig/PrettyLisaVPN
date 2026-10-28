@@ -1,3 +1,15 @@
+# Relay and daily balance — Windows 0.16.0 / Android 0.13.0
+
+Home Connect attempts direct WireGuard, then WireGuard through permanent RU,
+then the remaining placeholders. Both implemented adapters use the existing
+permission/UAC, verification, cancellation and confirmed-cleanup flows. Progress
+names the current method and previous failure; the connected method remains visible.
+Free Home displays the account-wide daily remainder, including unused active
+reservations, and next UTC reset. Unknown balance displays a dash; paid plans
+hide the counter. Profile refreshes on Home entry/state changes and every 30s.
+No new routes or external transitions. Other protocols remain placeholders.
+See [backend integration and rollback](wireguard-relay-quota.md).
+
 # WireGuard connection — Windows 0.15.0 / Android 0.12.0
 
 Home Connect now attempts real WireGuard before the remaining placeholders.

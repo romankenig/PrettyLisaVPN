@@ -1,5 +1,14 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Permanent RU relay and Free balance — 2026-10-28
+
+Next source: backend **0.20.0**, schema **0032**, Windows **0.16.0**, Android
+**0.13.0/code 24**, dashboard **0.2.0**. Base: PR #33,
+`c6ba668a868a1afcd147d82126ccb9953c01e4b9`, pre-task manual development build
+`20261028095251`. See [relay handoff](wireguard-relay-quota.md) for permanent RU
+routing, group updates, account reset and safe rollback. Final source/build/run
+and deployment evidence belong in this task's PR; implementation is not rollout.
+
 ## Sleep and occupied-node monitoring follow-up — 2026-10-28
 
 Source task: backend **0.18.1 → 0.19.0**, Android **0.12.1 → 0.12.2 / code 23**;

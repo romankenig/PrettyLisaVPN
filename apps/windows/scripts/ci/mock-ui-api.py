@@ -37,6 +37,7 @@ BILLING_LAST_COMMAND = None
 BILLING_REQUESTS = {}
 SIMULATE_BILLING = False
 SIMULATE_MESSAGES = False
+QUOTA_REVIEW = False
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
 MESSAGE_FIXTURES = [
@@ -64,6 +65,10 @@ MESSAGE_FIXTURES = [
 def fixture(method, path, body):
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
+    global QUOTA_REVIEW
+    if method == "POST" and path == "/ui-review/free-quota":
+        QUOTA_REVIEW = body.get("enabled") is True
+        return 200, {"enabled": QUOTA_REVIEW}
     if BILLING_SCENARIO.startswith("server-") and BILLING_EVIDENCE:
         if method == "GET" and urlsplit(path).path == "/billing/overview":
             return 200, BILLING_EVIDENCE["snapshots"][BILLING_SCENARIO.removeprefix("server-")]
@@ -175,7 +180,9 @@ def fixture(method, path, body):
     if method == "GET" and path == "/me":
         return 200, {
             "id": USER_ID, "email": ACCOUNT_EMAIL,
-            "plan": "PREMIUM", "active_device_count": 2,
+            "plan": "FREE" if QUOTA_REVIEW else "PREMIUM", "active_device_count": 2,
+            **({"entitlements": {"free_seconds_remaining": 0, "free_seconds_usable": 615,
+                "free_running_sessions": 0, "free_quota_resets_at": "2030-01-02T00:00:00Z"}} if QUOTA_REVIEW else {}),
         }
     if method == "GET" and path == "/devices":
         return 200, [

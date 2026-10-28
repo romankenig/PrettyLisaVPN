@@ -14,6 +14,7 @@ from prettylisavpn.fleet.domain import (
     FleetError,
     Node,
     NodeInput,
+    NodeUpdate,
     Observation,
     WireGuardConfig,
     server_quality,
@@ -85,6 +86,33 @@ class FleetService:
                 await session.scalars(select(FleetNodeRecord).order_by(FleetNodeRecord.name))
             ).all()
             return [node_value(row).model_dump(mode="json") for row in rows]
+
+    async def update_node(self, identifier: UUID, data: NodeUpdate) -> dict[str, Any]:
+        from prettylisavpn.client_vpn.model import ClientLeaseRecord
+
+        async with self.postgres.session() as session, session.begin():
+            row = await session.get(FleetNodeRecord, identifier, with_for_update=True)
+            if row is None:
+                raise FleetError("fleet_node_not_found", 404)
+            if row.group != data.group and await session.scalar(
+                select(ClientLeaseRecord.id)
+                .where(
+                    or_(
+                        ClientLeaseRecord.node_id == identifier,
+                        ClientLeaseRecord.relay_node_id == identifier,
+                    ),
+                    ClientLeaseRecord.removed_at.is_(None),
+                )
+                .limit(1)
+            ):
+                raise FleetError("fleet_node_has_active_access")
+            row.name, row.group = data.name, data.group
+            row.is_available_for_free = data.group == "FREE"
+            try:
+                await session.flush()
+            except IntegrityError:
+                raise FleetError("fleet_node_conflict") from None
+            return node_value(row).model_dump(mode="json")
 
     async def enqueue(
         self,
@@ -253,6 +281,7 @@ class FleetService:
                     "id": str(node.id),
                     "name": node.name,
                     "country_code": node.country_code,
+                    "group": node.group,
                     "method": "wireguard",
                     "configuration_state": method.state if method else "REGISTERED",
                     "capacity": node.capacity,
@@ -295,7 +324,7 @@ class FleetService:
         snapshot = await self.monitoring(days=1)
         by_country: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for node in snapshot["nodes"]:
-            if not free_only or node["is_available_for_free"]:
+            if node["group"] != "INTERMEDIATE" and (not free_only or node["is_available_for_free"]):
                 by_country[node["country_code"]].append(node)
         countries = []
         for code, nodes in sorted(by_country.items()):

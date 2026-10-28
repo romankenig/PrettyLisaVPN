@@ -18,6 +18,7 @@ import { ConnectionInfo } from "./ConnectionInfo";
 import { TrafficMode } from "./TrafficMode";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 import { attemptMessage } from "../vpn/attempt";
+import { FreeTimeBalance } from "./FreeTimeBalance";
 
 type ProfileState =
   | { phase: "loading" }
@@ -51,6 +52,14 @@ export function Home() {
     useState<ReactNode>(null);
 
   useEffect(() => {
+    const timer = setInterval(
+      () => setProfileAttempt((value) => value + 1),
+      30_000,
+    );
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (activeSession === null) return;
     void vpnConnection.reconcile(activeSession.accessToken);
   }, [activeSession, vpnConnection]);
@@ -81,7 +90,7 @@ export function Home() {
         setProfileState({ phase: "error", message: profileError(error) });
       });
     return () => controller.abort();
-  }, [profileToken, api, profileAttempt, session]);
+  }, [profileToken, api, profileAttempt, session, connectionState.phase]);
 
   if (activeSession === null) return null;
   const profile = activeSession.profile;
@@ -136,6 +145,7 @@ export function Home() {
         </div>
       ) : null}
       {profile ? <AccountSummary profile={profile} /> : null}
+      {profile ? <FreeTimeBalance profile={profile} /> : null}
 
       <div className="home-workspace">
         <div className="home-connect-panel">
@@ -183,23 +193,24 @@ export function Home() {
             {connectionState.phase === "CONNECTING" &&
             connectionState.attempt ? (
               <p className="connection-attempt" role="status">
-                {t(attemptMessage(connectionState.attempt))}
+                {t(
+                  attemptMessage({
+                    ...connectionState.attempt,
+                    method: t(connectionState.attempt.method),
+                    previousMethod: connectionState.attempt.previousMethod
+                      ? t(connectionState.attempt.previousMethod)
+                      : null,
+                  }),
+                )}
               </p>
             ) : null}
             {connectionState.phase === "CONNECTED" ? (
               <ConnectionInfo sessionId={connectionState.session.sessionId} />
             ) : null}
-            {profile?.plan === "FREE" &&
-            connectionState.phase === "CONNECTED" &&
-            connectionState.session.remainingSeconds !== null ? (
-              <p role="timer">
-                {t("Осталось:")}
-                {t(" ")}
-                {t(formatRemaining(connectionState.session.remainingSeconds))}
-              </p>
-            ) : null}
             <p id="connection-unavailable" className="field-help">
-              {t("Доступен WireGuard. Другие способы пока в разработке.")}
+              {t(
+                "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.",
+              )}
             </p>
             {connectionErrorMessage !== null ||
             ["UNAVAILABLE", "FAILED", "DEGRADED"].includes(
@@ -357,12 +368,6 @@ function connectionHeading(state: VpnConnectionState) {
     return "DISCONNECTING";
   if (state.tunnel === "DOWN") return "Not connected";
   return "Connection status unavailable";
-}
-
-function formatRemaining(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function ConnectionErrorMessage({ error }: { readonly error: unknown }) {

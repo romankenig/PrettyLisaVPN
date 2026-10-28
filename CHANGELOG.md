@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.13.0 / Windows — 0.16.0 / Backend — 0.20.0 / Dashboard — 0.2.0
+
+- Direct WireGuard falls back through a permanent RU intermediary, with verified
+  exit IP, both-hop cleanup and concise progress. Other methods remain timed
+  placeholders; Android remains one APK.
+- INTERMEDIATE/FREE/PREMIUM groups, admin rename/group API, intermediate exclusion
+  from customer selection, dashboard group summaries and filters.
+- Account-wide Free balance includes unused active reservations; both clients show
+  remaining time and reset. Audited server-only one-time allowance reset.
+- **BREAKING (backend rollback):** migrations 0031/0032 require draining both-hop
+  leases before downgrade. See [design and rollback](docs/wireguard-relay-quota.md).
+
 ### Android — 0.12.2 / Backend — 0.19.0 / Windows unchanged 0.15.0
 
 - Established WireGuard access no longer depends on Android delivering HTTP

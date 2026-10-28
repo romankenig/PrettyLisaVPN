@@ -10,6 +10,7 @@ from prettylisavpn.fleet.domain import (
     MethodState,
     Node,
     Observation,
+    RelayAccess,
     VpnMethod,
     WireGuardConfig,
 )
@@ -63,6 +64,19 @@ class WireGuardMethod(VpnMethod):
         result = await self.transport.call(
             node, "revoke", {"access_id": str(access.id), "purpose": access.purpose}
         )
+        return result.get("removed") is True
+
+    async def grant_relay(self, node: Node, access: RelayAccess) -> None:
+        if node.group != "INTERMEDIATE":
+            raise FleetError("RELAY_GROUP_INVALID")
+        result = await self.transport.call(
+            node, "grant-relay", {"access": access.model_dump(mode="json")}
+        )
+        if result.get("granted") is not True:
+            raise FleetError("RELAY_GRANT_UNCONFIRMED")
+
+    async def revoke_relay(self, node: Node, access: RelayAccess) -> bool:
+        result = await self.transport.call(node, "revoke-relay", {"access_id": str(access.id)})
         return result.get("removed") is True
 
     async def observe(self, node: Node) -> Observation:

@@ -33,6 +33,36 @@ NOW = datetime(2026, 10, 27, 12, tzinfo=UTC)
 PUBKEY = "A" * 43 + "="
 
 
+@pytest.mark.parametrize("token,status", [(None, 401), (MONITOR, 403), (ADMIN, 200)])
+async def test_node_group_update_is_admin_only(token, status):
+    fleet = AsyncMock()
+    fleet.update_node.return_value = {"name": "timeweb-rus-001", "group": "INTERMEDIATE"}
+    app = create_app(settings(), postgres=AsyncMock(), valkey=AsyncMock(), fleet=fleet)
+    identifier = uuid4()
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
+    ):
+        response = await client.patch(
+            f"/admin/nodes/{identifier}",
+            headers={"Authorization": "Bearer " + token} if token else {},
+            json={"name": "timeweb-rus-001", "group": "INTERMEDIATE"},
+        )
+        assert response.status_code == status
+        if status == 200:
+            assert response.json()["group"] == "INTERMEDIATE"
+            assert fleet.update_node.await_args.args[0] == identifier
+            invalid = await client.patch(
+                f"/admin/nodes/{identifier}",
+                headers={"Authorization": "Bearer " + token},
+                json={"name": "node", "group": "UNKNOWN"},
+            )
+            assert invalid.status_code == 422
+            fleet.update_node.assert_awaited_once()
+        else:
+            fleet.update_node.assert_not_called()
+
+
 def settings(**kwargs):
     return Settings(
         _env_file=None,

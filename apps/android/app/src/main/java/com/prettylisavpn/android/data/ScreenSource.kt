@@ -18,6 +18,7 @@ data class Snapshot(
     val supportAwaiting: Boolean = false,
     val refreshWarning: String? = null,
     val activeDeviceCount: Int = 0,
+    val freeTime: com.prettylisavpn.android.auth.FreeTime? = null,
     val signedIn: Boolean = false,
     val email: String = "",
     val plan: String = "Free",

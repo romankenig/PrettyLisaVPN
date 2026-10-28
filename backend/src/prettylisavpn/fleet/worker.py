@@ -143,7 +143,10 @@ class FleetWorker:
                         or_(FleetNodeRecord.lock_until.is_(None), FleetNodeRecord.lock_until < now),
                         ~select(ClientLeaseRecord.id)
                         .where(
-                            ClientLeaseRecord.node_id == FleetNodeRecord.id,
+                            or_(
+                                ClientLeaseRecord.node_id == FleetNodeRecord.id,
+                                ClientLeaseRecord.relay_node_id == FleetNodeRecord.id,
+                            ),
                             ClientLeaseRecord.claim_until > now,
                         )
                         .exists(),
