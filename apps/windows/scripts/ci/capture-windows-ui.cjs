@@ -449,6 +449,9 @@ async function main() {
   await screenshot("04b-home-country");
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByText("Пробую WireGuard…", { exact: true }).waitFor();
+  await page
+    .getByText("Первое подключение может занять пару минут.", { exact: true })
+    .waitFor();
   await screenshot("04b-home-trying-wireguard");
   await page
     .getByText("WireGuard не подключился, пробую AmneziaWG…", { exact: true })

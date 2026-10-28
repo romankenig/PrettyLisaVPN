@@ -267,4 +267,5 @@
     <string name="free_time_remaining">tiempo restante hoy</string>
     <string name="free_time_resets">se renueva: %1$s</string>
     <string name="vpn_wireguard_relay">WireGuard vía RU</string>
+    <string name="vpn_first_connection_hint">la primera conexión puede tardar un par de minutos.</string>
 </resources>

@@ -9,10 +9,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
+    private val preference = MethodPreference(
+        read = { context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).getString("last-successful-method", null) },
+        write = { context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).edit().putString("last-successful-method", it).apply() })
     private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http) { disconnect() }
     private val relay: WireGuardAdapter = WireGuardAdapter(context, sessions, http, viaRelay = true) { disconnect() }
     val controller: VpnController = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-        listOf(wireguard, relay) + placeholderAdapters().filter { it.method.id != "wireguard" })
+        listOf(wireguard, relay) + placeholderAdapters().filter { it.method.id != "wireguard" }, preference)
     override val status get() = controller.status
     override fun connect(country: String) = controller.connect(country)
     override fun disconnect(): Unit = controller.disconnect()

@@ -267,4 +267,5 @@
     <string name="free_time_remaining">今日剩余时间</string>
     <string name="free_time_resets">重置时间：%1$s</string>
     <string name="vpn_wireguard_relay">经俄罗斯中继的 WireGuard</string>
+    <string name="vpn_first_connection_hint">首次连接可能需要几分钟。</string>
 </resources>

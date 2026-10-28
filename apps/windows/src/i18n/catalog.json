@@ -271,7 +271,8 @@
     "Обновится: {0}": "Обновится: {0}",
     "WireGuard через RU": "WireGuard через RU",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.",
-    "Остаток Free": "Остаток Free"
+    "Остаток Free": "Остаток Free",
+    "Первое подключение может занять пару минут.": "Первое подключение может занять пару минут."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -545,7 +546,8 @@
     "Обновится: {0}": "Resets: {0}",
     "WireGuard через RU": "WireGuard via RU",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard and WireGuard via a relay are available. Other methods are still in development.",
-    "Остаток Free": "Free time remaining"
+    "Остаток Free": "Free time remaining",
+    "Первое подключение может занять пару минут.": "The first connection may take a couple of minutes."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -819,7 +821,8 @@
     "Обновится: {0}": "重置时间：{0}",
     "WireGuard через RU": "经俄罗斯中继的 WireGuard",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "可使用 WireGuard 直连和中继连接。其他连接方式仍在开发中。",
-    "Остаток Free": "Free 剩余时间"
+    "Остаток Free": "Free 剩余时间",
+    "Первое подключение может занять пару минут.": "首次连接可能需要几分钟。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1093,7 +1096,8 @@
     "Обновится: {0}": "Se renueva: {0}",
     "WireGuard через RU": "WireGuard vía RU",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard y WireGuard mediante un servidor intermediario están disponibles. Los demás métodos siguen en desarrollo.",
-    "Остаток Free": "Tiempo Free restante"
+    "Остаток Free": "Tiempo Free restante",
+    "Первое подключение может занять пару минут.": "La primera conexión puede tardar un par de minutos."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1367,7 +1371,8 @@
     "Обновится: {0}": "Erneuerung: {0}",
     "WireGuard через RU": "WireGuard über RU",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard und WireGuard über einen Zwischenserver sind verfügbar. Weitere Methoden sind in Entwicklung.",
-    "Остаток Free": "Verbleibende Free-Zeit"
+    "Остаток Free": "Verbleibende Free-Zeit",
+    "Первое подключение может занять пару минут.": "Die erste Verbindung kann ein paar Minuten dauern."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1641,6 +1646,7 @@
     "Обновится: {0}": "Renouvellement : {0}",
     "WireGuard через RU": "WireGuard via RU",
     "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.": "WireGuard et WireGuard via un relais sont disponibles. Les autres méthodes sont en développement.",
-    "Остаток Free": "Temps Free restant"
+    "Остаток Free": "Temps Free restant",
+    "Первое подключение может занять пару минут.": "La première connexion peut prendre quelques minutes."
   }
 }

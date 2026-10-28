@@ -52,6 +52,7 @@ class PlaceholderConnectionTest {
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()
             compose.waitUntil(5_000) { controller.status.value.attempt?.method?.id == "wireguard" }
             compose.onNodeWithTag("vpn-attempt").assertTextContains("WireGuard", substring = true)
+            compose.onNodeWithTag("vpn-duration-hint").assertExists()
             screenshot("placeholder-wireguard")
             compose.waitUntil(8_000) { controller.status.value.attempt?.method?.id == "amneziawg" }
             compose.onNodeWithTag("vpn-attempt").assertTextContains("AmneziaWG", substring = true)
@@ -65,6 +66,7 @@ class PlaceholderConnectionTest {
                 assertEquals(VpnError.METHODS_EXHAUSTED, controller.status.value.error)
             }
             compose.onNodeWithTag("vpn-method").assertDoesNotExist()
+            compose.onNodeWithTag("vpn-duration-hint").assertDoesNotExist()
             compose.onNodeWithTag("vpn-error").performScrollTo().assertIsDisplayed()
             screenshot("placeholder-exhausted")
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()

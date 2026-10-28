@@ -444,11 +444,17 @@ it("executes placeholders in the actual Home and cancels from its button", async
   fireEvent.click(screen.getByRole("button", { name: "CONNECT" }));
   expect(await screen.findByText("Пробую WireGuard…")).toBeVisible();
   expect(
+    screen.getByText("Первое подключение может занять пару минут."),
+  ).toBeVisible();
+  expect(
     screen.queryByRole("heading", { name: "Connected" }),
   ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Отменить" }));
   await waitFor(() => expect(connection.current().phase).toBe("DISCONNECTED"));
   expect(screen.queryByText("Пробую WireGuard…")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Первое подключение может занять пару минут."),
+  ).not.toBeInTheDocument();
   connection.dispose();
 });
 

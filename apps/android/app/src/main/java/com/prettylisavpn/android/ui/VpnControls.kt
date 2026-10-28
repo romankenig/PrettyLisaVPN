@@ -35,6 +35,8 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     if (status.phase == VpnPhase.CONNECTED) status.method?.let {
         Text(methodName(it), Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
     }
+    if (status.phase == VpnPhase.CONNECTING) Text(tr(R.string.vpn_first_connection_hint),
+        Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall)
     if (status.error != null) Text(
         if (status.error == VpnError.METHODS_EXHAUSTED) tr(R.string.vpn_placeholder_exhausted, status.method?.label ?: "")
         else tr(R.string.vpn_failed), Modifier.testTag("vpn-error"), style = MaterialTheme.typography.bodySmall, color = Brand.PersianRed)

@@ -207,6 +207,11 @@ export function Home() {
             {connectionState.phase === "CONNECTED" ? (
               <ConnectionInfo sessionId={connectionState.session.sessionId} />
             ) : null}
+            {connectionState.phase === "CONNECTING" ? (
+              <p className="field-help" data-testid="connection-duration-hint">
+                {t("Первое подключение может занять пару минут.")}
+              </p>
+            ) : null}
             <p id="connection-unavailable" className="field-help">
               {t(
                 "Доступны WireGuard и WireGuard через посредника. Другие способы пока в разработке.",
