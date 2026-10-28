@@ -22,4 +22,5 @@ export interface ConnectionAdapter {
     signal: AbortSignal,
   ): Promise<ConnectionResult>;
   disconnect(): Promise<void>;
+  recover?(): Promise<void>;
 }

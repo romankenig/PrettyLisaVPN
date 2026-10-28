@@ -12,6 +12,7 @@ from sqlalchemy import or_, select, update
 from prettylisavpn.auth.session_service import AccessIdentity
 from prettylisavpn.client_vpn.domain import NODE_TTL_SECONDS, SETUP_TIMEOUT_SECONDS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
+from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.client_vpn.service import principals_valid
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import Access, FleetError, Node, RelayAccess, VpnMethod
@@ -19,6 +20,7 @@ from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetO
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
+from prettylisavpn.users.model import UserRecord
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,15 @@ class ClientVpnWorker:
                 )
             ).all()
             for row in rows:
+                # Admission and every extension serialize on the same account.
+                # Skip busy accounts so one connect cannot stall all node grants.
+                account = await session.scalar(
+                    select(UserRecord)
+                    .where(UserRecord.id == row.user_id)
+                    .with_for_update(skip_locked=True)
+                )
+                if account is None:
+                    continue
                 identifiers = {row.node_id} | ({row.relay_node_id} if row.relay_node_id else set())
                 locked = (
                     await session.scalars(
@@ -119,7 +130,8 @@ class ClientVpnWorker:
                 elif row.expires_at <= now:
                     row.status, row.code = "REVOKING", "VPN_SESSION_EXPIRED"
                 elif (
-                    row.status == "PROVISIONING"
+                    row.status in ("PROVISIONING", "READY")
+                    and row.verified_at is None
                     and row.created_at + timedelta(seconds=SETUP_TIMEOUT_SECONDS) <= now
                 ):
                     row.status, row.code = "REVOKING", "VPN_SETUP_TIMEOUT"
@@ -127,7 +139,34 @@ class ClientVpnWorker:
                 # provisioned, access belongs to the authenticated session until
                 # explicit revocation or its entitlement/auth deadline. The worker
                 # still renews short node grants and rechecks every principal.
+                if row.is_free and row.status != "REVOKING":
+                    if row.quota_reserved_until is None:
+                        # Legacy grants were already limited to NODE_TTL_SECONDS.
+                        # Do not release any part of a possibly outstanding grant.
+                        row.quota_reserved_until = min(
+                            row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS)
+                        )
+                        await session.flush()
+                    elif row.quota_reserved_until <= now:
+                        row.status, row.code = "REVOKING", "VPN_RESERVATION_EXPIRED"
+                    if row.status != "REVOKING":
+                        available = await ClientQuotaRepository(session).remaining_free_seconds(
+                            row.user_id, now
+                        )
+                        row.quota_reserved_until = min(
+                            row.expires_at,
+                            max(
+                                row.quota_reserved_until,
+                                min(
+                                    now + timedelta(seconds=NODE_TTL_SECONDS),
+                                    row.quota_reserved_until + timedelta(seconds=available),
+                                ),
+                            ),
+                        )
                 revoke = row.status == "REVOKING"
+                grant_until = min(row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS))
+                if row.is_free and row.quota_reserved_until:
+                    grant_until = min(grant_until, row.quota_reserved_until)
                 token = uuid4()
                 row.claim_token, row.claim_until = token, now + timedelta(seconds=60)
                 # A monitoring namespace can coexist with customer grants. Never
@@ -148,7 +187,7 @@ class ClientVpnWorker:
                         listen_port=row.relay_port,
                         target_host=IPv4Address(node.host),
                         target_port=int(str(method.configuration["listen_port"])),
-                        expires_at=min(row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS)),
+                        expires_at=grant_until,
                     )
                 return Claim(
                     row.id,
@@ -158,7 +197,7 @@ class ClientVpnWorker:
                         id=row.id,
                         public_key=row.public_key,
                         address=row.address,
-                        expires_at=min(row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS)),
+                        expires_at=grant_until,
                         purpose="client",
                     ),
                     revoke,

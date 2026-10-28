@@ -5,6 +5,7 @@ import logging
 import signal
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, or_, select, update
@@ -18,6 +19,7 @@ from prettylisavpn.fleet.domain import (
     Observation,
     VpnMethod,
     hourly_slot,
+    server_quality,
     source_order,
 )
 from prettylisavpn.fleet.model import (
@@ -50,8 +52,11 @@ def unknown(code: str) -> Observation:
 
 
 class FleetWorker:
-    def __init__(self, postgres: Postgres, methods: dict[str, VpnMethod]) -> None:
+    def __init__(
+        self, postgres: Postgres, methods: dict[str, VpnMethod], settings: Settings | None = None
+    ) -> None:
         self.postgres, self.methods = postgres, methods
+        self.settings = settings or Settings()
 
     async def schedule(self, now: datetime) -> None:
         async with self.postgres.session() as session, session.begin():
@@ -259,6 +264,36 @@ class FleetWorker:
                     method.state = "AWAITING_VERIFICATION"
                 method.next_check_at = None
             if observation is not None:
+                previous = (
+                    await session.scalars(
+                        select(FleetObservationRecord).where(
+                            FleetObservationRecord.node_id == job.node_id,
+                            FleetObservationRecord.method == job.method,
+                            FleetObservationRecord.observed_at
+                            >= observation.observed_at - timedelta(hours=24),
+                            FleetObservationRecord.observed_at <= observation.observed_at,
+                        )
+                    )
+                ).all()
+                rating = server_quality(
+                    [Observation.model_validate(row.data) for row in previous] + [observation],
+                    claim.target.capacity,
+                    observation.observed_at,
+                    speed_target_mbps=self.settings.fleet_speed_target_mbps,
+                    connection_target_ms=self.settings.fleet_connection_target_ms,
+                    quality_weights=self.settings.fleet_quality_weights,
+                )
+                if (
+                    method is not None
+                    and observation.mode == "SYNTHETIC"
+                    and observation.status == "HEALTHY"
+                ):
+                    method.state = "READY"
+                quality = (
+                    cast(int, rating["quality"])
+                    if method is not None and method.state == "READY"
+                    else 0
+                )
                 if observation.mode != "SYNTHETIC":
                     job.source_id = None
                 job.result = {**job.result, "observation": observation.model_dump(mode="json")}
@@ -270,14 +305,9 @@ class FleetWorker:
                         method=job.method,
                         observed_at=observation.observed_at,
                         data=observation.model_dump(mode="json"),
+                        quality=quality,
                     )
                 )
-                if (
-                    method is not None
-                    and observation.mode == "SYNTHETIC"
-                    and observation.status == "HEALTHY"
-                ):
-                    method.state = "READY"
             await session.execute(
                 update(FleetNodeRecord)
                 .where(FleetNodeRecord.lock_owner == claim.token)
@@ -336,7 +366,7 @@ async def main() -> None:
         transport = SshTransport.from_file(settings.fleet_inventory_path)
         method = WireGuardMethod(transport)
         async with asyncio.TaskGroup() as group:
-            group.create_task(FleetWorker(postgres, {"wireguard": method}).run(stop))
+            group.create_task(FleetWorker(postgres, {"wireguard": method}, settings).run(stop))
             group.create_task(
                 ClientVpnWorker(postgres, method, enabled=settings.client_vpn_enabled).run(stop)
             )

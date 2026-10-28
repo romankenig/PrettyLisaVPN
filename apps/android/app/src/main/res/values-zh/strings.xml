@@ -262,10 +262,9 @@
     <string name="vpn_trying_method">正在尝试 %1$s…</string>
     <string name="vpn_switching_method">%1$s 未能连接，正在尝试 %2$s…</string>
     <string name="vpn_cancel">取消</string>
-    <string name="vpn_placeholder_notice">可使用 WireGuard 直连和中继连接。其他连接方式仍在开发中。</string>
     <string name="vpn_placeholder_exhausted">%1$s 未能连接。已尝试所有方式，连接失败。</string>
     <string name="free_time_remaining">今日剩余时间</string>
     <string name="free_time_resets">重置时间：%1$s</string>
-    <string name="vpn_wireguard_relay">经俄罗斯中继的 WireGuard</string>
+    <string name="vpn_wireguard_relay">WireGuard+</string>
     <string name="vpn_first_connection_hint">首次连接可能需要几分钟。</string>
 </resources>

@@ -2036,3 +2036,7 @@ main dd {
   outline: 2px solid var(--color-viking);
   outline-offset: 2px;
 }
+
+.connection-duration-hint {
+  opacity: 0.6;
+}

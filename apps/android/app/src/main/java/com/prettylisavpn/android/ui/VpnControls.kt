@@ -16,7 +16,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     val tr = strings()
     fun methodName(method: VpnMethod) = if (method.id == "wireguard_relay") tr(R.string.vpn_wireguard_relay) else method.shortLabel
     val status by (actions?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
-    val active = status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED)
+    val active = status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED) || status.error == VpnError.CLEANUP
     BrandActionButton(tr(if (status.phase == VpnPhase.CONNECTING) R.string.vpn_cancel else if (active) R.string.vpn_disconnect else R.string.dash_connect), {
         if (active) actions?.disconnect() else actions?.connect(country)
     }, Modifier.testTag("home-connect"), enabled = actions != null && signedIn && status.phase != VpnPhase.DISCONNECTING)
@@ -26,7 +26,6 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         VpnPhase.DISCONNECTING -> R.string.vpn_disconnecting
         else -> R.string.ui_not_connected
     }), Modifier.testTag("vpn-status").semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.titleMedium)
-    Text(tr(R.string.vpn_placeholder_notice), Modifier.testTag("vpn-placeholder-notice"), style = MaterialTheme.typography.bodySmall)
     if (status.phase == VpnPhase.CONNECTING) status.attempt?.let { attempt ->
         Text(if (attempt.previousMethod == null) tr(R.string.vpn_trying_method, methodName(attempt.method))
             else tr(R.string.vpn_switching_method, methodName(attempt.previousMethod), methodName(attempt.method)),
@@ -36,7 +35,8 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         Text(methodName(it), Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
     }
     if (status.phase == VpnPhase.CONNECTING) Text(tr(R.string.vpn_first_connection_hint),
-        Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall)
+        Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
     if (status.error != null) Text(
         if (status.error == VpnError.METHODS_EXHAUSTED) tr(R.string.vpn_placeholder_exhausted, status.method?.label ?: "")
         else tr(R.string.vpn_failed), Modifier.testTag("vpn-error"), style = MaterialTheme.typography.bodySmall, color = Brand.PersianRed)

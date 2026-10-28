@@ -22,12 +22,14 @@ class VpnController(
     private val scope: CoroutineScope,
     private val adapters: List<ConnectionAdapter> = placeholderAdapters(),
     private val preference: MethodPreference = MethodPreference(),
+    private val recovery: ConnectionAdapter? = null,
 ) : VpnActions {
     private val mutable = MutableStateFlow(VpnStatus())
     override val status = mutable.asStateFlow()
     private var operation: Job? = null
     private var stopping: Job? = null
     private var active: ConnectionAdapter? = null
+    private var recoveredOwner: String? = null
 
     override fun connect(country: String) {
         if (operation?.isActive == true || stopping?.isActive == true || active != null) return
@@ -79,5 +81,15 @@ class VpnController(
     suspend fun beforeLogout() { disconnect(); stopping?.join() }
     suspend fun beforeForget() = beforeLogout()
     suspend fun confirmedDeviceRevocation() = beforeLogout()
-    suspend fun recover() {} // Process restart always begins disconnected, with no remembered tunnel.
+    suspend fun recover() {
+        val id = owner() ?: return
+        if (recovery == null || recoveredOwner == id || active != null || operation?.isActive == true || stopping?.isActive == true) return
+        active = recovery
+        mutable.value = VpnStatus(VpnPhase.DISCONNECTING)
+        try {
+            recovery.recover()
+            active = null; recoveredOwner = id; mutable.value = VpnStatus()
+        } catch (error: CancellationException) { throw error }
+        catch (_: Exception) { mutable.value = VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP) }
+    }
 }

@@ -82,7 +82,7 @@ async def test_both_removals_required_before_port_and_quota_reuse(vpn_state, bro
             await ClientQuotaRepository(session).remaining_free_seconds(
                 identity.user_id, datetime.now(UTC)
             )
-            == 0
+            >= 3410
         )
     with pytest.raises(FleetError, match="VPN_CLEANUP_PENDING"):
         await connect(service, method="wireguard_relay")
@@ -126,12 +126,12 @@ async def test_display_includes_active_account_reservation_and_reset_preserves_h
     async with postgres.session() as session:
         email = (await session.get(UserRecord, identity.user_id)).email
         balance = await ClientQuotaRepository(session).display(identity.user_id, now)
-        assert balance.available_seconds == 0 and balance.running_sessions == 1
+        assert balance.available_seconds >= 3410 and balance.running_sessions == 1
         assert 3500 < balance.usable_seconds <= 3600
         later = await ClientQuotaRepository(session).display(
-            identity.user_id, now + timedelta(minutes=5)
+            identity.user_id, now + timedelta(minutes=1)
         )
-        assert 299 <= balance.usable_seconds - later.usable_seconds <= 301
+        assert 59 <= balance.usable_seconds - later.usable_seconds <= 61
     request_id = uuid4()
     with pytest.raises(FleetError, match="QUOTA_RESET_CLEANUP_REQUIRED"):
         await reset(postgres, email, request_id, now)

@@ -29,7 +29,7 @@ class NodeInput(Value):
     host: IPv4Address
     credential_ref: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,39}$")
     expected_egress_ips: list[IPv4Address] = Field(min_length=1, max_length=4)
-    capacity: int = Field(default=100, ge=1, le=10000)
+    capacity: int = Field(default=20, ge=1, le=10000)
     is_available_for_free: bool = False
     group: NodeGroup | None = None
 
@@ -81,6 +81,7 @@ class WireGuardConfig(Value):
 class NodeUpdate(Value):
     name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}$")
     group: NodeGroup
+    capacity: int | None = Field(default=None, ge=1, le=10000)
 
 
 class Node(Value):
@@ -233,7 +234,7 @@ def server_quality(
     capacity: int,
     now: datetime,
     *,
-    speed_target_mbps: float = 100,
+    speed_target_mbps: float = 30,
     connection_target_ms: float = 1000,
     quality_weights: tuple[float, float, float, float] = (0.50, 0.20, 0.15, 0.15),
 ) -> dict[str, object]:

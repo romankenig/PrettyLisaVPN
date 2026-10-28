@@ -9,7 +9,13 @@ from sqlalchemy import delete, select
 from test_fleet import healthy, settings
 
 from prettylisavpn.connections import Postgres
-from prettylisavpn.fleet.domain import FleetError, NodeInput, Observation, WireGuardConfig
+from prettylisavpn.fleet.domain import (
+    FleetError,
+    NodeInput,
+    NodeUpdate,
+    Observation,
+    WireGuardConfig,
+)
 from prettylisavpn.fleet.model import (
     FleetMethodRecord,
     FleetNodeRecord,
@@ -198,6 +204,10 @@ async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_st
     assert len(history) == 168
     assert history[0]["status"] == "NOT_REGISTERED"
     assert history[-1]["status"] == "HEALTHY"
+    assert history[-1]["measurements"][0]["download_mbps"] == 100
+    assert history[-1]["measurements"][0]["upload_mbps"] == 100
+    assert history[-1]["measurements"][0]["quality"] == 100
+    assert history[0]["measurements"] == []
     free = await service.countries(free_only=True)
     paid = await service.countries(free_only=False)
     assert free["countries"] == [{"country_code": "DE", "quality": 100, "available": True}]
@@ -205,3 +215,66 @@ async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_st
     assert paid["countries"][1]["available"] is False
     with pytest.raises(FleetError, match="fleet_check_rate_limited"):
         await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
+
+
+async def test_rating_snapshot_survives_settings_changes_and_legacy_remains_unknown(fleet_state):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids, ready=False)
+    config = settings().model_copy(
+        update={
+            "fleet_quality_weights": (0.0, 0.0, 0.0, 1.0),
+            "fleet_speed_target_mbps": 100,
+        }
+    )
+    worker = FleetWorker(postgres, {}, config)
+    await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
+    claim = await worker.claim(datetime.now(UTC))
+    assert claim is not None
+    observed = healthy(datetime.now(UTC), download_mbps=50, upload_mbps=25, active_connections=3)
+    assert await worker.finish(claim, {}, observed)
+    async with postgres.session() as session:
+        record = await session.scalar(
+            select(FleetObservationRecord).where(FleetObservationRecord.operation_id == claim.id)
+        )
+        assert record.quality == 25
+        assert record.data["download_mbps"] == 50
+        assert record.data["upload_mbps"] == 25
+    # Current score may change with capacity/weights; historical scores must not.
+    service.settings = config.model_copy(update={"fleet_quality_weights": (1.0, 0.0, 0.0, 0.0)})
+    snapshot = await service.monitoring(ids[0])
+    node = snapshot["nodes"][0]
+    assert node["quality"] == 100
+    measurement = next(value for hour in node["history"] for value in hour["measurements"])
+    assert measurement["quality"] == 25
+    assert measurement["active_connections"] == 3
+    assert measurement["download_mbps"] == 50
+    # Pre-upgrade observations have speed but no rating snapshot. Never backfill
+    # using today's settings or confuse a missing rating with a genuine zero.
+    async with postgres.session() as session, session.begin():
+        record = await session.scalar(
+            select(FleetObservationRecord).where(FleetObservationRecord.operation_id == claim.id)
+        )
+        record.quality = None
+    legacy = await service.monitoring(ids[0])
+    measurement = next(
+        value for hour in legacy["nodes"][0]["history"] for value in hour["measurements"]
+    )
+    assert measurement["quality"] is None
+    assert measurement["download_mbps"] == 50
+    assert len(legacy["nodes"]) == 1
+
+
+async def test_capacity_can_change_without_changing_group_or_old_patch_behavior(fleet_state):
+    postgres, service, ids = fleet_state
+    nodes = await service.nodes()
+    node = next(item for item in nodes if item["id"] == str(ids[0]))
+    assert node["capacity"] == 20
+    updated = await service.update_node(
+        ids[0], NodeUpdate(name=node["name"], group="FREE", capacity=10)
+    )
+    assert updated["capacity"] == 10
+    unchanged = await service.update_node(ids[0], NodeUpdate(name=node["name"], group="FREE"))
+    assert unchanged["capacity"] == 10
+    await service.update_node(ids[0], NodeUpdate(name=node["name"], group="FREE", capacity=20))
+    async with postgres.session() as session:
+        assert (await session.get(FleetNodeRecord, ids[0])).capacity == 20

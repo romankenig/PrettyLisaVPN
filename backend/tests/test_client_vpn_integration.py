@@ -100,7 +100,7 @@ async def test_grant_probe_scope_idempotency_and_confirmed_quota_release(vpn_sta
             await ClientQuotaRepository(session).remaining_free_seconds(
                 identity.user_id, datetime.now(UTC)
             )
-            == 0
+            >= 3410
         )
     await service.get("token", identifier, "revoke")
     assert await worker.tick()
@@ -164,7 +164,7 @@ async def test_unknown_removal_retains_quota_address_and_device(vpn_state):
             await ClientQuotaRepository(session).remaining_free_seconds(
                 identity.user_id, datetime.now(UTC)
             )
-            == 0
+            >= 3410
         )
     with pytest.raises(FleetError, match="VPN_CLEANUP_PENDING"):
         await connect(service)

@@ -500,3 +500,14 @@ Home при CONNECTING показывает «Первое подключени�
 неуспех/отмена не меняют выбор. Это реализованное поведение обоих клиентов,
 backend API/схема и маршруты навигации не меняются. См.
 [handoff](connection-method-preference.md).
+
+### Android 0.14.2 / Windows 0.17.2: cleanup and connection labels
+
+Home displays WireGuard+ for the unchanged wireguard_relay method. The banner
+listing implemented methods is removed; the first-connection hint uses 60% opacity.
+Failed cleanup exposes disconnect/retry, including when the local tunnel is down;
+fallback cannot start while cleanup remains uncertain. Authenticated startup
+recovers abandoned access for this device once, without interrupting a current
+in-process connection. Free balance stops extrapolating after 60 seconds without
+fresh account data. Backend integration is implemented, not a placeholder; see
+[quota handoff](free-quota-cleanup.md). Navigation routes and auth remain unchanged.
