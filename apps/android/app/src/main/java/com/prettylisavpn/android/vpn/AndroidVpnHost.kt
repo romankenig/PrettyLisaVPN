@@ -3,6 +3,7 @@ package com.prettylisavpn.android.vpn
 import com.prettylisavpn.android.auth.SessionCoordinator
 import com.prettylisavpn.android.auth.HttpAuthApi
 import android.content.Context
+import androidx.core.content.edit
 import com.prettylisavpn.android.vpn.placeholders.placeholderAdapters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +12,7 @@ import kotlinx.coroutines.SupervisorJob
 class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
     private val preference = MethodPreference(
         read = { context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).getString("last-successful-method", null) },
-        write = { context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).edit().putString("last-successful-method", it).apply() })
+        write = { method -> context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).edit { putString("last-successful-method", method) } })
     private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http) { disconnect() }
     private val relay: WireGuardAdapter = WireGuardAdapter(context, sessions, http, viaRelay = true) { disconnect() }
     val controller: VpnController = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
