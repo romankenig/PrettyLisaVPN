@@ -68,15 +68,15 @@ async def test_five_devices_share_reservations_without_double_spending(vpn_state
         balance = await ClientQuotaRepository(session).display(identity.user_id, clock.value)
         assert balance.running_sessions == 5 and balance.usable_seconds == 3600
         assert balance.available_seconds == 2700
-    clock.value += timedelta(seconds=60)
+    clock.value += timedelta(seconds=120)
     for _ in identifiers:
         assert await worker.tick()
-    # 5 devices * 60 seconds. Short reservations renew without changing the
-    # client-visible hour deadline or needing HTTP keepalives from a sleeping phone.
+    # Beyond the 90-second unverified cutoff, confirmed sleeping devices still
+    # renew without HTTP keepalives. Five devices consume 5 * 120 seconds.
     async with pg.session() as session:
         assert (
             await ClientQuotaRepository(session).display(identity.user_id, clock.value)
-        ).usable_seconds == 3300
+        ).usable_seconds == 3000
     for i, identifier in enumerate(identifiers):
         await service.get(str(i), identifier, "revoke")
     for _ in identifiers:
@@ -85,7 +85,7 @@ async def test_five_devices_share_reservations_without_double_spending(vpn_state
         quota = ClientQuotaRepository(session)
         balance = await quota.display(identity.user_id, clock.value + timedelta(minutes=10))
         assert balance.running_sessions == 0
-        assert balance.available_seconds == balance.usable_seconds == 3300
+        assert balance.available_seconds == balance.usable_seconds == 3000
     assert provider.revoke_access.await_count == 5
 
 
