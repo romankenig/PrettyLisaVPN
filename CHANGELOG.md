@@ -6,6 +6,43 @@
 
 ## Unreleased
 
+### Android — 0.14.0 / Windows — 0.17.0 / Backend unchanged 0.20.0
+
+- Remember the last Internet-verified VPN method on the device and try it first
+  on subsequent connections, including after restarting the app. Preserve every
+  remaining fallback and confirmed cleanup; cancellation/failure never changes it.
+- Show a short first-connection timing hint while connecting in all six languages.
+- Store only the method ID, with no keys, endpoints, account or browsing history.
+  See [handoff](docs/connection-method-preference.md).
+
+### Android — 0.13.0 / Windows — 0.16.0 / Backend — 0.20.0 / Dashboard — 0.2.0
+
+- Direct WireGuard falls back through a permanent RU intermediary, with verified
+  exit IP, both-hop cleanup and concise progress. Other methods remain timed
+  placeholders; Android remains one APK.
+- INTERMEDIATE/FREE/PREMIUM groups, admin rename/group API, intermediate exclusion
+  from customer selection, dashboard group summaries and filters.
+- Account-wide Free balance includes unused active reservations; both clients show
+  remaining time and reset. Audited server-only one-time allowance reset.
+- **BREAKING (backend rollback):** migrations 0031/0032 require draining both-hop
+  leases before downgrade. See [design and rollback](docs/wireguard-relay-quota.md).
+
+### Android — 0.12.2 / Backend — 0.19.0 / Windows unchanged 0.15.0
+
+- Established WireGuard access no longer depends on Android delivering HTTP
+  heartbeats during sleep. Server-owned grants still enforce account/device/auth
+  revocation, subscription deadlines, Free quota and short node expiry.
+- Android keeps the verified tunnel during temporary API outages and reconciles
+  after waking; confirmed revocation/expiry still stops it. Legacy servers retain
+  bounded heartbeat behavior through capability negotiation.
+- Hourly full VPN checks now run alongside managed customer connections. Customer
+  grants/revocations remain runnable during checks; the separate probe does not
+  occupy a customer address or enter the weighted load score.
+- Add regressions for silent clients, access revocation, concurrent monitoring,
+  load-weighted ratings and a real Android five-minute deep-Doze acceptance test.
+  Source changes alone do not prove deployment or device acceptance; see
+  [sleep stability handoff](docs/android-sleep-stability.md).
+
 ### Android — 0.12.1 / Windows unchanged 0.15.0
 
 - После включения WireGuard API, heartbeat и проверка доступности сервера используют

@@ -3,6 +3,7 @@ import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
 import type { ConnectionAttempt } from "./attempt";
 import { placeholderAdapters } from "./placeholders";
+import { createMethodPreference } from "./methodPreference";
 
 export interface ConnectedVpnSession {
   readonly sessionId: string;
@@ -88,6 +89,7 @@ export class VpnConnectionError extends Error {
 /** Real adapters and placeholders share one sequential executor and cleanup boundary. */
 export function createVpnConnectionManager(
   adapters: readonly ConnectionAdapter[] = placeholderAdapters(),
+  preference = createMethodPreference(),
 ): VpnConnectionManager {
   const idle = (): VpnConnectionState => ({
     phase: "DISCONNECTED",
@@ -167,7 +169,12 @@ export function createVpnConnectionManager(
       current.done = (async () => {
         let previousMethod: string | null = null;
         let firstFailure: string | null = null;
-        for (const adapter of adapters) {
+        const preferred = preference.current();
+        const ordered = [
+          ...adapters.filter((adapter) => adapter.id === preferred),
+          ...adapters.filter((adapter) => adapter.id !== preferred),
+        ];
+        for (const adapter of ordered) {
           if (current.controller.signal.aborted) return;
           emit({
             phase: "CONNECTING",
@@ -191,6 +198,7 @@ export function createVpnConnectionManager(
             ) {
               active = adapter;
               details = result.details;
+              preference.remember(adapter.id);
               emit({
                 phase: "CONNECTED",
                 backend: "ACTIVE",

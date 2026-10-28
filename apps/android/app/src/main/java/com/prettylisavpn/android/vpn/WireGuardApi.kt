@@ -12,7 +12,8 @@ data class WireGuardConfiguration(val address: String, val server_public_key: St
     val dns: List<String>, val allowed_ips: List<String>, val mtu: Int, val persistent_keepalive: Int,
     val expected_egress_ips: List<String>)
 data class WireGuardLease(val id: String, val status: String, val country: String, val expires_at: String,
-    val heartbeat_seconds: Int, val configuration: WireGuardConfiguration?)
+    val heartbeat_seconds: Int, val configuration: WireGuardConfiguration?,
+    val heartbeat_required: Boolean? = null)
 
 class WireGuardApi(private val http: HttpAuthApi, private val sessions: SessionCoordinator) {
     private val gson = Gson()
@@ -28,8 +29,10 @@ class WireGuardApi(private val http: HttpAuthApi, private val sessions: SessionC
                 require(it.heartbeat_seconds == 30)
             }
         }
-    suspend fun connect(country: String, publicKey: String, request: String): WireGuardLease =
-        requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey), request = request))
+    suspend fun connect(country: String, publicKey: String, request: String, method: String = "wireguard"): WireGuardLease {
+        require(method in setOf("wireguard", "wireguard_relay"))
+        return requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method), request = request))
+    }
     suspend fun current() = call("/current")
     suspend fun get(id: String) = requireNotNull(call("/${UUID.fromString(id)}"))
     suspend fun heartbeat(id: String) = requireNotNull(call("/${UUID.fromString(id)}/heartbeat", "POST"))

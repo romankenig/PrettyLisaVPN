@@ -29,6 +29,7 @@ def helper(monkeypatch, tmp_path):
 def test_foreign_peers_prevent_synthetic_issuance(helper, monkeypatch):
     calls = []
     monkeypatch.setattr(node, "counts", lambda: (1, 1, 0, 0))
+    monkeypatch.setattr(node, "peers", lambda: [PUBKEY])
     monkeypatch.setattr(node, "cmd", lambda args, **kwargs: calls.append(args))
     with pytest.raises(node.Failure, match="NODE_BUSY"):
         node.grant(
@@ -42,10 +43,36 @@ def test_foreign_peers_prevent_synthetic_issuance(helper, monkeypatch):
     assert calls == []
 
 
+def test_monitor_coexists_with_owned_customer_without_changing_its_peer(helper, monkeypatch):
+    root, run = helper
+    clients = root / "clients"
+    clients.mkdir()
+    customer_key = "B" * 43 + "="
+    customer_id, check_id = str(uuid4()), str(uuid4())
+    journal = {"public_key": customer_key, "address": "10.88.0.2/32", "expires": time.time() + 180}
+    node.write(clients / (customer_id + ".json"), json.dumps(journal))
+    calls = []
+    monkeypatch.setattr(node, "peers", lambda: [customer_key])
+    monkeypatch.setattr(node, "cmd", lambda args, **kwargs: calls.append(args) or "")
+    access = {
+        "id": check_id,
+        "public_key": PUBKEY,
+        "address": "10.88.0.254/32",
+        "expires_at": (datetime.now(UTC) + timedelta(minutes=3)).isoformat(),
+    }
+    assert node.grant(access)["granted"]
+    assert node.read(clients / (customer_id + ".json")) == journal
+    assert calls == [["wg", "set", node.WG, "peer", PUBKEY, "allowed-ips", "10.88.0.254/32"]]
+    assert node.read(run / ("lease-" + check_id + ".json"))["public_key"] == PUBKEY
+    with pytest.raises(node.Failure, match="ACCESS_CONFLICT"):
+        node.grant({**access, "id": str(uuid4()), "public_key": customer_key})
+
+
 def test_peer_journal_survives_failed_grant_for_autonomous_cleanup(helper, monkeypatch):
     _, run = helper
     identifier = str(uuid4())
     monkeypatch.setattr(node, "counts", lambda: (0, 0, 0, 0))
+    monkeypatch.setattr(node, "peers", lambda: [])
 
     def failed(args, **kwargs):
         raise node.Failure("NODE_COMMAND_FAILED")

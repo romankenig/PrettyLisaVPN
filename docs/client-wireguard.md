@@ -28,10 +28,12 @@ account, reserves quota and a unique node address, and returns PROVISIONING.
 Responses are private/no-store. The probe compares the actual caller IP with
 the node's configured egress addresses. No private client key reaches the API.
 
-The main-server fleet-worker runs a separate customer lease loop, sharing the
-same PostgreSQL node locks as configuration and cross-node checks. Grants last
-at most 180 seconds, are refreshed every 30 seconds, and stop after 90 seconds
-without a client heartbeat. Auth-session, device, account, node and paid-period
+The main-server fleet-worker runs a separate customer lease loop. Configuration
+remains exclusive; customer renewals/revocations may share a CHECK lock, and a
+new fleet operation cannot race an unfinished customer claim. Grants last at most
+180 seconds and are refreshed every 30 seconds. Since backend 0.19.0, established
+access does not expire for missing client heartbeats: Android sleep is expected.
+Unfinished provisioning is bounded to 90 seconds. Auth-session, device, account, node and paid-period
 eligibility are checked again by the worker. Premium and Platinum share rules.
 Free reserves the remaining account-wide UTC hour and ends by UTC midnight.
 Unused time returns only after confirmed peer removal; uncertain outcomes keep
@@ -56,7 +58,11 @@ MIT wireguard-go); GPL command-line libraries are excluded and packaging checked
 No companion APK is required. The app requests Android VPN consent, keeps a
 private foreground service, and binds DNS and HTTPS verification to the VPN
 Network whose address matches the lease. A fresh WireGuard handshake is required.
-A terminal heartbeat failure, exhausted renewal budget, expiry or system VPN revocation stops the connection.
+Backend 0.19.0 advertises `heartbeat_required=false`. Android 0.12.2 preserves the
+verified tunnel across sleep and temporary API failures, including an ambiguous
+refresh (which is never replayed). Confirmed terminal authorization failure,
+expiry or system VPN revocation still stops the connection. Absent capability
+retains the legacy bounded heartbeat policy. See [sleep stability](android-sleep-stability.md).
 The foreground lifetime uses Android's documented approved-VPN `systemExempted`
 eligibility, after the VPN is established and with a runtime consent check.
 AGP 8.11's alarm-only static permission check is narrowly annotated on that service
@@ -70,7 +76,10 @@ configuration ACLs to the user/SYSTEM/Administrators, and install/remove only
 accepted from the webview. An existing foreign VPN is detected without changing
 its routes. DNS and HTTPS proof are bound to the assigned tunnel source address.
 Private key/configuration content is never returned to the webview or logged.
-An app crash leaves a bounded server lease; the next Connect recovers the owned tunnel.
+An app crash leaves a server-owned reservation until explicit cleanup or the
+auth/entitlement deadline; the next Connect recovers and removes it before creating
+another peer. Free time continues while a reservation remains active, including
+sleep or an abandoned process. Short node grants still fail closed if the worker stops.
 Explicit disconnect/logout confirms teardown. Refresh credentials are consumed
 once and serialized with account transitions; ambiguous refresh requires OTP.
 

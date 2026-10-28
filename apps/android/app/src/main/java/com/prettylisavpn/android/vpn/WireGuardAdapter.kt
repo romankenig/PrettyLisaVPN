@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit
 
 /** Keys stay in this process; success requires fresh handshake and HTTPS through our VPN Network. */
 class WireGuardAdapter(private val context: Context, private val sessions: SessionCoordinator,
-    http: HttpAuthApi, private val lost: () -> Unit) : ConnectionAdapter {
-    override val method = VpnMethod("wireguard", "WireGuard")
+    http: HttpAuthApi, private val viaRelay: Boolean = false, private val lost: () -> Unit) : ConnectionAdapter {
+    override val method = if (viaRelay) VpnMethod("wireguard_relay", "WireGuard via RU") else VpnMethod("wireguard", "WireGuard")
     private val api = WireGuardApi(http, sessions)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var backend: GoBackend? = null
@@ -84,7 +84,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         val keys = KeyPair()
         stage = "PROVISIONING"
         acquired = true // A timed-out POST can still have allocated a remote peer.
-        lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString())
+        lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString(), method.id)
         armDeadline(requireNotNull(lease))
         heartbeat = scope.launch {
             maintainLeaseHeartbeat(renew = {
@@ -93,7 +93,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                     armDeadline(row)
                     heartbeats++
                     row.status in setOf("PROVISIONING", "READY") && Instant.parse(row.expires_at).isAfter(Instant.now())
-                }, lost = lost)
+                }, lost = lost, heartbeatRequired = lease?.heartbeat_required != false)
         }
         val ready = vpnDeadline(60_000) {
             while (true) {

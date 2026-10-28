@@ -10,6 +10,7 @@ from prettylisavpn.fleet.domain import (
     MethodState,
     Node,
     Observation,
+    RelayAccess,
     VpnMethod,
     WireGuardConfig,
 )
@@ -65,6 +66,19 @@ class WireGuardMethod(VpnMethod):
         )
         return result.get("removed") is True
 
+    async def grant_relay(self, node: Node, access: RelayAccess) -> None:
+        if node.group != "INTERMEDIATE":
+            raise FleetError("RELAY_GROUP_INVALID")
+        result = await self.transport.call(
+            node, "grant-relay", {"access": access.model_dump(mode="json")}
+        )
+        if result.get("granted") is not True:
+            raise FleetError("RELAY_GRANT_UNCONFIRMED")
+
+    async def revoke_relay(self, node: Node, access: RelayAccess) -> bool:
+        result = await self.transport.call(node, "revoke-relay", {"access_id": str(access.id)})
+        return result.get("removed") is True
+
     async def observe(self, node: Node) -> Observation:
         return Observation.model_validate(await self.transport.call(node, "observe"))
 
@@ -72,10 +86,8 @@ class WireGuardMethod(VpnMethod):
         await self.transport.call(node, "rollback", {"operation_id": str(operation_id)})
 
     async def probe(self, source: Node, target: Node, check_id: UUID) -> Observation:
-        # A target that became busy since queueing is observed without a synthetic peer.
+        # The reserved monitoring address is independent of all customer peers.
         state = await self.inspect(target)
-        if state.authorized_connections:
-            return await self.observe(target)
         if not state.public_key or not state.configuration:
             raise FleetError("TARGET_CONFIGURATION_MISSING")
         access: Access | None = None
@@ -109,12 +121,9 @@ class WireGuardMethod(VpnMethod):
             )
             result = Observation.model_validate(response)
         except FleetError as exc:
-            if exc.code == "NODE_BUSY":
-                result = await self.observe(target)
-            else:
-                result = Observation(
-                    status="UNKNOWN", mode="CONTROL", code=exc.code, observed_at=datetime.now(UTC)
-                )
+            result = Observation(
+                status="UNKNOWN", mode="CONTROL", code=exc.code, observed_at=datetime.now(UTC)
+            )
         finally:
             if access is not None:
                 try:
@@ -136,4 +145,12 @@ class WireGuardMethod(VpnMethod):
                 observed_at=datetime.now(UTC),
                 cleanup_confirmed=False,
             )
-        return result
+        # Include customer load in the same sample as the end-to-end result.
+        # inspect/counts excludes the monitoring peer, so the probe cannot lower
+        # its own score or consume a customer admission slot.
+        return result.model_copy(
+            update={
+                "active_connections": state.active_connections,
+                "authorized_connections": state.authorized_connections,
+            }
+        )

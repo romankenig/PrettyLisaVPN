@@ -20,6 +20,9 @@ class FleetError(Exception):
         super().__init__(code)
 
 
+NodeGroup = Literal["INTERMEDIATE", "FREE", "PREMIUM"]
+
+
 class NodeInput(Value):
     name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}$")
     country_code: str = Field(pattern=r"^[A-Z]{2}$")
@@ -28,6 +31,18 @@ class NodeInput(Value):
     expected_egress_ips: list[IPv4Address] = Field(min_length=1, max_length=4)
     capacity: int = Field(default=100, ge=1, le=10000)
     is_available_for_free: bool = False
+    group: NodeGroup | None = None
+
+    @model_validator(mode="after")
+    def group_access(self) -> Self:
+        if self.group is None:
+            self.group = "FREE" if self.is_available_for_free else "PREMIUM"
+        elif "is_available_for_free" in self.model_fields_set and self.is_available_for_free != (
+            self.group == "FREE"
+        ):
+            raise ValueError("Free eligibility must match the node group")
+        self.is_available_for_free = self.group == "FREE"
+        return self
 
     @field_validator("host")
     @classmethod
@@ -63,6 +78,11 @@ class WireGuardConfig(Value):
         return self
 
 
+class NodeUpdate(Value):
+    name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}$")
+    group: NodeGroup
+
+
 class Node(Value):
     id: UUID
     name: str
@@ -73,6 +93,22 @@ class Node(Value):
     capacity: int
     is_available_for_free: bool
     enabled: bool
+    group: NodeGroup = "PREMIUM"
+
+
+class RelayAccess(Value):
+    id: UUID
+    listen_port: int = Field(ge=20000, le=29999)
+    target_host: IPv4Address
+    target_port: int = Field(ge=1024, le=65535)
+    expires_at: datetime
+
+    @field_validator("target_host")
+    @classmethod
+    def public_target(cls, value: IPv4Address) -> IPv4Address:
+        if not value.is_global:
+            raise ValueError("A public target is required")
+        return value
 
 
 class Observation(Value):
@@ -154,6 +190,12 @@ class VpnMethod(ABC):
 
     @abstractmethod
     async def revoke_access(self, node: Node, access: Access) -> bool: ...
+
+    async def grant_relay(self, node: Node, access: RelayAccess) -> None:
+        raise FleetError("RELAY_UNSUPPORTED")
+
+    async def revoke_relay(self, node: Node, access: RelayAccess) -> bool:
+        raise FleetError("RELAY_UNSUPPORTED")
 
     @abstractmethod
     async def observe(self, node: Node) -> Observation: ...

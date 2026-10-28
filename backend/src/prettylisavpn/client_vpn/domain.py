@@ -4,6 +4,7 @@ import base64
 import math
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Interface
+from typing import Literal
 
 from pydantic import Field, field_validator
 
@@ -11,13 +12,14 @@ from prettylisavpn.fleet.domain import FleetError, Value
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 
 HEARTBEAT_SECONDS = 30
-HEARTBEAT_TIMEOUT = 90
+SETUP_TIMEOUT_SECONDS = 90
 NODE_TTL_SECONDS = 180
 
 
 class ConnectRequest(Value):
     public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
     country: str = Field(default="AUTO", pattern=r"^(AUTO|[A-Z]{2})$")
+    method: Literal["wireguard", "wireguard_relay"] = "wireguard"
 
     @field_validator("public_key")
     @classmethod

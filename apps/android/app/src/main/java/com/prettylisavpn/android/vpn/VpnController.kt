@@ -21,6 +21,7 @@ class VpnController(
     private val owner: () -> String?,
     private val scope: CoroutineScope,
     private val adapters: List<ConnectionAdapter> = placeholderAdapters(),
+    private val preference: MethodPreference = MethodPreference(),
 ) : VpnActions {
     private val mutable = MutableStateFlow(VpnStatus())
     override val status = mutable.asStateFlow()
@@ -35,7 +36,9 @@ class VpnController(
         operation = scope.launch {
             var previous: VpnMethod? = null
             try {
-                for (adapter in adapters) {
+                val preferred = preference.current()
+                val ordered = adapters.filter { it.method.id == preferred } + adapters.filter { it.method.id != preferred }
+                for (adapter in ordered) {
                     ensureActive()
                     if (owner() != id) { mutable.value = VpnStatus(); return@launch }
                     mutable.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(adapter.method, previous))
@@ -45,6 +48,7 @@ class VpnController(
                         ensureActive()
                         if (owner() == id && result == ConnectionResult.Verified) {
                             active = adapter; connected = true
+                            preference.remember(adapter.method.id)
                             mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method)
                             return@launch
                         }

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from test_auth_sessions_integration import create_device, create_user
 from test_client_vpn import KEY
 from test_fleet import settings
@@ -24,7 +24,10 @@ from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.client_vpn.service import ClientVpnService
 from prettylisavpn.client_vpn.worker import ClientVpnWorker
 from prettylisavpn.fleet.domain import FleetError
-from prettylisavpn.fleet.model import FleetMethodRecord
+from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
+from prettylisavpn.fleet.worker import FleetWorker
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
+from prettylisavpn.subscriptions.model import SubscriptionRecord
 from prettylisavpn.users.model import UserRecord
 
 pytestmark = [
@@ -87,6 +90,7 @@ async def test_grant_probe_scope_idempotency_and_confirmed_quota_release(vpn_sta
     assert await worker.tick()
     ready = await service.get("token", identifier)
     assert ready["status"] == "READY"
+    assert ready["heartbeat_required"] is False
     assert ready["configuration"]["address"].endswith(".2/32")
     assert provider.grant_access.await_args.args[1].purpose == "client"
     assert not (await service.get("token", identifier, "probe", "2.2.2.2"))["verified"]
@@ -166,7 +170,7 @@ async def test_unknown_removal_retains_quota_address_and_device(vpn_state):
         await connect(service)
 
 
-@pytest.mark.parametrize("reason", ["logout", "heartbeat", "expiry"])
+@pytest.mark.parametrize("reason", ["logout", "auth_expiry", "expiry", "node_disabled"])
 async def test_worker_revokes_lost_or_expired_access(vpn_state, reason):
     postgres, service, worker, _, identity = vpn_state
     identifier = UUID((await connect(service))["id"])
@@ -178,9 +182,99 @@ async def test_worker_revokes_lost_or_expired_access(vpn_state, reason):
         if reason == "logout":
             auth = await session.get(AuthSessionRecord, identity.session_id)
             auth.revoked_at = now
-        elif reason == "heartbeat":
-            row.heartbeat_at = now - timedelta(seconds=91)
+        elif reason == "auth_expiry":
+            auth = await session.get(AuthSessionRecord, identity.session_id)
+            auth.expires_at = now - timedelta(seconds=1)
+        elif reason == "node_disabled":
+            node = await session.get(FleetNodeRecord, row.node_id)
+            node.enabled = False
         else:
             row.expires_at = now - timedelta(seconds=1)
     assert await worker.tick()
     assert (await service.get("token", identifier))["status"] == "CLOSED"
+
+
+@pytest.mark.parametrize("plan", list(SubscriptionPlan))
+async def test_ready_access_survives_sleep_but_node_grants_stay_short(vpn_state, plan):
+    postgres, service, worker, provider, identity = vpn_state
+    now = datetime.now(UTC)
+    if plan != SubscriptionPlan.FREE:
+        async with postgres.session() as session, session.begin():
+            subscription = await session.scalar(
+                select(SubscriptionRecord).where(SubscriptionRecord.user_id == identity.user_id)
+            )
+            subscription.plan = plan
+            subscription.current_period_end = now + timedelta(days=2)
+    identifier = UUID((await connect(service))["id"])
+    await worker.tick()
+    async with postgres.session() as session, session.begin():
+        row = await session.get(ClientLeaseRecord, identifier)
+        row.heartbeat_at = now - (timedelta(minutes=10) if row.is_free else timedelta(hours=12))
+        row.next_attempt_at = now
+    assert await worker.tick()
+    assert (await service.get("token", identifier))["status"] == "READY"
+    grant = provider.grant_access.await_args.args[1]
+    assert now < grant.expires_at <= datetime.now(UTC) + timedelta(seconds=180)
+    provider.revoke_access.assert_not_called()
+    # Wake-up reconciliation keeps the same access; it never creates a second peer.
+    assert (await service.get("token", identifier, "heartbeat"))["id"] == str(identifier)
+    await service.get("token", identifier, "revoke")
+    assert await worker.tick()
+    assert (await service.get("token", identifier))["removed_at"] is not None
+
+
+async def test_unfinished_setup_still_expires(vpn_state):
+    postgres, service, worker, provider, _ = vpn_state
+    identifier = UUID((await connect(service))["id"])
+    async with postgres.session() as session, session.begin():
+        row = await session.get(ClientLeaseRecord, identifier)
+        row.created_at = datetime.now(UTC) - timedelta(seconds=91)
+    assert await worker.tick()
+    result = await service.get("token", identifier)
+    assert result["status"] == "CLOSED" and result["code"] == "VPN_SETUP_TIMEOUT"
+    provider.grant_access.assert_not_called()
+
+
+@pytest.mark.parametrize("kind,allowed", [("CHECK", True), ("CONFIGURE", False)])
+async def test_customer_renewal_shares_only_monitoring_lock(vpn_state, kind, allowed):
+    postgres, service, worker, _, _ = vpn_state
+    identifier = UUID((await connect(service))["id"])
+    await worker.tick()
+    now, token = datetime.now(UTC), uuid4()
+    async with postgres.session() as session, session.begin():
+        row = await session.get(ClientLeaseRecord, identifier)
+        row.next_attempt_at = now
+        node = await session.get(FleetNodeRecord, row.node_id)
+        node.lock_owner, node.lock_until = token, now + timedelta(minutes=20)
+        operation = FleetOperationRecord(
+            node_id=node.id,
+            method="wireguard",
+            kind=kind,
+            request_key=str(uuid4()),
+            status="RUNNING",
+            claim_token=token,
+            lease_until=node.lock_until,
+        )
+        session.add(operation)
+    claim = await worker.claim(now)
+    assert (claim is not None) == allowed
+    if claim:
+        async with postgres.session() as session, session.begin():
+            # Even if the check ends first, another fleet operation cannot race
+            # the in-flight customer grant.
+            node = await session.get(FleetNodeRecord, claim.node.id)
+            assert node.lock_owner == token
+            node.lock_owner, node.lock_until = None, None
+            completed = await session.get(FleetOperationRecord, operation.id)
+            completed.status, completed.lease_until = "SUCCEEDED", None
+            pending = FleetOperationRecord(
+                node_id=node.id,
+                method="wireguard",
+                kind="CONFIGURE",
+                request_key=str(uuid4()),
+                next_attempt_at=now,
+            )
+            session.add(pending)
+        assert await FleetWorker(postgres, {}).claim(now) is None
+        assert await worker.finish(claim, True)
+        assert await FleetWorker(postgres, {}).claim(now + timedelta(seconds=16)) is not None

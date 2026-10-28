@@ -33,6 +33,36 @@ NOW = datetime(2026, 10, 27, 12, tzinfo=UTC)
 PUBKEY = "A" * 43 + "="
 
 
+@pytest.mark.parametrize("token,status", [(None, 401), (MONITOR, 403), (ADMIN, 200)])
+async def test_node_group_update_is_admin_only(token, status):
+    fleet = AsyncMock()
+    fleet.update_node.return_value = {"name": "timeweb-rus-001", "group": "INTERMEDIATE"}
+    app = create_app(settings(), postgres=AsyncMock(), valkey=AsyncMock(), fleet=fleet)
+    identifier = uuid4()
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
+    ):
+        response = await client.patch(
+            f"/admin/nodes/{identifier}",
+            headers={"Authorization": "Bearer " + token} if token else {},
+            json={"name": "timeweb-rus-001", "group": "INTERMEDIATE"},
+        )
+        assert response.status_code == status
+        if status == 200:
+            assert response.json()["group"] == "INTERMEDIATE"
+            assert fleet.update_node.await_args.args[0] == identifier
+            invalid = await client.patch(
+                f"/admin/nodes/{identifier}",
+                headers={"Authorization": "Bearer " + token},
+                json={"name": "node", "group": "UNKNOWN"},
+            )
+            assert invalid.status_code == 422
+            fleet.update_node.assert_awaited_once()
+        else:
+            fleet.update_node.assert_not_called()
+
+
 def settings(**kwargs):
     return Settings(
         _env_file=None,
@@ -259,16 +289,46 @@ async def test_country_ratings_respect_effective_plan(plan, free_only):
     fleet.countries.assert_awaited_once_with(free_only=free_only)
 
 
-async def test_active_users_skip_synthetic_probe():
+async def test_active_users_still_receive_full_synthetic_probe():
     method = AsyncMock()
     method.inspect.return_value = MethodState(installed=True, authorized_connections=1)
-    method.observe.return_value = Observation(
-        status="UNKNOWN", mode="PASSIVE", code="PASSIVE_EVIDENCE_INSUFFICIENT", observed_at=NOW
-    )
+    method.probe.return_value = healthy(active_connections=1, authorized_connections=1)
     claim = Claim(uuid4(), uuid4(), node(), node(), "wireguard", "CHECK", {})
     _, observed = await FleetWorker(AsyncMock(), {"wireguard": method}).execute(claim)
-    assert observed.mode == "PASSIVE"
-    method.probe.assert_not_called()
+    assert observed.mode == "SYNTHETIC"
+    method.probe.assert_awaited_once_with(claim.source, claim.target, claim.id)
+    method.observe.assert_not_called()
+
+
+async def test_probe_preserves_customer_load_for_weighted_score():
+    transport = AsyncMock()
+    state = MethodState(
+        installed=True,
+        public_key=PUBKEY,
+        configuration={"address": "10.88.0.1/24", "listen_port": 51820, "mtu": 1380},
+        active_connections=25,
+        authorized_connections=30,
+    )
+
+    async def call(target, action, payload=None, **kwargs):
+        return {
+            "inspect": state.model_dump(),
+            "prepare": {"public_key": PUBKEY},
+            "grant": {},
+            "revoke": {"removed": True},
+            "dispose": {"removed": True},
+            "probe": healthy(connection_ms=200, download_mbps=150, upload_mbps=150).model_dump(
+                mode="json"
+            ),
+        }[action]
+
+    transport.call.side_effect = call
+    observed = await WireGuardMethod(transport).probe(node(), node(), uuid4())
+    assert observed.mode == "SYNTHETIC" and observed.active_connections == 25
+    assert observed.authorized_connections == 30
+    result = server_quality([observed], 100, NOW)
+    assert result["available"] and result["quality"] == 95
+    assert "observe" not in [item.args[1] for item in transport.call.await_args_list]
 
 
 @pytest.mark.parametrize("failure", ["HANDSHAKE_FAILED", "DNS_FAILED", "EGRESS_IP_MISMATCH"])

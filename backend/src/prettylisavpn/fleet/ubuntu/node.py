@@ -144,12 +144,15 @@ def inspect() -> dict[str, Any]:
     state = read(ROOT / "state.json")
     installed = state.get("committed", False) and bool(cmd(["ip", "link", "show", WG], check=False))
     users, active, _, _ = counts() if installed else (0, 0, 0, 0)
+    relays = [read(path) for path in (ROOT / "relays").glob("*.json")]
+    # Relay load is an authorized reservation, not a fabricated WireGuard handshake.
+    relay_load = sum(row.get("expires", 0) > time.time() for row in relays)
     return {
         "installed": bool(installed),
         "public_key": wg("public-key") if installed else None,
         "configuration": state.get("configuration", {}),
-        "authorized_connections": users,
-        "active_connections": active,
+        "authorized_connections": users + len(relays),
+        "active_connections": active + relay_load,
     }
 
 
@@ -381,11 +384,17 @@ def grant(access: dict[str, Any]) -> dict[str, Any]:
         or not time.time() < expiry <= time.time() + 300
     ):
         raise Failure("ACCESS_INVALID")
-    if counts()[0]:
-        raise Failure("NODE_BUSY")
     path = RUN / ("lease-" + identifier + ".json")
     existing = read(path)
+    known = {read(item)["public_key"] for item in (ROOT / "clients").glob("*.json")}
+    known.update(read(item)["public_key"] for item in RUN.glob("lease-*.json"))
+    present = set(peers())
+    if present - known:
+        # Unmanaged peers can own the reserved address; never take their route.
+        raise Failure("NODE_BUSY")
     if existing and existing["public_key"] != key:
+        raise Failure("ACCESS_CONFLICT")
+    if not existing and key in present:
         raise Failure("ACCESS_CONFLICT")
     for other in RUN.glob("lease-*.json"):
         if other != path:
@@ -477,6 +486,140 @@ def grant_client(access: dict[str, Any]) -> dict[str, Any]:
     client_firewall(identifier, str(address), expiry)
     cmd(["wg", "set", WG, "peer", key, "allowed-ips", str(address)])
     return {"granted": True}
+
+
+def relay_rules(identifier: str, row: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+    host, port, target, target_port = (
+        row["host"],
+        str(row["listen_port"]),
+        row["target_host"],
+        str(row["target_port"]),
+    )
+    chain = "PLR_" + UUID(identifier).hex[:20]
+    comment = ["-m", "comment", "--comment", "PrettyLisaVPN-relay-" + identifier]
+    original = ["-m", "conntrack", "--ctproto", "udp", "--ctorigdst", host, "--ctorigdstport", port]
+    return [
+        ("filter", "FORWARD", ["-p", "udp"] + original + comment + ["-j", chain]),
+        (
+            "nat",
+            "POSTROUTING",
+            ["-p", "udp", "-d", target, "--dport", target_port]
+            + original
+            + comment
+            + ["-j", "MASQUERADE"],
+        ),
+        (
+            "nat",
+            "PREROUTING",
+            ["-p", "udp", "-d", host, "--dport", port]
+            + comment
+            + ["-j", "DNAT", "--to-destination", target + ":" + target_port],
+        ),
+    ]
+
+
+def has_rule(table: str, parent: str, rule: list[str]) -> bool:
+    result = subprocess.run(
+        ["iptables", "-w", "5", "-t", table, "-C", parent] + rule,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=10,
+        check=False,
+    )
+    if result.returncode not in (0, 1):
+        raise Failure("RELAY_FIREWALL_UNAVAILABLE")
+    return result.returncode == 0
+
+
+def relay_deadline(identifier: str, expiry: float | None) -> None:
+    chain = "PLR_" + UUID(identifier).hex[:20]
+    allow = ""
+    if expiry is not None:
+        until = datetime.fromtimestamp(expiry - 1, UTC).strftime("%Y-%m-%dT%H:%M:%S")
+        allow = f"-A {chain} -m time --datestop {until} -j ACCEPT\n"
+    cmd(
+        ["iptables-restore", "-w", "5", "--noflush"],
+        data=(f"*filter\n:{chain} - [0:0]\n-F {chain}\n{allow}-A {chain} -j DROP\nCOMMIT\n"),
+    )
+
+
+def grant_relay(access: dict[str, Any]) -> dict[str, Any]:
+    identifier = uid(access["id"])
+    state = read(ROOT / "state.json")
+    host, target = public_ip(state["host"]), public_ip(access["target_host"])
+    port, target_port = int(access["listen_port"]), int(access["target_port"])
+    expiry = datetime.fromisoformat(access["expires_at"]).timestamp()
+    if (
+        not state.get("committed")
+        or host == target
+        or not 20000 <= port <= 29999
+        or not 1024 <= target_port <= 65535
+        or not time.time() < expiry <= time.time() + 185
+    ):
+        raise Failure("RELAY_ACCESS_INVALID")
+    directory = ROOT / "relays"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    path = directory / (identifier + ".json")
+    row = {"host": host, "target_host": target, "listen_port": port, "target_port": target_port}
+    existing = read(path)
+    if existing and any(existing.get(key) != value for key, value in row.items()):
+        raise Failure("RELAY_ACCESS_CONFLICT")
+    for other in directory.glob("*.json"):
+        if other != path and read(other).get("listen_port") == port:
+            raise Failure("RELAY_PORT_IN_USE")
+    if not existing:
+        if cmd(["ss", "-H", "-lun", "sport = :" + str(port)]):
+            raise Failure("RELAY_PORT_IN_USE")
+        chain = "PLR_" + UUID(identifier).hex[:20]
+        if cmd(["iptables", "-w", "5", "-S", chain], check=False):
+            raise Failure("UNOWNED_RELAY_RULES")
+    # Journal before mutation. A failed grant is recoverable by the node timer.
+    row["expires"] = expiry
+    write(path, json.dumps(row))
+    # Install the bounded filter before exposing the UDP forwarding port.
+    relay_deadline(identifier, expiry)
+    for table, parent, rule in relay_rules(identifier, row):
+        if not has_rule(table, parent, rule):
+            cmd(["iptables", "-w", "5", "-t", table, "-I", parent, "1"] + rule)
+    return {"granted": True}
+
+
+def revoke_relay(identifier: str) -> dict[str, Any]:
+    identifier = uid(identifier)
+    path = ROOT / "relays" / (identifier + ".json")
+    row = read(path)
+    if not row:
+        return {"removed": True}
+    # First block existing flows, then remove DNAT so new flows cannot be created.
+    relay_deadline(identifier, None)
+    rules = relay_rules(identifier, row)
+    for table, parent, rule in reversed(rules[1:]):
+        if has_rule(table, parent, rule):
+            cmd(["iptables", "-w", "5", "-t", table, "-D", parent] + rule)
+        if has_rule(table, parent, rule):
+            raise Failure("RELAY_CLEANUP_FAILED")
+    selector = [
+        "-p",
+        "udp",
+        "--orig-dst",
+        row["host"],
+        "--dport",
+        str(row["listen_port"]),
+        "--dst-nat",
+    ]
+    cmd(["conntrack", "-D"] + selector, check=False)
+    if cmd(["conntrack", "-L"] + selector):
+        raise Failure("RELAY_CLEANUP_FAILED")
+    table, parent, rule = rules[0]
+    if has_rule(table, parent, rule):
+        cmd(["iptables", "-w", "5", "-t", table, "-D", parent] + rule)
+    if has_rule(table, parent, rule):
+        raise Failure("RELAY_CLEANUP_FAILED")
+    chain = "PLR_" + UUID(identifier).hex[:20]
+    cmd(["iptables", "-w", "5", "-F", chain])
+    cmd(["iptables", "-w", "5", "-X", chain])
+    path.unlink()
+    return {"removed": True}
 
 
 def observation(status: str, mode: str, code: str, **values: Any) -> dict[str, Any]:
@@ -691,6 +834,9 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def cleanup() -> dict[str, Any]:
+    for path in (ROOT / "relays").glob("*.json"):
+        if read(path).get("expires", 0) <= time.time():
+            revoke_relay(path.stem)
     for path in (ROOT / "clients").glob("*.json"):
         if read(path).get("expires", 0) <= time.time():
             revoke(path.stem, "client")
@@ -795,6 +941,10 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
         return grant(payload["access"])
     if action == "revoke":
         return revoke(payload["access_id"], payload.get("purpose", "monitor"))
+    if action == "grant-relay":
+        return grant_relay(payload["access"])
+    if action == "revoke-relay":
+        return revoke_relay(payload["access_id"])
     if action == "observe":
         return observe()
     if action == "prepare":
@@ -829,9 +979,16 @@ def main() -> None:
         )
         import fcntl
 
-        with (RUN / "lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+        if payload["action"] == "probe":
+            # Only this check's namespace is touched. Holding the global mutex
+            # during network waits would delay customer renewals and revocations.
+            # The DB fences CHECK/CONFIGURE; the expiring probe journal and its
+            # timer independently bound orphaned namespaces.
             result = dispatch(payload)
+        else:
+            with (RUN / "lock").open("a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                result = dispatch(payload)
         print(json.dumps(result))
     except Exception as exc:
         code = str(exc) if isinstance(exc, Failure) else "NODE_OPERATION_FAILED"

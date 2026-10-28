@@ -33,7 +33,7 @@ class LiveSessionSource(
     override val initial: Snapshot get() {
         val p = sessions.profile ?: return Snapshot().also { vpn?.serviceLost(); snapshot = it; owner = "" }
         if (owner != p.id && p.id.isNotEmpty()) { snapshot = Snapshot(); owner = p.id }
-        return snapshot.copy(operationsReady = journalReady, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices)
+        return snapshot.copy(operationsReady = journalReady, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices, freeTime = p.freeTime)
     }
     private fun api() = accounts ?: throw SourceFailure("This feature is not connected yet.")
     private suspend fun disk(block: () -> Unit) {

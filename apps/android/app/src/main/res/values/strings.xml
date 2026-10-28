@@ -269,6 +269,10 @@
     <string name="vpn_switching_method">%1$s did not connect. trying %2$s…</string>
     <!-- Product typography uses lowercase for in-app actions, not system dialogs. -->
     <string name="vpn_cancel" tools:ignore="ButtonCase">cancel</string>
-    <string name="vpn_placeholder_notice">WireGuard is available. other methods are still in development.</string>
+    <string name="vpn_placeholder_notice">WireGuard and WireGuard via a relay are available. other methods are still in development.</string>
     <string name="vpn_placeholder_exhausted">%1$s did not connect. all methods tried; connection failed.</string>
+    <string name="free_time_remaining">time left today</string>
+    <string name="free_time_resets">resets: %1$s</string>
+    <string name="vpn_wireguard_relay">WireGuard via RU</string>
+    <string name="vpn_first_connection_hint">the first connection may take a couple of minutes.</string>
 </resources>

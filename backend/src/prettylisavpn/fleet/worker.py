@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import delete, or_, select, update
 
+from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import (
@@ -140,6 +141,15 @@ class FleetWorker:
                     .where(
                         FleetNodeRecord.enabled.is_(True),
                         or_(FleetNodeRecord.lock_until.is_(None), FleetNodeRecord.lock_until < now),
+                        ~select(ClientLeaseRecord.id)
+                        .where(
+                            or_(
+                                ClientLeaseRecord.node_id == FleetNodeRecord.id,
+                                ClientLeaseRecord.relay_node_id == FleetNodeRecord.id,
+                            ),
+                            ClientLeaseRecord.claim_until > now,
+                        )
+                        .exists(),
                     )
                     .order_by(FleetNodeRecord.id)
                     .with_for_update(skip_locked=True)
@@ -202,8 +212,6 @@ class FleetWorker:
                 code="METHOD_NOT_INSTALLED",
                 observed_at=datetime.now(UTC),
             )
-        if state.authorized_connections:
-            return {}, await method.observe(claim.target)
         if claim.source is None:
             return {}, unknown("NO_AVAILABLE_PROBE_SOURCE")
         try:

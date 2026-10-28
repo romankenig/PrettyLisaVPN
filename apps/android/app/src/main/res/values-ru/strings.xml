@@ -262,6 +262,10 @@
     <string name="vpn_trying_method">пробую %1$s…</string>
     <string name="vpn_switching_method">%1$s не подключился, пробую %2$s…</string>
     <string name="vpn_cancel">отменить</string>
-    <string name="vpn_placeholder_notice">доступен WireGuard. другие способы пока в разработке.</string>
+    <string name="vpn_placeholder_notice">доступны WireGuard и WireGuard через посредника. другие способы пока в разработке.</string>
     <string name="vpn_placeholder_exhausted">%1$s не подключился. все способы проверены; подключиться не удалось.</string>
+    <string name="free_time_remaining">осталось сегодня</string>
+    <string name="free_time_resets">обновится: %1$s</string>
+    <string name="vpn_wireguard_relay">WireGuard через RU</string>
+    <string name="vpn_first_connection_hint">первое подключение может занять пару минут.</string>
 </resources>
