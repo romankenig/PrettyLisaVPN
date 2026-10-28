@@ -2,9 +2,9 @@ name: Windows development client
 
 on:
   push:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py']
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   pull_request:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py']
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   workflow_dispatch:
 
 permissions:

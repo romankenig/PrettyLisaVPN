@@ -79,6 +79,15 @@ from its own parent run, validates build identity, and transfers it over verifie
 SSH using existing development-environment secrets. No repository token is stored
 on the server. Runtime services and hourly monitoring remain on the main server.
 
+The SSH deployment user runs `publish_client_container.sh` with its existing
+Docker permission. The helper uses the running backend's immutable local image
+ID, with networking disabled, a read-only root filesystem and all capabilities
+dropped. Only the incoming build (read-only) and download store are mounted.
+Root inside this short-lived container can update the root-owned downloads;
+dashboard credentials remain inaccessible and root SSH is not added to CI.
+`fleet.env` must remain owned by the deployment user with mode 0600, like
+`deployment.env`, because Compose reads it before starting containers.
+
 `infra/deployment/publish_client.py` validates platform, version, exact source SHA,
 run/attempt, size, format signature and SHA256. It rejects PR identities. A shared
 Linux file lock serializes updates across platforms. Immutable releases are stored
@@ -146,3 +155,11 @@ are not filled, and server/group filters and point-to-hour details apply equally
 Final client patches in this PR are Android 0.14.2 and Windows 0.17.2; backend
 0.21.1 includes quota/cleanup migration 0034 after the history migration 0033.
 See [quota/cleanup handoff](free-quota-cleanup.md).
+
+Publication follow-up: product versions unchanged (backend 0.21.1, Android
+0.14.2, Windows 0.17.2, dashboard 0.3.0). The first develop deployment at
+`422946f530d7abe5de47b3ede28732fa4532c069` exposed a root-owned `fleet.env`
+and a publisher launched directly as the non-root SSH user. Correct the env
+ownership and use the restricted container helper. Retain those failed runs
+as evidence; final successful source/build/run/attempt identities belong in
+the follow-up PR after deployment and publication have actually completed.

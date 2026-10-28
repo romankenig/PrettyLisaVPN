@@ -7,12 +7,14 @@ on:
       - '.github/workflows/android.yml'
       - '.github/workflows/client-download-publish.yml'
       - 'infra/deployment/publish_client.py'
+      - 'infra/deployment/publish_client_container.sh'
   pull_request:
     paths:
       - 'apps/android/**'
       - '.github/workflows/android.yml'
       - '.github/workflows/client-download-publish.yml'
       - 'infra/deployment/publish_client.py'
+      - 'infra/deployment/publish_client_container.sh'
   workflow_dispatch:
     inputs:
       live_wireguard:

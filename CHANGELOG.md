@@ -6,6 +6,11 @@
 
 ## Unreleased
 
+### Deployment follow-up — product versions unchanged
+
+- Publish verified client downloads through the deployment user's existing Docker
+  access, without exposing dashboard credentials or requiring root SSH in CI.
+
 ### Backend — 0.21.1 / Android — 0.14.2 / Windows — 0.17.2
 
 - Fix account-wide Free quota admission: reserve renewable grants of at most 180
