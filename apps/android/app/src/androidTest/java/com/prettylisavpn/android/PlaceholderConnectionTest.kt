@@ -21,10 +21,19 @@ class PlaceholderConnectionTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun shippedExecutorTriesAllMethodsAndCanBeCancelled() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        val controller = VpnController({ "test-owner" }, scope)
         val visited = mutableListOf<String>()
-        val started = mutableListOf<Long>()
         val adapters = placeholderAdapters()
+        val durations = mutableListOf<Long>()
+        val timedAdapters = adapters.map { adapter -> object : ConnectionAdapter by adapter {
+            override suspend fun connect(country: String): ConnectionResult {
+                // Measure the adapter itself, not delayed StateFlow delivery on a busy UI thread.
+                // Handler-based coroutine delays use this same monotonic uptime clock.
+                val began = android.os.SystemClock.uptimeMillis()
+                try { return adapter.connect(country) }
+                finally { durations += android.os.SystemClock.uptimeMillis() - began }
+            }
+        } }
+        val controller = VpnController({ "test-owner" }, scope, timedAdapters)
         val model = ScreenModel(object : ScreenSource by FixtureSource(0) {
             override val vpn: VpnActions = controller
         })
@@ -34,7 +43,6 @@ class PlaceholderConnectionTest {
                 controller.status.collect { status ->
                     if (status.phase == VpnPhase.CONNECTING) {
                         visited += status.attempt!!.method.id
-                        started += android.os.SystemClock.elapsedRealtime()
                     }
                 }
             }
@@ -51,7 +59,8 @@ class PlaceholderConnectionTest {
             compose.waitUntil(65_000) { controller.status.value.phase == VpnPhase.FAILED }
             compose.runOnIdle {
                 assertEquals(adapters.map { it.method.id }, visited)
-                assertTrue(started.zipWithNext().all { (first, second) -> second - first >= 3_000 })
+                assertEquals(adapters.size, durations.size)
+                assertTrue("Adapter durations: $durations", durations.all { it >= 3_000 })
                 assertTrue(android.os.SystemClock.elapsedRealtime() - start >= 42_000)
                 assertEquals(VpnError.METHODS_EXHAUSTED, controller.status.value.error)
             }
