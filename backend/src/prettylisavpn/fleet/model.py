@@ -1,6 +1,7 @@
 """New fleet state; historical legacy_vpn tables are intentionally not reactivated."""
 
 from datetime import UTC, datetime
+from typing import Protocol
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -23,11 +24,25 @@ def now_utc() -> datetime:
     return datetime.now(UTC)
 
 
+class ParameterContext(Protocol):
+    def get_current_parameters(self) -> dict[str, object]: ...
+
+
+def default_group(context: ParameterContext) -> str:
+    return "FREE" if context.get_current_parameters().get("is_available_for_free") else "PREMIUM"
+
+
 class FleetNodeRecord(Base):
     __tablename__ = "fleet_nodes"
     __table_args__ = (
         CheckConstraint("capacity > 0", name="ck_fleet_node_capacity"),
         CheckConstraint("country_code ~ '^[A-Z]{2}$'", name="ck_fleet_node_country"),
+        CheckConstraint(
+            "\"group\" IN ('INTERMEDIATE','FREE','PREMIUM')", name="ck_fleet_node_group"
+        ),
+        CheckConstraint(
+            "is_available_for_free = (\"group\" = 'FREE')", name="ck_fleet_node_group_access"
+        ),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(64), unique=True)
@@ -37,6 +52,7 @@ class FleetNodeRecord(Base):
     expected_egress_ips: Mapped[list[str]] = mapped_column(JSONB)
     capacity: Mapped[int] = mapped_column(Integer)
     is_available_for_free: Mapped[bool] = mapped_column(Boolean, default=False)
+    group: Mapped[str] = mapped_column(String(16), default=default_group)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     lock_owner: Mapped[UUID | None]

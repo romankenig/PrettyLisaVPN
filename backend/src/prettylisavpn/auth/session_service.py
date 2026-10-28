@@ -68,6 +68,9 @@ class MeSummary:
     subscription: Subscription | None = None
     free_seconds_remaining: int | None = None
     free_quota_resets_at: datetime | None = None
+    free_seconds_usable: int | None = None
+    free_running_sessions: int | None = None
+    quota_observed_at: datetime | None = None
 
 
 class AuthenticatedSessionHandler(Protocol):
@@ -186,10 +189,10 @@ class AuthenticatedSessionService:
                 active_device_count = await DeviceRepository(session).count_active(user.id)
                 remaining = None
                 resets_at = None
+                quota = None
                 if plan is SubscriptionPlan.FREE:
-                    remaining = await ClientQuotaRepository(session).remaining_free_seconds(
-                        user.id, now
-                    )
+                    quota = await ClientQuotaRepository(session).display(user.id, now)
+                    remaining = quota.available_seconds
                     resets_at = free_quota_resets_at(now)
                 await session.commit()
         except (
@@ -210,6 +213,9 @@ class AuthenticatedSessionService:
             subscription=subscription,
             free_seconds_remaining=remaining,
             free_quota_resets_at=resets_at,
+            free_seconds_usable=quota.usable_seconds if quota else None,
+            free_running_sessions=quota.running_sessions if quota else None,
+            quota_observed_at=now if plan is SubscriptionPlan.FREE else None,
         )
 
     def _decode_identity(self, access_token: str) -> AccessIdentity:

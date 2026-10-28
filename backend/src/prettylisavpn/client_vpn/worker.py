@@ -4,6 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from ipaddress import IPv4Address
 from uuid import UUID, uuid4
 
 from sqlalchemy import or_, select, update
@@ -13,8 +14,8 @@ from prettylisavpn.client_vpn.domain import NODE_TTL_SECONDS, SETUP_TIMEOUT_SECO
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.service import principals_valid
 from prettylisavpn.connections import Postgres
-from prettylisavpn.fleet.domain import Access, FleetError, Node, VpnMethod
-from prettylisavpn.fleet.model import FleetNodeRecord, FleetOperationRecord
+from prettylisavpn.fleet.domain import Access, FleetError, Node, RelayAccess, VpnMethod
+from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
@@ -29,6 +30,8 @@ class Claim:
     node: Node
     access: Access
     revoke: bool
+    relay: Node | None = None
+    relay_access: RelayAccess | None = None
 
 
 class ClientVpnWorker:
@@ -56,31 +59,44 @@ class ClientVpnWorker:
                 )
             ).all()
             for row in rows:
-                node = await session.scalar(
-                    select(FleetNodeRecord)
-                    .where(FleetNodeRecord.id == row.node_id)
-                    .with_for_update(skip_locked=True)
-                )
-                if node is None:
+                identifiers = {row.node_id} | ({row.relay_node_id} if row.relay_node_id else set())
+                locked = (
+                    await session.scalars(
+                        select(FleetNodeRecord)
+                        .where(FleetNodeRecord.id.in_(identifiers))
+                        .order_by(FleetNodeRecord.id)
+                        .with_for_update(skip_locked=True)
+                    )
+                ).all()
+                if len(locked) != len(identifiers):
                     continue
-                shared_check = False
-                if node.lock_until is not None and node.lock_until >= now:
-                    shared_check = bool(
+                shared_checks: set[UUID] = set()
+                blocked = False
+                for locked_node in locked:
+                    if locked_node.lock_until is None or locked_node.lock_until < now:
+                        continue
+                    if bool(
                         await session.scalar(
                             select(FleetOperationRecord.id).where(
-                                FleetOperationRecord.claim_token == node.lock_owner,
+                                FleetOperationRecord.claim_token == locked_node.lock_owner,
                                 FleetOperationRecord.kind == "CHECK",
                                 FleetOperationRecord.status == "RUNNING",
                                 FleetOperationRecord.lease_until > now,
                                 or_(
-                                    FleetOperationRecord.node_id == node.id,
-                                    FleetOperationRecord.source_id == node.id,
+                                    FleetOperationRecord.node_id == locked_node.id,
+                                    FleetOperationRecord.source_id == locked_node.id,
                                 ),
                             )
                         )
-                    )
-                    if not shared_check:
-                        continue
+                    ):
+                        shared_checks.add(locked_node.id)
+                    else:
+                        blocked = True
+                        break
+                if blocked:
+                    continue
+                node = next(item for item in locked if item.id == row.node_id)
+                relay = next((item for item in locked if item.id == row.relay_node_id), None)
                 identity = AccessIdentity(row.user_id, row.device_id, row.auth_session_id)
                 valid = self.enabled and await principals_valid(session, identity, now)
                 subscription = await SubscriptionRepository(session).get_by_user_id(row.user_id)
@@ -95,6 +111,8 @@ class ClientVpnWorker:
                 if (
                     not valid
                     or not node.enabled
+                    or node.group == "INTERMEDIATE"
+                    or (relay is not None and (not relay.enabled or relay.group != "INTERMEDIATE"))
                     or (row.is_free and not node.is_available_for_free)
                 ):
                     row.status, row.code = "REVOKING", "VPN_ACCESS_ENDED"
@@ -115,11 +133,23 @@ class ClientVpnWorker:
                 # A monitoring namespace can coexist with customer grants. Never
                 # replace its lock; CONFIGURE and competing client claims remain
                 # exclusive. Fleet claims also exclude in-flight client rows.
-                if not shared_check:
-                    node.lock_owner, node.lock_until = token, row.claim_until
+                for locked_node in locked:
+                    if locked_node.id not in shared_checks:
+                        locked_node.lock_owner, locked_node.lock_until = token, row.claim_until
                 if not revoke and row.activated_at is None:
                     # Reserve billable time BEFORE a possibly ambiguous external mutation.
                     row.activated_at = now
+                relay_access = None
+                if relay is not None:
+                    method = await session.get(FleetMethodRecord, (node.id, "wireguard"))
+                    assert method is not None and row.relay_port is not None
+                    relay_access = RelayAccess(
+                        id=row.id,
+                        listen_port=row.relay_port,
+                        target_host=IPv4Address(node.host),
+                        target_port=int(str(method.configuration["listen_port"])),
+                        expires_at=min(row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS)),
+                    )
                 return Claim(
                     row.id,
                     token,
@@ -132,6 +162,8 @@ class ClientVpnWorker:
                         purpose="client",
                     ),
                     revoke,
+                    node_value(relay) if relay else None,
+                    relay_access,
                 )
         return None
 
@@ -167,9 +199,20 @@ class ClientVpnWorker:
         try:
             async with asyncio.timeout(25):
                 if claim.revoke:
-                    success = await self.method.revoke_access(claim.node, claim.access)
+                    if claim.relay and claim.relay_access:
+                        # Always attempt both removals, even when one host is unreachable.
+                        results = await asyncio.gather(
+                            self.method.revoke_relay(claim.relay, claim.relay_access),
+                            self.method.revoke_access(claim.node, claim.access),
+                            return_exceptions=True,
+                        )
+                        success = all(result is True for result in results)
+                    else:
+                        success = await self.method.revoke_access(claim.node, claim.access)
                 else:
                     await self.method.grant_access(claim.node, claim.access)
+                    if claim.relay and claim.relay_access:
+                        await self.method.grant_relay(claim.relay, claim.relay_access)
                     success = True
             await self.finish(claim, success)
         except Exception as error:

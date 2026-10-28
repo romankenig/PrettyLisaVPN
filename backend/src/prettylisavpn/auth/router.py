@@ -130,6 +130,9 @@ class EntitlementsResponse(BaseModel):
     daily_vpn_limit_seconds: int | None
     free_seconds_remaining: int | None
     free_quota_resets_at: datetime | None
+    free_seconds_usable: int | None = None
+    free_running_sessions: int | None = None
+    quota_observed_at: datetime | None = None
 
 
 class MeResponse(BaseModel):
@@ -349,5 +352,8 @@ async def me(
             daily_vpn_limit_seconds=rights.daily_vpn_limit_seconds,
             free_seconds_remaining=result.free_seconds_remaining,
             free_quota_resets_at=result.free_quota_resets_at,
+            free_seconds_usable=result.free_seconds_usable,
+            free_running_sessions=result.free_running_sessions,
+            quota_observed_at=result.quota_observed_at,
         ),
     )

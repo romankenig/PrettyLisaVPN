@@ -1,3 +1,15 @@
+# Relay and daily balance — Windows 0.16.0 / Android 0.13.0
+
+Home Connect attempts direct WireGuard, then WireGuard through permanent RU,
+then the remaining placeholders. Both implemented adapters use the existing
+permission/UAC, verification, cancellation and confirmed-cleanup flows. Progress
+names the current method and previous failure; the connected method remains visible.
+Free Home displays the account-wide daily remainder, including unused active
+reservations, and next UTC reset. Unknown balance displays a dash; paid plans
+hide the counter. Profile refreshes on Home entry/state changes and every 30s.
+No new routes or external transitions. Other protocols remain placeholders.
+See [backend integration and rollback](wireguard-relay-quota.md).
+
 # WireGuard connection — Windows 0.15.0 / Android 0.12.0
 
 Home Connect now attempts real WireGuard before the remaining placeholders.
@@ -476,3 +488,15 @@ Logout сначала прекращает VPN и очищает backend session
 повторяют POST и не владеют lifetime туннеля; stop есть в постоянном уведомлении.
 Отдельные fixture-маршруты по-прежнему явно симулированы, release их не содержит.
 Windows navigation/backend unchanged; [handoff](android-vpn-runtime.md).
+
+
+### Android 0.14.0 / Windows 0.17.0: порядок подключения
+
+Home при CONNECTING показывает «Первое подключение может занять пару минут.»
+в дополнение к текущему способу/переключению; после завершения или отмены подсказка
+исчезает. После подтверждённого Internet-успеха локально сохраняется ID способа,
+который становится первым при следующей попытке, в том числе после перезапуска.
+Остальные адаптеры сохраняют порядок, каждый вызывается не более одного раза;
+неуспех/отмена не меняют выбор. Это реализованное поведение обоих клиентов,
+backend API/схема и маршруты навигации не меняются. См.
+[handoff](connection-method-preference.md).

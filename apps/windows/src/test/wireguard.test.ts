@@ -6,7 +6,7 @@ import { createTestCredentialStorage } from "./fakes";
 
 afterEach(() => vi.useRealTimers());
 const selection = { mode: "COUNTRY", country_code: "DE" } as const;
-function setup() {
+function setup(viaRelay = false) {
   vi.useFakeTimers();
   const row = {
     id: crypto.randomUUID(),
@@ -56,9 +56,36 @@ function setup() {
     native,
     bearer: async () => "current",
     lost,
+    viaRelay,
   });
   return { adapter, native, requests, row, lost, transport };
 }
+it("falls back through the actual relay adapter only after direct cleanup", async () => {
+  const direct = setup(),
+    relay = setup(true);
+  vi.mocked(direct.native.verify).mockResolvedValue(false);
+  relay.row.configuration.endpoint = "45.153.68.12:20000";
+  const manager = createVpnConnectionManager([direct.adapter, relay.adapter]);
+  const progress: string[] = [];
+  manager.subscribe(() => {
+    progress.push(JSON.stringify(manager.current()));
+  });
+  const connecting = manager.connect("", selection);
+  await vi.advanceTimersByTimeAsync(8000);
+  await connecting;
+  expect(direct.row.status).toBe("CLOSED");
+  expect(manager.current().phase).toBe("CONNECTED");
+  expect(relay.native.start).toHaveBeenCalledWith(relay.row.configuration);
+  expect(
+    JSON.parse(
+      relay.requests.find((request) => request.method === "POST")!.body!,
+    ).method,
+  ).toBe("wireguard_relay");
+  expect(progress.some((state) => state.includes("WireGuard через RU"))).toBe(
+    true,
+  );
+  await manager.disconnect("");
+});
 it("publishes real session only after native tunnel-bound proof and releases it", async () => {
   const { adapter, native, requests, row } = setup();
   const manager = createVpnConnectionManager([adapter]);

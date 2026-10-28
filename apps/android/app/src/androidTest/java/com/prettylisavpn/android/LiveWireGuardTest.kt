@@ -39,6 +39,9 @@ class LiveWireGuardTest {
             FileInputStream(descriptor.fileDescriptor).use { JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8)).asJsonObject }
         }
         val country = credentials.get("country").asString
+        val expectedMethod = InstrumentationRegistry.getArguments().getString("expectedMethod") ?: "wireguard"
+        require(expectedMethod in setOf("wireguard", "wireguard_relay"))
+        val attempts = mutableListOf<String>()
         require(country in setOf("DE", "US"))
         KeystoreVault(context).write(Credentials(credentials.get("sessionId").asString,
             credentials.get("refreshToken").asString, credentials.get("expiresAt").asString))
@@ -55,7 +58,9 @@ class LiveWireGuardTest {
                 device.wait(Until.findObject(By.res("android", "button1")), 10_000)?.click()
                 val deadline = SystemClock.elapsedRealtime() + 240_000
                 while (SystemClock.elapsedRealtime() < deadline) {
-                    val phase = requireNotNull(AndroidVpnHost.current()).status.value.phase
+                    val current = requireNotNull(AndroidVpnHost.current()).status.value
+                    current.attempt?.method?.id?.let { if (attempts.lastOrNull() != it) attempts.add(it) }
+                    val phase = current.phase
                     if (phase in setOf(VpnPhase.CONNECTED, VpnPhase.FAILED, VpnPhase.DISCONNECTED)) break
                     SystemClock.sleep(200)
                 }
@@ -114,13 +119,15 @@ class LiveWireGuardTest {
                 File(output, "wireguard-proof.json").writeText(Gson().toJson(mapOf(
                     "source_sha" to BuildConfig.SOURCE_SHA, "version" to BuildConfig.VERSION_NAME,
                     "country" to country, "phase" to state.phase.name, "method" to state.method?.id,
+                    "attempts" to attempts,
                     "sustained_seconds" to sustainedSeconds, "public_api_reachable" to publicApi,
                     "deep_idle_confirmed" to deepIdle, "idle_seconds" to idleSeconds,
                     "same_vpn_network" to sameNetwork,
                     "tunnel_https_rechecked" to tunnelHttps, "notice_visible" to noticeVisible,
                     "error" to state.error?.name, "wireguard" to AndroidVpnHost.current()?.wireguardDiagnostic())))
                 assertEquals("Real tunnel-bound verification did not pass", VpnPhase.CONNECTED, state.phase)
-                assertEquals("wireguard", state.method?.id)
+                assertEquals(expectedMethod, state.method?.id)
+                if (expectedMethod == "wireguard_relay") assertEquals(listOf("wireguard", "wireguard_relay"), attempts.take(2))
                 assertTrue("Tunnel did not survive two minutes", sustainedSeconds >= 120)
                 assertTrue("Tunnel must survive five minutes of deep Doze", deepIdle && idleSeconds >= 300)
                 assertTrue("Wake-up must preserve the original VPN network", sameNetwork)

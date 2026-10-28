@@ -29,8 +29,10 @@ class WireGuardApi(private val http: HttpAuthApi, private val sessions: SessionC
                 require(it.heartbeat_seconds == 30)
             }
         }
-    suspend fun connect(country: String, publicKey: String, request: String): WireGuardLease =
-        requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey), request = request))
+    suspend fun connect(country: String, publicKey: String, request: String, method: String = "wireguard"): WireGuardLease {
+        require(method in setOf("wireguard", "wireguard_relay"))
+        return requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method), request = request))
+    }
     suspend fun current() = call("/current")
     suspend fun get(id: String) = requireNotNull(call("/${UUID.fromString(id)}"))
     suspend fun heartbeat(id: String) = requireNotNull(call("/${UUID.fromString(id)}/heartbeat", "POST"))

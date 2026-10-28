@@ -136,6 +136,9 @@ def test_me_returns_identity_plan_and_active_device_count():
             "active_device_limit": 5,
             "daily_vpn_limit_seconds": None,
             "free_seconds_remaining": None,
+            "free_seconds_usable": None,
+            "free_running_sessions": None,
+            "quota_observed_at": None,
             "free_quota_resets_at": None,
         },
     }
