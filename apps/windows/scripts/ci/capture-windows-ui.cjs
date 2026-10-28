@@ -428,7 +428,7 @@ async function main() {
   });
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: "главная", exact: true }).click();
-  await page.getByText("Premium", { exact: true }).waitFor();
+  await page.getByText("PREMIUM ⭐", { exact: true }).waitFor();
   const combo = page.locator(".location-trigger");
   await combo.click();
   await page.getByRole("listbox").waitFor();
