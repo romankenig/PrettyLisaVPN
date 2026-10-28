@@ -11,7 +11,7 @@ from prettylisavpn.fleet.domain import FleetError, Value
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 
 HEARTBEAT_SECONDS = 30
-HEARTBEAT_TIMEOUT = 90
+SETUP_TIMEOUT_SECONDS = 90
 NODE_TTL_SECONDS = 180
 
 

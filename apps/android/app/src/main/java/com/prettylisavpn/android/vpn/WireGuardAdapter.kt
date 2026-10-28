@@ -93,7 +93,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                     armDeadline(row)
                     heartbeats++
                     row.status in setOf("PROVISIONING", "READY") && Instant.parse(row.expires_at).isAfter(Instant.now())
-                }, lost = lost)
+                }, lost = lost, heartbeatRequired = lease?.heartbeat_required != false)
         }
         val ready = vpnDeadline(60_000) {
             while (true) {

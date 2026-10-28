@@ -56,10 +56,17 @@ Database tokens fence results and node leases prevent overlapping source/target
 checks. Retries keep the operation UUID and are bounded. Missed hours are not replayed
 as a burst. Local timers independently expire monitoring peers and namespaces.
 
-If non-monitoring peers exist on the target, observe them without adding a test peer.
-Passive success needs fresh handshakes and growth in both aggregate byte counters.
-The first sample or idle traffic is UNKNOWN. No destinations, DNS queries, packet
-contents or browsing history are collected. Passive mode cannot prove DNS/HTTPS/IP.
+Since backend 0.19.0, full synthetic checks also run with managed customer peers.
+The last subnet address is reserved for the probe; customer keys/addresses/routes
+are preserved. Unknown foreign peers still prevent issuance, since their routes
+are not ours to replace. Passive historical samples remain unchanged and are not
+rewritten as successful DNS/HTTPS/IP evidence. No destinations, DNS queries, packet
+contents or browsing history are collected.
+
+Client renewals/revocations may share a live CHECK lock, retaining the check's
+ownership token. CONFIGURE and competing fleet checks remain exclusive and also
+exclude in-flight client claims. The isolated probe does not hold the helper's
+global mutation lock during network waits, so it cannot starve grant renewal.
 
 Full synthetic check:
 
@@ -93,6 +100,10 @@ a six-hour half-life over the last day. Latest failed/unknown or >75-minute-old
 evidence, unverified setup or unconfirmed cleanup makes the node unavailable.
 Full capacity also prevents availability. Country scores are capacity-weighted over
 eligible nodes; Free sees only free nodes. Premium and Platinum use the full fleet.
+Synthetic observations now include the target's customer load from inspection,
+excluding the monitoring peer. Thus a healthy fast node with 25 active clients
+out of capacity 100 scores 95 rather than 0 (all other factors maximal).
+Missing/failed checks remain distinct from load; activity alone is not a failed check.
 
 The owner-approved standalone dashboard is in `sites/fleet-dashboard/` and served
 at `https://api.prettylisavpn.com/dashboard/` on the main server. HTTPS Basic Auth

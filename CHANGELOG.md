@@ -6,6 +6,22 @@
 
 ## Unreleased
 
+### Android — 0.12.2 / Backend — 0.19.0 / Windows unchanged 0.15.0
+
+- Established WireGuard access no longer depends on Android delivering HTTP
+  heartbeats during sleep. Server-owned grants still enforce account/device/auth
+  revocation, subscription deadlines, Free quota and short node expiry.
+- Android keeps the verified tunnel during temporary API outages and reconciles
+  after waking; confirmed revocation/expiry still stops it. Legacy servers retain
+  bounded heartbeat behavior through capability negotiation.
+- Hourly full VPN checks now run alongside managed customer connections. Customer
+  grants/revocations remain runnable during checks; the separate probe does not
+  occupy a customer address or enter the weighted load score.
+- Add regressions for silent clients, access revocation, concurrent monitoring,
+  load-weighted ratings and a real Android five-minute deep-Doze acceptance test.
+  Source changes alone do not prove deployment or device acceptance; see
+  [sleep stability handoff](docs/android-sleep-stability.md).
+
 ### Android — 0.12.1 / Windows unchanged 0.15.0
 
 - После включения WireGuard API, heartbeat и проверка доступности сервера используют

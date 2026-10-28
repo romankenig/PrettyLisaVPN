@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.18.1", min_length=1)
+    application_version: str = Field(default="0.19.0", min_length=1)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox"] = "disabled"
     fleet_enabled: bool = False

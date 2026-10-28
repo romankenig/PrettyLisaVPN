@@ -381,11 +381,17 @@ def grant(access: dict[str, Any]) -> dict[str, Any]:
         or not time.time() < expiry <= time.time() + 300
     ):
         raise Failure("ACCESS_INVALID")
-    if counts()[0]:
-        raise Failure("NODE_BUSY")
     path = RUN / ("lease-" + identifier + ".json")
     existing = read(path)
+    known = {read(item)["public_key"] for item in (ROOT / "clients").glob("*.json")}
+    known.update(read(item)["public_key"] for item in RUN.glob("lease-*.json"))
+    present = set(peers())
+    if present - known:
+        # Unmanaged peers can own the reserved address; never take their route.
+        raise Failure("NODE_BUSY")
     if existing and existing["public_key"] != key:
+        raise Failure("ACCESS_CONFLICT")
+    if not existing and key in present:
         raise Failure("ACCESS_CONFLICT")
     for other in RUN.glob("lease-*.json"):
         if other != path:
@@ -829,9 +835,16 @@ def main() -> None:
         )
         import fcntl
 
-        with (RUN / "lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+        if payload["action"] == "probe":
+            # Only this check's namespace is touched. Holding the global mutex
+            # during network waits would delay customer renewals and revocations.
+            # The DB fences CHECK/CONFIGURE; the expiring probe journal and its
+            # timer independently bound orphaned namespaces.
             result = dispatch(payload)
+        else:
+            with (RUN / "lock").open("a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                result = dispatch(payload)
         print(json.dumps(result))
     except Exception as exc:
         code = str(exc) if isinstance(exc, Failure) else "NODE_OPERATION_FAILED"

@@ -17,7 +17,8 @@ from pathlib import Path
 proof = json.loads(Path('wireguard-evidence/wireguard-proof.json').read_text())
 assert proof['phase'] == 'CONNECTED' and proof['method'] == 'wireguard', proof
 assert proof['sustained_seconds'] >= 120 and proof['wireguard']['heartbeats'] >= 3, proof
+assert proof['deep_idle_confirmed'] and proof['idle_seconds'] >= 300 and proof['same_vpn_network'], proof
 assert proof['public_api_reachable'] and proof['tunnel_https_rechecked'] and not proof['notice_visible'], proof
 assert 'OK (1 test)' in Path('wireguard-evidence/instrumentation.txt').read_text()
-print('Real WireGuard: two minutes, repeated heartbeats, HTTPS, UI reachability and confirmed cleanup passed')
+print('Real WireGuard: initial verification, five minutes deep Doze, same tunnel after wake, HTTPS and confirmed cleanup passed')
 PY

@@ -9,12 +9,12 @@ from uuid import UUID, uuid4
 from sqlalchemy import or_, select, update
 
 from prettylisavpn.auth.session_service import AccessIdentity
-from prettylisavpn.client_vpn.domain import HEARTBEAT_TIMEOUT, NODE_TTL_SECONDS
+from prettylisavpn.client_vpn.domain import NODE_TTL_SECONDS, SETUP_TIMEOUT_SECONDS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.service import principals_valid
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import Access, FleetError, Node, VpnMethod
-from prettylisavpn.fleet.model import FleetNodeRecord
+from prettylisavpn.fleet.model import FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
@@ -58,14 +58,29 @@ class ClientVpnWorker:
             for row in rows:
                 node = await session.scalar(
                     select(FleetNodeRecord)
-                    .where(
-                        FleetNodeRecord.id == row.node_id,
-                        or_(FleetNodeRecord.lock_until.is_(None), FleetNodeRecord.lock_until < now),
-                    )
+                    .where(FleetNodeRecord.id == row.node_id)
                     .with_for_update(skip_locked=True)
                 )
                 if node is None:
                     continue
+                shared_check = False
+                if node.lock_until is not None and node.lock_until >= now:
+                    shared_check = bool(
+                        await session.scalar(
+                            select(FleetOperationRecord.id).where(
+                                FleetOperationRecord.claim_token == node.lock_owner,
+                                FleetOperationRecord.kind == "CHECK",
+                                FleetOperationRecord.status == "RUNNING",
+                                FleetOperationRecord.lease_until > now,
+                                or_(
+                                    FleetOperationRecord.node_id == node.id,
+                                    FleetOperationRecord.source_id == node.id,
+                                ),
+                            )
+                        )
+                    )
+                    if not shared_check:
+                        continue
                 identity = AccessIdentity(row.user_id, row.device_id, row.auth_session_id)
                 valid = self.enabled and await principals_valid(session, identity, now)
                 subscription = await SubscriptionRepository(session).get_by_user_id(row.user_id)
@@ -85,12 +100,23 @@ class ClientVpnWorker:
                     row.status, row.code = "REVOKING", "VPN_ACCESS_ENDED"
                 elif row.expires_at <= now:
                     row.status, row.code = "REVOKING", "VPN_SESSION_EXPIRED"
-                elif row.heartbeat_at + timedelta(seconds=HEARTBEAT_TIMEOUT) <= now:
-                    row.status, row.code = "REVOKING", "VPN_CLIENT_LOST"
+                elif (
+                    row.status == "PROVISIONING"
+                    and row.created_at + timedelta(seconds=SETUP_TIMEOUT_SECONDS) <= now
+                ):
+                    row.status, row.code = "REVOKING", "VPN_SETUP_TIMEOUT"
+                # A sleeping device cannot reliably run HTTP heartbeats. Once
+                # provisioned, access belongs to the authenticated session until
+                # explicit revocation or its entitlement/auth deadline. The worker
+                # still renews short node grants and rechecks every principal.
                 revoke = row.status == "REVOKING"
                 token = uuid4()
                 row.claim_token, row.claim_until = token, now + timedelta(seconds=60)
-                node.lock_owner, node.lock_until = token, row.claim_until
+                # A monitoring namespace can coexist with customer grants. Never
+                # replace its lock; CONFIGURE and competing client claims remain
+                # exclusive. Fleet claims also exclude in-flight client rows.
+                if not shared_check:
+                    node.lock_owner, node.lock_until = token, row.claim_until
                 if not revoke and row.activated_at is None:
                     # Reserve billable time BEFORE a possibly ambiguous external mutation.
                     row.activated_at = now

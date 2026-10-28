@@ -60,6 +60,7 @@ async def view(session: AsyncSession, row: ClientLeaseRecord) -> dict[str, Any]:
         "country": node.country_code,
         "expires_at": row.expires_at,
         "heartbeat_seconds": HEARTBEAT_SECONDS,
+        "heartbeat_required": False,
         "removed_at": row.removed_at,
     }
     if row.status == "READY":

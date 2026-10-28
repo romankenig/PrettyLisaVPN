@@ -1,5 +1,15 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Sleep and occupied-node monitoring follow-up — 2026-10-28
+
+Source task: backend **0.18.1 → 0.19.0**, Android **0.12.1 → 0.12.2 / code 23**;
+Windows remains **0.15.0**, schema remains **0030**. Details and rollback contract:
+[Android sleep stability](android-sleep-stability.md). PR #32 was merged as
+`1d2c3861cd7b786cf892890bef6a53f3fd2c56e1`; its last verified development runtime
+was `0.18.1-dev.40507713735+g1d2c3861cd7b786cf892890bef6a53f3fd2c56e1`.
+The new source is not deployment evidence. Record the exact final source, manual
+or CI build identity, node-helper rollout, tests and APK in this task's PR.
+
 ## Актуальный срез — 2026-10-27
 
 PR #31 слит в develop: `86831bc0a6afbc63fc2221f4810b16ae42b23604`.
