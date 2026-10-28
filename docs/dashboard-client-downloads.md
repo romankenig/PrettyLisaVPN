@@ -81,8 +81,9 @@ on the server. Runtime services and hourly monitoring remain on the main server.
 
 The SSH deployment user runs `publish_client_container.sh` with its existing
 Docker permission. The helper uses the running backend's immutable local image
-ID, with networking disabled, a read-only root filesystem and all capabilities
-dropped. Only the incoming build (read-only) and download store are mounted.
+ID, with networking disabled and a read-only root filesystem. Capabilities are
+dropped except DAC_READ_SEARCH, needed to read the deployment user's private
+incoming files. Only the incoming build (read-only) and download store are mounted.
 Root inside this short-lived container can update the root-owned downloads;
 dashboard credentials remain inaccessible and root SSH is not added to CI.
 `fleet.env` must remain owned by the deployment user with mode 0600, like

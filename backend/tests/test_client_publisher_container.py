@@ -48,6 +48,7 @@ class ClientPublisherContainerTests(unittest.TestCase):
         for flag, value in {
             "--network": "none",
             "--cap-drop": "ALL",
+            "--cap-add": "DAC_READ_SEARCH",
             "--security-opt": "no-new-privileges",
             "--user": "0:0",
             "--pull": "never",

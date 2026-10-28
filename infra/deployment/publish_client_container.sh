@@ -19,7 +19,7 @@ image="$(docker inspect --format '{{.Image}}' prettylisavpn-development-backend-
 [[ "$image" =~ ^sha256:[a-f0-9]{64}$ ]]
 downloads=/opt/prettylisavpn/secrets/dashboard/downloads
 exec docker run --rm --pull never --network none --read-only --user 0:0 \
-  --cap-drop ALL --security-opt no-new-privileges --pids-limit 32 \
+  --cap-drop ALL --cap-add DAC_READ_SEARCH --security-opt no-new-privileges --pids-limit 32 \
   --no-healthcheck --tmpfs /tmp:rw,nosuid,noexec,size=16m \
   --mount "type=bind,src=$incoming,dst=$incoming,readonly" \
   --mount "type=bind,src=$downloads,dst=$downloads" \
