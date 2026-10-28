@@ -1,11 +1,11 @@
 package com.prettylisavpn.android.vpn
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
 class RecoveryTest {
-    @Test fun startupRecoveryRunsOnceAndFailedCleanupCanBeRetried() = runTest {
+    @Test fun startupRecoveryRunsOnce() = runBlocking {
         var count = 0
         val adapter = object : ConnectionAdapter {
             override val method = VpnMethod("wireguard", "WireGuard")

@@ -1,11 +1,11 @@
 package com.prettylisavpn.android.vpn
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
 class DisconnectCleanupTest {
-    @Test fun localFailureStillRevokesRemoteAndCanBeRetried() = runTest {
+    @Test fun localFailureStillRevokesRemoteAndCanBeRetried() = runBlocking {
         var revoked = false
         val failure = IllegalStateException("local stop failed")
         val result = runCatching { disconnectCleanup({ throw failure }, { revoked = true }) }
@@ -13,7 +13,7 @@ class DisconnectCleanupTest {
         assertSame(failure, result.exceptionOrNull())
         disconnectCleanup({}, {})
     }
-    @Test fun uncertainRemoteRemovalNeverReportsSuccess() = runTest {
+    @Test fun uncertainRemoteRemovalNeverReportsSuccess() = runBlocking {
         var stopped = false
         val result = runCatching { disconnectCleanup({ stopped = true }, { error("offline") }) }
         assertTrue(stopped)
