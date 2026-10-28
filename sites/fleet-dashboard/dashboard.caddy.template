@@ -20,8 +20,7 @@ handle /dashboard/* {
                 header_up Authorization "Bearer @@MONITOR_TOKEN@@"
             }
         }
-        handle /dashboard/downloads/* {
-            uri strip_prefix /dashboard/downloads
+        handle_path /dashboard/downloads/* {
             root * /etc/caddy/dashboard/downloads/current
             @binary path /android.apk /windows.exe
             header @binary Content-Disposition attachment
