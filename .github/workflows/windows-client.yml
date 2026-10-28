@@ -2,9 +2,9 @@ name: Windows development client
 
 on:
   push:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml']
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py']
   pull_request:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml']
+    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py']
   workflow_dispatch:
 
 permissions:
@@ -69,3 +69,12 @@ jobs:
           path: apps/windows/artifacts/client/
           if-no-files-found: error
           retention-days: 14
+
+  publish-client:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/client-download-publish.yml
+    with:
+      platform: windows
+      artifact: PrettyLisaVPN-windows-development-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    secrets: inherit

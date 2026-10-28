@@ -1,0 +1,63 @@
+name: Publish dashboard client
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+      artifact:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish verified client on main server
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: development
+    env:
+      PLATFORM: ${{ inputs.platform }}
+      SOURCE_SHA: ${{ github.sha }}
+      DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+      DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+      DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: client-download
+      - name: Validate build and publish over SSH
+        env:
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          case "$PLATFORM" in android|windows) ;; *) exit 1 ;; esac
+          test -n "$DEV_VPS_HOST" && test -n "$DEV_VPS_PORT" && test -n "$DEV_VPS_USER"
+          python - <<'PY'
+          import importlib.util, os
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location("publisher", "infra/deployment/publish_client.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          module.validate(Path("client-download"), os.environ["PLATFORM"], os.environ["SOURCE_SHA"], int(os.environ["GITHUB_RUN_ID"]), int(os.environ["GITHUB_RUN_ATTEMPT"]))
+          PY
+          umask 077
+          ssh_dir="$RUNNER_TEMP/client-publish-ssh"
+          mkdir -p "$ssh_dir"
+          trap 'rm -f "$ssh_dir/key" "$ssh_dir/known_hosts"' EXIT
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          common=(-i "$ssh_dir/key" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts" -o LogLevel=ERROR)
+          remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
+          incoming="/opt/prettylisavpn/incoming/client-${PLATFORM}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "install -d -m 700 '$incoming'"
+          scp "${common[@]}" -P "$DEV_VPS_PORT" client-download/* infra/deployment/publish_client.py "$remote:$incoming/"
+          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "python3 '$incoming/publish_client.py' --platform '$PLATFORM' --directory '$incoming' --sha '$SOURCE_SHA' --run '$GITHUB_RUN_ID' --attempt '$GITHUB_RUN_ATTEMPT'"

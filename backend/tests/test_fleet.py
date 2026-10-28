@@ -16,6 +16,7 @@ from prettylisavpn.fleet.domain import (
     MethodState,
     Node,
     NodeInput,
+    NodeUpdate,
     Observation,
     WireGuardConfig,
     hourly_slot,
@@ -194,6 +195,27 @@ def test_rating_penalizes_failure_load_latency_bandwidth_and_staleness():
     passive = Observation(status="HEALTHY", mode="PASSIVE", code="ACTIVE_TRAFFIC", observed_at=NOW)
     assert server_quality([passive], 100, NOW)["confidence"] == "PASSIVE"
     assert server_quality([passive], 100, NOW)["quality"] == 70
+
+
+def test_default_capacity_and_speed_target_match_operator_policy():
+    assert (
+        NodeInput(
+            name="new-node",
+            country_code="DE",
+            host="1.1.1.1",
+            credential_ref="test",
+            expected_egress_ips=["1.1.1.1"],
+        ).capacity
+        == 20
+    )
+    assert settings().fleet_speed_target_mbps == 30
+    full = healthy(connection_ms=500, download_mbps=30, upload_mbps=30)
+    assert server_quality([full], 20, NOW)["quality"] == 100
+    loaded = full.model_copy(update={"active_connections": 10})
+    assert server_quality([loaded], 20, NOW)["quality"] == 90
+    assert server_quality([full.model_copy(update={"upload_mbps": 12})], 20, NOW)["quality"] == 91
+    with pytest.raises(ValidationError):
+        NodeUpdate(name="new-node", group="FREE", capacity=0)
 
 
 @pytest.mark.parametrize(

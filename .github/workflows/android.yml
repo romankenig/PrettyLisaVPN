@@ -5,10 +5,14 @@ on:
     paths:
       - 'apps/android/**'
       - '.github/workflows/android.yml'
+      - '.github/workflows/client-download-publish.yml'
+      - 'infra/deployment/publish_client.py'
   pull_request:
     paths:
       - 'apps/android/**'
       - '.github/workflows/android.yml'
+      - '.github/workflows/client-download-publish.yml'
+      - 'infra/deployment/publish_client.py'
   workflow_dispatch:
     inputs:
       live_wireguard:
@@ -183,3 +187,12 @@ jobs:
           path: evidence/
           if-no-files-found: error
           retention-days: 14
+
+  publish-client:
+    needs: [build, emulator]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/client-download-publish.yml
+    with:
+      platform: android
+      artifact: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    secrets: inherit

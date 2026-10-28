@@ -107,6 +107,8 @@ class FleetService:
             ):
                 raise FleetError("fleet_node_has_active_access")
             row.name, row.group = data.name, data.group
+            if data.capacity is not None:
+                row.capacity = data.capacity
             row.is_available_for_free = data.group == "FREE"
             try:
                 await session.flush()
@@ -233,6 +235,21 @@ class FleetService:
             if method is None or method.state != "READY":
                 quality = {"quality": 0, "available": False, "confidence": "UNVERIFIED"}
             buckets: dict[datetime, list[Observation]] = defaultdict(list)
+            measurements: dict[datetime, list[dict[str, Any]]] = defaultdict(list)
+            for row, item in zip(records, observations, strict=True):
+                measurements[item.observed_at.replace(minute=0, second=0, microsecond=0)].append(
+                    {
+                        "observed_at": item.observed_at,
+                        "status": item.status,
+                        "mode": item.mode,
+                        "code": item.code,
+                        "quality": row.quality,
+                        "download_mbps": item.download_mbps,
+                        "upload_mbps": item.upload_mbps,
+                        "connection_ms": item.connection_ms,
+                        "active_connections": item.active_connections,
+                    }
+                )
             for item in observations:
                 buckets[item.observed_at.replace(minute=0, second=0, microsecond=0)].append(item)
             history = []
@@ -262,6 +279,7 @@ class FleetService:
                         "status": status,
                         "modes": sorted({item.mode for item in values}),
                         "checks": len(values),
+                        "measurements": measurements[hour],
                     }
                 )
             total_expected += expected

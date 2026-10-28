@@ -41,6 +41,13 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
     route = route.replace("backend:8000", "127.0.0.1:8000")
     (tmp_path / "site").mkdir()
     (tmp_path / "site/index.html").write_text("PrettyLisaVPN private dashboard")
+    downloads = tmp_path / "downloads"
+    snapshot = downloads / "snapshots" / "first"
+    snapshot.mkdir(parents=True)
+    (snapshot / "index.json").write_text('{"schema":1,"clients":{}}')
+    (snapshot / "android.apk").write_text("test-only-apk")
+    (snapshot / "windows.exe").write_text("test-only-exe")
+    (downloads / "current").symlink_to("snapshots/first")
     (tmp_path / "Caddyfile").write_text(
         ":8080 {\n" + route + "\nhandle {\nrespond 404\n}\n}\n:8000 {\n"
         "@authorized {\npath /admin/monitoring/availability\nquery days=7\n"
@@ -79,7 +86,13 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
             if "401 Unauthorized" in request("/dashboard/").stderr:
                 break
             time.sleep(0.2)
-        for path in ("/dashboard/", "/dashboard/api/availability"):
+        for path in (
+            "/dashboard/",
+            "/dashboard/api/availability",
+            "/dashboard/downloads/index.json",
+            "/dashboard/downloads/android.apk",
+            "/dashboard/downloads/windows.exe",
+        ):
             assert "401 Unauthorized" in request(path).stderr
             assert "401 Unauthorized" in request(path, "admin:wrong").stderr
         page = request("/dashboard/", "admin:" + password)
@@ -87,6 +100,16 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         metrics = request("/dashboard/api/availability?days=1", "admin:" + password)
         assert metrics.returncode == 0 and metrics.stdout == "monitoring-authorized"
         assert "private, no-store" in metrics.stderr
+        for file, expected in (("android.apk", "test-only-apk"), ("windows.exe", "test-only-exe")):
+            binary = request("/dashboard/downloads/" + file, "admin:" + password)
+            assert binary.returncode == 0 and binary.stdout == expected
+            assert "Content-Disposition: attachment" in binary.stderr
+            assert "private, no-store" in binary.stderr
+        catalog = request("/dashboard/downloads/index.json", "admin:" + password)
+        assert catalog.returncode == 0 and json.loads(catalog.stdout)["schema"] == 1
+        missing = request("/dashboard/downloads/missing.apk", "admin:" + password)
+        assert "404 Not Found" in missing.stderr
+        assert request("/dashboard/downloads/", "admin:" + password).returncode != 0
         assert token not in page.stdout + page.stderr + metrics.stdout + metrics.stderr
         assert request("/dashboard/monitoring.caddy", "admin:" + password).returncode != 0
         assert request("/dashboard/../monitoring.caddy", "admin:" + password).returncode != 0

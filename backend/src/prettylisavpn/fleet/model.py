@@ -96,7 +96,10 @@ class FleetOperationRecord(Base):
 
 class FleetObservationRecord(Base):
     __tablename__ = "fleet_observations"
-    __table_args__ = (Index("ix_fleet_observation_history", "node_id", "observed_at"),)
+    __table_args__ = (
+        Index("ix_fleet_observation_history", "node_id", "observed_at"),
+        CheckConstraint("quality BETWEEN 0 AND 100", name="ck_fleet_observation_quality"),
+    )
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     operation_id: Mapped[UUID] = mapped_column(ForeignKey("fleet_operations.id"), unique=True)
     node_id: Mapped[UUID] = mapped_column(ForeignKey("fleet_nodes.id"))
@@ -104,3 +107,5 @@ class FleetObservationRecord(Base):
     method: Mapped[str] = mapped_column(String(32))
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     data: Mapped[dict[str, object]] = mapped_column(JSONB)
+    # Snapshot of the score at observation time. Legacy observations remain null.
+    quality: Mapped[int | None] = mapped_column(Integer, nullable=True)

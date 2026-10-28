@@ -6,6 +6,21 @@
 
 ## Unreleased
 
+### Dashboard — 0.3.0 / Backend — 0.21.0 / Android and Windows unchanged
+
+- Permanent Android APK and Windows EXE download links on the private dashboard.
+  Successful develop CI builds publish verified binaries to the main server;
+  atomic updates preserve both platforms and reject outdated or corrupt builds.
+- Display all dashboard timestamps in GMT+3, including hour details and downloads.
+  Backend storage, probes and the Free UTC-day allowance remain unchanged.
+- Preserve rating at each completed probe (migration 0033) and expose individual
+  historical download/upload speeds, rating and active connections on hour selection.
+  Legacy speeds remain available; missing historical ratings stay unknown.
+- Add a speed/rating chart switch respecting server/group selection and missing data.
+- Set new-node capacity to 20 and speed-rating target to 30 Mbps; allow capacity
+  changes through the existing admin PATCH while preserving omitted values.
+- See [deployment and verification handoff](docs/dashboard-client-downloads.md).
+
 ### Android — 0.14.0 / Windows — 0.17.0 / Backend unchanged 0.20.0
 
 - Remember the last Internet-verified VPN method on the device and try it first
