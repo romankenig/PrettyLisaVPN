@@ -65,9 +65,12 @@ jobs:
           if (-not $env:ACCEPTANCE_CREDENTIAL) { throw 'Acceptance credential missing' }
           $env:ACCEPTANCE_CREDENTIAL | Set-Content -Encoding utf8NoBOM $env:ACCEPTANCE_CREDENTIAL_PATH
           try {
-            npm install --no-save --package-lock=false --ignore-scripts playwright-core@1.55.0
+            $captureTools = Join-Path $env:RUNNER_TEMP 'managed-capture-tools'
+            New-Item -ItemType Directory -Force $captureTools | Out-Null
+            Copy-Item scripts/ci/capture-managed.cjs $captureTools
+            npm install --prefix $captureTools --no-audit --no-fund --ignore-scripts playwright-core@1.56.1
             if ($LASTEXITCODE -ne 0) { throw 'Acceptance tooling install failed' }
-            node scripts/ci/capture-managed.cjs
+            node (Join-Path $captureTools 'capture-managed.cjs')
             if ($LASTEXITCODE -ne 0) { throw 'Real managed acceptance failed' }
           } finally { Remove-Item -LiteralPath $env:ACCEPTANCE_CREDENTIAL_PATH -Force }
       - uses: actions/upload-artifact@v4
