@@ -2,9 +2,9 @@ name: Managed VPN engines
 
 on:
   push:
-    paths: ['engines/**', '.github/workflows/managed-engines.yml']
+    paths: ['engines/**', '.gitattributes', '.github/workflows/managed-engines.yml']
   pull_request:
-    paths: ['engines/**', '.github/workflows/managed-engines.yml']
+    paths: ['engines/**', '.gitattributes', '.github/workflows/managed-engines.yml']
   workflow_dispatch:
 
 permissions:

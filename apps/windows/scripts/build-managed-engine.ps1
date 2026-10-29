@@ -32,19 +32,23 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'License tool setup failed' }
         & go-licenses check ./cmd/pl-engine --allowed_licenses=MIT,MPL-2.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
         if ($LASTEXITCODE -ne 0) { throw 'Managed dependency license audit failed' }
-        $sources = Join-Path $output 'source'
+        # Keep corresponding sources outside the app: test discovery must not
+        # execute the archived copy of the frontend test suite.
+        $distribution = Join-Path $env:RUNNER_TEMP ('prettylisa-managed-source-' + [guid]::NewGuid())
+        $sources = Join-Path $distribution 'source'
         New-Item -ItemType Directory -Force -Path $sources | Out-Null
-        $sourceTar = Join-Path $output 'source.tar'
+        $sourceTar = Join-Path $distribution 'source.tar'
         & git -C $repository archive --output $sourceTar HEAD engines/managed apps/windows
         if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
-        & tar -xf (Join-Path $output 'source.tar') -C $sources
+        & tar -xf $sourceTar -C $sources
         if ($LASTEXITCODE -ne 0) { throw 'Source extraction failed' }
         & $GoExecutable mod vendor -o (Join-Path $sources 'engines/managed/vendor')
         if ($LASTEXITCODE -ne 0) { throw 'Corresponding dependency sources missing' }
-        $notices = Join-Path $output 'licenses'
+        $notices = Join-Path $distribution 'licenses'
         & go-licenses save ./cmd/pl-engine --save_path $notices
         if ($LASTEXITCODE -ne 0) { throw 'Dependency notices missing' }
-        & tar -czf (Join-Path $output 'managed-source.tar.gz') -C $output source licenses Wintun-Prebuilt-License.txt identity.json
+        Copy-Item (Join-Path $output 'Wintun-Prebuilt-License.txt'), (Join-Path $output 'identity.json') $distribution
+        & tar -czf (Join-Path $output 'managed-source.tar.gz') -C $distribution source licenses Wintun-Prebuilt-License.txt identity.json
         if ($LASTEXITCODE -ne 0) { throw 'Corresponding source package failed' }
     }
 } finally { Pop-Location }
