@@ -72,6 +72,15 @@ can serve successive attempts after confirmed cleanup. The pinned, signed
 official Wintun binary is redistributed under its binary license, with notices;
 its GPL driver sources are not built or linked into the application.
 
+The first full Windows live run (40946090883, product 5e46b6a) provisioned and
+cleaned all twenty managed leases, but none reached verification. A native
+regression reproduced `ENGINE_UNAVAILABLE`: Rust `File::read` turns the empty
+nonblocking pipe's `ERROR_NO_DATA` into EOF. The host now uses bounded Win32
+reads, preserving idle connections and fragmented frames while rejecting a
+closed peer or incomplete timed-out frame. Delayed/fragmented, idle-timeout and
+partial-frame tests cover this boundary. Windows remains 0.18.0; real acceptance
+of the corrected packaged build is required before publication.
+
 Advanced settings persist a nonempty device-local subset (default all). Each
 attempt snapshots it and prefers the last verified enabled method. Confirmed
 cleanup gates fallback; starting an engine is never sufficient for success.

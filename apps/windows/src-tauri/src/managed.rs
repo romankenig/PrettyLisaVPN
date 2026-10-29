@@ -147,15 +147,27 @@ fn frame(
     let mut data = Zeroizing::new(Vec::new());
     while Instant::now() < until {
         let mut byte = [0u8];
-        match pipe.read(&mut byte) {
-            Ok(1) if byte[0] == b'\n' => return Ok(data),
-            Ok(1) => {
+        let mut received = 0;
+        // File::read normalizes ERROR_NO_DATA to EOF on Windows. For a live
+        // PIPE_NOWAIT peer it means "not yet", so retain the Win32 error here.
+        let ok = unsafe {
+            ReadFile(
+                pipe.as_raw_handle(),
+                byte.as_mut_ptr(),
+                1,
+                &mut received,
+                std::ptr::null_mut(),
+            )
+        };
+        match (ok, received) {
+            (_, 1) if ok != 0 && byte[0] == b'\n' => return Ok(data),
+            (_, 1) if ok != 0 => {
                 data.push(byte[0]);
                 if data.len() > FRAME_LIMIT {
                     return Err("ENGINE_INVALID_RESPONSE");
                 }
             }
-            Err(e) if e.raw_os_error() == Some(ERROR_NO_DATA as i32) => {
+            (0, _) if unsafe { GetLastError() } == ERROR_NO_DATA => {
                 if !running(process) {
                     return Err(ERROR);
                 }
@@ -164,7 +176,12 @@ fn frame(
             _ => return Err(ERROR),
         }
     }
-    Err("ENGINE_TIMEOUT")
+    // Never drop half a command and interpret its suffix as the next frame.
+    Err(if data.is_empty() {
+        "ENGINE_TIMEOUT"
+    } else {
+        "ENGINE_INVALID_RESPONSE"
+    })
 }
 fn write_frame(pipe: &mut impl Write, value: &Value) -> Result<(), &'static str> {
     let mut bytes = Zeroizing::new(serde_json::to_vec(value).map_err(|_| ERROR)?);
@@ -509,6 +526,54 @@ mod tests {
         }
         drop(client);
         assert!(frame(&mut server, &parent, Duration::from_secs(2)).is_err());
+    }
+
+    #[test]
+    fn private_pipe_waits_for_delayed_fragmented_frames() {
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut server = pipe_server(&id).unwrap();
+        let mut client = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(pipe_name(&id).unwrap())
+            .unwrap();
+        let parent = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, std::process::id()) });
+        let writer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(100));
+            client.write_all(b"{\"status\":").unwrap();
+            std::thread::sleep(Duration::from_millis(100));
+            client.write_all(b"\"RUNNING\"}\n").unwrap();
+            client
+        });
+        let result = frame(&mut server, &parent, Duration::from_secs(2));
+        let client = writer.join().unwrap();
+        assert_eq!(result.unwrap().as_slice(), b"{\"status\":\"RUNNING\"}");
+        assert_eq!(
+            frame(&mut server, &parent, Duration::from_millis(100)).unwrap_err(),
+            "ENGINE_TIMEOUT"
+        );
+        drop(client);
+        assert_eq!(
+            frame(&mut server, &parent, Duration::from_secs(2)).unwrap_err(),
+            ERROR
+        );
+    }
+
+    #[test]
+    fn incomplete_frame_timeout_is_fatal_instead_of_discarding_bytes() {
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut server = pipe_server(&id).unwrap();
+        let mut client = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(pipe_name(&id).unwrap())
+            .unwrap();
+        let parent = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, std::process::id()) });
+        client.write_all(b"{\"action\":").unwrap();
+        assert_eq!(
+            frame(&mut server, &parent, Duration::from_millis(100)).unwrap_err(),
+            "ENGINE_INVALID_RESPONSE"
+        );
     }
 
     #[test]

@@ -34,6 +34,9 @@
 
 ### Managed transports — in progress
 
+- Keep the Windows private engine pipe alive while waiting for delayed/fragmented
+  replies; distinguish nonblocking no-data from a closed peer and reject partial
+  timed-out frames. Regression tests reproduce the previous startup failure.
 - Add dispatch-only real Android/Windows TUN acceptance per selected method,
   including sustained connection, independent tunneled HTTPS and cleanup proof.
 - Use our own verified TLS target in the fleet rollout after isolating an
