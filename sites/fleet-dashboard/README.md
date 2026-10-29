@@ -1,4 +1,8 @@
-# PrettyLisaVPN monitoring dashboard — 0.4.0
+# PrettyLisaVPN monitoring dashboard — 0.4.1
+
+Managed client downloads include corresponding engine source/license archives.
+Their links appear only when the verified publisher reports matching sources.
+Existing binaries remain available until a newer successful develop build is published.
 
 Standalone read-only React dashboard at `/dashboard/` on the main server.
 The scheduler, probes, history and acceptance timer run independently of this UI.

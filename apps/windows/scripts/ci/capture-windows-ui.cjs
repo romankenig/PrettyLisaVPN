@@ -486,6 +486,10 @@ async function main() {
     .getByRole("checkbox", { name: "WireGuard", exact: true })
     .uncheck();
   await screenshot("05a-advanced-methods");
+  await page
+    .getByRole("checkbox", { name: "Salamander+", exact: true })
+    .scrollIntoViewIfNeeded();
+  await screenshot("05b-advanced-methods-bottom");
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
   await page.getByRole("link", { name: /расширенные настройки/i }).click();
   if (

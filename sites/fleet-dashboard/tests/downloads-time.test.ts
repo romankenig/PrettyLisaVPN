@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { clock, date, TIME_ZONE_LABEL } from "../src/time.ts";
-import { readClients, downloadUrls } from "../src/downloads.ts";
+import { readClients, downloadUrls, sourceUrls } from "../src/downloads.ts";
 
 test("GMT+3 remains fixed, including midnight rollover and summer/winter", () => {
   assert.equal(TIME_ZONE_LABEL, "GMT+3");
@@ -19,4 +19,6 @@ test("downloads tolerate a missing platform and never use catalog-controlled lin
   assert.equal(downloadUrls.windows, "/dashboard/downloads/windows.exe");
   assert.deepEqual(readClients({ schema: 1, clients: { android: { ...client, published_at: "invalid" }, windows: { ...client, bytes: -1 } } }), {});
   assert.throws(() => readClients({ clients: {} }));
+  assert.equal(readClients({ schema: 1, clients: { android: { ...client, sources_url: sourceUrls.android, sources_sha256: "a".repeat(64) } } }).android?.has_sources, true);
+  assert.equal(readClients({ schema: 1, clients: { android: { ...client, sources_url: "https://untrusted.invalid/source", sources_sha256: "a".repeat(64) } } }).android?.has_sources, undefined);
 });

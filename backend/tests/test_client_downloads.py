@@ -2,8 +2,10 @@
 
 import hashlib
 import importlib.util
+import io
 import json
 import os
+import tarfile
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -56,6 +58,85 @@ class ClientDownloadsTests(unittest.TestCase):
             run,
             attempt,
         )
+
+    def source_archive(self, directory, platform, sha=SHA):
+        marker = (
+            {"source-sha.txt": sha}
+            if platform == "android"
+            else {
+                "identity.json": json.dumps({"source_sha": sha}),
+                "Wintun-Prebuilt-License.txt": "Test-only license fixture",
+            }
+        )
+        with tarfile.open(directory / PUBLISHER.SOURCES, "w:gz") as archive:
+            for name, value in {
+                **marker,
+                "source/engines/managed/go.mod": "module test-only",
+                "licenses/test-only/LICENSE": "Test-only license fixture",
+            }.items():
+                data = value.encode()
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                archive.addfile(member, io.BytesIO(data))
+        if platform == "windows":
+            (directory / "Wintun-Prebuilt-License.txt").write_text("Test-only license fixture")
+
+    def test_managed_clients_require_matching_sources_and_licenses(self):
+        for platform, version in (("android", "0.15.0"), ("windows", "0.18.0")):
+            directory = self.artifact(platform, version=version)
+            with self.assertRaises(ValueError):
+                PUBLISHER.validate(directory, platform, SHA, 100, 1)
+            self.source_archive(directory, platform, "b" * 40)
+            with self.assertRaises(ValueError):
+                PUBLISHER.validate(directory, platform, SHA, 100, 1)
+            self.source_archive(directory, platform)
+            entry, _, companions = PUBLISHER.validate(directory, platform, SHA, 100, 1)
+            self.assertEqual(
+                entry["sources_sha256"],
+                hashlib.sha256(companions[f"{platform}-sources.tar.gz"]).hexdigest(),
+            )
+            self.assertEqual(
+                entry["sources_url"], f"/dashboard/downloads/{platform}-sources.tar.gz"
+            )
+            if platform == "windows":
+                (directory / "Wintun-Prebuilt-License.txt").write_text("different")
+                with self.assertRaises(ValueError):
+                    PUBLISHER.validate(directory, platform, SHA, 100, 1)
+
+    @unittest.skipIf(os.name == "nt", "Publisher uses Linux flock and symlinks")
+    def test_sources_switch_atomically_and_changed_source_replay_is_rejected(self):
+        directory = self.artifact("windows", version="0.18.0")
+        self.source_archive(directory, "windows")
+        self.assertEqual(
+            PUBLISHER.publish(self.root, directory, "windows", SHA, 100, 1), "published"
+        )
+        initial = (self.root / "current").readlink()
+        catalog = json.loads((self.root / "current/index.json").read_text())["clients"]["windows"]
+        for name, key in (
+            ("windows-sources.tar.gz", "sources_sha256"),
+            ("windows-licenses.txt", "licenses_sha256"),
+        ):
+            self.assertEqual(
+                hashlib.sha256((self.root / "current" / name).read_bytes()).hexdigest(),
+                catalog[key],
+            )
+        # A new valid archive with the same source marker but changed payload is
+        # still a different immutable build and cannot replace these coordinates.
+        with tarfile.open(directory / PUBLISHER.SOURCES, "r:gz") as archive:
+            data = [
+                (member, archive.extractfile(member).read())
+                for member in archive
+                if member.isfile()
+            ]
+        with tarfile.open(directory / PUBLISHER.SOURCES, "w:gz") as archive:
+            for member, content in data:
+                if member.name.endswith("go.mod"):
+                    content += b"\n// changed"
+                    member.size = len(content)
+                archive.addfile(member, io.BytesIO(content))
+        with self.assertRaises(ValueError):
+            PUBLISHER.publish(self.root, directory, "windows", SHA, 100, 1)
+        self.assertEqual((self.root / "current").readlink(), initial)
 
     def test_identity_hash_size_and_format_are_verified(self):
         for platform in PUBLISHER.FILES:

@@ -14,6 +14,8 @@ if ((Get-FileHash -LiteralPath $WintunArchive -Algorithm SHA256).Hash.ToLowerInv
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::OpenRead($WintunArchive)
 try {
+    & python prepare_core.py --go $GoExecutable
+    if ($LASTEXITCODE -ne 0) { throw 'Pinned core preparation failed' }
     foreach ($entry in @(@('wintun/bin/amd64/wintun.dll', 'wintun.dll'), @('wintun/LICENSE.txt', 'Wintun-Prebuilt-License.txt'))) {
         $item = $archive.GetEntry($entry[0])
         if (!$item) { throw 'Missing pinned Wintun distribution entry' }
@@ -42,6 +44,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
         & tar -xf $sourceTar -C $sources
         if ($LASTEXITCODE -ne 0) { throw 'Source extraction failed' }
+        Copy-Item -LiteralPath (Join-Path $engineSource 'patched') -Destination (Join-Path $sources 'engines/managed/patched') -Recurse
         & $GoExecutable mod vendor -o (Join-Path $sources 'engines/managed/vendor')
         if ($LASTEXITCODE -ne 0) { throw 'Corresponding dependency sources missing' }
         $notices = Join-Path $distribution 'licenses'

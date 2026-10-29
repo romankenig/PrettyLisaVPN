@@ -15,6 +15,8 @@
 - Add direct/relay adapters for AmneziaWG, SS2022, VMess, VLESS, REALITY, Hysteria 1/2 and
   Salamander; keep placeholders in UI-test fixtures only.
 - MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
+- Dashboard 0.4.1 exposes matching source/license archives beside new managed
+  client downloads; atomic publication rejects missing or mismatched sources.
   [Rollout and remaining validation](docs/managed-transports.md).
 
 ### Dashboard — 0.4.0

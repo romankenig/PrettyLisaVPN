@@ -1,5 +1,5 @@
 import { Download, Monitor, Smartphone } from "lucide-react";
-import { downloadUrls, PLATFORMS, type Clients } from "./downloads";
+import { downloadUrls, sourceUrls, PLATFORMS, type Clients } from "./downloads";
 import { date, TIME_ZONE_LABEL } from "./time";
 
 export default function Downloads({ clients, unavailable }: { clients: Clients; unavailable: boolean }) {
@@ -15,5 +15,6 @@ export default function Downloads({ clients, unavailable }: { clients: Clients; 
       </article>;
     })}</div>
     <p className="download-help">Android: установите APK поверх приложения. Windows: сохраните и запустите EXE.</p>
+    {PLATFORMS.some(platform => clients[platform]?.has_sources) && <p className="download-help">Исходники и лицензии: {PLATFORMS.filter(platform => clients[platform]?.has_sources).map((platform, index) => <span key={platform}>{index > 0 && " · "}<a href={sourceUrls[platform]} download>{platform === "android" ? "Android" : "Windows"}</a></span>)}</p>}
   </section>;
 }

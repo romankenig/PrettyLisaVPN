@@ -27,6 +27,7 @@ apps/android/engine-app/libs/*.aar
 apps/android/app/libs/*.aar
 apps/android/app/src/main/assets/engine-licenses/
 engines/managed/vendor/
+engines/managed/patched/
 apps/windows/src-tauri/engine/
 # Local outputs from the retired runtime remain untracked for rollback inspection.
 server-profiles/rendered/

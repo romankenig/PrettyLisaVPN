@@ -39,6 +39,7 @@ Windows uses Xray's TUN routing and DNS/WFP protections. The parent must provide
 the vetted Wintun distribution and required privileges before enabling it.
 
 ```text
+python prepare_core.py
 go test ./...
 go vet ./...
 go build -trimpath ./cmd/pl-engine
@@ -49,6 +50,11 @@ BSD/Apache/ISC licenses, failing on GPL/AGPL or unknown licenses. It does not
 replace redistribution obligations: ship the exact dependency notices and
 corresponding MPL source with a binary release, including any modified files.
 The current workflow builds and tests; it does not publish a release.
+`prepare_core.py` verifies the pinned upstream checksum and makes a private
+generated copy, fixing two unsynchronized Hysteria 2 shutdown flags with atomics.
+It leaves the shared module cache untouched. Builds fail if this copy is absent;
+race tests remain required. Exact modified MPL sources and the reproducible patch
+are included in every corresponding-source archive.
 Android linker options follow [libXray's Android builder](https://github.com/XTLS/libXray/blob/main/build/app/android.py):
 the pinned anet dependency references Go's internal IPv6 zone cache, requiring
 `-checklinkname=0`, and native libraries use 16 KiB page alignment. Changes to the

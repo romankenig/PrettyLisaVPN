@@ -4,6 +4,10 @@ Backend 0.21.1 → 0.22.0 (migration 0035), Android 0.14.2/code27 → 0.15.0/cod
 Windows 0.17.2 → 0.18.0, managed engine 0.3.0. These are minor feature increments,
 not deployment or acceptance claims. Android and Windows native integration is
 implemented in source; device and packaged-build acceptance remain pending.
+Dashboard 0.4.0 → 0.4.1 adds small corresponding-source download links. Its
+publisher switches binaries, source archives and notices atomically; Android
+0.15+ and Windows 0.18+ cannot publish without a matching source SHA and notices.
+Archives remain stored with each immutable build, not only in expiring CI artifacts.
 
 Admission currently implements AmneziaWG, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
 Hysteria 1/2 and Salamander, each direct or `_relay`. Relays permanently forward the
@@ -75,3 +79,6 @@ credentials/identity, core integration and shutdown. CI repeats races and fuzzin
 Backend admission and both client selectors contain 18 methods including direct
 WireGuard and every implemented relay variant. This is source implementation,
 not a claim that all methods have already passed DE/US device acceptance.
+The expanded race suite found unsynchronized closed flags in upstream Hysteria 2.
+The pinned core is now copied and patched reproducibly (two atomic flags), with
+its checksum, MPL notices and modified sources retained. No check is disabled.

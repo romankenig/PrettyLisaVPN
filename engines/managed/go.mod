@@ -6,6 +6,10 @@ go 1.27.3
 // our independently implemented MIT token bucket; never link that dependency.
 replace github.com/juju/ratelimit => ./compat/ratelimit
 
+// Reproducibly materialized by prepare_core.py from the pinned upstream module.
+// Two Hysteria UDP closed flags need atomic access (covered by race tests).
+replace github.com/xtls/xray-core => ./patched/xray-core
+
 require (
 	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828
 	github.com/apernet/quic-go v0.61.1-0.20260806010916-184d081eef3e

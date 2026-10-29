@@ -116,6 +116,7 @@ jobs:
       - name: Build isolated native engine for the single APK from current source
         working-directory: engines/managed
         run: |
+          python3 prepare_core.py
           go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867
           go install golang.org/x/mobile/cmd/gobind@v0.0.0-20261011034528-197770444867
           mkdir -p ../../apps/android/app/libs
@@ -132,6 +133,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/android-engine-source/source"
           git -C ../.. archive HEAD engines/managed apps/android | tar -x -C "$RUNNER_TEMP/android-engine-source/source"
+          cp -R patched "$RUNNER_TEMP/android-engine-source/source/engines/managed/patched"
           go mod vendor -o "$RUNNER_TEMP/android-engine-source/source/engines/managed/vendor"
           GOOS=android GOARCH=arm64 CGO_ENABLED=0 go-licenses save ./mobile --save_path="$RUNNER_TEMP/android-engine-source/licenses"
           cp -R "$RUNNER_TEMP/android-engine-source/licenses" ../../apps/android/app/src/main/assets/engine-licenses
@@ -155,13 +157,16 @@ jobs:
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 scripts/record-build.py
-      - name: Upload debug APK from this commit
+      - name: Include corresponding source archive beside the APK
+        run: cp "$RUNNER_TEMP/android-engine-source.tar.gz" app/build/outputs/apk/debug/managed-source.tar.gz
+      - name: Upload debug APK and corresponding sources from this commit
         uses: actions/upload-artifact@v4
         with:
           name: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             apps/android/app/build/outputs/apk/debug/app-debug.apk
             apps/android/app/build/outputs/apk/debug/build-identity.json
+            apps/android/app/build/outputs/apk/debug/managed-source.tar.gz
           if-no-files-found: error
           retention-days: 14
       - name: Upload test APK

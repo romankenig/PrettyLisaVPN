@@ -34,6 +34,7 @@ jobs:
           cache-dependency-path: engines/managed/go.sum
       - name: Format, vet, test and build without starting VPN
         run: |
+          python prepare_core.py
           test -z "$(gofmt -l .)"
           go vet ./...
           go test ./...
@@ -67,6 +68,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/managed-distribution/source"
           cp "$RUNNER_TEMP/pl-node-engine" "$RUNNER_TEMP/managed-distribution/"
           git -C ../.. archive HEAD engines/managed | tar -x -C "$RUNNER_TEMP/managed-distribution/source"
+          cp -R patched "$RUNNER_TEMP/managed-distribution/source/engines/managed/patched"
           go mod vendor -o "$RUNNER_TEMP/managed-distribution/source/engines/managed/vendor"
           go-licenses save ./cmd/pl-node-engine --save_path="$RUNNER_TEMP/managed-distribution/licenses"
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/managed-distribution/source-sha.txt"

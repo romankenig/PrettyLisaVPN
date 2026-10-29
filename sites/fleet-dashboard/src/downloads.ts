@@ -4,7 +4,11 @@ export const downloadUrls: Record<Platform, string> = {
   android: "/dashboard/downloads/android.apk",
   windows: "/dashboard/downloads/windows.exe",
 };
-export type Client = { version: string; published_at: string; bytes: number };
+export const sourceUrls: Record<Platform, string> = {
+  android: "/dashboard/downloads/android-sources.tar.gz",
+  windows: "/dashboard/downloads/windows-sources.tar.gz",
+};
+export type Client = { version: string; published_at: string; bytes: number; has_sources?: true };
 export type Clients = Partial<Record<Platform, Client>>;
 
 export function readClients(value: unknown): Clients {
@@ -16,6 +20,7 @@ export function readClients(value: unknown): Clients {
     const client = item as Record<string, unknown>;
     if (typeof client.version !== "string" || !/^\d+\.\d+\.\d+$/.test(client.version) || typeof client.published_at !== "string" || !Number.isFinite(Date.parse(client.published_at)) || typeof client.bytes !== "number" || client.bytes <= 0) continue;
     result[platform] = { version: client.version, published_at: client.published_at, bytes: client.bytes };
+    if (client.sources_url === sourceUrls[platform] && typeof client.sources_sha256 === "string" && /^[a-f0-9]{64}$/.test(client.sources_sha256)) result[platform]!.has_sources = true;
   }
   return result;
 }
