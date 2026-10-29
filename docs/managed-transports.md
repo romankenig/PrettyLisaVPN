@@ -90,8 +90,9 @@ also recreates expired UDP upstreams instead of retaining a dead flow.
 SSTP's MIT wire/PPP foundation is in `engines/managed/sstp`, with upstream file
 hashes and notices. It is not admitted or linked into clients yet. TLS loopback
 tests cover packet exchange, credentials, certificate pin/hostname, shutdown,
-rejection before authentication, and current-nonce crypto binding. An in-memory
-network adapter and official-peer interoperability remain required. The reviewed
+rejection before authentication, and current-nonce crypto binding. Its in-memory
+TCP/UDP network adapter now passes encrypted echo and shutdown tests; official-peer
+interoperability and admission integration remain required. The reviewed
 upstream system-TUN/server code is not used; packet admission is owned here.
 
 The native Windows capture for source 006364d (merge build 88e540e,
@@ -99,3 +100,18 @@ UI run 40873782903) confirmed bounded scrolling; visual inspection also found a
 clipped fieldset legend, now replaced by an inset accessible group heading.
 The next capture must verify that correction. Ansible's local artifact check
 now uses its private temporary directory for read-only worker containers.
+
+First fleet acceptance used the real Linux artifact from run 40873782931,
+attempt 1, product 006364d, merge build 88e540e53c254073e1b0ce47cff035b41068714b,
+artifact 12897296698. All three node installations preserved existing WireGuard
+configuration. Of 32 DE/US direct/relay probes, 21 confirmed DNS, HTTPS and the
+expected exit IP; all probe grants were removed. Hysteria 1 failed all four cases;
+some TLS/QUIC relay cases also failed and require diagnosis. This is not complete
+fleet or client acceptance. API admission remains disabled on the old backend.
+
+A regression test then reproduced Hysteria 1 resetting a completed upstream
+response instead of delivering QUIC FIN. The adapter now preserves queued bytes
+on normal EOF; the new finite-response test passes 30 consecutive local runs.
+The changed code still requires new artifact and fleet acceptance. Versions stay
+within this unfinished task (backend 0.22.0, Android 0.15.0, Windows 0.18.0,
+engine 0.3.0); current CI/build evidence is maintained in PR #38.

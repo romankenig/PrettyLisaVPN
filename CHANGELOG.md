@@ -17,6 +17,8 @@
 - MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
 - Begin an MIT SSTP adapter with authenticated TLS/PPP packet tests; it remains
   unavailable in selection until network-stack and interoperability acceptance.
+- Add SSTP's in-memory TCP/UDP network adapter; preserve Hysteria 1 response
+  bytes and graceful EOF when the upstream server closes its connection.
 - Dashboard 0.4.1 exposes matching source/license archives beside new managed
   client downloads; atomic publication rejects missing or mismatched sources.
   [Rollout and remaining validation](docs/managed-transports.md).

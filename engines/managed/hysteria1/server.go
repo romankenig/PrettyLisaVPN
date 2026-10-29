@@ -105,7 +105,17 @@ func (s *Server) serve(c *quic.Conn) {
 		streams.Add(1)
 		go func() {
 			defer streams.Done()
-			defer closeStream(stream)
+			graceful := false
+			defer func() {
+				if graceful {
+					// Preserve queued response bytes after upstream EOF. CancelWrite
+					// would turn a valid HTTP response into a stream reset.
+					stream.CancelRead(0)
+					_ = stream.Close()
+				} else {
+					closeStream(stream)
+				}
+			}()
 			_ = stream.SetDeadline(time.Now().Add(handshakeTimeout))
 			udp, address, err := readRequest(stream)
 			if err != nil {
@@ -127,7 +137,7 @@ func (s *Server) serve(c *quic.Conn) {
 				return
 			}
 			_ = stream.SetDeadline(time.Time{})
-			s.copyTCP(stream, upstream)
+			graceful = s.copyTCP(stream, upstream)
 		}()
 	}
 }
@@ -147,7 +157,7 @@ func (s *Server) count(up bool, n int) {
 		s.traffic(up, n)
 	}
 }
-func (s *Server) copyTCP(stream *quic.Stream, conn net.Conn) {
+func (s *Server) copyTCP(stream *quic.Stream, conn net.Conn) bool {
 	done := make(chan struct{}, 1)
 	go func() {
 		_, _ = io.Copy(countingWriter{conn, func(n int) { s.count(true, n) }}, stream)
@@ -156,10 +166,11 @@ func (s *Server) copyTCP(stream *quic.Stream, conn net.Conn) {
 		}
 		done <- struct{}{}
 	}()
-	_, _ = io.Copy(countingWriter{stream, func(n int) { s.count(false, n) }}, conn)
+	_, err := io.Copy(countingWriter{stream, func(n int) { s.count(false, n) }}, conn)
 	_ = conn.Close()
 	stream.CancelRead(0)
 	<-done
+	return err == nil
 }
 func (s *Server) serveUDP(p *peer, stream *quic.Stream, id uint32) {
 	ch, err := p.register(id)

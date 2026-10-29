@@ -203,6 +203,37 @@ func TestProtocolGoldenAndBounds(t *testing.T) {
 	}
 }
 
+// HTTP responses often end by closing the upstream TCP connection. QUIC must
+// deliver the queued response and FIN, not discard it with RESET_STREAM.
+func TestTCPDeliversResponseBeforeUpstreamEOF(t *testing.T) {
+	cert, pin := testCertificate(t)
+	p := packet(t)
+	payload := bytes.Repeat([]byte("finite response"), 32768)
+	s, err := NewServer(p, cert, "test-authorization-123", func(context.Context, string, string) (net.Conn, error) {
+		local, remote := net.Pipe()
+		go func() {
+			defer remote.Close()
+			_, _ = remote.Write(payload)
+		}()
+		return local, nil
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	c := newTestClient(t, p.LocalAddr().String(), "test-authorization-123", "vpn.example.com", pin)
+	conn, err := c.Dial(context.Background(), "tcp", "192.0.2.1:443")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
+	got, err := io.ReadAll(conn)
+	if err != nil || !bytes.Equal(got, payload) {
+		t.Fatalf("response truncated: received %d/%d bytes, error %v", len(got), len(payload), err)
+	}
+}
+
 type oneReplyConn struct {
 	net.Conn
 	replied bool
