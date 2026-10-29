@@ -12,5 +12,11 @@ bounded resource lifetime and its in-memory IP stack. In particular data must
 never be forwarded before PPP authentication, crypto binding and IPCP complete.
 Legacy PPP algorithms operate only inside authenticated TLS.
 
-This adapter is under implementation and not yet admitted by either client or
-backend. Official-peer interoperability and real-server acceptance are required.
+The adapter is registered in backend and client source. Its official-peer test
+uses SoftEther Stable 4.41 build 9787 in a disposable container without host
+networking, TUN or published ports. The official archive SHA-256 is
+`c766f92fc664cc95eb4b78d7c041a1e26dbd20d2e714438426c7bc45b146ffd9`.
+Reference binaries and their bundled libraries are test-only, never redistributed
+with PrettyLisaVPN clients. See reference/ and interop_test.go. TLS/PPP negotiation,
+tunneled DNS and HTTPS passed manually; CI repeats the reference test. Actual
+DE/US and packaged-device acceptance remain required.

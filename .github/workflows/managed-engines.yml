@@ -62,6 +62,13 @@ jobs:
           curl --fail --location --retry 3 https://github.com/HyNetworks/hysteria/releases/download/v1.3.5/hysteria-windows-amd64.exe --output "$RUNNER_TEMP/hysteria1-reference.exe"
           echo "1001bd4a83f6addac166bfdfc3e777f3b751bb397e11b5d8f1d6ec1c2dd44023  $RUNNER_TEMP/hysteria1-reference.exe" | sha256sum --check
           PL_HYSTERIA1_REFERENCE="$RUNNER_TEMP/hysteria1-reference.exe" go test ./hysteria1 -run TestOfficialV1Interop -count=1
+      - name: Verify SSTP with official SoftEther
+        if: runner.os == 'Linux'
+        run: |
+          go test -c -o "$RUNNER_TEMP/sstp-reference.test" ./sstp
+          docker build --tag pl-sstp-reference sstp/reference
+          docker run --rm --memory=256m --cpus=1 --cap-drop=ALL --security-opt=no-new-privileges \
+            --mount "type=bind,source=$RUNNER_TEMP/sstp-reference.test,target=/run/reference.test,readonly" pl-sstp-reference
       - name: Verify real server process closes accepted sockets
         if: runner.os == 'Linux'
         run: python3 node/process_test.py "$RUNNER_TEMP/pl-node-engine"

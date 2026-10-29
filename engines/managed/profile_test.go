@@ -43,7 +43,7 @@ func sample(method string) Profile {
 		p.ServerName = "vpn.example.com"
 	case "SHADOWSOCKS_2022":
 		p.Secret = key + ":" + key
-	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
+	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER", "SSTP":
 		p.ServerName = "vpn.example.com"
 	}
 	if method == "VLESS_REALITY" {
@@ -53,10 +53,13 @@ func sample(method string) Profile {
 	if method == "HYSTERIA2_SALAMANDER" {
 		p.ObfsSecret = "test-only-obfs-password"
 	}
+	if method == "SSTP" {
+		p.CertificatePin = strings.Repeat("a", 64)
+	}
 	return p
 }
 func TestGeneratedProfilesAcceptedByPinnedCore(t *testing.T) {
-	for _, method := range []string{"WIREGUARD", "AMNEZIA", "VLESS_TLS", "VLESS_REALITY", "VMESS_TLS", "TROJAN_TLS", "SHADOWSOCKS", "SHADOWSOCKS_2022", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER"} {
+	for _, method := range []string{"WIREGUARD", "AMNEZIA", "VLESS_TLS", "VLESS_REALITY", "VMESS_TLS", "TROJAN_TLS", "SHADOWSOCKS", "SHADOWSOCKS_2022", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER", "SSTP"} {
 		t.Run(method, func(t *testing.T) { checkCore(t, sample(method)) })
 	}
 	for _, method := range []string{"VLESS_TLS", "VMESS_TLS", "TROJAN_TLS"} {
@@ -71,6 +74,14 @@ func TestGeneratedProfilesAcceptedByPinnedCore(t *testing.T) {
 				checkCore(t, p)
 			})
 		}
+	}
+}
+
+func TestSSTPRequiresPinnedIdentity(t *testing.T) {
+	p := sample("SSTP")
+	p.CertificatePin = ""
+	if p.Validate() == nil {
+		t.Fatal("SSTP accepted without its authorized certificate pin")
 	}
 }
 func checkCore(t *testing.T, p Profile) {

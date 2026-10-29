@@ -20,6 +20,7 @@ class ManagedMethod:
 
 MANAGED_METHODS = {
     "amneziawg": ManagedMethod("AMNEZIA", "udp"),
+    "sstp": ManagedMethod("SSTP", "tcp"),
     "vless_reality": ManagedMethod("VLESS_REALITY", "tcp"),
     "vless": ManagedMethod("VLESS_TLS", "tcp"),
     "vmess": ManagedMethod("VMESS_TLS", "tcp"),

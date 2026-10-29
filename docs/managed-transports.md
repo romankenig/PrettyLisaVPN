@@ -9,12 +9,12 @@ publisher switches binaries, source archives and notices atomically; Android
 0.15+ and Windows 0.18+ cannot publish without a matching source SHA and notices.
 Archives remain stored with each immutable build, not only in expiring CI artifacts.
 
-Admission currently implements AmneziaWG, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
+Admission currently implements AmneziaWG, SSTP, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
 Hysteria 1/2 and Salamander, each direct or `_relay`. Relays permanently forward the
 encrypted TCP/UDP connection through INTERMEDIATE nodes to the selected exit.
 WireGuard retains its compatible API and lifecycle. OpenVPN/OpenConnect and other
-GPL/LGPL-dependent integrations are deferred; sing-box is excluded. SSTP and native
-SoftEther still require audited adapters.
+GPL/LGPL-dependent integrations are deferred; sing-box is excluded. Native
+SoftEther still requires its audited adapter.
 
 The private `/vpn/sessions` API delegates to existing account-serialized quota,
 device and country admission. The former WireGuard API remains compatible.
@@ -76,7 +76,7 @@ Go 1.20 reference executable is test-only, never redistributed in the clients.
 The adapter uses QUIC's standard congestion control and advertises a 30 Mbit/s
 rate. Source tests additionally cover fragmented UDP, malformed frames, wrong
 credentials/identity, core integration and shutdown. CI repeats races and fuzzing.
-Backend admission and both client selectors contain 18 methods including direct
+Backend admission and both client selectors contain 20 methods including direct
 WireGuard and every implemented relay variant. This is source implementation,
 not a claim that all methods have already passed DE/US device acceptance.
 The expanded race suite found unsynchronized closed flags in upstream Hysteria 2.
@@ -88,17 +88,22 @@ modes. Regression tests cover blocked sends and writing after close. Hysteria 1
 also recreates expired UDP upstreams instead of retaining a dead flow.
 
 SSTP's MIT wire/PPP foundation is in `engines/managed/sstp`, with upstream file
-hashes and notices. It is not admitted or linked into clients yet. TLS loopback
+hashes and notices. It is registered in backend and client source. TLS loopback
 tests cover packet exchange, credentials, certificate pin/hostname, shutdown,
 rejection before authentication, and current-nonce crypto binding. Its in-memory
-TCP/UDP network adapter now passes encrypted echo and shutdown tests; official-peer
-interoperability and admission integration remain required. The reviewed
+TCP/UDP network adapter passes encrypted echo and shutdown tests. An isolated
+official SoftEther Stable 4.41/9787 reference also passed tunneled DNS and HTTPS;
+the reproducible CI test retains its archive hash and never redistributes that
+reference binary. PPP peers may use a dummy inner address; it creates no system
+route and cannot bypass authentication or binding. The reviewed
 upstream system-TUN/server code is not used; packet admission is owned here.
 
 The native Windows capture for source 006364d (merge build 88e540e,
 UI run 40873782903) confirmed bounded scrolling; visual inspection also found a
 clipped fieldset legend, now replaced by an inset accessible group heading.
-The next capture must verify that correction. Ansible's local artifact check
+The source 53cd8d5 native capture (run 40876641682, merge build
+3e41564d152b1c35b4e3c97189eb0f45917e97c4) verified the correction. The newly added
+SSTP rows still require their next capture. Ansible's local artifact check
 now uses its private temporary directory for read-only worker containers.
 
 First fleet acceptance used the real Linux artifact from run 40873782931,
@@ -115,3 +120,13 @@ on normal EOF; the new finite-response test passes 30 consecutive local runs.
 The changed code still requires new artifact and fleet acceptance. Versions stay
 within this unfinished task (backend 0.22.0, Android 0.15.0, Windows 0.18.0,
 engine 0.3.0); current CI/build evidence is maintained in PR #38.
+
+The corrected Hysteria binary from product/build
+61aa4f6e6132e086920f89208c88ece8ad739d3b, run 40879877744 attempt 1,
+artifact 12898884722, SHA-256
+e98bbc2861c6830d27ba7ce0ddd784e56264024ed5df9493f0268f66e361dcdc,
+passed direct DE, direct US and relay DE DNS/HTTPS/exit checks. The new twenty-case
+series still failed five US relay paths (REALITY, VLESS, VMess, Hysteria 1/2),
+plus one DE VMess relay DNS check. Every test grant was removed. These network
+failures are not hidden by the passing builds; further diagnosis and client
+acceptance remain open. SSTP acceptance is separate and not covered by that binary.

@@ -36,6 +36,7 @@ def upgrade() -> None:
         "method IN ('wireguard','wireguard_relay','vless_reality','vless_reality_relay',"
         "'amneziawg','amneziawg_relay','vless','vless_relay','vmess','vmess_relay',"
         "'hysteria','hysteria_relay',"
+        "'sstp','sstp_relay',"
         "'shadowsocks2022','shadowsocks2022_relay','hysteria2','hysteria2_relay',"
         "'hysteria2_salamander','hysteria2_salamander_relay')",
     )

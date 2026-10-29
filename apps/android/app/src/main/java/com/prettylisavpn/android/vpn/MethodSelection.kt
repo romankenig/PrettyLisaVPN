@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 val connectionMethods: List<VpnMethod> = listOf(
-    "wireguard" to "WireGuard", "amneziawg" to "Amnezia", "shadowsocks2022" to "SS2022",
+    "wireguard" to "WireGuard", "amneziawg" to "Amnezia", "sstp" to "SSTP",
+    "shadowsocks2022" to "SS2022",
     "vmess" to "VMess", "vless" to "VLESS", "vless_reality" to "REALITY",
     "hysteria" to "Hysteria",
     "hysteria2" to "Hysteria 2", "hysteria2_salamander" to "Salamander",

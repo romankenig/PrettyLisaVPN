@@ -372,7 +372,10 @@ func (h clientHandler) Authenticated(response [mschap.NTResponseLen]byte) {
 	h.mu.Unlock()
 }
 func (h clientHandler) NetworkUp(config ppp.IPConfig) {
-	if !config.LocalIP.Equal(ClientIP) || !config.PeerIP.Equal(ServerIP) {
+	// The authenticated peer may advertise a dummy PPP address (RFC 7600) or
+	// omit its address. It is not an Ethernet gateway and installs no host route.
+	// Only the address assigned to this authorization is required here.
+	if !config.LocalIP.Equal(ClientIP) {
 		_ = h.Close()
 		return
 	}

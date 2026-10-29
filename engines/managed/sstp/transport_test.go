@@ -36,6 +36,21 @@ func certificate(t *testing.T) (tls.Certificate, string) {
 	pin := sha256.Sum256(der)
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, hex.EncodeToString(pin[:])
 }
+
+func TestNetworkNegotiationAcceptsDummyPPPAddressButStillRequiresAuthentication(t *testing.T) {
+	for _, peer := range []net.IP{nil, net.IPv4(192, 0, 0, 8), ServerIP} {
+		s := &Session{ready: make(chan struct{})}
+		clientHandler{s}.NetworkUp(ppp.IPConfig{LocalIP: ClientIP, PeerIP: peer})
+		if !s.network {
+			t.Fatal("valid PPP configuration rejected")
+		}
+		select {
+		case <-s.ready:
+			t.Fatal("IPCP bypassed authentication and binding")
+		default:
+		}
+	}
+}
 func ipPacket(source, dest net.IP) []byte {
 	b := make([]byte, 28)
 	b[0] = 0x45

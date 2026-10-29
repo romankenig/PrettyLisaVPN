@@ -15,6 +15,7 @@ import (
 
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp"
 	"github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/core"
 )
@@ -96,12 +97,12 @@ func (p Profile) Validate() error {
 		if p.Method == "VLESS_REALITY" && (!key32(p.PublicKey, true) || !shortID.MatchString(p.ShortID) || p.Transport != "") {
 			return ErrProfile
 		}
-	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
+	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER", "SSTP":
 		tlsRequired = true
 		if len(p.Secret) < 16 {
 			return ErrProfile
 		}
-		if p.Method == "HYSTERIA1_TLS" && len(p.Secret) > 128 {
+		if (p.Method == "HYSTERIA1_TLS" || p.Method == "SSTP") && len(p.Secret) > 128 {
 			return ErrProfile
 		}
 		if p.Method == "HYSTERIA2_SALAMANDER" && (len(p.ObfsSecret) < 16 || len(p.ObfsSecret) > 128 || strings.ContainsAny(p.ObfsSecret, "\x00\r\n")) {
@@ -138,6 +139,9 @@ func (p Profile) Validate() error {
 		return ErrProfile
 	}
 	if p.CertificatePin != "" && (!tlsRequired || p.Method == "VLESS_REALITY" || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(p.CertificatePin)) {
+		return ErrProfile
+	}
+	if p.Method == "SSTP" && p.CertificatePin == "" {
 		return ErrProfile
 	}
 	if p.Transport == "" {
@@ -181,7 +185,7 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		stream["tlsSettings"].(obj)["pinnedPeerCertSha256"] = p.CertificatePin
 	}
 	switch p.Method {
-	case "HYSTERIA1_TLS":
+	case "HYSTERIA1_TLS", "SSTP":
 		// The private typed factory is applied by Configure after JSON parsing.
 		// Until then this outbound is closed, never an unencrypted fallback.
 		out["protocol"], out["settings"] = "blackhole", obj{}
@@ -258,10 +262,13 @@ func (p Profile) Configure(config *core.Config) error {
 	if p.Method == "AMNEZIA" {
 		return amnezia.Wrap(config)
 	}
-	if p.Method == "HYSTERIA1_TLS" {
+	if p.Method == "HYSTERIA1_TLS" || p.Method == "SSTP" {
 		for _, out := range config.Outbound {
 			if out.Tag == "vpn" {
 				out.ProxySettings = serial.ToTypedMessage(&hysteria1.Config{Address: p.Server, Port: uint32(p.Port), Secret: p.Secret, ServerName: p.ServerName, CertificatePin: p.CertificatePin})
+				if p.Method == "SSTP" {
+					out.ProxySettings = serial.ToTypedMessage(&sstp.Config{Address: p.Server, Port: uint32(p.Port), Secret: p.Secret, ServerName: p.ServerName, CertificatePin: p.CertificatePin})
+				}
 				return nil
 			}
 		}

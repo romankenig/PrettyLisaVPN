@@ -35,6 +35,7 @@ ENGINE = Path("/usr/local/lib/prettylisavpn-fleet/pl-node-engine")
 HELPER = Path("/usr/local/lib/prettylisavpn-fleet/managed.py")
 METHODS = {
     "AMNEZIA": ("udp",),
+    "SSTP": ("tcp",),
     "VLESS_REALITY": ("tcp",),
     "VLESS_TLS": ("tcp",),
     "VMESS_TLS": ("tcp",),

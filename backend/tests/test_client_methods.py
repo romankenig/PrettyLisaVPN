@@ -26,6 +26,8 @@ def test_every_encrypted_method_has_a_relay_and_no_deferred_method_is_admitted()
     assert MANAGED_METHODS["hysteria2"].network == "udp"
     assert MANAGED_METHODS["hysteria"].engine == "HYSTERIA1_TLS"
     assert MANAGED_METHODS["hysteria"].network == "udp"
+    assert MANAGED_METHODS["sstp"].engine == "SSTP"
+    assert MANAGED_METHODS["sstp"].network == "tcp"
     assert MANAGED_METHODS["vless_reality"].network == "tcp"
 
 

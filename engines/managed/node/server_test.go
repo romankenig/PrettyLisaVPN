@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp"
 	"github.com/xtls/xray-core/core"
 )
 
@@ -62,14 +63,14 @@ func TestSelectedMethodExposesOnlyOneListener(t *testing.T) {
 			t.Fatal(method, err)
 		}
 		inbounds := parsed.inbounds()
-		if method != "HYSTERIA1_TLS" && (len(inbounds) != 1 || inbounds[0].(map[string]any)["port"] != l.Port) {
+		if method != "HYSTERIA1_TLS" && method != "SSTP" && (len(inbounds) != 1 || inbounds[0].(map[string]any)["port"] != l.Port) {
 			t.Fatal("unselected listener exposed", method)
 		}
 		config, err := parsed.Config()
 		if err != nil {
 			t.Fatal(method, err)
 		}
-		if method == "HYSTERIA1_TLS" {
+		if method == "HYSTERIA1_TLS" || method == "SSTP" {
 			listeners := 0
 			for _, app := range config.App {
 				value, err := app.GetInstance()
@@ -79,6 +80,12 @@ func TestSelectedMethodExposesOnlyOneListener(t *testing.T) {
 				if h, ok := value.(*hysteria1.Config); ok {
 					if !h.Server || h.Port != uint32(l.Port) || h.Secret != l.Secret {
 						t.Fatal("wrong authorized listener")
+					}
+					listeners++
+				}
+				if h, ok := value.(*sstp.Config); ok {
+					if !h.Server || h.Port != uint32(l.Port) || h.Secret != l.Secret {
+						t.Fatal("wrong authorized SSTP listener")
 					}
 					listeners++
 				}
