@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Backend — 0.22.1
+
+- Recheck configured zero-rated servers every three minutes on the main server,
+  with distinct slots, existing operation locks and no replay of missed intervals.
+- Use the dashboard rating, including stale/unverified results; return to hourly
+  checks after recovery. Active connections do not suppress the normal probe.
+  No schema change. See [monitoring retry handoff](fleet-fast-rechecks.md).
+
 ### Android — 0.15.1 / dashboard — 0.4.2
 
 - Replace the 253 MB universal debug APK with standalone per-CPU APKs, strip Go

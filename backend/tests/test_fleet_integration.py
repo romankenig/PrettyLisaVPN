@@ -15,6 +15,7 @@ from prettylisavpn.fleet.domain import (
     NodeUpdate,
     Observation,
     WireGuardConfig,
+    hourly_slot,
 )
 from prettylisavpn.fleet.model import (
     FleetMethodRecord,
@@ -162,6 +163,91 @@ async def test_hourly_schedule_does_not_replay_outage_and_enrolls_new_nodes(flee
             )
         ).all()
         assert all(row.next_check_at > now for row in methods)
+
+
+async def test_zero_rating_reschedules_fast_and_recovery_returns_to_hourly(fleet_state):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids)
+    worker = FleetWorker(postgres, {"wireguard": None})
+    now = datetime.now(UTC)
+    async with postgres.session() as session, session.begin():
+        for identifier in ids:
+            method = await session.get(FleetMethodRecord, (identifier, "wireguard"))
+            method.next_check_at = now + timedelta(minutes=50)
+    # No history means the same zero/STALE rating the dashboard displays.
+    await worker.schedule(now)
+    async with postgres.session() as session:
+        rows = (
+            await session.scalars(
+                select(FleetMethodRecord).where(FleetMethodRecord.node_id.in_(ids))
+            )
+        ).all()
+        due = {row.node_id: row.next_check_at for row in rows}
+    assert len(set(due.values())) == 3
+    assert all(now < value <= now + timedelta(minutes=3) for value in due.values())
+    target = min(due, key=due.get)
+    # An outstanding operation prevents another scheduled job for this target.
+    await service.enqueue(target, "wireguard", "CHECK", uuid4())
+    await worker.schedule(due[target] + timedelta(milliseconds=1))
+    async with postgres.session() as session:
+        jobs = (
+            await session.scalars(
+                select(FleetOperationRecord).where(FleetOperationRecord.node_id == target)
+            )
+        ).all()
+        assert len(jobs) == 1
+    claim = await worker.claim(datetime.now(UTC))
+    assert claim is not None and claim.target.id == target
+    observed = datetime.now(UTC)
+    assert await worker.finish(claim, {}, healthy(observed, active_connections=2))
+    await worker.schedule(observed + timedelta(milliseconds=1))
+    async with postgres.session() as session:
+        method = await session.get(FleetMethodRecord, (target, "wireguard"))
+        assert method.next_check_at == hourly_slot(
+            target, observed + timedelta(milliseconds=1), ids
+        )
+    # Aging past 75 minutes must accelerate checks even when the stored result
+    # was healthy. Active users by themselves never create a zero rating.
+    await worker.schedule(observed + timedelta(minutes=76))
+    async with postgres.session() as session:
+        method = await session.get(FleetMethodRecord, (target, "wireguard"))
+        assert (
+            observed + timedelta(minutes=76)
+            < method.next_check_at
+            <= observed + timedelta(minutes=79)
+        )
+
+
+async def test_failed_probe_retries_once_per_three_minute_slot(fleet_state):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids)
+    worker = FleetWorker(postgres, {"wireguard": None})
+    await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
+    claim = await worker.claim(datetime.now(UTC))
+    assert claim is not None
+    failed = Observation(
+        status="FAILED", mode="SYNTHETIC", code="HTTPS_FAILED", observed_at=datetime.now(UTC)
+    )
+    assert await worker.finish(claim, {}, failed)
+    now = datetime.now(UTC)
+    await worker.schedule(now)
+    async with postgres.session() as session:
+        method = await session.get(FleetMethodRecord, (ids[0], "wireguard"))
+        due = method.next_check_at
+    assert now < due <= now + timedelta(minutes=3)
+    for _ in range(2):
+        await worker.schedule(due + timedelta(milliseconds=1))
+    async with postgres.session() as session:
+        jobs = (
+            await session.scalars(
+                select(FleetOperationRecord).where(
+                    FleetOperationRecord.node_id == ids[0], FleetOperationRecord.status == "QUEUED"
+                )
+            )
+        ).all()
+        assert len(jobs) == 1 and jobs[0].request_key.startswith("retry:")
+        method = await session.get(FleetMethodRecord, (ids[0], "wireguard"))
+        assert abs((method.next_check_at - due).total_seconds() - 180) < 0.001
 
 
 async def test_passive_observation_has_no_fictitious_source(fleet_state):

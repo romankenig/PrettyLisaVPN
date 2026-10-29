@@ -24,26 +24,18 @@ def sources(directory: Path, platform: str, version: str, sha: str) -> dict[str,
     if tuple(map(int, version.split("."))) < minimum:
         return {}
     path = directory / SOURCES
-    if (
-        path.is_symlink()
-        or not path.is_file()
-        or not 0 < path.stat().st_size <= 512 * 1024 * 1024
-    ):
+    if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 512 * 1024 * 1024:
         raise ValueError("Corresponding managed sources are required")
     with tarfile.open(path, "r:gz") as archive:
         names = {member.name.removeprefix("./"): member for member in archive}
-        marker = names.get(
-            "source-sha.txt" if platform == "android" else "identity.json"
-        )
+        marker = names.get("source-sha.txt" if platform == "android" else "identity.json")
         if marker is None or not marker.isfile() or marker.size > 4096:
             raise ValueError("Source identity missing")
         stream = archive.extractfile(marker)
         assert stream is not None
         identity = stream.read().decode("utf-8-sig")
         source_sha = (
-            identity.strip()
-            if platform == "android"
-            else json.loads(identity)["source_sha"]
+            identity.strip() if platform == "android" else json.loads(identity)["source_sha"]
         )
         if (
             source_sha != sha
@@ -84,16 +76,9 @@ def order(entry: dict[str, Any]) -> tuple[int, ...]:
 def validate(
     directory: Path, platform: str, sha: str, run: int, attempt: int
 ) -> tuple[dict[str, Any], bytes, dict[str, bytes]]:
-    if (
-        platform not in FILES
-        or not re.fullmatch(r"[0-9a-f]{40}", sha)
-        or run < 1
-        or attempt < 1
-    ):
+    if platform not in FILES or not re.fullmatch(r"[0-9a-f]{40}", sha) or run < 1 or attempt < 1:
         raise ValueError("Invalid build coordinates")
-    identity = json.loads(
-        (directory / "build-identity.json").read_text(encoding="utf-8-sig")
-    )
+    identity = json.loads((directory / "build-identity.json").read_text(encoding="utf-8-sig"))
     if (
         identity["source_sha"] != sha
         or str(identity["run_id"]) != str(run)
@@ -124,9 +109,7 @@ def validate(
     if compact_android:
         if len(payload) > 40_000_000:
             raise ValueError("Android APK exceeds 40 MB")
-        if identity.get("abi") != "arm64-v8a" or identity.get("apk_bytes") != len(
-            payload
-        ):
+        if identity.get("abi") != "arm64-v8a" or identity.get("apk_bytes") != len(payload):
             raise ValueError("Expected the standalone ARM64 phone APK")
         with zipfile.ZipFile(io.BytesIO(payload)) as apk:
             natives = {name for name in apk.namelist() if name.startswith("lib/")}
@@ -163,9 +146,7 @@ def validate(
     return entry, payload, companions
 
 
-def publish(
-    root: Path, directory: Path, platform: str, sha: str, run: int, attempt: int
-) -> str:
+def publish(root: Path, directory: Path, platform: str, sha: str, run: int, attempt: int) -> str:
     # Only used on the Linux main server. A shared lock serializes both platforms.
     import fcntl
 
@@ -174,9 +155,7 @@ def publish(
     with (root / "publish.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         current = root / "current" / "index.json"
-        catalog = (
-            json.loads(current.read_text()) if current.exists() else {"clients": {}}
-        )
+        catalog = json.loads(current.read_text()) if current.exists() else {"clients": {}}
         clients = catalog["clients"]
         previous = clients.get(platform)
         if previous:
@@ -200,17 +179,12 @@ def publish(
         if release.exists():
             if (
                 json.loads((release / "identity.json").read_text())["source_sha"] != sha
-                or hashlib.sha256(
-                    (release / DOWNLOADS[platform]).read_bytes()
-                ).hexdigest()
+                or hashlib.sha256((release / DOWNLOADS[platform]).read_bytes()).hexdigest()
                 != entry["sha256"]
             ):
                 raise ValueError("Conflicting stored build")
             for name, content in companions.items():
-                if (
-                    not (release / name).is_file()
-                    or (release / name).read_bytes() != content
-                ):
+                if not (release / name).is_file() or (release / name).read_bytes() != content:
                     raise ValueError("Conflicting stored sources or licenses")
         else:
             stage = Path(tempfile.mkdtemp(prefix="pending-", dir=release.parent))
