@@ -32,13 +32,28 @@ func init() {
 		}
 		client, err := NewClient(net.JoinHostPort(c.Address, strconv.Itoa(int(c.Port))), c.Secret, c.ServerName, c.CertificatePin,
 			func(ctx context.Context) (net.PacketConn, error) {
-				return internet.ListenSystemPacket(ctx, &net.UDPAddr{IP: net.IPv4zero}, nil)
+				return listenUplink(ctx, c.Address, uint16(c.Port))
 			})
 		if err != nil {
 			return nil, err
 		}
 		return &outbound{Client: client}, nil
 	}))
+}
+
+func listenUplink(ctx context.Context, address string, port uint16) (net.PacketConn, error) {
+	// Outbound controllers bind Windows sockets to the physical interface and
+	// protect Android sockets from the VPN. A listener skips the former and can
+	// feed the QUIC handshake back into our own TUN after default routes change.
+	conn, err := internet.DialSystem(ctx, xnet.UDPDestination(xnet.ParseAddress(address), xnet.Port(port)), nil)
+	if err != nil {
+		return nil, err
+	}
+	if packet, ok := conn.(*xnet.PacketConnWrapper); ok {
+		return packet.PacketConn, nil
+	}
+	_ = conn.Close()
+	return nil, errProtocol
 }
 
 type outbound struct{ *Client }

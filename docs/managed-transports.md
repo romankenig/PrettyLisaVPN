@@ -1,5 +1,14 @@
 # Managed transport rollout (in progress)
 
+Windows run 40948674534 attempt 2 confirmed the repaired private pipe and found
+another boundary in Hysteria 1: its UDP listener skipped the outbound controllers
+that bind desktop sockets to the physical interface. The uplink now uses the
+same protected system dialer as Hysteria 2. A regression first failed because the
+controller was never called; it now verifies the destination, UDP send/receive
+and fail-closed behavior when protection refuses a socket. Existing version
+numbers remain within the unfinished task. New packaged Hysteria acceptance is
+required; other methods do not use this changed socket factory.
+
 Android's first packaged six-case US acceptance (product ef77d8f, dispatch
 40943421487/1) verified VLESS, SS2022, SS2022+, Hysteria 2 and Hysteria 2+,
 including 40-second renewals, independent HTTPS and all six cleanups. VLESS+

@@ -34,6 +34,8 @@
 
 ### Managed transports — in progress
 
+- Route Hysteria 1 UDP uplinks through outbound socket protection, so the Windows
+  physical-interface binding prevents QUIC from looping back into its own TUN.
 - Keep the Windows private engine pipe alive while waiting for delayed/fragmented
   replies; distinguish nonblocking no-data from a closed peer and reject partial
   timed-out frames. Regression tests reproduce the previous startup failure.
