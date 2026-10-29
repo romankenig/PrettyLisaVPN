@@ -480,7 +480,7 @@ async function main() {
   await screenshot("05-settings");
   await page.getByRole("link", { name: /расширенные настройки/i }).click();
   await page
-    .getByRole("heading", { name: "расширенные настройки", exact: true })
+    .getByRole("heading", { name: /^расширенные настройки$/i })
     .waitFor();
   await page
     .getByRole("checkbox", { name: "WireGuard", exact: true })
@@ -495,7 +495,7 @@ async function main() {
   )
     throw new Error("Method selection was not persisted");
   await page
-    .getByRole("checkbox", { name: "все способы", exact: true })
+    .getByRole("checkbox", { name: /^все способы$/i })
     .check();
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
 
