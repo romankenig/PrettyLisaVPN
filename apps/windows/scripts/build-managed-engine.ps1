@@ -14,7 +14,7 @@ if ((Get-FileHash -LiteralPath $WintunArchive -Algorithm SHA256).Hash.ToLowerInv
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::OpenRead($WintunArchive)
 try {
-    & python prepare_core.py --go $GoExecutable
+    & python (Join-Path $engineSource 'prepare_core.py') --go $GoExecutable
     if ($LASTEXITCODE -ne 0) { throw 'Pinned core preparation failed' }
     foreach ($entry in @(@('wintun/bin/amd64/wintun.dll', 'wintun.dll'), @('wintun/LICENSE.txt', 'Wintun-Prebuilt-License.txt'))) {
         $item = $archive.GetEntry($entry[0])

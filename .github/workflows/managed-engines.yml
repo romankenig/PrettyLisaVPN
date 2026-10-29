@@ -34,6 +34,7 @@ jobs:
           cache-dependency-path: engines/managed/go.sum
       - name: Format, vet, test and build without starting VPN
         run: |
+          python -m unittest prepare_core_test
           python prepare_core.py
           test -z "$(gofmt -l .)"
           go vet ./...
