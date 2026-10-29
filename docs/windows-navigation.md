@@ -4,6 +4,8 @@ Settings → Advanced settings opens a method checklist; Back returns to Setting
 All methods are selected by default; a nonempty device-local subset is persisted.
 The bounded checklist scrolls inside its card; Back, title and the All checkbox
 remain visible. Native review covers both the first and last method rows.
+The accessible checkbox group has an inset heading so WebView2 does not clip
+the label against the rounded card border.
 Connection snapshots this selection and starts with the last successful enabled
 method. Android has the private in-APK engine adapter. Windows uses a separate
 elevated private engine host and retains the normal unelevated UI. Production

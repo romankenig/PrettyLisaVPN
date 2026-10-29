@@ -52,6 +52,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           go test -race ./hysteria1 ./node
+          go test -race . -run TestGRPCClose
+          go test -race ./sstp/...
           go test ./hysteria1 -run '^$' -fuzz FuzzDatagram -fuzztime=10s
       - name: Verify compatibility with official Hysteria 1
         if: runner.os == 'Windows'

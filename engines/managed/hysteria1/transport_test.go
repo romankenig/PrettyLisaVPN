@@ -55,12 +55,17 @@ func TestEncryptedTCPUDPAndIdentity(t *testing.T) {
 	cert, pin := testCertificate(t)
 	p := packet(t)
 	var up, down atomic.Int64
+	counted := make(chan struct{}, 1)
 	dialer := net.Dialer{Timeout: time.Second}
 	s, e := NewServer(p, cert, "test-authorization-123", dialer.DialContext, func(u bool, n int) {
 		if u {
 			up.Add(int64(n))
 		} else {
 			down.Add(int64(n))
+		}
+		select {
+		case counted <- struct{}{}:
+		default:
 		}
 	})
 	if e != nil {
@@ -119,8 +124,15 @@ func TestEncryptedTCPUDPAndIdentity(t *testing.T) {
 			}
 		})
 	}
-	if up.Load() < 64000 || down.Load() < 64000 {
-		t.Fatal("missing aggregate traffic counters")
+	// A peer can receive bytes before the writer returns and accounts for them.
+	deadline := time.NewTimer(time.Second)
+	defer deadline.Stop()
+	for up.Load() < 64000 || down.Load() < 64000 {
+		select {
+		case <-counted:
+		case <-deadline.C:
+			t.Fatal("missing aggregate traffic counters")
+		}
 	}
 	for _, bad := range []struct{ name, pin, secret string }{
 		{"wrong.example.com", pin, "test-authorization-123"},

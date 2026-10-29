@@ -86,3 +86,16 @@ The same full race suite exposed gRPC Send/CloseSend concurrency. The pinned
 patch now cancels blocked RPC sends and serializes send/close in both framing
 modes. Regression tests cover blocked sends and writing after close. Hysteria 1
 also recreates expired UDP upstreams instead of retaining a dead flow.
+
+SSTP's MIT wire/PPP foundation is in `engines/managed/sstp`, with upstream file
+hashes and notices. It is not admitted or linked into clients yet. TLS loopback
+tests cover packet exchange, credentials, certificate pin/hostname, shutdown,
+rejection before authentication, and current-nonce crypto binding. An in-memory
+network adapter and official-peer interoperability remain required. The reviewed
+upstream system-TUN/server code is not used; packet admission is owned here.
+
+The native Windows capture for source 006364d (merge build 88e540e,
+UI run 40873782903) confirmed bounded scrolling; visual inspection also found a
+clipped fieldset legend, now replaced by an inset accessible group heading.
+The next capture must verify that correction. Ansible's local artifact check
+now uses its private temporary directory for read-only worker containers.

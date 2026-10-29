@@ -49,6 +49,10 @@
         path: /run/fleet/pl-node-engine
       delegate_to: localhost
       become: false
+      vars:
+        # The worker has a read-only root filesystem; local delegation otherwise
+        # expands the passwd home (/home/backend), ignoring its temporary HOME.
+        ansible_remote_tmp: "{{ lookup('env', 'ANSIBLE_LOCAL_TEMP') }}"
       register: managed_engine_artifact
     - name: Install verified managed engine without restarting active sessions
       ansible.builtin.copy:

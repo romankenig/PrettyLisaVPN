@@ -25,8 +25,12 @@ export function AdvancedSettings({
         {t("← настройки")}
       </Link>
       <h1 id="advanced-title">{t("Расширенные настройки")}</h1>
-      <fieldset className="method-options">
-        <legend>{t("Способы подключения")}</legend>
+      <div
+        className="method-options"
+        role="group"
+        aria-labelledby="method-options-title"
+      >
+        <h2 id="method-options-title">{t("Способы подключения")}</h2>
         <p>
           {t(
             "Изменения применятся при следующем подключении. Выберите хотя бы один способ.",
@@ -54,7 +58,7 @@ export function AdvancedSettings({
             </label>
           ))}
         </div>
-      </fieldset>
+      </div>
     </section>
   );
 }
