@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
 	"github.com/xtls/xray-core/core"
 )
 
@@ -61,12 +62,30 @@ func TestSelectedMethodExposesOnlyOneListener(t *testing.T) {
 			t.Fatal(method, err)
 		}
 		inbounds := parsed.inbounds()
-		if len(inbounds) != 1 || inbounds[0].(map[string]any)["port"] != l.Port {
+		if method != "HYSTERIA1_TLS" && (len(inbounds) != 1 || inbounds[0].(map[string]any)["port"] != l.Port) {
 			t.Fatal("unselected listener exposed", method)
 		}
 		config, err := parsed.Config()
 		if err != nil {
 			t.Fatal(method, err)
+		}
+		if method == "HYSTERIA1_TLS" {
+			listeners := 0
+			for _, app := range config.App {
+				value, err := app.GetInstance()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if h, ok := value.(*hysteria1.Config); ok {
+					if !h.Server || h.Port != uint32(l.Port) || h.Secret != l.Secret {
+						t.Fatal("wrong authorized listener")
+					}
+					listeners++
+				}
+			}
+			if len(config.Inbound) != 0 || listeners != 1 {
+				t.Fatal("unexpected listeners")
+			}
 		}
 		instance, err := core.New(config)
 		if err != nil {

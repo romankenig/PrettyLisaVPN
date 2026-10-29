@@ -494,9 +494,7 @@ async function main() {
       .isChecked()
   )
     throw new Error("Method selection was not persisted");
-  await page
-    .getByRole("checkbox", { name: /^все способы$/i })
-    .check();
+  await page.getByRole("checkbox", { name: /^все способы$/i }).check();
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
 
   async function billingScenario(scenario) {

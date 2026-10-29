@@ -8,6 +8,7 @@ replace github.com/juju/ratelimit => ./compat/ratelimit
 
 require (
 	github.com/amnezia-vpn/amneziawg-go/v3 v3.1.20260828
+	github.com/apernet/quic-go v0.61.1-0.20260806010916-184d081eef3e
 	github.com/miekg/dns v1.1.73
 	github.com/xtls/xray-core v1.260327.1-0.20261021115930-1b1647cd9ddf
 	golang.org/x/crypto v0.58.0
@@ -18,7 +19,6 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.3 // indirect
-	github.com/apernet/quic-go v0.61.1-0.20260806010916-184d081eef3e // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.6.0 // indirect

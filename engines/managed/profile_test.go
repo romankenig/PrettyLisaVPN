@@ -34,7 +34,7 @@ func sample(method string) Profile {
 	key := base64.StdEncoding.EncodeToString(append([]byte{1}, make([]byte, 31)...))
 	p := Profile{Version: 1, Session: "d84cd4d2-8aee-4c17-9772-31db1d512924", Country: "DE", Method: method, Server: "192.0.2.20", Port: 443, Secret: "test-only-disposable-password"}
 	switch method {
-	case "WIREGUARD":
+	case "WIREGUARD", "AMNEZIA":
 		p.Secret = key
 		p.PublicKey = key
 		p.Address = "10.77.0.2/32"
@@ -43,7 +43,7 @@ func sample(method string) Profile {
 		p.ServerName = "vpn.example.com"
 	case "SHADOWSOCKS_2022":
 		p.Secret = key + ":" + key
-	case "TROJAN_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
+	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
 		p.ServerName = "vpn.example.com"
 	}
 	if method == "VLESS_REALITY" {
@@ -56,7 +56,7 @@ func sample(method string) Profile {
 	return p
 }
 func TestGeneratedProfilesAcceptedByPinnedCore(t *testing.T) {
-	for _, method := range []string{"WIREGUARD", "VLESS_TLS", "VLESS_REALITY", "VMESS_TLS", "TROJAN_TLS", "SHADOWSOCKS", "SHADOWSOCKS_2022", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER"} {
+	for _, method := range []string{"WIREGUARD", "AMNEZIA", "VLESS_TLS", "VLESS_REALITY", "VMESS_TLS", "TROJAN_TLS", "SHADOWSOCKS", "SHADOWSOCKS_2022", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER"} {
 		t.Run(method, func(t *testing.T) { checkCore(t, sample(method)) })
 	}
 	for _, method := range []string{"VLESS_TLS", "VMESS_TLS", "TROJAN_TLS"} {
@@ -83,6 +83,9 @@ func checkCore(t *testing.T, p Profile) {
 		c, err := serial.LoadJSONConfig(bytes.NewReader(content))
 		if err != nil {
 			t.Fatal("core rejected schema", err)
+		}
+		if err := p.Configure(c); err != nil {
+			t.Fatal(err)
 		}
 		instance, err := core.New(c)
 		if err != nil {

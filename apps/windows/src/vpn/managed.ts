@@ -8,6 +8,7 @@ export const managedMethods = {
   vless: "VLESS_TLS",
   vmess: "VMESS_TLS",
   shadowsocks2022: "SHADOWSOCKS_2022",
+  hysteria: "HYSTERIA1_TLS",
   hysteria2: "HYSTERIA2_TLS",
   hysteria2_salamander: "HYSTERIA2_SALAMANDER",
 } as const;
@@ -68,7 +69,7 @@ export function createManagedAdapter(options: {
     details: ({ engine_profile: p }) => ({
       protocol: options.name,
       transport:
-        base === "amneziawg" || base.startsWith("hysteria2")
+        base === "amneziawg" || base.startsWith("hysteria")
           ? "UDP"
           : base === "shadowsocks2022"
             ? "TCP/UDP"

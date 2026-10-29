@@ -24,10 +24,11 @@ closes the tunnel. The Windows host must use a kill-on-close Job Object and kill
 the helper if bounded cleanup fails. RUNNING is not proof of connectivity.
 
 The generated profile supports WireGuard, AmneziaWG, VLESS/TLS, VLESS/REALITY/Vision,
-VMess/TLS, Trojan/TLS, Shadowsocks AEAD/2022, Hysteria2 and Salamander. The TLS
+VMess/TLS, Trojan/TLS, Shadowsocks AEAD/2022, Hysteria 1/2 and Salamander. The TLS
 proxies additionally support WebSocket, gRPC, HTTPUpgrade and XHTTP. Old HTTP/2
 and QUIC transport names are rejected, not silently mapped to a different wire
-format. Hysteria1, SSH, UoT and other article families need separate adapters.
+format. Hysteria 1 uses its distinct protocol-v3 adapter; SSH, UoT and other
+article families need separate adapters.
 OpenVPN/OpenConnect GPL libraries are not part of this component.
 
 All application packets, including DNS to 1.1.1.1, use the selected encrypted

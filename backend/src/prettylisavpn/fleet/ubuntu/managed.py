@@ -40,6 +40,7 @@ METHODS = {
     "VMESS_TLS": ("tcp",),
     "SHADOWSOCKS_2022": ("tcp", "udp"),
     "HYSTERIA2_TLS": ("udp",),
+    "HYSTERIA1_TLS": ("udp",),
     "HYSTERIA2_SALAMANDER": ("udp",),
 }
 

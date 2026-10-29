@@ -6,10 +6,11 @@ not deployment or acceptance claims. Android and Windows native integration is
 implemented in source; device and packaged-build acceptance remain pending.
 
 Admission currently implements AmneziaWG, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
-Hysteria2 and Salamander, each direct or `_relay`. Relays permanently forward the
+Hysteria 1/2 and Salamander, each direct or `_relay`. Relays permanently forward the
 encrypted TCP/UDP connection through INTERMEDIATE nodes to the selected exit.
 WireGuard retains its compatible API and lifecycle. OpenVPN/OpenConnect and other
-GPL/LGPL-dependent integrations are deferred; sing-box is excluded. SSTP, native SoftEther and Hysteria1 still require audited adapters.
+GPL/LGPL-dependent integrations are deferred; sing-box is excluded. SSTP and native
+SoftEther still require audited adapters.
 
 The private `/vpn/sessions` API delegates to existing account-serialized quota,
 device and country admission. The former WireGuard API remains compatible.
@@ -62,3 +63,15 @@ proxy adaptation in engines/managed/amnezia. Native loopback tests confirm TCP,
 UDP and rejection of unauthorized keys. Kernel modules and GPL utilities are
 not used. Its source integration adds two more managed adapter cases; repeat
 packaged Android/Windows and real-server acceptance for the resulting head.
+
+Hysteria 1 uses a bounded MIT protocol-v3 adapter over the current pinned QUIC
+runtime, distinct from Hysteria 2. It authenticates before forwarding, checks the
+pinned CA plus hostname/expiry, and uses the protected socket/TUN lifecycle.
+Official v1.3.5 interoperability passes TCP and UDP in both directions; the old
+Go 1.20 reference executable is test-only, never redistributed in the clients.
+The adapter uses QUIC's standard congestion control and advertises a 30 Mbit/s
+rate. Source tests additionally cover fragmented UDP, malformed frames, wrong
+credentials/identity, core integration and shutdown. CI repeats races and fuzzing.
+Backend admission and both client selectors contain 18 methods including direct
+WireGuard and every implemented relay variant. This is source implementation,
+not a claim that all methods have already passed DE/US device acceptance.

@@ -24,6 +24,8 @@ def test_every_encrypted_method_has_a_relay_and_no_deferred_method_is_admitted()
             base_method(method)
     assert MANAGED_METHODS["shadowsocks2022"].network == "both"
     assert MANAGED_METHODS["hysteria2"].network == "udp"
+    assert MANAGED_METHODS["hysteria"].engine == "HYSTERIA1_TLS"
+    assert MANAGED_METHODS["hysteria"].network == "udp"
     assert MANAGED_METHODS["vless_reality"].network == "tcp"
 
 

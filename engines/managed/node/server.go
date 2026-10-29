@@ -16,8 +16,10 @@ import (
 
 	_ "github.com/romankenig/PrettyLisaVPN/engines/managed"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
 	_ "github.com/xtls/xray-core/app/policy"
 	_ "github.com/xtls/xray-core/app/stats"
+	commonserial "github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf/serial"
 	_ "github.com/xtls/xray-core/proxy/freedom"
@@ -115,6 +117,9 @@ func (l Lease) Config() (*core.Config, error) {
 		if amnezia.Wrap(c) != nil {
 			return nil, ErrConfiguration
 		}
+	}
+	if l.Method == "HYSTERIA1_TLS" {
+		c.App = append(c.App, commonserial.ToTypedMessage(&hysteria1.Config{Server: true, Address: l.Listen, Port: uint32(l.Port), Secret: l.Secret, Certificate: l.TLSCertificate, Key: l.TLSKey}))
 	}
 	return c, nil
 }

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 
 internal val managedMethods = linkedMapOf("amneziawg" to "AMNEZIA", "vless_reality" to "VLESS_REALITY", "vless" to "VLESS_TLS",
     "vmess" to "VMESS_TLS", "shadowsocks2022" to "SHADOWSOCKS_2022",
+    "hysteria" to "HYSTERIA1_TLS",
     "hysteria2" to "HYSTERIA2_TLS", "hysteria2_salamander" to "HYSTERIA2_SALAMANDER")
 
 internal class ManagedAdapter(private val context: Context, private val sessions: SessionCoordinator,

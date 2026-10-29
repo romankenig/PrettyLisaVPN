@@ -16,6 +16,7 @@ const PlanPorts = 20
 // A current lease exposes exactly one selected encrypted protocol.
 var methodOffsets = map[string]int{
 	"AMNEZIA":       -1,
+	"HYSTERIA1_TLS": -2,
 	"VLESS_REALITY": 0, "VLESS_TLS": 1, "VMESS_TLS": 6,
 	"SHADOWSOCKS_2022": 17, "HYSTERIA2_TLS": 18, "HYSTERIA2_SALAMANDER": 19,
 }
@@ -27,6 +28,9 @@ func derived(secret, purpose string) string {
 
 func (l Lease) inbounds() []any {
 	type obj = map[string]any
+	if l.Method == "HYSTERIA1_TLS" {
+		return nil
+	}
 	if l.Method == "AMNEZIA" {
 		raw, _ := base64.StdEncoding.DecodeString(derived(l.Secret, "amnezia-key"))
 		private, _ := ecdh.X25519().NewPrivateKey(raw)

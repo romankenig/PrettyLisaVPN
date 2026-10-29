@@ -6,7 +6,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf/serial"
 )
@@ -50,10 +49,8 @@ func (r *Runtime) start(profile string, mobile bool) error {
 	if err != nil {
 		return ErrProfile
 	}
-	if p.Method == "AMNEZIA" {
-		if amnezia.Wrap(c) != nil {
-			return ErrProfile
-		}
+	if p.Configure(c) != nil {
+		return ErrProfile
 	}
 	instance, err := r.create(c)
 	if err != nil {

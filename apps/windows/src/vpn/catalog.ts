@@ -5,6 +5,7 @@ const families = [
   ["vmess", "VMess"],
   ["vless", "VLESS"],
   ["vless_reality", "REALITY"],
+  ["hysteria", "Hysteria"],
   ["hysteria2", "Hysteria 2"],
   ["hysteria2_salamander", "Salamander"],
 ] as const;

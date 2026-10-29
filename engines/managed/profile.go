@@ -12,6 +12,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
+	"github.com/xtls/xray-core/common/serial"
+	"github.com/xtls/xray-core/core"
 )
 
 const Version = "0.3.0"
@@ -91,9 +96,12 @@ func (p Profile) Validate() error {
 		if p.Method == "VLESS_REALITY" && (!key32(p.PublicKey, true) || !shortID.MatchString(p.ShortID) || p.Transport != "") {
 			return ErrProfile
 		}
-	case "TROJAN_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
+	case "TROJAN_TLS", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER":
 		tlsRequired = true
 		if len(p.Secret) < 16 {
+			return ErrProfile
+		}
+		if p.Method == "HYSTERIA1_TLS" && len(p.Secret) > 128 {
 			return ErrProfile
 		}
 		if p.Method == "HYSTERIA2_SALAMANDER" && (len(p.ObfsSecret) < 16 || len(p.ObfsSecret) > 128 || strings.ContainsAny(p.ObfsSecret, "\x00\r\n")) {
@@ -173,6 +181,10 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		stream["tlsSettings"].(obj)["pinnedPeerCertSha256"] = p.CertificatePin
 	}
 	switch p.Method {
+	case "HYSTERIA1_TLS":
+		// The private typed factory is applied by Configure after JSON parsing.
+		// Until then this outbound is closed, never an unencrypted fallback.
+		out["protocol"], out["settings"] = "blackhole", obj{}
 	case "WIREGUARD", "AMNEZIA":
 		out["protocol"] = "wireguard"
 		out["settings"] = obj{"secretKey": p.Secret, "address": []string{p.Address}, "mtu": 1280, "noKernelTun": true, "peers": []any{obj{"publicKey": p.PublicKey, "endpoint": net.JoinHostPort(p.Server, strconv.Itoa(int(p.Port))), "keepAlive": 25, "allowedIPs": []string{"0.0.0.0/0"}}}}
@@ -240,4 +252,20 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		"routing":   obj{"domainStrategy": "AsIs", "rules": []any{obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"}, obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": "vpn"}}},
 	}
 	return json.Marshal(config)
+}
+
+func (p Profile) Configure(config *core.Config) error {
+	if p.Method == "AMNEZIA" {
+		return amnezia.Wrap(config)
+	}
+	if p.Method == "HYSTERIA1_TLS" {
+		for _, out := range config.Outbound {
+			if out.Tag == "vpn" {
+				out.ProxySettings = serial.ToTypedMessage(&hysteria1.Config{Address: p.Server, Port: uint32(p.Port), Secret: p.Secret, ServerName: p.ServerName, CertificatePin: p.CertificatePin})
+				return nil
+			}
+		}
+		return ErrProfile
+	}
+	return nil
 }

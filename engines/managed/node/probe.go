@@ -18,7 +18,6 @@ import (
 
 	"github.com/miekg/dns"
 	managed "github.com/romankenig/PrettyLisaVPN/engines/managed"
-	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
 	xnet "github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf/serial"
@@ -88,10 +87,8 @@ func Probe(raw []byte) ProbeResult {
 	if err != nil {
 		return result
 	}
-	if p.Method == "AMNEZIA" {
-		if amnezia.Wrap(parsed) != nil {
-			return result
-		}
+	if p.Configure(parsed) != nil {
+		return result
 	}
 	instance, err := core.New(parsed)
 	if err != nil {

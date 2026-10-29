@@ -24,6 +24,7 @@ MANAGED_METHODS = {
     "vless": ManagedMethod("VLESS_TLS", "tcp"),
     "vmess": ManagedMethod("VMESS_TLS", "tcp"),
     "shadowsocks2022": ManagedMethod("SHADOWSOCKS_2022", "both"),
+    "hysteria": ManagedMethod("HYSTERIA1_TLS", "udp"),
     "hysteria2": ManagedMethod("HYSTERIA2_TLS", "udp"),
     "hysteria2_salamander": ManagedMethod("HYSTERIA2_SALAMANDER", "udp"),
 }

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package prettylisavpn.hysteria1;
+option go_package = "github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1";
+
+message Config {
+  bool server = 1;
+  string address = 2;
+  uint32 port = 3;
+  string secret = 4;
+  string server_name = 5;
+  string certificate_pin = 6;
+  string certificate = 7;
+  string key = 8;
+}
