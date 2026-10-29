@@ -32,7 +32,7 @@
   Backend and Windows versions are unchanged by this packaging task.
   See [APK size handoff](android-apk-size.md) for build and publication evidence.
 
-### Managed transports — in progress
+### Managed transports
 
 - Route Hysteria 1 UDP uplinks through outbound socket protection, so the Windows
   physical-interface binding prevents QUIC from looping back into its own TUN.
@@ -51,14 +51,14 @@
   Salamander; keep placeholders in UI-test fixtures only.
 - MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
 - Add an MIT SSTP adapter with authenticated TLS/PPP and in-memory TCP/UDP;
-  verify DNS/HTTPS with official SoftEther, with DE/US client acceptance pending.
+  verify DNS/HTTPS with official SoftEther and real DE/US client tunnels.
 - Add an MIT native SoftEther adapter with authenticated, isolated Ethernet
   segments and tunneled DNS/HTTPS interoperability against official SoftEther.
 - Preserve Hysteria 1 response
   bytes and graceful EOF when the upstream server closes its connection.
 - Dashboard 0.4.1 exposes matching source/license archives beside new managed
   client downloads; atomic publication rejects missing or mismatched sources.
-  [Rollout and remaining validation](docs/managed-transports.md).
+  [Rollout, exact build evidence and validation limits](docs/managed-transports.md).
 
 ### Dashboard — 0.4.0
 

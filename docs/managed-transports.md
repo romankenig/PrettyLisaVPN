@@ -1,4 +1,60 @@
-# Managed transport rollout (in progress)
+# Managed transports and rollout evidence
+
+## Acceptance and deployment, 2026-10-29
+
+The deployed backend is 0.22.1, schema 0035, product
+`277053a5484bf681bf4c3be7e45a0803e3a63d63`, manual build 20261029184333/1.
+The backend and fleet worker use the same immutable image. Managed admission is
+enabled; DE, US and the intermediate node are READY. Node binary artifact
+12923746083 came from engine run 40932133095/1, product 277053a, merge build
+7a479dd2eb8319a88386eca0fd37f384ad8f2633. Its SHA-256 is
+895dfb8063bcc7b32af10c39a3639b5ca6c529f4b89a2f1c6748418cae58f1a4.
+
+All forty server combinations (ten managed families, direct/relay, DE/US)
+confirmed handshake, DNS, HTTPS and the expected exit IP. Initial pass: 35/40;
+all five failures passed a separate retry. Four initial HTTPS failures coincided
+with a backend restart; one Salamander+ DNS failure was transient. All 45 grants
+were removed. Redacted reports are retained on the main server under
+`managed-source-validation-20261029/node-acceptance-owned-{sni,retry}.json`.
+
+Windows product/build 4484c0f3a17ff54864a7eb772e5472ee644a379f, run 40948674534/2,
+artifact 12932136870, passed 18/20 packaged DE cases. Each successful case had
+40 seconds of sustained connection, a separate HTTPS request explicitly bound
+to Wintun, and confirmed local/server cleanup. Native connected screenshots
+show the actual selected method and DE exit IP. Only Hysteria 1 and Hysteria 1+
+failed; both grants were removed. This prompted the isolated uplink correction
+below. Follow-up client results and permanent download identities are recorded
+in PR #38; these earlier binaries are not evidence for the corrected Hysteria.
+
+The physical Android phone was disconnected, and the owner's Windows machine
+retained its existing VPN. Real client acceptance uses an isolated Android
+emulator and Windows runner, not fixture traffic. Android UI checks cover API
+26/35/36; transport acceptance uses API 35. ARM64 phone and x86_64 emulator APKs
+come from the same source but are separate architecture builds.
+
+Android 0.15.2/code30 product/build abe454301c8ba8d8b763378ba4a2e2de68dd511a,
+run 40950109996/1, artifact 12933100794, passed all 20 packaged US cases with
+40-second sustained connections, independent VPN-bound HTTPS and all cleanups.
+SS2022, VLESS, REALITY+ and Salamander+ needed the bounded second verification;
+the other sixteen passed their first probe. All API 26/35/36 UI jobs passed.
+Native screenshots confirmed Connected and the selected method.
+
+The isolated Hysteria uplink correction is product/build
+5f8aac754b8f6d31e1a8ce8099f41f685fc107ad. Windows follow-up 40953318291/1,
+artifact 12933471228, passed Hysteria, Hysteria+ and the Hysteria 2+ control with
+the same sustained HTTPS/cleanup criteria. Its tested client artifact is
+12932423245: Windows 0.18.0, 71,531,520 bytes, SHA-256
+b3d53955615131025b5a100d6f09221a89fdec56a7ad5b3fe877bb9fcb25475b.
+The Android counterpart is run 40954115978/1. Its result, the final paginated
+CI audit, publication identities and rollback catalog are maintained in
+[PR #38](https://github.com/romankenig/PrettyLisaVPN/pull/38), avoiding another
+binary build solely to record a completed run. The older full matrices prove
+the unchanged adapters; only the corrected Hysteria factory uses these new
+follow-up builds. No unverified newer implementation is inferred from an older
+artifact. These are development builds, not signed store releases or endurance
+proof for every physical device and network.
+
+## Implementation and diagnostic history
 
 Windows run 40948674534 attempt 2 confirmed the repaired private pipe and found
 another boundary in Hysteria 1: its UDP listener skipped the outbound controllers
