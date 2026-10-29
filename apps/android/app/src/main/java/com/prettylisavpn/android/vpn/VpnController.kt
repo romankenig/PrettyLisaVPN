@@ -1,6 +1,5 @@
 package com.prettylisavpn.android.vpn
 
-import com.prettylisavpn.android.vpn.placeholders.placeholderAdapters
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,13 +15,14 @@ interface VpnActions {
     fun disconnect()
 }
 
-/** One executor for real verified adapters and the remaining method placeholders. */
+/** One executor for verified adapters; cleanup fences every fallback attempt. */
 class VpnController(
     private val owner: () -> String?,
     private val scope: CoroutineScope,
-    private val adapters: List<ConnectionAdapter> = placeholderAdapters(),
+    private val adapters: List<ConnectionAdapter>,
     private val preference: MethodPreference = MethodPreference(),
     private val recovery: ConnectionAdapter? = null,
+    private val enabledMethods: () -> Set<String>? = { null },
 ) : VpnActions {
     private val mutable = MutableStateFlow(VpnStatus())
     override val status = mutable.asStateFlow()
@@ -39,7 +39,9 @@ class VpnController(
             var previous: VpnMethod? = null
             try {
                 val preferred = preference.current()
-                val ordered = adapters.filter { it.method.id == preferred } + adapters.filter { it.method.id != preferred }
+                val selected = enabledMethods()
+                val allowed = adapters.filter { selected == null || it.method.id in selected }
+                val ordered = allowed.filter { it.method.id == preferred } + allowed.filter { it.method.id != preferred }
                 for (adapter in ordered) {
                     ensureActive()
                     if (owner() != id) { mutable.value = VpnStatus(); return@launch }

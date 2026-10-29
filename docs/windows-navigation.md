@@ -1,4 +1,14 @@
-# Relay and daily balance — Windows 0.16.0 / Android 0.13.0
+# Advanced settings — Windows 0.18.0 / Android 0.15.0 (in progress)
+
+Settings → Advanced settings opens a method checklist; Back returns to Settings.
+All methods are selected by default; a nonempty device-local subset is persisted.
+Connection snapshots this selection and starts with the last successful enabled
+method. Android has the private in-APK engine adapter. Windows uses a separate
+elevated private engine host and retains the normal unelevated UI. Production
+registries contain real adapters only; UI review fixtures remain test-only.
+Real backend acceptance is pending. See [rollout](managed-transports.md).
+
+## Relay and daily balance — Windows 0.16.0 / Android 0.13.0
 
 Home Connect attempts direct WireGuard, then WireGuard through permanent RU,
 then the remaining placeholders. Both implemented adapters use the existing

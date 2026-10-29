@@ -135,6 +135,12 @@ jobs:
           }
           rustfmt --check --edition 2021 --config skip_children=true src-tauri/src/main.rs src-tauri/src/window_frame.rs src-tauri/src/payment_browser.rs src-tauri/src/public_location.rs
           exit $LASTEXITCODE
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Build current managed engine and verify signed Wintun
+        run: ./scripts/build-managed-engine.ps1
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/windows/src-tauri

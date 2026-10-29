@@ -137,7 +137,7 @@ async def test_expired_worker_claim_is_fenced_and_nodes_are_exclusive(fleet_stat
 async def test_hourly_schedule_does_not_replay_outage_and_enrolls_new_nodes(fleet_state):
     postgres, _, ids = fleet_state
     await configured(postgres, ids)
-    worker = FleetWorker(postgres, {})
+    worker = FleetWorker(postgres, {"wireguard": None})
     now = datetime.now(UTC)
     await worker.schedule(now)
     async with postgres.session() as session, session.begin():

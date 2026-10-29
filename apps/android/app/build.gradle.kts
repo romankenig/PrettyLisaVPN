@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 27
-        versionName = "0.14.2"
+        versionCode = 28
+        versionName = "0.15.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -40,6 +40,7 @@ android {
     }
     bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
     buildFeatures {
+        aidl = true
         compose = true
         buildConfig = true
     }
@@ -65,6 +66,7 @@ android {
 }
 
 dependencies {
+    implementation(files("libs/managed.aar"))
     implementation(libs.wireguard.tunnel)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

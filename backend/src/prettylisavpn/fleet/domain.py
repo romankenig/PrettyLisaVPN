@@ -103,6 +103,7 @@ class RelayAccess(Value):
     target_host: IPv4Address
     target_port: int = Field(ge=1024, le=65535)
     expires_at: datetime
+    protocol: Literal["udp", "tcp", "both"] = "udp"
 
     @field_validator("target_host")
     @classmethod
@@ -168,6 +169,23 @@ class Access(Value):
     public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
     address: str
     expires_at: datetime
+
+
+class ManagedAccess(Access):
+    method: str
+    listen_port: int = Field(ge=40000, le=49999)
+
+
+class ManagedConfig(Value):
+    server_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]{1,251}[A-Za-z0-9]$")
+    reality_target: IPv4Address
+
+    @field_validator("reality_target")
+    @classmethod
+    def public_reality_target(cls, value: IPv4Address) -> IPv4Address:
+        if not value.is_global:
+            raise ValueError("A public Reality target is required")
+        return value
 
 
 class VpnMethod(ABC):

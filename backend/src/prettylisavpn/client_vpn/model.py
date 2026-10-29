@@ -28,10 +28,31 @@ class ClientLeaseRecord(Base):
             "status IN ('PROVISIONING','READY','REVOKING','CLOSED')", name="ck_client_lease_status"
         ),
         CheckConstraint(
-            "(method = 'wireguard' AND relay_node_id IS NULL AND relay_port IS NULL) OR "
-            "(method = 'wireguard_relay' AND relay_node_id IS NOT NULL AND relay_port IS NOT NULL "
+            "(right(method, 6) <> '_relay' AND relay_node_id IS NULL AND relay_port IS NULL) OR "
+            "(right(method, 6) = '_relay' AND relay_node_id IS NOT NULL AND relay_port IS NOT NULL "
             "AND relay_port BETWEEN 20000 AND 29999 AND relay_node_id <> node_id)",
             name="ck_client_lease_relay",
+        ),
+        CheckConstraint(
+            "(method IN ('wireguard','wireguard_relay') AND address IS NOT NULL "
+            "AND engine_port IS NULL) OR "
+            "(method NOT IN ('wireguard','wireguard_relay') AND address IS NULL "
+            "AND engine_port BETWEEN 40000 AND 49899 AND engine_port IS NOT NULL)",
+            name="ck_client_lease_engine",
+        ),
+        CheckConstraint(
+            "method IN ('wireguard','wireguard_relay','vless_reality','vless_reality_relay',"
+            "'vless','vless_relay','vmess','vmess_relay',"
+            "'shadowsocks2022','shadowsocks2022_relay','hysteria2','hysteria2_relay',"
+            "'hysteria2_salamander','hysteria2_salamander_relay')",
+            name="ck_client_lease_method",
+        ),
+        Index(
+            "uq_client_lease_engine_port",
+            "node_id",
+            "engine_port",
+            unique=True,
+            postgresql_where=text("removed_at IS NULL AND engine_port IS NOT NULL"),
         ),
         Index(
             "uq_client_lease_relay_port",
@@ -77,7 +98,8 @@ class ClientLeaseRecord(Base):
     relay_port: Mapped[int | None] = mapped_column(Integer)
     country: Mapped[str] = mapped_column(String(4))
     public_key: Mapped[str] = mapped_column(String(44))
-    address: Mapped[str] = mapped_column(String(18))
+    address: Mapped[str | None] = mapped_column(String(18))
+    engine_port: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="PROVISIONING")
     is_free: Mapped[bool] = mapped_column(Boolean)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

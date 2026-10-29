@@ -2,9 +2,9 @@ name: Windows development client
 
 on:
   push:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
+    paths: ['apps/windows/**', 'engines/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   pull_request:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
+    paths: ['apps/windows/**', 'engines/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   workflow_dispatch:
 
 permissions:
@@ -34,6 +34,12 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: apps/windows/package.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Build current managed engine and verify signed Wintun
+        run: ./scripts/build-managed-engine.ps1
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/windows/src-tauri
@@ -51,6 +57,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force artifacts/client | Out-Null
           Copy-Item src-tauri/target/debug/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          Copy-Item src-tauri/engine/Wintun-Prebuilt-License.txt artifacts/client/
+          Copy-Item src-tauri/engine/managed-source.tar.gz artifacts/client/
           $binary = Get-Item artifacts/client/PrettyLisaVPN.exe
           @{
             source_sha = '${{ github.sha }}'
@@ -61,7 +69,7 @@ jobs:
             bytes = $binary.Length
             sha256 = (Get-FileHash -Algorithm SHA256 $binary.FullName).Hash.ToLowerInvariant()
             backend = 'https://api.prettylisavpn.com'
-            mode = 'Managed official WireGuard; 13 remaining placeholder adapters'
+            mode = 'WireGuard and private managed transports; Internet verification required'
           } | ConvertTo-Json | Set-Content -Encoding utf8 artifacts/client/build-identity.json
       - uses: actions/upload-artifact@v4
         with:

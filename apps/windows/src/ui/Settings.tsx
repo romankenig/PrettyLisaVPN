@@ -6,6 +6,7 @@ import { useApplication } from "../state/application";
 import { Devices } from "./Devices";
 import { Subscription } from "./Subscription";
 import { NavigationIcon } from "./NavigationIcon";
+import { AdvancedSettings } from "./AdvancedSettings";
 
 export function Settings() {
   useLanguage();
@@ -13,6 +14,7 @@ export function Settings() {
     <Routes>
       <Route index element={<SettingsOverview />} />
       <Route path="subscription" element={<Subscription />} />
+      <Route path="advanced" element={<AdvancedSettings />} />
       <Route
         path="devices"
         element={
@@ -86,6 +88,14 @@ function SettingsOverview() {
           <span>
             <strong>{t("устройства")}</strong>
             <small>{t("Управление доступом к аккаунту")}</small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+        <Link className="settings-option" to="/settings/advanced">
+          <NavigationIcon name="settings" />
+          <span>
+            <strong>{t("Расширенные настройки")}</strong>
+            <small>{t("Способы подключения")}</small>
           </span>
           <span aria-hidden="true">→</span>
         </Link>

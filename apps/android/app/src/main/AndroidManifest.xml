@@ -19,6 +19,13 @@
              https://developer.android.com/develop/background-work/services/fgs/service-types#system-exempted -->
         <service android:name=".vpn.TunnelForegroundService" android:exported="false"
             android:foregroundServiceType="systemExempted" tools:ignore="ForegroundServicePermission" />
+        <service android:name="com.prettylisavpn.engine.ControlService"
+            android:process=":engine" android:exported="false" />
+        <service android:name="com.prettylisavpn.engine.EngineService"
+            android:process=":engine" android:exported="false" android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="systemExempted" tools:ignore="ForegroundServicePermission">
+            <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize"

@@ -1,2 +1,5 @@
-// Native review exercises the shipped placeholder executor, never synthetic success.
-export { createVpnConnectionManager as createReviewVpnConnection } from "../vpn/connection";
+// Test-only failed adapters exercise the real executor without starting a VPN.
+import { createVpnConnectionManager } from "../vpn/connection";
+import { placeholderAdapters } from "./placeholders";
+export const createReviewVpnConnection = () =>
+  createVpnConnectionManager(placeholderAdapters());

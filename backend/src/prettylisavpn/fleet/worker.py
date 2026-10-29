@@ -6,7 +6,7 @@ import signal
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import cast
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy import delete, or_, select, update
 
@@ -66,29 +66,29 @@ class FleetWorker:
                 )
             ).all()
             enabled = {node.id for node in nodes}
-            roster = list(
-                (
-                    await session.scalars(
-                        select(FleetMethodRecord.node_id).where(
-                            FleetMethodRecord.configured_at.is_not(None),
-                            FleetMethodRecord.node_id.in_(enabled),
-                        )
-                    )
-                ).all()
-            )
             configured = (
                 await session.scalars(
                     select(FleetMethodRecord)
                     .where(
                         FleetMethodRecord.configured_at.is_not(None),
                         FleetMethodRecord.node_id.in_(enabled),
+                        FleetMethodRecord.method.in_(self.methods),
                     )
                     .with_for_update(skip_locked=True)
                 )
             ).all()
+            slots = [
+                row.node_id if row.method == "wireguard" else uuid5(row.node_id, row.method)
+                for row in configured
+            ]
             for method in configured:
+                slot_id = (
+                    method.node_id
+                    if method.method == "wireguard"
+                    else uuid5(method.node_id, method.method)
+                )
                 if method.next_check_at is None:
-                    method.next_check_at = hourly_slot(method.node_id, now, roster)
+                    method.next_check_at = hourly_slot(slot_id, now, slots)
                 elif method.next_check_at <= now:
                     # A restart never replays missed hours. At most one current job per target.
                     outstanding = await session.scalar(
@@ -108,7 +108,7 @@ class FleetWorker:
                                 request_key="hour:" + method.next_check_at.isoformat(),
                             )
                         )
-                    method.next_check_at = hourly_slot(method.node_id, now, roster)
+                    method.next_check_at = hourly_slot(slot_id, now, slots)
             await session.execute(
                 delete(FleetObservationRecord).where(
                     FleetObservationRecord.observed_at < now - timedelta(days=8)
@@ -256,7 +256,11 @@ class FleetWorker:
             if claim.kind == "CONFIGURE" and not error and method is not None:
                 state = result["state"]
                 assert isinstance(state, dict)
-                method.configuration = claim.parameters
+                method.configuration = (
+                    cast(dict[str, object], state["configuration"])
+                    if claim.method == "managed"
+                    else claim.parameters
+                )
                 method.public_key = str(state["public_key"])
                 method.configured_at = method.configured_at or now
                 # Idempotent configure preserves prior validation, otherwise awaits a real probe.
@@ -349,6 +353,7 @@ class FleetWorker:
 
 async def main() -> None:
     from prettylisavpn.client_vpn.worker import ClientVpnWorker
+    from prettylisavpn.fleet.managed import ManagedVpnMethod
     from prettylisavpn.fleet.ssh import SshTransport
     from prettylisavpn.fleet.wireguard import WireGuardMethod
 
@@ -365,10 +370,20 @@ async def main() -> None:
     try:
         transport = SshTransport.from_file(settings.fleet_inventory_path)
         method = WireGuardMethod(transport)
+        managed = ManagedVpnMethod(transport, settings.managed_vpn_secret)
+        methods: dict[str, VpnMethod] = {"wireguard": method}
+        if settings.managed_vpn_secret is not None:
+            methods["managed"] = managed
         async with asyncio.TaskGroup() as group:
-            group.create_task(FleetWorker(postgres, {"wireguard": method}, settings).run(stop))
+            group.create_task(FleetWorker(postgres, methods, settings).run(stop))
             group.create_task(
-                ClientVpnWorker(postgres, method, enabled=settings.client_vpn_enabled).run(stop)
+                ClientVpnWorker(
+                    postgres,
+                    method,
+                    enabled=settings.client_vpn_enabled,
+                    managed_method=managed,
+                    managed_enabled=settings.managed_vpn_enabled,
+                ).run(stop)
             )
     finally:
         if transport is not None:

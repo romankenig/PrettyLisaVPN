@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createVpnConnectionManager } from "../vpn/connection";
-import { placeholderAdapters } from "../vpn/placeholders";
+import { placeholderAdapters } from "../review/placeholders";
 import type { ConnectionAdapter } from "../vpn/protocol";
 import { attemptMessage } from "../vpn/attempt";
 
@@ -82,7 +82,7 @@ describe("shipped placeholder connection executor", () => {
 
   it("ignores double clicks and cancels on account change or disposal", async () => {
     vi.useFakeTimers();
-    const manager = createVpnConnectionManager();
+    const manager = createVpnConnectionManager(placeholderAdapters());
     const first = manager.connect("", selection);
     await manager.connect("", selection);
     expect(vi.getTimerCount()).toBe(1);

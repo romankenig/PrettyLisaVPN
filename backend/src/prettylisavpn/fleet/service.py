@@ -12,6 +12,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import (
     FleetError,
+    ManagedConfig,
     Node,
     NodeInput,
     NodeUpdate,
@@ -122,10 +123,16 @@ class FleetService:
         method: str,
         kind: str,
         request_key: UUID,
-        config: WireGuardConfig | None = None,
+        config: WireGuardConfig | ManagedConfig | None = None,
     ) -> dict[str, Any]:
-        if method != "wireguard":
+        if method not in ("wireguard", "managed"):
             raise FleetError("fleet_method_unsupported", 422)
+        if method == "managed" and self.settings.managed_vpn_secret is None:
+            raise FleetError("fleet_method_unavailable", 503)
+        if kind == "CONFIGURE" and not isinstance(
+            config, WireGuardConfig if method == "wireguard" else ManagedConfig
+        ):
+            raise FleetError("fleet_configuration_invalid", 422)
         parameters = config.model_dump(mode="json") if config is not None else {}
         async with self.postgres.session() as session, session.begin():
             node = await session.get(FleetNodeRecord, node_id, with_for_update=True)
@@ -209,6 +216,7 @@ class FleetService:
                     select(FleetObservationRecord)
                     .where(
                         FleetObservationRecord.node_id.in_(ids),
+                        FleetObservationRecord.method == "wireguard",
                         FleetObservationRecord.observed_at >= start,
                         FleetObservationRecord.observed_at <= now,
                     )

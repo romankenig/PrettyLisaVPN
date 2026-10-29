@@ -2,7 +2,6 @@ import type { ConnectionAdapter, ProtocolStatus } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
 import type { ConnectionAttempt } from "./attempt";
-import { placeholderAdapters } from "./placeholders";
 import { createMethodPreference } from "./methodPreference";
 
 export interface ConnectedVpnSession {
@@ -86,10 +85,11 @@ export class VpnConnectionError extends Error {
   }
 }
 
-/** Real adapters and placeholders share one sequential executor and cleanup boundary. */
+/** Every native adapter shares the sequential executor and confirmed cleanup boundary. */
 export function createVpnConnectionManager(
-  adapters: readonly ConnectionAdapter[] = placeholderAdapters(),
+  adapters: readonly ConnectionAdapter[],
   preference = createMethodPreference(),
+  enabledMethods: () => readonly string[] | null = () => null,
 ): VpnConnectionManager {
   const idle = (): VpnConnectionState => ({
     phase: "DISCONNECTED",
@@ -202,9 +202,13 @@ export function createVpnConnectionManager(
         let previousMethod: string | null = null;
         let firstFailure: string | null = null;
         const preferred = preference.current();
+        const enabled = enabledMethods();
+        const allowed = adapters.filter(
+          (adapter) => enabled === null || enabled.includes(adapter.id),
+        );
         const ordered = [
-          ...adapters.filter((adapter) => adapter.id === preferred),
-          ...adapters.filter((adapter) => adapter.id !== preferred),
+          ...allowed.filter((adapter) => adapter.id === preferred),
+          ...allowed.filter((adapter) => adapter.id !== preferred),
         ];
         for (const adapter of ordered) {
           if (current.controller.signal.aborted) return;

@@ -271,7 +271,11 @@
     "Обновится: {0}": "Обновится: {0}",
     "Остаток Free": "Остаток Free",
     "Первое подключение может занять пару минут.": "Первое подключение может занять пару минут.",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "Расширенные настройки",
+    "Способы подключения": "Способы подключения",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "Изменения применятся при следующем подключении. Выберите хотя бы один способ.",
+    "Все способы": "Все способы"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -545,7 +549,11 @@
     "Обновится: {0}": "Resets: {0}",
     "Остаток Free": "Free time remaining",
     "Первое подключение может занять пару минут.": "The first connection may take a couple of minutes.",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "Advanced settings",
+    "Способы подключения": "Connection methods",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "Changes apply to the next connection. Select at least one method.",
+    "Все способы": "All methods"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -819,7 +827,11 @@
     "Обновится: {0}": "重置时间：{0}",
     "Остаток Free": "Free 剩余时间",
     "Первое подключение может занять пару минут.": "首次连接可能需要几分钟。",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "高级设置",
+    "Способы подключения": "连接方式",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "更改将在下次连接时生效。请至少选择一种方式。",
+    "Все способы": "所有方式"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1093,7 +1105,11 @@
     "Обновится: {0}": "Se renueva: {0}",
     "Остаток Free": "Tiempo Free restante",
     "Первое подключение может занять пару минут.": "La primera conexión puede tardar un par de minutos.",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "Ajustes avanzados",
+    "Способы подключения": "Métodos de conexión",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "Los cambios se aplican a la próxima conexión. Selecciona al menos un método.",
+    "Все способы": "Todos los métodos"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1367,7 +1383,11 @@
     "Обновится: {0}": "Erneuerung: {0}",
     "Остаток Free": "Verbleibende Free-Zeit",
     "Первое подключение может занять пару минут.": "Die erste Verbindung kann ein paar Minuten dauern.",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "Erweiterte Einstellungen",
+    "Способы подключения": "Verbindungsmethoden",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "Änderungen gelten für die nächste Verbindung. Wählen Sie mindestens eine Methode.",
+    "Все способы": "Alle Methoden"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1641,6 +1661,10 @@
     "Обновится: {0}": "Renouvellement : {0}",
     "Остаток Free": "Temps Free restant",
     "Первое подключение может занять пару минут.": "La première connexion peut prendre quelques minutes.",
-    "WireGuard+": "WireGuard+"
+    "WireGuard+": "WireGuard+",
+    "Расширенные настройки": "Paramètres avancés",
+    "Способы подключения": "Méthodes de connexion",
+    "Изменения применятся при следующем подключении. Выберите хотя бы один способ.": "Les modifications prennent effet à la prochaine connexion. Sélectionnez au moins une méthode.",
+    "Все способы": "Toutes les méthodes"
   }
 }

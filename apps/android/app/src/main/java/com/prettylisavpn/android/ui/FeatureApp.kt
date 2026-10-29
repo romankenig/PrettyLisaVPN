@@ -27,6 +27,7 @@ import java.util.UUID
 @Composable
 internal fun FeatureApp(model: ScreenModel) {
     val tr = strings()
+    val methodSelection = remember { com.prettylisavpn.android.vpn.MethodSelection() }
     val state by model.state.collectAsState()
     if (!model.enabled) {
         Surface(color = Brand.PurpleHeart, contentColor = Brand.Mercury) {
@@ -89,6 +90,7 @@ internal fun FeatureApp(model: ScreenModel) {
                     BrandCard {
                         Action(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), "open-subscription") { go("SUBSCRIPTION") }
                         Action(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), "open-devices") { go("DEVICES") }
+                        Action(tr(R.string.advanced_settings), tr(R.string.connection_methods), "open-advanced") { go("ADVANCED") }
                         Action(tr(R.string.ui_sign_out), tr(R.string.ui_end_the_test_session_on_this_device), "logout") { openDialog("logout") }
                     }
                     BrandCard(Modifier.testTag("fixture-tools")) {
@@ -101,6 +103,7 @@ internal fun FeatureApp(model: ScreenModel) {
             composable("ABOUT") {
                 AboutScreen("screen_ABOUT", { go("SUPPORT") }, "open-support")
             }
+            composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("LOGIN") { AuthScreen(model, false, { go("OTP") }, { nav.popBackStack() }) }
             composable("OTP") { AuthScreen(model, true, {}, { nav.popBackStack() }) }
             composable("COUNTRIES") {

@@ -28,6 +28,8 @@ import java.util.UUID
 @Composable
 internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = false, logout: () -> Unit) {
     val tr = strings()
+    val context = LocalContext.current
+    val methodSelection = remember { com.prettylisavpn.android.vpn.DeviceMethodSelection.get(context) }
     val state by model.state.collectAsState()
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
@@ -45,10 +47,12 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
                 SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
+                SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "settings-advanced") { go("ADVANCED") }
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
             composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }) }
+            composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
             composable("SUBSCRIPTION") { LiveSubscription(model) { nav.popBackStack() } }
             composable("SUPPORT") { support -> LiveSupport(model, support.savedStateHandle) { nav.popBackStack() } }

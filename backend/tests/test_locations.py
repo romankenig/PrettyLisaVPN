@@ -58,10 +58,15 @@ async def test_locations_are_authenticated_metadata_with_no_live_availability(
         }
 
 
-async def test_old_session_and_managed_engine_paths_remain_removed():
+async def test_common_sessions_and_wireguard_compatibility_exclude_legacy_engine_paths():
     app = create_app(Settings(_env_file=None), postgres=AsyncMock(), valkey=AsyncMock())
     assert set(path for path in app.openapi()["paths"] if path.startswith("/vpn/")) == {
         "/vpn/countries",
+        "/vpn/sessions",
+        "/vpn/sessions/current",
+        "/vpn/sessions/{identifier}",
+        "/vpn/sessions/{identifier}/heartbeat",
+        "/vpn/sessions/{identifier}/probe",
         "/vpn/wireguard/sessions",
         "/vpn/wireguard/sessions/current",
         "/vpn/wireguard/sessions/{identifier}",
@@ -70,9 +75,6 @@ async def test_old_session_and_managed_engine_paths_remain_removed():
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         for method, path in [
-            ("POST", "/vpn/sessions"),
-            ("GET", "/vpn/sessions/current"),
-            ("DELETE", "/vpn/sessions/00000000-0000-0000-0000-000000000001"),
             ("POST", "/vpn/sessions/00000000-0000-0000-0000-000000000001/managed"),
             ("POST", "/vpn/sessions/00000000-0000-0000-0000-000000000001/managed-plan"),
         ]:

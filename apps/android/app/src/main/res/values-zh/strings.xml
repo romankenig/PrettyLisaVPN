@@ -267,4 +267,8 @@
     <string name="free_time_resets">重置时间：%1$s</string>
     <string name="vpn_wireguard_relay">WireGuard+</string>
     <string name="vpn_first_connection_hint">首次连接可能需要几分钟。</string>
+    <string name="advanced_settings">高级设置</string>
+    <string name="connection_methods">连接方式</string>
+    <string name="connection_methods_hint">更改将在下次连接时生效。请至少选择一种方式。</string>
+    <string name="all_methods">所有方式</string>
 </resources>

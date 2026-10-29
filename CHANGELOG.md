@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Managed transports — in progress
+
+- Backend 0.22.0 adds common session admission and durable managed grants, keeping
+  account-wide Free quota and the WireGuard API compatible (migration 0035).
+- Android 0.15.0 adds private in-APK engine control and Advanced settings.
+  Windows 0.18.0 adds a private elevated engine host and the same method selection.
+- Add direct/relay adapters for SS2022, VMess, VLESS, REALITY, Hysteria2 and
+  Salamander; keep placeholders in UI-test fixtures only.
+- MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
+  [Rollout and remaining validation](docs/managed-transports.md).
+
 ### Dashboard — 0.4.0
 
 - Place individual speed/rating/active-connection charts inside each server card.

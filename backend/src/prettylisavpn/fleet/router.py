@@ -8,7 +8,13 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 
 from prettylisavpn.auth.router import bearer_token
 from prettylisavpn.config import Settings
-from prettylisavpn.fleet.domain import FleetError, NodeInput, NodeUpdate, WireGuardConfig
+from prettylisavpn.fleet.domain import (
+    FleetError,
+    ManagedConfig,
+    NodeInput,
+    NodeUpdate,
+    WireGuardConfig,
+)
 from prettylisavpn.fleet.service import FleetService
 
 router = APIRouter(prefix="/admin", tags=["fleet"])
@@ -61,7 +67,7 @@ async def update_node(
 async def configure(
     node_id: UUID,
     method: str,
-    data: WireGuardConfig,
+    data: WireGuardConfig | ManagedConfig,
     service: Annotated[FleetService, Depends(admin)],
     idempotency_key: Annotated[UUID, Header()],
 ) -> dict[str, Any]:

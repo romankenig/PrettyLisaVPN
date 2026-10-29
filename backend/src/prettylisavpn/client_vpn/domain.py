@@ -4,10 +4,10 @@ import base64
 import math
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Interface
-from typing import Literal
 
 from pydantic import Field, field_validator
 
+from prettylisavpn.client_vpn.methods import METHODS
 from prettylisavpn.fleet.domain import FleetError, Value
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 
@@ -19,7 +19,14 @@ NODE_TTL_SECONDS = 180
 class ConnectRequest(Value):
     public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
     country: str = Field(default="AUTO", pattern=r"^(AUTO|[A-Z]{2})$")
-    method: Literal["wireguard", "wireguard_relay"] = "wireguard"
+    method: str = "wireguard"
+
+    @field_validator("method")
+    @classmethod
+    def supported_method(cls, value: str) -> str:
+        if value not in METHODS:
+            raise ValueError("Unsupported VPN method")
+        return value
 
     @field_validator("public_key")
     @classmethod

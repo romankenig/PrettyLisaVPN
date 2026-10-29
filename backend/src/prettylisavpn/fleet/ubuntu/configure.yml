@@ -38,6 +38,25 @@
         dest: /usr/local/lib/prettylisavpn-fleet/node.py
         owner: root
         mode: '0644'
+    - name: Install managed process supervisor
+      ansible.builtin.copy:
+        src: managed.py
+        dest: /usr/local/lib/prettylisavpn-fleet/managed.py
+        owner: root
+        mode: '0644'
+    - name: Locate operator-provisioned verified engine artifact
+      ansible.builtin.stat:
+        path: /run/fleet/pl-node-engine
+      delegate_to: localhost
+      become: false
+      register: managed_engine_artifact
+    - name: Install verified managed engine without restarting active sessions
+      ansible.builtin.copy:
+        src: /run/fleet/pl-node-engine
+        dest: /usr/local/lib/prettylisavpn-fleet/pl-node-engine
+        owner: root
+        mode: '0755'
+      when: managed_engine_artifact.stat.exists
     - name: Install measurement service
       ansible.builtin.copy:
         src: prettylisa-fleet-measure.service
