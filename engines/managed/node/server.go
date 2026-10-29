@@ -17,6 +17,7 @@ import (
 	_ "github.com/romankenig/PrettyLisaVPN/engines/managed"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/hysteria1"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/softether"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp"
 	_ "github.com/xtls/xray-core/app/policy"
 	_ "github.com/xtls/xray-core/app/stats"
@@ -124,6 +125,9 @@ func (l Lease) Config() (*core.Config, error) {
 	}
 	if l.Method == "SSTP" {
 		c.App = append(c.App, commonserial.ToTypedMessage(&sstp.Config{Server: true, Address: l.Listen, Port: uint32(l.Port), Secret: l.Secret, Certificate: l.TLSCertificate, Key: l.TLSKey}))
+	}
+	if l.Method == "SOFTETHER" {
+		c.App = append(c.App, commonserial.ToTypedMessage(&softether.Config{Server: true, Address: l.Listen, Port: uint32(l.Port), Secret: l.Secret, Certificate: l.TLSCertificate, Key: l.TLSKey}))
 	}
 	return c, nil
 }

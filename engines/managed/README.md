@@ -9,7 +9,7 @@ implemented MIT adapter in `compat/ratelimit` (only the two required methods).
 NAT-PMP is pinned to Apache-2.0 commit `2c56765bf4dfd2c849263d5f1b4eeef8fea74214`
 with its complete license text.
 
-Android and Windows wiring and opt-in authorization for seven managed families are
+Android and Windows wiring and opt-in authorization for ten managed families are
 implemented in source; real device acceptance remains pending. See
 [the current rollout and validation status](../../docs/managed-transports.md).
 Linux builds include the isolated server binary; automatic desktop client routing
@@ -23,7 +23,7 @@ Credentials stay in memory and never enter command lines or logs. EOF exits and
 closes the tunnel. The Windows host must use a kill-on-close Job Object and kill
 the helper if bounded cleanup fails. RUNNING is not proof of connectivity.
 
-The generated profile supports WireGuard, AmneziaWG, VLESS/TLS, VLESS/REALITY/Vision,
+The generated profile supports WireGuard, AmneziaWG, SSTP, native SoftEther, VLESS/TLS, VLESS/REALITY/Vision,
 VMess/TLS, Trojan/TLS, Shadowsocks AEAD/2022, Hysteria 1/2 and Salamander. The TLS
 proxies additionally support WebSocket, gRPC, HTTPUpgrade and XHTTP. Old HTTP/2
 and QUIC transport names are rejected, not silently mapped to a different wire

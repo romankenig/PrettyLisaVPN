@@ -5,17 +5,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/hex"
 	"errors"
 	"io"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/internal/pinnedtls"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/mschap"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/ppp"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/wire"
@@ -48,38 +46,6 @@ type Session struct {
 	serverPPP              *ppp.ServerSession
 }
 
-// The configured pin replaces trust roots, never hostname, expiry or chain checks.
-func verifiedTLS(name, pin string) (*tls.Config, error) {
-	c := &tls.Config{ServerName: name, MinVersion: tls.VersionTLS12}
-	expected, err := hex.DecodeString(pin)
-	if name == "" || err != nil || len(expected) != sha256.Size {
-		return nil, ErrProtocol
-	}
-	c.InsecureSkipVerify = true // Mandatory full chain verification with the pinned root below.
-	c.VerifyConnection = func(state tls.ConnectionState) error {
-		if len(state.PeerCertificates) == 0 {
-			return ErrProtocol
-		}
-		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
-		found := false
-		for _, cert := range state.PeerCertificates {
-			sum := sha256.Sum256(cert.Raw)
-			if subtle.ConstantTimeCompare(sum[:], expected) == 1 {
-				roots.AddCert(cert)
-				found = true
-			} else {
-				intermediates.AddCert(cert)
-			}
-		}
-		if !found {
-			return ErrProtocol
-		}
-		_, err := state.PeerCertificates[0].Verify(x509.VerifyOptions{DNSName: name, Roots: roots, Intermediates: intermediates})
-		return err
-	}
-	return c, nil
-}
-
 func newSession(conn *tls.Conn, secret string, server bool) *Session {
 	return &Session{conn: conn, secret: secret, server: server, ready: make(chan struct{}), done: make(chan struct{}), packets: make(chan []byte, 64)}
 }
@@ -89,7 +55,7 @@ func Dial(ctx context.Context, address, secret, name, pin string, dial func(cont
 	if len(secret) < 16 || len(secret) > 128 {
 		return nil, ErrProtocol
 	}
-	configuration, err := verifiedTLS(name, pin)
+	configuration, err := pinnedtls.Config(name, pin)
 	if err != nil {
 		return nil, err
 	}

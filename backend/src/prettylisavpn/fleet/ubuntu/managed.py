@@ -36,6 +36,7 @@ HELPER = Path("/usr/local/lib/prettylisavpn-fleet/managed.py")
 METHODS = {
     "AMNEZIA": ("udp",),
     "SSTP": ("tcp",),
+    "SOFTETHER": ("tcp",),
     "VLESS_REALITY": ("tcp",),
     "VLESS_TLS": ("tcp",),
     "VMESS_TLS": ("tcp",),

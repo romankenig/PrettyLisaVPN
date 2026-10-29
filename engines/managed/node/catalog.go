@@ -18,6 +18,7 @@ var methodOffsets = map[string]int{
 	"AMNEZIA":       -1,
 	"HYSTERIA1_TLS": -2,
 	"SSTP":          -3,
+	"SOFTETHER":     -4,
 	"VLESS_REALITY": 0, "VLESS_TLS": 1, "VMESS_TLS": 6,
 	"SHADOWSOCKS_2022": 17, "HYSTERIA2_TLS": 18, "HYSTERIA2_SALAMANDER": 19,
 }
@@ -29,7 +30,7 @@ func derived(secret, purpose string) string {
 
 func (l Lease) inbounds() []any {
 	type obj = map[string]any
-	if l.Method == "HYSTERIA1_TLS" || l.Method == "SSTP" {
+	if l.Method == "HYSTERIA1_TLS" || l.Method == "SSTP" || l.Method == "SOFTETHER" {
 		return nil
 	}
 	if l.Method == "AMNEZIA" {

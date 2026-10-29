@@ -527,3 +527,11 @@ recovers abandoned access for this device once, without interrupting a current
 in-process connection. Free balance stops extrapolating after 60 seconds without
 fresh account data. Backend integration is implemented, not a placeholder; see
 [quota handoff](free-quota-cleanup.md). Navigation routes and auth remain unchanged.
+
+### Android 0.15.0 / Windows 0.18.0: native SoftEther selection
+
+Advanced settings includes SoftEther and SoftEther+ alongside SSTP/SSTP+ and the
+other managed methods. The persisted nonempty selection, last successful method,
+progress messages and confirmed cleanup gate are unchanged. These rows now use
+real native adapters; backend opt-in deployment and packaged VPN acceptance remain
+pending. No new route, popup or external transition. See managed-transports.md.

@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/internal/pinnedtls"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/mschap"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/ppp"
 	"github.com/romankenig/PrettyLisaVPN/engines/managed/sstp/internal/wire"
@@ -139,7 +140,7 @@ func TestRejectsBadTLSAndCredentials(t *testing.T) {
 func TestRejectsDataBeforePPPAuthentication(t *testing.T) {
 	cert, pin := certificate(t)
 	l, accepted := listener(t, cert)
-	configuration, err := verifiedTLS("vpn.example.com", pin)
+	configuration, err := pinnedtls.Config("vpn.example.com", pin)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,11 +12,13 @@
   account-wide Free quota and the WireGuard API compatible (migration 0035).
 - Android 0.15.0 adds private in-APK engine control and Advanced settings.
   Windows 0.18.0 adds a private elevated engine host and the same method selection.
-- Add direct/relay adapters for AmneziaWG, SSTP, SS2022, VMess, VLESS, REALITY, Hysteria 1/2 and
+- Add direct/relay adapters for AmneziaWG, SSTP, SoftEther, SS2022, VMess, VLESS, REALITY, Hysteria 1/2 and
   Salamander; keep placeholders in UI-test fixtures only.
 - MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
 - Add an MIT SSTP adapter with authenticated TLS/PPP and in-memory TCP/UDP;
   verify DNS/HTTPS with official SoftEther, with DE/US client acceptance pending.
+- Add an MIT native SoftEther adapter with authenticated, isolated Ethernet
+  segments and tunneled DNS/HTTPS interoperability against official SoftEther.
 - Preserve Hysteria 1 response
   bytes and graceful EOF when the upstream server closes its connection.
 - Dashboard 0.4.1 exposes matching source/license archives beside new managed

@@ -1,20 +1,19 @@
 # Managed transport rollout (in progress)
 
-Backend 0.21.1 → 0.22.0 (migration 0035), Android 0.14.2/code27 → 0.15.0/code28,
-Windows 0.17.2 → 0.18.0, managed engine 0.3.0. These are minor feature increments,
+Backend 0.21.1 в†’ 0.22.0 (migration 0035), Android 0.14.2/code27 в†’ 0.15.0/code28,
+Windows 0.17.2 в†’ 0.18.0, managed engine 0.3.0. These are minor feature increments,
 not deployment or acceptance claims. Android and Windows native integration is
 implemented in source; device and packaged-build acceptance remain pending.
-Dashboard 0.4.0 → 0.4.1 adds small corresponding-source download links. Its
+Dashboard 0.4.0 в†’ 0.4.1 adds small corresponding-source download links. Its
 publisher switches binaries, source archives and notices atomically; Android
 0.15+ and Windows 0.18+ cannot publish without a matching source SHA and notices.
 Archives remain stored with each immutable build, not only in expiring CI artifacts.
 
-Admission currently implements AmneziaWG, SSTP, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
+Admission currently implements AmneziaWG, SSTP, SoftEther, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
 Hysteria 1/2 and Salamander, each direct or `_relay`. Relays permanently forward the
 encrypted TCP/UDP connection through INTERMEDIATE nodes to the selected exit.
 WireGuard retains its compatible API and lifecycle. OpenVPN/OpenConnect and other
-GPL/LGPL-dependent integrations are deferred; sing-box is excluded. Native
-SoftEther still requires its audited adapter.
+GPL/LGPL-dependent integrations are deferred; sing-box is excluded.
 
 The private `/vpn/sessions` API delegates to existing account-serialized quota,
 device and country admission. The former WireGuard API remains compatible.
@@ -76,7 +75,7 @@ Go 1.20 reference executable is test-only, never redistributed in the clients.
 The adapter uses QUIC's standard congestion control and advertises a 30 Mbit/s
 rate. Source tests additionally cover fragmented UDP, malformed frames, wrong
 credentials/identity, core integration and shutdown. CI repeats races and fuzzing.
-Backend admission and both client selectors contain 20 methods including direct
+Backend admission and both client selectors contain 22 methods including direct
 WireGuard and every implemented relay variant. This is source implementation,
 not a claim that all methods have already passed DE/US device acceptance.
 The expanded race suite found unsynchronized closed flags in upstream Hysteria 2.
@@ -130,3 +129,22 @@ series still failed five US relay paths (REALITY, VLESS, VMess, Hysteria 1/2),
 plus one DE VMess relay DNS check. Every test grant was removed. These network
 failures are not hidden by the passing builds; further diagnosis and client
 acceptance remain open. SSTP acceptance is separate and not covered by that binary.
+
+Native SoftEther now uses bounded MIT PACK/auth/block codecs with an owned TLS
+session, per-lease static Ethernet segment, ARP and source validation. It shares
+only pinned TLS verification and the in-memory TCP/UDP adapter with SSTP. A fresh
+challenge is mandatory; pre-authentication data, replay, anonymous authentication,
+spoofed inner sources and ambiguous control fields are rejected. Independent
+SoftEther Stable 4.41/9787 native-server DNS/HTTPS acceptance passed in a disposable
+container; CI repeats the pinned reference. Both client catalogs and backend
+admission now include SoftEther/SoftEther+. No new version increment within this
+unfinished transport task. Actual fleet and device acceptance remain outstanding.
+
+Owner-requested Android publication on 2026-10-29 used product/build
+0b1301566e4f5cab7f672ff38f4abe1999a1b255, push run 40884321086 attempt 1,
+artifact 12901602893, Android 0.15.0/code28. All API 26/35/36 jobs passed. The
+published APK SHA-256 is ec4fda2b8c659fc38fc771ff1396881bc2e767a3a4f6b6028d9fa6885387c640;
+its exact corresponding sources are retained and downloadable behind dashboard
+authentication. This build predates native SoftEther. Backend admission remains
+disabled while deployment and device validation are incomplete. The owner has
+requested a smaller replacement because this universal debug APK is 253155576 bytes.

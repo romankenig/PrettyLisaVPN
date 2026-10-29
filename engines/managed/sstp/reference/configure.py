@@ -110,16 +110,23 @@ pathlib.Path("/run/pl-reference.json").write_text(
         }
     )
 )
+protocol = os.environ.get("PL_REFERENCE_PROTOCOL", "sstp")
+if protocol not in {"sstp", "softether"}:
+    raise RuntimeError("unsupported reference protocol")
+test = (
+    "TestOfficialSoftEtherSSTP" if protocol == "sstp" else "TestOfficialSoftEtherNative"
+)
+variable = "PL_SSTP_REFERENCE" if protocol == "sstp" else "PL_SOFTETHER_REFERENCE"
 result = subprocess.run(
     [
         "/run/reference.test",
         "-test.run",
-        "TestOfficialSoftEtherSSTP",
+        test,
         "-test.v",
         "-test.timeout",
         "45s",
     ],
-    env={**os.environ, "PL_SSTP_REFERENCE": "/run/pl-reference.json"},
+    env={**os.environ, variable: "/run/pl-reference.json"},
     check=False,
 )
 raise SystemExit(result.returncode)

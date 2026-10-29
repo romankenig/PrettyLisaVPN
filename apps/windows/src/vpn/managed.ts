@@ -5,6 +5,7 @@ import { createSessionAdapter, type SessionEngine } from "./sessionAdapter";
 export const managedMethods = {
   amneziawg: "AMNEZIA",
   sstp: "SSTP",
+  softether: "SOFTETHER",
   vless_reality: "VLESS_REALITY",
   vless: "VLESS_TLS",
   vmess: "VMESS_TLS",
