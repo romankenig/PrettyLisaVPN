@@ -190,6 +190,68 @@ func TestProtocolGoldenAndBounds(t *testing.T) {
 		t.Fatal("trailing byte accepted")
 	}
 }
+
+type oneReplyConn struct {
+	net.Conn
+	replied bool
+}
+
+func (c *oneReplyConn) Read(b []byte) (int, error) {
+	if c.replied {
+		return 0, io.EOF
+	}
+	n, err := c.Conn.Read(b)
+	c.replied = true
+	return n, err
+}
+
+func TestUDPReopensAnExpiredUpstream(t *testing.T) {
+	cert, pin := testCertificate(t)
+	p := packet(t)
+	var dials atomic.Int32
+	ended := make(chan struct{}, 2)
+	s, err := NewServer(p, cert, "test-authorization-123", func(context.Context, string, string) (net.Conn, error) {
+		dials.Add(1)
+		local, remote := net.Pipe()
+		go func() {
+			defer remote.Close()
+			_, _ = io.Copy(remote, remote)
+			ended <- struct{}{}
+		}()
+		return &oneReplyConn{Conn: local}, nil
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	c := newTestClient(t, p.LocalAddr().String(), "test-authorization-123", "vpn.example.com", pin)
+	conn, err := c.Dial(context.Background(), "udp", "192.0.2.1:53")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	for i := 0; i < 2; i++ {
+		_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+		if _, err = conn.Write([]byte("query")); err != nil {
+			t.Fatal(err)
+		}
+		b := make([]byte, 5)
+		if _, err = io.ReadFull(conn, b); err != nil {
+			t.Fatal(err)
+		}
+		if string(b) != "query" {
+			t.Fatal("wrong UDP response")
+		}
+		select {
+		case <-ended:
+		case <-time.After(time.Second):
+			t.Fatal("expired flow not closed")
+		}
+	}
+	if dials.Load() != 2 {
+		t.Fatal("expired UDP flow was reused")
+	}
+}
 func FuzzDatagram(f *testing.F) {
 	raw, _ := (datagram{session: 1, host: "1.1.1.1", port: 53, count: 1, data: []byte("query")}).encode()
 	f.Add(raw)

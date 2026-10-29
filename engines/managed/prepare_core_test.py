@@ -33,6 +33,7 @@ class PreparationTest(unittest.TestCase):
                     patch.object(prepare_core.subprocess, "check_output", return_value=metadata),
                     patch.object(prepare_core.subprocess, "run"),
                     patch.object(prepare_core, "patched", return_value=b"patched"),
+                    patch.object(prepare_core, "GRPC_FILES", {}),
                 ):
                     prepare_core.prepare("go")
                     prepare_core.prepare("go")

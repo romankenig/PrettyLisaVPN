@@ -177,10 +177,11 @@ func (s *Server) serveUDP(p *peer, stream *quic.Stream, id uint32) {
 	// Each authenticated session has at most eight destinations. The oldest is
 	// evicted on demand, bounding descriptors while retaining protocol v1's mux.
 	type flow struct {
-		conn net.Conn
-		host string
-		port uint16
-		used time.Time
+		conn   net.Conn
+		host   string
+		port   uint16
+		used   time.Time
+		closed atomic.Bool
 	}
 	flows := make(map[string]*flow)
 	var wg sync.WaitGroup
@@ -202,6 +203,10 @@ func (s *Server) serveUDP(p *peer, stream *quic.Stream, id uint32) {
 			}
 			address := net.JoinHostPort(d.host, strconv.Itoa(int(d.port)))
 			f := flows[address]
+			if f != nil && f.closed.Load() {
+				delete(flows, address)
+				f = nil
+			}
 			if f == nil {
 				if len(flows) >= 8 {
 					var oldest string
@@ -223,6 +228,7 @@ func (s *Server) serveUDP(p *peer, stream *quic.Stream, id uint32) {
 				wg.Add(1)
 				go func(f *flow) {
 					defer wg.Done()
+					defer func() { f.closed.Store(true); _ = f.conn.Close() }()
 					b := make([]byte, 65507)
 					for {
 						n, e := f.conn.Read(b)

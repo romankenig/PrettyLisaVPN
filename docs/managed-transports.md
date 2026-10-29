@@ -82,3 +82,7 @@ not a claim that all methods have already passed DE/US device acceptance.
 The expanded race suite found unsynchronized closed flags in upstream Hysteria 2.
 The pinned core is now copied and patched reproducibly (two atomic flags), with
 its checksum, MPL notices and modified sources retained. No check is disabled.
+The same full race suite exposed gRPC Send/CloseSend concurrency. The pinned
+patch now cancels blocked RPC sends and serializes send/close in both framing
+modes. Regression tests cover blocked sends and writing after close. Hysteria 1
+also recreates expired UDP upstreams instead of retaining a dead flow.
