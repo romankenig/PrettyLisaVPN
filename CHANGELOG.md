@@ -26,6 +26,10 @@
 
 ### Managed transports — in progress
 
+- Add dispatch-only real Android/Windows TUN acceptance per selected method,
+  including sustained connection, independent tunneled HTTPS and cleanup proof.
+- Use our own verified TLS target in the fleet rollout after isolating an
+  SNI-dependent relay handshake failure; retain strict client identity checks.
 - Backend 0.22.0 adds common session admission and durable managed grants, keeping
   account-wide Free quota and the WireGuard API compatible (migration 0035).
 - Android 0.15.0 adds private in-APK engine control and Advanced settings.

@@ -1,5 +1,25 @@
 # Managed transport rollout (in progress)
 
+Continuation on 2026-10-29 keeps backend 0.22.1, Android 0.15.1/code29,
+Windows 0.18.0 and engine 0.3.0 within this unfinished feature. Dispatch-only
+Android/Windows acceptance now builds the current checkout, uses expiring
+disposable accounts and selects each requested method independently. Success
+requires the application's DNS/HTTPS/exit verification, 40 seconds of continued
+connection, a second HTTPS request bound to the VPN, and confirmed cleanup.
+Proof artifacts contain only outcomes, stable codes and native screenshots;
+credentials, profiles and traffic logs are excluded. These checks are separate
+from fixture UI tests. Actual run results and publication identities belong in PR #38.
+
+Relay diagnosis found TCP established but TLS stalled with the previous
+`www.cloudflare.com` SNI on the RU-to-US path. On the same forwarded port,
+the owned `api.prettylisavpn.com` SNI completed TLS 1.3; a scoped MSS reduction
+did not fix the old SNI. All three nodes now use the owned HTTPS endpoint
+95.140.152.42 as their REALITY target and identity name. TLS 1.3, certificate
+validation and HTTP/2 were checked from every node. Private identities were
+backed up on-node before rotation, no managed leases were active, and WireGuard
+configuration was unchanged. Real clients still enforce their private CA pin,
+hostname and expiry; diagnostic certificate bypass was not added to runtime.
+
 Backend 0.21.1 в†’ 0.22.0 (migration 0035), Android 0.14.2/code27 в†’ 0.15.0/code28,
 Windows 0.17.2 в†’ 0.18.0, managed engine 0.3.0. These are minor feature increments,
 not deployment or acceptance claims. Android and Windows native integration is
