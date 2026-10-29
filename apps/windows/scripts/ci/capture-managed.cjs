@@ -112,6 +112,7 @@ async function main() {
     for (const method of account.methods) {
       await page.evaluate(
         ({ userId, country, method }) => {
+          localStorage.setItem("prettylisavpn:language", "en");
           localStorage.setItem(
             "prettylisavpn:enabled-vpn-methods:v1",
             JSON.stringify([method]),
@@ -126,6 +127,14 @@ async function main() {
       await page.reload();
       await page.getByText(account.email, { exact: true }).waitFor();
       await page.locator(".location-trigger").waitFor();
+      // Home restores/cleans the previous session asynchronously after sign-in.
+      // A click during RECONCILING is intentionally ignored by the controller.
+      await page.waitForFunction(
+        () =>
+          window.document
+            .querySelector(".connection-status")
+            ?.textContent?.trim() === "Not connected",
+      );
       const row = {
         method,
         connected: false,
@@ -239,6 +248,8 @@ async function main() {
     );
   } finally {
     save();
+    if (page && !report.results.length)
+      await capture("startup").catch(() => {});
     if (page)
       await page
         .evaluate(() => window.__TAURI_INTERNALS__.invoke("engine_stop"))

@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Android — 0.15.2
+
+- Keep the same managed tunnel for one bounded retry after a transient DNS/HTTPS
+  startup failure, matching WireGuard's existing tolerance. Exit mismatch,
+  cancellation and a stopped engine still fail closed.
+- Retain only fixed diagnostic stages, exception types and HTTP status for
+  acceptance evidence; never profiles, tokens or traffic destinations.
+
 ### Backend — 0.22.1
 
 - Recheck configured zero-rated servers every three minutes on the main server,

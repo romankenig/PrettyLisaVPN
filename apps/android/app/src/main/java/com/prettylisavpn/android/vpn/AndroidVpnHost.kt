@@ -35,6 +35,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     override fun disconnect(): Unit = controller.disconnect()
     fun serviceLost() { if (wireguard.isRunning || relay.isRunning || engines.any { it.isRunning }) disconnect() }
     fun wireguardDiagnostic() = if (relay.isRunning) relay.diagnostic() else wireguard.diagnostic()
+    internal fun managedDiagnostic(method: String) = engines.firstOrNull { it.method.id == method }?.diagnostic()
     companion object {
         @Volatile private var instance: AndroidVpnHost? = null
         fun current() = instance

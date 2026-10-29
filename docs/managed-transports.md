@@ -1,5 +1,14 @@
 # Managed transport rollout (in progress)
 
+Android's first packaged six-case US acceptance (product ef77d8f, dispatch
+40943421487/1) verified VLESS, SS2022, SS2022+, Hysteria 2 and Hysteria 2+,
+including 40-second renewals, independent HTTPS and all six cleanups. VLESS+
+failed before verification. Android 0.15.1/code29 → 0.15.2/code30 adds one bounded
+retry for transient network verification errors and redacted stage diagnostics;
+new artifact acceptance is still required. Cancellation, exit mismatch and
+engine shutdown do not qualify for another network attempt. Backend and Windows
+versions remain 0.22.1 and 0.18.0 respectively.
+
 Continuation on 2026-10-29 keeps backend 0.22.1, Android 0.15.1/code29,
 Windows 0.18.0 and engine 0.3.0 within this unfinished feature. Dispatch-only
 Android/Windows acceptance now builds the current checkout, uses expiring

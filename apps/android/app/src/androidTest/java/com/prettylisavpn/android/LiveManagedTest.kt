@@ -102,6 +102,7 @@ class LiveManagedTest {
                     val cleanupDeadline = SystemClock.elapsedRealtime() + 45_000
                     while (AndroidVpnHost.current()?.status?.value?.phase == VpnPhase.DISCONNECTING && SystemClock.elapsedRealtime() < cleanupDeadline) SystemClock.sleep(200)
                     row["cleanup"] = AndroidVpnHost.current()?.status?.value?.phase == VpnPhase.DISCONNECTED
+                    row["diagnostic"] = AndroidVpnHost.current()?.managedDiagnostic(method)
                     save()
                     assertEquals("Cleanup must finish before another method", true, row["cleanup"])
                 }

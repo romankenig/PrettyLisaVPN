@@ -34,15 +34,32 @@ internal class ManagedAdapter(private val context: Context, private val sessions
     private var deadline: Job? = null
     private var lease: ManagedLease? = null
     private var acquired = false
+    @Volatile private var stage = "IDLE"
+    @Volatile private var failure: String? = null
+    @Volatile private var httpStatus: Int? = null
+    @Volatile private var verificationAttempts = 0
     val isRunning get() = runtime.isOwned
+    fun diagnostic(): Map<String, Any?> = mapOf("stage" to stage, "failure_type" to failure,
+        "http_status" to httpStatus, "verification_attempts" to verificationAttempts)
 
-    override suspend fun connect(country: String): ConnectionResult {
+    override suspend fun connect(country: String): ConnectionResult = try {
+        failure = null; httpStatus = null; verificationAttempts = 0
+        connectChecked(country)
+    } catch (error: Exception) {
+        // Class and fixed stage only: no exception text, credentials or destinations.
+        failure = error.javaClass.simpleName
+        throw error
+    }
+    private suspend fun connectChecked(country: String): ConnectionResult {
+        stage = "PERMISSION"
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
+        stage = "RECOVERY"
         closeRemote()
         // The existing request binding remains a fresh public key; its private
         // half is unused by these protocols and never leaves this process.
         val publicKey = KeyPair().publicKey.toBase64()
         acquired = true
+        stage = "ADMISSION"
         lease = api.connect(country, publicKey, UUID.randomUUID().toString(), method.id)
         armDeadline(requireNotNull(lease))
         heartbeat = scope.launch {
@@ -52,6 +69,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
                 row.status in setOf("PROVISIONING", "READY") && Instant.parse(row.expires_at).isAfter(Instant.now())
             }, lost = lost, heartbeatRequired = lease?.heartbeat_required != false)
         }
+        stage = "PROVISIONING"
         val ready = vpnDeadline(60_000) {
             while (true) {
                 val row = api.get(requireNotNull(lease).id)
@@ -66,8 +84,10 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         require(ready.method == method.id && profile.get("session").asString == ready.id)
         require(profile.get("country").asString == ready.country && profile.get("method").asString == managedMethods[method.id.removeSuffix("_relay")])
         require(config.expected_egress_ips.isNotEmpty())
+        stage = "ENGINE"
         runtime.start(profile.toString())
         context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
+        stage = "NETWORK"
         val network = vpnDeadline(10_000) {
             while (true) { vpnNetwork()?.let { return@vpnDeadline it }; delay(100) }
             @Suppress("UNREACHABLE_CODE") error("VPN_NETWORK_MISSING")
@@ -75,18 +95,25 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         HttpRoutes.vpn(network.socketFactory, object : okhttp3.Dns {
             override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
         })
-        val verified = verify(network, ready, config)
-        return if (verified && runtime.isUp()) ConnectionResult.Verified else ConnectionResult.Failed
+        val verified = verifyConnection(isUp = runtime::isUp) { verify(network, ready, config) }
+        return if (verified && runtime.isUp()) {
+            stage = "VERIFIED"; ConnectionResult.Verified
+        } else { stage = "VERIFICATION_FAILED"; ConnectionResult.Failed }
     }
     private suspend fun verify(network: Network, row: ManagedLease, config: ManagedConfiguration): Boolean =
         sessions.request { token -> withContext(Dispatchers.IO) {
+            verificationAttempts++
             val client = OkHttpClient.Builder().socketFactory(network.socketFactory).proxy(Proxy.NO_PROXY)
-                .dns(object : okhttp3.Dns { override fun lookup(hostname: String) = network.getAllByName(hostname).toList() })
+                .dns(object : okhttp3.Dns { override fun lookup(hostname: String): List<java.net.InetAddress> {
+                    stage = "DNS"
+                    return network.getAllByName(hostname).toList().also { stage = "HTTPS" }
+                } })
                 .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
             try {
                 client.newCall(Request.Builder().url("https://api.prettylisavpn.com/vpn/sessions/${row.id}/probe")
                     .header("Authorization", "Bearer $token").header("Cache-Control", "no-store").build()).execute().use { response ->
+                    httpStatus = response.code
                     check(response.isSuccessful)
                     val source = requireNotNull(response.body).source()
                     check(!source.request(4096))
