@@ -58,6 +58,9 @@ class LiveManagedTest {
                     "tunnel_https" to false, "cleanup" to false)
                 rows.add(row); save()
                 try {
+                    val idleDeadline = SystemClock.elapsedRealtime() + 45_000
+                    while (AndroidVpnHost.current()?.status?.value?.phase != VpnPhase.DISCONNECTED && SystemClock.elapsedRealtime() < idleDeadline) SystemClock.sleep(200)
+                    assertEquals("Session recovery must finish before connect", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
                     scenario.onActivity {
                         DeviceMethodSelection.get(context).apply {
                             all()
@@ -67,10 +70,15 @@ class LiveManagedTest {
                     }
                     val started = SystemClock.elapsedRealtime()
                     var observedStart = false
+                    device.takeScreenshot(File(output, "managed-$method-start.png"))
                     while (SystemClock.elapsedRealtime() - started < 180_000) {
                         device.findObject(By.res("android", "button1"))?.click()
                         val state = requireNotNull(AndroidVpnHost.current()).status.value
                         if (state.phase != VpnPhase.DISCONNECTED) observedStart = true
+                        row["phase"] = state.phase.name
+                        row["diagnostic"] = AndroidVpnHost.current()?.managedDiagnostic(method)
+                        save()
+                        check(observedStart || SystemClock.elapsedRealtime() - started < 10_000) { "Connection did not start" }
                         if (observedStart && state.phase in setOf(VpnPhase.CONNECTED, VpnPhase.FAILED, VpnPhase.DISCONNECTED)) break
                         SystemClock.sleep(250)
                     }
@@ -98,6 +106,7 @@ class LiveManagedTest {
                         device.takeScreenshot(File(output, "managed-$method.png"))
                     }
                 } finally {
+                    device.takeScreenshot(File(output, "managed-$method-final.png"))
                     scenario.onActivity { AndroidVpnHost.current()?.disconnect() }
                     val cleanupDeadline = SystemClock.elapsedRealtime() + 45_000
                     while (AndroidVpnHost.current()?.status?.value?.phase == VpnPhase.DISCONNECTING && SystemClock.elapsedRealtime() < cleanupDeadline) SystemClock.sleep(200)
