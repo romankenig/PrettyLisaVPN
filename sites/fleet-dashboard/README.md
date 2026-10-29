@@ -1,4 +1,4 @@
-# PrettyLisaVPN monitoring dashboard — 0.3.0
+# PrettyLisaVPN monitoring dashboard — 0.4.0
 
 Standalone read-only React dashboard at `/dashboard/` on the main server.
 The scheduler, probes, history and acceptance timer run independently of this UI.
@@ -25,6 +25,18 @@ timezone. API timestamps and monitoring slots stay UTC.
 Click an hour to inspect every stored speed measurement and rating at check time.
 Overall/group selection retains per-server detail. Legacy observations have no
 rating snapshot; their speeds remain visible and missing values use a dash.
+
+Individual speed/rating/activity charts live inside each server card. Active
+connections are hourly bars using the last observation per server/hour, not a
+sum of repeated checks. The shared chart contains only the selected servers'
+aggregate: arithmetic mean download/upload speed, median rating (mean of the
+two middle values for an even count), and summed active connections. Current
+summary tiles use the same rules on latest observations. Each server has equal
+weight regardless of check frequency. Filters apply before aggregation.
+Missing values are omitted, never carried forward or replaced by zero; tooltips
+and current tiles report coverage. Partial sums are not complete group totals.
+Relay connections count on both nodes and are not globally unique devices.
+See [implementation and verification](../../docs/dashboard-group-metrics.md).
 
 Client downloads use `/dashboard/downloads/android.apk` and
 `/dashboard/downloads/windows.exe`, protected by the same password. The catalog

@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Dashboard — 0.4.0
+
+- Place individual speed/rating/active-connection charts inside each server card.
+  Active connections use hourly bars; repeated probes in one hour are not summed.
+- Show only aggregates for the selected group/server set in the shared chart and
+  summary: mean download/upload speed, median rating, sum of active connections.
+  Preserve real zeros, report missing-data coverage and respect both filters.
+- Backend schema/API and client binaries are unchanged by this dashboard commit.
+  See [dashboard metrics handoff](docs/dashboard-group-metrics.md).
+
 ### Deployment follow-up — product versions unchanged
 
 - Publish verified client downloads through the deployment user's existing Docker

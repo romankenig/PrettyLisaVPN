@@ -7,6 +7,7 @@ import type { Measurement, FocusedHour } from "./history";
 import ClientDownloads from "./ClientDownloads";
 import { readClients, type Clients } from "./downloads";
 import { clock, date, TIME_ZONE_LABEL } from "./time";
+import { selectionSummary } from "./summary";
 
 type Status = "HEALTHY" | "DEGRADED" | "FAILED" | "UNKNOWN" | "PENDING" | "NOT_REGISTERED";
 type Hour = { at: string; status: Status; modes: string[]; checks: number; measurements?: Measurement[] };
@@ -52,6 +53,7 @@ export default function Dashboard() {
   useEffect(() => { const first = setTimeout(() => void refresh(), 0); const timer = setInterval(() => void refresh(), 60000); return () => { clearTimeout(first); clearInterval(timer); }; }, [refresh]);
   const groupNodes = snapshot?.nodes.filter(node => group === "all" || nodeGroup(node) === group) ?? [];
   const nodes = groupNodes.filter(node => selected === "all" || selected === node.id);
+  const summary = selectionSummary(nodes);
   const known = nodes.reduce((sum, node) => sum + node.known_hours, 0), expected = nodes.reduce((sum, node) => sum + node.expected_hours, 0), successful = nodes.reduce((sum, node) => sum + node.successful_hours, 0);
   const combined = (nodes[0]?.history ?? []).map((hour, index) => {
     const values = nodes.map((node) => node.history[index]).filter((item) => item.status !== "NOT_REGISTERED");
@@ -74,17 +76,24 @@ export default function Dashboard() {
         <article className="metric"><span>Покрытие наблюдениями</span><strong>{snapshot ? percent(known, expected) : "—"}</strong><p>{known} из {expected} завершённых часов</p></article>
         <article className="metric"><span>Последняя проверка</span><strong className="time">{newest ? clock(newest.observed_at) : "—"}</strong><p>{newest ? modes[newest.mode] : "Ожидаем первое наблюдение"}</p></article>
       </section>
+      <section className="panel selection-summary" aria-label="Общие показатели выбранных серверов">
+        <div><span>Средняя скорость ↓ / ↑</span><strong>{number(summary.download.value, 1)} / {number(summary.upload.value, 1)} <small>Мбит/с</small></strong><p>Данные: ↓ {summary.download.covered}/{nodes.length}, ↑ {summary.upload.covered}/{nodes.length} серверов</p></div>
+        <div><span>Медиана рейтинга</span><strong>{number(summary.rating.value, 1)} <small>/ 100</small></strong><p>Данные: {summary.rating.covered}/{nodes.length} серверов</p></div>
+        <div><span>Активные устройства — сумма</span><strong>{number(summary.active.value)}</strong><p>Данные: {summary.active.covered}/{nodes.length} серверов{summary.active.covered < nodes.length ? " · неполная выборка" : ""}</p></div>
+      </section>
       <section className="panel history-panel"><div className="section-title"><div><h2>{selected !== "all" ? "История сервера" : group === "all" ? "Общая история" : `История группы ${groupNames[group]}`}</h2><p>Каждая отметка — час. Сбой любого выбранного узла виден в общей строке.</p></div><span className="period">7 дней</span></div>
         {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{(["HEALTHY", "FAILED", "UNKNOWN", "NOT_REGISTERED"] as Status[]).map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
       </section>
-      <HistoryChart nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
-      {focused && <HourDetails focus={focused} nodes={nodes} />}
+      <HistoryChart aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
+      {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}
       <section className="nodes-section"><div className="section-title"><h2>Серверы <span className="count">{nodes.length}</span></h2><span className="muted">Автообновление каждую минуту</span></div>
         {nodes.map((node) => <article className="panel node" key={node.id}>
           <div className="node-heading"><div className="node-name"><span className="flag">{node.country_code === "DE" ? "🇩🇪" : node.country_code === "US" ? "🇺🇸" : node.country_code}</span><div><h3>{node.name}</h3><span>{groupNames[nodeGroup(node)]} · WireGuard · {node.country_code}</span></div></div><div className={`badge ${node.available ? "good" : "neutral"}`}>{node.available ? "Доступен" : node.confidence === "STALE" ? "Данные устарели" : node.latest?.status === "HEALTHY" ? "Недоступен для подключения" : node.latest ? names[node.latest.status] : "Ожидает проверки"}</div><div className="rating"><b>{node.quality}</b><span>рейтинг / 100</span></div></div>
           <div className="node-metrics"><div><span>Подключение</span><b>{number(node.latest?.connection_ms)} <small>мс</small></b></div><div><span>Скорость ↓ / ↑</span><b>{number(node.latest?.download_mbps, 1)} / {number(node.latest?.upload_mbps, 1)} <small>Мбит/с</small></b></div><div><span>Активные подключения</span><b>{number(node.latest?.active_connections)} <small>/ {node.capacity}</small></b></div><div><span>Следующая проверка</span><b className="date">{date(node.next_check_at)}</b></div></div>
           <div className="proofs"><span>{node.latest ? modes[node.latest.mode] : "Нет наблюдений"}</span><Proof label="Handshake" value={node.latest?.handshake_ok} /><Proof label="DNS" value={node.latest?.dns_ok} /><Proof label="HTTPS" value={node.latest?.https_ok} /><Proof label="Выходной IP" value={node.latest?.egress_ok} />{node.latest_source_id && <span>из {snapshot?.nodes.find((item) => item.id === node.latest_source_id)?.name ?? "другого узла"}</span>}</div>
           <Timeline history={node.history} onSelect={hour => setFocused({ at: hour.at, nodeId: node.id })} /><div className="node-footer"><span>Полная проверка: {date(node.last_full_check_at)} {TIME_ZONE_LABEL}</span><code>{node.latest?.code ?? node.configuration_state}</code></div>
+          <HistoryChart nodes={[node]} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
+          {focused?.nodeId === node.id && <HourDetails focus={focused} nodes={[node]} />}
         </article>)}
       </section>
       <ClientDownloads clients={clients} unavailable={downloadsUnavailable} />
