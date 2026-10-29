@@ -50,7 +50,7 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: apk
       - uses: actions/download-artifact@v4
         with:
@@ -122,7 +122,7 @@ jobs:
           mkdir -p ../../apps/android/app/libs
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.0.13004108"
           # Matches XTLS/libXray's Android linker settings for anet and 16 KiB pages.
-          gomobile bind -target android/arm,android/arm64,android/386,android/amd64 -androidapi 26 -javapkg com.prettylisavpn.enginecore -trimpath -ldflags='-checklinkname=0 -extldflags=-Wl,-z,max-page-size=16384' -o ../../apps/android/app/libs/managed.aar ./mobile
+          gomobile bind -target android/arm,android/arm64,android/386,android/amd64 -androidapi 26 -javapkg com.prettylisavpn.enginecore -trimpath -ldflags='-s -w -checklinkname=0 -extldflags=-Wl,-z,max-page-size=16384' -o ../../apps/android/app/libs/managed.aar ./mobile
       - name: Enforce Android dependency licenses
         working-directory: engines/managed
         run: |
@@ -158,15 +158,31 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 scripts/record-build.py
       - name: Include corresponding source archive beside the APK
-        run: cp "$RUNNER_TEMP/android-engine-source.tar.gz" app/build/outputs/apk/debug/managed-source.tar.gz
+        run: cp "$RUNNER_TEMP/android-engine-source.tar.gz" app/build/distributions/debug/arm64-v8a/managed-source.tar.gz
       - name: Upload debug APK and corresponding sources from this commit
         uses: actions/upload-artifact@v4
         with:
           name: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            apps/android/app/build/outputs/apk/debug/app-debug.apk
-            apps/android/app/build/outputs/apk/debug/build-identity.json
-            apps/android/app/build/outputs/apk/debug/managed-source.tar.gz
+            apps/android/app/build/distributions/debug/arm64-v8a/app-debug.apk
+            apps/android/app/build/distributions/debug/arm64-v8a/build-identity.json
+            apps/android/app/build/distributions/debug/arm64-v8a/managed-source.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload matching emulator APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/android/app/build/distributions/debug/x86_64/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain other standalone CPU builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-other-abis-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/android/app/build/distributions/debug/armeabi-v7a/
+            apps/android/app/build/distributions/debug/x86/
           if-no-files-found: error
           retention-days: 14
       - name: Upload test APK
@@ -201,7 +217,7 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: PrettyLisaVPN-android-debug-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: apk
       - uses: actions/download-artifact@v4
         with:

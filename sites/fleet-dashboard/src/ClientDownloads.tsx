@@ -10,7 +10,7 @@ export default function Downloads({ clients, unavailable }: { clients: Clients; 
       const client = clients[platform];
       return <article className="download-client" key={platform}>
         {platform === "android" ? <Smartphone size={23} /> : <Monitor size={23} />}
-        <div><h3>{platform === "android" ? "Android" : "Windows"}{client && <span>{client.version}</span>}</h3><p>{client ? `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(client.bytes / 1048576)} МБ · ${date(client.published_at)} ${TIME_ZONE_LABEL}` : "Сборка пока недоступна"}</p></div>
+        <div><h3>{platform === "android" ? (client?.abi ? "Android · ARM64" : "Android") : "Windows"}{client && <span>{client.version}</span>}</h3><p>{client ? `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(client.bytes / 1048576)} МБ · ${date(client.published_at)} ${TIME_ZONE_LABEL}` : "Сборка пока недоступна"}</p></div>
         {client && <a href={downloadUrls[platform]} download aria-label={`Скачать ${platform === "android" ? "Android APK" : "Windows EXE"}`}><Download size={16} />{platform === "android" ? "APK" : "EXE"}</a>}
       </article>;
     })}</div>

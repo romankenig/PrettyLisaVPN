@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Android — 0.15.1 / dashboard — 0.4.2
+
+- Replace the 253 MB universal debug APK with standalone per-CPU APKs, strip Go
+  debug symbols and compress native libraries. Each APK must stay below 40 MB.
+- Dashboard distributes the ARM64 phone APK and labels its architecture; CI
+  tests the matching x86_64 build and retains ARM32/x86 builds separately.
+- Preserve all VPN engines, six locales, signing identity and one-APK installation.
+  Backend and Windows versions are unchanged by this packaging task.
+  See [APK size handoff](android-apk-size.md) for build and publication evidence.
+
 ### Managed transports — in progress
 
 - Backend 0.22.0 adds common session admission and durable managed grants, keeping

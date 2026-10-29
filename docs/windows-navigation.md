@@ -11,7 +11,7 @@ method. Android has the private in-APK engine adapter. Windows uses a separate
 elevated private engine host and retains the normal unelevated UI. Production
 registries contain real adapters only; UI review fixtures remain test-only.
 SSTP and SSTP+ use the same private engine lifecycle and appear after Amnezia;
-the complete catalog now has 20 choices, including direct WireGuard.
+the complete catalog now has 22 choices, including direct WireGuard.
 Real backend acceptance is pending. See [rollout](managed-transports.md).
 
 ## Relay and daily balance — Windows 0.16.0 / Android 0.13.0
