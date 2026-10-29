@@ -5,12 +5,11 @@ Windows 0.17.2 → 0.18.0, managed engine 0.3.0. These are minor feature increme
 not deployment or acceptance claims. Android and Windows native integration is
 implemented in source; device and packaged-build acceptance remain pending.
 
-Admission currently implements REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
+Admission currently implements AmneziaWG, REALITY/Vision, VLESS/TLS, VMess/TLS, SS2022,
 Hysteria2 and Salamander, each direct or `_relay`. Relays permanently forward the
 encrypted TCP/UDP connection through INTERMEDIATE nodes to the selected exit.
 WireGuard retains its compatible API and lifecycle. OpenVPN/OpenConnect and other
-GPL/LGPL-dependent integrations are deferred; sing-box is excluded. AmneziaWG,
-SSTP, native SoftEther and Hysteria1 still require audited adapters.
+GPL/LGPL-dependent integrations are deferred; sing-box is excluded. SSTP, native SoftEther and Hysteria1 still require audited adapters.
 
 The private `/vpn/sessions` API delegates to existing account-serialized quota,
 device and country admission. The former WireGuard API remains compatible.
@@ -49,7 +48,7 @@ rejection, strict parsing, cancellation and renewal. Backend tests cover admissi
 boundaries, credentials and cleanup. PostgreSQL migration and 610 backend tests
 passed in an isolated database (11 environment-specific skips). Five shell tests
 required a rerun after correcting CRLF in the Windows-to-Linux validation archive;
-repository shell sources are unchanged. Windows has 293 passing frontend tests,
+repository shell sources are unchanged. The initial 864b3ca milestone has 293 passing Windows frontend tests,
 15 native tests, TypeScript, ESLint and clippy checks. Android packaging, Windows native/UI and DE/US
 acceptance must be recorded against the actual PR
 head, build SHA/run/attempt and artifacts; no historical binary is evidence.
@@ -57,3 +56,9 @@ head, build SHA/run/attempt and artifacts; no historical binary is evidence.
 Rollback retains the previous clients and disables new admission. Migration 0035
 can downgrade only before any managed lease is issued; afterwards preserve its
 schema/history and credential until all authorizations and usage are settled.
+
+AmneziaWG uses pinned MIT amneziawg-go v3.1.20260828 and the small MPL Xray
+proxy adaptation in engines/managed/amnezia. Native loopback tests confirm TCP,
+UDP and rejection of unauthorized keys. Kernel modules and GPL utilities are
+not used. Its source integration adds two more managed adapter cases; repeat
+packaged Android/Windows and real-server acceptance for the resulting head.

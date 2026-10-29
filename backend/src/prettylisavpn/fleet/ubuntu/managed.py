@@ -34,6 +34,7 @@ ROOT = Path("/etc/prettylisavpn-fleet/managed")
 ENGINE = Path("/usr/local/lib/prettylisavpn-fleet/pl-node-engine")
 HELPER = Path("/usr/local/lib/prettylisavpn-fleet/managed.py")
 METHODS = {
+    "AMNEZIA": ("udp",),
     "VLESS_REALITY": ("tcp",),
     "VLESS_TLS": ("tcp",),
     "VMESS_TLS": ("tcp",),
@@ -334,7 +335,7 @@ def supervise(identifier: str) -> None:
         "target": state["reality_target"],
         **{key: identity[key] for key in ("private_key", "server_name", "short_id")},
     }
-    if row["method"] != "VLESS_REALITY":
+    if row["method"] not in ("VLESS_REALITY", "AMNEZIA", "SHADOWSOCKS_2022"):
         payload.update({key: identity[key] for key in ("tls_certificate", "tls_key")})
     child = subprocess.Popen(
         [str(ENGINE), "--lease", identifier],

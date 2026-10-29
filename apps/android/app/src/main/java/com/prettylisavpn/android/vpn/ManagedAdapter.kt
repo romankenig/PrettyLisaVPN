@@ -18,7 +18,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-internal val managedMethods = linkedMapOf("vless_reality" to "VLESS_REALITY", "vless" to "VLESS_TLS",
+internal val managedMethods = linkedMapOf("amneziawg" to "AMNEZIA", "vless_reality" to "VLESS_REALITY", "vless" to "VLESS_TLS",
     "vmess" to "VMESS_TLS", "shadowsocks2022" to "SHADOWSOCKS_2022",
     "hysteria2" to "HYSTERIA2_TLS", "hysteria2_salamander" to "HYSTERIA2_SALAMANDER")
 

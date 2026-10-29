@@ -3,6 +3,7 @@ import type { HttpTransport } from "../native/http";
 import { createSessionAdapter, type SessionEngine } from "./sessionAdapter";
 
 export const managedMethods = {
+  amneziawg: "AMNEZIA",
   vless_reality: "VLESS_REALITY",
   vless: "VLESS_TLS",
   vmess: "VMESS_TLS",
@@ -66,19 +67,27 @@ export function createManagedAdapter(options: {
     },
     details: ({ engine_profile: p }) => ({
       protocol: options.name,
-      transport: base.startsWith("hysteria2")
-        ? "UDP"
-        : base === "shadowsocks2022"
-          ? "TCP/UDP"
-          : "TCP",
+      transport:
+        base === "amneziawg" || base.startsWith("hysteria2")
+          ? "UDP"
+          : base === "shadowsocks2022"
+            ? "TCP/UDP"
+            : "TCP",
       server: `${p.server}:${p.port}`,
-      encryption: base === "shadowsocks2022" ? "AEAD-2022" : "TLS",
+      encryption:
+        base === "amneziawg"
+          ? "ChaCha20-Poly1305"
+          : base === "shadowsocks2022"
+            ? "AEAD-2022"
+            : "TLS",
       obfuscation:
-        base === "vless_reality"
-          ? "REALITY"
-          : base === "hysteria2_salamander"
-            ? "Salamander"
-            : "none",
+        base === "amneziawg"
+          ? "AmneziaWG"
+          : base === "vless_reality"
+            ? "REALITY"
+            : base === "hysteria2_salamander"
+              ? "Salamander"
+              : "none",
       mtu: 1280,
       dns: ["1.1.1.1"],
       clientAddress: "172.30.255.1/30",

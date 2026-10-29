@@ -78,7 +78,7 @@ func (p Profile) Validate() error {
 	}
 	tlsRequired := false
 	switch p.Method {
-	case "WIREGUARD":
+	case "WIREGUARD", "AMNEZIA":
 		prefix, e := netip.ParsePrefix(p.Address)
 		if e != nil || !prefix.Addr().Is4() || prefix.Bits() != 32 || !key32(p.Secret, false) || !key32(p.PublicKey, false) {
 			return ErrProfile
@@ -114,10 +114,10 @@ func (p Profile) Validate() error {
 	if tlsRequired && (!hostname.MatchString(p.ServerName) || !strings.Contains(p.ServerName, ".") || strings.Contains(p.ServerName, "..")) {
 		return ErrProfile
 	}
-	if p.Method != "WIREGUARD" && p.Address != "" {
+	if p.Method != "WIREGUARD" && p.Method != "AMNEZIA" && p.Address != "" {
 		return ErrProfile
 	}
-	if p.Method != "WIREGUARD" && p.Method != "VLESS_REALITY" && p.PublicKey != "" {
+	if p.Method != "WIREGUARD" && p.Method != "AMNEZIA" && p.Method != "VLESS_REALITY" && p.PublicKey != "" {
 		return ErrProfile
 	}
 	if p.Method != "VLESS_REALITY" && p.ShortID != "" {
@@ -173,7 +173,7 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		stream["tlsSettings"].(obj)["pinnedPeerCertSha256"] = p.CertificatePin
 	}
 	switch p.Method {
-	case "WIREGUARD":
+	case "WIREGUARD", "AMNEZIA":
 		out["protocol"] = "wireguard"
 		out["settings"] = obj{"secretKey": p.Secret, "address": []string{p.Address}, "mtu": 1280, "noKernelTun": true, "peers": []any{obj{"publicKey": p.PublicKey, "endpoint": net.JoinHostPort(p.Server, strconv.Itoa(int(p.Port))), "keepAlive": 25, "allowedIPs": []string{"0.0.0.0/0"}}}}
 	case "VLESS_TLS", "VLESS_REALITY":

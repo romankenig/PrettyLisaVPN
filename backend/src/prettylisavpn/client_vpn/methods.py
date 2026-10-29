@@ -19,6 +19,7 @@ class ManagedMethod:
 
 
 MANAGED_METHODS = {
+    "amneziawg": ManagedMethod("AMNEZIA", "udp"),
     "vless_reality": ManagedMethod("VLESS_REALITY", "tcp"),
     "vless": ManagedMethod("VLESS_TLS", "tcp"),
     "vmess": ManagedMethod("VMESS_TLS", "tcp"),
@@ -84,7 +85,13 @@ def profile(
         "port": port,
         "secret": secret,
     }
-    if selected.engine == "SHADOWSOCKS_2022":
+    if selected.engine == "AMNEZIA":
+        result.update(
+            secret=derived(secret, "amnezia-key"),
+            public_key=base64.b64encode(base64.urlsafe_b64decode(str(public_key) + "=")).decode(),
+            address="172.30.253.2/32",
+        )
+    elif selected.engine == "SHADOWSOCKS_2022":
         result["secret"] = derived(secret, "ss-server") + ":" + derived(secret, "ss-user")
     else:
         result["server_name"] = configuration["server_name"]

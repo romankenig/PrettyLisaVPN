@@ -15,6 +15,7 @@ import (
 	"time"
 
 	_ "github.com/romankenig/PrettyLisaVPN/engines/managed"
+	"github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia"
 	_ "github.com/xtls/xray-core/app/policy"
 	_ "github.com/xtls/xray-core/app/stats"
 	"github.com/xtls/xray-core/core"
@@ -81,7 +82,7 @@ func Parse(raw []byte, now time.Time) (Lease, error) {
 		if _, ok := methodOffsets[l.Method]; !ok || l.Plan {
 			return Lease{}, ErrConfiguration
 		}
-		if l.Method != "VLESS_REALITY" && l.Method != "SHADOWSOCKS_2022" {
+		if l.Method != "VLESS_REALITY" && l.Method != "SHADOWSOCKS_2022" && l.Method != "AMNEZIA" {
 			if _, err := tls.X509KeyPair([]byte(l.TLSCertificate), []byte(l.TLSKey)); err != nil {
 				return Lease{}, ErrConfiguration
 			}
@@ -109,6 +110,11 @@ func (l Lease) Config() (*core.Config, error) {
 	c, err := serial.LoadJSONConfig(bytes.NewReader(content))
 	if err != nil {
 		return nil, ErrConfiguration
+	}
+	if l.Method == "AMNEZIA" {
+		if amnezia.Wrap(c) != nil {
+			return nil, ErrConfiguration
+		}
 	}
 	return c, nil
 }

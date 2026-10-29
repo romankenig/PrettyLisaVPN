@@ -2,6 +2,7 @@
 package node
 
 import (
+	"crypto/ecdh"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
@@ -14,6 +15,7 @@ const PlanPorts = 20
 
 // A current lease exposes exactly one selected encrypted protocol.
 var methodOffsets = map[string]int{
+	"AMNEZIA":       -1,
 	"VLESS_REALITY": 0, "VLESS_TLS": 1, "VMESS_TLS": 6,
 	"SHADOWSOCKS_2022": 17, "HYSTERIA2_TLS": 18, "HYSTERIA2_SALAMANDER": 19,
 }
@@ -25,6 +27,14 @@ func derived(secret, purpose string) string {
 
 func (l Lease) inbounds() []any {
 	type obj = map[string]any
+	if l.Method == "AMNEZIA" {
+		raw, _ := base64.StdEncoding.DecodeString(derived(l.Secret, "amnezia-key"))
+		private, _ := ecdh.X25519().NewPrivateKey(raw)
+		clear(raw)
+		return []any{obj{"tag": "authorized", "listen": l.Listen, "port": l.Port, "protocol": "wireguard",
+			"settings": obj{"secretKey": l.PrivateKey, "address": []string{"172.30.253.1/24"}, "mtu": 1280,
+				"peers": []any{obj{"publicKey": base64.StdEncoding.EncodeToString(private.PublicKey().Bytes()), "allowedIPs": []string{"172.30.253.2/32"}}}}}}
+	}
 	if l.Method != "" {
 		legacy := l
 		legacy.Method, legacy.Plan = "", true

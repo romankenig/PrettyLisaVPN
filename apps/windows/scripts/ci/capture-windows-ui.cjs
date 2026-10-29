@@ -478,9 +478,7 @@ async function main() {
     .click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await screenshot("05-settings");
-  await page
-    .getByRole("link", { name: "расширенные настройки", exact: true })
-    .click();
+  await page.getByRole("link", { name: /расширенные настройки/i }).click();
   await page
     .getByRole("heading", { name: "расширенные настройки", exact: true })
     .waitFor();
@@ -489,9 +487,7 @@ async function main() {
     .uncheck();
   await screenshot("05a-advanced-methods");
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
-  await page
-    .getByRole("link", { name: "расширенные настройки", exact: true })
-    .click();
+  await page.getByRole("link", { name: /расширенные настройки/i }).click();
   if (
     await page
       .getByRole("checkbox", { name: "WireGuard", exact: true })

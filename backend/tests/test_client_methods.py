@@ -10,6 +10,7 @@ from prettylisavpn.client_vpn.methods import (
     METHODS,
     base_method,
     lease_credential,
+    profile,
 )
 from prettylisavpn.fleet.domain import FleetError
 
@@ -37,3 +38,24 @@ def test_credentials_are_stable_scoped_separate_and_redacted():
     for unavailable in (None, SecretStr("short")):
         with pytest.raises(FleetError, match="VPN_ENGINE_UNAVAILABLE"):
             lease_credential(unavailable, lease, node)
+
+
+def test_amnezia_profile_has_only_its_keys_and_tunnel_address():
+    import base64
+
+    key, lease, node = SecretStr("test-only-key-" + "a" * 32), uuid4(), uuid4()
+    result = profile(
+        method="amneziawg_relay",
+        lease_id=lease,
+        node_id=node,
+        key=key,
+        host="9.9.9.9",
+        port=25000,
+        country="DE",
+        public_key="AQ" + "A" * 41,
+        configuration={},
+    )
+    assert result["method"] == "AMNEZIA" and result["address"] == "172.30.253.2/32"
+    assert len(base64.b64decode(str(result["secret"]))) == 32
+    assert len(base64.b64decode(str(result["public_key"]))) == 32
+    assert "server_name" not in result and "certificate_pin" not in result

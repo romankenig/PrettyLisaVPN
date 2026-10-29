@@ -1,5 +1,6 @@
 const families = [
   ["wireguard", "WireGuard"],
+  ["amneziawg", "Amnezia"],
   ["shadowsocks2022", "SS2022"],
   ["vmess", "VMess"],
   ["vless", "VLESS"],
