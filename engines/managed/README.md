@@ -1,6 +1,6 @@
 # PrettyLisaVPN managed engine (in development)
 
-Isolated engine, version 0.3.0. Xray-core 26.10.21 is pinned to source commit
+Isolated engine, version 0.4.0. Xray-core 26.10.21 is pinned to source commit
 `1b1647cd9ddf0abc34b981d4611fc03bcac1ca74` in go.mod/go.sum. The adapter is MIT;
 Xray is MPL-2.0. The unpublished sing-box implementation was removed following
 the owner's decision. No sing-box, sing-openvpn or sing-openconnect is linked.
@@ -10,8 +10,12 @@ NAT-PMP is pinned to Apache-2.0 commit `2c56765bf4dfd2c849263d5f1b4eeef8fea74214
 with its complete license text.
 
 Android and Windows wiring and opt-in authorization for ten managed families are
-implemented in source; real device acceptance remains pending. See
-[the current rollout and validation status](../../docs/managed-transports.md).
+implemented. Transport acceptance and rollout evidence are recorded in
+[the transport handoff](../../docs/managed-transports.md) and its linked PR.
+Version 0.4.0 adds optional device-owned domain routing for WireGuard and every
+managed family; full tunnel remains the default. See the separate
+[split-routing handoff](../../docs/split-routing.md) for behavior, limitations and
+the current task's acceptance evidence.
 Linux builds include the isolated server binary; automatic desktop client routing
 targets Windows, not a Linux product release.
 
