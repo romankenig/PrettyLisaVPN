@@ -57,7 +57,18 @@ class LiveManagedTest {
                 }
             } finally { connection.disconnect() }
         }
-        val baseline = if (modes.any { it != "all" }) origins.map { ip(it) } else emptyList()
+        // A newly booted emulator can report boot_completed before physical DNS
+        // is ready. Only retry this pre-VPN prerequisite; tunnel checks below
+        // still require both distinct routes on each single connection attempt.
+        val baseline = if (modes.any { it != "all" }) {
+            var addresses: List<String>? = null
+            val deadline = SystemClock.elapsedRealtime() + 60_000
+            while (addresses == null && SystemClock.elapsedRealtime() < deadline) {
+                addresses = runCatching { origins.map { ip(it) } }.getOrNull()
+                if (addresses == null) SystemClock.sleep(2_000)
+            }
+            requireNotNull(addresses) { "Physical Internet/DNS unavailable before VPN" }
+        } else emptyList()
         val exits = credential.getAsJsonArray("expected_egress_ips")?.map { it.asString } ?: emptyList()
         if (modes.any { it != "all" }) require(exits.isNotEmpty() && baseline.none { it in exits })
         KeystoreVault(context).write(Credentials(credential.get("sessionId").asString,

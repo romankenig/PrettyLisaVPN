@@ -54,11 +54,11 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: apk
       - uses: actions/download-artifact@v4
         with:
-          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: test-apk
       - name: Prepare private, expiring acceptance credential
         env:
@@ -107,11 +107,11 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: apk
       - uses: actions/download-artifact@v4
         with:
-          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: test-apk
       - name: Prepare private, expiring acceptance credential
         env:
@@ -146,6 +146,8 @@ jobs:
 
   build:
     name: Debug APK and lint
+    outputs:
+      artifact_attempt: ${{ steps.identity.outputs.artifact_attempt }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -209,9 +211,12 @@ jobs:
           python3 scripts/check-source-isolation.py
           python3 scripts/check-vpn-packaging.py
       - name: Record build identity
+        id: identity
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python3 scripts/record-build.py
+        run: |
+          python3 scripts/record-build.py
+          echo "artifact_attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Include corresponding source archive beside the APK
         run: cp "$RUNNER_TEMP/android-engine-source.tar.gz" app/build/distributions/debug/arm64-v8a/managed-source.tar.gz
       - name: Upload debug APK and corresponding sources from this commit
@@ -272,11 +277,11 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-emulator-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: apk
       - uses: actions/download-artifact@v4
         with:
-          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-test-apk-${{ github.sha }}-${{ github.run_id }}-${{ needs.build.outputs.artifact_attempt }}
           path: test-apk
       - name: Enable KVM
         run: |
