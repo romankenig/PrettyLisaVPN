@@ -146,18 +146,7 @@ internal fun LiveHome(model: ScreenModel) {
                 }
             }
         }
-        BrandCard {
-            Text(tr(R.string.ui_what_to_protect), style = MaterialTheme.typography.titleMedium)
-            listOf(R.string.dash_all_traffic, R.string.dash_include, R.string.dash_exclude).forEachIndexed { index, title ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(index == 0, {}, enabled = index == 0)
-                    Column(Modifier.weight(1f)) {
-                        Text(tr(title), color = if (index == 0) Brand.Black else Brand.Scorpion)
-                        if (index != 0) Text(tr(R.string.dash_soon), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                    }
-                }
-            }
-        }
+        TrafficRouting(model)
     }
 }
 

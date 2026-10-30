@@ -20,6 +20,7 @@ from prettylisavpn.legacy_vpn import sessions as vpn_sessions_model  # noqa: F40
 from prettylisavpn.product_events import model as product_events_model  # noqa: F401
 from prettylisavpn.subscriptions import model as subscriptions_model  # noqa: F401
 from prettylisavpn.support import model as support_model  # noqa: F401
+from prettylisavpn.traffic import model as traffic_model  # noqa: F401
 from prettylisavpn.users import model as users_model  # noqa: F401
 
 config = context.config

@@ -25,9 +25,13 @@ try {
 if ((Get-AuthenticodeSignature (Join-Path $output 'wintun.dll')).Status -ne 'Valid') { throw 'Wintun signature is not valid' }
 Push-Location $engineSource
 try {
-    & $GoExecutable build -trimpath -ldflags=-checklinkname=0 -o (Join-Path $output 'pl-engine.exe') ./cmd/pl-engine
+    & $GoExecutable build -trimpath '-ldflags=-checklinkname=0 -s -w' -o (Join-Path $output 'pl-engine.exe') ./cmd/pl-engine
     if ($LASTEXITCODE -ne 0) { throw 'Managed engine build failed' }
-    @{ engine_sha256 = (Get-FileHash (Join-Path $output 'pl-engine.exe') -Algorithm SHA256).Hash.ToLowerInvariant(); wintun_archive_sha256 = $expected; source_sha = (& git -C $repository rev-parse HEAD) } |
+    $inputStream = [IO.File]::OpenRead((Join-Path $output 'pl-engine.exe'))
+    $outputStream = [IO.File]::Create((Join-Path $output 'pl-engine.exe.gz'))
+    $compressed = [IO.Compression.GZipStream]::new($outputStream, [IO.Compression.CompressionLevel]::SmallestSize)
+    try { $inputStream.CopyTo($compressed) } finally { $compressed.Dispose(); $outputStream.Dispose(); $inputStream.Dispose() }
+    @{ engine_sha256 = (Get-FileHash (Join-Path $output 'pl-engine.exe') -Algorithm SHA256).Hash.ToLowerInvariant(); embedded_sha256 = (Get-FileHash (Join-Path $output 'pl-engine.exe.gz') -Algorithm SHA256).Hash.ToLowerInvariant(); wintun_archive_sha256 = $expected; source_sha = (& git -C $repository rev-parse HEAD) } |
         ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $output 'identity.json')
     if ($env:GITHUB_ACTIONS -eq 'true') {
         & $GoExecutable install github.com/google/go-licenses/v2@v2.0.1

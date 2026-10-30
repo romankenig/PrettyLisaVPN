@@ -6,6 +6,23 @@
 
 ## Unreleased
 
+### Windows — 0.19.1
+
+- Build the downloadable client with release optimization, strip Go symbols and
+  compress the embedded engine. The single EXE expands the engine only inside
+  its existing private helper directory; all transports and license/source
+  packages remain present. See [packaging handoff](docs/windows-package-size.md).
+
+### Backend — 0.24.0 / Android — 0.16.0 / Windows — 0.19.0 / engines — 0.4.0
+
+- Add independent include/exclude service lists, custom domain masks and a
+  separate selection dialog on Home. Saving stops VPN; the next manual connection
+  uses the new rules. Every implemented method, including WireGuard and relay
+  variants, receives the same device-local routing policy.
+- Migration 0037 seeds database-owned YouTube/Instagram presets. Authenticated
+  catalog API returns masks and icon keys; browsing data never reaches the API.
+  See [routing handoff](docs/split-routing.md).
+
 ### Backend — 0.23.0 / Android — 0.15.3 / Windows — 0.18.1
 
 - Operators can grant a one-off account-wide Free allowance for the current UTC

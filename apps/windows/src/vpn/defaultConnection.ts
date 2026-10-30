@@ -23,19 +23,7 @@ export function createDefaultVpnConnection(
   };
   const manager = createVpnConnectionManager(
     [
-      createWireGuardAdapter({
-        ...options,
-        native: {
-          ...wireGuardNative,
-          stop: async () => {
-            try {
-              await managedNative.stop();
-            } finally {
-              await wireGuardNative.stop();
-            }
-          },
-        },
-      }),
+      createWireGuardAdapter(options),
       createWireGuardAdapter({ ...options, viaRelay: true }),
       ...connectionMethods
         .filter((item) => item.id.replace(/_relay$/, "") in managedMethods)

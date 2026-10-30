@@ -2489,8 +2489,9 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
 name = "prettylisavpn-windows"
-version = "0.18.1"
+version = "0.19.1"
 dependencies = [
+ "flate2",
  "serde",
  "serde_json",
  "tauri",

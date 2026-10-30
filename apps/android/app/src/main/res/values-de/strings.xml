@@ -239,7 +239,6 @@
     <string name="dash_all_traffic">gesamter datenverkehr</string>
     <string name="dash_include">nur ausgewählte webseiten</string>
     <string name="dash_exclude">außer ausgewählten webseiten</string>
-    <string name="dash_soon">demnächst</string>
     <string name="dash_end_session">sitzung auf diesem gerät beenden</string>
     <string name="dash_added">hinzugefügt</string>
     <string name="dash_last_login">letzte anmeldung</string>
@@ -271,4 +270,14 @@
     <string name="connection_methods">verbindungsmethoden</string>
     <string name="connection_methods_hint">änderungen gelten für die nächste Verbindung. wählen Sie mindestens eine Methode.</string>
     <string name="all_methods">alle Methoden</string>
+    <string name="traffic_services">dienste auswählen</string>
+    <string name="traffic_save_hint">speichern trennt das VPN. neue Regeln gelten ab der nächsten Verbindung.</string>
+    <string name="traffic_catalog_unavailable">katalog nicht verfügbar. gespeicherte Dienste und Domainmuster bleiben verfügbar.</string>
+    <string name="traffic_mask">domainmuster</string>
+    <string name="traffic_add">hinzufügen</string>
+    <string name="traffic_remove">entfernen</string>
+    <string name="traffic_save">speichern</string>
+    <string name="traffic_save_failed">regeln konnten nicht gespeichert werden. bitte erneut versuchen.</string>
+    <string name="traffic_mask_invalid">domain oder *.domain ohne Seitenpfad eingeben. maximal 256 Muster.</string>
+    <string name="traffic_loading">dienste werden geladen…</string>
 </resources>

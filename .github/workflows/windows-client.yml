@@ -55,7 +55,16 @@ jobs:
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - name: Build downloadable client using the real development API
-        run: pnpm tauri build --debug --no-bundle
+        run: pnpm tauri build --no-bundle
+      - name: Install signed official WireGuard for opt-in acceptance only
+        if: github.event_name == 'workflow_dispatch' && inputs.live_managed
+        run: |
+          $msi = Join-Path $env:RUNNER_TEMP 'wireguard-amd64-1.1.1.msi'
+          Invoke-WebRequest 'https://download.wireguard.com/windows-client/wireguard-amd64-1.1.1.msi' -OutFile $msi -TimeoutSec 60
+          $signature = Get-AuthenticodeSignature -LiteralPath $msi
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'WireGuard') { throw 'Invalid WireGuard installer signature' }
+          $install = Start-Process msiexec.exe -ArgumentList @('/i', $msi, '/qn', '/norestart', 'DO_NOT_LAUNCH=1') -WindowStyle Hidden -Wait -PassThru
+          if ($install.ExitCode -notin @(0, 3010)) { throw 'WireGuard installation failed' }
       - name: Real packaged managed transport acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.live_managed
         env:
@@ -85,7 +94,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           New-Item -ItemType Directory -Force artifacts/client | Out-Null
-          Copy-Item src-tauri/target/debug/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          Copy-Item src-tauri/target/release/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
           Copy-Item src-tauri/engine/Wintun-Prebuilt-License.txt artifacts/client/
           Copy-Item src-tauri/engine/managed-source.tar.gz artifacts/client/
           $binary = Get-Item artifacts/client/PrettyLisaVPN.exe

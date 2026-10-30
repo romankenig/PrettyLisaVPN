@@ -1,3 +1,13 @@
+# Traffic routing — Windows 0.19.0 / Android 0.16.0
+
+Home → Choose services opens an internal modal, with independent include/exclude
+lists, catalog checkboxes/icons and custom masks. Cancel/Escape/Back discards the
+draft. Save disconnects VPN and waits for cleanup before persisting; no automatic
+reconnection. Mode changes use the same stop-before-save rule. The next Connect
+uses saved rules. Authentication, external links and account navigation remain.
+The catalog endpoint and engine routing are implemented; deployed/native
+acceptance evidence belongs to the task PR. See [handoff](split-routing.md).
+
 # Daily allowance — Windows 0.18.1 / Android 0.15.3
 
 Home retains its existing navigation. The Free balance now accepts an explicit

@@ -21,7 +21,7 @@ import (
 	"github.com/xtls/xray-core/core"
 )
 
-const Version = "0.3.0"
+const Version = "0.4.0"
 const CoreVersion = "26.10.21"
 const MaxProfileBytes = 64 * 1024
 
@@ -30,21 +30,22 @@ var ErrProfile = errors.New("UNSUPPORTED_CONFIGURATION")
 // Profile is a private payload from the authorized client, never an arbitrary
 // Xray config. No file paths, scripts, log options, custom routes or insecure TLS.
 type Profile struct {
-	Version        int    `json:"version"`
-	Session        string `json:"session"`
-	Country        string `json:"country"`
-	Method         string `json:"method"`
-	Server         string `json:"server"`
-	Port           uint16 `json:"port"`
-	Secret         string `json:"secret"`
-	ServerName     string `json:"server_name,omitempty"`
-	PublicKey      string `json:"public_key,omitempty"`
-	ShortID        string `json:"short_id,omitempty"`
-	ObfsSecret     string `json:"obfs_secret,omitempty"`
-	Transport      string `json:"transport,omitempty"`
-	Path           string `json:"path,omitempty"`
-	Address        string `json:"address,omitempty"`
-	CertificatePin string `json:"certificate_pin,omitempty"`
+	Version        int      `json:"version"`
+	Session        string   `json:"session"`
+	Country        string   `json:"country"`
+	Method         string   `json:"method"`
+	Server         string   `json:"server"`
+	Port           uint16   `json:"port"`
+	Secret         string   `json:"secret"`
+	ServerName     string   `json:"server_name,omitempty"`
+	PublicKey      string   `json:"public_key,omitempty"`
+	ShortID        string   `json:"short_id,omitempty"`
+	ObfsSecret     string   `json:"obfs_secret,omitempty"`
+	Transport      string   `json:"transport,omitempty"`
+	Path           string   `json:"path,omitempty"`
+	Address        string   `json:"address,omitempty"`
+	CertificatePin string   `json:"certificate_pin,omitempty"`
+	Routing        *Routing `json:"routing,omitempty"`
 }
 
 func (p Profile) String() string   { return "Profile([redacted])" }
@@ -76,6 +77,9 @@ func key32(value string, raw bool) bool {
 	return err == nil && len(b) == 32 && !bytes.Equal(b, make([]byte, 32))
 }
 func (p Profile) Validate() error {
+	if p.Routing.validate() != nil {
+		return ErrProfile
+	}
 	ip, err := netip.ParseAddr(p.Server)
 	if p.Version != 1 || !uuid.MatchString(p.Session) || !regexp.MustCompile(`^[A-Z]{2}$`).MatchString(p.Country) || err != nil || !ip.Is4() || !ip.IsGlobalUnicast() || ip.IsPrivate() || p.Port == 0 {
 		return ErrProfile
@@ -256,6 +260,7 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		"outbounds": []any{out, obj{"tag": "blocked", "protocol": "blackhole"}},
 		"routing":   obj{"domainStrategy": "AsIs", "rules": []any{obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"}, obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": "vpn"}}},
 	}
+	p.Routing.apply(config)
 	return json.Marshal(config)
 }
 

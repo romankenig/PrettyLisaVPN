@@ -13,7 +13,10 @@ interface Lease<C> {
 }
 export interface SessionEngine<C> {
   prepare(): Promise<string>;
-  start(configuration: C): Promise<void>;
+  start(
+    configuration: C,
+    context: { id: string; country: string },
+  ): Promise<void>;
   stop(): Promise<void>;
   verify(configuration: C, id: string, token: string): Promise<boolean>;
   isUp(): Promise<boolean>;
@@ -185,7 +188,7 @@ export function createSessionAdapter<C>(
       const row = lease,
         configuration = lease.configuration;
       options.validate(configuration, row.id, row.country);
-      await native.start(configuration);
+      await native.start(configuration, { id: row.id, country: row.country });
       local = true;
       check(signal);
       // DNS and HTTPS are bound by the native implementation to the allocated tunnel IP.

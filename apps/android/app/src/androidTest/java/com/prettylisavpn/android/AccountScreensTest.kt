@@ -41,6 +41,9 @@ class AccountScreensTest {
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
+        override suspend fun trafficServices(token:String) = listOf(
+            com.prettylisavpn.android.vpn.TrafficService("0bd811da-f080-4f25-887a-67bf534ac2c6", "youtube", "YouTube", "youtube", listOf("youtube.com", "*.youtube.com")),
+            com.prettylisavpn.android.vpn.TrafficService("4e2b8d7c-289f-4c57-8f26-aeb680408cda", "instagram", "Instagram", "instagram", listOf("instagram.com", "*.instagram.com")))
         override suspend fun devices(token:String): List<Device> { deviceReads++; return listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active), Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
         override suspend fun locations(token:String)=LocationOptions(countries(token),80)
@@ -57,6 +60,7 @@ class AccountScreensTest {
         override suspend fun supportSubmit(token:String,report:SupportSubmission):SupportReceipt { submitted=report;sends++;return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
     }
     @Before fun launch() {
+        com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext).save(com.prettylisavpn.android.vpn.TrafficSelection())
         val vault=object:CredentialVault {
             var value:Credentials?=Credentials(device,"fake","2030-01-01T00:00:00Z")
             override fun read()=value
@@ -71,7 +75,7 @@ class AccountScreensTest {
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
     }
-    @After fun reset() { SourceFactory.sourceForTests=null }
+    @After fun reset() { SourceFactory.sourceForTests=null; com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext).save(com.prettylisavpn.android.vpn.TrafficSelection()) }
     private fun waitFor(tag:String)=compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     private fun click(tag:String) {
         if(compose.onAllNodes(hasTestTag(tag) and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag(tag).performScrollTo()
@@ -110,6 +114,24 @@ class AccountScreensTest {
         compose.onNodeWithTag("device-$device").assertDoesNotExist();compose.onNodeWithTag("current-device-badge").assertExists();screenshot("devices-revoked")
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
+    }
+
+    @Test fun trafficListsAreIndependentAndPersistAfterRecreation() {
+        click("traffic-services"); waitFor("traffic-service-youtube")
+        click("traffic-service-youtube")
+        compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
+        screenshot("traffic-include")
+        click("traffic-tab-exclude")
+        compose.onNodeWithTag("traffic-service-youtube").assertIsOff()
+        click("traffic-service-instagram")
+        screenshot("traffic-exclude")
+        click("traffic-save")
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("traffic-dialog").fetchSemanticsNodes().isEmpty() }
+        compose.activityRule.scenario.recreate(); waitFor("live-account")
+        click("traffic-services"); waitFor("traffic-service-youtube")
+        compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
+        click("traffic-tab-exclude")
+        compose.onNodeWithTag("traffic-service-instagram").assertIsOn()
     }
     @Test fun messagesPopupOnlyNavigatesAfterSuccessfulAck() {
         messages=true;ackFail=true

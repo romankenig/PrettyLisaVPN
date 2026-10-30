@@ -11,6 +11,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.prettylisavpn.android.auth.Credentials
 import com.prettylisavpn.android.auth.KeystoreVault
+import com.prettylisavpn.android.vpn.DeviceTrafficSelection
+import com.prettylisavpn.android.vpn.TrafficSelection
+import com.prettylisavpn.android.vpn.TrafficList
 import com.prettylisavpn.android.vpn.AndroidVpnHost
 import com.prettylisavpn.android.vpn.DeviceMethodSelection
 import com.prettylisavpn.android.vpn.VpnPhase
@@ -38,6 +41,36 @@ class LiveManagedTest {
         require(country in setOf("DE", "US"))
         val methods = credential.getAsJsonArray("methods").map { it.asString }
         require(methods.isNotEmpty() && methods.all { id -> connectionMethods.any { it.id == id } })
+        val modes = credential.getAsJsonArray("routing_modes")?.map { it.asString } ?: listOf("all")
+        require(modes.isNotEmpty() && modes.all { it in setOf("all", "include", "exclude") })
+        // Fixed diagnostic origins only, no customer destinations or DNS logs.
+        val origins = listOf("https://api.ipify.org", "https://ipv4.icanhazip.com")
+        fun ip(origin: String, network: android.net.Network? = null): String {
+            val connection = (network?.openConnection(URL(origin), Proxy.NO_PROXY)
+                ?: URL(origin).openConnection(Proxy.NO_PROXY)) as HttpsURLConnection
+            try {
+                connection.connectTimeout = 15_000; connection.readTimeout = 15_000
+                connection.instanceFollowRedirects = false; connection.useCaches = false
+                check(connection.responseCode == 200)
+                return connection.inputStream.bufferedReader().use { it.readText().trim() }.also {
+                    check(it.matches(Regex("[0-9]{1,3}(\\.[0-9]{1,3}){3}")))
+                }
+            } finally { connection.disconnect() }
+        }
+        // A newly booted emulator can report boot_completed before physical DNS
+        // is ready. Only retry this pre-VPN prerequisite; tunnel checks below
+        // still require both distinct routes on each single connection attempt.
+        val baseline = if (modes.any { it != "all" }) {
+            var addresses: List<String>? = null
+            val deadline = SystemClock.elapsedRealtime() + 60_000
+            while (addresses == null && SystemClock.elapsedRealtime() < deadline) {
+                addresses = runCatching { origins.map { ip(it) } }.getOrNull()
+                if (addresses == null) SystemClock.sleep(2_000)
+            }
+            requireNotNull(addresses) { "Physical Internet/DNS unavailable before VPN" }
+        } else emptyList()
+        val exits = credential.getAsJsonArray("expected_egress_ips")?.map { it.asString } ?: emptyList()
+        if (modes.any { it != "all" }) require(exits.isNotEmpty() && baseline.none { it in exits })
         KeystoreVault(context).write(Credentials(credential.get("sessionId").asString,
             credential.get("refreshToken").asString, credential.get("expiresAt").asString))
         val output = requireNotNull(context.getExternalFilesDir(null))
@@ -53,8 +86,8 @@ class LiveManagedTest {
                 SystemClock.sleep(200)
             }
             assertTrue("Disposable account restoration failed", signedIn)
-            for (method in methods) {
-                val row = mutableMapOf<String, Any?>("method" to method, "connected" to false,
+            for ((method, mode) in methods.flatMap { method -> modes.map { method to it } }) {
+                val row = mutableMapOf<String, Any?>("method" to method, "routing_mode" to mode, "split_verified" to (mode == "all"), "connected" to false,
                     "tunnel_https" to false, "cleanup" to false)
                 rows.add(row); save()
                 try {
@@ -62,6 +95,8 @@ class LiveManagedTest {
                     while (AndroidVpnHost.current()?.status?.value?.phase != VpnPhase.DISCONNECTED && SystemClock.elapsedRealtime() < idleDeadline) SystemClock.sleep(200)
                     assertEquals("Session recovery must finish before connect", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
                     scenario.onActivity {
+                        val masks = TrafficList(masks = listOf("api.ipify.org"))
+                        DeviceTrafficSelection.get(context).save(TrafficSelection(mode, masks, masks))
                         DeviceMethodSelection.get(context).apply {
                             all()
                             connectionMethods.filter { it.id != method }.forEach { toggle(it.id) }
@@ -70,7 +105,7 @@ class LiveManagedTest {
                     }
                     val started = SystemClock.elapsedRealtime()
                     var observedStart = false
-                    device.takeScreenshot(File(output, "managed-$method-start.png"))
+                    device.takeScreenshot(File(output, "managed-$method-$mode-start.png"))
                     while (SystemClock.elapsedRealtime() - started < 180_000) {
                         device.findObject(By.res("android", "button1"))?.click()
                         val state = requireNotNull(AndroidVpnHost.current()).status.value
@@ -103,10 +138,19 @@ class LiveManagedTest {
                                 connection.responseCode == 200 && connection.inputStream.bufferedReader().use { it.readText().contains("ok") }
                             } finally { connection.disconnect() }
                         }.getOrDefault(false)
-                        device.takeScreenshot(File(output, "managed-$method.png"))
+                        if (mode != "all" && vpn != null) {
+                            row["split_verified"] = runCatching {
+                                val actual = origins.map { ip(it, vpn) }
+                                actual.indices.all { index ->
+                                    val shouldUseVpn = (index == 0) == (mode == "include")
+                                    if (shouldUseVpn) actual[index] in exits else actual[index] == baseline[index]
+                                }
+                            }.getOrDefault(false)
+                        }
+                        device.takeScreenshot(File(output, "managed-$method-$mode.png"))
                     }
                 } finally {
-                    device.takeScreenshot(File(output, "managed-$method-final.png"))
+                    device.takeScreenshot(File(output, "managed-$method-$mode-final.png"))
                     scenario.onActivity { AndroidVpnHost.current()?.disconnect() }
                     val cleanupDeadline = SystemClock.elapsedRealtime() + 45_000
                     while (AndroidVpnHost.current()?.status?.value?.phase == VpnPhase.DISCONNECTING && SystemClock.elapsedRealtime() < cleanupDeadline) SystemClock.sleep(200)
@@ -118,7 +162,7 @@ class LiveManagedTest {
             }
         }
         assertTrue("Every requested real method must pass; inspect redacted proof", rows.all {
-            it["connected"] == true && it["tunnel_https"] == true && (it["sustained_seconds"] as? Long ?: 0) >= 40
+            it["split_verified"] == true && it["connected"] == true && it["tunnel_https"] == true && (it["sustained_seconds"] as? Long ?: 0) >= 40
         })
     }
 }

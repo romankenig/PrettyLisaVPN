@@ -30,6 +30,23 @@ use zeroize::Zeroizing;
 const ERROR: &str = "ENGINE_UNAVAILABLE";
 const FRAME_LIMIT: usize = 132_096;
 const NO_WINDOW: u32 = 0x08000000;
+const EMBEDDED_ENGINE: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/engine/pl-engine.exe.gz"
+));
+
+fn unpack_engine(content: &[u8]) -> Result<Vec<u8>, &'static str> {
+    const LIMIT: u64 = 64 * 1024 * 1024;
+    let mut decoded = Vec::new();
+    flate2::read::GzDecoder::new(content)
+        .take(LIMIT + 1)
+        .read_to_end(&mut decoded)
+        .map_err(|_| ERROR)?;
+    if decoded.len() < 64 || decoded.len() as u64 > LIMIT || !decoded.starts_with(b"MZ") {
+        return Err(ERROR);
+    }
+    Ok(decoded)
+}
 
 struct Handle(HANDLE);
 unsafe impl Send for Handle {}
@@ -397,7 +414,7 @@ fn serve(
 ) -> Result<(), &'static str> {
     fs::write(
         directory.join("pl-engine.exe"),
-        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/engine/pl-engine.exe")),
+        unpack_engine(EMBEDDED_ENGINE)?,
     )
     .map_err(|_| ERROR)?;
     fs::write(
@@ -487,6 +504,28 @@ fn serve_child(pipe: &mut File, parent: &Handle, child: &mut Child) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn embedded_engine_is_a_complete_executable_and_rejects_corruption() {
+        let decoded = unpack_engine(EMBEDDED_ENGINE).unwrap();
+        assert!(decoded.len() > 1024);
+        assert_eq!(&decoded[..2], b"MZ");
+        assert!(unpack_engine(&EMBEDDED_ENGINE[..EMBEDDED_ENGINE.len() / 2]).is_err());
+        let mut damaged = EMBEDDED_ENGINE.to_vec();
+        let last = damaged.len() - 1;
+        damaged[last] ^= 1;
+        assert!(unpack_engine(&damaged).is_err());
+    }
+
+    #[test]
+    fn decompression_rejects_non_executable_and_excessive_payload() {
+        for data in [vec![0u8; 128], vec![0u8; 64 * 1024 * 1024 + 1]] {
+            let mut compressor =
+                flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+            compressor.write_all(&data).unwrap();
+            assert!(unpack_engine(&compressor.finish().unwrap()).is_err());
+        }
+    }
 
     #[test]
     fn pipe_namespace_rejects_paths_and_command_fragments() {

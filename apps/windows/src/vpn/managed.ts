@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { HttpTransport } from "../native/http";
 import { createSessionAdapter, type SessionEngine } from "./sessionAdapter";
+import {
+  getDeviceTrafficSelection,
+  routingPolicy,
+  type RoutingPolicy,
+} from "./traffic";
 
 export const managedMethods = {
   amneziawg: "AMNEZIA",
@@ -26,15 +31,17 @@ export interface ManagedConfiguration {
   };
   expected_egress_ips: string[];
 }
+let routing: RoutingPolicy = { mode: "all", domains: [] };
 export const managedNative: SessionEngine<ManagedConfiguration> = {
   async prepare() {
+    routing = routingPolicy(getDeviceTrafficSelection().current());
     // Request binding only: these transports do not use a WireGuard private key.
     return btoa(
       String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))),
     );
   },
   start: ({ engine_profile }) =>
-    invoke("engine_start", { profile: engine_profile }),
+    invoke("engine_start", { profile: { ...engine_profile, routing } }),
   stop: () => invoke("engine_stop"),
   isUp: () => invoke("engine_is_up"),
   verify: (_, sessionId, accessToken) =>

@@ -75,7 +75,10 @@ it("falls back through the actual relay adapter only after direct cleanup", asyn
   await connecting;
   expect(direct.row.status).toBe("CLOSED");
   expect(manager.current().phase).toBe("CONNECTED");
-  expect(relay.native.start).toHaveBeenCalledWith(relay.row.configuration);
+  expect(relay.native.start).toHaveBeenCalledWith(relay.row.configuration, {
+    id: relay.row.id,
+    country: relay.row.country,
+  });
   expect(
     JSON.parse(
       relay.requests.find((request) => request.method === "POST")!.body!,
