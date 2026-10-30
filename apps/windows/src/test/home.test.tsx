@@ -117,6 +117,38 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("keeps previous traffic rules when cleanup fails", async () => {
+    const state = {
+      phase: "CONNECTED",
+      backend: "ACTIVE",
+      tunnel: "UP",
+      session: {
+        sessionId: "cleanup-test",
+        countryCode: "DE",
+        expiresAt: null,
+        remainingSeconds: null,
+      },
+    } as const;
+    const vpn = {
+      ...createTestVpnConnection(),
+      current: () => state,
+      disconnect: vi.fn(async () => {
+        throw new Error("CLEANUP_FAILED");
+      }),
+      connect: vi.fn(),
+    };
+    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
+    fireEvent.click(
+      await screen.findByRole("radio", { name: /только выбранные сайты/ }),
+    );
+    expect(
+      await screen.findByText(
+        "Не удалось сохранить правила. Повторите попытку.",
+      ),
+    ).toBeVisible();
+    expect(getDeviceTrafficSelection().current().mode).toBe("all");
+    expect(vpn.connect).not.toHaveBeenCalled();
+  });
   it("stops the current attempt before applying new rules without reconnecting", async () => {
     let confirm!: () => void;
     const state = {

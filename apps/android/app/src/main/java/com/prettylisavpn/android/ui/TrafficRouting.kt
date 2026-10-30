@@ -21,9 +21,7 @@ import com.prettylisavpn.android.data.*
 import com.prettylisavpn.android.vpn.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 @Composable
 internal fun TrafficRouting(model: ScreenModel) {
@@ -40,14 +38,8 @@ internal fun TrafficRouting(model: ScreenModel) {
         busy = true; failed = false
         scope.launch {
             try {
-                model.vpn?.let { vpn ->
-                    if (vpn.status.value.phase != VpnPhase.DISCONNECTED) {
-                        vpn.disconnect()
-                        val stopped = withTimeout(45_000) { vpn.status.first { it.phase == VpnPhase.DISCONNECTED || it.phase == VpnPhase.FAILED } }
-                        check(stopped.phase == VpnPhase.DISCONNECTED)
-                    }
-                }
-                store.save(next); opened = false
+                applyTrafficSelection(next, store, model.vpn)
+                opened = false
             } catch (_: TimeoutCancellationException) { failed = true }
             catch (e: CancellationException) { throw e }
             catch (_: Exception) { failed = true }
@@ -89,7 +81,10 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
                     Text((if (tab == mode) "✓ " else "") + tr(label))
                 }
             }
-            if (state.loads[Area.TRAFFIC]?.phase == LoadPhase.LOADING) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (state.loads[Area.TRAFFIC]?.phase == LoadPhase.LOADING) {
+                Text(tr(R.string.traffic_loading))
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
             if (state.loads[Area.TRAFFIC]?.phase == LoadPhase.ERROR) {
                 Text(tr(R.string.traffic_catalog_unavailable))
                 TextButton({ model.load(Area.TRAFFIC) }) { Text(tr(R.string.ui_retry)) }
@@ -121,7 +116,7 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
             if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
         } },
         confirmButton = { TextButton({ save(draft.refreshServices(catalog)) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
-        dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.traffic_cancel)) } })
+        dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.ui_cancel)) } })
 }
 
 @Composable

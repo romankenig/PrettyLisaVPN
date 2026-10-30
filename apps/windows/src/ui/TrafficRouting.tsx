@@ -6,6 +6,7 @@ import {
   normalizeMask,
   parseTrafficCatalog,
   refreshServices,
+  routingPolicy,
   type TrafficSelection,
   type TrafficService,
   type TrafficMode as Mode,
@@ -38,6 +39,9 @@ export function TrafficRouting() {
     setBusy(true);
     setError(false);
     try {
+      routingPolicy(next);
+      routingPolicy({ ...next, mode: "include" });
+      routingPolicy({ ...next, mode: "exclude" });
       const token = session.current()?.accessToken;
       if (!token) throw new Error("AUTH_REQUIRED");
       if (

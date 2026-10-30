@@ -2,8 +2,41 @@ package com.prettylisavpn.android.vpn
 
 import org.junit.Assert.*
 import org.junit.Test
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun applyingRulesWaitsForCleanupAndNeverReconnects() = runBlocking {
+        for (phase in listOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED)) {
+            val state = MutableStateFlow(VpnStatus(phase))
+            var stops = 0
+            val vpn = object : VpnActions {
+                override val status = state
+                override fun connect(country: String) { error("Unexpected reconnect") }
+                override fun disconnect() { stops++; state.value = VpnStatus(VpnPhase.DISCONNECTING) }
+            }
+            val store = TrafficPreference()
+            val operation = launch(start = CoroutineStart.UNDISPATCHED) { applyTrafficSelection(TrafficSelection("include"), store, vpn) }
+            assertEquals(1, stops)
+            assertEquals("all", store.current().mode)
+            state.value = VpnStatus(VpnPhase.DISCONNECTED)
+            operation.join()
+            assertEquals("include", store.current().mode)
+        }
+    }
+    @Test fun failedCleanupKeepsPreviousRules() = runBlocking {
+        val state = MutableStateFlow(VpnStatus(VpnPhase.CONNECTED))
+        val vpn = object : VpnActions {
+            override val status = state
+            override fun connect(country: String) { error("Unexpected reconnect") }
+            override fun disconnect() { state.value = VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP) }
+        }
+        val store = TrafficPreference()
+        assertTrue(runCatching { applyTrafficSelection(TrafficSelection("include"), store, vpn) }.isFailure)
+        assertEquals("all", store.current().mode)
+    }
     @Test fun explicitSaveRefreshesOnlySelectedPresetsAndRetainsOfflineChoices() {
         val old = TrafficService("0bd811da-f080-4f25-887a-67bf534ac2c6", "youtube", "YouTube", "youtube", listOf("youtube.com"))
         val updated = old.copy(domains = listOf("youtube.com", "*.googlevideo.com"))

@@ -245,7 +245,6 @@
     <string name="dash_all_traffic">all traffic</string>
     <string name="dash_include">only selected sites</string>
     <string name="dash_exclude">except selected sites</string>
-    <string name="dash_soon">coming soon</string>
     <string name="dash_end_session">end the session on this device</string>
     <string name="dash_added">added</string>
     <string name="dash_last_login">last sign-in</string>
@@ -285,7 +284,6 @@
     <string name="traffic_add">add</string>
     <string name="traffic_remove">remove</string>
     <string name="traffic_save">save</string>
-    <string name="traffic_cancel">cancel</string>
     <string name="traffic_save_failed">could not save the rules. please retry.</string>
     <string name="traffic_mask_invalid">enter a domain or *.domain without a page path. maximum 256 masks.</string>
     <string name="traffic_loading">loading services…</string>

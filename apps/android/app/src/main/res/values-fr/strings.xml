@@ -239,7 +239,6 @@
     <string name="dash_all_traffic">tout le trafic</string>
     <string name="dash_include">uniquement les sites sélectionnés</string>
     <string name="dash_exclude">sauf les sites sélectionnés</string>
-    <string name="dash_soon">bientôt</string>
     <string name="dash_end_session">fermer la session sur cet appareil</string>
     <string name="dash_added">ajouté</string>
     <string name="dash_last_login">dernière connexion</string>
@@ -278,7 +277,6 @@
     <string name="traffic_add">ajouter</string>
     <string name="traffic_remove">supprimer</string>
     <string name="traffic_save">enregistrer</string>
-    <string name="traffic_cancel">annuler</string>
     <string name="traffic_save_failed">impossible d’enregistrer les règles. réessayez.</string>
     <string name="traffic_mask_invalid">saisissez un domaine ou *.domaine sans chemin. maximum 256 masques.</string>
     <string name="traffic_loading">chargement des services…</string>

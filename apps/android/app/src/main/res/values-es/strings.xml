@@ -239,7 +239,6 @@
     <string name="dash_all_traffic">todo el tráfico</string>
     <string name="dash_include">solo sitios seleccionados</string>
     <string name="dash_exclude">excepto sitios seleccionados</string>
-    <string name="dash_soon">próximamente</string>
     <string name="dash_end_session">cerrar la sesión en este dispositivo</string>
     <string name="dash_added">añadido</string>
     <string name="dash_last_login">último acceso</string>
@@ -278,7 +277,6 @@
     <string name="traffic_add">añadir</string>
     <string name="traffic_remove">eliminar</string>
     <string name="traffic_save">guardar</string>
-    <string name="traffic_cancel">cancelar</string>
     <string name="traffic_save_failed">no se pudieron guardar las reglas. inténtalo de nuevo.</string>
     <string name="traffic_mask_invalid">introduce un dominio o *.dominio sin ruta. máximo 256 patrones.</string>
     <string name="traffic_loading">cargando servicios…</string>

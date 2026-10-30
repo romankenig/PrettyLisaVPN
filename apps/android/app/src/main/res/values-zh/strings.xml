@@ -239,7 +239,6 @@
     <string name="dash_all_traffic">全部流量</string>
     <string name="dash_include">仅选定网站</string>
     <string name="dash_exclude">排除选定网站</string>
-    <string name="dash_soon">即将推出</string>
     <string name="dash_end_session">结束此设备上的会话</string>
     <string name="dash_added">添加时间</string>
     <string name="dash_last_login">上次登录</string>
@@ -278,7 +277,6 @@
     <string name="traffic_add">添加</string>
     <string name="traffic_remove">删除</string>
     <string name="traffic_save">保存</string>
-    <string name="traffic_cancel">取消</string>
     <string name="traffic_save_failed">无法保存规则，请重试。</string>
     <string name="traffic_mask_invalid">请输入域名或 *.域名，不含页面路径。最多 256 条。</string>
     <string name="traffic_loading">正在加载服务…</string>

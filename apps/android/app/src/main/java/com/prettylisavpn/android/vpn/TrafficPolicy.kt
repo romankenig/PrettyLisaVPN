@@ -5,6 +5,8 @@ import java.net.IDN
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 
 data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>)
 data class TrafficList(val services: List<TrafficService> = emptyList(), val masks: List<String> = emptyList())
@@ -53,4 +55,15 @@ class TrafficPreference(read: () -> String? = { null }, private val write: (Stri
     val selected = mutable.asStateFlow()
     fun current() = mutable.value
     fun save(value: TrafficSelection) { checked(value); write(gson.toJson(value)); mutable.value = value }
+}
+
+/** Saving never reconnects and cannot commit rules before confirmed cleanup. */
+suspend fun applyTrafficSelection(next: TrafficSelection, store: TrafficPreference, vpn: VpnActions?) {
+    next.policy(); next.copy(mode = "include").policy(); next.copy(mode = "exclude").policy()
+    if (vpn != null && vpn.status.value.phase != VpnPhase.DISCONNECTED) {
+        vpn.disconnect()
+        val stopped = withTimeout(45_000) { vpn.status.first { it.phase == VpnPhase.DISCONNECTED || it.phase == VpnPhase.FAILED } }
+        check(stopped.phase == VpnPhase.DISCONNECTED)
+    }
+    store.save(next)
 }

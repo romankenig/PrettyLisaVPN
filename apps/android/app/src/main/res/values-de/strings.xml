@@ -239,7 +239,6 @@
     <string name="dash_all_traffic">gesamter datenverkehr</string>
     <string name="dash_include">nur ausgewählte webseiten</string>
     <string name="dash_exclude">außer ausgewählten webseiten</string>
-    <string name="dash_soon">demnächst</string>
     <string name="dash_end_session">sitzung auf diesem gerät beenden</string>
     <string name="dash_added">hinzugefügt</string>
     <string name="dash_last_login">letzte anmeldung</string>
@@ -278,7 +277,6 @@
     <string name="traffic_add">hinzufügen</string>
     <string name="traffic_remove">entfernen</string>
     <string name="traffic_save">speichern</string>
-    <string name="traffic_cancel">abbrechen</string>
     <string name="traffic_save_failed">regeln konnten nicht gespeichert werden. bitte erneut versuchen.</string>
     <string name="traffic_mask_invalid">domain oder *.domain ohne Seitenpfad eingeben. maximal 256 Muster.</string>
     <string name="traffic_loading">dienste werden geladen…</string>
