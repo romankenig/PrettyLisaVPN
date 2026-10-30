@@ -198,7 +198,7 @@ function TrafficDialog({
   return (
     <dialog
       ref={dialog}
-      className="billing-dialog traffic-dialog"
+      className="traffic-dialog"
       aria-labelledby="traffic-dialog-title"
       onCancel={(e) => {
         e.preventDefault();

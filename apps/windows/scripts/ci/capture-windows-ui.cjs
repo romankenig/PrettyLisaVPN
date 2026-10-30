@@ -425,6 +425,21 @@ async function main() {
   await trafficDialog
     .getByRole("button", { name: "Добавить", exact: true })
     .click();
+  await trafficDialog.evaluate((dialog) => {
+    const body = dialog.querySelector(".traffic-dialog__body");
+    const input = dialog.querySelector("#traffic-mask");
+    if (
+      dialog.scrollWidth > dialog.clientWidth + 1 ||
+      body.scrollWidth > body.clientWidth + 1
+    )
+      throw new Error("Traffic picker must not scroll horizontally");
+    if (
+      input.getBoundingClientRect().height > 60 ||
+      dialog.getBoundingClientRect().bottom > window.innerHeight
+    )
+      throw new Error("Traffic picker controls must fit the native window");
+    body.scrollTop = 0;
+  });
   await screenshot("04-traffic-include");
   await trafficDialog
     .getByRole("button", { name: "кроме выбранных сайтов", exact: true })
@@ -438,6 +453,9 @@ async function main() {
   await trafficDialog
     .getByRole("checkbox", { name: "Instagram", exact: true })
     .check();
+  await trafficDialog.locator(".traffic-dialog__body").evaluate((body) => {
+    body.scrollTop = 0;
+  });
   await screenshot("04-traffic-exclude");
   await trafficDialog
     .getByRole("button", { name: "Сохранить", exact: true })
