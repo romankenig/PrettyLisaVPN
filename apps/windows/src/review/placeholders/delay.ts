@@ -1,4 +1,4 @@
-import type { ConnectionAdapter } from "../protocol";
+import type { ConnectionAdapter } from "../../vpn/protocol";
 
 export const PLACEHOLDER_DELAY_MS = 3_000;
 

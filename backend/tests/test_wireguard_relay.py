@@ -138,3 +138,41 @@ def test_relay_failed_grant_has_durable_cleanup_journal(relay_helper, monkeypatc
     with pytest.raises(node.Failure):
         node.grant_relay(row)
     assert (root / "relays" / (row["id"] + ".json")).exists()
+
+
+@pytest.mark.parametrize("protocol,expected", [("tcp", {"tcp"}), ("both", {"tcp", "udp"})])
+def test_tcp_and_dual_transport_relay_revoke_every_flow(relay_helper, protocol, expected):
+    root, commands, rules = relay_helper
+    row = access(protocol=protocol)
+    node.grant_relay(row)
+    assert len(rules) == 3 * len(expected)
+    assert {rule[2][1] for rule in rules} == expected
+    node.grant_relay(row)
+    commands.clear()
+    assert node.revoke_relay(row["id"])["removed"]
+    assert not rules
+    assert {
+        args[args.index("-p") + 1] for args, _ in commands if args[:2] == ["conntrack", "-D"]
+    } == expected
+    assert not (root / "relays" / (row["id"] + ".json")).exists()
+
+
+def test_legacy_udp_journal_renews_without_migration(relay_helper):
+    root, _, _ = relay_helper
+    row = access()
+    node.grant_relay(row)
+    path = root / "relays" / (row["id"] + ".json")
+    journal = node.read(path)
+    journal.pop("protocol")
+    node.write(path, json.dumps(journal))
+    assert node.grant_relay(row)["granted"]
+    assert node.revoke_relay(row["id"])["removed"]
+
+
+def test_relay_rejects_unknown_protocol_before_os_mutation(relay_helper):
+    _, commands, _ = relay_helper
+    with pytest.raises(node.Failure, match="RELAY_PROTOCOL_INVALID"):
+        node.grant_relay(access(protocol="icmp"))
+    assert commands == []
+    with pytest.raises(ValidationError):
+        RelayAccess.model_validate(access(protocol="icmp"))

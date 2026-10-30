@@ -103,6 +103,7 @@ class RelayAccess(Value):
     target_host: IPv4Address
     target_port: int = Field(ge=1024, le=65535)
     expires_at: datetime
+    protocol: Literal["udp", "tcp", "both"] = "udp"
 
     @field_validator("target_host")
     @classmethod
@@ -170,6 +171,23 @@ class Access(Value):
     expires_at: datetime
 
 
+class ManagedAccess(Access):
+    method: str
+    listen_port: int = Field(ge=40000, le=49999)
+
+
+class ManagedConfig(Value):
+    server_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]{1,251}[A-Za-z0-9]$")
+    reality_target: IPv4Address
+
+    @field_validator("reality_target")
+    @classmethod
+    def public_reality_target(cls, value: IPv4Address) -> IPv4Address:
+        if not value.is_global:
+            raise ValueError("A public Reality target is required")
+        return value
+
+
 class VpnMethod(ABC):
     """Implement protocol details; queueing/auth/fencing stay in the application layer."""
 
@@ -210,13 +228,20 @@ class VpnMethod(ABC):
 
 def hourly_slot(node_id: UUID, at: datetime, roster: list[UUID]) -> datetime:
     """Evenly spread a stable roster, with bounded per-node jitter; never catch up in bursts."""
+    return monitoring_slot(node_id, at, roster, rapid=False)
+
+
+def monitoring_slot(node_id: UUID, at: datetime, roster: list[UUID], *, rapid: bool) -> datetime:
+    """Zero-rated nodes repeat every 180 seconds, retaining independent roster slots."""
+    period = 180 if rapid else 3600
     ordered = sorted(set(roster) | {node_id}, key=str)
-    width = 3600 / len(ordered)
+    width = period / len(ordered)
     index = ordered.index(node_id)
     jitter = int.from_bytes(hashlib.sha256(node_id.bytes).digest()[:2], "big") / 65535
-    offset = min(3599, (index + 0.25 + jitter * 0.5) * width)
-    slot = at.astimezone(UTC).replace(minute=0, second=0, microsecond=0) + timedelta(seconds=offset)
-    return slot if slot > at else slot + timedelta(hours=1)
+    offset = min(period - 1, (index + 0.25 + jitter * 0.5) * width)
+    start = datetime.fromtimestamp((at.timestamp() // period) * period, UTC)
+    slot = start + timedelta(seconds=offset)
+    return slot if slot > at else slot + timedelta(seconds=period)
 
 
 def source_order(target: UUID, at: datetime, roster: list[UUID]) -> list[UUID]:

@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod installation_id;
+mod managed;
 mod payment_browser;
 mod public_location;
 mod refresh_credentials;
@@ -10,6 +11,17 @@ mod wireguard;
 use tauri::Manager;
 
 fn main() {
+    let arguments: Vec<String> = std::env::args().collect();
+    if arguments
+        .get(1)
+        .is_some_and(|value| value == "--engine-host")
+    {
+        std::process::exit(if managed::host(&arguments).is_ok() {
+            0
+        } else {
+            1
+        });
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
@@ -19,6 +31,7 @@ fn main() {
             app.manage(installation_id);
             app.manage(refresh_credentials::RefreshCredentialState::new());
             app.manage(wireguard::WireGuardState::default());
+            app.manage(managed::ManagedState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -34,6 +47,10 @@ fn main() {
             wireguard::wg_stop,
             wireguard::wg_is_up,
             wireguard::wg_verify,
+            managed::engine_start,
+            managed::engine_stop,
+            managed::engine_is_up,
+            managed::engine_verify,
         ])
         .run(tauri::generate_context!())
         .expect("Unable to start PrettyLisaVPN");

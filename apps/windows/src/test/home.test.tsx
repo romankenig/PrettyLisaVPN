@@ -1,3 +1,4 @@
+import { placeholderAdapters } from "../review/placeholders";
 import {
   act,
   fireEvent,
@@ -436,7 +437,7 @@ describe("authenticated Home", () => {
 
 it("executes placeholders in the actual Home and cancels from its button", async () => {
   const { createVpnConnectionManager } = await import("../vpn/connection");
-  const connection = createVpnConnectionManager();
+  const connection = createVpnConnectionManager(placeholderAdapters());
   renderRestored(mockApi(), createTestCredentialStorage(), connection);
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled(),

@@ -48,6 +48,7 @@ class PrivateRoute(APIRoute):
 
 
 router = APIRouter(prefix="/vpn/wireguard/sessions", tags=["client-vpn"], route_class=PrivateRoute)
+common_router = APIRouter(prefix="/vpn/sessions", tags=["client-vpn"], route_class=PrivateRoute)
 
 
 def service(request: Request) -> ClientVpnService:
@@ -65,6 +66,7 @@ Token = Annotated[str, Depends(token)]
 
 
 @router.post("", status_code=202)
+@common_router.post("", status_code=202)
 async def connect(
     data: ConnectRequest,
     backend: Service,
@@ -75,26 +77,31 @@ async def connect(
 
 
 @router.get("/current")
+@common_router.get("/current")
 async def current(backend: Service, credential: Token) -> dict[str, Any] | None:
     return await backend.get(credential)
 
 
 @router.get("/{identifier}")
+@common_router.get("/{identifier}")
 async def get(identifier: UUID, backend: Service, credential: Token) -> dict[str, Any] | None:
     return await backend.get(credential, identifier)
 
 
 @router.post("/{identifier}/heartbeat")
+@common_router.post("/{identifier}/heartbeat")
 async def heartbeat(identifier: UUID, backend: Service, credential: Token) -> dict[str, Any] | None:
     return await backend.get(credential, identifier, "heartbeat")
 
 
 @router.delete("/{identifier}", status_code=202)
+@common_router.delete("/{identifier}", status_code=202)
 async def revoke(identifier: UUID, backend: Service, credential: Token) -> dict[str, Any] | None:
     return await backend.get(credential, identifier, "revoke")
 
 
 @router.get("/{identifier}/probe")
+@common_router.get("/{identifier}/probe")
 async def probe(
     identifier: UUID, request: Request, backend: Service, credential: Token
 ) -> dict[str, Any] | None:

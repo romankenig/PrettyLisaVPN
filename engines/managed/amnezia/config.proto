@@ -1,0 +1,5 @@
+syntax = "proto3";
+package prettylisavpn.amnezia;
+option go_package = "github.com/romankenig/PrettyLisaVPN/engines/managed/amnezia";
+import "proxy/wireguard/config.proto";
+message Config { xray.proxy.wireguard.DeviceConfig device = 1; }

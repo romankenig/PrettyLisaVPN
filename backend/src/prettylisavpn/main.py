@@ -35,6 +35,7 @@ from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.sandbox import SandboxBillingProvider
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
 from prettylisavpn.billing.worker import BillingWorkerPort
+from prettylisavpn.client_vpn.router import common_router as client_sessions_router
 from prettylisavpn.client_vpn.router import router as client_vpn_router
 from prettylisavpn.client_vpn.service import ClientVpnService
 from prettylisavpn.config import Settings
@@ -248,6 +249,7 @@ def create_app(
     app.add_middleware(SafeExceptionMiddleware)
     app.include_router(auth_router)
     app.include_router(client_vpn_router)
+    app.include_router(client_sessions_router)
     app.include_router(account_router)
     app.include_router(devices_router)
     app.include_router(locations_router)

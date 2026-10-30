@@ -1,0 +1,15 @@
+{
+  "internal/softether/pack.go": "fec5b4e8dcb5e221699fa7e233bfd6a24f870759e908b5fd9bc1ac6a04fed803",
+  "internal/softether/pack_test.go": "fc1b40324eabbdaddd940cf8180e0e28cd3a678d4f0fb01f11225b834daa1b46",
+  "internal/softether/http.go": "81440482cd355c094475034ba2c9b892486ce26699f789a0f569d024c2afac6a",
+  "internal/softether/http_test.go": "6691cab96bc7c5a9c5c42ec14683e730db1b3ee86120dc1bb63adfd0c86ed854",
+  "internal/softether/frame.go": "f305bf2b893d1260f072316b34bcb01809e8c4acc419e126894d09395bd9a5f3",
+  "internal/softether/frame_test.go": "120ed07a42e5416579e4fc7800057ee972c94a3b3f084ebe82684b729353cd0b",
+  "internal/softether/auth.go": "1bb457e4eb8e63baa47c152022a4f7a41f6fa4cf68f343f120e15e46401a6bb7",
+  "internal/softether/auth_test.go": "92ea8513d4c982c242653607d6e0202d220c9737231d7aa36d842aeff0af76d2",
+  "internal/softether/sha0.go": "7deb18969ae38a5c805ecff846b4bde2dc1a42813d93421efe961b575d6fb710",
+  "internal/softether/sha0_test.go": "71cfe6c0168dc728f906b46f4df2ab59e91a7681894422508ddd5c96784bfc3b",
+  "internal/softether/policy.go": "d41c35bfc4ffd3ee23f0a7cf05417d53aee02e374700a9627827ff14f2554173",
+  "internal/softether/policy_test.go": "479b7ce3fb17b06c3bff907bd8c83eb74137f26e29911bb470b7f1d1f3a34fd4",
+  "internal/softether/fuzz_test.go": "e9ca752e9ef136b24e744c13eacd4a273e7f655aa914948ea3fb98fa4f9db152"
+}

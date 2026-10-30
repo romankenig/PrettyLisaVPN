@@ -2,10 +2,15 @@ name: Windows development client
 
 on:
   push:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
+    paths: ['apps/windows/**', 'engines/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   pull_request:
-    paths: ['apps/windows/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
+    paths: ['apps/windows/**', 'engines/**', '.github/workflows/windows-client.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   workflow_dispatch:
+    inputs:
+      live_managed:
+        description: Real managed tunnels on the isolated Windows runner
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 35
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: apps/windows
@@ -34,6 +39,12 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: apps/windows/package.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Build current managed engine and verify signed Wintun
+        run: ./scripts/build-managed-engine.ps1
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/windows/src-tauri
@@ -45,12 +56,38 @@ jobs:
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - name: Build downloadable client using the real development API
         run: pnpm tauri build --debug --no-bundle
+      - name: Real packaged managed transport acceptance
+        if: github.event_name == 'workflow_dispatch' && inputs.live_managed
+        env:
+          ACCEPTANCE_CREDENTIAL: ${{ secrets.MANAGED_WINDOWS_ACCEPTANCE_CREDENTIAL }}
+          ACCEPTANCE_CREDENTIAL_PATH: ${{ runner.temp }}/pl-managed-credentials.json
+        run: |
+          if (-not $env:ACCEPTANCE_CREDENTIAL) { throw 'Acceptance credential missing' }
+          $env:ACCEPTANCE_CREDENTIAL | Set-Content -Encoding utf8NoBOM $env:ACCEPTANCE_CREDENTIAL_PATH
+          try {
+            $captureTools = Join-Path $env:RUNNER_TEMP 'managed-capture-tools'
+            New-Item -ItemType Directory -Force $captureTools | Out-Null
+            Copy-Item scripts/ci/capture-managed.cjs $captureTools
+            npm install --prefix $captureTools --no-audit --no-fund --ignore-scripts playwright-core@1.56.1
+            if ($LASTEXITCODE -ne 0) { throw 'Acceptance tooling install failed' }
+            node (Join-Path $captureTools 'capture-managed.cjs')
+            if ($LASTEXITCODE -ne 0) { throw 'Real managed acceptance failed' }
+          } finally { Remove-Item -LiteralPath $env:ACCEPTANCE_CREDENTIAL_PATH -Force }
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.live_managed
+        with:
+          name: windows-live-managed-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/windows/artifacts/managed-acceptance/
+          if-no-files-found: error
+          retention-days: 7
       - name: Record exact binary identity and size
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           New-Item -ItemType Directory -Force artifacts/client | Out-Null
           Copy-Item src-tauri/target/debug/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          Copy-Item src-tauri/engine/Wintun-Prebuilt-License.txt artifacts/client/
+          Copy-Item src-tauri/engine/managed-source.tar.gz artifacts/client/
           $binary = Get-Item artifacts/client/PrettyLisaVPN.exe
           @{
             source_sha = '${{ github.sha }}'
@@ -61,7 +98,7 @@ jobs:
             bytes = $binary.Length
             sha256 = (Get-FileHash -Algorithm SHA256 $binary.FullName).Hash.ToLowerInvariant()
             backend = 'https://api.prettylisavpn.com'
-            mode = 'Managed official WireGuard; 13 remaining placeholder adapters'
+            mode = 'WireGuard and private managed transports; Internet verification required'
           } | ConvertTo-Json | Set-Content -Encoding utf8 artifacts/client/build-identity.json
       - uses: actions/upload-artifact@v4
         with:

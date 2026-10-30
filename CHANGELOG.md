@@ -6,6 +6,70 @@
 
 ## Unreleased
 
+### Android — 0.15.2
+
+- Keep the same managed tunnel for one bounded retry after a transient DNS/HTTPS
+  startup failure, matching WireGuard's existing tolerance. Exit mismatch,
+  cancellation and a stopped engine still fail closed.
+- Retain only fixed diagnostic stages, exception types and HTTP status for
+  acceptance evidence; never profiles, tokens or traffic destinations.
+
+### Backend — 0.22.1
+
+- Recheck configured zero-rated servers every three minutes on the main server,
+  with distinct slots, existing operation locks and no replay of missed intervals.
+- Use the dashboard rating, including stale/unverified results; return to hourly
+  checks after recovery. Active connections do not suppress the normal probe.
+  No schema change. See [monitoring retry handoff](fleet-fast-rechecks.md).
+
+### Android — 0.15.1 / dashboard — 0.4.2
+
+- Replace the 253 MB universal debug APK with standalone per-CPU APKs, strip Go
+  debug symbols and compress native libraries. Each APK must stay below 40 MB.
+- Dashboard distributes the ARM64 phone APK and labels its architecture; CI
+  tests the matching x86_64 build and retains ARM32/x86 builds separately.
+- Preserve all VPN engines, six locales, signing identity and one-APK installation.
+  Backend and Windows versions are unchanged by this packaging task.
+  See [APK size handoff](android-apk-size.md) for build and publication evidence.
+
+### Managed transports
+
+- Route Hysteria 1 UDP uplinks through outbound socket protection, so the Windows
+  physical-interface binding prevents QUIC from looping back into its own TUN.
+- Keep the Windows private engine pipe alive while waiting for delayed/fragmented
+  replies; distinguish nonblocking no-data from a closed peer and reject partial
+  timed-out frames. Regression tests reproduce the previous startup failure.
+- Add dispatch-only real Android/Windows TUN acceptance per selected method,
+  including sustained connection, independent tunneled HTTPS and cleanup proof.
+- Use our own verified TLS target in the fleet rollout after isolating an
+  SNI-dependent relay handshake failure; retain strict client identity checks.
+- Backend 0.22.0 adds common session admission and durable managed grants, keeping
+  account-wide Free quota and the WireGuard API compatible (migration 0035).
+- Android 0.15.0 adds private in-APK engine control and Advanced settings.
+  Windows 0.18.0 adds a private elevated engine host and the same method selection.
+- Add direct/relay adapters for AmneziaWG, SSTP, SoftEther, SS2022, VMess, VLESS, REALITY, Hysteria 1/2 and
+  Salamander; keep placeholders in UI-test fixtures only.
+- MIT/MPL runtime 0.3.0 excludes sing-box and GPL/LGPL integrations.
+- Add an MIT SSTP adapter with authenticated TLS/PPP and in-memory TCP/UDP;
+  verify DNS/HTTPS with official SoftEther and real DE/US client tunnels.
+- Add an MIT native SoftEther adapter with authenticated, isolated Ethernet
+  segments and tunneled DNS/HTTPS interoperability against official SoftEther.
+- Preserve Hysteria 1 response
+  bytes and graceful EOF when the upstream server closes its connection.
+- Dashboard 0.4.1 exposes matching source/license archives beside new managed
+  client downloads; atomic publication rejects missing or mismatched sources.
+  [Rollout, exact build evidence and validation limits](docs/managed-transports.md).
+
+### Dashboard — 0.4.0
+
+- Place individual speed/rating/active-connection charts inside each server card.
+  Active connections use hourly bars; repeated probes in one hour are not summed.
+- Show only aggregates for the selected group/server set in the shared chart and
+  summary: mean download/upload speed, median rating, sum of active connections.
+  Preserve real zeros, report missing-data coverage and respect both filters.
+- Backend schema/API and client binaries are unchanged by this dashboard commit.
+  See [dashboard metrics handoff](docs/dashboard-group-metrics.md).
+
 ### Deployment follow-up — product versions unchanged
 
 - Publish verified client downloads through the deployment user's existing Docker

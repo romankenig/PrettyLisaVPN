@@ -22,10 +22,10 @@ class TunnelForegroundService : Service() {
         super.onCreate()
         if (VpnService.prepare(this) != null) { stopSelf(); return }
         getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel("vpn", "WireGuard", NotificationManager.IMPORTANCE_LOW))
+            NotificationChannel("vpn", "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = Notification.Builder(this, "vpn").setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("PrettyLisaVPN").setContentText("WireGuard")
+            .setContentTitle("PrettyLisaVPN")
             .setContentIntent(open).setOngoing(true).build()
         if (Build.VERSION.SDK_INT >= 34) startForeground(31, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
         else startForeground(31, notification)

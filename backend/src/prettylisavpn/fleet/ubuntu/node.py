@@ -132,11 +132,18 @@ def counts() -> tuple[int, int, int, int]:
         for key, rx, tx in (line.split() for line in wg("transfer").splitlines())
     }
     active = sum(time.time() - handshakes.get(key, 0) < 180 for key in users)
+    managed_load = (0, 0, 0, 0)
+    if (ROOT / "managed").exists():
+        if __package__:
+            from .managed import counts as managed_counts
+        else:
+            from managed import counts as managed_counts  # type: ignore[no-redef,import-not-found]
+        managed_load = managed_counts()
     return (
-        len(users),
-        active,
-        sum(transfer.get(key, (0, 0))[0] for key in users),
-        sum(transfer.get(key, (0, 0))[1] for key in users),
+        len(users) + managed_load[0],
+        active + managed_load[1],
+        sum(transfer.get(key, (0, 0))[0] for key in users) + managed_load[2],
+        sum(transfer.get(key, (0, 0))[1] for key in users) + managed_load[3],
     )
 
 
@@ -488,6 +495,13 @@ def grant_client(access: dict[str, Any]) -> dict[str, Any]:
     return {"granted": True}
 
 
+def relay_protocols(row: dict[str, Any]) -> tuple[str, ...]:
+    protocol = row.get("protocol", "udp")
+    if protocol not in ("udp", "tcp", "both"):
+        raise Failure("RELAY_PROTOCOL_INVALID")
+    return ("tcp", "udp") if protocol == "both" else (protocol,)
+
+
 def relay_rules(identifier: str, row: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
     host, port, target, target_port = (
         row["host"],
@@ -497,25 +511,39 @@ def relay_rules(identifier: str, row: dict[str, Any]) -> list[tuple[str, str, li
     )
     chain = "PLR_" + UUID(identifier).hex[:20]
     comment = ["-m", "comment", "--comment", "PrettyLisaVPN-relay-" + identifier]
-    original = ["-m", "conntrack", "--ctproto", "udp", "--ctorigdst", host, "--ctorigdstport", port]
-    return [
-        ("filter", "FORWARD", ["-p", "udp"] + original + comment + ["-j", chain]),
-        (
-            "nat",
-            "POSTROUTING",
-            ["-p", "udp", "-d", target, "--dport", target_port]
-            + original
-            + comment
-            + ["-j", "MASQUERADE"],
-        ),
-        (
-            "nat",
-            "PREROUTING",
-            ["-p", "udp", "-d", host, "--dport", port]
-            + comment
-            + ["-j", "DNAT", "--to-destination", target + ":" + target_port],
-        ),
-    ]
+    rules = []
+    for protocol in relay_protocols(row):
+        original = [
+            "-m",
+            "conntrack",
+            "--ctproto",
+            protocol,
+            "--ctorigdst",
+            host,
+            "--ctorigdstport",
+            port,
+        ]
+        rules.extend(
+            [
+                ("filter", "FORWARD", ["-p", protocol] + original + comment + ["-j", chain]),
+                (
+                    "nat",
+                    "POSTROUTING",
+                    ["-p", protocol, "-d", target, "--dport", target_port]
+                    + original
+                    + comment
+                    + ["-j", "MASQUERADE"],
+                ),
+                (
+                    "nat",
+                    "PREROUTING",
+                    ["-p", protocol, "-d", host, "--dport", port]
+                    + comment
+                    + ["-j", "DNAT", "--to-destination", target + ":" + target_port],
+                ),
+            ]
+        )
+    return rules
 
 
 def has_rule(table: str, parent: str, rule: list[str]) -> bool:
@@ -544,6 +572,7 @@ def relay_deadline(identifier: str, expiry: float | None) -> None:
 
 
 def grant_relay(access: dict[str, Any]) -> dict[str, Any]:
+    protocols = relay_protocols(access)
     identifier = uid(access["id"])
     state = read(ROOT / "state.json")
     host, target = public_ip(state["host"]), public_ip(access["target_host"])
@@ -560,23 +589,32 @@ def grant_relay(access: dict[str, Any]) -> dict[str, Any]:
     directory = ROOT / "relays"
     directory.mkdir(mode=0o700, exist_ok=True)
     path = directory / (identifier + ".json")
-    row = {"host": host, "target_host": target, "listen_port": port, "target_port": target_port}
+    row = {
+        "host": host,
+        "target_host": target,
+        "listen_port": port,
+        "target_port": target_port,
+        "protocol": access.get("protocol", "udp"),
+    }
     existing = read(path)
+    if existing:
+        existing.setdefault("protocol", "udp")  # Pre-upgrade WireGuard journals.
     if existing and any(existing.get(key) != value for key, value in row.items()):
         raise Failure("RELAY_ACCESS_CONFLICT")
     for other in directory.glob("*.json"):
         if other != path and read(other).get("listen_port") == port:
             raise Failure("RELAY_PORT_IN_USE")
     if not existing:
-        if cmd(["ss", "-H", "-lun", "sport = :" + str(port)]):
-            raise Failure("RELAY_PORT_IN_USE")
+        for protocol in protocols:
+            if cmd(["ss", "-H", "-lun" if protocol == "udp" else "-ltn", "sport = :" + str(port)]):
+                raise Failure("RELAY_PORT_IN_USE")
         chain = "PLR_" + UUID(identifier).hex[:20]
         if cmd(["iptables", "-w", "5", "-S", chain], check=False):
             raise Failure("UNOWNED_RELAY_RULES")
     # Journal before mutation. A failed grant is recoverable by the node timer.
     row["expires"] = expiry
     write(path, json.dumps(row))
-    # Install the bounded filter before exposing the UDP forwarding port.
+    # Install the bounded filter before exposing any forwarding port.
     relay_deadline(identifier, expiry)
     for table, parent, rule in relay_rules(identifier, row):
         if not has_rule(table, parent, rule):
@@ -593,28 +631,29 @@ def revoke_relay(identifier: str) -> dict[str, Any]:
     # First block existing flows, then remove DNAT so new flows cannot be created.
     relay_deadline(identifier, None)
     rules = relay_rules(identifier, row)
-    for table, parent, rule in reversed(rules[1:]):
+    for table, parent, rule in reversed([item for item in rules if item[0] == "nat"]):
         if has_rule(table, parent, rule):
             cmd(["iptables", "-w", "5", "-t", table, "-D", parent] + rule)
         if has_rule(table, parent, rule):
             raise Failure("RELAY_CLEANUP_FAILED")
-    selector = [
-        "-p",
-        "udp",
-        "--orig-dst",
-        row["host"],
-        "--dport",
-        str(row["listen_port"]),
-        "--dst-nat",
-    ]
-    cmd(["conntrack", "-D"] + selector, check=False)
-    if cmd(["conntrack", "-L"] + selector):
-        raise Failure("RELAY_CLEANUP_FAILED")
-    table, parent, rule = rules[0]
-    if has_rule(table, parent, rule):
-        cmd(["iptables", "-w", "5", "-t", table, "-D", parent] + rule)
-    if has_rule(table, parent, rule):
-        raise Failure("RELAY_CLEANUP_FAILED")
+    for protocol in relay_protocols(row):
+        selector = [
+            "-p",
+            protocol,
+            "--orig-dst",
+            row["host"],
+            "--dport",
+            str(row["listen_port"]),
+            "--dst-nat",
+        ]
+        cmd(["conntrack", "-D"] + selector, check=False)
+        if cmd(["conntrack", "-L"] + selector):
+            raise Failure("RELAY_CLEANUP_FAILED")
+    for table, parent, rule in (item for item in rules if item[0] == "filter"):
+        if has_rule(table, parent, rule):
+            cmd(["iptables", "-w", "5", "-t", table, "-D", parent] + rule)
+        if has_rule(table, parent, rule):
+            raise Failure("RELAY_CLEANUP_FAILED")
     chain = "PLR_" + UUID(identifier).hex[:20]
     cmd(["iptables", "-w", "5", "-F", chain])
     cmd(["iptables", "-w", "5", "-X", chain])
@@ -834,6 +873,7 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def cleanup() -> dict[str, Any]:
+    managed_action({"action": "managed-cleanup"})
     for path in (ROOT / "relays").glob("*.json"):
         if read(path).get("expires", 0) <= time.time():
             revoke_relay(path.stem)
@@ -958,6 +998,17 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
     raise Failure("ACTION_UNSUPPORTED")
 
 
+def managed_action(payload: dict[str, Any]) -> dict[str, Any]:
+    if __package__:
+        from . import managed
+    else:
+        import managed  # type: ignore[no-redef]
+    try:
+        return managed.dispatch(payload)
+    except managed.Failure as error:
+        raise Failure(str(error)) from None
+
+
 def main() -> None:
     try:
         argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -979,16 +1030,24 @@ def main() -> None:
         )
         import fcntl
 
-        if payload["action"] == "probe":
+        if payload["action"] in ("probe", "managed-probe"):
             # Only this check's namespace is touched. Holding the global mutex
             # during network waits would delay customer renewals and revocations.
             # The DB fences CHECK/CONFIGURE; the expiring probe journal and its
             # timer independently bound orphaned namespaces.
-            result = dispatch(payload)
+            result = (
+                managed_action(payload)
+                if payload["action"] == "managed-probe"
+                else dispatch(payload)
+            )
         else:
             with (RUN / "lock").open("a") as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX)
-                result = dispatch(payload)
+                result = (
+                    managed_action(payload)
+                    if str(payload["action"]).startswith("managed-")
+                    else dispatch(payload)
+                )
         print(json.dumps(result))
     except Exception as exc:
         code = str(exc) if isinstance(exc, Failure) else "NODE_OPERATION_FAILED"

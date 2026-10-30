@@ -16,6 +16,7 @@ from prettylisavpn.client_vpn.domain import (
     allocate_address,
     deadline,
 )
+from prettylisavpn.client_vpn.methods import base_method, profile
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.config import Settings
@@ -50,9 +51,14 @@ async def principals_valid(session: AsyncSession, identity: AccessIdentity, now:
     )
 
 
-async def view(session: AsyncSession, row: ClientLeaseRecord) -> dict[str, Any]:
+async def view(
+    session: AsyncSession, row: ClientLeaseRecord, settings: Settings | None = None
+) -> dict[str, Any]:
     node = await session.get(FleetNodeRecord, row.node_id)
-    method = await session.get(FleetMethodRecord, (row.node_id, "wireguard"))
+    managed = base_method(row.method) != "wireguard"
+    method = await session.get(
+        FleetMethodRecord, (row.node_id, "managed" if managed else "wireguard")
+    )
     assert node and method
     relay = await session.get(FleetNodeRecord, row.relay_node_id) if row.relay_node_id else None
     result: dict[str, Any] = {
@@ -67,7 +73,23 @@ async def view(session: AsyncSession, row: ClientLeaseRecord) -> dict[str, Any]:
         "heartbeat_required": False,
         "removed_at": row.removed_at,
     }
-    if row.status == "READY":
+    if row.status == "READY" and managed:
+        assert row.engine_port is not None
+        result["configuration"] = {
+            "engine_profile": profile(
+                method=row.method,
+                lease_id=row.id,
+                node_id=row.node_id,
+                key=settings.managed_vpn_secret if settings else None,
+                host=relay.host if relay else node.host,
+                port=row.relay_port if relay and row.relay_port else row.engine_port,
+                country=node.country_code,
+                public_key=method.public_key,
+                configuration=method.configuration,
+            ),
+            "expected_egress_ips": node.expected_egress_ips,
+        }
+    elif row.status == "READY":
         result["configuration"] = {
             "address": row.address,
             "server_public_key": method.public_key,
@@ -102,6 +124,9 @@ class ClientVpnService:
         if not self.settings.client_vpn_enabled:
             raise FleetError("VPN_UNAVAILABLE", 503)
         identity = await self.identity(token)
+        managed = base_method(data.method) != "wireguard"
+        if managed and not self.settings.managed_vpn_enabled:
+            raise FleetError("VPN_METHOD_UNAVAILABLE", 503)
         snapshot = await self.fleet.monitoring(days=1)
         candidates = sorted(
             (item for item in snapshot["nodes"] if item["available"]),
@@ -128,7 +153,7 @@ class ClientVpnService:
                     or previous.method != data.method
                 ):
                     raise FleetError("VPN_IDEMPOTENCY_CONFLICT", 409)
-                return await view(session, previous)
+                return await view(session, previous, self.settings)
             if await session.scalar(
                 select(ClientLeaseRecord.id).where(
                     ClientLeaseRecord.device_id == identity.device_id,
@@ -167,7 +192,7 @@ class ClientVpnService:
             nodes = {node.id: node for node in locked}
             relay: FleetNodeRecord | None = None
             relay_port: int | None = None
-            if data.method == "wireguard_relay":
+            if data.method.endswith("_relay"):
                 for candidate in candidates:
                     intermediate = nodes[UUID(candidate["id"])]
                     if not intermediate.enabled or intermediate.group != "INTERMEDIATE":
@@ -206,25 +231,40 @@ class ClientVpnService:
                     or (data.country != "AUTO" and node.country_code != data.country)
                 ):
                     continue
-                method = await session.get(FleetMethodRecord, (node.id, "wireguard"))
+                method = await session.get(
+                    FleetMethodRecord, (node.id, "managed" if managed else "wireguard")
+                )
                 if not method or method.state != "READY" or not method.public_key:
                     continue
-                used = set(
+                leases = list(
                     (
                         await session.scalars(
-                            select(ClientLeaseRecord.address).where(
+                            select(ClientLeaseRecord).where(
                                 ClientLeaseRecord.node_id == node.id,
                                 ClientLeaseRecord.removed_at.is_(None),
                             )
                         )
                     ).all()
                 )
-                if len(used) >= node.capacity:
+                if len(leases) >= node.capacity:
                     continue
-                try:
-                    address = allocate_address(method.configuration, used)
-                except FleetError:
-                    continue
+                address: str | None = None
+                engine_port: int | None = None
+                if managed:
+                    used_ports = {item.engine_port for item in leases}
+                    engine_port = next(
+                        (port for port in range(40000, 49900) if port not in used_ports), None
+                    )
+                    if engine_port is None:
+                        continue
+                else:
+                    try:
+                        address = allocate_address(
+                            method.configuration,
+                            {item.address for item in leases if item.address is not None},
+                        )
+                    except FleetError:
+                        continue
                 row = ClientLeaseRecord(
                     request_id=request_id,
                     user_id=identity.user_id,
@@ -237,6 +277,7 @@ class ClientVpnService:
                     country=data.country,
                     public_key=data.public_key,
                     address=address,
+                    engine_port=engine_port,
                     is_free=is_free,
                     created_at=now,
                     expires_at=expires,
@@ -251,7 +292,7 @@ class ClientVpnService:
                 )
                 session.add(row)
                 await session.flush()
-                return await view(session, row)
+                return await view(session, row, self.settings)
             raise FleetError("VPN_NO_AVAILABLE_NODE", 503)
 
     async def get(
@@ -296,4 +337,4 @@ class ClientVpnService:
                     "verified": verified,
                     "ip": observed_ip,
                 }
-            return await view(session, row)
+            return await view(session, row, self.settings)

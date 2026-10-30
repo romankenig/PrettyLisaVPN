@@ -789,6 +789,78 @@ h1 {
 .settings-page {
   width: min(100%, 640px);
 }
+.advanced-settings {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.advanced-settings > .settings-back,
+.advanced-settings > h1 {
+  flex-shrink: 0;
+}
+
+.method-options {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--scorpion, #5b5b5b);
+  border-radius: 24px;
+  background: #e4e4e4;
+  color: #010101;
+}
+
+.method-options h2 {
+  flex-shrink: 0;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.method-options p {
+  color: #5b5b5b;
+  flex-shrink: 0;
+  margin: 0.25rem 0 0.75rem;
+}
+.method-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 4px;
+}
+.method-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  text-transform: none;
+  cursor: pointer;
+}
+.method-checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: #5f22d9;
+}
+.method-checkbox input:focus-visible {
+  outline: 2px solid #5f22d9;
+  outline-offset: 3px;
+}
+.method-checkbox--all {
+  flex-shrink: 0;
+  border-bottom: 1px solid #bdbdbd;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
 .settings-options {
   display: grid;
   gap: 16px;

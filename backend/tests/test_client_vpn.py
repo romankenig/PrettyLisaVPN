@@ -83,9 +83,10 @@ def test_allocator_never_uses_server_monitor_or_broadcast_addresses():
         ("GET", "/{id}/probe"),
     ],
 )
-async def test_all_customer_endpoints_are_private_and_delegate(method, path):
+@pytest.mark.parametrize("prefix", ["/vpn/wireguard/sessions", "/vpn/sessions"])
+async def test_all_customer_endpoints_are_private_and_delegate(method, path, prefix):
     identifier, request_id = uuid4(), uuid4()
-    path = "/vpn/wireguard/sessions" + path.format(id=identifier)
+    path = prefix + path.format(id=identifier)
     backend = SimpleNamespace(
         connect=AsyncMock(return_value={"status": "PROVISIONING"}),
         get=AsyncMock(return_value={"status": "READY"}),

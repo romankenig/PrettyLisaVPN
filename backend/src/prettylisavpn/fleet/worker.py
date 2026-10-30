@@ -3,10 +3,11 @@
 import asyncio
 import logging
 import signal
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import cast
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy import delete, or_, select, update
 
@@ -18,7 +19,7 @@ from prettylisavpn.fleet.domain import (
     Node,
     Observation,
     VpnMethod,
-    hourly_slot,
+    monitoring_slot,
     server_quality,
     source_order,
 )
@@ -66,31 +67,54 @@ class FleetWorker:
                 )
             ).all()
             enabled = {node.id for node in nodes}
-            roster = list(
-                (
-                    await session.scalars(
-                        select(FleetMethodRecord.node_id).where(
-                            FleetMethodRecord.configured_at.is_not(None),
-                            FleetMethodRecord.node_id.in_(enabled),
-                        )
-                    )
-                ).all()
-            )
             configured = (
                 await session.scalars(
                     select(FleetMethodRecord)
                     .where(
                         FleetMethodRecord.configured_at.is_not(None),
                         FleetMethodRecord.node_id.in_(enabled),
+                        FleetMethodRecord.method.in_(self.methods),
                     )
                     .with_for_update(skip_locked=True)
                 )
             ).all()
+            slots = [
+                row.node_id if row.method == "wireguard" else uuid5(row.node_id, row.method)
+                for row in configured
+            ]
+            history: dict[tuple[UUID, str], list[Observation]] = defaultdict(list)
+            for row in await session.scalars(
+                select(FleetObservationRecord).where(
+                    FleetObservationRecord.node_id.in_(enabled),
+                    FleetObservationRecord.method.in_(self.methods),
+                    FleetObservationRecord.observed_at >= now - timedelta(hours=24),
+                    FleetObservationRecord.observed_at <= now,
+                )
+            ):
+                history[row.node_id, row.method].append(Observation.model_validate(row.data))
+            capacities = {node.id: node.capacity for node in nodes}
             for method in configured:
-                if method.next_check_at is None:
-                    method.next_check_at = hourly_slot(method.node_id, now, roster)
+                slot_id = (
+                    method.node_id
+                    if method.method == "wireguard"
+                    else uuid5(method.node_id, method.method)
+                )
+                rating = server_quality(
+                    history[method.node_id, method.method],
+                    capacities[method.node_id],
+                    now,
+                    speed_target_mbps=self.settings.fleet_speed_target_mbps,
+                    connection_target_ms=self.settings.fleet_connection_target_ms,
+                    quality_weights=self.settings.fleet_quality_weights,
+                )
+                rapid = method.state != "READY" or rating["quality"] == 0
+                next_slot = monitoring_slot(slot_id, now, slots, rapid=rapid)
+                if method.next_check_at is None or (
+                    rapid and method.next_check_at > now + timedelta(minutes=3)
+                ):
+                    method.next_check_at = next_slot
                 elif method.next_check_at <= now:
-                    # A restart never replays missed hours. At most one current job per target.
+                    # A restart never replays missed slots. One current job per target.
                     outstanding = await session.scalar(
                         select(FleetOperationRecord.id)
                         .where(
@@ -99,16 +123,18 @@ class FleetWorker:
                         )
                         .limit(1)
                     )
-                    if outstanding is None and now - method.next_check_at < timedelta(minutes=10):
+                    grace = timedelta(minutes=3 if rapid else 10)
+                    if outstanding is None and now - method.next_check_at < grace:
                         session.add(
                             FleetOperationRecord(
                                 node_id=method.node_id,
                                 method=method.method,
                                 kind="CHECK",
-                                request_key="hour:" + method.next_check_at.isoformat(),
+                                request_key=("retry:" if rapid else "hour:")
+                                + method.next_check_at.isoformat(),
                             )
                         )
-                    method.next_check_at = hourly_slot(method.node_id, now, roster)
+                    method.next_check_at = next_slot
             await session.execute(
                 delete(FleetObservationRecord).where(
                     FleetObservationRecord.observed_at < now - timedelta(days=8)
@@ -256,7 +282,11 @@ class FleetWorker:
             if claim.kind == "CONFIGURE" and not error and method is not None:
                 state = result["state"]
                 assert isinstance(state, dict)
-                method.configuration = claim.parameters
+                method.configuration = (
+                    cast(dict[str, object], state["configuration"])
+                    if claim.method == "managed"
+                    else claim.parameters
+                )
                 method.public_key = str(state["public_key"])
                 method.configured_at = method.configured_at or now
                 # Idempotent configure preserves prior validation, otherwise awaits a real probe.
@@ -294,6 +324,10 @@ class FleetWorker:
                     if method is not None and method.state == "READY"
                     else 0
                 )
+                if method is not None:
+                    # The next scheduler tick uses this result: fast on zero,
+                    # hourly after recovery, including operator-triggered checks.
+                    method.next_check_at = None
                 if observation.mode != "SYNTHETIC":
                     job.source_id = None
                 job.result = {**job.result, "observation": observation.model_dump(mode="json")}
@@ -349,6 +383,7 @@ class FleetWorker:
 
 async def main() -> None:
     from prettylisavpn.client_vpn.worker import ClientVpnWorker
+    from prettylisavpn.fleet.managed import ManagedVpnMethod
     from prettylisavpn.fleet.ssh import SshTransport
     from prettylisavpn.fleet.wireguard import WireGuardMethod
 
@@ -365,10 +400,20 @@ async def main() -> None:
     try:
         transport = SshTransport.from_file(settings.fleet_inventory_path)
         method = WireGuardMethod(transport)
+        managed = ManagedVpnMethod(transport, settings.managed_vpn_secret)
+        methods: dict[str, VpnMethod] = {"wireguard": method}
+        if settings.managed_vpn_secret is not None:
+            methods["managed"] = managed
         async with asyncio.TaskGroup() as group:
-            group.create_task(FleetWorker(postgres, {"wireguard": method}, settings).run(stop))
+            group.create_task(FleetWorker(postgres, methods, settings).run(stop))
             group.create_task(
-                ClientVpnWorker(postgres, method, enabled=settings.client_vpn_enabled).run(stop)
+                ClientVpnWorker(
+                    postgres,
+                    method,
+                    enabled=settings.client_vpn_enabled,
+                    managed_method=managed,
+                    managed_enabled=settings.managed_vpn_enabled,
+                ).run(stop)
             )
     finally:
         if transport is not None:

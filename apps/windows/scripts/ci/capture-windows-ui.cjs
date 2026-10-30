@@ -478,6 +478,29 @@ async function main() {
     .click();
   await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   await screenshot("05-settings");
+  await page.getByRole("link", { name: /расширенные настройки/i }).click();
+  await page
+    .getByRole("heading", { name: /^расширенные настройки$/i })
+    .waitFor();
+  await page
+    .getByRole("checkbox", { name: "WireGuard", exact: true })
+    .uncheck();
+  await screenshot("05a-advanced-methods");
+  await page
+    .getByRole("checkbox", { name: "Salamander+", exact: true })
+    .scrollIntoViewIfNeeded();
+  await screenshot("05b-advanced-methods-bottom");
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+  await page.getByRole("link", { name: /расширенные настройки/i }).click();
+  if (
+    await page
+      .getByRole("checkbox", { name: "WireGuard", exact: true })
+      .isChecked()
+  )
+    throw new Error("Method selection was not persisted");
+  await page.getByRole("checkbox", { name: /^все способы$/i }).check();
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+
   async function billingScenario(scenario) {
     const response = await fetch(
       "http://127.0.0.1:8000/ui-review/billing-scenario",

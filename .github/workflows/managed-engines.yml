@@ -1,0 +1,99 @@
+name: Managed VPN engines
+
+on:
+  push:
+    paths: ['engines/**', '.gitattributes', '.github/workflows/managed-engines.yml']
+  pull_request:
+    paths: ['engines/**', '.gitattributes', '.github/workflows/managed-engines.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engines-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: engines/managed
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Format, vet, test and build without starting VPN
+        run: |
+          python -m unittest prepare_core_test
+          python prepare_core.py
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+          (cd compat/ratelimit && go test -race ./...)
+          go build -trimpath -o "$RUNNER_TEMP/pl-engine" ./cmd/pl-engine
+          go build -trimpath -ldflags=-checklinkname=0 -o "$RUNNER_TEMP/pl-node-engine" ./cmd/pl-node-engine
+          printf '%s\n' '{"action":"version"}' '{"action":"status"}' '{"action":"stop"}' | "$RUNNER_TEMP/pl-engine"
+      - name: Enforce dependency licenses
+        run: |
+          go install github.com/google/go-licenses/v2@v2.0.1
+          go-licenses check ./cmd/pl-engine --allowed_licenses=MIT,MPL-2.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
+          go-licenses check ./cmd/pl-node-engine --allowed_licenses=MIT,MPL-2.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
+      - name: Check Hysteria 1 concurrency and bounded framing
+        if: runner.os == 'Linux'
+        run: |
+          go test -race ./hysteria1 ./node
+          go test -race . -run TestGRPCClose
+          go test -race ./sstp/... ./softether/...
+          go test ./hysteria1 -run '^$' -fuzz FuzzDatagram -fuzztime=10s
+      - name: Verify compatibility with official Hysteria 1
+        if: runner.os == 'Windows'
+        run: |
+          # Test oracle only: loopback TCP/UDP relays, no TUN or host routes.
+          curl --fail --location --retry 3 https://github.com/HyNetworks/hysteria/releases/download/v1.3.5/hysteria-windows-amd64.exe --output "$RUNNER_TEMP/hysteria1-reference.exe"
+          echo "1001bd4a83f6addac166bfdfc3e777f3b751bb397e11b5d8f1d6ec1c2dd44023  $RUNNER_TEMP/hysteria1-reference.exe" | sha256sum --check
+          PL_HYSTERIA1_REFERENCE="$RUNNER_TEMP/hysteria1-reference.exe" go test ./hysteria1 -run TestOfficialV1Interop -count=1
+      - name: Verify SSTP and native SoftEther with official SoftEther
+        if: runner.os == 'Linux'
+        run: |
+          go test -c -o "$RUNNER_TEMP/sstp-reference.test" ./sstp
+          docker build --tag pl-sstp-reference sstp/reference
+          docker run --rm --memory=256m --cpus=1 --cap-drop=ALL --security-opt=no-new-privileges \
+            --mount "type=bind,source=$RUNNER_TEMP/sstp-reference.test,target=/run/reference.test,readonly" pl-sstp-reference
+          go test -c -o "$RUNNER_TEMP/softether-reference.test" ./softether
+          docker run --rm --memory=256m --cpus=1 --cap-drop=ALL --security-opt=no-new-privileges \
+            -e PL_REFERENCE_PROTOCOL=softether \
+            --mount "type=bind,source=$RUNNER_TEMP/softether-reference.test,target=/run/reference.test,readonly" pl-sstp-reference
+      - name: Verify real server process closes accepted sockets
+        if: runner.os == 'Linux'
+        run: python3 node/process_test.py "$RUNNER_TEMP/pl-node-engine"
+      - name: Package Linux engine with corresponding sources and licenses
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p "$RUNNER_TEMP/managed-distribution/source"
+          cp "$RUNNER_TEMP/pl-node-engine" "$RUNNER_TEMP/managed-distribution/"
+          git -C ../.. archive HEAD engines/managed | tar -x -C "$RUNNER_TEMP/managed-distribution/source"
+          cp -R patched "$RUNNER_TEMP/managed-distribution/source/engines/managed/patched"
+          go mod vendor -o "$RUNNER_TEMP/managed-distribution/source/engines/managed/vendor"
+          go-licenses save ./cmd/pl-node-engine --save_path="$RUNNER_TEMP/managed-distribution/licenses"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/managed-distribution/source-sha.txt"
+          tar -czf "$RUNNER_TEMP/managed-source.tar.gz" -C "$RUNNER_TEMP/managed-distribution" source licenses source-sha.txt
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: managed-node-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/managed-distribution/pl-node-engine
+            ${{ runner.temp }}/managed-source.tar.gz
+            ${{ runner.temp }}/managed-distribution/source-sha.txt
+          if-no-files-found: error
+          retention-days: 14

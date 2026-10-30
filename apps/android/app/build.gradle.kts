@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 27
-        versionName = "0.14.2"
+        versionCode = 30
+        versionName = "0.15.2"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -39,7 +39,17 @@ android {
         }
     }
     bundle { language { enableSplit = false } } // All six locales work offline, including future AAB installs.
+    // A standalone APK per CPU, never several APKs installed on one device.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            isUniversalApk = false
+        }
+    }
     buildFeatures {
+        aidl = true
         compose = true
         buildConfig = true
     }
@@ -58,6 +68,8 @@ android {
         informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
     }
     packaging {
+        // Direct APK downloads: compress native code and let Android extract it.
+        jniLibs.useLegacyPackaging = true
         // Use the Apache-2.0 wrapper and MIT wireguard-go; exclude GPL command-line utilities.
         jniLibs.excludes += setOf("**/libwg.so", "**/libwg-quick.so")
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -65,6 +77,7 @@ android {
 }
 
 dependencies {
+    implementation(files("libs/managed.aar"))
     implementation(libs.wireguard.tunnel)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

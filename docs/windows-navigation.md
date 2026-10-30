@@ -1,4 +1,20 @@
-# Relay and daily balance — Windows 0.16.0 / Android 0.13.0
+# Advanced settings — Windows 0.18.0 / Android 0.15.0 (in progress)
+
+Settings → Advanced settings opens a method checklist; Back returns to Settings.
+All methods are selected by default; a nonempty device-local subset is persisted.
+The bounded checklist scrolls inside its card; Back, title and the All checkbox
+remain visible. Native review covers both the first and last method rows.
+The accessible checkbox group has an inset heading so WebView2 does not clip
+the label against the rounded card border.
+Connection snapshots this selection and starts with the last successful enabled
+method. Android has the private in-APK engine adapter. Windows uses a separate
+elevated private engine host and retains the normal unelevated UI. Production
+registries contain real adapters only; UI review fixtures remain test-only.
+SSTP and SSTP+ use the same private engine lifecycle and appear after Amnezia;
+the complete catalog now has 22 choices, including direct WireGuard.
+Real backend acceptance is pending. See [rollout](managed-transports.md).
+
+## Relay and daily balance — Windows 0.16.0 / Android 0.13.0
 
 Home Connect attempts direct WireGuard, then WireGuard through permanent RU,
 then the remaining placeholders. Both implemented adapters use the existing
@@ -511,3 +527,11 @@ recovers abandoned access for this device once, without interrupting a current
 in-process connection. Free balance stops extrapolating after 60 seconds without
 fresh account data. Backend integration is implemented, not a placeholder; see
 [quota handoff](free-quota-cleanup.md). Navigation routes and auth remain unchanged.
+
+### Android 0.15.0 / Windows 0.18.0: native SoftEther selection
+
+Advanced settings includes SoftEther and SoftEther+ alongside SSTP/SSTP+ and the
+other managed methods. The persisted nonempty selection, last successful method,
+progress messages and confirmed cleanup gate are unchanged. These rows now use
+real native adapters; backend opt-in deployment and packaged VPN acceptance remain
+pending. No new route, popup or external transition. See managed-transports.md.

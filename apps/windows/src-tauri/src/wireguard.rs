@@ -168,6 +168,9 @@ fn stop(app: &AppHandle) -> Result<(), &'static str> {
 
 fn preflight() -> Result<(), &'static str> {
     installed("wireguard.exe")?;
+    route_preflight()
+}
+pub(super) fn route_preflight() -> Result<(), &'static str> {
     // Read-only. In particular, never disable the user's Kaspersky tunnel.
     let script = "$ErrorActionPreference='Stop'; $r=Get-NetRoute -AddressFamily IPv4; if($r | Where-Object {$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')}) {exit 17}; $v=Get-NetAdapter | Where-Object {$_.InterfaceDescription -match 'WireGuard|Wintun|TAP|VPN|Kaspersky'}; if($r | Where-Object {$_.DestinationPrefix -eq '0.0.0.0/0' -and $_.InterfaceIndex -in $v.ifIndex}) {exit 17}";
     let status = command(system("WindowsPowerShell\\v1.0\\powershell.exe"))
@@ -436,6 +439,14 @@ pub async fn wg_verify(
     if service_state()? != Some(SERVICE_RUNNING) {
         return Err(FAILED);
     }
+    verify_tunnel(local, identifier, access_token, false).await
+}
+pub(super) async fn verify_tunnel(
+    local: Ipv4Addr,
+    identifier: uuid::Uuid,
+    access_token: String,
+    managed: bool,
+) -> Result<bool, &'static str> {
     let resolved = tauri::async_runtime::spawn_blocking(move || resolve(local))
         .await
         .map_err(|_| FAILED)??;
@@ -448,10 +459,13 @@ pub async fn wg_verify(
         .build()
         .map_err(|_| FAILED)?;
     let token = Zeroizing::new(access_token);
+    let path = if managed {
+        "sessions"
+    } else {
+        "wireguard/sessions"
+    };
     let mut response = client
-        .get(format!(
-            "https://{HOST}/vpn/wireguard/sessions/{identifier}/probe"
-        ))
+        .get(format!("https://{HOST}/vpn/{path}/{identifier}/probe"))
         .bearer_auth(token.as_str())
         .header("Cache-Control", "no-store")
         .send()

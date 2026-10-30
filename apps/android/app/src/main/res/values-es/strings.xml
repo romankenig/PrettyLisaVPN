@@ -267,4 +267,8 @@
     <string name="free_time_resets">se renueva: %1$s</string>
     <string name="vpn_wireguard_relay">WireGuard+</string>
     <string name="vpn_first_connection_hint">la primera conexión puede tardar un par de minutos.</string>
+    <string name="advanced_settings">ajustes avanzados</string>
+    <string name="connection_methods">métodos de conexión</string>
+    <string name="connection_methods_hint">los cambios se aplican a la próxima conexión. selecciona al menos un método.</string>
+    <string name="all_methods">todos los métodos</string>
 </resources>
