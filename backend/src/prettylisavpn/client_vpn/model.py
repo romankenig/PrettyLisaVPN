@@ -123,8 +123,12 @@ class FreeQuotaResetRecord(Base):
     """An explicit operator reset; historical leases/usage are never rewritten."""
 
     __tablename__ = "free_quota_resets"
-    __table_args__ = (UniqueConstraint("user_id", "day", name="uq_free_quota_reset_day"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "day", name="uq_free_quota_reset_day"),
+        CheckConstraint("allowance_seconds BETWEEN 1 AND 86400", name="ck_free_quota_allowance"),
+    )
     id: Mapped[UUID] = mapped_column(primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     day: Mapped[date] = mapped_column(Date)
     reset_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    allowance_seconds: Mapped[int] = mapped_column(Integer, default=3600, server_default="3600")

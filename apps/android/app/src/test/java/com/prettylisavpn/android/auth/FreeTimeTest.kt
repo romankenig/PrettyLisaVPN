@@ -5,6 +5,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FreeTimeTest {
+    @Test fun explicitDailyAllowanceSupportsThreeHoursAndIdleTime() {
+        val json = JsonParser.parseString("""{"entitlements":{"daily_vpn_limit_seconds":10800,"free_seconds_usable":10800,"free_running_sessions":0,"free_quota_resets_at":"2030-01-02T00:00:00Z"}}""").asJsonObject
+        val value = requireNotNull(readFreeTime(json, 1000))
+        assertEquals(10800, value.remaining(61000))
+        assertEquals(10740, value.copy(running = 2).remaining(31000))
+        for (limit in listOf(0, -1, 86401)) {
+            json.getAsJsonObject("entitlements").addProperty("daily_vpn_limit_seconds", limit)
+            assertNull(readFreeTime(json))
+        }
+    }
     @Test fun accountBalanceIncludesTimeReservedByOtherDevices() {
         val json = JsonParser.parseString("""{"entitlements":{"free_seconds_remaining":0,"free_seconds_usable":600,"free_running_sessions":2,"free_quota_resets_at":"2030-01-02T00:00:00Z"}}""").asJsonObject
         val value = requireNotNull(readFreeTime(json, 1000))

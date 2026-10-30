@@ -43,3 +43,45 @@ it("does not invent an hour for missing/invalid data and hides Free balance on p
   rerender(<FreeTimeBalance profile={{ ...profile, plan: "PREMIUM" }} />);
   expect(screen.queryByRole("timer")).toBeNull();
 });
+
+it("honors an explicit account allowance without counting down while disconnected", () => {
+  const extended = {
+    ...profile,
+    quotaReceivedAt: Date.now(),
+    entitlements: {
+      ...profile.entitlements,
+      daily_vpn_limit_seconds: 10800,
+      free_seconds_usable: 10800,
+      free_running_sessions: 0,
+    },
+  };
+  expect(freeTimeRemaining(extended, extended.quotaReceivedAt + 60000)).toBe(
+    10800,
+  );
+  const { unmount } = render(<FreeTimeBalance profile={extended} />);
+  expect(screen.getByRole("timer")).toHaveTextContent("180:00");
+  unmount();
+  expect(
+    freeTimeRemaining(
+      {
+        ...extended,
+        entitlements: { ...extended.entitlements, free_running_sessions: 2 },
+      },
+      extended.quotaReceivedAt + 30000,
+    ),
+  ).toBe(10740);
+  for (const limit of [0, -1, 86401, 10800.5]) {
+    expect(
+      freeTimeRemaining(
+        {
+          ...extended,
+          entitlements: {
+            ...extended.entitlements,
+            daily_vpn_limit_seconds: limit,
+          },
+        },
+        extended.quotaReceivedAt,
+      ),
+    ).toBeNull();
+  }
+});

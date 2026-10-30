@@ -20,8 +20,10 @@ from prettylisavpn.users.model import UserRecord
 
 
 async def reset(
-    postgres: Postgres, email: str, request_id: UUID, now: datetime
+    postgres: Postgres, email: str, request_id: UUID, now: datetime, *, seconds: int = 3600
 ) -> dict[str, object]:
+    if type(seconds) is not int or not 1 <= seconds <= 86400:
+        raise FleetError("QUOTA_RESET_INVALID_ALLOWANCE")
     async with postgres.session() as session, session.begin():
         user = await session.scalar(
             select(UserRecord).where(UserRecord.email == email.strip().lower()).with_for_update()
@@ -30,7 +32,7 @@ async def reset(
             raise FleetError("ACCOUNT_NOT_FOUND", 404)
         previous = await session.get(FreeQuotaResetRecord, request_id)
         if previous:
-            if previous.user_id != user.id:
+            if previous.user_id != user.id or previous.allowance_seconds != seconds:
                 raise FleetError("QUOTA_RESET_CONFLICT")
             return {"reset": True, "repeated": True, "reset_at": previous.reset_at.isoformat()}
         subscription = await SubscriptionRepository(session).get_by_user_id(user.id)
@@ -43,7 +45,7 @@ async def reset(
             )
         ):
             raise FleetError("QUOTA_RESET_ALREADY_APPLIED")
-        # Confirm cleanup first: never grant another hour over an uncertain reservation.
+        # Confirm cleanup first: never grant more time over an uncertain reservation.
         await ClientQuotaRepository(session).remaining_free_seconds(user.id, now)
         if await session.scalar(
             select(ClientLeaseRecord.id)
@@ -63,14 +65,18 @@ async def reset(
             raise FleetError("QUOTA_RESET_CLEANUP_REQUIRED")
         session.add(
             FreeQuotaResetRecord(
-                id=request_id, user_id=user.id, day=now.astimezone(UTC).date(), reset_at=now
+                id=request_id,
+                user_id=user.id,
+                day=now.astimezone(UTC).date(),
+                reset_at=now,
+                allowance_seconds=seconds,
             )
         )
         return {
             "reset": True,
             "repeated": False,
             "reset_at": now.isoformat(),
-            "available_seconds": 3600,
+            "available_seconds": seconds,
         }
 
 
@@ -78,10 +84,19 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--email", required=True)
     parser.add_argument("--request-id", type=UUID, required=True)
+    parser.add_argument(
+        "--seconds", type=int, default=3600, help="One-off allowance for this UTC day (1–86400)"
+    )
     args = parser.parse_args()
     postgres = Postgres(Settings())
     try:
-        print(json.dumps(await reset(postgres, args.email, args.request_id, datetime.now(UTC))))
+        print(
+            json.dumps(
+                await reset(
+                    postgres, args.email, args.request_id, datetime.now(UTC), seconds=args.seconds
+                )
+            )
+        )
     except FleetError as error:
         print(json.dumps({"error": error.code}))
         raise SystemExit(1) from None

@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Backend — 0.23.0 / Android — 0.15.3 / Windows — 0.18.1
+
+- Operators can grant a one-off account-wide Free allowance for the current UTC
+  day with `reset_quota --seconds`; ordinary Free remains one hour. Migration
+  0036 retains existing one-hour reset records and audit history.
+- Android and Windows counters honor the explicit daily allowance reported by
+  `/me`, including three hours; disconnected time still does not consume it.
+  See [daily allowance handoff](docs/daily-allowance.md).
+
 ### Android — 0.15.2
 
 - Keep the same managed tunnel for one bounded retry after a transient DNS/HTTPS

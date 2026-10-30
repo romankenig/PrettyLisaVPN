@@ -349,7 +349,11 @@ async def me(
             country_selection_allowed=rights.country_selection_allowed,
             free_nodes_only=rights.free_nodes_only,
             active_device_limit=rights.active_device_limit,
-            daily_vpn_limit_seconds=rights.daily_vpn_limit_seconds,
+            daily_vpn_limit_seconds=(
+                result.daily_vpn_limit_seconds
+                if result.daily_vpn_limit_seconds is not None
+                else rights.daily_vpn_limit_seconds
+            ),
             free_seconds_remaining=result.free_seconds_remaining,
             free_quota_resets_at=result.free_quota_resets_at,
             free_seconds_usable=result.free_seconds_usable,

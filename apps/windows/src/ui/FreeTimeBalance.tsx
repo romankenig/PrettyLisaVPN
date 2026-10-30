@@ -9,11 +9,15 @@ export function freeTimeRemaining(
   const rights = profile.entitlements;
   const seconds = rights?.free_seconds_usable ?? rights?.free_seconds_remaining;
   const running = rights?.free_running_sessions ?? 0;
+  const limit = rights?.daily_vpn_limit_seconds ?? 3600;
   if (
     typeof seconds !== "number" ||
     !Number.isInteger(seconds) ||
     seconds < 0 ||
-    seconds > 3600 ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 86400 ||
+    seconds > limit ||
     !Number.isInteger(running) ||
     running < 0 ||
     running > 5

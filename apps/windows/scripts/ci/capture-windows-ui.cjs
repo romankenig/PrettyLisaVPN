@@ -424,6 +424,18 @@ async function main() {
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: true, extended: true }),
+  });
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page
+    .getByRole("timer", { name: "Остаток Free" })
+    .filter({ hasText: "180:00" })
+    .waitFor();
+  await screenshot("04-home-free-three-hours");
+  await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled: false }),
   });
   await page.getByRole("link", { name: "настройки", exact: true }).click();

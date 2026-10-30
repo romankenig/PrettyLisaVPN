@@ -1,4 +1,12 @@
-# Advanced settings — Windows 0.18.0 / Android 0.15.0 (in progress)
+# Daily allowance — Windows 0.18.1 / Android 0.15.3
+
+Home retains its existing navigation. The Free balance now accepts an explicit
+account/day limit from `/me`, including 180:00 for a three-hour allowance. Idle
+time does not count down; the server remains authoritative. Missing or invalid
+data still displays an em dash. No new screen, popup or external transition.
+See [operator allowance](daily-allowance.md) for backend/deployment evidence.
+
+# Advanced settings — Windows 0.18.0 / Android 0.15.0
 
 Settings → Advanced settings opens a method checklist; Back returns to Settings.
 All methods are selected by default; a nonempty device-local subset is persisted.

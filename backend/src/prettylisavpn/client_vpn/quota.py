@@ -17,23 +17,28 @@ class FreeQuotaSnapshot:
     available_seconds: int
     usable_seconds: int
     running_sessions: int
+    daily_limit_seconds: int = 3600
 
 
 class ClientQuotaRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
-        start = at.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-        reset = await self.session.scalar(
+    async def _reset(self, user_id: UUID, at: datetime) -> FreeQuotaResetRecord | None:
+        record: FreeQuotaResetRecord | None = await self.session.scalar(
             select(FreeQuotaResetRecord).where(
                 FreeQuotaResetRecord.user_id == user_id,
-                FreeQuotaResetRecord.day == start.date(),
+                FreeQuotaResetRecord.day == at.astimezone(UTC).date(),
                 FreeQuotaResetRecord.reset_at <= at,
             )
         )
+        return record
+
+    async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
+        start = at.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        reset = await self._reset(user_id, at)
         remaining = (
-            3600
+            reset.allowance_seconds
             if reset
             else await LegacyQuotaRepository(self.session).remaining_free_seconds(user_id, at)
         )
@@ -76,4 +81,6 @@ class ClientQuotaRepository:
             max(0, int(((row.quota_reserved_until or row.expires_at) - at).total_seconds()))
             for row in live
         )
-        return FreeQuotaSnapshot(remaining, min(3600, usable), len(live))
+        reset = await self._reset(user_id, at)
+        limit = reset.allowance_seconds if reset else 3600
+        return FreeQuotaSnapshot(remaining, min(limit, usable), len(live), limit)
