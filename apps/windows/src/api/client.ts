@@ -61,6 +61,7 @@ export interface MeResponse {
   readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
   readonly active_device_count: number;
   readonly entitlements?: {
+    readonly daily_vpn_limit_seconds?: number | null;
     readonly free_seconds_remaining?: number | null;
     readonly free_seconds_usable?: number | null;
     readonly free_running_sessions?: number | null;

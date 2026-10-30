@@ -38,6 +38,7 @@ BILLING_REQUESTS = {}
 SIMULATE_BILLING = False
 SIMULATE_MESSAGES = False
 QUOTA_REVIEW = False
+QUOTA_EXTENDED = False
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
 MESSAGE_FIXTURES = [
@@ -65,9 +66,10 @@ MESSAGE_FIXTURES = [
 def fixture(method, path, body):
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
-    global QUOTA_REVIEW
+    global QUOTA_REVIEW, QUOTA_EXTENDED
     if method == "POST" and path == "/ui-review/free-quota":
         QUOTA_REVIEW = body.get("enabled") is True
+        QUOTA_EXTENDED = body.get("extended") is True
         return 200, {"enabled": QUOTA_REVIEW}
     if BILLING_SCENARIO.startswith("server-") and BILLING_EVIDENCE:
         if method == "GET" and urlsplit(path).path == "/billing/overview":
@@ -181,7 +183,8 @@ def fixture(method, path, body):
         return 200, {
             "id": USER_ID, "email": ACCOUNT_EMAIL,
             "plan": "FREE" if QUOTA_REVIEW else "PREMIUM", "active_device_count": 2,
-            **({"entitlements": {"free_seconds_remaining": 0, "free_seconds_usable": 615,
+            **({"entitlements": {"daily_vpn_limit_seconds": 10800 if QUOTA_EXTENDED else 3600,
+                "free_seconds_remaining": 0, "free_seconds_usable": 10800 if QUOTA_EXTENDED else 615,
                 "free_running_sessions": 0, "free_quota_resets_at": "2030-01-02T00:00:00Z"}} if QUOTA_REVIEW else {}),
         }
     if method == "GET" and path == "/devices":

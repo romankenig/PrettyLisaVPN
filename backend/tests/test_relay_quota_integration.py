@@ -156,3 +156,43 @@ async def test_display_includes_active_account_reservation_and_reset_preserves_h
         assert (await quota.display(identity.user_id, datetime.now(UTC))).usable_seconds == 3600
         tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
         assert await quota.remaining_free_seconds(identity.user_id, tomorrow) == 3600
+
+
+async def test_custom_allowance_is_account_scoped_and_expires_at_midnight(vpn_state):  # noqa: F811
+    postgres, service, worker, _, identity = vpn_state
+    now = datetime.now(UTC)
+    async with postgres.session() as session:
+        email = (await session.get(UserRecord, identity.user_id)).email
+    request_id = uuid4()
+    result = await reset(postgres, email, request_id, now, seconds=10800)
+    assert result["available_seconds"] == 10800
+    assert (await reset(postgres, email, request_id, now, seconds=10800))["repeated"]
+    with pytest.raises(FleetError, match="QUOTA_RESET_CONFLICT"):
+        await reset(postgres, email, request_id, now, seconds=3600)
+    async with postgres.session() as session:
+        quota = ClientQuotaRepository(session)
+        before = await quota.display(identity.user_id, now)
+        assert (
+            before.available_seconds == before.usable_seconds == before.daily_limit_seconds == 10800
+        )
+        assert (await quota.display(uuid4(), now)).daily_limit_seconds == 3600
+        tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        after = await quota.display(identity.user_id, tomorrow)
+        assert after.available_seconds == after.usable_seconds == after.daily_limit_seconds == 3600
+    identifier = UUID((await connect(service))["id"])
+    await worker.tick()
+    async with postgres.session() as session:
+        lease = await session.get(ClientLeaseRecord, identifier)
+        assert abs((lease.expires_at - min(now + timedelta(hours=3), tomorrow)).total_seconds()) < 5
+        balance = await ClientQuotaRepository(session).display(identity.user_id, datetime.now(UTC))
+        assert 10790 <= balance.usable_seconds <= 10800
+        assert balance.running_sessions == 1
+    await service.get("token", identifier, "revoke")
+    await worker.tick()
+
+
+@pytest.mark.parametrize("seconds", [0, -1, 86401, True])
+async def test_operator_allowance_rejects_invalid_amount(vpn_state, seconds):  # noqa: F811
+    postgres, _, _, _, _ = vpn_state
+    with pytest.raises(FleetError, match="QUOTA_RESET_INVALID_ALLOWANCE"):
+        await reset(postgres, "irrelevant@example.com", uuid4(), datetime.now(UTC), seconds=seconds)

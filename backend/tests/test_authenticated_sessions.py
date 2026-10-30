@@ -115,6 +115,27 @@ def test_logout_revokes_bearer_session():
     service.logout.assert_awaited_once_with("access-token")
 
 
+def test_me_returns_custom_daily_allowance():
+    service = AsyncMock()
+    service.me.return_value = MeSummary(
+        uuid4(),
+        "user@example.com",
+        SubscriptionPlan.FREE,
+        1,
+        daily_vpn_limit_seconds=10800,
+        free_seconds_remaining=10800,
+        free_seconds_usable=10800,
+        free_running_sessions=0,
+    )
+    with api_client(service) as client:
+        response = client.get("/me", headers={"Authorization": "Bearer access-token"})
+    assert response.status_code == 200
+    rights = response.json()["entitlements"]
+    assert rights["daily_vpn_limit_seconds"] == 10800
+    assert rights["free_seconds_usable"] == 10800
+    assert rights["free_nodes_only"] is True
+
+
 def test_me_returns_identity_plan_and_active_device_count():
     service = AsyncMock()
     summary = MeSummary(uuid4(), "user@example.com", SubscriptionPlan.PREMIUM, 3)

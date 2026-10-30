@@ -71,6 +71,7 @@ class MeSummary:
     free_seconds_usable: int | None = None
     free_running_sessions: int | None = None
     quota_observed_at: datetime | None = None
+    daily_vpn_limit_seconds: int | None = None
 
 
 class AuthenticatedSessionHandler(Protocol):
@@ -216,6 +217,7 @@ class AuthenticatedSessionService:
             free_seconds_usable=quota.usable_seconds if quota else None,
             free_running_sessions=quota.running_sessions if quota else None,
             quota_observed_at=now if plan is SubscriptionPlan.FREE else None,
+            daily_vpn_limit_seconds=quota.daily_limit_seconds if quota else None,
         )
 
     def _decode_identity(self, access_token: str) -> AccessIdentity:
