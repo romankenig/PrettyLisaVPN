@@ -271,15 +271,15 @@
     <string name="connection_methods">métodos de conexión</string>
     <string name="connection_methods_hint">los cambios se aplican a la próxima conexión. selecciona al menos un método.</string>
     <string name="all_methods">todos los métodos</string>
-    <string name="traffic_services">Elegir servicios</string>
-    <string name="traffic_save_hint">Guardar desconecta la VPN. Las reglas se aplican en la próxima conexión.</string>
-    <string name="traffic_catalog_unavailable">Catálogo no disponible. Los servicios y dominios guardados siguen disponibles.</string>
-    <string name="traffic_mask">Patrón de dominio</string>
-    <string name="traffic_add">Añadir</string>
-    <string name="traffic_remove">Eliminar</string>
-    <string name="traffic_save">Guardar</string>
-    <string name="traffic_cancel">Cancelar</string>
-    <string name="traffic_save_failed">No se pudieron guardar las reglas. Inténtalo de nuevo.</string>
-    <string name="traffic_mask_invalid">Introduce un dominio o *.dominio sin ruta. Máximo 256 patrones.</string>
-    <string name="traffic_loading">Cargando servicios…</string>
+    <string name="traffic_services">elegir servicios</string>
+    <string name="traffic_save_hint">guardar desconecta la VPN. las reglas se aplican en la próxima conexión.</string>
+    <string name="traffic_catalog_unavailable">catálogo no disponible. los servicios y dominios guardados siguen disponibles.</string>
+    <string name="traffic_mask">patrón de dominio</string>
+    <string name="traffic_add">añadir</string>
+    <string name="traffic_remove">eliminar</string>
+    <string name="traffic_save">guardar</string>
+    <string name="traffic_cancel">cancelar</string>
+    <string name="traffic_save_failed">no se pudieron guardar las reglas. inténtalo de nuevo.</string>
+    <string name="traffic_mask_invalid">introduce un dominio o *.dominio sin ruta. máximo 256 patrones.</string>
+    <string name="traffic_loading">cargando servicios…</string>
 </resources>

@@ -5,6 +5,7 @@ import {
   getDeviceTrafficSelection,
   normalizeMask,
   parseTrafficCatalog,
+  refreshServices,
   type TrafficSelection,
   type TrafficService,
   type TrafficMode as Mode,
@@ -341,7 +342,7 @@ function TrafficDialog({
           type="button"
           disabled={busy || !!input.trim()}
           onClick={() => {
-            void onSave(draft).catch(() => {});
+            void onSave(refreshServices(draft, catalog)).catch(() => {});
           }}
         >
           {t("Сохранить")}

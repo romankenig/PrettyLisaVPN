@@ -120,7 +120,7 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
             } }
             if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
         } },
-        confirmButton = { TextButton({ save(draft) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
+        confirmButton = { TextButton({ save(draft.refreshServices(catalog)) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
         dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.traffic_cancel)) } })
 }
 

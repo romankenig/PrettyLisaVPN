@@ -19,6 +19,22 @@ export interface RoutingPolicy {
   mode: TrafficMode;
   domains: string[];
 }
+export function refreshServices(
+  value: TrafficSelection,
+  catalog: TrafficService[],
+): TrafficSelection {
+  const refresh = (list: TrafficList): TrafficList => ({
+    ...list,
+    services: list.services.map(
+      (saved) => catalog.find((s) => s.id === saved.id) ?? saved,
+    ),
+  });
+  return {
+    ...value,
+    include: refresh(value.include),
+    exclude: refresh(value.exclude),
+  };
+}
 const KEY = "prettylisavpn:traffic:v1";
 export const emptyTraffic = (): TrafficSelection => ({
   mode: "all",

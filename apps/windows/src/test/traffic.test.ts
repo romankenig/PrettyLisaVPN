@@ -5,9 +5,35 @@ import {
   normalizeMask,
   parseTrafficCatalog,
   routingPolicy,
+  refreshServices,
 } from "../vpn/traffic";
 
 describe("device traffic rules", () => {
+  it("refreshes selected preset masks only on explicit save and preserves offline choices", () => {
+    const old = {
+      id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
+      slug: "youtube",
+      name: "YouTube",
+      icon: "youtube",
+      domains: ["youtube.com"],
+    };
+    const updated = { ...old, domains: ["youtube.com", "*.googlevideo.com"] };
+    const value = {
+      ...emptyTraffic(),
+      include: { services: [old], masks: ["manual.example.com"] },
+    };
+    expect(refreshServices(value, []).include.services).toEqual([old]);
+    expect(refreshServices(value, [updated]).include.services).toEqual([
+      updated,
+    ]);
+    expect(value.include.services).toEqual([old]);
+    expect(refreshServices(value, [updated]).exclude).toEqual(
+      emptyTraffic().exclude,
+    );
+    expect(refreshServices(value, [updated]).include.masks).toEqual([
+      "manual.example.com",
+    ]);
+  });
   it("normalizes exact and subdomain masks independently", () => {
     expect(normalizeMask(" YouTube.com ")).toBe("youtube.com");
     expect(normalizeMask("*.YouTube.com")).toBe("*.youtube.com");

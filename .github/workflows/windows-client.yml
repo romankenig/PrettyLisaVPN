@@ -55,7 +55,7 @@ jobs:
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - name: Build downloadable client using the real development API
-        run: pnpm tauri build --debug --no-bundle
+        run: pnpm tauri build --no-bundle
       - name: Install signed official WireGuard for opt-in acceptance only
         if: github.event_name == 'workflow_dispatch' && inputs.live_managed
         run: |
@@ -94,7 +94,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           New-Item -ItemType Directory -Force artifacts/client | Out-Null
-          Copy-Item src-tauri/target/debug/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          Copy-Item src-tauri/target/release/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
           Copy-Item src-tauri/engine/Wintun-Prebuilt-License.txt artifacts/client/
           Copy-Item src-tauri/engine/managed-source.tar.gz artifacts/client/
           $binary = Get-Item artifacts/client/PrettyLisaVPN.exe

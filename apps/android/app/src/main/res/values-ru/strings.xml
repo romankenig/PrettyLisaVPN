@@ -271,15 +271,15 @@
     <string name="connection_methods">способы подключения</string>
     <string name="connection_methods_hint">изменения применятся при следующем подключении. выберите хотя бы один способ.</string>
     <string name="all_methods">все способы</string>
-    <string name="traffic_services">Выбрать сервисы</string>
-    <string name="traffic_save_hint">При сохранении VPN отключится. Новые правила — со следующего подключения.</string>
-    <string name="traffic_catalog_unavailable">Каталог недоступен. Сохранённые сервисы и ваши маски доступны.</string>
-    <string name="traffic_mask">Маска сервиса</string>
-    <string name="traffic_add">Добавить</string>
-    <string name="traffic_remove">Удалить</string>
-    <string name="traffic_save">Сохранить</string>
-    <string name="traffic_cancel">Отмена</string>
-    <string name="traffic_save_failed">Не удалось сохранить правила. Повторите попытку.</string>
-    <string name="traffic_mask_invalid">Укажите домен или *.домен, без адреса страницы. Максимум 256 масок.</string>
-    <string name="traffic_loading">Загрузка сервисов…</string>
+    <string name="traffic_services">выбрать сервисы</string>
+    <string name="traffic_save_hint">при сохранении VPN отключится. новые правила — со следующего подключения.</string>
+    <string name="traffic_catalog_unavailable">каталог недоступен. сохранённые сервисы и ваши маски доступны.</string>
+    <string name="traffic_mask">маска сервиса</string>
+    <string name="traffic_add">добавить</string>
+    <string name="traffic_remove">удалить</string>
+    <string name="traffic_save">сохранить</string>
+    <string name="traffic_cancel">отмена</string>
+    <string name="traffic_save_failed">не удалось сохранить правила. повторите попытку.</string>
+    <string name="traffic_mask_invalid">укажите домен или *.домен, без адреса страницы. максимум 256 масок.</string>
+    <string name="traffic_loading">загрузка сервисов…</string>
 </resources>

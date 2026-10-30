@@ -126,7 +126,7 @@ async function capture(method) {
 async function main() {
   try {
     app = spawn(
-      path.resolve("src-tauri/target/debug/prettylisavpn-windows.exe"),
+      path.resolve("src-tauri/target/release/prettylisavpn-windows.exe"),
       [],
       {
         env: {

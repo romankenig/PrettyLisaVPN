@@ -11,6 +11,11 @@ data class TrafficList(val services: List<TrafficService> = emptyList(), val mas
 data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList())
 data class RoutingPolicy(val mode: String, val domains: List<String>)
 
+fun TrafficSelection.refreshServices(catalog: List<TrafficService>): TrafficSelection {
+    fun refresh(list: TrafficList) = list.copy(services = list.services.map { saved -> catalog.find { it.id == saved.id } ?: saved })
+    return copy(include = refresh(include), exclude = refresh(exclude))
+}
+
 fun normalizeTrafficMask(input: String): String {
     val raw = input.trim().lowercase(Locale.ROOT)
     val wildcard = raw.startsWith("*.")

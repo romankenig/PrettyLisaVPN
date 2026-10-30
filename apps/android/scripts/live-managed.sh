@@ -44,7 +44,7 @@ from pathlib import Path
 proof = json.loads(Path('managed-evidence/managed-proof.json').read_text())
 assert proof['results'], 'No real attempts'
 for row in proof['results']:
-    assert row['connected'] and row['tunnel_https'] and row['cleanup'], row
+    assert row['connected'] and row['tunnel_https'] and row['cleanup'] and row.get('split_verified', True), row
     assert row['sustained_seconds'] >= 40, row
 assert 'OK (1 test)' in Path('managed-evidence/instrumentation.txt').read_text()
 print('Real packaged managed tunnels: verification, HTTPS, renewal and cleanup passed')

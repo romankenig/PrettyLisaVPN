@@ -271,15 +271,15 @@
     <string name="connection_methods">méthodes de connexion</string>
     <string name="connection_methods_hint">les modifications prennent effet à la prochaine connexion. sélectionnez au moins une méthode.</string>
     <string name="all_methods">toutes les méthodes</string>
-    <string name="traffic_services">Choisir les services</string>
-    <string name="traffic_save_hint">Enregistrer déconnecte le VPN. Les règles seront appliquées à la prochaine connexion.</string>
-    <string name="traffic_catalog_unavailable">Catalogue indisponible. Vos services et domaines enregistrés restent disponibles.</string>
-    <string name="traffic_mask">Masque de domaine</string>
-    <string name="traffic_add">Ajouter</string>
-    <string name="traffic_remove">Supprimer</string>
-    <string name="traffic_save">Enregistrer</string>
-    <string name="traffic_cancel">Annuler</string>
-    <string name="traffic_save_failed">Impossible d’enregistrer les règles. Réessayez.</string>
-    <string name="traffic_mask_invalid">Saisissez un domaine ou *.domaine sans chemin. Maximum 256 masques.</string>
-    <string name="traffic_loading">Chargement des services…</string>
+    <string name="traffic_services">choisir les services</string>
+    <string name="traffic_save_hint">enregistrer déconnecte le VPN. les règles seront appliquées à la prochaine connexion.</string>
+    <string name="traffic_catalog_unavailable">catalogue indisponible. vos services et domaines enregistrés restent disponibles.</string>
+    <string name="traffic_mask">masque de domaine</string>
+    <string name="traffic_add">ajouter</string>
+    <string name="traffic_remove">supprimer</string>
+    <string name="traffic_save">enregistrer</string>
+    <string name="traffic_cancel">annuler</string>
+    <string name="traffic_save_failed">impossible d’enregistrer les règles. réessayez.</string>
+    <string name="traffic_mask_invalid">saisissez un domaine ou *.domaine sans chemin. maximum 256 masques.</string>
+    <string name="traffic_loading">chargement des services…</string>
 </resources>
