@@ -15,7 +15,7 @@ import {
 import { ConnectionLocationSelector } from "./ConnectionLocationSelector";
 import { CurrentLocation } from "./CurrentLocation";
 import { ConnectionInfo } from "./ConnectionInfo";
-import { TrafficMode } from "./TrafficMode";
+import { TrafficRouting } from "./TrafficRouting";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 import { attemptMessage } from "../vpn/attempt";
 import { FreeTimeBalance } from "./FreeTimeBalance";
@@ -236,7 +236,7 @@ export function Home() {
           </div>
           <CurrentLocation connection={connectionState} />
         </div>
-        <TrafficMode />
+        <TrafficRouting />
       </div>
     </section>
   );

@@ -22,6 +22,85 @@
   background: var(--color-purple-heart);
   font-synthesis: none;
 }
+.traffic-mode > button {
+  margin-top: 12px;
+  width: 100%;
+}
+.traffic-dialog {
+  width: min(640px, 92vw);
+  max-height: 88vh;
+}
+.traffic-dialog > p {
+  font-size: 12px;
+  color: var(--color-scorpion);
+}
+.traffic-tabs,
+.traffic-mask-entry,
+.traffic-dialog__actions {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+.traffic-tabs button {
+  flex: 1;
+  font-size: 13px;
+}
+.traffic-tabs button[aria-pressed="true"] {
+  background: var(--color-viking);
+  color: var(--color-black);
+}
+.traffic-dialog__body {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 4px;
+}
+.traffic-services label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--color-purple-heart);
+  border-radius: 12px;
+}
+.traffic-services input {
+  flex: 0 0 auto;
+}
+.traffic-services svg {
+  flex-shrink: 0;
+  color: var(--color-purple-heart);
+}
+.traffic-services small {
+  display: block;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  margin-top: 6px;
+  color: var(--color-scorpion);
+}
+.traffic-mask-entry input {
+  min-width: 0;
+  flex: 1;
+}
+.traffic-masks {
+  list-style: none;
+  padding: 0;
+}
+.traffic-masks li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+}
+.traffic-masks span {
+  overflow-wrap: anywhere;
+}
+.traffic-masks button {
+  padding: 4px 12px;
+}
+.traffic-dialog__actions {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
 * {
   box-sizing: border-box;
 }

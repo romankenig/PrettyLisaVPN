@@ -271,4 +271,15 @@
     <string name="connection_methods">verbindungsmethoden</string>
     <string name="connection_methods_hint">änderungen gelten für die nächste Verbindung. wählen Sie mindestens eine Methode.</string>
     <string name="all_methods">alle Methoden</string>
+    <string name="traffic_services">Dienste auswählen</string>
+    <string name="traffic_save_hint">Speichern trennt das VPN. Neue Regeln gelten ab der nächsten Verbindung.</string>
+    <string name="traffic_catalog_unavailable">Katalog nicht verfügbar. Gespeicherte Dienste und Domainmuster bleiben verfügbar.</string>
+    <string name="traffic_mask">Domainmuster</string>
+    <string name="traffic_add">Hinzufügen</string>
+    <string name="traffic_remove">Entfernen</string>
+    <string name="traffic_save">Speichern</string>
+    <string name="traffic_cancel">Abbrechen</string>
+    <string name="traffic_save_failed">Regeln konnten nicht gespeichert werden. Bitte erneut versuchen.</string>
+    <string name="traffic_mask_invalid">Domain oder *.domain ohne Seitenpfad eingeben. Maximal 256 Muster.</string>
+    <string name="traffic_loading">Dienste werden geladen…</string>
 </resources>

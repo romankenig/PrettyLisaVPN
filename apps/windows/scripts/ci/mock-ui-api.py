@@ -202,6 +202,11 @@ def fixture(method, path, body):
                 ("55555555-5555-4555-8555-555555555555", "Android phone", "ANDROID", False),
             ]
         ]
+    if method == "GET" and path == "/vpn/traffic/services":
+        return 200, {"services": [
+            {"id": "0bd811da-f080-4f25-887a-67bf534ac2c6", "slug": "youtube", "name": "YouTube", "icon": "youtube", "domains": ["youtube.com", "*.youtube.com", "*.googlevideo.com"]},
+            {"id": "4e2b8d7c-289f-4c57-8f26-aeb680408cda", "slug": "instagram", "name": "Instagram", "icon": "instagram", "domains": ["instagram.com", "*.instagram.com", "*.cdninstagram.com"]},
+        ]}
     if method == "GET" and path == "/vpn/countries":
         return 200, {
             "autopilot": {"quality": 95, "available": True},

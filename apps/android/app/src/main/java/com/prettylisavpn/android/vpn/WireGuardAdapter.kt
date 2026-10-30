@@ -29,6 +29,8 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private val api = WireGuardApi(http, sessions)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var backend: GoBackend? = null
+    private val routedRuntime = ManagedRuntime(context, lost)
+    private var routed = false
     private var heartbeat: Job? = null
     private var deadline: Job? = null
     private var lease: WireGuardLease? = null
@@ -77,6 +79,8 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     }
 
     private suspend fun connectTunnel(country: String): ConnectionResult {
+        val routing = DeviceTrafficSelection.get(context).current().policy()
+        routed = routing.mode != "all"
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
         stage = "RECOVERY"
         // Recover an abandoned reservation from a previous process before creating a fresh key.
@@ -124,7 +128,17 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         val started = System.currentTimeMillis() - 1_000
         startedAt = started
         stage = "START"
-        withContext(Dispatchers.IO) {
+        if (routed) {
+            val profile = com.google.gson.JsonObject().apply {
+                addProperty("version", 1); addProperty("session", ready.id); addProperty("country", ready.country)
+                addProperty("method", "WIREGUARD"); addProperty("server", config.endpoint.substringBefore(':'))
+                addProperty("port", config.endpoint.substringAfter(':').toInt())
+                addProperty("secret", keys.privateKey.toBase64()); addProperty("public_key", config.server_public_key)
+                addProperty("address", config.address); add("routing", com.google.gson.Gson().toJsonTree(routing))
+            }
+            expectingUp = true
+            routedRuntime.start(profile.toString())
+        } else withContext(Dispatchers.IO) {
             val engine = backend ?: GoBackend(context).also { backend = it }
             expectingUp = true
             engine.setState(tunnel, Tunnel.State.UP, parsed)
@@ -133,13 +147,13 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         // establish() returns before network routing/first WireGuard response settle.
         // Keep this one tunnel alive through the protocol's initial handshake retries.
         stage = "HANDSHAKE"
-        vpnDeadline(20_000) {
+        if (!routed) vpnDeadline(20_000) {
             while (!freshHandshake(started)) delay(250)
         }
         stage = "NETWORK"
         val network = vpnDeadline(10_000) {
             while (true) {
-                vpnNetwork(config.address.substringBefore('/'))?.let { return@vpnDeadline it }
+                vpnNetwork(if (routed) "172.30.255.1" else config.address.substringBefore('/'))?.let { return@vpnDeadline it }
                 delay(100)
             }
             @Suppress("UNREACHABLE_CODE") error("VPN_NETWORK_MISSING")
@@ -162,7 +176,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
             }
         }
         stage = if (verified) "HANDSHAKE" else "EGRESS_MISMATCH"
-        return if (verified && freshHandshake(started) && expectingUp) {
+        return if (verified && (if (routed) routedRuntime.isUp() else freshHandshake(started)) && expectingUp) {
             stage = "VERIFIED"
             ConnectionResult.Verified
         } else ConnectionResult.Failed
@@ -236,7 +250,10 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         expectingUp = false
         withContext(NonCancellable) {
             disconnectCleanup(stopLocal = {
-                try { withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) } }
+                try {
+                    if (routed || routedRuntime.isOwned) routedRuntime.stop()
+                    withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) }
+                }
                 finally { HttpRoutes.default() }
             }, revokeRemote = { if (acquired || lease != null) closeRemote() })
             context.stopService(Intent(context, TunnelForegroundService::class.java))

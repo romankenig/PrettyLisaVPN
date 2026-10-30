@@ -51,6 +51,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         throw error
     }
     private suspend fun connectChecked(country: String): ConnectionResult {
+        val routing = DeviceTrafficSelection.get(context).current().policy()
         stage = "PERMISSION"
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
         stage = "RECOVERY"
@@ -85,7 +86,9 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         require(profile.get("country").asString == ready.country && profile.get("method").asString == managedMethods[method.id.removeSuffix("_relay")])
         require(config.expected_egress_ips.isNotEmpty())
         stage = "ENGINE"
-        runtime.start(profile.toString())
+        val localProfile = profile.deepCopy()
+        localProfile.add("routing", com.google.gson.Gson().toJsonTree(routing))
+        runtime.start(localProfile.toString())
         context.startForegroundService(Intent(context, TunnelForegroundService::class.java))
         stage = "NETWORK"
         val network = vpnDeadline(10_000) {

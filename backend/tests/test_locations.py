@@ -62,6 +62,7 @@ async def test_common_sessions_and_wireguard_compatibility_exclude_legacy_engine
     app = create_app(Settings(_env_file=None), postgres=AsyncMock(), valkey=AsyncMock())
     assert set(path for path in app.openapi()["paths"] if path.startswith("/vpn/")) == {
         "/vpn/countries",
+        "/vpn/traffic/services",
         "/vpn/sessions",
         "/vpn/sessions/current",
         "/vpn/sessions/{identifier}",

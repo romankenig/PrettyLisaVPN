@@ -1,4 +1,5 @@
 import { placeholderAdapters } from "../review/placeholders";
+import { emptyTraffic, getDeviceTrafficSelection } from "../vpn/traffic";
 import {
   act,
   fireEvent,
@@ -110,9 +111,40 @@ async function renderFresh(api: ApiClient) {
   return renderWithSession(api, storage, session);
 }
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  getDeviceTrafficSelection().save(emptyTraffic());
+});
 
 describe("authenticated Home", () => {
+  it("stops the current attempt before applying new rules without reconnecting", async () => {
+    let confirm!: () => void;
+    const state = {
+      phase: "CONNECTING",
+      backend: "ACTIVE",
+      tunnel: "DOWN",
+    } as const;
+    const vpn = {
+      ...createTestVpnConnection(),
+      current: () => state,
+      disconnect: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            confirm = resolve;
+          }),
+      ),
+      connect: vi.fn(),
+    };
+    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
+    fireEvent.click(
+      await screen.findByRole("radio", { name: /только выбранные сайты/ }),
+    );
+    expect(vpn.disconnect).toHaveBeenCalledWith("access-token");
+    expect(getDeviceTrafficSelection().current().mode).toBe("all");
+    await act(async () => confirm());
+    expect(getDeviceTrafficSelection().current().mode).toBe("include");
+    expect(vpn.connect).not.toHaveBeenCalled();
+  });
   it("shows concise attempt progress and clears it when checking the tunnel", async () => {
     let state: ReturnType<VpnConnectionManager["current"]> = {
       phase: "CONNECTING",
@@ -213,10 +245,10 @@ describe("authenticated Home", () => {
     expect(screen.getByRole("radio", { name: /весь трафик/ })).toBeChecked();
     expect(
       screen.getByRole("radio", { name: /только выбранные сайты/ }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(
       screen.getByRole("radio", { name: /кроме выбранных сайтов/ }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(screen.queryByText("локация")).not.toBeInTheDocument();
   });
 

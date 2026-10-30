@@ -73,7 +73,10 @@ it.each(Object.keys(managedMethods).flatMap((id) => [id, id + "_relay"]))(
     await vi.advanceTimersByTimeAsync(2000);
     await connecting;
     expect(manager.current().phase).toBe("CONNECTED");
-    expect(native.start).toHaveBeenCalledWith(configuration);
+    expect(native.start).toHaveBeenCalledWith(configuration, {
+      id: row.id,
+      country: row.country,
+    });
     expect(native.verify).toHaveBeenCalledWith(configuration, row.id, "access");
     expect(
       JSON.parse(

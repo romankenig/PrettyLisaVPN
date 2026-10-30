@@ -44,6 +44,7 @@ fn main() {
             refresh_credentials::delete_refresh_credential,
             wireguard::wg_prepare,
             wireguard::wg_start,
+            wireguard::wg_start_routed,
             wireguard::wg_stop,
             wireguard::wg_is_up,
             wireguard::wg_verify,

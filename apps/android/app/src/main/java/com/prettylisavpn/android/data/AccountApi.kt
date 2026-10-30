@@ -33,6 +33,7 @@ data class SupportSubmission(val requestId: String, val subject: String, val des
 }
 data class SupportReceipt(val id: String, val status: String)
 interface AccountApi {
+    suspend fun trafficServices(token: String): List<com.prettylisavpn.android.vpn.TrafficService> = emptyList()
     suspend fun countries(token: String): List<Country> = emptyList()
     suspend fun locations(token: String): LocationOptions = LocationOptions(countries(token))
     suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt = supportSubmit(token, report)
@@ -49,6 +50,15 @@ interface AccountApi {
 
 /** Strict transport projection: unknown account fields are tolerated, invalid capabilities fail closed. */
 class HttpAccountApi(private val http: HttpAuthApi, private val version: String) : AccountApi {
+    override suspend fun trafficServices(token: String): List<com.prettylisavpn.android.vpn.TrafficService> {
+        val raw = json("vpn/traffic/services", token)
+        return parse {
+            val values = raw.asJsonObject.getAsJsonArray("services").map {
+                gson.fromJson(it, com.prettylisavpn.android.vpn.TrafficService::class.java)
+            }
+            com.prettylisavpn.android.vpn.validateTrafficServices(values)
+        }
+    }
     private val gson = GsonBuilder().serializeNulls().create()
     private fun JsonObject.text(key: String) = get(key)?.takeUnless { it.isJsonNull }?.asString ?: throw AuthFailure("invalid_response")
     private fun JsonObject.optional(key: String) = get(key)?.takeUnless { it.isJsonNull }?.asString

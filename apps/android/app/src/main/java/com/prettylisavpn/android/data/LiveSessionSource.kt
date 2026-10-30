@@ -60,6 +60,7 @@ class LiveSessionSource(
         if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
+            Area.TRAFFIC -> snapshot = initial.copy(trafficServices = sessions.request { api().trafficServices(it) })
             Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
             Area.COUNTRIES -> {
                 val options = sessions.request { api().locations(it) }

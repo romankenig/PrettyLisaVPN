@@ -11,6 +11,7 @@ const account = JSON.parse(
   fs.readFileSync(process.env.ACCEPTANCE_CREDENTIAL_PATH, "utf8"),
 );
 const families = new Map([
+  ["wireguard", "WireGuard"],
   ["amneziawg", "Amnezia"],
   ["sstp", "SSTP"],
   ["softether", "SoftEther"],
@@ -28,6 +29,43 @@ if (
   !account.methods.every((id) => families.has(id.replace(/_relay$/, "")))
 )
   throw new Error("Invalid acceptance matrix");
+const modes = account.routing_modes || ["all"];
+if (
+  !modes.length ||
+  !modes.every((m) => ["all", "include", "exclude"].includes(m))
+)
+  throw new Error("Invalid routing matrix");
+const origins = ["https://api.ipify.org", "https://ipv4.icanhazip.com"];
+function ip(origin, tunnel = false) {
+  const probe = spawnSync(
+    "curl.exe",
+    [
+      "--silent",
+      "--fail",
+      "--max-time",
+      "20",
+      "-4",
+      ...(tunnel ? ["--interface", "172.30.255.1"] : []),
+      origin,
+    ],
+    { encoding: "utf8", timeout: 25000 },
+  );
+  if (
+    probe.status !== 0 ||
+    !/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/.test(probe.stdout.trim())
+  )
+    throw new Error("Diagnostic origin unavailable");
+  return probe.stdout.trim();
+}
+const baseline = modes.some((m) => m !== "all")
+  ? origins.map((origin) => ip(origin))
+  : [];
+const exits = account.expected_egress_ips || [];
+if (
+  baseline.length &&
+  (!exits.length || baseline.some((value) => exits.includes(value)))
+)
+  throw new Error("Diagnostic routes are not independent");
 const report = {
   source_sha: process.env.GITHUB_SHA,
   run: process.env.GITHUB_RUN_ID,
@@ -109,9 +147,16 @@ async function main() {
         credential,
       });
     }, account.credential);
-    for (const method of account.methods) {
+    for (const [method, mode] of account.methods.flatMap((method) =>
+      modes.map((mode) => [method, mode]),
+    )) {
       await page.evaluate(
-        ({ userId, country, method }) => {
+        ({ userId, country, method, mode }) => {
+          const list = { services: [], masks: ["api.ipify.org"] };
+          localStorage.setItem(
+            "prettylisavpn:traffic:v1",
+            JSON.stringify({ mode, include: list, exclude: list }),
+          );
           localStorage.setItem("prettylisavpn:language", "en");
           localStorage.setItem(
             "prettylisavpn:enabled-vpn-methods:v1",
@@ -122,7 +167,7 @@ async function main() {
             JSON.stringify({ mode: "COUNTRY", country_code: country }),
           );
         },
-        { userId: account.userId, country: account.country, method },
+        { userId: account.userId, country: account.country, method, mode },
       );
       await page.reload();
       await page.getByText(account.email, { exact: true }).waitFor();
@@ -137,6 +182,8 @@ async function main() {
       );
       const row = {
         method,
+        routing_mode: mode,
+        split_verified: mode === "all",
         connected: false,
         tunnel_https: false,
         cleanup: false,
@@ -193,14 +240,25 @@ async function main() {
           );
           row.tunnel_https =
             probe.status === 0 && /"status"\s*:\s*"ok"/.test(probe.stdout);
-          await capture(method);
+          if (mode !== "all") {
+            try {
+              const actual = origins.map((origin) => ip(origin, true));
+              row.split_verified = actual.every((value, index) => {
+                const vpn = (index === 0) === (mode === "include");
+                return vpn ? exits.includes(value) : value === baseline[index];
+              });
+            } catch {
+              row.split_verified = false;
+            }
+          }
+          await capture(method + "-" + mode);
         } else {
           // Stable error codes only; never export profiles, tokens or network logs.
           const text = await page
             .locator(".connection-error")
             .allTextContents();
           row.codes = text.join(" ").match(/\b[A-Z][A-Z_]{3,}\b/g) || [];
-          await capture(method);
+          await capture(method + "-" + mode);
         }
       } finally {
         const button = page.locator(".connection-card > button");
@@ -235,6 +293,7 @@ async function main() {
     if (
       !report.results.every(
         (r) =>
+          r.split_verified &&
           r.connected &&
           r.native_up &&
           r.tunnel_https &&

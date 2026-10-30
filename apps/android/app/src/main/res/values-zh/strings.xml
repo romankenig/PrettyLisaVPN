@@ -271,4 +271,15 @@
     <string name="connection_methods">连接方式</string>
     <string name="connection_methods_hint">更改将在下次连接时生效。请至少选择一种方式。</string>
     <string name="all_methods">所有方式</string>
+    <string name="traffic_services">选择服务</string>
+    <string name="traffic_save_hint">保存后将断开 VPN。新规则在下次连接时生效。</string>
+    <string name="traffic_catalog_unavailable">目录暂不可用。仍可使用已保存的服务和域名规则。</string>
+    <string name="traffic_mask">服务域名规则</string>
+    <string name="traffic_add">添加</string>
+    <string name="traffic_remove">删除</string>
+    <string name="traffic_save">保存</string>
+    <string name="traffic_cancel">取消</string>
+    <string name="traffic_save_failed">无法保存规则，请重试。</string>
+    <string name="traffic_mask_invalid">请输入域名或 *.域名，不含页面路径。最多 256 条。</string>
+    <string name="traffic_loading">正在加载服务…</string>
 </resources>

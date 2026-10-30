@@ -59,6 +59,8 @@ from prettylisavpn.support.delivery import (
 )
 from prettylisavpn.support.router import router as support_router
 from prettylisavpn.support.service import SupportService
+from prettylisavpn.traffic.router import router as traffic_router
+from prettylisavpn.traffic.service import DatabaseCatalog, TrafficCatalogService
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +189,10 @@ def create_app(
                     config,
                     cast(FleetService, app.state.fleet),
                 )
+                app.state.traffic_catalog = TrafficCatalogService(
+                    DatabaseCatalog(cast(Postgres, pg)),
+                    cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                )
                 app.state.billing = billing or BillingOverviewService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
@@ -257,6 +263,7 @@ def create_app(
     app.include_router(support_router)
     app.include_router(billing_router)
     app.include_router(fleet_router)
+    app.include_router(traffic_router)
 
     @app.exception_handler(FleetError)
     async def fleet_error(request: Request, exc: FleetError) -> JSONResponse:

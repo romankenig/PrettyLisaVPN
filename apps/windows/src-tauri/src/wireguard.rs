@@ -407,6 +407,38 @@ pub async fn wg_start(app: AppHandle, configuration: Configuration) -> Result<()
         .await
         .map_err(|_| FAILED)?
 }
+
+#[tauri::command]
+pub async fn wg_start_routed(
+    app: AppHandle,
+    configuration: Configuration,
+    session_id: String,
+    country: String,
+    routing: serde_json::Value,
+) -> Result<(), &'static str> {
+    // The private key never enters the renderer. The engine validates the
+    // bounded profile and routing schema before opening a tunnel.
+    let key = app
+        .state::<WireGuardState>()
+        .key
+        .lock()
+        .map_err(|_| FAILED)?
+        .take()
+        .ok_or(FAILED)?;
+    let endpoint: SocketAddr = configuration.endpoint.parse().map_err(|_| FAILED)?;
+    let mut profile = serde_json::json!({
+        "version": 1, "session": session_id, "country": country, "method": "WIREGUARD",
+        "server": endpoint.ip().to_string(), "port": endpoint.port(),
+        "secret": key.as_str(), "public_key": configuration.server_public_key,
+        "address": configuration.address, "routing": routing,
+    });
+    let result = super::managed::engine_start(app, profile.clone()).await;
+    if let Some(serde_json::Value::String(secret)) = profile.get_mut("secret") {
+        use zeroize::Zeroize;
+        secret.zeroize();
+    }
+    result
+}
 #[tauri::command]
 pub async fn wg_stop(app: AppHandle) -> Result<(), &'static str> {
     tauri::async_runtime::spawn_blocking(move || stop(&app))
