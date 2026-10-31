@@ -122,8 +122,13 @@ class AccountScreensTest {
         val list = com.prettylisavpn.android.vpn.TrafficList(
             services = kotlinx.coroutines.runBlocking { accounts.trafficServices("fake") },
             masks = (0..31).map { "site$it.example.com" })
+        compose.onNodeWithTag("traffic-services").assertDoesNotExist()
+        compose.onNodeWithTag("traffic-selected-strip").assertDoesNotExist()
+        compose.runOnUiThread { store.save(store.current().copy(include = list, exclude = list)) }
         for (mode in listOf("include", "exclude")) {
-            compose.runOnUiThread { store.save(store.current().copy(mode = mode, include = list, exclude = list)) }
+            click("traffic-mode-menu"); click("traffic-mode-$mode")
+            compose.onNodeWithTag("traffic-services").assertExists()
+            compose.onNodeWithTag("traffic-mode-description").assertExists()
             waitFor("vpn-location")
             compose.onNodeWithTag("vpn-location").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
@@ -133,12 +138,15 @@ class AccountScreensTest {
             screenshot("vpn-location-$mode")
             compose.onNodeWithTag("home-network").assertExists()
         }
-        compose.runOnUiThread { store.save(store.current().copy(mode = "all")) }
+        click("traffic-mode-menu"); click("traffic-mode-all")
+        compose.onNodeWithTag("traffic-services").assertDoesNotExist()
+        compose.onNodeWithTag("traffic-selected-strip").assertDoesNotExist()
         compose.onNodeWithTag("vpn-location").assertDoesNotExist()
         compose.onNodeWithTag("home-network").assertExists()
     }
 
     @Test fun trafficListsAreIndependentAndPersistAfterRecreation() {
+        click("traffic-mode-menu"); click("traffic-mode-include")
         click("traffic-services"); waitFor("traffic-service-youtube")
         click("traffic-service-youtube")
         compose.onNodeWithTag("traffic-service-youtube").assertIsOn()

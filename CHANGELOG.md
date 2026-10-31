@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Android — 0.18.1 / Windows — 0.21.1
+
+- Move traffic mode selection into a compact dropdown beside the Home heading.
+- Show a small translucent mode description, followed by the service picker and
+  selected icons only in split modes. Preserve independent lists, cleanup before
+  changes and one location in all-traffic mode. See [handoff](docs/traffic-mode-dropdown.md).
+
 ### Backend — 0.26.0 / Android — 0.18.0 / Windows — 0.21.0 / engines — 0.5.0
 
 - Add catalog-owned public IPv4 networks for Telegram's native DC connections

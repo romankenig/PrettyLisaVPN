@@ -296,4 +296,7 @@
     <string name="traffic_whitelist">allowlisted services</string>
     <string name="vpn_location">vpn location</string>
     <string name="vpn_location_loading">determining…</string>
+    <string name="traffic_description_all">all sites and apps through vpn</string>
+    <string name="traffic_description_include">other traffic goes directly</string>
+    <string name="traffic_description_exclude">vpn for everything except your list</string>
 </resources>

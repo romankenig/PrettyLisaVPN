@@ -1,3 +1,13 @@
+# Traffic mode dropdown — Windows 0.21.1 / Android 0.18.1
+
+Home → dropdown beside “what to protect” selects all / selected / except selected.
+The small description appears below the header. Only the split modes expose
+Choose services → existing modal, selected icons and the right VPN location.
+All-traffic mode has one left location and no service-selection controls.
+Cleanup, independent saved lists and next-manual-connect behavior remain
+implemented; no pending backend integration is introduced by this UI change.
+See [handoff](traffic-mode-dropdown.md) for version and validation scope.
+
 # Traffic routing — Windows 0.19.0 / Android 0.16.0
 
 Home → Choose services opens an internal modal, with independent include/exclude

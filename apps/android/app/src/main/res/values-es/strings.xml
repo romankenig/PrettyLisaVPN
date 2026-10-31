@@ -289,4 +289,7 @@
     <string name="traffic_whitelist">lista permitida</string>
     <string name="vpn_location">ubicación vpn</string>
     <string name="vpn_location_loading">determinando…</string>
+    <string name="traffic_description_all">todos los sitios y apps por vpn</string>
+    <string name="traffic_description_include">el resto del tráfico va directamente</string>
+    <string name="traffic_description_exclude">vpn para todo excepto su lista</string>
 </resources>

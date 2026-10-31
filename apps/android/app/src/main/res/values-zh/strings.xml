@@ -289,4 +289,7 @@
     <string name="traffic_whitelist">白名单</string>
     <string name="vpn_location">vpn 位置</string>
     <string name="vpn_location_loading">正在确定…</string>
+    <string name="traffic_description_all">所有网站和应用均通过 vpn</string>
+    <string name="traffic_description_include">其他流量直接连接</string>
+    <string name="traffic_description_exclude">除列表外的所有流量均通过 vpn</string>
 </resources>

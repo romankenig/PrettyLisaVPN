@@ -289,4 +289,7 @@
     <string name="traffic_whitelist">белый список</string>
     <string name="vpn_location">локация vpn</string>
     <string name="vpn_location_loading">определяем…</string>
+    <string name="traffic_description_all">все сайты и приложения через vpn</string>
+    <string name="traffic_description_include">остальной трафик — напрямую</string>
+    <string name="traffic_description_exclude">vpn для всего, кроме вашего списка</string>
 </resources>

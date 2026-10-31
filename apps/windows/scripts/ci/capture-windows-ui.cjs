@@ -402,29 +402,36 @@ async function main() {
   await page
     .getByRole("heading", { name: "что защищаем", exact: true })
     .waitFor();
-  for (const name of [/только выбранные сайты/, /кроме выбранных сайтов/]) {
-    if (!(await page.getByRole("radio", { name }).isEnabled()))
-      throw new Error("Traffic modes must be available");
-  }
+  const trafficMode = page.getByRole("combobox", {
+    name: "режим трафика",
+    exact: true,
+  });
+  if (
+    !(await trafficMode.isEnabled()) ||
+    (await trafficMode.locator("option").count()) !== 3
+  )
+    throw new Error("Traffic dropdown must offer all three modes");
+  if (await page.locator(".traffic-edit").count())
+    throw new Error("Full-traffic mode must not show service selection");
   if ((await page.locator(".account-summary").innerText()).includes("статус"))
     throw new Error("Account status must be removed");
   await screenshot("04-home");
   if (await page.locator(".traffic-mode .current-location").count())
     throw new Error("Full-traffic mode must have only one location");
-  for (const [mode, name] of [
-    ["include", "только выбранные сайты"],
-    ["exclude", "кроме выбранных сайтов"],
-  ]) {
-    await page.getByRole("radio", { name, exact: true }).check();
+  for (const mode of ["include", "exclude"]) {
+    await trafficMode.selectOption(mode);
     await page.locator(".traffic-mode .current-location").waitFor();
     if ((await page.locator(".current-location").count()) !== 2)
       throw new Error("Split modes require two location blocks");
     await screenshot("04-home-location-" + mode);
   }
-  await page.getByRole("radio", { name: "весь трафик", exact: true }).check();
+  await trafficMode.selectOption("all");
   await page
     .locator(".traffic-mode .current-location")
     .waitFor({ state: "detached" });
+  if (await page.locator(".traffic-edit").count())
+    throw new Error("Service picker must be hidden in all mode");
+  await trafficMode.selectOption("include");
   await page
     .getByRole("button", { name: "Выбрать сервисы", exact: true })
     .click();
@@ -495,9 +502,7 @@ async function main() {
   await trafficDialog
     .getByRole("button", { name: "Отмена", exact: true })
     .click();
-  await page
-    .getByRole("radio", { name: "только выбранные сайты", exact: true })
-    .check();
+  await trafficMode.selectOption("include");
   await page.locator(".traffic-selected__more").waitFor();
   await page.locator(".traffic-selected").evaluate((strip) => {
     const row = strip.getBoundingClientRect();
@@ -523,7 +528,7 @@ async function main() {
       throw new Error("Selected service icons must fit one compact row");
   });
   await screenshot("04-home-service-colors-overflow");
-  await page.getByRole("radio", { name: "весь трафик", exact: true }).check();
+  await trafficMode.selectOption("all");
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

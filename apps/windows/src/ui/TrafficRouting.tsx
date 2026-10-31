@@ -26,6 +26,11 @@ const labels: Record<Mode, string> = {
   include: "только выбранные сайты",
   exclude: "кроме выбранных сайтов",
 };
+const shortLabels: Record<Mode, string> = {
+  all: "Всё",
+  include: "Выбранное",
+  exclude: "Кроме выбранного",
+};
 const details: Record<Mode, string> = {
   all: "все сайты и приложения через VPN",
   include: "остальной трафик — напрямую",
@@ -74,60 +79,53 @@ export function TrafficRouting() {
     <section className="traffic-mode" aria-labelledby="traffic-mode-title">
       <div className="traffic-mode__heading">
         <h2 id="traffic-mode-title">{t("что защищаем")}</h2>
-        <button
-          type="button"
-          className="traffic-edit"
+        <select
+          className="traffic-mode__select"
+          aria-label={t("режим трафика")}
+          aria-describedby="traffic-mode-description"
+          value={selected.mode}
           disabled={busy}
-          onClick={() => setOpen(true)}
+          onChange={(event) => {
+            void save({ ...selected, mode: event.target.value as Mode }).catch(
+              () => {},
+            );
+          }}
         >
-          {t("Выбрать сервисы")} <span aria-hidden="true">›</span>
-        </button>
+          {(["all", "include", "exclude"] as Mode[]).map((mode) => (
+            <option key={mode} value={mode}>
+              {t(shortLabels[mode])}
+            </option>
+          ))}
+        </select>
       </div>
-      <fieldset className="traffic-mode__options" disabled={busy}>
-        <legend className="sr-only">{t("режим трафика")}</legend>
-        {(["all", "include", "exclude"] as Mode[]).map((mode) => (
-          <label
-            key={mode}
-            className={`traffic-choice ${mode === selected.mode ? "traffic-choice--active" : ""}`}
-          >
-            <input
-              type="radio"
-              aria-label={t(labels[mode])}
-              name="traffic-mode"
-              value={mode}
-              checked={mode === selected.mode}
-              onChange={() => {
-                void save({ ...selected, mode }).catch(() => {});
-              }}
-            />
-            <span>
-              {t(
-                mode === "all"
-                  ? "Всё"
-                  : mode === "include"
-                    ? "Выбранное"
-                    : "Кроме выбранного",
-              )}
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      <p className="traffic-mode__hint">{t(details[selected.mode])}</p>
+      <p id="traffic-mode-description" className="traffic-mode__hint">
+        {t(details[selected.mode])}
+      </p>
       {selected.mode !== "all" && (
-        <SelectedServiceIcons
-          items={[
-            ...selected[selected.mode].services.map((service) => ({
-              id: service.id,
-              name: service.name,
-              icon: service.icon,
-            })),
-            ...selected[selected.mode].masks.map((mask) => ({
-              id: mask,
-              name: mask,
-              icon: "website",
-            })),
-          ]}
-        />
+        <>
+          <button
+            type="button"
+            className="traffic-edit"
+            disabled={busy}
+            onClick={() => setOpen(true)}
+          >
+            {t("Выбрать сервисы")} <span aria-hidden="true">›</span>
+          </button>
+          <SelectedServiceIcons
+            items={[
+              ...selected[selected.mode].services.map((service) => ({
+                id: service.id,
+                name: service.name,
+                icon: service.icon,
+              })),
+              ...selected[selected.mode].masks.map((mask) => ({
+                id: mask,
+                name: mask,
+                icon: "website",
+              })),
+            ]}
+          />
+        </>
       )}
       {error && (
         <p role="alert">
