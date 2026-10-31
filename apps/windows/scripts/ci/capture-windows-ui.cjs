@@ -501,6 +501,13 @@ async function main() {
   await page.locator(".traffic-selected__more").waitFor();
   await page.locator(".traffic-selected").evaluate((strip) => {
     const row = strip.getBoundingClientRect();
+    if (
+      strip.children.length !== 3 ||
+      strip.querySelectorAll("svg").length !== 2
+    )
+      throw new Error(
+        "Sites without a logo must use one ellipsis, not generic icons",
+      );
     const icons = [...strip.children].map((node) =>
       node.getBoundingClientRect(),
     );

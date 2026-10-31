@@ -117,7 +117,7 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
-  it("uses compact service colors and reveals overflow after resizing without changing rules", async () => {
+  it("hides missing logos and keeps an ellipsis with spare room without changing rules", async () => {
     let width = 72;
     let resize = () => {};
     const bounds = HTMLElement.prototype.getBoundingClientRect;
@@ -157,6 +157,20 @@ describe("authenticated Home", () => {
             icon: "instagram",
             domains: ["instagram.com"],
           },
+          {
+            id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            slug: "telegram",
+            name: "Telegram",
+            icon: "telegram",
+            domains: ["t.me"],
+          },
+          {
+            id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            slug: "yandex",
+            name: "Yandex",
+            icon: "yandex",
+            domains: ["ya.ru"],
+          },
         ],
         masks: ["one.example.com", "two.example.com"],
       },
@@ -172,18 +186,39 @@ describe("authenticated Home", () => {
       });
       expect(screen.getByText("…")).toHaveAttribute(
         "title",
-        "one.example.com, two.example.com",
+        "Telegram, Yandex, one.example.com, two.example.com",
       );
       expect(screen.queryByRole("img", { name: "one.example.com" })).toBeNull();
       act(() => {
         width = 120;
         resize();
       });
-      expect(screen.queryByText("…")).toBeNull();
-      expect(
-        screen.getByRole("img", { name: "two.example.com" }),
-      ).toBeVisible();
+      expect(screen.getByRole("img", { name: "Telegram" })).toBeVisible();
+      expect(screen.queryByRole("img", { name: "Yandex" })).toBeNull();
+      expect(screen.queryByRole("img", { name: "two.example.com" })).toBeNull();
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "Yandex, one.example.com, two.example.com",
+      );
       expect(getDeviceTrafficSelection().current()).toEqual(selection);
+      act(() => {
+        getDeviceTrafficSelection().save({
+          ...selection,
+          include: {
+            services: selection.include.services.slice(0, 3),
+            masks: [],
+          },
+        });
+      });
+      expect(screen.queryByText("…")).toBeNull();
+      act(() => {
+        width = 48;
+        resize();
+      });
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "Instagram, Telegram",
+      );
     } finally {
       rendered.unmount();
       measured.mockRestore();

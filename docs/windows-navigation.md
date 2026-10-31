@@ -581,3 +581,5 @@ The Home selection uses service-colored 20 px icons, 4 px gaps and one row.
 Overflow appears as an ellipsis with hidden names in its accessible description
 and tooltip; resizing never changes the saved selection. Picker styling remains
 unchanged. No new route or automatic reconnection is introduced.
+Entries without a packaged logo use the same ellipsis even with available space;
+no generic globe or letter-badge fallback appears in the Home row.

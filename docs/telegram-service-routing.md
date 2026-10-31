@@ -44,6 +44,8 @@ Home service icons use identity colors, 20 px/dp size and 4 px/dp gaps in one
 responsive row. Overflow uses an ellipsis, retaining every selected routing
 rule. Hidden names remain available to assistive technology; Windows also uses
 a tooltip. The service picker retains the PrettyLisaVPN palette.
+Entries without a packaged logo are omitted from the Home row and produce the
+same ellipsis even when space remains; their routing rules stay active.
 No auth tokens, device identifiers or location/browsing history enter public
 geolocation requests or logs. Existing left-side location behavior is retained.
 

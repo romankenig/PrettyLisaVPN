@@ -15,6 +15,7 @@
   retains one location; disconnected tunnels never produce a direct-IP fallback.
 - Use service colors for a compact single-row Home icon list, with an ellipsis
   for overflow; keep all selected routing rules and the existing picker style.
+  Missing logos are omitted and also produce an ellipsis, even with spare room.
   See [handoff](docs/telegram-service-routing.md).
 
 ### Backend — 0.25.0 / Android — 0.17.0 / Windows — 0.20.0 / dashboard — 0.4.3

@@ -169,10 +169,15 @@ function SelectedServiceIcons({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const count =
-    slots !== null && items.length > slots ? slots - 1 : items.length;
+  const logos = items.filter((item) => serviceIcons[item.icon]);
+  const needsMore =
+    logos.length < items.length || (slots !== null && logos.length > slots);
+  const visible = logos.slice(
+    0,
+    slots === null ? logos.length : Math.max(0, slots - (needsMore ? 1 : 0)),
+  );
   const hidden = items
-    .slice(count)
+    .filter((item) => !visible.includes(item))
     .map((item) => item.name)
     .join(", ");
   return (
@@ -181,7 +186,7 @@ function SelectedServiceIcons({
       className="traffic-selected"
       aria-label={t("Выбранные сервисы")}
     >
-      {items.slice(0, count).map((item) => (
+      {visible.map((item) => (
         <span
           key={item.id}
           className="traffic-selected__icon"

@@ -127,6 +127,7 @@ class AccountScreensTest {
             waitFor("vpn-location")
             compose.onNodeWithTag("vpn-location").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
+            compose.onNodeWithContentDescription("site0.example.com").assertDoesNotExist()
             assertEquals(32, store.current().include.masks.size)
             assertEquals(32, store.current().exclude.masks.size)
             screenshot("vpn-location-$mode")

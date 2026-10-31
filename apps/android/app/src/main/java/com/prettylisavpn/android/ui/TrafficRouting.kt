@@ -90,11 +90,13 @@ internal fun TrafficRouting(model: ScreenModel) {
             val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }
             BoxWithConstraints(Modifier.fillMaxWidth().semantics { contentDescription = selectionLabel }.testTag("traffic-selected-strip")) {
                 val slots = ((maxWidth.value + 4) / 24).toInt().coerceAtLeast(1)
-                val count = if (items.size > slots) slots - 1 else items.size
+                val logos = items.indices.filter { serviceDrawable(items[it].second) != null }
+                val needsMore = logos.size < items.size || logos.size > slots
+                val visible = logos.take((slots - if (needsMore) 1 else 0).coerceAtLeast(0))
+                val hidden = items.filterIndexed { index, _ -> index !in visible }.joinToString(", ") { it.first }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    items.take(count).forEach { (name, icon) -> Box(Modifier.semantics { contentDescription = name }) { ServiceIcon(icon, brand = true, iconSize = 20.dp) } }
-                    if (count < items.size) {
-                        val hidden = items.drop(count).joinToString(", ") { it.first }
+                    visible.forEach { index -> val (name, icon) = items[index]; Box(Modifier.semantics { contentDescription = name }) { ServiceIcon(icon, brand = true, iconSize = 20.dp) } }
+                    if (hidden.isNotEmpty()) {
                         Canvas(Modifier.size(20.dp).semantics { contentDescription = hidden }.testTag("traffic-selected-more")) {
                             for (fraction in listOf(0.25f, 0.5f, 0.75f)) drawCircle(Brand.Scorpion, size.width / 16, Offset(size.width * fraction, size.height / 2))
                         }
@@ -186,10 +188,7 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
         dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.ui_cancel)) } })
 }
 
-@Composable
-private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.dp) {
-    val color = if (brand) serviceColor(icon) else Brand.PurpleHeart
-    val drawable = when(icon) {
+private fun serviceDrawable(icon: String): Int? = when(icon) {
         "youtube" -> R.drawable.service_youtube
         "instagram" -> R.drawable.service_instagram
         "facebook" -> R.drawable.service_facebook
@@ -203,7 +202,12 @@ private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.
         "ok" -> R.drawable.service_ok
         "mail" -> R.drawable.service_mail
         else -> null
-    }
+}
+
+@Composable
+private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.dp) {
+    val color = if (brand) serviceColor(icon) else Brand.PurpleHeart
+    val drawable = serviceDrawable(icon)
     if (drawable != null) {
         Icon(androidx.compose.ui.res.painterResource(drawable), contentDescription = null, tint = color, modifier = Modifier.size(iconSize))
         return
