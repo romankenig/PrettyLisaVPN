@@ -236,7 +236,6 @@
     <string name="dash_no_countries">keine länder verfügbar</string>
     <string name="dash_connect">verbinden</string>
     <string name="dash_region">aktuelle region</string>
-    <string name="dash_all_traffic">gesamter datenverkehr</string>
     <string name="dash_include">nur ausgewählte webseiten</string>
     <string name="dash_exclude">außer ausgewählten webseiten</string>
     <string name="dash_end_session">sitzung auf diesem gerät beenden</string>

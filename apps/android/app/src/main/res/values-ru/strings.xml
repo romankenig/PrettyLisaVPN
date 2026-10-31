@@ -236,7 +236,6 @@
     <string name="dash_no_countries">нет доступных стран</string>
     <string name="dash_connect">подключить</string>
     <string name="dash_region">текущий регион</string>
-    <string name="dash_all_traffic">весь трафик</string>
     <string name="dash_include">только выбранные сайты</string>
     <string name="dash_exclude">кроме выбранных сайтов</string>
     <string name="dash_end_session">завершить сессию на этом устройстве</string>

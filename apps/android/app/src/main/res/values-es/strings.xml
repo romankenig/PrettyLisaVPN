@@ -236,7 +236,6 @@
     <string name="dash_no_countries">no hay países disponibles</string>
     <string name="dash_connect">conectar</string>
     <string name="dash_region">región actual</string>
-    <string name="dash_all_traffic">todo el tráfico</string>
     <string name="dash_include">solo sitios seleccionados</string>
     <string name="dash_exclude">excepto sitios seleccionados</string>
     <string name="dash_end_session">cerrar la sesión en este dispositivo</string>
