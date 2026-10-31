@@ -10,6 +10,7 @@ export default function HistoryChart({ nodes, roster, end, onSelect, aggregate =
   const color = (id: string) => colors[Math.max(0, roster.findIndex(node => node.id === id)) % colors.length];
   const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string } | null>(null);
   const [metric, setMetric] = useState<ChartMetric>("speed");
+  const noClientNodes = aggregate && metric === "active" && !nodes.some(node => node.group !== "INTERMEDIATE");
   const series = aggregate ? aggregateSeries(nodes, metric) : chartSeries(nodes, metric);
   const points = series.flatMap(line => line.segments.flat());
   const start = Date.parse(nodes[0]?.history[0]?.at ?? "");
@@ -47,6 +48,6 @@ export default function HistoryChart({ nodes, roster, end, onSelect, aggregate =
       </g>}</svg></div>
       <div className="chart-legend">{nodes.filter(node => series.some(line => line.nodeId === node.id && line.segments.length)).map(node => <span key={node.id}><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" fill={color(node.id)} /></svg>{node.name}</span>)}{metric === "speed" && <span className="chart-directions">Сплошная — загрузка ↓ · пунктир — отдача ↑</span>}</div>
       <p className="history-note">{aggregate ? "По последнему замеру каждого выбранного сервера за час: скорость — среднее, рейтинг — медиана, активные устройства — сумма. Пропуски не заменяются нулями; в подсказке указан охват. Неполная выборка не описывает всю группу. Активные устройства суммируются только по FREE / PREMIUM: транзит на посредниках не учитывается повторно." : metric === "active" ? "Каждый столбик — последнее измеренное число VPN-подключений на узле за час. Повторные проверки не суммируются, пропуски не заполняются." : "Каждая точка — сохранённый замер. Пропуски не заполняются; линия обрывается при отсутствии замера или перерыве более 75 минут."}</p>
-    </> : <div className="empty"><h3>{metric === "active" ? "История активных устройств ещё не накоплена" : metric === "rating" ? "История рейтинга ещё не накоплена" : "Нет замеров скорости за выбранный период"}</h3><p>Данные появятся после проверки выбранных серверов. Неизвестные значения не заменяются нулями.</p></div>}
+    </> : <div className="empty"><h3>{noClientNodes ? "В выборке нет серверов FREE / PREMIUM" : metric === "active" ? "История активных устройств ещё не накоплена" : metric === "rating" ? "История рейтинга ещё не накоплена" : "Нет замеров скорости за выбранный период"}</h3><p>{noClientNodes ? "Транзитные подключения показаны в карточке посредника и не входят в сумму устройств." : "Данные появятся после проверки выбранных серверов. Неизвестные значения не заменяются нулями."}</p></div>}
   </section>;
 }

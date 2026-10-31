@@ -84,7 +84,7 @@ export default function Dashboard() {
       <section className="panel history-panel"><div className="section-title"><div><h2>{selected !== "all" ? "История сервера" : group === "all" ? "Общая история" : `История группы ${groupNames[group]}`}</h2><p>Каждая отметка — час. Сбой любого выбранного узла виден в общей строке.</p></div><span className="period">7 дней</span></div>
         {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{(["HEALTHY", "FAILED", "UNKNOWN", "NOT_REGISTERED"] as Status[]).map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
       </section>
-      <HistoryChart aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
+      <HistoryChart key={`${group}-${selected}`} aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
       {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}
       <section className="nodes-section"><div className="section-title"><h2>Серверы <span className="count">{nodes.length}</span></h2><span className="muted">Автообновление каждую минуту</span></div>
         {nodes.map((node) => <article className="panel node" key={node.id}>

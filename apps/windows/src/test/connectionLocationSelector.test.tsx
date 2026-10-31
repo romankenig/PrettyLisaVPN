@@ -204,6 +204,35 @@ describe("connection location dropdown", () => {
     ).toHaveLength(3);
   });
 
+  it("shows zero to three ascending bars for country rating bands", async () => {
+    const api = mockApi();
+    vi.mocked(api.listVpnCountries).mockResolvedValue({
+      autopilot: availability.autopilot,
+      countries: [
+        { country_code: "DE", quality: 0, available: true },
+        { country_code: "FR", quality: 33, available: true },
+        { country_code: "US", quality: 66, available: true },
+        { country_code: "NL", quality: 100, available: true },
+      ],
+    });
+    renderSelector(api);
+    await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
+    fireEvent.click(screen.getByRole("combobox"));
+    const group = within(screen.getByRole("group", { name: "все страны" }));
+    for (const [rating, filled] of [
+      [0, 0],
+      [33, 1],
+      [66, 2],
+      [100, 3],
+    ]) {
+      const label = group.getByLabelText(`доступность ${rating} из 100`);
+      expect(label.querySelectorAll(".quality-bars i")).toHaveLength(3);
+      expect(label.querySelectorAll(".quality-bars i.filled")).toHaveLength(
+        filled,
+      );
+    }
+  });
+
   it("restores a country and falls back to Autopilot when it is unavailable", async () => {
     renderSelector(mockApi(), "PREMIUM", {
       mode: "COUNTRY",
