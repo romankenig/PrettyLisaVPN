@@ -80,9 +80,11 @@ internal class PublicMetadata(
     private val base = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).callTimeout(5, TimeUnit.SECONDS).build()
     private val client = RoutedHttpClient(base)
-    private suspend fun read(url: String, http: OkHttpClient = client.current()) = withContext(Dispatchers.IO) {
+    private suspend fun read(url: String, http: OkHttpClient? = null) = withContext(Dispatchers.IO) {
         runCatching {
-            http.newCall(Request.Builder().url(url).header("Accept", "application/json").build()).execute().use {
+            // Changing routes evicts TLS sockets, which can write close_notify.
+            // Select the routed pool inside IO, never in a default argument on Main.
+            (http ?: client.current()).newCall(Request.Builder().url(url).header("Accept", "application/json").build()).execute().use {
                 if (!it.isSuccessful) return@use null
                 val body = it.body ?: return@use null
                 if (body.contentLength() > 16_384) return@use null
@@ -118,21 +120,21 @@ internal class PublicMetadata(
     }.getOrNull()
     suspend fun country(): String? = location()?.country
 
-    suspend fun vpnLocation(): PublicLocation? {
+    suspend fun vpnLocation(): PublicLocation? = withContext(Dispatchers.IO) {
         val route = HttpRoutes.current
-        val sockets = route.sockets ?: return null
-        val dns = route.dns ?: return null
+        val sockets = route.sockets ?: return@withContext null
+        val dns = route.dns ?: return@withContext null
         // Pin both requests to the VPN Network; never fall back to physical
         // sockets if disconnect changes HttpRoutes while a request is running.
         val http = base.newBuilder().socketFactory(sockets).dns(dns).proxy(java.net.Proxy.NO_PROXY)
             .connectionPool(okhttp3.ConnectionPool()).build()
-        return try {
-            val value = read(vpnIpUrl, http) ?: return null
-            val ip = runCatching { value.get("ip_addr")?.asString }.getOrNull() ?: return null
-            if (!ip.matches(Regex("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) || ip.split('.').any { it.toInt() !in 0..255 }) return null
+        try {
+            val value = read(vpnIpUrl, http) ?: return@withContext null
+            val ip = runCatching { value.get("ip_addr")?.asString }.getOrNull() ?: return@withContext null
+            if (!ip.matches(Regex("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) || ip.split('.').any { it.toInt() !in 0..255 }) return@withContext null
             val observed = PublicLocation(ip, null, null)
             currentCoroutineContext().ensureActive()
-            if (HttpRoutes.current !== route) return null
+            if (HttpRoutes.current !== route) return@withContext null
             val location = read(vpnCountryUrl + ip, http)?.let { parseLocation(it, false) }?.takeIf { it.ip == ip } ?: observed
             if (HttpRoutes.current === route) location else null
         } finally { http.connectionPool.evictAll() }
