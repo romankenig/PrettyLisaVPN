@@ -6,6 +6,7 @@ export interface TrafficService {
   icon: string;
   domains: string[];
   category?: "popular" | "whitelist";
+  ipv4_cidrs?: string[];
 }
 export interface TrafficList {
   services: TrafficService[];
@@ -19,6 +20,50 @@ export interface TrafficSelection {
 export interface RoutingPolicy {
   mode: TrafficMode;
   domains: string[];
+  ipv4_cidrs?: string[];
+}
+// Service-owned public networks only; manual input remains domain masks.
+export function normalizeServiceNetwork(value: string): string {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/.exec(
+    value,
+  );
+  if (!match) throw new Error("INVALID_SERVICE_NETWORK");
+  const octets = match.slice(1, 5).map(Number);
+  const bits = Number(match[5]);
+  if (
+    octets.some((n) => n > 255) ||
+    bits < 8 ||
+    bits > 32 ||
+    `${octets.join(".")}/${bits}` !== value
+  )
+    throw new Error("INVALID_SERVICE_NETWORK");
+  const address = octets.reduce((n, byte) => n * 256 + byte, 0);
+  const size = 2 ** (32 - bits);
+  if (address % size) throw new Error("INVALID_SERVICE_NETWORK");
+  const end = address + size - 1;
+  for (const cidr of [
+    "0.0.0.0/8",
+    "10.0.0.0/8",
+    "100.64.0.0/10",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "172.16.0.0/12",
+    "192.0.0.0/24",
+    "192.0.2.0/24",
+    "192.88.99.0/24",
+    "192.168.0.0/16",
+    "198.18.0.0/15",
+    "198.51.100.0/24",
+    "203.0.113.0/24",
+    "224.0.0.0/3",
+  ]) {
+    const [ip, prefix] = cidr.split("/");
+    const first = ip.split(".").reduce((n, part) => n * 256 + Number(part), 0);
+    const last = first + 2 ** (32 - Number(prefix)) - 1;
+    if (address <= last && end >= first)
+      throw new Error("INVALID_SERVICE_NETWORK");
+  }
+  return value;
 }
 export function refreshServices(
   value: TrafficSelection,
@@ -82,7 +127,20 @@ export function parseTrafficCatalog(raw: unknown): TrafficService[] {
     )
       throw new Error("INVALID_CATALOG");
     ids.add(s.id);
-    return { ...s, domains: [...new Set(s.domains.map(normalizeMask))] };
+    if (
+      s.ipv4_cidrs != null &&
+      (!Array.isArray(s.ipv4_cidrs) || s.ipv4_cidrs.length > 64)
+    )
+      throw new Error("INVALID_CATALOG");
+    return {
+      ...s,
+      domains: [...new Set(s.domains.map(normalizeMask))],
+      ...(s.ipv4_cidrs == null
+        ? {}
+        : {
+            ipv4_cidrs: [...new Set(s.ipv4_cidrs.map(normalizeServiceNetwork))],
+          }),
+    };
   });
 }
 export function routingPolicy(value: TrafficSelection): RoutingPolicy {
@@ -99,7 +157,19 @@ export function routingPolicy(value: TrafficSelection): RoutingPolicy {
     ]),
   ];
   if (domains.length > 256) throw new Error("TOO_MANY_MASKS");
-  return { mode: value.mode, domains };
+  const ipv4_cidrs = [
+    ...new Set(
+      parseTrafficCatalog({ services: list.services }).flatMap(
+        (s) => s.ipv4_cidrs ?? [],
+      ),
+    ),
+  ];
+  if (ipv4_cidrs.length > 256) throw new Error("TOO_MANY_NETWORKS");
+  return {
+    mode: value.mode,
+    domains,
+    ...(ipv4_cidrs.length ? { ipv4_cidrs } : {}),
+  };
 }
 export function createTrafficSelection(
   storage?: Pick<Storage, "getItem" | "setItem">,

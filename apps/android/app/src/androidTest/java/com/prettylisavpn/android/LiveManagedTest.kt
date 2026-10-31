@@ -14,6 +14,9 @@ import com.prettylisavpn.android.auth.KeystoreVault
 import com.prettylisavpn.android.vpn.DeviceTrafficSelection
 import com.prettylisavpn.android.vpn.TrafficSelection
 import com.prettylisavpn.android.vpn.TrafficList
+import com.prettylisavpn.android.vpn.TrafficService
+import com.prettylisavpn.android.ui.PublicMetadata
+import kotlinx.coroutines.runBlocking
 import com.prettylisavpn.android.vpn.AndroidVpnHost
 import com.prettylisavpn.android.vpn.DeviceMethodSelection
 import com.prettylisavpn.android.vpn.VpnPhase
@@ -95,7 +98,10 @@ class LiveManagedTest {
                     while (AndroidVpnHost.current()?.status?.value?.phase != VpnPhase.DISCONNECTED && SystemClock.elapsedRealtime() < idleDeadline) SystemClock.sleep(200)
                     assertEquals("Session recovery must finish before connect", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
                     scenario.onActivity {
-                        val masks = TrafficList(masks = listOf("api.ipify.org", "ifconfig.me"))
+                        val masks = TrafficList(services = listOf(TrafficService(
+                            "11111111-1111-4111-8111-111111111111", "telegram", "Telegram", "telegram",
+                            listOf("telegram.org", "*.telegram.org"), ipv4_cidrs = listOf("149.154.160.0/20"))),
+                            masks = listOf("api.ipify.org", "ifconfig.me"))
                         DeviceTrafficSelection.get(context).save(TrafficSelection(mode, masks, masks))
                         DeviceMethodSelection.get(context).apply {
                             all()
@@ -143,6 +149,8 @@ class LiveManagedTest {
                                 val actual = origins.mapIndexed { index, origin ->
                                     try { ip(origin, vpn) } catch (error: Exception) { row["origin_${index}_error"] = error.javaClass.simpleName; throw error }
                                 }
+                                row["vpn_location_verified"] = runBlocking { PublicMetadata().vpnLocation()?.ip } == actual[2] && actual[2] in exits
+                                check(row["vpn_location_verified"] == true)
                                 val page = vpn.openConnection(URL("https://ifconfig.me/"), Proxy.NO_PROXY) as HttpsURLConnection
                                 try {
                                     page.connectTimeout = 15_000; page.readTimeout = 15_000; page.instanceFollowRedirects = false
@@ -151,7 +159,7 @@ class LiveManagedTest {
                                     check(row["ifconfig_page"] == true)
                                 } finally { page.disconnect() }
                                 actual.indices.all { index ->
-                                    val shouldUseVpn = (index != 1) == (mode == "include")
+                                    val shouldUseVpn = index == 2 || (index != 1) == (mode == "include")
                                     if (shouldUseVpn) actual[index] in exits else actual[index] == baseline[index]
                                 }
                             }.getOrDefault(false)

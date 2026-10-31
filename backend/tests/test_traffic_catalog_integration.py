@@ -40,6 +40,9 @@ async def test_seeded_catalog_and_disabled_service():
         assert sum(row.category == "popular" for row in rows) == 10
         assert sum(row.category == "whitelist" for row in rows) == 10
         assert len({mask for row in rows for mask in row.domains}) <= 256
+        assert len(by_slug["telegram"].ipv4_cidrs) == 9
+        assert "149.154.160.0/20" in by_slug["telegram"].ipv4_cidrs
+        assert all(not row.ipv4_cidrs for row in rows if row.slug != "telegram")
         assert "youtube" in by_slug and "instagram" in by_slug
         assert identifier not in {row.id for row in rows}
         assert {"youtube.com", "*.youtube.com", "*.googlevideo.com"} <= set(

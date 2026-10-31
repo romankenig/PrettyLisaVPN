@@ -566,3 +566,14 @@ applies on the next manual connection. Database catalog integration is real;
 category is optional for compatibility. Autopilot has no visible score; country
 rows include three rating bars. No new route, auth guard or external transition.
 See [handoff](traffic-polish.md) and the task PR for actual native screenshots.
+
+### Windows 0.21.0: split VPN location
+
+In include/exclude mode only, the right traffic card shows VPN IP/location from
+ifconfig.me, with country/city for that measured IP. The left observation keeps
+its existing provider. Full-traffic mode has only the left location. Disconnected
+and pending states never query the VPN-location provider; teardown clears stale
+values. Saving a Telegram preset also persists its database-owned IPv4 networks;
+manual masks remain domain-only. No new navigation route or external browser
+transition is introduced. See [handoff](telegram-service-routing.md) for actual
+validation/rollout evidence; these controls are wired to native providers.

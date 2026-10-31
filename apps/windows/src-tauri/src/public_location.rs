@@ -104,8 +104,74 @@ pub async fn get_public_location() -> Result<Observation, &'static str> {
     first_location(fetch_location).await
 }
 
+fn ifconfig_ip(body: &[u8]) -> Result<std::net::Ipv4Addr, &'static str> {
+    if body.len() > MAX_BODY {
+        return Err(UNAVAILABLE);
+    }
+    let value: serde_json::Value = serde_json::from_slice(body).map_err(|_| UNAVAILABLE)?;
+    value
+        .get("ip_addr")
+        .and_then(|v| v.as_str())
+        .ok_or(UNAVAILABLE)?
+        .parse()
+        .map_err(|_| UNAVAILABLE)
+}
+
+// Split modes always use the managed TUN. Binding prevents a failed tunnel
+// from silently measuring the physical connection; no arbitrary URL is accepted.
+#[tauri::command]
+pub async fn get_vpn_location(app: tauri::AppHandle) -> Result<Observation, &'static str> {
+    if !super::managed::engine_is_up(app.clone())
+        .await
+        .unwrap_or(false)
+    {
+        return Err(UNAVAILABLE);
+    }
+    let client = Client::builder()
+        .timeout(Duration::from_secs(8))
+        .connect_timeout(Duration::from_secs(5))
+        .redirect(Policy::none())
+        .no_proxy()
+        .local_address(IpAddr::V4(std::net::Ipv4Addr::new(172, 30, 255, 1)))
+        .user_agent(concat!("PrettyLisaVPN/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|_| UNAVAILABLE)?;
+    let request = client
+        .get("https://ifconfig.me/all.json")
+        .header("Accept", "application/json")
+        .build()
+        .map_err(|_| UNAVAILABLE)?;
+    let ip = ifconfig_ip(&fetch_body(&client, request).await?)?;
+    let mut observation = Observation {
+        success: true,
+        ip: ip.to_string(),
+        country_code: None,
+        city: None,
+    };
+    let request = client
+        .get(format!("https://ipwho.is/{ip}"))
+        .header("Accept", "application/json")
+        .build()
+        .map_err(|_| UNAVAILABLE)?;
+    if let Ok(body) = fetch_body(&client, request).await {
+        if let Ok(location) = parse_observation(&body, Provider::IpWho) {
+            if location.ip == observation.ip {
+                observation = location;
+            }
+        }
+    }
+    if !super::managed::engine_is_up(app).await.unwrap_or(false) {
+        return Err(UNAVAILABLE);
+    }
+    Ok(observation)
+}
+
 async fn fetch_location(provider: Provider) -> Result<Observation, &'static str> {
     let (client, request) = request(provider)?;
+    parse_observation(&fetch_body(&client, request).await?, provider)
+}
+
+async fn fetch_body(client: &Client, request: Request) -> Result<Vec<u8>, &'static str> {
     let mut response = client.execute(request).await.map_err(|_| UNAVAILABLE)?;
     if !response.status().is_success()
         || response
@@ -121,12 +187,31 @@ async fn fetch_location(provider: Provider) -> Result<Observation, &'static str>
         }
         body.extend_from_slice(&chunk);
     }
-    parse_observation(&body, provider)
+    Ok(body)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn vpn_ip_comes_only_from_ifconfig_and_is_not_a_url_or_name() {
+        assert_eq!(
+            ifconfig_ip(br#"{"ip_addr":"198.51.100.42","forwarded":"untrusted"}"#)
+                .unwrap()
+                .to_string(),
+            "198.51.100.42"
+        );
+        for body in [
+            br#"{"ip":"198.51.100.42"}"#.as_slice(),
+            br#"{"ip_addr":"example.com"}"#,
+            br#"{"ip_addr":"999.0.0.1"}"#,
+            br#"{"ip_addr":"198.51.100.42/path"}"#,
+        ] {
+            assert!(ifconfig_ip(body).is_err());
+        }
+        assert!(ifconfig_ip(&vec![b' '; MAX_BODY + 1]).is_err());
+    }
 
     #[test]
     fn fixed_request_does_not_send_browser_or_account_headers() {

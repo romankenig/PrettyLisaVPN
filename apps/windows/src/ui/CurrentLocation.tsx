@@ -17,11 +17,17 @@ type LocationState =
 
 export function CurrentLocation({
   connection,
+  vpn = false,
 }: {
   readonly connection: VpnConnectionState;
+  readonly vpn?: boolean;
 }) {
   useLanguage();
-  const { publicLocation } = useApplication();
+  const application = useApplication();
+  const publicLocation = vpn
+    ? application.vpnLocation
+    : application.publicLocation;
+  const inactive = vpn && connection.phase !== "CONNECTED";
   const pending = [
     "RECONCILING",
     "CONNECTING",
@@ -34,7 +40,7 @@ export function CurrentLocation({
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     setState({ key, phase: "loading" });
-    if (pending) return;
+    if (pending || inactive) return;
     if (!publicLocation) {
       setState({ key, phase: "error" });
       return;
@@ -76,17 +82,23 @@ export function CurrentLocation({
       window.removeEventListener("online", onNetwork);
       window.removeEventListener("focus", onNetwork);
     };
-  }, [attempt, key, pending, publicLocation]);
+  }, [attempt, key, pending, inactive, publicLocation]);
   const visible =
     state.key === key && !pending ? state : { phase: "loading" as const };
   return (
     <div
       className="current-location"
-      aria-label={t("текущая локация")}
+      aria-label={t(vpn ? "локация VPN" : "текущая локация")}
       aria-live="polite"
     >
-      <span className="current-location__label">{t("текущая локация:")}</span>
-      {visible.phase === "ready" ? (
+      <span className="current-location__label">
+        {t(vpn ? "локация VPN:" : "текущая локация:")}
+      </span>
+      {inactive ? (
+        <span className="current-location__notice">
+          {t("VPN не подключён")}
+        </span>
+      ) : visible.phase === "ready" ? (
         <div className="current-location__details">
           <CountryIcon code={visible.data.countryCode} />
           <div>
@@ -108,11 +120,13 @@ export function CurrentLocation({
           )}
         </span>
       )}
-      {visible.phase === "error" ? (
+      {!inactive && visible.phase === "error" ? (
         <button
           type="button"
           className="location-refresh"
-          aria-label={t("обновить текущую локацию")}
+          aria-label={t(
+            vpn ? "обновить локацию VPN" : "обновить текущую локацию",
+          )}
           onClick={() => setAttempt((value) => value + 1)}
         >
           ↻

@@ -1,6 +1,7 @@
 """Bounded authenticated catalog, independent of any VPN transport."""
 
 import re
+from ipaddress import IPv4Network
 from typing import Annotated, Literal, Protocol
 from uuid import UUID
 
@@ -19,6 +20,36 @@ class TrafficService(BaseModel):
     icon: Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,39}$")]
     category: Literal["popular", "whitelist"] = "popular"
     domains: Annotated[list[str], Field(min_length=1, max_length=64)]
+    ipv4_cidrs: Annotated[list[str], Field(max_length=64)] = Field(default_factory=list)
+
+    @field_validator("ipv4_cidrs")
+    @classmethod
+    def valid_networks(cls, values: list[str]) -> list[str]:
+        for value in values:
+            network = IPv4Network(value, strict=True)
+            if str(network) != value or network.prefixlen < 8 or not network.is_global:
+                raise ValueError("Invalid service IPv4 network")
+            if any(
+                network.overlaps(IPv4Network(reserved))
+                for reserved in (
+                    "0.0.0.0/8",
+                    "10.0.0.0/8",
+                    "100.64.0.0/10",
+                    "127.0.0.0/8",
+                    "169.254.0.0/16",
+                    "172.16.0.0/12",
+                    "192.0.0.0/24",
+                    "192.0.2.0/24",
+                    "192.88.99.0/24",
+                    "192.168.0.0/16",
+                    "198.18.0.0/15",
+                    "198.51.100.0/24",
+                    "203.0.113.0/24",
+                    "224.0.0.0/3",
+                )
+            ):
+                raise ValueError("Invalid service IPv4 network")
+        return list(dict.fromkeys(values))
 
     @field_validator("domains")
     @classmethod

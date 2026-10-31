@@ -116,6 +116,21 @@ class AccountScreensTest {
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
     }
 
+    @Test fun secondLocationAppearsOnlyInSplitModes() {
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        val store = com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext)
+        for (mode in listOf("include", "exclude")) {
+            compose.runOnUiThread { store.save(store.current().copy(mode = mode)) }
+            waitFor("vpn-location")
+            compose.onNodeWithTag("vpn-location").performScrollTo()
+            screenshot("vpn-location-$mode")
+            compose.onNodeWithTag("home-network").assertExists()
+        }
+        compose.runOnUiThread { store.save(store.current().copy(mode = "all")) }
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.onNodeWithTag("home-network").assertExists()
+    }
+
     @Test fun trafficListsAreIndependentAndPersistAfterRecreation() {
         click("traffic-services"); waitFor("traffic-service-youtube")
         click("traffic-service-youtube")

@@ -89,3 +89,24 @@ def test_catalog_categories_are_bounded_and_backward_compatible():
     assert preset(category="whitelist").category == "whitelist"
     with pytest.raises(ValidationError):
         preset(category="unknown")
+
+
+def test_service_networks_are_explicit_canonical_and_bounded():
+    assert preset().ipv4_cidrs == []
+    assert preset(ipv4_cidrs=["91.108.4.0/22"] * 2).ipv4_cidrs == ["91.108.4.0/22"]
+    for value in [
+        "91.108.4.1/22",
+        "91.108.4.0",
+        "0.0.0.0/0",
+        "127.0.0.1/32",
+        "10.0.0.0/8",
+        "100.64.0.0/10",
+        "198.18.0.0/15",
+        "198.0.0.0/8",
+        "224.0.0.0/4",
+        "2001:b28:f23d::/48",
+    ]:
+        with pytest.raises(ValidationError):
+            preset(ipv4_cidrs=[value])
+    with pytest.raises(ValidationError):
+        preset(ipv4_cidrs=["91.108.4.0/22"] * 65)

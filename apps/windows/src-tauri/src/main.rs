@@ -37,6 +37,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             payment_browser::open_payment_url,
             public_location::get_public_location,
+            public_location::get_vpn_location,
             installation_id::get_installation_id,
             refresh_credentials::save_refresh_credential,
             refresh_credentials::load_refresh_credential,

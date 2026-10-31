@@ -2,6 +2,7 @@
 package managed
 
 import (
+	"net/netip"
 	"regexp"
 	"strings"
 )
@@ -9,16 +10,28 @@ import (
 // Routing contains explicit device preferences only. No observed destinations
 // are persisted or exported. Nil preserves the existing full-tunnel profile.
 type Routing struct {
-	Mode    string   `json:"mode"`
-	Domains []string `json:"domains"`
+	Mode      string   `json:"mode"`
+	Domains   []string `json:"domains"`
+	IPv4CIDRs []string `json:"ipv4_cidrs,omitempty"`
 }
 
 func (r *Routing) validate() error {
 	if r == nil {
 		return nil
 	}
-	if (r.Mode != "all" && r.Mode != "include" && r.Mode != "exclude") || len(r.Domains) > 256 || (r.Mode == "all" && len(r.Domains) != 0) {
+	if (r.Mode != "all" && r.Mode != "include" && r.Mode != "exclude") || len(r.Domains) > 256 || len(r.IPv4CIDRs) > 256 || (r.Mode == "all" && (len(r.Domains) != 0 || len(r.IPv4CIDRs) != 0)) {
 		return ErrProfile
+	}
+	for _, value := range r.IPv4CIDRs {
+		prefix, err := netip.ParsePrefix(value)
+		if err != nil || !prefix.Addr().Is4() || prefix.Bits() < 8 || prefix.Masked().String() != value || !prefix.Addr().IsGlobalUnicast() || prefix.Addr().IsPrivate() {
+			return ErrProfile
+		}
+		for _, reserved := range []string{"0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24", "192.88.99.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/3"} {
+			if prefix.Overlaps(netip.MustParsePrefix(reserved)) {
+				return ErrProfile
+			}
+		}
 	}
 	for _, mask := range r.Domains {
 		host := strings.TrimPrefix(mask, "*.")
@@ -53,7 +66,7 @@ func (r *Routing) apply(config map[string]any) {
 	rules := []any{
 		obj{"type": "field", "inboundTag": []string{"resolver"}, "outboundTag": "vpn"},
 		obj{"type": "field", "inboundTag": []string{"tun"}, "port": "53", "outboundTag": "dns"},
-		obj{"type": "field", "domain": []string{"full:api.prettylisavpn.com"}, "outboundTag": "vpn"},
+		obj{"type": "field", "domain": []string{"full:api.prettylisavpn.com", "domain:ifconfig.me"}, "outboundTag": "vpn"},
 		obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"},
 	}
 	selected, fallback := "vpn", "direct"
@@ -71,6 +84,9 @@ func (r *Routing) apply(config map[string]any) {
 	}
 	if len(domains) > 0 {
 		rules = append(rules, obj{"type": "field", "domain": domains, "outboundTag": selected})
+	}
+	if len(r.IPv4CIDRs) > 0 {
+		rules = append(rules, obj{"type": "field", "ip": r.IPv4CIDRs, "outboundTag": selected})
 	}
 	// Unknown/stale fake addresses must never escape to the physical network.
 	rules = append(rules, obj{"type": "field", "ip": []string{"198.18.0.0/15"}, "outboundTag": "blocked"},

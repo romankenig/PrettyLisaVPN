@@ -154,12 +154,14 @@ describe("authenticated Home", () => {
     );
     try {
       const rendered = renderRestored();
+      expect(screen.queryByLabelText("локация VPN")).toBeNull();
       fireEvent.click(
         await screen.findByRole("radio", { name: "только выбранные сайты" }),
       );
       await waitFor(() =>
         expect(getDeviceTrafficSelection().current().mode).toBe("include"),
       );
+      expect(screen.getByLabelText("локация VPN")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
       const dialog = within(await screen.findByRole("dialog"));
       fireEvent.click(await dialog.findByRole("switch", { name: "YouTube" }));
@@ -191,6 +193,11 @@ describe("authenticated Home", () => {
         expect(screen.getByRole("img", { name: "Instagram" })).toBeVisible(),
       );
       expect(screen.queryByRole("img", { name: "YouTube" })).toBeNull();
+      expect(screen.getByLabelText("локация VPN")).toBeVisible();
+      fireEvent.click(screen.getByRole("radio", { name: "весь трафик" }));
+      await waitFor(() =>
+        expect(screen.queryByLabelText("локация VPN")).toBeNull(),
+      );
     } finally {
       if (originalModal)
         Object.defineProperty(

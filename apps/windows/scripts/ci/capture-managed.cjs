@@ -157,7 +157,16 @@ async function main() {
       await page.evaluate(
         ({ userId, country, method, mode }) => {
           const list = {
-            services: [],
+            services: [
+              {
+                id: "11111111-1111-4111-8111-111111111111",
+                slug: "telegram",
+                name: "Telegram",
+                icon: "telegram",
+                domains: ["telegram.org", "*.telegram.org"],
+                ipv4_cidrs: ["149.154.160.0/20"],
+              },
+            ],
             masks: ["api.ipify.org", "ifconfig.me"],
           };
           localStorage.setItem(
@@ -257,6 +266,13 @@ async function main() {
                   throw new Error("PROBE_FAILED");
                 }
               });
+              const location = await page.evaluate(() =>
+                window.__TAURI_INTERNALS__.invoke("get_vpn_location"),
+              );
+              row.vpn_location_verified =
+                location.ip === actual[2] && exits.includes(location.ip);
+              if (!row.vpn_location_verified)
+                throw new Error("LOCATION_FAILED");
               const pageProbe = spawnSync(
                 "curl.exe",
                 [
@@ -277,7 +293,8 @@ async function main() {
                 pageProbe.status === 0 && pageProbe.stdout.includes(actual[2]);
               if (!row.ifconfig_page) throw new Error("PAGE_FAILED");
               row.split_verified = actual.every((value, index) => {
-                const vpn = (index !== 1) === (mode === "include");
+                const vpn =
+                  index === 2 || (index !== 1) === (mode === "include");
                 return vpn ? exits.includes(value) : value === baseline[index];
               });
             } catch {

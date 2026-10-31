@@ -8,10 +8,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
 
-data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>, val category: String? = null)
+data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>, val category: String? = null, val ipv4_cidrs: List<String>? = null)
 data class TrafficList(val services: List<TrafficService> = emptyList(), val masks: List<String> = emptyList())
 data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList())
-data class RoutingPolicy(val mode: String, val domains: List<String>)
+data class RoutingPolicy(val mode: String, val domains: List<String>, val ipv4_cidrs: List<String> = emptyList())
+
+fun normalizeServiceNetwork(value: String): String {
+    val match = Regex("([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})/([0-9]{1,2})").matchEntire(value)
+    require(match != null)
+    val octets = match.groupValues.drop(1).take(4).map(String::toLong)
+    val bits = match.groupValues[5].toInt()
+    require(octets.all { it in 0..255 } && bits in 8..32 && "${octets.joinToString(".")}/$bits" == value)
+    val address = octets.fold(0L) { n, byte -> n * 256 + byte }
+    val size = 1L shl (32 - bits)
+    require(address % size == 0L)
+    val end = address + size - 1
+    for (cidr in listOf("0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24", "192.88.99.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/3")) {
+        val (ip, prefix) = cidr.split('/')
+        val first = ip.split('.').fold(0L) { n, part -> n * 256 + part.toLong() }
+        val last = first + (1L shl (32 - prefix.toInt())) - 1
+        require(address > last || end < first)
+    }
+    return value
+}
 
 fun TrafficSelection.refreshServices(catalog: List<TrafficService>): TrafficSelection {
     fun refresh(list: TrafficList) = list.copy(services = list.services.map { saved -> catalog.find { it.id == saved.id } ?: saved })
@@ -35,7 +54,8 @@ fun validateTrafficServices(values: List<TrafficService>): List<TrafficService> 
         require(value.id.matches(Regex("[0-9a-f-]{36}")) && value.slug.matches(Regex("[a-z][a-z0-9-]{0,39}")) && value.icon.matches(Regex("[a-z][a-z0-9-]{0,39}")))
         require(value.category == null || value.category in setOf("popular", "whitelist"))
         require(value.name.length in 1..80 && value.domains.size in 1..64)
-        value.copy(domains = value.domains.map(::normalizeTrafficMask).distinct())
+        require((value.ipv4_cidrs?.size ?: 0) <= 64)
+        value.copy(domains = value.domains.map(::normalizeTrafficMask).distinct(), ipv4_cidrs = value.ipv4_cidrs?.map(::normalizeServiceNetwork)?.distinct())
     }
 }
 fun TrafficSelection.policy(): RoutingPolicy {
@@ -44,7 +64,9 @@ fun TrafficSelection.policy(): RoutingPolicy {
     val list = if (mode == "include") include else exclude
     val domains = (list.masks.map(::normalizeTrafficMask) + validateTrafficServices(list.services).flatMap { it.domains }).distinct()
     require(domains.size <= 256)
-    return RoutingPolicy(mode, domains)
+    val networks = validateTrafficServices(list.services).flatMap { it.ipv4_cidrs ?: emptyList() }.distinct()
+    require(networks.size <= 256)
+    return RoutingPolicy(mode, domains, networks)
 }
 class TrafficPreference(read: () -> String? = { null }, private val write: (String) -> Unit = {}) {
     private val gson = Gson()

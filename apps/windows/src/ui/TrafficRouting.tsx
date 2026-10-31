@@ -1,4 +1,5 @@
 import { serviceIcons } from "./serviceIcons";
+import { CurrentLocation } from "./CurrentLocation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { t, useLanguage } from "../i18n";
 import { useApplication } from "../state/application";
@@ -27,6 +28,11 @@ const details: Record<Mode, string> = {
 export function TrafficRouting() {
   useLanguage();
   const { vpnConnection, session } = useApplication();
+  const connection = useSyncExternalStore(
+    vpnConnection.subscribe,
+    vpnConnection.current,
+    vpnConnection.current,
+  );
   const store = getDeviceTrafficSelection();
   const selected = useSyncExternalStore(
     store.subscribe,
@@ -131,6 +137,9 @@ export function TrafficRouting() {
         <p role="alert">
           {t("Не удалось сохранить правила. Повторите попытку.")}
         </p>
+      )}
+      {selected.mode !== "all" && (
+        <CurrentLocation connection={connection} vpn />
       )}
       {open && (
         <TrafficDialog

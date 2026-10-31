@@ -294,4 +294,6 @@
     <string name="traffic_search">find a service</string>
     <string name="traffic_popular">popular services</string>
     <string name="traffic_whitelist">allowlisted services</string>
+    <string name="vpn_location">vpn location</string>
+    <string name="vpn_location_loading">determining…</string>
 </resources>

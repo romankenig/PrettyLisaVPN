@@ -7,13 +7,17 @@ export function createPublicLocationTransport(): HttpTransport {
   const fallback = createHttpTransport();
   return async (input, init) => {
     const url = input instanceof Request ? input.url : String(input);
-    if (!isTauri() || url !== "https://ipwho.is/") {
+    const vpn = url === "https://ifconfig.me/all.json";
+    if (vpn && !isTauri()) throw new Error("PUBLIC_LOCATION_UNAVAILABLE");
+    if (!isTauri() || (url !== "https://ipwho.is/" && !vpn)) {
       return fallback(input, init);
     }
     if (init?.signal?.aborted) {
       throw new Error("PUBLIC_LOCATION_UNAVAILABLE");
     }
-    const observation = await invoke("get_public_location");
+    const observation = await invoke(
+      vpn ? "get_vpn_location" : "get_public_location",
+    );
     if (init?.signal?.aborted) {
       throw new Error("PUBLIC_LOCATION_UNAVAILABLE");
     }

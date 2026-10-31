@@ -44,7 +44,7 @@ const vpn: PublicLocation = {
 };
 afterEach(() => vi.useRealTimers());
 
-function mount(provider: PublicLocationProvider) {
+function mount(provider: PublicLocationProvider, vpnOnly = false) {
   const value = {
     api: createApiClient("https://unused.invalid", vi.fn(), 5000),
     config: loadConfig({}),
@@ -56,10 +56,11 @@ function mount(provider: PublicLocationProvider) {
     sessionRestoration: createTestSessionRestoration(),
     vpnConnection: createTestVpnConnection(),
     publicLocation: provider,
+    vpnLocation: provider,
   };
   const view = (connection: VpnConnectionState) => (
     <ApplicationProvider value={value}>
-      <CurrentLocation connection={connection} />
+      <CurrentLocation connection={connection} vpn={vpnOnly} />
     </ApplicationProvider>
   );
   const result = render(view(disconnected));
@@ -69,6 +70,22 @@ function mount(provider: PublicLocationProvider) {
       result.rerender(view(connection)),
   };
 }
+
+it("never measures VPN location while disconnected and clears it on teardown", async () => {
+  const provider = {
+    current: vi.fn<PublicLocationProvider["current"]>().mockResolvedValue(vpn),
+  };
+  const result = mount(provider, true);
+  expect(screen.getByText("VPN не подключён")).toBeVisible();
+  expect(provider.current).not.toHaveBeenCalled();
+  result.change(connected);
+  expect(await screen.findByText(vpn.ip)).toBeVisible();
+  const signal = provider.current.mock.calls[0][0];
+  result.change(disconnected);
+  expect(signal.aborted).toBe(true);
+  expect(screen.queryByText(vpn.ip)).not.toBeInTheDocument();
+  expect(provider.current).toHaveBeenCalledTimes(1);
+});
 
 it("updates observed egress on connection and disconnect", async () => {
   const provider = {

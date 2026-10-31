@@ -25,6 +25,7 @@ import com.prettylisavpn.android.vpn.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -33,6 +34,21 @@ internal fun TrafficRouting(model: ScreenModel) {
     val context = LocalContext.current
     val store = remember { DeviceTrafficSelection.get(context) }
     val selected by store.selected.collectAsState()
+    val presentation = LocalPresentation.current
+    val vpn by (model.vpn?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
+    var vpnLocation by remember { mutableStateOf<PublicLocation?>(null) }
+    var locating by remember { mutableStateOf(false) }
+    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method) {
+        vpnLocation = null; locating = false
+        if (selected.mode != "all" && vpn.phase == VpnPhase.CONNECTED) {
+            while (true) {
+                locating = true
+                vpnLocation = presentation.vpnLocation()
+                locating = false
+                delay(60_000)
+            }
+        }
+    }
     var opened by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
@@ -74,6 +90,22 @@ internal fun TrafficRouting(model: ScreenModel) {
             }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
+        if (selected.mode != "all") {
+            HorizontalDivider(color = Brand.DustyGray)
+            Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(tr(R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+                val value = vpnLocation
+                if (vpn.phase != VpnPhase.CONNECTED) Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.bodySmall)
+                else if (value == null) Text(tr(if (locating) R.string.vpn_location_loading else R.string.unavailable), style = MaterialTheme.typography.bodySmall)
+                else {
+                    val language by presentation.preference.language.collectAsState()
+                    val locale = java.util.Locale.forLanguageTag(language.code)
+                    val region = listOfNotNull(value.city, value.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
+                    Text(countryFlag(value.country) + " " + region.ifBlank { tr(R.string.unavailable) }, style = MaterialTheme.typography.bodySmall)
+                    Text("IP: " + value.ip, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                }
+            }
+        }
     }
     if (opened) TrafficDialog(model, selected, busy, failed, { opened = false }, ::save)
 }

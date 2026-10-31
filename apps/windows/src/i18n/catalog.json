@@ -293,7 +293,11 @@
     "Выбранные сервисы": "Выбранные сервисы",
     "Найти сервис": "Найти сервис",
     "Популярные сервисы": "Популярные сервисы",
-    "Белый список": "Белый список"
+    "Белый список": "Белый список",
+    "локация VPN": "локация VPN",
+    "VPN не подключён": "VPN не подключён",
+    "обновить локацию VPN": "обновить локацию VPN",
+    "локация VPN:": "локация VPN:"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -589,7 +593,11 @@
     "Выбранные сервисы": "Selected services",
     "Найти сервис": "Find a service",
     "Популярные сервисы": "Popular services",
-    "Белый список": "Allowlisted services"
+    "Белый список": "Allowlisted services",
+    "локация VPN": "VPN location",
+    "VPN не подключён": "VPN is not connected",
+    "обновить локацию VPN": "refresh VPN location",
+    "локация VPN:": "VPN location:"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -885,7 +893,11 @@
     "Выбранные сервисы": "所选服务",
     "Найти сервис": "搜索服务",
     "Популярные сервисы": "热门服务",
-    "Белый список": "白名单"
+    "Белый список": "白名单",
+    "локация VPN": "VPN 位置",
+    "VPN не подключён": "VPN 未连接",
+    "обновить локацию VPN": "刷新 VPN 位置",
+    "локация VPN:": "VPN 位置:"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1181,7 +1193,11 @@
     "Выбранные сервисы": "Servicios elegidos",
     "Найти сервис": "Buscar un servicio",
     "Популярные сервисы": "Servicios populares",
-    "Белый список": "Lista permitida"
+    "Белый список": "Lista permitida",
+    "локация VPN": "ubicación VPN",
+    "VPN не подключён": "VPN no conectada",
+    "обновить локацию VPN": "actualizar ubicación VPN",
+    "локация VPN:": "ubicación VPN:"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1477,7 +1493,11 @@
     "Выбранные сервисы": "Ausgewählte Dienste",
     "Найти сервис": "Dienst suchen",
     "Популярные сервисы": "Beliebte Dienste",
-    "Белый список": "Freigabeliste"
+    "Белый список": "Freigabeliste",
+    "локация VPN": "VPN-Standort",
+    "VPN не подключён": "VPN ist nicht verbunden",
+    "обновить локацию VPN": "VPN-Standort aktualisieren",
+    "локация VPN:": "VPN-Standort:"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1773,6 +1793,10 @@
     "Выбранные сервисы": "Services sélectionnés",
     "Найти сервис": "Chercher un service",
     "Популярные сервисы": "Services populaires",
-    "Белый список": "Liste autorisée"
+    "Белый список": "Liste autorisée",
+    "локация VPN": "localisation VPN",
+    "VPN не подключён": "VPN non connecté",
+    "обновить локацию VPN": "actualiser la localisation VPN",
+    "локация VPN:": "localisation VPN:"
   }
 }
