@@ -117,6 +117,79 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("uses compact service colors and reveals overflow after resizing without changing rules", async () => {
+    let width = 72;
+    let resize = () => {};
+    const bounds = HTMLElement.prototype.getBoundingClientRect;
+    const measured = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains("traffic-selected")
+          ? new DOMRect(0, 0, width, 20)
+          : bounds.call(this);
+      });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const selection = {
+      ...emptyTraffic(),
+      mode: "include" as const,
+      include: {
+        services: [
+          {
+            id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
+            slug: "youtube",
+            name: "YouTube",
+            icon: "youtube",
+            domains: ["youtube.com"],
+          },
+          {
+            id: "4e2b8d7c-289f-4c57-8f26-aeb680408cda",
+            slug: "instagram",
+            name: "Instagram",
+            icon: "instagram",
+            domains: ["instagram.com"],
+          },
+        ],
+        masks: ["one.example.com", "two.example.com"],
+      },
+    };
+    getDeviceTrafficSelection().save(selection);
+    const rendered = renderRestored();
+    try {
+      expect(await screen.findByRole("img", { name: "YouTube" })).toHaveStyle({
+        color: "#FF0000",
+      });
+      expect(screen.getByRole("img", { name: "Instagram" })).toHaveStyle({
+        color: "#FF0069",
+      });
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "one.example.com, two.example.com",
+      );
+      expect(screen.queryByRole("img", { name: "one.example.com" })).toBeNull();
+      act(() => {
+        width = 120;
+        resize();
+      });
+      expect(screen.queryByText("…")).toBeNull();
+      expect(
+        screen.getByRole("img", { name: "two.example.com" }),
+      ).toBeVisible();
+      expect(getDeviceTrafficSelection().current()).toEqual(selection);
+    } finally {
+      rendered.unmount();
+      measured.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
   it("uses name-only service switches and restores independent lists and Home icons", async () => {
     // jsdom has no native dialog; the CI native review also exercises showModal.
     const originalModal = Object.getOwnPropertyDescriptor(

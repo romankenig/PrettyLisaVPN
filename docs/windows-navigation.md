@@ -577,3 +577,7 @@ values. Saving a Telegram preset also persists its database-owned IPv4 networks;
 manual masks remain domain-only. No new navigation route or external browser
 transition is introduced. See [handoff](telegram-service-routing.md) for actual
 validation/rollout evidence; these controls are wired to native providers.
+The Home selection uses service-colored 20 px icons, 4 px gaps and one row.
+Overflow appears as an ellipsis with hidden names in its accessible description
+and tooltip; resizing never changes the saved selection. Picker styling remains
+unchanged. No new route or automatic reconnection is introduced.

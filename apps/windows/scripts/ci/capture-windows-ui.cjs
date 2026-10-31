@@ -436,8 +436,15 @@ async function main() {
     .getByRole("switch", { name: "YouTube", exact: true })
     .check();
   await trafficDialog
+    .getByRole("switch", { name: "Instagram", exact: true })
+    .check();
+  await trafficDialog
     .getByLabel("Маска сервиса", { exact: true })
-    .fill("example.com, *.example.com");
+    .fill(
+      Array.from({ length: 32 }, (_, index) => `site${index}.example.com`).join(
+        ", ",
+      ),
+    );
   await trafficDialog
     .getByRole("button", { name: "Добавить", exact: true })
     .click();
@@ -488,6 +495,28 @@ async function main() {
   await trafficDialog
     .getByRole("button", { name: "Отмена", exact: true })
     .click();
+  await page
+    .getByRole("radio", { name: "только выбранные сайты", exact: true })
+    .check();
+  await page.locator(".traffic-selected__more").waitFor();
+  await page.locator(".traffic-selected").evaluate((strip) => {
+    const row = strip.getBoundingClientRect();
+    const icons = [...strip.children].map((node) =>
+      node.getBoundingClientRect(),
+    );
+    if (
+      icons.some(
+        (icon) =>
+          icon.width !== 20 ||
+          icon.height !== 20 ||
+          icon.right > row.right + 1 ||
+          icon.top !== icons[0].top,
+      )
+    )
+      throw new Error("Selected service icons must fit one compact row");
+  });
+  await screenshot("04-home-service-colors-overflow");
+  await page.getByRole("radio", { name: "весь трафик", exact: true }).check();
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

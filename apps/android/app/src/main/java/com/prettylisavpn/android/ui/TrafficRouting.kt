@@ -16,9 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.prettylisavpn.android.R
 import com.prettylisavpn.android.data.*
 import com.prettylisavpn.android.vpn.*
@@ -84,9 +87,19 @@ internal fun TrafficRouting(model: ScreenModel) {
         if (selected.mode != "all") {
             val list = if (selected.mode == "include") selected.include else selected.exclude
             val selectionLabel = tr(R.string.traffic_selected)
-            FlowRow(Modifier.semantics { contentDescription = selectionLabel }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                list.services.forEach { service -> Box(Modifier.semantics { contentDescription = service.name }.padding(4.dp)) { ServiceIcon(service.icon) } }
-                list.masks.forEach { mask -> Box(Modifier.semantics { contentDescription = mask }.padding(4.dp)) { ServiceIcon("website") } }
+            val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }
+            BoxWithConstraints(Modifier.fillMaxWidth().semantics { contentDescription = selectionLabel }.testTag("traffic-selected-strip")) {
+                val slots = ((maxWidth.value + 4) / 24).toInt().coerceAtLeast(1)
+                val count = if (items.size > slots) slots - 1 else items.size
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    items.take(count).forEach { (name, icon) -> Box(Modifier.semantics { contentDescription = name }) { ServiceIcon(icon, brand = true, iconSize = 20.dp) } }
+                    if (count < items.size) {
+                        val hidden = items.drop(count).joinToString(", ") { it.first }
+                        Canvas(Modifier.size(20.dp).semantics { contentDescription = hidden }.testTag("traffic-selected-more")) {
+                            for (fraction in listOf(0.25f, 0.5f, 0.75f)) drawCircle(Brand.Scorpion, size.width / 16, Offset(size.width * fraction, size.height / 2))
+                        }
+                    }
+                }
             }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
@@ -174,7 +187,8 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
 }
 
 @Composable
-private fun ServiceIcon(icon: String) {
+private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.dp) {
+    val color = if (brand) serviceColor(icon) else Brand.PurpleHeart
     val drawable = when(icon) {
         "youtube" -> R.drawable.service_youtube
         "instagram" -> R.drawable.service_instagram
@@ -191,21 +205,31 @@ private fun ServiceIcon(icon: String) {
         else -> null
     }
     if (drawable != null) {
-        Icon(androidx.compose.ui.res.painterResource(drawable), contentDescription = null, tint = Brand.PurpleHeart, modifier = Modifier.size(26.dp))
+        Icon(androidx.compose.ui.res.painterResource(drawable), contentDescription = null, tint = color, modifier = Modifier.size(iconSize))
         return
     }
     val badge = mapOf("linkedin" to "in", "max" to "M", "yandex" to "Я", "ozon" to "O", "wildberries" to "WB", "gosuslugi" to "ГУ", "rutube" to "R", "dzen" to "Д")[icon]
     if (badge != null) {
-        Surface(color = Brand.PurpleHeart, contentColor = androidx.compose.ui.graphics.Color.White, shape = MaterialTheme.shapes.small) {
-            Box(Modifier.size(26.dp), contentAlignment = Alignment.Center) { Text(badge, style = MaterialTheme.typography.labelSmall) }
+        Surface(color = color, contentColor = Color.White, shape = MaterialTheme.shapes.small) {
+            Box(Modifier.size(iconSize), contentAlignment = Alignment.Center) { Text(badge, style = MaterialTheme.typography.labelSmall, fontSize = if (brand) with(LocalDensity.current) { 9.dp.toSp() } else MaterialTheme.typography.labelSmall.fontSize, maxLines = 1) }
         }
         return
     }
-    Canvas(Modifier.size(26.dp)) {
-        val color = Brand.PurpleHeart
+    Canvas(Modifier.size(iconSize)) {
         val unit = size.width / 24
         drawCircle(color, 10*unit, style = Stroke(1.7f*unit))
         drawOval(color, Offset(7*unit, 2*unit), Size(10*unit, 20*unit), style = Stroke(1.7f*unit))
         drawLine(color, Offset(2*unit, 12*unit), Offset(22*unit, 12*unit), 1.7f*unit)
     }
 }
+
+/** Service identity colors on Home; the picker retains the PrettyLisaVPN palette. */
+private fun serviceColor(icon: String): Color = Color(when(icon) {
+    "youtube" -> 0xFFFF0000; "instagram" -> 0xFFFF0069; "facebook" -> 0xFF0866FF
+    "whatsapp" -> 0xFF25D366; "telegram" -> 0xFF26A5E4; "discord" -> 0xFF5865F2
+    "signal" -> 0xFF3B45FD; "x", "tiktok" -> 0xFF000000; "linkedin" -> 0xFF0A66C2
+    "vk" -> 0xFF0077FF; "ok" -> 0xFFEE8208; "mail" -> 0xFF005FF9; "max" -> 0xFF5B51D8
+    "yandex" -> 0xFFFC3F1D; "ozon" -> 0xFF005BFF; "wildberries" -> 0xFFCB11AB
+    "gosuslugi" -> 0xFF0D4CD3; "rutube" -> 0xFF100943; "dzen" -> 0xFF2C3036
+    else -> 0xFF5B5B5B
+})

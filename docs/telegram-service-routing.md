@@ -40,6 +40,10 @@ socket factory/DNS snapshot. No direct fallback is allowed for this probe.
 
 **Full-traffic mode has only one location**, in the left block. Saving traffic
 rules still disconnects and waits for cleanup; it never reconnects automatically.
+Home service icons use identity colors, 20 px/dp size and 4 px/dp gaps in one
+responsive row. Overflow uses an ellipsis, retaining every selected routing
+rule. Hidden names remain available to assistive technology; Windows also uses
+a tooltip. The service picker retains the PrettyLisaVPN palette.
 No auth tokens, device identifiers or location/browsing history enter public
 geolocation requests or logs. Existing left-side location behavior is retained.
 
