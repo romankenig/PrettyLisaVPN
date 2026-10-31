@@ -20,6 +20,27 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+it("uses a separate VPN-bound observation and never falls back to browser egress", async () => {
+  bridge.invoke.mockResolvedValue({
+    success: true,
+    ip: "198.51.100.42",
+    country_code: "DE",
+  });
+  const provider = createPublicLocationProvider(
+    createPublicLocationTransport(),
+    "https://ifconfig.me/all.json",
+  );
+  expect((await provider.current(new AbortController().signal)).ip).toBe(
+    "198.51.100.42",
+  );
+  expect(bridge.invoke).toHaveBeenCalledWith("get_vpn_location");
+  bridge.native = false;
+  await expect(
+    provider.current(new AbortController().signal),
+  ).rejects.toThrow();
+  expect(bridge.fetch).not.toHaveBeenCalled();
+});
+
 it("uses the fixed native command without account data", async () => {
   bridge.invoke.mockResolvedValue({
     success: true,

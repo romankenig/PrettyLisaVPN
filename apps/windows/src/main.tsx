@@ -89,6 +89,14 @@ try {
             import.meta.env.VITE_PUBLIC_LOCATION_URL,
             config.environment === "test",
           ),
+          vpnLocation: createPublicLocationProvider(
+            createPublicLocationTransport(),
+            config.environment === "test" &&
+              import.meta.env.VITE_PUBLIC_LOCATION_URL
+              ? import.meta.env.VITE_PUBLIC_LOCATION_URL
+              : "https://ifconfig.me/all.json",
+            config.environment === "test",
+          ),
         }}
       >
         <HashRouter>

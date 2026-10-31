@@ -42,7 +42,7 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 	for _, mode := range []string{"include", "exclude"} {
 		t.Run(mode, func(t *testing.T) {
 			p := sample("VLESS_TLS")
-			p.Routing = &Routing{Mode: mode, Domains: []string{"exact.example.com", "*.sub.example.com"}}
+			p.Routing = &Routing{Mode: mode, Domains: []string{"exact.example.com", "*.sub.example.com", "ifconfig.me", "*.ifconfig.me"}, IPv4CIDRs: []string{"91.108.4.0/22", "149.154.160.0/20"}}
 			data, _ := p.CoreConfig(true)
 			var config map[string]any
 			if json.Unmarshal(data, &config) != nil {
@@ -83,6 +83,7 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 				{"exact.example.com", true}, {"www.exact.example.com", false},
 				{"x.sub.example.com", true}, {"sub.example.com", false},
 				{"evilsub.example.com", false}, {"x.sub.example.com.attacker.invalid", false},
+				{"ifconfig.me.attacker.invalid", false},
 			} {
 				expected := "D"
 				if tc.selected == (mode == "include") {
@@ -129,15 +130,39 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 					}
 				}
 			}
-			// The health origin must remain encrypted even in an empty include list.
-			conn, err := core.Dial(ctx, instance, xnet.TCPDestination(xnet.DomainAddress("api.prettylisavpn.com"), 443))
-			if err != nil {
-				t.Fatal(err)
+			for _, hostname := range []string{"api.prettylisavpn.com", "ifconfig.me", "www.ifconfig.me"} {
+				conn, err := core.Dial(ctx, instance, xnet.TCPDestination(xnet.DomainAddress(hostname), 443))
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer conn.Close()
+				marker := make([]byte, 1)
+				if _, err = io.ReadFull(conn, marker); err != nil || string(marker) != "V" {
+					t.Fatal("verification escaped VPN")
+				}
 			}
-			defer conn.Close()
-			marker := make([]byte, 1)
-			if _, err = io.ReadFull(conn, marker); err != nil || string(marker) != "V" {
-				t.Fatal("verification escaped VPN")
+			// Native MTProto has no DNS/domain metadata: the destination IP alone
+			// must choose the selected exit, in both inverse policies.
+			for _, tc := range []struct {
+				address  string
+				selected bool
+			}{
+				{"91.108.4.1", true}, {"91.108.7.255", true}, {"149.154.167.50", true}, {"91.108.8.1", false},
+			} {
+				expected := "D"
+				if tc.selected == (mode == "include") {
+					expected = "V"
+				}
+				conn, err := core.Dial(ctx, instance, xnet.TCPDestination(xnet.ParseAddress(tc.address), 443))
+				if err != nil {
+					t.Fatal(err)
+				}
+				marker := make([]byte, 1)
+				_, err = io.ReadFull(conn, marker)
+				_ = conn.Close()
+				if err != nil || string(marker) != expected {
+					t.Fatal("literal IP used wrong exit")
+				}
 			}
 		})
 	}

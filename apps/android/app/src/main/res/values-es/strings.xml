@@ -287,4 +287,6 @@
     <string name="traffic_search">buscar un servicio</string>
     <string name="traffic_popular">servicios populares</string>
     <string name="traffic_whitelist">lista permitida</string>
+    <string name="vpn_location">ubicación vpn</string>
+    <string name="vpn_location_loading">determinando…</string>
 </resources>

@@ -287,4 +287,6 @@
     <string name="traffic_search">найти сервис</string>
     <string name="traffic_popular">популярные сервисы</string>
     <string name="traffic_whitelist">белый список</string>
+    <string name="vpn_location">локация vpn</string>
+    <string name="vpn_location_loading">определяем…</string>
 </resources>

@@ -1,5 +1,12 @@
-import { serviceIcons } from "./serviceIcons";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { serviceColors, serviceIcons } from "./serviceIcons";
+import { CurrentLocation } from "./CurrentLocation";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { t, useLanguage } from "../i18n";
 import { useApplication } from "../state/application";
 import {
@@ -27,6 +34,11 @@ const details: Record<Mode, string> = {
 export function TrafficRouting() {
   useLanguage();
   const { vpnConnection, session } = useApplication();
+  const connection = useSyncExternalStore(
+    vpnConnection.subscribe,
+    vpnConnection.current,
+    vpnConnection.current,
+  );
   const store = getDeviceTrafficSelection();
   const selected = useSyncExternalStore(
     store.subscribe,
@@ -102,35 +114,28 @@ export function TrafficRouting() {
       </fieldset>
       <p className="traffic-mode__hint">{t(details[selected.mode])}</p>
       {selected.mode !== "all" && (
-        <div className="traffic-selected" aria-label={t("Выбранные сервисы")}>
-          {selected[selected.mode].services.map((service) => (
-            <span
-              key={service.id}
-              className="traffic-selected__icon"
-              role="img"
-              aria-label={service.name}
-              title={service.name}
-            >
-              <ServiceIcon name={service.icon} />
-            </span>
-          ))}
-          {selected[selected.mode].masks.map((mask) => (
-            <span
-              key={mask}
-              className="traffic-selected__icon"
-              role="img"
-              aria-label={mask}
-              title={mask}
-            >
-              <ServiceIcon name="website" />
-            </span>
-          ))}
-        </div>
+        <SelectedServiceIcons
+          items={[
+            ...selected[selected.mode].services.map((service) => ({
+              id: service.id,
+              name: service.name,
+              icon: service.icon,
+            })),
+            ...selected[selected.mode].masks.map((mask) => ({
+              id: mask,
+              name: mask,
+              icon: "website",
+            })),
+          ]}
+        />
       )}
       {error && (
         <p role="alert">
           {t("Не удалось сохранить правила. Повторите попытку.")}
         </p>
+      )}
+      {selected.mode !== "all" && (
+        <CurrentLocation connection={connection} vpn />
       )}
       {open && (
         <TrafficDialog
@@ -142,6 +147,68 @@ export function TrafficRouting() {
         />
       )}
     </section>
+  );
+}
+function SelectedServiceIcons({
+  items,
+}: {
+  items: { id: string; name: string; icon: string }[];
+}) {
+  const container = useRef<HTMLDivElement>(null);
+  const [slots, setSlots] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const node = container.current;
+    if (!node) return;
+    const measure = () => {
+      const width = node.getBoundingClientRect().width;
+      if (width > 0) setSlots(Math.max(1, Math.floor((width + 4) / 24)));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const logos = items.filter((item) => serviceIcons[item.icon]);
+  const needsMore =
+    logos.length < items.length || (slots !== null && logos.length > slots);
+  const visible = logos.slice(
+    0,
+    slots === null ? logos.length : Math.max(0, slots - (needsMore ? 1 : 0)),
+  );
+  const hidden = items
+    .filter((item) => !visible.includes(item))
+    .map((item) => item.name)
+    .join(", ");
+  return (
+    <div
+      ref={container}
+      className="traffic-selected"
+      aria-label={t("Выбранные сервисы")}
+    >
+      {visible.map((item) => (
+        <span
+          key={item.id}
+          className="traffic-selected__icon"
+          style={{ color: serviceColors[item.icon] ?? serviceColors.website }}
+          role="img"
+          aria-label={item.name}
+          title={item.name}
+        >
+          <ServiceIcon name={item.icon} />
+        </span>
+      ))}
+      {hidden && (
+        <span
+          className="traffic-selected__more"
+          role="img"
+          aria-label={hidden}
+          title={hidden}
+        >
+          …
+        </span>
+      )}
+    </div>
   );
 }
 function ServiceIcon({ name }: { name: string }) {

@@ -117,6 +117,114 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("hides missing logos and keeps an ellipsis with spare room without changing rules", async () => {
+    let width = 72;
+    let resize = () => {};
+    const bounds = HTMLElement.prototype.getBoundingClientRect;
+    const measured = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains("traffic-selected")
+          ? new DOMRect(0, 0, width, 20)
+          : bounds.call(this);
+      });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const selection = {
+      ...emptyTraffic(),
+      mode: "include" as const,
+      include: {
+        services: [
+          {
+            id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
+            slug: "youtube",
+            name: "YouTube",
+            icon: "youtube",
+            domains: ["youtube.com"],
+          },
+          {
+            id: "4e2b8d7c-289f-4c57-8f26-aeb680408cda",
+            slug: "instagram",
+            name: "Instagram",
+            icon: "instagram",
+            domains: ["instagram.com"],
+          },
+          {
+            id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            slug: "telegram",
+            name: "Telegram",
+            icon: "telegram",
+            domains: ["t.me"],
+          },
+          {
+            id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            slug: "yandex",
+            name: "Yandex",
+            icon: "yandex",
+            domains: ["ya.ru"],
+          },
+        ],
+        masks: ["one.example.com", "two.example.com"],
+      },
+    };
+    getDeviceTrafficSelection().save(selection);
+    const rendered = renderRestored();
+    try {
+      expect(await screen.findByRole("img", { name: "YouTube" })).toHaveStyle({
+        color: "#FF0000",
+      });
+      expect(screen.getByRole("img", { name: "Instagram" })).toHaveStyle({
+        color: "#FF0069",
+      });
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "Telegram, Yandex, one.example.com, two.example.com",
+      );
+      expect(screen.queryByRole("img", { name: "one.example.com" })).toBeNull();
+      act(() => {
+        width = 120;
+        resize();
+      });
+      expect(screen.getByRole("img", { name: "Telegram" })).toBeVisible();
+      expect(screen.queryByRole("img", { name: "Yandex" })).toBeNull();
+      expect(screen.queryByRole("img", { name: "two.example.com" })).toBeNull();
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "Yandex, one.example.com, two.example.com",
+      );
+      expect(getDeviceTrafficSelection().current()).toEqual(selection);
+      act(() => {
+        getDeviceTrafficSelection().save({
+          ...selection,
+          include: {
+            services: selection.include.services.slice(0, 3),
+            masks: [],
+          },
+        });
+      });
+      expect(screen.queryByText("…")).toBeNull();
+      act(() => {
+        width = 48;
+        resize();
+      });
+      expect(screen.getByText("…")).toHaveAttribute(
+        "title",
+        "Instagram, Telegram",
+      );
+    } finally {
+      rendered.unmount();
+      measured.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
   it("uses name-only service switches and restores independent lists and Home icons", async () => {
     // jsdom has no native dialog; the CI native review also exercises showModal.
     const originalModal = Object.getOwnPropertyDescriptor(
@@ -154,12 +262,14 @@ describe("authenticated Home", () => {
     );
     try {
       const rendered = renderRestored();
+      expect(screen.queryByLabelText("локация VPN")).toBeNull();
       fireEvent.click(
         await screen.findByRole("radio", { name: "только выбранные сайты" }),
       );
       await waitFor(() =>
         expect(getDeviceTrafficSelection().current().mode).toBe("include"),
       );
+      expect(screen.getByLabelText("локация VPN")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
       const dialog = within(await screen.findByRole("dialog"));
       fireEvent.click(await dialog.findByRole("switch", { name: "YouTube" }));
@@ -191,6 +301,11 @@ describe("authenticated Home", () => {
         expect(screen.getByRole("img", { name: "Instagram" })).toBeVisible(),
       );
       expect(screen.queryByRole("img", { name: "YouTube" })).toBeNull();
+      expect(screen.getByLabelText("локация VPN")).toBeVisible();
+      fireEvent.click(screen.getByRole("radio", { name: "весь трафик" }));
+      await waitFor(() =>
+        expect(screen.queryByLabelText("локация VPN")).toBeNull(),
+      );
     } finally {
       if (originalModal)
         Object.defineProperty(

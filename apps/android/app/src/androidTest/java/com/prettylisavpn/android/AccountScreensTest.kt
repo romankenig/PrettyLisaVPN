@@ -116,6 +116,28 @@ class AccountScreensTest {
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
     }
 
+    @Test fun secondLocationAppearsOnlyInSplitModes() {
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        val store = com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext)
+        val list = com.prettylisavpn.android.vpn.TrafficList(
+            services = kotlinx.coroutines.runBlocking { accounts.trafficServices("fake") },
+            masks = (0..31).map { "site$it.example.com" })
+        for (mode in listOf("include", "exclude")) {
+            compose.runOnUiThread { store.save(store.current().copy(mode = mode, include = list, exclude = list)) }
+            waitFor("vpn-location")
+            compose.onNodeWithTag("vpn-location").performScrollTo()
+            compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
+            compose.onNodeWithContentDescription("site0.example.com").assertDoesNotExist()
+            assertEquals(32, store.current().include.masks.size)
+            assertEquals(32, store.current().exclude.masks.size)
+            screenshot("vpn-location-$mode")
+            compose.onNodeWithTag("home-network").assertExists()
+        }
+        compose.runOnUiThread { store.save(store.current().copy(mode = "all")) }
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.onNodeWithTag("home-network").assertExists()
+    }
+
     @Test fun trafficListsAreIndependentAndPersistAfterRecreation() {
         click("traffic-services"); waitFor("traffic-service-youtube")
         click("traffic-service-youtube")

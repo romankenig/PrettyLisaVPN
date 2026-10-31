@@ -16,15 +16,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.prettylisavpn.android.R
 import com.prettylisavpn.android.data.*
 import com.prettylisavpn.android.vpn.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -33,6 +37,21 @@ internal fun TrafficRouting(model: ScreenModel) {
     val context = LocalContext.current
     val store = remember { DeviceTrafficSelection.get(context) }
     val selected by store.selected.collectAsState()
+    val presentation = LocalPresentation.current
+    val vpn by (model.vpn?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
+    var vpnLocation by remember { mutableStateOf<PublicLocation?>(null) }
+    var locating by remember { mutableStateOf(false) }
+    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method) {
+        vpnLocation = null; locating = false
+        if (selected.mode != "all" && vpn.phase == VpnPhase.CONNECTED) {
+            while (true) {
+                locating = true
+                vpnLocation = presentation.vpnLocation()
+                locating = false
+                delay(60_000)
+            }
+        }
+    }
     var opened by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
@@ -68,12 +87,40 @@ internal fun TrafficRouting(model: ScreenModel) {
         if (selected.mode != "all") {
             val list = if (selected.mode == "include") selected.include else selected.exclude
             val selectionLabel = tr(R.string.traffic_selected)
-            FlowRow(Modifier.semantics { contentDescription = selectionLabel }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                list.services.forEach { service -> Box(Modifier.semantics { contentDescription = service.name }.padding(4.dp)) { ServiceIcon(service.icon) } }
-                list.masks.forEach { mask -> Box(Modifier.semantics { contentDescription = mask }.padding(4.dp)) { ServiceIcon("website") } }
+            val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }
+            BoxWithConstraints(Modifier.fillMaxWidth().semantics { contentDescription = selectionLabel }.testTag("traffic-selected-strip")) {
+                val slots = ((maxWidth.value + 4) / 24).toInt().coerceAtLeast(1)
+                val logos = items.indices.filter { serviceDrawable(items[it].second) != null }
+                val needsMore = logos.size < items.size || logos.size > slots
+                val visible = logos.take((slots - if (needsMore) 1 else 0).coerceAtLeast(0))
+                val hidden = items.filterIndexed { index, _ -> index !in visible }.joinToString(", ") { it.first }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    visible.forEach { index -> val (name, icon) = items[index]; Box(Modifier.semantics { contentDescription = name }) { ServiceIcon(icon, brand = true, iconSize = 20.dp) } }
+                    if (hidden.isNotEmpty()) {
+                        Canvas(Modifier.size(20.dp).semantics { contentDescription = hidden }.testTag("traffic-selected-more")) {
+                            for (fraction in listOf(0.25f, 0.5f, 0.75f)) drawCircle(Brand.Scorpion, size.width / 16, Offset(size.width * fraction, size.height / 2))
+                        }
+                    }
+                }
             }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
+        if (selected.mode != "all") {
+            HorizontalDivider(color = Brand.DustyGray)
+            Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(tr(R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+                val value = vpnLocation
+                if (vpn.phase != VpnPhase.CONNECTED) Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.bodySmall)
+                else if (value == null) Text(tr(if (locating) R.string.vpn_location_loading else R.string.unavailable), style = MaterialTheme.typography.bodySmall)
+                else {
+                    val language by presentation.preference.language.collectAsState()
+                    val locale = java.util.Locale.forLanguageTag(language.code)
+                    val region = listOfNotNull(value.city, value.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
+                    Text(countryFlag(value.country) + " " + region.ifBlank { tr(R.string.unavailable) }, style = MaterialTheme.typography.bodySmall)
+                    Text("IP: " + value.ip, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                }
+            }
+        }
     }
     if (opened) TrafficDialog(model, selected, busy, failed, { opened = false }, ::save)
 }
@@ -141,9 +188,7 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
         dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.ui_cancel)) } })
 }
 
-@Composable
-private fun ServiceIcon(icon: String) {
-    val drawable = when(icon) {
+private fun serviceDrawable(icon: String): Int? = when(icon) {
         "youtube" -> R.drawable.service_youtube
         "instagram" -> R.drawable.service_instagram
         "facebook" -> R.drawable.service_facebook
@@ -157,23 +202,38 @@ private fun ServiceIcon(icon: String) {
         "ok" -> R.drawable.service_ok
         "mail" -> R.drawable.service_mail
         else -> null
-    }
+}
+
+@Composable
+private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.dp) {
+    val color = if (brand) serviceColor(icon) else Brand.PurpleHeart
+    val drawable = serviceDrawable(icon)
     if (drawable != null) {
-        Icon(androidx.compose.ui.res.painterResource(drawable), contentDescription = null, tint = Brand.PurpleHeart, modifier = Modifier.size(26.dp))
+        Icon(androidx.compose.ui.res.painterResource(drawable), contentDescription = null, tint = color, modifier = Modifier.size(iconSize))
         return
     }
     val badge = mapOf("linkedin" to "in", "max" to "M", "yandex" to "Я", "ozon" to "O", "wildberries" to "WB", "gosuslugi" to "ГУ", "rutube" to "R", "dzen" to "Д")[icon]
     if (badge != null) {
-        Surface(color = Brand.PurpleHeart, contentColor = androidx.compose.ui.graphics.Color.White, shape = MaterialTheme.shapes.small) {
-            Box(Modifier.size(26.dp), contentAlignment = Alignment.Center) { Text(badge, style = MaterialTheme.typography.labelSmall) }
+        Surface(color = color, contentColor = Color.White, shape = MaterialTheme.shapes.small) {
+            Box(Modifier.size(iconSize), contentAlignment = Alignment.Center) { Text(badge, style = MaterialTheme.typography.labelSmall, fontSize = if (brand) with(LocalDensity.current) { 9.dp.toSp() } else MaterialTheme.typography.labelSmall.fontSize, maxLines = 1) }
         }
         return
     }
-    Canvas(Modifier.size(26.dp)) {
-        val color = Brand.PurpleHeart
+    Canvas(Modifier.size(iconSize)) {
         val unit = size.width / 24
         drawCircle(color, 10*unit, style = Stroke(1.7f*unit))
         drawOval(color, Offset(7*unit, 2*unit), Size(10*unit, 20*unit), style = Stroke(1.7f*unit))
         drawLine(color, Offset(2*unit, 12*unit), Offset(22*unit, 12*unit), 1.7f*unit)
     }
 }
+
+/** Service identity colors on Home; the picker retains the PrettyLisaVPN palette. */
+private fun serviceColor(icon: String): Color = Color(when(icon) {
+    "youtube" -> 0xFFFF0000; "instagram" -> 0xFFFF0069; "facebook" -> 0xFF0866FF
+    "whatsapp" -> 0xFF25D366; "telegram" -> 0xFF26A5E4; "discord" -> 0xFF5865F2
+    "signal" -> 0xFF3B45FD; "x", "tiktok" -> 0xFF000000; "linkedin" -> 0xFF0A66C2
+    "vk" -> 0xFF0077FF; "ok" -> 0xFFEE8208; "mail" -> 0xFF005FF9; "max" -> 0xFF5B51D8
+    "yandex" -> 0xFFFC3F1D; "ozon" -> 0xFF005BFF; "wildberries" -> 0xFFCB11AB
+    "gosuslugi" -> 0xFF0D4CD3; "rutube" -> 0xFF100943; "dzen" -> 0xFF2C3036
+    else -> 0xFF5B5B5B
+})

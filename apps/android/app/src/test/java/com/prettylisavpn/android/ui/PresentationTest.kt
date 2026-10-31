@@ -121,6 +121,28 @@ class PresentationTest {
             assertEquals(1, primary.requestCount); assertEquals(0, secondary.requestCount)
         } }
     }
+    @Test fun vpnLocationUsesIfconfigIpAndNeverFallsBackToPhysicalOrWrongGeo() = runBlocking {
+        val routes = com.prettylisavpn.android.network.HttpRoutes
+        try { MockWebServer().use { server ->
+            val metadata = PublicMetadata(vpnIpUrl = server.url("/ifconfig").toString(), vpnCountryUrl = server.url("/lookup/").toString())
+            routes.default()
+            assertNull(metadata.vpnLocation()); assertEquals(0, server.requestCount)
+            routes.vpn(javax.net.SocketFactory.getDefault(), okhttp3.Dns.SYSTEM)
+            server.enqueue(MockResponse().setBody("""{"ip_addr":"198.51.100.42"}"""))
+            server.enqueue(MockResponse().setBody("""{"success":true,"ip":"198.51.100.42","country_code":"DE","city":"Berlin"}"""))
+            assertEquals(PublicLocation("198.51.100.42","DE","Berlin"), metadata.vpnLocation())
+            assertEquals("/ifconfig", server.takeRequest().path)
+            val lookup = server.takeRequest(); assertEquals("/lookup/198.51.100.42", lookup.path)
+            assertNull(lookup.getHeader("Authorization")); assertNull(lookup.getHeader("Cookie"))
+            server.enqueue(MockResponse().setBody("""{"ip_addr":"198.51.100.42"}"""))
+            server.enqueue(MockResponse().setBody("""{"success":true,"ip":"192.0.2.10","country_code":"RU"}"""))
+            assertEquals(PublicLocation("198.51.100.42",null,null), metadata.vpnLocation())
+            server.takeRequest(); server.takeRequest()
+            server.enqueue(MockResponse().setResponseCode(503))
+            assertNull(metadata.vpnLocation()); assertEquals(5, server.requestCount)
+        } } finally { routes.default() }
+    }
+
     @Test fun deviceDatesUseLocalCalendarAndAbsentDatesStayAbsent() {
         val raw="2026-10-20T23:41:10.625960Z"
         val utc=readableDate(raw,java.util.Locale.US,java.time.ZoneId.of("UTC"))!!

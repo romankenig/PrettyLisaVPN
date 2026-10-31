@@ -14,7 +14,7 @@ func TestRoutingProfilesInstantiatePinnedCore(t *testing.T) {
 		for _, mode := range []string{"include", "exclude"} {
 			t.Run(method+"/"+mode, func(t *testing.T) {
 				p := sample(method)
-				p.Routing = &Routing{Mode: mode, Domains: []string{"youtube.com", "*.youtube.com"}}
+				p.Routing = &Routing{Mode: mode, Domains: []string{"youtube.com", "*.youtube.com"}, IPv4CIDRs: []string{"91.108.4.0/22"}}
 				data, err := p.CoreConfig(true)
 				if err != nil {
 					t.Fatal(err)
@@ -34,6 +34,31 @@ func TestRoutingProfilesInstantiatePinnedCore(t *testing.T) {
 					t.Fatal(err)
 				}
 			})
+		}
+	}
+}
+
+func TestServiceNetworksValidateWithoutAllowingPrivateOrFakeDestinations(t *testing.T) {
+	for _, value := range []string{"91.108.4.0/22", "149.154.160.0/20", "185.76.151.1/32"} {
+		p := sample("WIREGUARD")
+		p.Routing = &Routing{Mode: "include", IPv4CIDRs: []string{value}}
+		if err := p.Validate(); err != nil {
+			t.Fatalf("valid service network rejected: %v", err)
+		}
+	}
+	for _, value := range []string{"91.108.4.1/22", "91.108.4.0", "091.108.4.0/22", "1.0.0.0/7", "0.0.0.0/0", "127.0.0.1/32", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10", "198.18.0.0/15", "198.0.0.0/8", "224.0.0.0/4", "2001:b28:f23d::/48"} {
+		p := sample("WIREGUARD")
+		p.Routing = &Routing{Mode: "include", IPv4CIDRs: []string{value}}
+		if p.Validate() == nil {
+			t.Fatalf("invalid service network accepted: %q", value)
+		}
+	}
+	for _, routing := range []*Routing{
+		{Mode: "all", IPv4CIDRs: []string{"91.108.4.0/22"}},
+		{Mode: "include", IPv4CIDRs: make([]string, 257)},
+	} {
+		if routing.validate() == nil {
+			t.Fatal("invalid network policy accepted")
 		}
 	}
 }

@@ -287,4 +287,6 @@
     <string name="traffic_search">搜索服务</string>
     <string name="traffic_popular">热门服务</string>
     <string name="traffic_whitelist">白名单</string>
+    <string name="vpn_location">vpn 位置</string>
+    <string name="vpn_location_loading">正在确定…</string>
 </resources>

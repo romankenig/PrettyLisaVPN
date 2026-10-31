@@ -8,6 +8,19 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun serviceNetworksPersistIndependentlyAndRejectUnsafeRanges() {
+        val service = TrafficService("6cbb9213-108e-5bf7-b4f9-5f10a42d2b0c", "telegram", "Telegram", "telegram", listOf("telegram.org"), ipv4_cidrs = listOf("91.108.4.0/22"))
+        val value = TrafficSelection("include", TrafficList(services = listOf(service)))
+        var raw: String? = null
+        TrafficPreference({ raw }, { raw = it }).save(value)
+        assertEquals(service.ipv4_cidrs, TrafficPreference({ raw }).current().policy().ipv4_cidrs)
+        assertTrue(value.copy(mode = "exclude").policy().ipv4_cidrs.isEmpty())
+        assertTrue(value.copy(mode = "all").policy().ipv4_cidrs.isEmpty())
+        for (cidr in listOf("91.108.4.1/22", "91.108.4.0", "091.108.4.0/22", "0.0.0.0/0", "127.0.0.1/32", "10.0.0.0/8", "100.64.0.0/10", "198.18.0.0/15", "198.0.0.0/8", "224.0.0.0/4", "2001:b28:f23d::/48")) {
+            assertTrue(runCatching { normalizeServiceNetwork(cidr) }.isFailure)
+        }
+        assertTrue(runCatching { validateTrafficServices(listOf(service.copy(ipv4_cidrs = List(65) { "91.108.4.0/22" }))) }.isFailure)
+    }
     @Test fun categoriesRetainLegacySavedListsAndAcceptWhitelist() {
         val legacy = """{"mode":"include","include":{"services":[{"id":"0bd811da-f080-4f25-887a-67bf534ac2c6","slug":"youtube","name":"YouTube","icon":"youtube","domains":["youtube.com"]}],"masks":["ifconfig.me"]},"exclude":{"services":[],"masks":["example.com"]}}"""
         val saved = TrafficPreference({ legacy }).current()
