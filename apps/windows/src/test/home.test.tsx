@@ -263,8 +263,9 @@ describe("authenticated Home", () => {
     try {
       const rendered = renderRestored();
       expect(screen.queryByLabelText("локация VPN")).toBeNull();
-      fireEvent.click(
-        await screen.findByRole("radio", { name: "только выбранные сайты" }),
+      fireEvent.change(
+        await screen.findByRole("combobox", { name: "режим трафика" }),
+        { target: { value: "include" } },
       );
       await waitFor(() =>
         expect(getDeviceTrafficSelection().current().mode).toBe("include"),
@@ -294,15 +295,19 @@ describe("authenticated Home", () => {
       expect(getDeviceTrafficSelection().current().exclude.masks).toEqual([]);
       rendered.unmount();
       renderRestored();
-      fireEvent.click(
-        screen.getByRole("radio", { name: "кроме выбранных сайтов" }),
+      fireEvent.change(
+        screen.getByRole("combobox", { name: "режим трафика" }),
+        { target: { value: "exclude" } },
       );
       await waitFor(() =>
         expect(screen.getByRole("img", { name: "Instagram" })).toBeVisible(),
       );
       expect(screen.queryByRole("img", { name: "YouTube" })).toBeNull();
       expect(screen.getByLabelText("локация VPN")).toBeVisible();
-      fireEvent.click(screen.getByRole("radio", { name: "весь трафик" }));
+      fireEvent.change(
+        screen.getByRole("combobox", { name: "режим трафика" }),
+        { target: { value: "all" } },
+      );
       await waitFor(() =>
         expect(screen.queryByLabelText("локация VPN")).toBeNull(),
       );
@@ -338,8 +343,9 @@ describe("authenticated Home", () => {
       connect: vi.fn(),
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpn);
-    fireEvent.click(
-      await screen.findByRole("radio", { name: /только выбранные сайты/ }),
+    fireEvent.change(
+      await screen.findByRole("combobox", { name: "режим трафика" }),
+      { target: { value: "include" } },
     );
     expect(
       await screen.findByText(
@@ -368,11 +374,15 @@ describe("authenticated Home", () => {
       connect: vi.fn(),
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpn);
-    fireEvent.click(
-      await screen.findByRole("radio", { name: /только выбранные сайты/ }),
+    fireEvent.change(
+      await screen.findByRole("combobox", { name: "режим трафика" }),
+      { target: { value: "include" } },
     );
     expect(vpn.disconnect).toHaveBeenCalledWith("access-token");
     expect(getDeviceTrafficSelection().current().mode).toBe("all");
+    expect(
+      screen.getByRole("combobox", { name: "режим трафика" }),
+    ).toBeDisabled();
     await act(async () => confirm());
     expect(getDeviceTrafficSelection().current().mode).toBe("include");
     expect(vpn.connect).not.toHaveBeenCalled();
@@ -474,13 +484,24 @@ describe("authenticated Home", () => {
         .closest(".home-connect-panel"),
     ).not.toBeNull();
     expect(screen.getByRole("heading", { name: "что защищаем" })).toBeVisible();
-    expect(screen.getByRole("radio", { name: /весь трафик/ })).toBeChecked();
+    const modes = screen.getByRole("combobox", { name: "режим трафика" });
+    expect(modes).toHaveValue("all");
+    expect(modes).toBeEnabled();
     expect(
-      screen.getByRole("radio", { name: /только выбранные сайты/ }),
-    ).toBeEnabled();
+      within(modes)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Всё", "Выбранное", "Кроме выбранного"]);
+    expect(modes.closest(".traffic-mode__heading")).toContainElement(
+      screen.getByRole("heading", { name: "что защищаем" }),
+    );
+    expect(modes).toHaveAccessibleDescription(
+      "все сайты и приложения через VPN",
+    );
     expect(
-      screen.getByRole("radio", { name: /кроме выбранных сайтов/ }),
-    ).toBeEnabled();
+      screen.queryByRole("button", { name: /Выбрать сервисы/ }),
+    ).toBeNull();
+    expect(screen.queryByLabelText("Выбранные сервисы")).toBeNull();
     expect(screen.queryByText("локация")).not.toBeInTheDocument();
   });
 

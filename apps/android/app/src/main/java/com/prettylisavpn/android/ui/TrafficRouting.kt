@@ -1,9 +1,6 @@
 package com.prettylisavpn.android.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
@@ -30,7 +27,6 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun TrafficRouting(model: ScreenModel) {
     val tr = strings()
@@ -53,6 +49,7 @@ internal fun TrafficRouting(model: ScreenModel) {
         }
     }
     var opened by remember { mutableStateOf(false) }
+    var modeMenu by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -72,19 +69,25 @@ internal fun TrafficRouting(model: ScreenModel) {
     BrandCard {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(tr(R.string.ui_what_to_protect), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            TextButton({ opened = true; model.load(Area.TRAFFIC) }, Modifier.testTag("traffic-services"), enabled = !busy) { Text(tr(R.string.traffic_services)) }
-        }
-        FlowRow(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("all" to R.string.traffic_all_short, "include" to R.string.traffic_include_short, "exclude" to R.string.traffic_exclude_short).forEach { (mode, label) ->
-                Surface(shape = MaterialTheme.shapes.large, color = if (selected.mode == mode) Brand.PurpleHeart else Brand.Mercury,
-                    contentColor = if (selected.mode == mode) androidx.compose.ui.graphics.Color.White else Brand.Scorpion,
-                    modifier = Modifier.selectable(selected.mode == mode, enabled = !busy, role = Role.RadioButton) { save(selected.copy(mode = mode)) }.testTag("traffic-mode-$mode")) {
-                    Text(tr(label), Modifier.padding(horizontal = 14.dp, vertical = 12.dp), style = MaterialTheme.typography.labelLarge)
+            Box(Modifier.widthIn(max = 180.dp)) {
+                val options = listOf("all" to R.string.traffic_all_short, "include" to R.string.traffic_include_short, "exclude" to R.string.traffic_exclude_short)
+                OutlinedButton({ modeMenu = true }, enabled = !busy, contentPadding = PaddingValues(horizontal = 10.dp), modifier = Modifier.testTag("traffic-mode-menu")) {
+                    Text(tr(options.first { it.first == selected.mode }.second), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelMedium)
+                    Text("⌄", Modifier.padding(start = 6.dp))
+                }
+                DropdownMenu(modeMenu, { modeMenu = false }) {
+                    options.forEach { (mode, label) ->
+                        DropdownMenuItem(text = { Text(tr(label)) }, enabled = !busy,
+                            onClick = { modeMenu = false; if (selected.mode != mode) save(selected.copy(mode = mode)) },
+                            modifier = Modifier.testTag("traffic-mode-$mode"))
+                    }
                 }
             }
         }
-        Text(tr(when(selected.mode) { "include" -> R.string.dash_include; "exclude" -> R.string.dash_exclude; else -> R.string.dash_all_traffic }), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+        Text(tr(when(selected.mode) { "include" -> R.string.traffic_description_include; "exclude" -> R.string.traffic_description_exclude; else -> R.string.traffic_description_all }),
+            modifier = Modifier.testTag("traffic-mode-description"), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion.copy(alpha = 0.65f))
         if (selected.mode != "all") {
+            TextButton({ opened = true; model.load(Area.TRAFFIC) }, Modifier.testTag("traffic-services"), enabled = !busy, contentPadding = PaddingValues(0.dp)) { Text(tr(R.string.traffic_services)) }
             val list = if (selected.mode == "include") selected.include else selected.exclude
             val selectionLabel = tr(R.string.traffic_selected)
             val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }

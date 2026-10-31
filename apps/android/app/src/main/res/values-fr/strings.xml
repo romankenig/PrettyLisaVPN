@@ -236,7 +236,6 @@
     <string name="dash_no_countries">aucun pays disponible</string>
     <string name="dash_connect">connecter</string>
     <string name="dash_region">région actuelle</string>
-    <string name="dash_all_traffic">tout le trafic</string>
     <string name="dash_include">uniquement les sites sélectionnés</string>
     <string name="dash_exclude">sauf les sites sélectionnés</string>
     <string name="dash_end_session">fermer la session sur cet appareil</string>
@@ -289,4 +288,7 @@
     <string name="traffic_whitelist">liste autorisée</string>
     <string name="vpn_location">localisation vpn</string>
     <string name="vpn_location_loading">détermination…</string>
+    <string name="traffic_description_all">tous les sites et applis via vpn</string>
+    <string name="traffic_description_include">le reste du trafic passe directement</string>
+    <string name="traffic_description_exclude">vpn pour tout sauf votre liste</string>
 </resources>

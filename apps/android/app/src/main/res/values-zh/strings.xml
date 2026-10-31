@@ -236,7 +236,6 @@
     <string name="dash_no_countries">暂无可用国家</string>
     <string name="dash_connect">连接</string>
     <string name="dash_region">当前地区</string>
-    <string name="dash_all_traffic">全部流量</string>
     <string name="dash_include">仅选定网站</string>
     <string name="dash_exclude">排除选定网站</string>
     <string name="dash_end_session">结束此设备上的会话</string>
@@ -289,4 +288,7 @@
     <string name="traffic_whitelist">白名单</string>
     <string name="vpn_location">vpn 位置</string>
     <string name="vpn_location_loading">正在确定…</string>
+    <string name="traffic_description_all">所有网站和应用均通过 vpn</string>
+    <string name="traffic_description_include">其他流量直接连接</string>
+    <string name="traffic_description_exclude">除列表外的所有流量均通过 vpn</string>
 </resources>
