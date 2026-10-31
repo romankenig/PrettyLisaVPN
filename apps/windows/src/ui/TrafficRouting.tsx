@@ -193,20 +193,9 @@ function ServiceIcon({ name }: { name: string }) {
       stroke="currentColor"
       strokeWidth="1.7"
     >
-      {name === "youtube" ? (
-        <>
-          <rect x="2" y="5" width="20" height="14" rx="4" />
-          <path fill="currentColor" stroke="none" d="m10 9 6 3-6 3z" />
-        </>
-      ) : name === "instagram" ? (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="5" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r=".7" />
-        </>
-      ) : (
-        <circle cx="12" cy="12" r="9" />
-      )}
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <path d="M3 12h18" />
     </svg>
   );
 }

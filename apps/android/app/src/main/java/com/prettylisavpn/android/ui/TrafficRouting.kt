@@ -13,10 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -173,17 +171,8 @@ private fun ServiceIcon(icon: String) {
     Canvas(Modifier.size(26.dp)) {
         val color = Brand.PurpleHeart
         val unit = size.width / 24
-        if (icon == "youtube") {
-            drawRoundRect(color, Offset(2*unit, 5*unit), Size(20*unit, 14*unit), CornerRadius(4*unit), style = Stroke(1.7f*unit))
-            drawPath(Path().apply { moveTo(10*unit, 9*unit); lineTo(16*unit, 12*unit); lineTo(10*unit, 15*unit); close() }, color)
-        } else if (icon == "instagram") {
-            drawRoundRect(color, Offset(3*unit, 3*unit), Size(18*unit, 18*unit), CornerRadius(5*unit), style = Stroke(1.7f*unit))
-            drawCircle(color, 4*unit, Offset(12*unit, 12*unit), style = Stroke(1.7f*unit))
-            drawCircle(color, unit, Offset(17.5f*unit, 6.5f*unit))
-        } else {
             drawCircle(color, 10*unit, style = Stroke(1.7f*unit))
             drawOval(color, Offset(7*unit, 2*unit), Size(10*unit, 20*unit), style = Stroke(1.7f*unit))
             drawLine(color, Offset(2*unit, 12*unit), Offset(22*unit, 12*unit), 1.7f*unit)
-        }
     }
 }
