@@ -35,7 +35,11 @@ if (
   !modes.every((m) => ["all", "include", "exclude"].includes(m))
 )
   throw new Error("Invalid routing matrix");
-const origins = ["https://api.ipify.org", "https://ipv4.icanhazip.com"];
+const origins = [
+  "https://api.ipify.org",
+  "https://ipv4.icanhazip.com",
+  "https://ifconfig.me/ip",
+];
 function ip(origin, tunnel = false) {
   const probe = spawnSync(
     "curl.exe",
@@ -152,7 +156,10 @@ async function main() {
     )) {
       await page.evaluate(
         ({ userId, country, method, mode }) => {
-          const list = { services: [], masks: ["api.ipify.org"] };
+          const list = {
+            services: [],
+            masks: ["api.ipify.org", "ifconfig.me"],
+          };
           localStorage.setItem(
             "prettylisavpn:traffic:v1",
             JSON.stringify({ mode, include: list, exclude: list }),
@@ -242,9 +249,35 @@ async function main() {
             probe.status === 0 && /"status"\s*:\s*"ok"/.test(probe.stdout);
           if (mode !== "all") {
             try {
-              const actual = origins.map((origin) => ip(origin, true));
+              const actual = origins.map((origin, index) => {
+                try {
+                  return ip(origin, true);
+                } catch {
+                  row[`origin_${index}_error`] = "PROBE_FAILED";
+                  throw new Error("PROBE_FAILED");
+                }
+              });
+              const pageProbe = spawnSync(
+                "curl.exe",
+                [
+                  "--silent",
+                  "--fail",
+                  "--max-time",
+                  "20",
+                  "-4",
+                  "--interface",
+                  "172.30.255.1",
+                  "--user-agent",
+                  "Mozilla/5.0 PrettyLisaVPN-Acceptance",
+                  "https://ifconfig.me/",
+                ],
+                { encoding: "utf8", timeout: 25000 },
+              );
+              row.ifconfig_page =
+                pageProbe.status === 0 && pageProbe.stdout.includes(actual[2]);
+              if (!row.ifconfig_page) throw new Error("PAGE_FAILED");
               row.split_verified = actual.every((value, index) => {
-                const vpn = (index === 0) === (mode === "include");
+                const vpn = (index !== 1) === (mode === "include");
                 return vpn ? exits.includes(value) : value === baseline[index];
               });
             } catch {

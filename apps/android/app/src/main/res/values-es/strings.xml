@@ -280,4 +280,11 @@
     <string name="traffic_save_failed">no se pudieron guardar las reglas. inténtalo de nuevo.</string>
     <string name="traffic_mask_invalid">introduce un dominio o *.dominio sin ruta. máximo 256 patrones.</string>
     <string name="traffic_loading">cargando servicios…</string>
+    <string name="traffic_all_short">Todo</string>
+    <string name="traffic_include_short">Elegidos</string>
+    <string name="traffic_exclude_short">Excepto elegidos</string>
+    <string name="traffic_selected">Servicios elegidos</string>
+    <string name="traffic_search">Buscar un servicio</string>
+    <string name="traffic_popular">Servicios populares</string>
+    <string name="traffic_whitelist">Lista permitida</string>
 </resources>

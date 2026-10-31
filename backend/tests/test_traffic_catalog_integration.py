@@ -36,6 +36,10 @@ async def test_seeded_catalog_and_disabled_service():
             )
         rows = await DatabaseCatalog(postgres).list_enabled()
         by_slug = {row.slug: row for row in rows}
+        assert len(rows) == 20
+        assert sum(row.category == "popular" for row in rows) == 10
+        assert sum(row.category == "whitelist" for row in rows) == 10
+        assert len({mask for row in rows for mask in row.domains}) <= 256
         assert "youtube" in by_slug and "instagram" in by_slug
         assert identifier not in {row.id for row in rows}
         assert {"youtube.com", "*.youtube.com", "*.googlevideo.com"} <= set(

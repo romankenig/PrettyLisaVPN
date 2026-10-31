@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Backend — 0.25.0 / Android — 0.17.0 / Windows — 0.20.0 / dashboard — 0.4.3
+
+- Expand the database-owned catalog to two groups of ten services (migration 0038).
+- Compact traffic modes, service switches, name-only presets and icon-only Home
+  selections. Preserve independent include/exclude lists on the device.
+- Hide Autopilot ratings and show country quality with three ascending bars.
+- Exclude intermediate servers from current/historical device aggregates; show
+  immediate chart tooltips with GMT+3 time and values. See [handoff](docs/traffic-polish.md).
+
 ### Windows — 0.19.1
 
 - Build the downloadable client with release optimization, strip Go symbols and

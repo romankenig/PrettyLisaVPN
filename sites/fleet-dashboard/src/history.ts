@@ -4,7 +4,7 @@ export type Measurement = {
   connection_ms: number | null; active_connections: number;
 };
 export type FocusedHour = { at: string; nodeId?: string };
-export type HistoryNode = { id: string; name: string; history: { at: string; measurements?: Measurement[] }[] };
+export type HistoryNode = { id: string; name: string; group?: "FREE" | "PREMIUM" | "INTERMEDIATE"; history: { at: string; measurements?: Measurement[] }[] };
 
 export function hourMeasurements(nodes: HistoryNode[], focus: FocusedHour) {
   return nodes.filter(node => !focus.nodeId || node.id === focus.nodeId).flatMap(node =>

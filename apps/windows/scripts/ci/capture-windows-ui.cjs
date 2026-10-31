@@ -417,7 +417,7 @@ async function main() {
     exact: true,
   });
   await trafficDialog
-    .getByRole("checkbox", { name: "YouTube", exact: true })
+    .getByRole("switch", { name: "YouTube", exact: true })
     .check();
   await trafficDialog
     .getByLabel("Маска сервиса", { exact: true })
@@ -446,12 +446,12 @@ async function main() {
     .click();
   if (
     await trafficDialog
-      .getByRole("checkbox", { name: "YouTube", exact: true })
+      .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked()
   )
     throw new Error("Traffic lists are not independent");
   await trafficDialog
-    .getByRole("checkbox", { name: "Instagram", exact: true })
+    .getByRole("switch", { name: "Instagram", exact: true })
     .check();
   await trafficDialog.locator(".traffic-dialog__body").evaluate((body) => {
     body.scrollTop = 0;
@@ -465,7 +465,7 @@ async function main() {
     .click();
   if (
     !(await trafficDialog
-      .getByRole("checkbox", { name: "YouTube", exact: true })
+      .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked())
   )
     throw new Error("Traffic selection was not saved");

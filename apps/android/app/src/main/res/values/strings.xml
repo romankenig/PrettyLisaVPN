@@ -287,4 +287,11 @@
     <string name="traffic_save_failed">could not save the rules. please retry.</string>
     <string name="traffic_mask_invalid">enter a domain or *.domain without a page path. maximum 256 masks.</string>
     <string name="traffic_loading">loading services…</string>
+    <string name="traffic_all_short">All</string>
+    <string name="traffic_include_short">Selected</string>
+    <string name="traffic_exclude_short">Except selected</string>
+    <string name="traffic_selected">Selected services</string>
+    <string name="traffic_search">Find a service</string>
+    <string name="traffic_popular">Popular services</string>
+    <string name="traffic_whitelist">Allowlisted services</string>
 </resources>

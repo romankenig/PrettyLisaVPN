@@ -178,12 +178,30 @@ describe("connection location dropdown", () => {
     expect(
       screen
         .getAllByRole("option")
+        .filter(
+          (o) =>
+            o.querySelector(".location-option__name")?.textContent !==
+            "автопилот",
+        )
         .every(
           (o) =>
             o.querySelector("svg") &&
             o.querySelector(".location-option__quality"),
         ),
     ).toBe(true);
+    expect(
+      within(screen.getByRole("group", { name: "автопилот" }))
+        .getByRole("option")
+        .querySelector(".location-option__quality"),
+    ).toBeNull();
+    expect(
+      screen.getByRole("combobox").querySelector(".quality-bars"),
+    ).toBeNull();
+    expect(
+      within(screen.getByRole("group", { name: "все страны" }))
+        .getAllByRole("option")[0]
+        .querySelectorAll(".quality-bars i.filled"),
+    ).toHaveLength(3);
   });
 
   it("restores a country and falls back to Autopilot when it is unavailable", async () => {

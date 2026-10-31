@@ -1,7 +1,7 @@
 """Bounded authenticated catalog, independent of any VPN transport."""
 
 import re
-from typing import Annotated, Protocol
+from typing import Annotated, Literal, Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -17,6 +17,7 @@ class TrafficService(BaseModel):
     slug: Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,39}$")]
     name: Annotated[str, Field(min_length=1, max_length=80)]
     icon: Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,39}$")]
+    category: Literal["popular", "whitelist"] = "popular"
     domains: Annotated[list[str], Field(min_length=1, max_length=64)]
 
     @field_validator("domains")

@@ -280,4 +280,11 @@
     <string name="traffic_save_failed">не удалось сохранить правила. повторите попытку.</string>
     <string name="traffic_mask_invalid">укажите домен или *.домен, без адреса страницы. максимум 256 масок.</string>
     <string name="traffic_loading">загрузка сервисов…</string>
+    <string name="traffic_all_short">Всё</string>
+    <string name="traffic_include_short">Выбранное</string>
+    <string name="traffic_exclude_short">Кроме выбранного</string>
+    <string name="traffic_selected">Выбранные сервисы</string>
+    <string name="traffic_search">Найти сервис</string>
+    <string name="traffic_popular">Популярные сервисы</string>
+    <string name="traffic_whitelist">Белый список</string>
 </resources>

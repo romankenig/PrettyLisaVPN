@@ -82,3 +82,10 @@ def test_catalog_preserves_exact_vs_subdomain_and_bounds():
     ]
     with pytest.raises(ValidationError):
         preset(domains=["youtube.com"] * 65)
+
+
+def test_catalog_categories_are_bounded_and_backward_compatible():
+    assert preset().category == "popular"
+    assert preset(category="whitelist").category == "whitelist"
+    with pytest.raises(ValidationError):
+        preset(category="unknown")

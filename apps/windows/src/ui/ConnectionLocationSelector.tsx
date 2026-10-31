@@ -356,12 +356,24 @@ function ChoiceLabel({
       <span className="location-option__name" id={id}>
         {t(choice.name)}
       </span>
-      <span
-        className="location-option__quality"
-        aria-label={t(`доступность ${choice.quality} из 100`)}
-      >
-        {t(choice.quality)}
-      </span>
+      {choice.selection.mode === "COUNTRY" && (
+        <span
+          className="location-option__quality"
+          aria-label={t(`доступность ${choice.quality} из 100`)}
+        >
+          <span className="quality-bars" aria-hidden="true">
+            {[1, 2, 3].map((level) => (
+              <i
+                key={level}
+                className={
+                  choice.quality > ((level - 1) * 100) / 3 ? "filled" : ""
+                }
+              />
+            ))}
+          </span>
+          {t(choice.quality)}
+        </span>
+      )}
     </>
   );
 }

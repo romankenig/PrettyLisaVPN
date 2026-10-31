@@ -280,4 +280,11 @@
     <string name="traffic_save_failed">无法保存规则，请重试。</string>
     <string name="traffic_mask_invalid">请输入域名或 *.域名，不含页面路径。最多 256 条。</string>
     <string name="traffic_loading">正在加载服务…</string>
+    <string name="traffic_all_short">全部</string>
+    <string name="traffic_include_short">所选</string>
+    <string name="traffic_exclude_short">除所选外</string>
+    <string name="traffic_selected">所选服务</string>
+    <string name="traffic_search">搜索服务</string>
+    <string name="traffic_popular">热门服务</string>
+    <string name="traffic_whitelist">白名单</string>
 </resources>
