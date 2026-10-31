@@ -67,7 +67,8 @@ internal fun TrafficRouting(model: ScreenModel) {
         Text(tr(when(selected.mode) { "include" -> R.string.dash_include; "exclude" -> R.string.dash_exclude; else -> R.string.dash_all_traffic }), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
         if (selected.mode != "all") {
             val list = if (selected.mode == "include") selected.include else selected.exclude
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val selectionLabel = tr(R.string.traffic_selected)
+            FlowRow(Modifier.semantics { contentDescription = selectionLabel }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 list.services.forEach { service -> Box(Modifier.semantics { contentDescription = service.name }.padding(4.dp)) { ServiceIcon(service.icon) } }
                 list.masks.forEach { mask -> Box(Modifier.semantics { contentDescription = mask }.padding(4.dp)) { ServiceIcon("website") } }
             }
@@ -171,8 +172,8 @@ private fun ServiceIcon(icon: String) {
     Canvas(Modifier.size(26.dp)) {
         val color = Brand.PurpleHeart
         val unit = size.width / 24
-            drawCircle(color, 10*unit, style = Stroke(1.7f*unit))
-            drawOval(color, Offset(7*unit, 2*unit), Size(10*unit, 20*unit), style = Stroke(1.7f*unit))
-            drawLine(color, Offset(2*unit, 12*unit), Offset(22*unit, 12*unit), 1.7f*unit)
+        drawCircle(color, 10*unit, style = Stroke(1.7f*unit))
+        drawOval(color, Offset(7*unit, 2*unit), Size(10*unit, 20*unit), style = Stroke(1.7f*unit))
+        drawLine(color, Offset(2*unit, 12*unit), Offset(22*unit, 12*unit), 1.7f*unit)
     }
 }
