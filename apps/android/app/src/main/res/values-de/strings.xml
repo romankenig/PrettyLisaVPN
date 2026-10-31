@@ -280,4 +280,11 @@
     <string name="traffic_save_failed">regeln konnten nicht gespeichert werden. bitte erneut versuchen.</string>
     <string name="traffic_mask_invalid">domain oder *.domain ohne Seitenpfad eingeben. maximal 256 Muster.</string>
     <string name="traffic_loading">dienste werden geladen…</string>
+    <string name="traffic_all_short">alles</string>
+    <string name="traffic_include_short">ausgewählte</string>
+    <string name="traffic_exclude_short">außer Auswahl</string>
+    <string name="traffic_selected">ausgewählte Dienste</string>
+    <string name="traffic_search">dienst suchen</string>
+    <string name="traffic_popular">beliebte Dienste</string>
+    <string name="traffic_whitelist">freigabeliste</string>
 </resources>

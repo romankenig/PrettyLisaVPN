@@ -1,4 +1,4 @@
-# PrettyLisaVPN monitoring dashboard — 0.4.1
+# PrettyLisaVPN monitoring dashboard — 0.4.3
 
 Managed client downloads include corresponding engine source/license archives.
 Their links appear only when the verified publisher reports matching sources.
@@ -39,7 +39,10 @@ summary tiles use the same rules on latest observations. Each server has equal
 weight regardless of check frequency. Filters apply before aggregation.
 Missing values are omitted, never carried forward or replaced by zero; tooltips
 and current tiles report coverage. Partial sums are not complete group totals.
-Relay connections count on both nodes and are not globally unique devices.
+Active totals include only selected FREE and PREMIUM exits, excluding transit
+nodes to avoid counting a relay connection twice. Intermediate-only selection
+has no client total; its own card still displays transit activity. Hover or focus
+a point/bar to see its date/time in GMT+3 and metric value immediately.
 See [implementation and verification](../../docs/dashboard-group-metrics.md).
 
 Client downloads use `/dashboard/downloads/android.apk` and

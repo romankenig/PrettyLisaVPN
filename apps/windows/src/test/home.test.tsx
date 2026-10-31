@@ -117,6 +117,91 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("uses name-only service switches and restores independent lists and Home icons", async () => {
+    // jsdom has no native dialog; the CI native review also exercises showModal.
+    const originalModal = Object.getOwnPropertyDescriptor(
+      HTMLDialogElement.prototype,
+      "showModal",
+    );
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+      configurable: true,
+      value: function (this: HTMLDialogElement) {
+        this.open = true;
+      },
+    });
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          services: [
+            {
+              id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
+              slug: "youtube",
+              name: "YouTube",
+              icon: "youtube",
+              domains: ["youtube.com", "*.youtube.com"],
+            },
+            {
+              id: "4e2b8d7c-289f-4c57-8f26-aeb680408cda",
+              slug: "instagram",
+              name: "Instagram",
+              icon: "instagram",
+              domains: ["instagram.com"],
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    try {
+      const rendered = renderRestored();
+      fireEvent.click(
+        await screen.findByRole("radio", { name: "только выбранные сайты" }),
+      );
+      await waitFor(() =>
+        expect(getDeviceTrafficSelection().current().mode).toBe("include"),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
+      const dialog = within(await screen.findByRole("dialog"));
+      fireEvent.click(await dialog.findByRole("switch", { name: "YouTube" }));
+      expect(dialog.queryByText("youtube.com, *.youtube.com")).toBeNull();
+      fireEvent.change(dialog.getByLabelText("Маска сервиса"), {
+        target: { value: "ifconfig.me" },
+      });
+      fireEvent.click(dialog.getByRole("button", { name: "Добавить" }));
+      fireEvent.click(
+        dialog.getByRole("button", { name: "кроме выбранных сайтов" }),
+      );
+      expect(dialog.getByRole("switch", { name: "YouTube" })).not.toBeChecked();
+      expect(dialog.queryByText("ifconfig.me")).toBeNull();
+      fireEvent.click(dialog.getByRole("switch", { name: "Instagram" }));
+      fireEvent.click(dialog.getByRole("button", { name: "Сохранить" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(screen.getByRole("img", { name: "YouTube" })).toBeVisible();
+      expect(screen.queryByText("ifconfig.me")).toBeNull();
+      expect(getDeviceTrafficSelection().current().include.masks).toEqual([
+        "ifconfig.me",
+      ]);
+      expect(getDeviceTrafficSelection().current().exclude.masks).toEqual([]);
+      rendered.unmount();
+      renderRestored();
+      fireEvent.click(
+        screen.getByRole("radio", { name: "кроме выбранных сайтов" }),
+      );
+      await waitFor(() =>
+        expect(screen.getByRole("img", { name: "Instagram" })).toBeVisible(),
+      );
+      expect(screen.queryByRole("img", { name: "YouTube" })).toBeNull();
+    } finally {
+      if (originalModal)
+        Object.defineProperty(
+          HTMLDialogElement.prototype,
+          "showModal",
+          originalModal,
+        );
+      else Reflect.deleteProperty(HTMLDialogElement.prototype, "showModal");
+      fetch.mockRestore();
+    }
+  });
   it("keeps previous traffic rules when cleanup fails", async () => {
     const state = {
       phase: "CONNECTED",

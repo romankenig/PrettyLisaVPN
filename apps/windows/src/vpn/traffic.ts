@@ -5,6 +5,7 @@ export interface TrafficService {
   name: string;
   icon: string;
   domains: string[];
+  category?: "popular" | "whitelist";
 }
 export interface TrafficList {
   services: TrafficService[];
@@ -67,6 +68,7 @@ export function parseTrafficCatalog(raw: unknown): TrafficService[] {
   return data.services.map((s) => {
     if (
       !s ||
+      (s.category != null && !["popular", "whitelist"].includes(s.category)) ||
       !/^[0-9a-f-]{36}$/.test(s.id) ||
       ids.has(s.id) ||
       !/^[a-z][a-z0-9-]{0,39}$/.test(s.slug) ||

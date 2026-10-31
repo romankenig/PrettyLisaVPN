@@ -16,14 +16,15 @@ it aggregates only the currently selected group and server filters.
 
 - Speed: arithmetic mean of valid measurements, separately for download/upload.
 - Rating: median, with the arithmetic mean of the two middle values for even N.
-- Active connections: sum across servers; repeated checks never increase weight.
+- Active connections: sum across selected FREE/PREMIUM servers; repeated checks never increase weight.
 - History uses the latest observation for each server in each UTC hour. Display
   timezone remains GMT+3. Current tiles use latest observations/current ratings.
 - Unknown/nonfinite values are omitted and coverage N/M is shown. A later null
   does not fall back to an earlier valid sample in that hour. Empty selections
   show no data. Real zero is retained. Missing hours break aggregate lines.
-- A relay connection appears on the exit and intermediate nodes. The sum is
-  node connection count, not a count of distinct devices across the service.
+- Since dashboard 0.4.3, a relay connection is counted only on its exit in the
+  aggregate. The intermediate card retains its own transit chart, excluded from
+  the shared total. Empty eligible selection has no client total.
 
 ## Verification and delivery
 

@@ -8,6 +8,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun categoriesRetainLegacySavedListsAndAcceptWhitelist() {
+        val legacy = """{"mode":"include","include":{"services":[{"id":"0bd811da-f080-4f25-887a-67bf534ac2c6","slug":"youtube","name":"YouTube","icon":"youtube","domains":["youtube.com"]}],"masks":["ifconfig.me"]},"exclude":{"services":[],"masks":["example.com"]}}"""
+        val saved = TrafficPreference({ legacy }).current()
+        assertEquals(listOf("ifconfig.me", "youtube.com"), saved.policy().domains)
+        assertEquals(listOf("example.com"), saved.copy(mode = "exclude").policy().domains)
+        assertEquals("whitelist", validateTrafficServices(listOf(saved.include.services.single().copy(category = "whitelist"))).single().category)
+        assertTrue(runCatching { validateTrafficServices(listOf(saved.include.services.single().copy(category = "unknown"))) }.isFailure)
+    }
     @Test fun applyingRulesWaitsForCleanupAndNeverReconnects() = runBlocking {
         for (phase in listOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED)) {
             val state = MutableStateFlow(VpnStatus(phase))

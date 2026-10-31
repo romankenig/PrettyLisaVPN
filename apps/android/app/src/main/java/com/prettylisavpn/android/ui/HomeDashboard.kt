@@ -160,8 +160,17 @@ private fun LocationLabel(code: String?, name: String, quality: Int?, modifier: 
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(countryFlag(code), style = MaterialTheme.typography.bodyMedium)
         Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        // The server's availability score, not latency, speed or a fabricated measurement.
-        Text(quality?.toString() ?: "—", Modifier.semantics { contentDescription = qualityLabel },
-            style = MaterialTheme.typography.labelLarge, color = Brand.PurpleHeart)
+        if (code != null) Row(Modifier.semantics { contentDescription = qualityLabel }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            androidx.compose.foundation.Canvas(Modifier.size(20.dp, 18.dp)) {
+                val unit = size.width / 20
+                for (level in 1..3) {
+                    val height = (5 + level * 4) * unit
+                    drawRoundRect(if ((quality ?: 0) > (level - 1) * 100 / 3.0) Brand.PurpleHeart else Brand.DustyGray.copy(alpha = .3f),
+                        androidx.compose.ui.geometry.Offset((level - 1) * 7 * unit, size.height - height),
+                        androidx.compose.ui.geometry.Size(5 * unit, height), androidx.compose.ui.geometry.CornerRadius(unit))
+                }
+            }
+            Text(quality?.toString() ?: "—", style = MaterialTheme.typography.labelLarge, color = Brand.PurpleHeart)
+        }
     }
 }

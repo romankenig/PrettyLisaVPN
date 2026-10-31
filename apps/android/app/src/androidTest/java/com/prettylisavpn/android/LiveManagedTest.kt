@@ -44,7 +44,7 @@ class LiveManagedTest {
         val modes = credential.getAsJsonArray("routing_modes")?.map { it.asString } ?: listOf("all")
         require(modes.isNotEmpty() && modes.all { it in setOf("all", "include", "exclude") })
         // Fixed diagnostic origins only, no customer destinations or DNS logs.
-        val origins = listOf("https://api.ipify.org", "https://ipv4.icanhazip.com")
+        val origins = listOf("https://api.ipify.org", "https://ipv4.icanhazip.com", "https://ifconfig.me/ip")
         fun ip(origin: String, network: android.net.Network? = null): String {
             val connection = (network?.openConnection(URL(origin), Proxy.NO_PROXY)
                 ?: URL(origin).openConnection(Proxy.NO_PROXY)) as HttpsURLConnection
@@ -95,7 +95,7 @@ class LiveManagedTest {
                     while (AndroidVpnHost.current()?.status?.value?.phase != VpnPhase.DISCONNECTED && SystemClock.elapsedRealtime() < idleDeadline) SystemClock.sleep(200)
                     assertEquals("Session recovery must finish before connect", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
                     scenario.onActivity {
-                        val masks = TrafficList(masks = listOf("api.ipify.org"))
+                        val masks = TrafficList(masks = listOf("api.ipify.org", "ifconfig.me"))
                         DeviceTrafficSelection.get(context).save(TrafficSelection(mode, masks, masks))
                         DeviceMethodSelection.get(context).apply {
                             all()
@@ -140,9 +140,18 @@ class LiveManagedTest {
                         }.getOrDefault(false)
                         if (mode != "all" && vpn != null) {
                             row["split_verified"] = runCatching {
-                                val actual = origins.map { ip(it, vpn) }
+                                val actual = origins.mapIndexed { index, origin ->
+                                    try { ip(origin, vpn) } catch (error: Exception) { row["origin_${index}_error"] = error.javaClass.simpleName; throw error }
+                                }
+                                val page = vpn.openConnection(URL("https://ifconfig.me/"), Proxy.NO_PROXY) as HttpsURLConnection
+                                try {
+                                    page.connectTimeout = 15_000; page.readTimeout = 15_000; page.instanceFollowRedirects = false
+                                    page.setRequestProperty("User-Agent", "Mozilla/5.0 PrettyLisaVPN-Acceptance")
+                                    row["ifconfig_page"] = page.responseCode == 200 && page.inputStream.bufferedReader().use { it.readText().contains(actual[2]) }
+                                    check(row["ifconfig_page"] == true)
+                                } finally { page.disconnect() }
                                 actual.indices.all { index ->
-                                    val shouldUseVpn = (index == 0) == (mode == "include")
+                                    val shouldUseVpn = (index != 1) == (mode == "include")
                                     if (shouldUseVpn) actual[index] in exits else actual[index] == baseline[index]
                                 }
                             }.getOrDefault(false)

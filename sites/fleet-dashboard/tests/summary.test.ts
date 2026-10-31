@@ -17,3 +17,12 @@ test("current selection has mean speeds, median ratings and summed active device
   assert.equal(selectionSummary(nodes.slice(0, 2)).rating.value, 50);
   assert.equal(selectionSummary([]).active.value, null);
 });
+
+test("active totals exclude transit nodes but retain their speed and rating", () => {
+  const latest = { download_mbps: 30, upload_mbps: 10, active_connections: 3 };
+  const nodes = [{ group: "FREE" as const, quality: 90, latest }, { group: "INTERMEDIATE" as const, quality: 70, latest }];
+  assert.deepEqual(selectionSummary(nodes).active, { value: 3, covered: 1, total: 1 });
+  assert.equal(selectionSummary(nodes).rating.value, 80);
+  assert.equal(selectionSummary(nodes).download.covered, 2);
+  assert.deepEqual(selectionSummary(nodes.slice(1)).active, { value: null, covered: 0, total: 0 });
+});

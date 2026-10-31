@@ -280,4 +280,11 @@
     <string name="traffic_save_failed">impossible d’enregistrer les règles. réessayez.</string>
     <string name="traffic_mask_invalid">saisissez un domaine ou *.domaine sans chemin. maximum 256 masques.</string>
     <string name="traffic_loading">chargement des services…</string>
+    <string name="traffic_all_short">tout</string>
+    <string name="traffic_include_short">sélection</string>
+    <string name="traffic_exclude_short">sauf sélection</string>
+    <string name="traffic_selected">services sélectionnés</string>
+    <string name="traffic_search">chercher un service</string>
+    <string name="traffic_popular">services populaires</string>
+    <string name="traffic_whitelist">liste autorisée</string>
 </resources>

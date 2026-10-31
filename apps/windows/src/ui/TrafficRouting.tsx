@@ -1,3 +1,4 @@
+import { serviceIcons } from "./serviceIcons";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { t, useLanguage } from "../i18n";
 import { useApplication } from "../state/application";
@@ -59,7 +60,17 @@ export function TrafficRouting() {
   }
   return (
     <section className="traffic-mode" aria-labelledby="traffic-mode-title">
-      <h2 id="traffic-mode-title">{t("что защищаем")}</h2>
+      <div className="traffic-mode__heading">
+        <h2 id="traffic-mode-title">{t("что защищаем")}</h2>
+        <button
+          type="button"
+          className="traffic-edit"
+          disabled={busy}
+          onClick={() => setOpen(true)}
+        >
+          {t("Выбрать сервисы")} <span aria-hidden="true">›</span>
+        </button>
+      </div>
       <fieldset className="traffic-mode__options" disabled={busy}>
         <legend className="sr-only">{t("режим трафика")}</legend>
         {(["all", "include", "exclude"] as Mode[]).map((mode) => (
@@ -69,6 +80,7 @@ export function TrafficRouting() {
           >
             <input
               type="radio"
+              aria-label={t(labels[mode])}
               name="traffic-mode"
               value={mode}
               checked={mode === selected.mode}
@@ -76,19 +88,45 @@ export function TrafficRouting() {
                 void save({ ...selected, mode }).catch(() => {});
               }}
             />
-            <span className="traffic-choice__icon" aria-hidden="true">
-              {mode === "all" ? "◇" : mode === "include" ? "+" : "−"}
-            </span>
             <span>
-              <strong>{t(labels[mode])}</strong>
-              <small>{t(details[mode])}</small>
+              {t(
+                mode === "all"
+                  ? "Всё"
+                  : mode === "include"
+                    ? "Выбранное"
+                    : "Кроме выбранного",
+              )}
             </span>
           </label>
         ))}
       </fieldset>
-      <button type="button" disabled={busy} onClick={() => setOpen(true)}>
-        {t("Выбрать сервисы")}
-      </button>
+      <p className="traffic-mode__hint">{t(details[selected.mode])}</p>
+      {selected.mode !== "all" && (
+        <div className="traffic-selected" aria-label={t("Выбранные сервисы")}>
+          {selected[selected.mode].services.map((service) => (
+            <span
+              key={service.id}
+              className="traffic-selected__icon"
+              role="img"
+              aria-label={service.name}
+              title={service.name}
+            >
+              <ServiceIcon name={service.icon} />
+            </span>
+          ))}
+          {selected[selected.mode].masks.map((mask) => (
+            <span
+              key={mask}
+              className="traffic-selected__icon"
+              role="img"
+              aria-label={mask}
+              title={mask}
+            >
+              <ServiceIcon name="website" />
+            </span>
+          ))}
+        </div>
+      )}
       {error && (
         <p role="alert">
           {t("Не удалось сохранить правила. Повторите попытку.")}
@@ -107,6 +145,44 @@ export function TrafficRouting() {
   );
 }
 function ServiceIcon({ name }: { name: string }) {
+  if (serviceIcons[name])
+    return (
+      <svg
+        aria-hidden="true"
+        width="26"
+        height="26"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d={serviceIcons[name]} />
+      </svg>
+    );
+  const badge: Record<string, string> = {
+    linkedin: "in",
+    max: "M",
+    yandex: "Я",
+    ozon: "O",
+    wildberries: "WB",
+    gosuslugi: "ГУ",
+    rutube: "R",
+    dzen: "Д",
+  };
+  if (badge[name])
+    return (
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24">
+        <rect width="24" height="24" rx="6" fill="currentColor" />
+        <text
+          x="12"
+          y="16"
+          textAnchor="middle"
+          fill="white"
+          fontSize="11"
+          fontWeight="600"
+        >
+          {badge[name]}
+        </text>
+      </svg>
+    );
   return (
     <svg
       aria-hidden="true"
@@ -117,20 +193,9 @@ function ServiceIcon({ name }: { name: string }) {
       stroke="currentColor"
       strokeWidth="1.7"
     >
-      {name === "youtube" ? (
-        <>
-          <rect x="2" y="5" width="20" height="14" rx="4" />
-          <path fill="currentColor" stroke="none" d="m10 9 6 3-6 3z" />
-        </>
-      ) : name === "instagram" ? (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="5" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r=".7" />
-        </>
-      ) : (
-        <circle cx="12" cy="12" r="9" />
-      )}
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <path d="M3 12h18" />
     </svg>
   );
 }
@@ -156,6 +221,7 @@ function TrafficDialog({
   const [catalog, setCatalog] = useState<TrafficService[]>([]);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
+  const [query, setQuery] = useState("");
   const [input, setInput] = useState("");
   const [invalid, setInvalid] = useState(false);
   useEffect(() => {
@@ -241,34 +307,60 @@ function TrafficDialog({
             )}
           </p>
         )}
-        <div className="traffic-services">
-          {services.map((service) => (
-            <label key={service.id}>
-              <input
-                type="checkbox"
-                aria-label={service.name}
-                checked={list.services.some((s) => s.id === service.id)}
-                disabled={busy}
-                onChange={() =>
-                  setDraft({
-                    ...draft,
-                    [tab]: {
-                      ...list,
-                      services: list.services.some((s) => s.id === service.id)
-                        ? list.services.filter((s) => s.id !== service.id)
-                        : [...list.services, service],
-                    },
-                  })
-                }
-              />
-              <ServiceIcon name={service.icon} />
-              <span>
-                {service.name}
-                <small>{service.domains.join(", ")}</small>
-              </span>
-            </label>
-          ))}
-        </div>
+        <input
+          className="traffic-search"
+          type="search"
+          aria-label={t("Найти сервис")}
+          placeholder={t("Найти сервис")}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {(["popular", "whitelist"] as const).map((category) => (
+          <section key={category} className="traffic-category">
+            <h3>
+              {t(
+                category === "popular" ? "Популярные сервисы" : "Белый список",
+              )}
+            </h3>
+            <div className="traffic-services">
+              {services
+                .filter(
+                  (service) =>
+                    (service.category ?? "popular") === category &&
+                    service.name
+                      .toLocaleLowerCase()
+                      .includes(query.trim().toLocaleLowerCase()),
+                )
+                .map((service) => (
+                  <label key={service.id}>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      className="service-switch"
+                      aria-label={service.name}
+                      checked={list.services.some((s) => s.id === service.id)}
+                      disabled={busy}
+                      onChange={() =>
+                        setDraft({
+                          ...draft,
+                          [tab]: {
+                            ...list,
+                            services: list.services.some(
+                              (s) => s.id === service.id,
+                            )
+                              ? list.services.filter((s) => s.id !== service.id)
+                              : [...list.services, service],
+                          },
+                        })
+                      }
+                    />
+                    <ServiceIcon name={service.icon} />
+                    <span>{service.name}</span>
+                  </label>
+                ))}
+            </div>
+          </section>
+        ))}
         <label htmlFor="traffic-mask">{t("Маска сервиса")}</label>
         <div className="traffic-mask-entry">
           <input

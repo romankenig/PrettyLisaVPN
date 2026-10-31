@@ -178,12 +178,59 @@ describe("connection location dropdown", () => {
     expect(
       screen
         .getAllByRole("option")
+        .filter(
+          (o) =>
+            o.querySelector(".location-option__name")?.textContent !==
+            "автопилот",
+        )
         .every(
           (o) =>
             o.querySelector("svg") &&
             o.querySelector(".location-option__quality"),
         ),
     ).toBe(true);
+    expect(
+      within(screen.getByRole("group", { name: "автопилот" }))
+        .getByRole("option")
+        .querySelector(".location-option__quality"),
+    ).toBeNull();
+    expect(
+      screen.getByRole("combobox").querySelector(".quality-bars"),
+    ).toBeNull();
+    expect(
+      within(screen.getByRole("group", { name: "все страны" }))
+        .getAllByRole("option")[0]
+        .querySelectorAll(".quality-bars i.filled"),
+    ).toHaveLength(3);
+  });
+
+  it("shows zero to three ascending bars for country rating bands", async () => {
+    const api = mockApi();
+    vi.mocked(api.listVpnCountries).mockResolvedValue({
+      autopilot: availability.autopilot,
+      countries: [
+        { country_code: "DE", quality: 0, available: true },
+        { country_code: "FR", quality: 33, available: true },
+        { country_code: "US", quality: 66, available: true },
+        { country_code: "NL", quality: 100, available: true },
+      ],
+    });
+    renderSelector(api);
+    await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
+    fireEvent.click(screen.getByRole("combobox"));
+    const group = within(screen.getByRole("group", { name: "все страны" }));
+    for (const [rating, filled] of [
+      [0, 0],
+      [33, 1],
+      [66, 2],
+      [100, 3],
+    ]) {
+      const label = group.getByLabelText(`доступность ${rating} из 100`);
+      expect(label.querySelectorAll(".quality-bars i")).toHaveLength(3);
+      expect(label.querySelectorAll(".quality-bars i.filled")).toHaveLength(
+        filled,
+      );
+    }
   });
 
   it("restores a country and falls back to Autopilot when it is unavailable", async () => {

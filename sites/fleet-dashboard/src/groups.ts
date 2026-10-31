@@ -9,7 +9,7 @@ export function groupSummaries(nodes: SummaryNode[]) {
     const known = members.reduce((sum, node) => sum + node.known_hours, 0);
     const successful = members.reduce((sum, node) => sum + node.successful_hours, 0);
     return { group, servers: members.length, available: members.filter(node => node.available).length,
-      active: members.reduce((sum, node) => sum + (node.latest?.active_connections ?? 0), 0),
+      active: group === "INTERMEDIATE" ? null : members.reduce((sum, node) => sum + (node.latest?.active_connections ?? 0), 0),
       availability: known ? 100 * successful / known : null };
   });
 }

@@ -1,5 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+
+test("historical active totals exclude intermediate nodes while their individual bars remain", () => {
+  const at = "2026-10-31T06:00:00Z";
+  const sample = { observed_at: at, status: "HEALTHY", mode: "SYNTHETIC", quality: 90, download_mbps: 30, upload_mbps: 20, connection_ms: 10, active_connections: 4 };
+  const nodes = [{ id: "de", name: "DE", group: "FREE" as const, history: [{ at, measurements: [sample] }] }, { id: "ru", name: "RU", group: "INTERMEDIATE" as const, history: [{ at, measurements: [sample] }] }];
+  assert.deepEqual(aggregateSeries(nodes, "active")[0].segments[0][0], { time: Date.parse(at), value: 4, covered: 1, total: 1 });
+  assert.equal(chartSeries(nodes.slice(1), "active")[0].segments[0][0].value, 4);
+  assert.deepEqual(aggregateSeries(nodes.slice(1), "active")[0].segments, []);
+});
 import { activeBars, aggregateSeries, aggregateValues, chartSeries } from "../src/chart.ts";
 
 test("group aggregation weights servers equally, uses median and sum, and reports incomplete coverage", () => {

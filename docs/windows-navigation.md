@@ -553,3 +553,16 @@ other managed methods. The persisted nonempty selection, last successful method,
 progress messages and confirmed cleanup gate are unchanged. These rows now use
 real native adapters; backend opt-in deployment and packaged VPN acceptance remain
 pending. No new route, popup or external transition. See managed-transports.md.
+
+
+### Android 0.17.0 / Windows 0.20.0: service selection polish
+
+Home keeps the three traffic modes as compact segmented controls; the adjacent
+Choose services action opens the same editor. Selected sites appear as icons with
+accessible names. Editor switches, search and category headings replace checkbox
+rows with domain details. Include/exclude tabs still edit independent saved lists;
+changing the tab does not change the active Home mode. Saving disconnects and
+applies on the next manual connection. Database catalog integration is real;
+category is optional for compatibility. Autopilot has no visible score; country
+rows include three rating bars. No new route, auth guard or external transition.
+See [handoff](traffic-polish.md) and the task PR for actual native screenshots.

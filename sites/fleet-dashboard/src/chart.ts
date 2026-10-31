@@ -22,6 +22,7 @@ export function aggregateValues(values: number[], metric: ChartMetric): number |
 
 /** Equal weight per server, not per check. No carry-forward across missing hours. */
 export function aggregateSeries(nodes: HistoryNode[], metric: ChartMetric): Series[] {
+  if (metric === "active") nodes = nodes.filter(node => node.group !== "INTERMEDIATE");
   const hours = new Map<number, Map<string, Measurement>>();
   for (const node of nodes) for (const bucket of node.history) {
     const bucketTime = Date.parse(bucket.at);
