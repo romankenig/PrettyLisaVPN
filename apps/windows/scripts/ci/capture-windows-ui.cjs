@@ -409,6 +409,22 @@ async function main() {
   if ((await page.locator(".account-summary").innerText()).includes("статус"))
     throw new Error("Account status must be removed");
   await screenshot("04-home");
+  if (await page.locator(".traffic-mode .current-location").count())
+    throw new Error("Full-traffic mode must have only one location");
+  for (const [mode, name] of [
+    ["include", "только выбранные сайты"],
+    ["exclude", "кроме выбранных сайтов"],
+  ]) {
+    await page.getByRole("radio", { name, exact: true }).check();
+    await page.locator(".traffic-mode .current-location").waitFor();
+    if ((await page.locator(".current-location").count()) !== 2)
+      throw new Error("Split modes require two location blocks");
+    await screenshot("04-home-location-" + mode);
+  }
+  await page.getByRole("radio", { name: "весь трафик", exact: true }).check();
+  await page
+    .locator(".traffic-mode .current-location")
+    .waitFor({ state: "detached" });
   await page
     .getByRole("button", { name: "Выбрать сервисы", exact: true })
     .click();
