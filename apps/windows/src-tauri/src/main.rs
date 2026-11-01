@@ -5,6 +5,7 @@ mod managed;
 mod payment_browser;
 mod public_location;
 mod refresh_credentials;
+mod vpn_service;
 mod window_frame;
 mod wireguard;
 
@@ -12,15 +13,14 @@ use tauri::Manager;
 
 fn main() {
     let arguments: Vec<String> = std::env::args().collect();
-    if arguments
-        .get(1)
-        .is_some_and(|value| value == "--engine-host")
-    {
-        std::process::exit(if managed::host(&arguments).is_ok() {
-            0
-        } else {
-            1
-        });
+    let action = match arguments.get(1).map(String::as_str) {
+        Some("--vpn-service") if arguments.len() == 2 => Some(vpn_service::dispatch()),
+        Some("--install-service") if arguments.len() == 2 => Some(vpn_service::install()),
+        Some("--service-check") if arguments.len() == 2 => Some(managed::service_check()),
+        _ => None,
+    };
+    if let Some(result) = action {
+        std::process::exit(if result.is_ok() { 0 } else { 1 });
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
@@ -44,11 +44,8 @@ fn main() {
             refresh_credentials::replace_refresh_credential,
             refresh_credentials::delete_refresh_credential,
             wireguard::wg_prepare,
-            wireguard::wg_start,
             wireguard::wg_start_routed,
             wireguard::wg_stop,
-            wireguard::wg_is_up,
-            wireguard::wg_verify,
             managed::engine_start,
             managed::engine_stop,
             managed::engine_is_up,

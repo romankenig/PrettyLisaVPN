@@ -264,9 +264,7 @@
     "Отменить": "Отменить",
     "Доступен WireGuard. Другие способы пока в разработке.": "Доступен WireGuard. Другие способы пока в разработке.",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} не подключился. Все способы проверены; подключиться не удалось.",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "Установите официальный WireGuard для Windows и повторите подключение.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Для WireGuard нужно подтвердить системный запрос Windows.",
     "Осталось сегодня:": "Осталось сегодня:",
     "Обновится: {0}": "Обновится: {0}",
     "Остаток Free": "Остаток Free",
@@ -300,7 +298,8 @@
     "локация VPN:": "локация VPN:",
     "Обновить главную": "Обновить главную",
     "Топ-10 популярных": "Топ-10 популярных",
-    "Все сервисы": "Все сервисы"
+    "Все сервисы": "Все сервисы",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -567,9 +566,7 @@
     "Отменить": "cancel",
     "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard is available. Other methods are still in development.",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} did not connect. All methods tried; connection failed.",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "Install the official WireGuard for Windows and try again.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Another VPN is active. Disconnect it before connecting PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Approve the Windows system prompt to start WireGuard.",
     "Осталось сегодня:": "Time left today:",
     "Обновится: {0}": "Resets: {0}",
     "Остаток Free": "Free time remaining",
@@ -603,7 +600,8 @@
     "локация VPN:": "VPN location:",
     "Обновить главную": "Refresh Home",
     "Топ-10 популярных": "Top 10 popular",
-    "Все сервисы": "All services"
+    "Все сервисы": "All services",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "The VPN service is unavailable. Run the PrettyLisaVPN installer again."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -870,9 +868,7 @@
     "Отменить": "取消",
     "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard 已可用，其他连接方式仍在开发中。",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} 未能连接。已尝试所有方式，连接失败。",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "请安装官方 WireGuard Windows 客户端后重试。",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "另一个 VPN 正在运行。连接 PrettyLisaVPN 前请先断开它。",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "请确认 Windows 系统提示以启动 WireGuard。",
     "Осталось сегодня:": "今日剩余时间:",
     "Обновится: {0}": "重置时间：{0}",
     "Остаток Free": "Free 剩余时间",
@@ -906,7 +902,8 @@
     "локация VPN:": "VPN 位置:",
     "Обновить главную": "刷新主页",
     "Топ-10 популярных": "十大热门服务",
-    "Все сервисы": "全部服务"
+    "Все сервисы": "全部服务",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "VPN 服务不可用。请重新运行 PrettyLisaVPN 安装程序。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1173,9 +1170,7 @@
     "Отменить": "cancelar",
     "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard está disponible. Los demás métodos siguen en desarrollo.",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} no se conectó. Se probaron todos los métodos; la conexión falló.",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "Instala el cliente oficial WireGuard para Windows e inténtalo de nuevo.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Hay otra VPN activa. Desconéctala antes de conectar PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirma la solicitud del sistema Windows para iniciar WireGuard.",
     "Осталось сегодня:": "Tiempo restante hoy:",
     "Обновится: {0}": "Se renueva: {0}",
     "Остаток Free": "Tiempo Free restante",
@@ -1209,7 +1204,8 @@
     "локация VPN:": "ubicación VPN:",
     "Обновить главную": "Actualizar inicio",
     "Топ-10 популярных": "Top 10 populares",
-    "Все сервисы": "Todos los servicios"
+    "Все сервисы": "Todos los servicios",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "El servicio VPN no está disponible. Ejecuta de nuevo el instalador de PrettyLisaVPN."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1476,9 +1472,7 @@
     "Отменить": "abbrechen",
     "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard ist verfügbar. Weitere Methoden werden noch entwickelt.",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} konnte keine Verbindung herstellen. Alle Methoden wurden versucht.",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "Installieren Sie den offiziellen WireGuard-Client für Windows und versuchen Sie es erneut.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Ein anderes VPN ist aktiv. Trennen Sie es, bevor Sie PrettyLisaVPN verbinden.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Bestätigen Sie die Windows-Systemabfrage, um WireGuard zu starten.",
     "Осталось сегодня:": "Heute verbleibende Zeit:",
     "Обновится: {0}": "Erneuerung: {0}",
     "Остаток Free": "Verbleibende Free-Zeit",
@@ -1512,7 +1506,8 @@
     "локация VPN:": "VPN-Standort:",
     "Обновить главную": "Startseite aktualisieren",
     "Топ-10 популярных": "Top 10 beliebt",
-    "Все сервисы": "Alle Dienste"
+    "Все сервисы": "Alle Dienste",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Der VPN-Dienst ist nicht verfügbar. Führen Sie das PrettyLisaVPN-Installationsprogramm erneut aus."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1779,9 +1774,7 @@
     "Отменить": "annuler",
     "Доступен WireGuard. Другие способы пока в разработке.": "WireGuard est disponible. Les autres méthodes sont encore en développement.",
     "{0} не подключился. Все способы проверены; подключиться не удалось.": "{0} n’a pas pu se connecter. Toutes les méthodes ont été essayées sans succès.",
-    "Установите официальный WireGuard для Windows и повторите подключение.": "Installez le client officiel WireGuard pour Windows et réessayez.",
     "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.": "Un autre VPN est actif. Déconnectez-le avant de connecter PrettyLisaVPN.",
-    "Для WireGuard нужно подтвердить системный запрос Windows.": "Confirmez la demande système Windows pour démarrer WireGuard.",
     "Осталось сегодня:": "Temps restant aujourd’hui:",
     "Обновится: {0}": "Renouvellement : {0}",
     "Остаток Free": "Temps Free restant",
@@ -1815,6 +1808,7 @@
     "локация VPN:": "localisation VPN:",
     "Обновить главную": "Actualiser l’accueil",
     "Топ-10 популярных": "Top 10 populaires",
-    "Все сервисы": "Tous les services"
+    "Все сервисы": "Tous les services",
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Le service VPN est indisponible. Relancez le programme d’installation PrettyLisaVPN."
   }
 }

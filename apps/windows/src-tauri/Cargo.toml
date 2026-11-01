@@ -1,11 +1,14 @@
 [package]
 name = "prettylisavpn-windows"
-version = "0.22.0"
+version = "0.23.0"
 edition = "2021"
 rust-version = "1.85"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
+base64 = "0.22"
+getrandom = "0.3"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
 url = "2"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
@@ -20,6 +23,7 @@ windows-sys = { version = "0.61", features = [
   "Win32_Security_Credentials",
   "Win32_System_Registry",
   "Win32_System_Services",
+  "Win32_System_Com",
   "Win32_System_Threading",
   "Win32_System_JobObjects",
   "Win32_System_Pipes",
