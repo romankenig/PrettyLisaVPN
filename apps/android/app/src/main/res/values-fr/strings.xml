@@ -290,10 +290,10 @@
     <string name="traffic_description_include">le reste du trafic passe directement</string>
     <string name="traffic_description_exclude">vpn pour tout sauf votre liste</string>
     <string name="notification_vpn_connected">VPN activé</string>
-    <string name="notification_vpn_connecting">Connexion au VPN…</string>
-    <string name="notification_vpn_disconnecting">Déconnexion du VPN…</string>
-    <string name="notification_open">Ouvrir l’application</string>
-    <string name="notification_disconnect">Déconnecter le VPN</string>
-    <string name="traffic_top">Top 10 populaires</string>
-    <string name="traffic_all_services">Tous les services</string>
+    <string name="notification_vpn_connecting">connexion au VPN…</string>
+    <string name="notification_vpn_disconnecting">déconnexion du VPN…</string>
+    <string name="notification_open">ouvrir l’application</string>
+    <string name="notification_disconnect">déconnecter le VPN</string>
+    <string name="traffic_top">top 10 populaires</string>
+    <string name="traffic_all_services">tous les services</string>
 </resources>

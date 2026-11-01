@@ -19,7 +19,7 @@ func (r *Routing) validate() error {
 	if r == nil {
 		return nil
 	}
-	if (r.Mode != "all" && r.Mode != "include" && r.Mode != "exclude") || len(r.Domains) > 256 || len(r.IPv4CIDRs) > 256 || (r.Mode == "all" && (len(r.Domains) != 0 || len(r.IPv4CIDRs) != 0)) {
+	if (r.Mode != "all" && r.Mode != "include" && r.Mode != "exclude") || len(r.Domains) > 1024 || len(r.IPv4CIDRs) > 256 || (r.Mode == "all" && (len(r.Domains) != 0 || len(r.IPv4CIDRs) != 0)) {
 		return ErrProfile
 	}
 	for _, value := range r.IPv4CIDRs {

@@ -3,7 +3,8 @@
 Task versions: Android **0.18.1/code 35 → 0.19.0/code 36**, Windows
 **0.21.1 → 0.22.0**, backend **0.26.0 → 0.27.0**. MINOR releases add Home
 refresh, an expanded database catalog and actionable VPN notifications.
-Managed engines remain **0.5.0**, dashboard remains **0.4.3**.
+Managed engines **0.5.0 → 0.5.1** fix the domain rule bound for the larger catalog;
+dashboard remains **0.4.3**.
 
 ## Behavior
 
@@ -40,6 +41,11 @@ below the existing 64-entry API/client limit. Rank is optional for older clients
 and older saved selections. No traffic destinations or user browsing observations
 are collected. Names are observed catalog facts; ranking is editorial, not usage
 statistics. See [catalog evidence](traffic-catalog-sources.md).
+
+Both clients and engine 0.5.1 accept up to 1024 combined domain rules, so the
+complete catalog and 256 manual masks fit together. Manual masks remain limited
+to 256, service IPv4 rules to 256, and the engine profile to 64 KiB. Older engines
+still accept their previous profiles; new clients ship the matching engine.
 
 Upgrade backend before distributing clients to expose the larger catalog.
 Downgrade removes only the 40 seeded IDs and the rank column; original services

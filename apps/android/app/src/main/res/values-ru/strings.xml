@@ -290,10 +290,10 @@
     <string name="traffic_description_include">остальной трафик — напрямую</string>
     <string name="traffic_description_exclude">vpn для всего, кроме вашего списка</string>
     <string name="notification_vpn_connected">VPN включён</string>
-    <string name="notification_vpn_connecting">Подключение VPN…</string>
-    <string name="notification_vpn_disconnecting">Отключение VPN…</string>
-    <string name="notification_open">Открыть приложение</string>
-    <string name="notification_disconnect">Отключить VPN</string>
-    <string name="traffic_top">Топ-10 популярных</string>
-    <string name="traffic_all_services">Все сервисы</string>
+    <string name="notification_vpn_connecting">подключение VPN…</string>
+    <string name="notification_vpn_disconnecting">отключение VPN…</string>
+    <string name="notification_open">открыть приложение</string>
+    <string name="notification_disconnect">отключить VPN</string>
+    <string name="traffic_top">топ-10 популярных</string>
+    <string name="traffic_all_services">все сервисы</string>
 </resources>

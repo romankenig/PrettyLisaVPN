@@ -39,7 +39,8 @@ async def test_seeded_catalog_and_disabled_service():
         assert len(rows) == 60
         assert sum(row.category == "popular" for row in rows) == 50
         assert sum(row.category == "whitelist" for row in rows) == 10
-        assert len({mask for row in rows for mask in row.domains}) <= 512
+        # Full catalog plus the maximum manual list fits both clients and engine.
+        assert len({mask for row in rows for mask in row.domains}) + 256 <= 1024
         assert by_slug["youtube"].popularity_rank == 1
         assert by_slug["chatgpt"].popularity_rank == 7
         assert by_slug["vk"].popularity_rank == 1

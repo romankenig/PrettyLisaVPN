@@ -297,10 +297,10 @@
     <string name="traffic_description_include">other traffic goes directly</string>
     <string name="traffic_description_exclude">vpn for everything except your list</string>
     <string name="notification_vpn_connected">VPN is on</string>
-    <string name="notification_vpn_connecting">Connecting VPN…</string>
-    <string name="notification_vpn_disconnecting">Disconnecting VPN…</string>
-    <string name="notification_open">Open app</string>
-    <string name="notification_disconnect">Disconnect VPN</string>
-    <string name="traffic_top">Top 10 popular</string>
-    <string name="traffic_all_services">All services</string>
+    <string name="notification_vpn_connecting">connecting VPN…</string>
+    <string name="notification_vpn_disconnecting">disconnecting VPN…</string>
+    <string name="notification_open">open app</string>
+    <string name="notification_disconnect">disconnect VPN</string>
+    <string name="traffic_top">top 10 popular</string>
+    <string name="traffic_all_services">all services</string>
 </resources>

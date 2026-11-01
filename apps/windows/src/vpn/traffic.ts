@@ -153,6 +153,7 @@ export function routingPolicy(value: TrafficSelection): RoutingPolicy {
     throw new Error("INVALID_TRAFFIC_MODE");
   if (value.mode === "all") return { mode: "all", domains: [] };
   const list = value[value.mode];
+  if (list.masks.length > 256) throw new Error("TOO_MANY_MASKS");
   const domains = [
     ...new Set([
       ...list.masks.map(normalizeMask),
@@ -161,7 +162,7 @@ export function routingPolicy(value: TrafficSelection): RoutingPolicy {
       ),
     ]),
   ];
-  if (domains.length > 256) throw new Error("TOO_MANY_MASKS");
+  if (domains.length > 1024) throw new Error("TOO_MANY_MASKS");
   const ipv4_cidrs = [
     ...new Set(
       parseTrafficCatalog({ services: list.services }).flatMap(

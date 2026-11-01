@@ -6,13 +6,15 @@
 
 ## Unreleased
 
-### Android — 0.19.0 / Windows — 0.22.0 / Backend — 0.27.0
+### Android — 0.19.0 / Windows — 0.22.0 / Backend — 0.27.0 / engines — 0.5.1
 
 - Refresh Home manually, immediately recheck location after VPN transitions and
   show loading indicators; tolerate brief network interruptions for 15 seconds.
 - Extend the database catalog to 50 curated popular services observed in NotVPN,
   retaining ten allowlist presets and existing routing identities (migration 0040).
 - Show a mode/language-dependent top ten followed by the complete alphabetic list.
+- Allow the expanded catalog and manual masks together within a shared bounded
+  1024-domain policy; retain the 256-manual-mask and 256-network limits.
 - Add Android ongoing VPN status with Open app / Disconnect VPN actions and the
   Android 13+ notification permission request. See [handoff](docs/home-refresh-catalog.md).
 

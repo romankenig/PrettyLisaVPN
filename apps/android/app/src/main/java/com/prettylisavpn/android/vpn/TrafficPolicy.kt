@@ -63,8 +63,9 @@ fun TrafficSelection.policy(): RoutingPolicy {
     require(mode in setOf("all", "include", "exclude"))
     if (mode == "all") return RoutingPolicy(mode, emptyList())
     val list = if (mode == "include") include else exclude
+    require(list.masks.size <= 256)
     val domains = (list.masks.map(::normalizeTrafficMask) + validateTrafficServices(list.services).flatMap { it.domains }).distinct()
-    require(domains.size <= 256)
+    require(domains.size <= 1024)
     val networks = validateTrafficServices(list.services).flatMap { it.ipv4_cidrs ?: emptyList() }.distinct()
     require(networks.size <= 256)
     return RoutingPolicy(mode, domains, networks)

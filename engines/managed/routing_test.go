@@ -3,11 +3,44 @@ package managed
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/infra/conf/serial"
 )
+
+func TestExpandedCatalogRoutingBound(t *testing.T) {
+	for _, mode := range []string{"include", "exclude"} {
+		p := sample("WIREGUARD")
+		p.Routing = &Routing{Mode: mode}
+		for i := 0; i < 1024; i++ {
+			p.Routing.Domains = append(p.Routing.Domains, fmt.Sprintf("site%d.example.com", i))
+		}
+		data, err := p.CoreConfig(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		config, err := serial.LoadJSONConfig(bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = p.Configure(config); err != nil {
+			t.Fatal(err)
+		}
+		instance, err := core.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = instance.Close(); err != nil {
+			t.Fatal(err)
+		}
+		p.Routing.Domains = append(p.Routing.Domains, "overflow.example.com")
+		if p.Validate() == nil {
+			t.Fatal("accepted more than 1024 rules")
+		}
+	}
+}
 
 func TestRoutingProfilesInstantiatePinnedCore(t *testing.T) {
 	for _, method := range []string{"WIREGUARD", "AMNEZIA", "VLESS_REALITY", "VLESS_TLS", "VMESS_TLS", "SHADOWSOCKS_2022", "SSTP", "SOFTETHER", "HYSTERIA1_TLS", "HYSTERIA2_TLS", "HYSTERIA2_SALAMANDER"} {

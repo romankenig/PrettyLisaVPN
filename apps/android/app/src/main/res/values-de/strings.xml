@@ -292,8 +292,8 @@
     <string name="notification_vpn_connected">VPN ist aktiv</string>
     <string name="notification_vpn_connecting">VPN wird verbunden…</string>
     <string name="notification_vpn_disconnecting">VPN wird getrennt…</string>
-    <string name="notification_open">App öffnen</string>
+    <string name="notification_open">app öffnen</string>
     <string name="notification_disconnect">VPN trennen</string>
-    <string name="traffic_top">Top 10 beliebt</string>
-    <string name="traffic_all_services">Alle Dienste</string>
+    <string name="traffic_top">top 10 beliebt</string>
+    <string name="traffic_all_services">alle Dienste</string>
 </resources>

@@ -8,6 +8,19 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun expandedPresetsAndManualMasksFitBothSavedModes() {
+        val services = List(12) { i -> TrafficService("00000000-0000-4000-8000-${i.toString().padStart(12, '0')}", "service-$i", "Service $i", "generic", List(64) { j -> "s$i-$j.example.com" }) }
+        val masks = List(256) { "m$it.example.com" }
+        val list = TrafficList(services, masks)
+        val value = TrafficSelection("include", list, list)
+        var disk: String? = null
+        TrafficPreference({ disk }, { disk = it }).save(value)
+        val restored = TrafficPreference({ disk }).current()
+        for (mode in listOf("include", "exclude")) assertEquals(1024, restored.copy(mode = mode).policy().domains.size)
+        assertTrue(runCatching { value.copy(include = list.copy(masks = masks + "extra.com")).policy() }.isFailure)
+        val extra = services.first().copy(id = "00000000-0000-4000-8000-999999999999", domains = listOf("extra.com"))
+        assertTrue(runCatching { value.copy(include = list.copy(services = services + extra)).policy() }.isFailure)
+    }
     @Test fun serviceNetworksPersistIndependentlyAndRejectUnsafeRanges() {
         val service = TrafficService("6cbb9213-108e-5bf7-b4f9-5f10a42d2b0c", "telegram", "Telegram", "telegram", listOf("telegram.org"), ipv4_cidrs = listOf("91.108.4.0/22"))
         val value = TrafficSelection("include", TrafficList(services = listOf(service)))
