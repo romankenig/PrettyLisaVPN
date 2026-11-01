@@ -1,5 +1,8 @@
 param([Parameter(Mandatory)][ValidateSet('prepare','remove')][string]$Action)
 $ErrorActionPreference = 'Stop'
+# Setup may be launched by PowerShell 7. Load only this Windows PowerShell's
+# built-in modules, never inherited/user module paths in an elevated process.
+$env:PSModulePath = Join-Path $PSHOME 'Modules'
 # Fixed machine-wide location. Never use an environment-controlled executable path.
 $target = Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'PrettyLisaVPN'
 function Assert-ProtectedPath([string]$Path) {

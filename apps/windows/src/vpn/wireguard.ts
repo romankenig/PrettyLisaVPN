@@ -72,7 +72,7 @@ export function createWireGuardAdapter(options: {
       server: configuration.endpoint,
       encryption: "ChaCha20-Poly1305",
       obfuscation: "none",
-      mtu: configuration.mtu,
+      mtu: 1280, // The managed WireGuard core and its TUN both use this MTU.
       dns: configuration.dns,
       clientAddress: configuration.address,
       allowedIps: configuration.allowed_ips,
