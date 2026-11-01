@@ -269,16 +269,26 @@ describe("connection location dropdown", () => {
     const api = mockApi();
     vi.mocked(api.listVpnCountries)
       .mockResolvedValueOnce(availability)
-      .mockRejectedValueOnce(new ApiError("NETWORK_ERROR"))
-      .mockResolvedValueOnce(availability);
+      .mockRejectedValue(new ApiError("NETWORK_ERROR"));
     renderSelector(api);
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
+    vi.useFakeTimers();
     fireEvent.click(screen.getByRole("button", { name: "обновить страны" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Проверьте сеть",
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(14_999);
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent("Проверьте сеть");
     expect(screen.getByRole("combobox")).toBeDisabled();
+    vi.mocked(api.listVpnCountries).mockResolvedValue(availability);
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    vi.useRealTimers();
     await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
   });
 

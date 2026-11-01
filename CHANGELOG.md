@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Android — 0.19.0 / Windows — 0.22.0 / Backend — 0.27.0
+
+- Refresh Home manually, immediately recheck location after VPN transitions and
+  show loading indicators; tolerate brief network interruptions for 15 seconds.
+- Extend the database catalog to 50 curated popular services observed in NotVPN,
+  retaining ten allowlist presets and existing routing identities (migration 0040).
+- Show a mode/language-dependent top ten followed by the complete alphabetic list.
+- Add Android ongoing VPN status with Open app / Disconnect VPN actions and the
+  Android 13+ notification permission request. See [handoff](docs/home-refresh-catalog.md).
+
 ### Android — 0.18.1 / Windows — 0.21.1
 
 - Move traffic mode selection into a compact dropdown beside the Home heading.

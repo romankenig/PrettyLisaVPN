@@ -284,11 +284,16 @@
     <string name="traffic_exclude_short">excepto elegidos</string>
     <string name="traffic_selected">servicios elegidos</string>
     <string name="traffic_search">buscar un servicio</string>
-    <string name="traffic_popular">servicios populares</string>
-    <string name="traffic_whitelist">lista permitida</string>
     <string name="vpn_location">ubicación vpn</string>
     <string name="vpn_location_loading">determinando…</string>
     <string name="traffic_description_all">todos los sitios y apps por vpn</string>
     <string name="traffic_description_include">el resto del tráfico va directamente</string>
     <string name="traffic_description_exclude">vpn para todo excepto su lista</string>
+    <string name="notification_vpn_connected">VPN activada</string>
+    <string name="notification_vpn_connecting">Conectando VPN…</string>
+    <string name="notification_vpn_disconnecting">Desconectando VPN…</string>
+    <string name="notification_open">Abrir aplicación</string>
+    <string name="notification_disconnect">Desconectar VPN</string>
+    <string name="traffic_top">Top 10 populares</string>
+    <string name="traffic_all_services">Todos los servicios</string>
 </resources>

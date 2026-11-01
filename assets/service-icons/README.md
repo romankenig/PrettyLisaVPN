@@ -2,6 +2,9 @@ Service icons from Simple Icons, CC0-1.0, commit `90646e4bf7f3b89df6c37e65baf3e7
 https://github.com/simple-icons/simple-icons/tree/90646e4bf7f3b89df6c37e65baf3e7bc759a517c
 
 Only selected paths are packaged. These identify third-party services, not affiliation.
+The 0.19.0 Android / 0.22.0 Windows catalog adds thirty available paths from
+this same pinned commit. A missing upstream logo is not invented or substituted
+on Home; it follows the existing ellipsis rule.
 The remaining icons are locally drawn letter badges; website uses a generic globe.
 Home identity colors for the packaged Simple Icons paths follow the same pinned
 commit's `data/simple-icons.json`. Letter badges use representative service

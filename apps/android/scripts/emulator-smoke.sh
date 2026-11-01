@@ -90,6 +90,16 @@ assert re.search(r'OK \(5 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PRESENTATION_CHECK
 
+# Real notification channel/actions on the installed APK, without starting a VPN.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.VpnNotificationTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/vpn-notification-instrumentation.txt
+python3 - <<'NOTIFICATION_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/vpn-notification-instrumentation.txt').read_text()
+assert re.search(r'OK \(1 test\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+NOTIFICATION_CHECK
+
 # Two independent Android processes prove encrypted state survives force-stop.
 for stage in Seed Check; do
   adb shell am force-stop "$package"
@@ -104,7 +114,7 @@ RESTART_CHECK
 done
 
 # Live account screens and encrypted operation journal use isolated API ports only.
-for spec in AccountScreensTest:13 AccountJournalTest:2; do
+for spec in AccountScreensTest:14 AccountJournalTest:2; do
   test_class=${spec%:*}; test_count=${spec#*:}
   adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
     "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"

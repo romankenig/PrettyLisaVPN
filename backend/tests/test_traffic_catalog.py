@@ -91,6 +91,14 @@ def test_catalog_categories_are_bounded_and_backward_compatible():
         preset(category="unknown")
 
 
+def test_editorial_rank_is_optional_and_bounded():
+    assert preset().popularity_rank is None
+    assert preset(popularity_rank=1).popularity_rank == 1
+    for rank in (0, -1, 1001):
+        with pytest.raises(ValidationError):
+            preset(popularity_rank=rank)
+
+
 def test_service_networks_are_explicit_canonical_and_bounded():
     assert preset().ipv4_cidrs == []
     assert preset(ipv4_cidrs=["91.108.4.0/22"] * 2).ipv4_cidrs == ["91.108.4.0/22"]

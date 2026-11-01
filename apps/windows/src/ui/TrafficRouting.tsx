@@ -7,7 +7,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { t, useLanguage } from "../i18n";
+import { t, useLanguage, getLanguage } from "../i18n";
+import { serviceGroups } from "../vpn/serviceGroups";
 import { useApplication } from "../state/application";
 import {
   getDeviceTrafficSelection,
@@ -36,7 +37,11 @@ const details: Record<Mode, string> = {
   include: "остальной трафик — напрямую",
   exclude: "VPN для всего, кроме вашего списка",
 };
-export function TrafficRouting() {
+export function TrafficRouting({
+  refreshKey = 0,
+}: {
+  readonly refreshKey?: number;
+}) {
   useLanguage();
   const { vpnConnection, session } = useApplication();
   const connection = useSyncExternalStore(
@@ -133,7 +138,7 @@ export function TrafficRouting() {
         </p>
       )}
       {selected.mode !== "all" && (
-        <CurrentLocation connection={connection} vpn />
+        <CurrentLocation connection={connection} vpn refreshKey={refreshKey} />
       )}
       {open && (
         <TrafficDialog
@@ -380,21 +385,20 @@ function TrafficDialog({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        {(["popular", "whitelist"] as const).map((category) => (
-          <section key={category} className="traffic-category">
-            <h3>
-              {t(
-                category === "popular" ? "Популярные сервисы" : "Белый список",
-              )}
-            </h3>
+        {serviceGroups(services, tab, getLanguage()).map((group) => (
+          <section
+            key={group.key}
+            className="traffic-category"
+            aria-label={t(group.title)}
+            data-testid={`traffic-group-${group.key}`}
+          >
+            <h3>{t(group.title)}</h3>
             <div className="traffic-services">
-              {services
-                .filter(
-                  (service) =>
-                    (service.category ?? "popular") === category &&
-                    service.name
-                      .toLocaleLowerCase()
-                      .includes(query.trim().toLocaleLowerCase()),
+              {group.services
+                .filter((service) =>
+                  service.name
+                    .toLocaleLowerCase()
+                    .includes(query.trim().toLocaleLowerCase()),
                 )
                 .map((service) => (
                   <label key={service.id}>

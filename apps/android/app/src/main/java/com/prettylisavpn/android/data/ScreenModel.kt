@@ -29,13 +29,16 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
     var emailDraft = ""
     val resendAtMillis: Long get() = mutable.value.resendAtMillis
     init { if (!fixture) load(Area.SESSION) }
-    fun load(area: Area) {
-        if (!enabled || mutable.value.loads[area]?.phase == LoadPhase.LOADING) return
+    fun load(area: Area): kotlinx.coroutines.Job? {
+        if (!enabled || mutable.value.loads[area]?.phase == LoadPhase.LOADING) return null
         val owner = epoch
         mutable.value = mutable.value.copy(loads = mutable.value.loads + (area to Load(LoadPhase.LOADING)))
-        scope.launch {
+        return scope.launch {
             try {
-                val data = source.read(area)
+                val data = if (area in setOf(Area.HOME, Area.COUNTRIES)) readWithNetworkGrace {
+                    if (owner != epoch) throw CancellationException()
+                    source.read(area)
+                } else source.read(area)
                 if (owner == epoch) {
                     val changed = data.signedIn != mutable.value.data.signedIn
                     if (changed) { epoch++; messageVisit.reset() }

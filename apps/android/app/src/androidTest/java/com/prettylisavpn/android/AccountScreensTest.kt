@@ -28,6 +28,8 @@ class AccountScreensTest {
     private var starts=0
     private var sends=0
     private var deviceReads=0
+    private var profileReads=0
+    private var countryReads=0
     private var uploadGate:kotlinx.coroutines.CompletableDeferred<Unit>?=null
     private var submitted:SupportSubmission?=null
     private var receipt:SupportReceipt?=null
@@ -37,7 +39,7 @@ class AccountScreensTest {
         override suspend fun verifyOtp(email:String,code:String,installationId:String,deviceName:String)=tokens()
         fun tokens()=Tokens("fake",900,Credentials(device,"fake","2030-01-01T00:00:00Z"))
         override suspend fun refresh(credentials:Credentials)=tokens()
-        override suspend fun me(access:String)=Profile("screens@example.com","Premium",if(active)2 else 1,owner)
+        override suspend fun me(access:String):Profile { profileReads++; return Profile("screens@example.com","Premium",if(active)2 else 1,owner) }
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
@@ -46,7 +48,7 @@ class AccountScreensTest {
             com.prettylisavpn.android.vpn.TrafficService("4e2b8d7c-289f-4c57-8f26-aeb680408cda", "instagram", "Instagram", "instagram", listOf("instagram.com", "*.instagram.com")))
         override suspend fun devices(token:String): List<Device> { deviceReads++; return listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active), Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
-        override suspend fun locations(token:String)=LocationOptions(countries(token),80)
+        override suspend fun locations(token:String):LocationOptions { countryReads++; return LocationOptions(countries(token),80) }
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
         override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION",expiresAt=messageExpiry))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
@@ -114,6 +116,18 @@ class AccountScreensTest {
         compose.onNodeWithTag("device-$device").assertDoesNotExist();compose.onNodeWithTag("current-device-badge").assertExists();screenshot("devices-revoked")
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
         click("tab_HOME");compose.onNodeWithText("1 / 5").assertExists()
+    }
+
+    @Test fun homePullDownRefreshesAccountAndCountriesWithoutNavigation() {
+        waitFor("live-account")
+        compose.waitUntil(10_000) { model.state.value.loads[Area.HOME]?.phase==LoadPhase.READY && model.state.value.loads[Area.COUNTRIES]?.phase==LoadPhase.READY }
+        val profiles = profileReads
+        val countries = countryReads
+        compose.onNodeWithTag("live-account").performTouchInput { swipeDown() }
+        compose.waitUntil(10_000) { profileReads>profiles && countryReads>countries }
+        compose.onNodeWithTag("live-account").assertExists()
+        compose.onNodeWithTag("account-summary").assertExists()
+        screenshot("home-refreshed")
     }
 
     @Test fun secondLocationAppearsOnlyInSplitModes() {

@@ -440,9 +440,11 @@ async function main() {
     exact: true,
   });
   await trafficDialog
+    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "YouTube", exact: true })
     .check();
   await trafficDialog
+    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "Instagram", exact: true })
     .check();
   await trafficDialog
@@ -476,11 +478,13 @@ async function main() {
     .click();
   if (
     await trafficDialog
+      .locator('[data-testid="traffic-group-all"]')
       .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked()
   )
     throw new Error("Traffic lists are not independent");
   await trafficDialog
+    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "Instagram", exact: true })
     .check();
   await trafficDialog.locator(".traffic-dialog__body").evaluate((body) => {
@@ -495,6 +499,7 @@ async function main() {
     .click();
   if (
     !(await trafficDialog
+      .locator('[data-testid="traffic-group-all"]')
       .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked())
   )

@@ -18,9 +18,11 @@ type LocationState =
 export function CurrentLocation({
   connection,
   vpn = false,
+  refreshKey = 0,
 }: {
   readonly connection: VpnConnectionState;
   readonly vpn?: boolean;
+  readonly refreshKey?: number;
 }) {
   useLanguage();
   const application = useApplication();
@@ -82,7 +84,7 @@ export function CurrentLocation({
       window.removeEventListener("online", onNetwork);
       window.removeEventListener("focus", onNetwork);
     };
-  }, [attempt, key, pending, inactive, publicLocation]);
+  }, [attempt, key, pending, inactive, publicLocation, refreshKey]);
   const visible =
     state.key === key && !pending ? state : { phase: "loading" as const };
   return (
@@ -90,6 +92,7 @@ export function CurrentLocation({
       className="current-location"
       aria-label={t(vpn ? "локация VPN" : "текущая локация")}
       aria-live="polite"
+      aria-busy={!inactive && visible.phase === "loading"}
     >
       <span className="current-location__label">
         {t(vpn ? "локация VPN:" : "текущая локация:")}
@@ -115,6 +118,13 @@ export function CurrentLocation({
         </div>
       ) : (
         <span className="current-location__notice">
+          {visible.phase === "loading" && (
+            <span
+              className="location-spinner"
+              role="progressbar"
+              aria-label={t("определяем…")}
+            />
+          )}
           {t(
             visible.phase === "error" ? "не удалось определить" : "определяем…",
           )}

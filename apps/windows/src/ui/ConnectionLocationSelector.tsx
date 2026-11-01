@@ -4,6 +4,7 @@ import { ApiError, type VpnCountriesResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import type { VpnLocationSelection } from "../vpn/selection";
 import { CountryIcon } from "./CountryIcon";
+import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
 
 const AVAILABILITY_MAX_AGE_MS = 60_000;
 type AvailabilityState =
@@ -28,12 +29,14 @@ export function ConnectionLocationSelector({
   onConnectabilityChange,
   disabled = false,
   allowUnavailable = false,
+  refreshKey = 0,
 }: {
   readonly selection: VpnLocationSelection;
   readonly onSelectionChange: (selection: VpnLocationSelection) => void;
   readonly onConnectabilityChange: (available: boolean) => void;
   readonly disabled?: boolean;
   readonly allowUnavailable?: boolean;
+  readonly refreshKey?: number;
 }) {
   useLanguage();
   const { api, session } = useApplication();
@@ -54,8 +57,10 @@ export function ConnectionLocationSelector({
         ? { phase: "refreshing", data: current.data }
         : { phase: "loading" },
     );
-    void api
-      .listVpnCountries(activeSession.accessToken, controller.signal)
+    void readWithNetworkGrace(
+      () => api.listVpnCountries(activeSession.accessToken, controller.signal),
+      controller.signal,
+    )
       .then((data) => {
         if (!controller.signal.aborted) setState({ phase: "ready", data });
       })
@@ -72,7 +77,7 @@ export function ConnectionLocationSelector({
         );
       });
     return () => controller.abort();
-  }, [activeSession, api, attempt]);
+  }, [activeSession, api, attempt, refreshKey]);
 
   useEffect(() => {
     if (state.phase !== "ready") return;

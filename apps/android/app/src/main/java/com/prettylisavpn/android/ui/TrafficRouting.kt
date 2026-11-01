@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun TrafficRouting(model: ScreenModel) {
+internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
     val tr = strings()
     val context = LocalContext.current
     val store = remember { DeviceTrafficSelection.get(context) }
@@ -37,7 +37,7 @@ internal fun TrafficRouting(model: ScreenModel) {
     val vpn by (model.vpn?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
     var vpnLocation by remember { mutableStateOf<PublicLocation?>(null) }
     var locating by remember { mutableStateOf(false) }
-    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method) {
+    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method, refreshKey) {
         vpnLocation = null; locating = false
         if (selected.mode != "all" && vpn.phase == VpnPhase.CONNECTED) {
             while (true) {
@@ -112,6 +112,7 @@ internal fun TrafficRouting(model: ScreenModel) {
             HorizontalDivider(color = Brand.DustyGray)
             Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(tr(R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+                if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("vpn-location-loading"), strokeWidth = 2.dp)
                 val value = vpnLocation
                 if (vpn.phase != VpnPhase.CONNECTED) Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.bodySmall)
                 else if (value == null) Text(tr(if (locating) R.string.vpn_location_loading else R.string.unavailable), style = MaterialTheme.typography.bodySmall)
@@ -131,6 +132,7 @@ internal fun TrafficRouting(model: ScreenModel) {
 @Composable
 private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: Boolean, failed: Boolean, close: () -> Unit, save: (TrafficSelection) -> Unit) {
     val tr = strings()
+    val language by LocalPresentation.current.preference.language.collectAsState()
     val state by model.state.collectAsState()
     var draft by remember { mutableStateOf(initial) }
     var tab by remember { mutableStateOf(if (initial.mode == "exclude") "exclude" else "include") }
@@ -159,15 +161,15 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
                 TextButton({ model.load(Area.TRAFFIC) }) { Text(tr(R.string.ui_retry)) }
             }
             OutlinedTextField(query, { query = it }, singleLine = true, label = { Text(tr(R.string.traffic_search)) }, modifier = Modifier.fillMaxWidth().testTag("traffic-search"))
-            listOf("popular" to R.string.traffic_popular, "whitelist" to R.string.traffic_whitelist).forEach { (category, label) ->
-                Text(tr(label), style = MaterialTheme.typography.titleSmall, color = Brand.Scorpion)
-                services.filter { (it.category ?: "popular") == category && it.name.contains(query.trim(), ignoreCase = true) }.forEach { service ->
+            serviceGroups(services, tab, java.util.Locale.forLanguageTag(language.code)).forEach { (group, entries) ->
+                Text(tr(if (group == "top") R.string.traffic_top else R.string.traffic_all_services), style = MaterialTheme.typography.titleSmall, color = Brand.Scorpion)
+                entries.filter { it.name.contains(query.trim(), ignoreCase = true) }.forEach { service ->
                     val checked = list.services.any { it.id == service.id }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ServiceIcon(service.icon)
                         Text(service.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Switch(checked, { update(list.copy(services = if (checked) list.services.filter { it.id != service.id } else list.services + service)) }, enabled = !busy,
-                            modifier = Modifier.testTag("traffic-service-${service.slug}").semantics { contentDescription = service.name })
+                            modifier = Modifier.testTag(if (group == "all") "traffic-service-${service.slug}" else "traffic-top-service-${service.slug}").semantics { contentDescription = service.name })
                     }
                 }
             }
@@ -192,6 +194,36 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
 }
 
 private fun serviceDrawable(icon: String): Int? = when(icon) {
+        "anthropic" -> R.drawable.service_anthropic
+        "spotify" -> R.drawable.service_spotify
+        "netflix" -> R.drawable.service_netflix
+        "twitch" -> R.drawable.service_twitch
+        "reddit" -> R.drawable.service_reddit
+        "pinterest" -> R.drawable.service_pinterest
+        "snapchat" -> R.drawable.service_snapchat
+        "threads" -> R.drawable.service_threads
+        "viber" -> R.drawable.service_viber
+        "zoom" -> R.drawable.service_zoom
+        "steam" -> R.drawable.service_steam
+        "epicgames" -> R.drawable.service_epicgames
+        "playstation" -> R.drawable.service_playstation
+        "roblox" -> R.drawable.service_roblox
+        "google" -> R.drawable.service_google
+        "google-play" -> R.drawable.service_google_play
+        "apple-music" -> R.drawable.service_apple_music
+        "youtube-music" -> R.drawable.service_youtube_music
+        "deezer" -> R.drawable.service_deezer
+        "soundcloud" -> R.drawable.service_soundcloud
+        "tidal" -> R.drawable.service_tidal
+        "hbo" -> R.drawable.service_hbo
+        "notion" -> R.drawable.service_notion
+        "trello" -> R.drawable.service_trello
+        "deepseek" -> R.drawable.service_deepseek
+        "gemini" -> R.drawable.service_gemini
+        "ebay" -> R.drawable.service_ebay
+        "airbnb" -> R.drawable.service_airbnb
+        "booking" -> R.drawable.service_booking
+        "patreon" -> R.drawable.service_patreon
         "youtube" -> R.drawable.service_youtube
         "instagram" -> R.drawable.service_instagram
         "facebook" -> R.drawable.service_facebook
@@ -232,6 +264,36 @@ private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.
 
 /** Service identity colors on Home; the picker retains the PrettyLisaVPN palette. */
 private fun serviceColor(icon: String): Color = Color(when(icon) {
+    "anthropic" -> 0xFF191919
+    "spotify" -> 0xFF1ED760
+    "netflix" -> 0xFFE50914
+    "twitch" -> 0xFF9146FF
+    "reddit" -> 0xFFFF4500
+    "pinterest" -> 0xFFBD081C
+    "snapchat" -> 0xFFFFFC00
+    "threads" -> 0xFF000000
+    "viber" -> 0xFF7360F2
+    "zoom" -> 0xFF0B5CFF
+    "steam" -> 0xFF000000
+    "epicgames" -> 0xFF313131
+    "playstation" -> 0xFF0070D1
+    "roblox" -> 0xFF000000
+    "google" -> 0xFF4285F4
+    "google-play" -> 0xFF414141
+    "apple-music" -> 0xFFFA243C
+    "youtube-music" -> 0xFFFF0000
+    "deezer" -> 0xFFA238FF
+    "soundcloud" -> 0xFFFF5500
+    "tidal" -> 0xFF000000
+    "hbo" -> 0xFF000000
+    "notion" -> 0xFF000000
+    "trello" -> 0xFF0052CC
+    "deepseek" -> 0xFF5786FE
+    "gemini" -> 0xFF8E75B2
+    "ebay" -> 0xFFE53238
+    "airbnb" -> 0xFFFF5A5F
+    "booking" -> 0xFF003A9A
+    "patreon" -> 0xFF000000
     "youtube" -> 0xFFFF0000; "instagram" -> 0xFFFF0069; "facebook" -> 0xFF0866FF
     "whatsapp" -> 0xFF25D366; "telegram" -> 0xFF26A5E4; "discord" -> 0xFF5865F2
     "signal" -> 0xFF3B45FD; "x", "tiktok" -> 0xFF000000; "linkedin" -> 0xFF0A66C2

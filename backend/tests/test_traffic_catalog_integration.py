@@ -36,10 +36,16 @@ async def test_seeded_catalog_and_disabled_service():
             )
         rows = await DatabaseCatalog(postgres).list_enabled()
         by_slug = {row.slug: row for row in rows}
-        assert len(rows) == 20
-        assert sum(row.category == "popular" for row in rows) == 10
+        assert len(rows) == 60
+        assert sum(row.category == "popular" for row in rows) == 50
         assert sum(row.category == "whitelist" for row in rows) == 10
-        assert len({mask for row in rows for mask in row.domains}) <= 256
+        assert len({mask for row in rows for mask in row.domains}) <= 512
+        assert by_slug["youtube"].popularity_rank == 1
+        assert by_slug["chatgpt"].popularity_rank == 7
+        assert by_slug["vk"].popularity_rank == 1
+        assert all(row.popularity_rank is not None for row in rows)
+        assert "*.spotifycdn.com" in by_slug["spotify"].domains
+        assert "*.claude.ai" in by_slug["anthropic"].domains
         assert len(by_slug["telegram"].ipv4_cidrs) == 9
         assert "149.154.160.0/20" in by_slug["telegram"].ipv4_cidrs
         assert all(not row.ipv4_cidrs for row in rows if row.slug != "telegram")

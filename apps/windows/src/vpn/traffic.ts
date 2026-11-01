@@ -6,6 +6,7 @@ export interface TrafficService {
   icon: string;
   domains: string[];
   category?: "popular" | "whitelist";
+  popularity_rank?: number | null;
   ipv4_cidrs?: string[];
 }
 export interface TrafficList {
@@ -114,6 +115,10 @@ export function parseTrafficCatalog(raw: unknown): TrafficService[] {
     if (
       !s ||
       (s.category != null && !["popular", "whitelist"].includes(s.category)) ||
+      (s.popularity_rank != null &&
+        (!Number.isInteger(s.popularity_rank) ||
+          s.popularity_rank < 1 ||
+          s.popularity_rank > 1000)) ||
       !/^[0-9a-f-]{36}$/.test(s.id) ||
       ids.has(s.id) ||
       !/^[a-z][a-z0-9-]{0,39}$/.test(s.slug) ||

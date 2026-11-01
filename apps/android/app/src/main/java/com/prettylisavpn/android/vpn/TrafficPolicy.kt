@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
 
-data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>, val category: String? = null, val ipv4_cidrs: List<String>? = null)
+data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>, val category: String? = null, val ipv4_cidrs: List<String>? = null, val popularity_rank: Int? = null)
 data class TrafficList(val services: List<TrafficService> = emptyList(), val masks: List<String> = emptyList())
 data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList())
 data class RoutingPolicy(val mode: String, val domains: List<String>, val ipv4_cidrs: List<String> = emptyList())
@@ -53,6 +53,7 @@ fun validateTrafficServices(values: List<TrafficService>): List<TrafficService> 
     return values.map { value ->
         require(value.id.matches(Regex("[0-9a-f-]{36}")) && value.slug.matches(Regex("[a-z][a-z0-9-]{0,39}")) && value.icon.matches(Regex("[a-z][a-z0-9-]{0,39}")))
         require(value.category == null || value.category in setOf("popular", "whitelist"))
+        require(value.popularity_rank == null || value.popularity_rank in 1..1000)
         require(value.name.length in 1..80 && value.domains.size in 1..64)
         require((value.ipv4_cidrs?.size ?: 0) <= 64)
         value.copy(domains = value.domains.map(::normalizeTrafficMask).distinct(), ipv4_cidrs = value.ipv4_cidrs?.map(::normalizeServiceNetwork)?.distinct())

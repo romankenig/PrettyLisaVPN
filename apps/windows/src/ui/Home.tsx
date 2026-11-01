@@ -19,6 +19,7 @@ import { TrafficRouting } from "./TrafficRouting";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 import { attemptMessage } from "../vpn/attempt";
 import { FreeTimeBalance } from "./FreeTimeBalance";
+import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
 
 type ProfileState =
   | { phase: "loading" }
@@ -38,6 +39,8 @@ export function Home() {
     activeSession?.profile ? { phase: "ready" } : { phase: "loading" },
   );
   const [profileAttempt, setProfileAttempt] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [locationSelection, setLocationSelection] =
     useState<VpnLocationSelection>(() =>
       readLocationSelection(activeSession?.userId ?? ""),
@@ -67,10 +70,13 @@ export function Home() {
   useEffect(() => {
     if (profileToken === undefined) return;
     const controller = new AbortController();
+    setRefreshing(true);
     if (session.current()?.profile === null)
       setProfileState({ phase: "loading" });
-    void api
-      .me(profileToken, controller.signal)
+    void readWithNetworkGrace(
+      () => api.me(profileToken, controller.signal),
+      controller.signal,
+    )
       .then((profile) => {
         if (controller.signal.aborted) return;
         session.updateProfile(profileToken, profile);
@@ -88,9 +94,19 @@ export function Home() {
           return;
         }
         setProfileState({ phase: "error", message: profileError(error) });
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRefreshing(false);
       });
     return () => controller.abort();
-  }, [profileToken, api, profileAttempt, session, connectionState.phase]);
+  }, [
+    profileToken,
+    api,
+    profileAttempt,
+    refreshKey,
+    session,
+    connectionState.phase,
+  ]);
 
   if (activeSession === null) return null;
   const profile = activeSession.profile;
@@ -126,9 +142,26 @@ export function Home() {
   return (
     <section className="account-home" aria-labelledby="home-title">
       <p className="eyebrow">home</p>
-      <h1 id="home-title" className="product-name">
-        PrettyLisaVPN
-      </h1>
+      <div className="home-heading">
+        <h1 id="home-title" className="product-name">
+          PrettyLisaVPN
+        </h1>
+        <button
+          type="button"
+          className="location-refresh home-refresh"
+          disabled={refreshing}
+          aria-label={t("Обновить главную")}
+          aria-busy={refreshing}
+          onClick={() => setRefreshKey((value) => value + 1)}
+        >
+          <span
+            aria-hidden="true"
+            className={refreshing ? "refresh-spinning" : undefined}
+          >
+            ↻
+          </span>
+        </button>
+      </div>
 
       {profileState.phase === "loading" ? (
         <p role="status">{t("загружаем данные аккаунта…")}</p>
@@ -150,6 +183,7 @@ export function Home() {
       <div className="home-workspace">
         <div className="home-connect-panel">
           <ConnectionLocationSelector
+            refreshKey={refreshKey}
             allowUnavailable
             selection={locationSelection}
             onSelectionChange={(selection) => {
@@ -234,9 +268,12 @@ export function Home() {
               </p>
             ) : null}
           </div>
-          <CurrentLocation connection={connectionState} />
+          <CurrentLocation
+            connection={connectionState}
+            refreshKey={refreshKey}
+          />
         </div>
-        <TrafficRouting />
+        <TrafficRouting refreshKey={refreshKey} />
       </div>
     </section>
   );

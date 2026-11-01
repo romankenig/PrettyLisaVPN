@@ -2277,3 +2277,42 @@ main dd {
 .connection-duration-hint {
   opacity: 0.6;
 }
+
+.home-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.home-heading h1 {
+  margin-bottom: 0;
+}
+.home-refresh {
+  flex-shrink: 0;
+}
+.refresh-spinning {
+  display: inline-block;
+  animation: home-refresh-spin 1s linear infinite;
+}
+.location-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 2px solid var(--color-dusty-gray);
+  border-top-color: var(--color-viking);
+  border-radius: 50%;
+  animation: home-refresh-spin 1s linear infinite;
+}
+@keyframes home-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refresh-spinning,
+  .location-spinner {
+    animation: none;
+  }
+}

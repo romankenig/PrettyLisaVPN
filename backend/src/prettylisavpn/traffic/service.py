@@ -19,6 +19,7 @@ class TrafficService(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=80)]
     icon: Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,39}$")]
     category: Literal["popular", "whitelist"] = "popular"
+    popularity_rank: Annotated[int | None, Field(ge=1, le=1000)] = None
     domains: Annotated[list[str], Field(min_length=1, max_length=64)]
     ipv4_cidrs: Annotated[list[str], Field(max_length=64)] = Field(default_factory=list)
 
