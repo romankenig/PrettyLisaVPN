@@ -13,6 +13,9 @@
   ${EnableX64FSRedirection}
   Pop $0
   Pop $1
+  FileOpen $2 "$INSTDIR\install-status.txt" w
+  FileWrite $2 "prepare: $0$\r$\n$1$\r$\n"
+  FileClose $2
   ${If} $0 != 0
     MessageBox MB_ICONSTOP "PrettyLisaVPN could not prepare its VPN service. Installation stopped." /SD IDOK
     SetErrorLevel 1
@@ -22,7 +25,12 @@
 
 !macro NSIS_HOOK_POSTINSTALL
   CopyFiles /SILENT "$PLUGINSDIR\installer-service.ps1" "$INSTDIR\installer-service.ps1"
-  ExecWait '"$INSTDIR\prettylisavpn-windows.exe" --install-service' $0
+  nsExec::ExecToStack '"$INSTDIR\prettylisavpn-windows.exe" --install-service'
+  Pop $0
+  Pop $1
+  FileOpen $2 "$INSTDIR\install-status.txt" a
+  FileWrite $2 "service: $0$\r$\n$1$\r$\n"
+  FileClose $2
   ${If} $0 != 0
     MessageBox MB_ICONSTOP "PrettyLisaVPN could not start its VPN service. Please run the installer again." /SD IDOK
     SetErrorLevel 1
@@ -45,5 +53,6 @@
 
 !macro NSIS_HOOK_POSTUNINSTALL
   Delete "$INSTDIR\installer-service.ps1"
+  Delete "$INSTDIR\install-status.txt"
   RMDir "$INSTDIR"
 !macroend

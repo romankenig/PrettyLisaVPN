@@ -16,8 +16,21 @@ function Check([string]$Name, [bool]$Passed) {
 }
 function Run([string]$File, [string[]]$Arguments) {
     $process = Start-Process -FilePath $File -ArgumentList $Arguments -WindowStyle Hidden -PassThru
+    $null = $process.Handle # Retain the native handle until ExitCode has been read.
     if (-not $process.WaitForExit(120000)) { throw 'Installer timeout' }
-    $process.Refresh()
+    Write-Output "Installer command exit code: $($process.ExitCode)"
+    if ($process.ExitCode -ne 0) {
+        Get-ChildItem -LiteralPath $directory -ErrorAction SilentlyContinue | Select-Object Name,Length
+        Get-CimInstance Win32_Service -Filter "Name='PrettyLisaVPNService'" | Select-Object State,StartName,PathName,ExitCode
+        foreach ($name in @('install-status.txt','installer-service.ps1','prettylisavpn-windows.exe')) {
+            $path = Join-Path $directory $name
+            if (Test-Path -LiteralPath $path) {
+                if ($name -eq 'install-status.txt') { Get-Content -LiteralPath $path }
+                else { Get-Acl -LiteralPath $path | Select-Object Owner,Sddl }
+            }
+        }
+        if (Test-Path -LiteralPath $directory) { Get-Acl -LiteralPath $directory | Select-Object Owner,Sddl }
+    }
     Check 'installer command completed' ($process.ExitCode -eq 0)
 }
 function Assert-Installed {
@@ -40,14 +53,14 @@ try {
     Check 'test account is not an administrator' (-not ((Get-LocalGroupMember -SID 'S-1-5-32-544').SID.Value -contains $user.SID.Value))
     Start-Sleep -Seconds 2
     $client = Start-Process -FilePath $executable -ArgumentList '--service-check' -Credential $credential -LoadUserProfile -WorkingDirectory $directory -WindowStyle Hidden -PassThru
+    $null = $client.Handle
     Check 'standard user IPC completes without UAC' ($client.WaitForExit(30000))
-    $client.Refresh()
     Check 'standard user receives engine DOWN' ($client.ExitCode -eq 0)
     Start-Sleep -Seconds 2
     # Identical bytes outside the protected installation are not authorized.
     $foreign = Start-Process -FilePath $source -ArgumentList '--service-check' -WindowStyle Hidden -PassThru
+    $null = $foreign.Handle
     Check 'uninstalled client is rejected promptly' ($foreign.WaitForExit(15000))
-    $foreign.Refresh()
     Check 'uninstalled client cannot control privileged service' ($foreign.ExitCode -ne 0)
 } finally { Remove-LocalUser -Name $username }
 Start-Sleep -Seconds 2

@@ -20,6 +20,9 @@ fn main() {
         _ => None,
     };
     if let Some(result) = action {
+        if let Err(code) = result {
+            eprintln!("{code}: {}", std::io::Error::last_os_error());
+        }
         std::process::exit(if result.is_ok() { 0 } else { 1 });
     }
     tauri::Builder::default()
