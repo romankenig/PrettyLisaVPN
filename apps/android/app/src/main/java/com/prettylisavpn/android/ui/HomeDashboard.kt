@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.prettylisavpn.android.R
 import com.prettylisavpn.android.data.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -84,6 +86,10 @@ internal fun LiveHome(model: ScreenModel) {
     val state by model.state.collectAsState()
     val presentation = LocalPresentation.current
     val location by presentation.location.collectAsState()
+    val locating by presentation.locating.collectAsState()
+    var refreshKey by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val language by presentation.preference.language.collectAsState()
     val locale = Locale.forLanguageTag(language.code)
     var selected by rememberSaveable { mutableStateOf("AUTO") }
@@ -96,15 +102,29 @@ internal fun LiveHome(model: ScreenModel) {
         while (true) { model.load(Area.COUNTRIES); delay(60_000) }
     }
     // Public egress does not depend on an authenticated backend refresh succeeding.
-    LaunchedEffect(presentation) {
-        while (true) { presentation.refreshLocation(); delay(60_000) }
+    LaunchedEffect(presentation, vpn.phase, vpn.method, refreshKey) {
+        val changing = vpn.phase == com.prettylisavpn.android.vpn.VpnPhase.CONNECTING || vpn.phase == com.prettylisavpn.android.vpn.VpnPhase.DISCONNECTING
+        presentation.invalidateLocation(changing)
+        if (!changing) while (true) {
+            presentation.refreshLocation()
+            delay(60_000)
+        }
     }
     val collator = remember(locale) { java.text.Collator.getInstance(locale) }
     val countries = state.data.countries.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
     LaunchedEffect(countries, state.loads[Area.COUNTRIES]?.phase) {
         if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected }) selected = "AUTO"
     }
-    PhoneScreen("live-account") {
+    PhoneScreen("live-account", onRefresh = {
+        scope.launch {
+            refreshing = true
+            try {
+                val reads = listOfNotNull(model.load(Area.HOME), model.load(Area.COUNTRIES))
+                refreshKey++
+                reads.joinAll()
+            } finally { refreshing = false }
+        }
+    }, refreshing = refreshing, refreshAtEnd = false) {
         AccountSummary(state.data)
         OperationError(state.loads[Area.HOME]?.error)
         BrandCard {
@@ -138,15 +158,16 @@ internal fun LiveHome(model: ScreenModel) {
             VpnControls(model.vpn, selected, state.data.signedIn)
             HorizontalDivider(color = Brand.DustyGray)
             Row(Modifier.fillMaxWidth().testTag("home-network"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(countryFlag(location?.country), style = MaterialTheme.typography.bodyMedium)
+                if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("home-location-loading"), strokeWidth = 2.dp)
+                else Text(countryFlag(location?.country), style = MaterialTheme.typography.bodyMedium)
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     val region = location?.let { value -> listOfNotNull(value.city, value.country?.let { Locale("", it).getDisplayCountry(locale) }).joinToString(", ") }?.takeIf { it.isNotBlank() }
-                    Text(tr(R.string.dash_region) + ": " + (region ?: tr(R.string.unavailable)), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                    Text("IP: " + (location?.ip ?: tr(R.string.unavailable)), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                    Text(tr(R.string.dash_region) + ": " + (region ?: tr(if (locating) R.string.vpn_location_loading else R.string.unavailable)), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                    if (!locating) Text("IP: " + (location?.ip ?: tr(R.string.unavailable)), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
                 }
             }
         }
-        TrafficRouting(model)
+        TrafficRouting(model, refreshKey)
     }
 }
 

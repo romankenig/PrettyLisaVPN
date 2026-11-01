@@ -58,9 +58,13 @@ function mount(provider: PublicLocationProvider, vpnOnly = false) {
     publicLocation: provider,
     vpnLocation: provider,
   };
-  const view = (connection: VpnConnectionState) => (
+  const view = (connection: VpnConnectionState, refreshKey = 0) => (
     <ApplicationProvider value={value}>
-      <CurrentLocation connection={connection} vpn={vpnOnly} />
+      <CurrentLocation
+        connection={connection}
+        vpn={vpnOnly}
+        refreshKey={refreshKey}
+      />
     </ApplicationProvider>
   );
   const result = render(view(disconnected));
@@ -68,6 +72,7 @@ function mount(provider: PublicLocationProvider, vpnOnly = false) {
     ...result,
     change: (connection: VpnConnectionState) =>
       result.rerender(view(connection)),
+    refresh: () => result.rerender(view(disconnected, 1)),
   };
 }
 
@@ -98,6 +103,7 @@ it("updates observed egress on connection and disconnect", async () => {
   const result = mount(provider);
   expect(await screen.findByText(home.ip)).toBeVisible();
   result.change({ phase: "CONNECTING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
+  expect(screen.getByRole("progressbar")).toBeVisible();
   expect(screen.queryByText(home.ip)).not.toBeInTheDocument();
   expect(provider.current).toHaveBeenCalledTimes(1);
   result.change(connected);
@@ -105,6 +111,29 @@ it("updates observed egress on connection and disconnect", async () => {
   expect(screen.getByText("Berlin, Германия")).toBeVisible();
   result.change(disconnected);
   expect(await screen.findByText(home.ip)).toBeVisible();
+});
+
+it("Home refresh immediately replaces the previous lookup with a loading indicator", async () => {
+  let finish!: (value: PublicLocation) => void;
+  const provider = {
+    current: vi
+      .fn<PublicLocationProvider["current"]>()
+      .mockResolvedValueOnce(home)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      ),
+  };
+  const result = mount(provider);
+  expect(await screen.findByText(home.ip)).toBeVisible();
+  result.refresh();
+  expect(screen.queryByText(home.ip)).toBeNull();
+  expect(screen.getByRole("progressbar")).toBeVisible();
+  await act(async () => finish(vpn));
+  expect(screen.getByText(vpn.ip)).toBeVisible();
+  expect(screen.queryByRole("progressbar")).toBeNull();
 });
 
 it("ignores late replies from the previous network and cancels on unmount", async () => {

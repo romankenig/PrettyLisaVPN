@@ -1,0 +1,340 @@
+{
+  "observed_at": "2026-11-01",
+  "app": "com.notvpn",
+  "version": "25.3",
+  "version_code": 253,
+  "screen": "Apps / Websites → Show the full list",
+  "ranking": "Editorial selection, not NotVPN usage statistics",
+  "services": [
+    {
+      "slug": "chatgpt",
+      "name": "ChatGPT",
+      "notvpn_label": "ChatGPT",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/openai",
+      "domain_source_blob": "d6f5f3d1b5fbcfc87e04aafcbeef5ffdc81d766c"
+    },
+    {
+      "slug": "anthropic",
+      "name": "Claude / Anthropic",
+      "notvpn_label": "Anthropic",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/anthropic",
+      "domain_source_blob": "bed1f78b0f77a630c3c308e9b29978e7bd21aceb"
+    },
+    {
+      "slug": "openai",
+      "name": "OpenAI",
+      "notvpn_label": "OpenAI",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/openai",
+      "domain_source_blob": "d6f5f3d1b5fbcfc87e04aafcbeef5ffdc81d766c"
+    },
+    {
+      "slug": "spotify",
+      "name": "Spotify",
+      "notvpn_label": "Spotify",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/spotify",
+      "domain_source_blob": "e39114062f95c68035a44a25965649c93a89a831"
+    },
+    {
+      "slug": "netflix",
+      "name": "Netflix",
+      "notvpn_label": "Netflix",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/netflix",
+      "domain_source_blob": "65af23034d79a097c546a8b7766ce13a5b855498"
+    },
+    {
+      "slug": "twitch",
+      "name": "Twitch",
+      "notvpn_label": "Twitch",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/twitch",
+      "domain_source_blob": "293bf05ff16354e77b5a7562176052db2a733595"
+    },
+    {
+      "slug": "reddit",
+      "name": "Reddit",
+      "notvpn_label": "Reddit",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/reddit",
+      "domain_source_blob": "c3bb983f25d795c12119a0cf18b5bd0e846536fc"
+    },
+    {
+      "slug": "pinterest",
+      "name": "Pinterest",
+      "notvpn_label": "Pinterest",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/pinterest",
+      "domain_source_blob": "3f12904f48d6830f1e79ea7cb99d374b489bd508"
+    },
+    {
+      "slug": "snapchat",
+      "name": "Snapchat",
+      "notvpn_label": "Snapchat",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/snap",
+      "domain_source_blob": "6569a831b6711dbc8605d66a81805cafe31239a5"
+    },
+    {
+      "slug": "threads",
+      "name": "Threads",
+      "notvpn_label": "Threads",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/threads",
+      "domain_source_blob": "3d7d150b72e00b9ac0eb89b439cdc6e9d95f6b3b"
+    },
+    {
+      "slug": "viber",
+      "name": "Viber",
+      "notvpn_label": "Viber",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/viber",
+      "domain_source_blob": "6df64521faa78f08e3a7aac671bd4eb330d29763"
+    },
+    {
+      "slug": "zoom",
+      "name": "Zoom",
+      "notvpn_label": "Zoom",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/zoom",
+      "domain_source_blob": "ee282692b9753a052e35bc2fc818b1d8863f74cc"
+    },
+    {
+      "slug": "steam",
+      "name": "Steam",
+      "notvpn_label": "Steam",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/steam",
+      "domain_source_blob": "391a352758ab28776d3d6f449e09123d6bd163a3"
+    },
+    {
+      "slug": "epicgames",
+      "name": "Epic Games",
+      "notvpn_label": "Epic Games Store",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/epicgames",
+      "domain_source_blob": "56c26dc8536e603c685d0fdaf36d555e1aa6f53d"
+    },
+    {
+      "slug": "playstation",
+      "name": "PlayStation",
+      "notvpn_label": "PlayStation",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/playstation",
+      "domain_source_blob": "0d4e7bb7d5cd70cfde47616ba91dc249f09a7ac9"
+    },
+    {
+      "slug": "roblox",
+      "name": "Roblox",
+      "notvpn_label": "Roblox",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/roblox",
+      "domain_source_blob": "374f82bcac18870e71f7bfd1db1f7b16add81564"
+    },
+    {
+      "slug": "minecraft",
+      "name": "Minecraft",
+      "notvpn_label": "Minecraft",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/mojang",
+      "domain_source_blob": "39cdbf557c1e9081a4b4679acaceeb0aeca5b4d0"
+    },
+    {
+      "slug": "google",
+      "name": "Google",
+      "notvpn_label": "Google",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/google",
+      "domain_source_blob": "e4e550b506d510bcc3087c6a7476783e34e37b49"
+    },
+    {
+      "slug": "google-play",
+      "name": "Google Play",
+      "notvpn_label": "Google Play",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/google-play",
+      "domain_source_blob": "3fdb40ef39977e1bdb41bd2b607c63f5571818ae"
+    },
+    {
+      "slug": "apple-music",
+      "name": "Apple Music",
+      "notvpn_label": "Apple Music",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/apple-music",
+      "domain_source_blob": "61b2907c0b84dbc575e67c1405a43771c3396fab"
+    },
+    {
+      "slug": "youtube-music",
+      "name": "YouTube Music",
+      "notvpn_label": "YouTube Music",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/youtube",
+      "domain_source_blob": "77cb29fb260f4b1810759de8df0f4ceb9b83b100"
+    },
+    {
+      "slug": "deezer",
+      "name": "Deezer",
+      "notvpn_label": "Deezer",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/deezer",
+      "domain_source_blob": "32afdbc2c205e236b37c58775ca6c2d20ae9cc4f"
+    },
+    {
+      "slug": "soundcloud",
+      "name": "SoundCloud",
+      "notvpn_label": "SoundCloud",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/soundcloud",
+      "domain_source_blob": "56125c4c3583387336b12bc4e63dcb305e77b8d5"
+    },
+    {
+      "slug": "tidal",
+      "name": "TIDAL",
+      "notvpn_label": "TIDAL",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/tidal",
+      "domain_source_blob": "518b5e5af02ef67f3347a71e61ab12e66019bdf2"
+    },
+    {
+      "slug": "disney-plus",
+      "name": "Disney+",
+      "notvpn_label": "Disney+",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/disney",
+      "domain_source_blob": "677ccbaa3469db7907bec57d841b5a1e709822d3"
+    },
+    {
+      "slug": "hbo",
+      "name": "HBO / Max",
+      "notvpn_label": "HBO",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/hbo",
+      "domain_source_blob": "e6047429479c6128fdbcc5f3c4cc2e0fc7f0c2b5"
+    },
+    {
+      "slug": "notion",
+      "name": "Notion",
+      "notvpn_label": "Notion",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/notion",
+      "domain_source_blob": "cae9e15432f27c81a3fedae382cca36ab190cfad"
+    },
+    {
+      "slug": "trello",
+      "name": "Trello",
+      "notvpn_label": "Trello",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/trello",
+      "domain_source_blob": "ca2e85f376a8070c389743ec1326f087c1636292"
+    },
+    {
+      "slug": "canva",
+      "name": "Canva",
+      "notvpn_label": "Canva",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/canva",
+      "domain_source_blob": "90daf6e7d9c03bec8671147d207d1f486a15281b"
+    },
+    {
+      "slug": "capcut",
+      "name": "CapCut",
+      "notvpn_label": "CapCut",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/bytedance",
+      "domain_source_blob": "7714257a76743d6603edf73fcb2b48bc98db9865"
+    },
+    {
+      "slug": "deepseek",
+      "name": "DeepSeek",
+      "notvpn_label": "DeepSeek",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/deepseek",
+      "domain_source_blob": "696087e25412306347a31d4cfddda58145878577"
+    },
+    {
+      "slug": "gemini",
+      "name": "Gemini",
+      "notvpn_label": "Google ‎Gemini",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/google-deepmind",
+      "domain_source_blob": "c9c61a097f342e16bf8ede100ea784f322a06c6f"
+    },
+    {
+      "slug": "microsoft",
+      "name": "Microsoft",
+      "notvpn_label": "Microsoft",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/microsoft",
+      "domain_source_blob": "5ca598ada7f3b81a32581591c3254c042ee84e46"
+    },
+    {
+      "slug": "bing",
+      "name": "Bing",
+      "notvpn_label": "Bing",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/bing",
+      "domain_source_blob": "cdb61bade2e908c756a81bb1a342fad0adcc3e25"
+    },
+    {
+      "slug": "copilot",
+      "name": "Copilot",
+      "notvpn_label": "Copilot",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/bing",
+      "domain_source_blob": "cdb61bade2e908c756a81bb1a342fad0adcc3e25"
+    },
+    {
+      "slug": "amazon",
+      "name": "Amazon",
+      "notvpn_label": "Amazon",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/amazon",
+      "domain_source_blob": "5cba8453f287743232d4c7b2c109b127028043d3"
+    },
+    {
+      "slug": "ebay",
+      "name": "eBay",
+      "notvpn_label": "ebay",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/ebay",
+      "domain_source_blob": "c83b80a11a309abcc7db2d34575d859e647abfa9"
+    },
+    {
+      "slug": "airbnb",
+      "name": "Airbnb",
+      "notvpn_label": "Airbnb",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/airbnb",
+      "domain_source_blob": "4b16054ae1e84a622c83888087afa10f2e8cf065"
+    },
+    {
+      "slug": "booking",
+      "name": "Booking.com",
+      "notvpn_label": "Booking",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/booking",
+      "domain_source_blob": "0e69ec520fc622d1715d3561cf769aa9a5ee4781"
+    },
+    {
+      "slug": "patreon",
+      "name": "Patreon",
+      "notvpn_label": "Patreon",
+      "domain_source": "https://github.com/v2fly/domain-list-community/blob/master/data/patreon",
+      "domain_source_blob": "db0bb4d3cb06b961925a475439f2bd7de0027ac6"
+    },
+    {
+      "slug": "youtube",
+      "notvpn_label": "YouTube",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "instagram",
+      "notvpn_label": "Instagram",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "facebook",
+      "notvpn_label": "Facebook",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "whatsapp",
+      "notvpn_label": "WhatsApp",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "telegram",
+      "notvpn_label": "Telegram",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "discord",
+      "notvpn_label": "Discord",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "signal",
+      "notvpn_label": "Signal",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "x",
+      "notvpn_label": "X (Twitter)",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "linkedin",
+      "notvpn_label": "LinkedIn",
+      "domains": "preserved from migrations 0037/0038/0039"
+    },
+    {
+      "slug": "tiktok",
+      "notvpn_label": "TikTok",
+      "domains": "preserved from migrations 0037/0038/0039"
+    }
+  ]
+}

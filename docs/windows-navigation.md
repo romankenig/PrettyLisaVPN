@@ -593,3 +593,17 @@ and tooltip; resizing never changes the saved selection. Picker styling remains
 unchanged. No new route or automatic reconnection is introduced.
 Entries without a packaged logo use the same ellipsis even with available space;
 no generic globe or letter-badge fallback appears in the Home row.
+
+### Windows 0.22.0 / Android 0.19.0: Home refresh and service recommendations
+
+The Windows Home heading has an accessible refresh button for account, countries
+and location; Android Home uses a downward pull. Neither action navigates or
+reconnects. Loading indicators replace stale location values during transitions.
+Home read errors tolerate 15 seconds of continuous network failure; auth failures
+remain immediate. The service editor promotes ten database-ranked entries by
+mode/language, then shows the entire alphabetic list. Both sections share each
+service's selection, while include/exclude lists remain independent. These are
+implemented backend/native integrations, not pending mock screens. No new route,
+auth guard or external browser transition. Android's notification opens the same
+MainActivity or requests cleanup through the existing VPN controller.
+See [handoff](home-refresh-catalog.md) for release verification status.

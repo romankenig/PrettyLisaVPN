@@ -160,17 +160,17 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
 
 /** Edge pull in either direction: down at the start or up at the end of a list. */
 @Composable
-internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshing: Boolean = false, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshing: Boolean = false, refreshAtEnd: Boolean = true, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     val scroll = androidx.compose.foundation.rememberScrollState()
     val refresh by androidx.compose.runtime.rememberUpdatedState(onRefresh)
     val busy by androidx.compose.runtime.rememberUpdatedState(refreshing)
     val threshold = with(LocalDensity.current) { 64.dp.toPx() }
     var pull by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0f) }
-    val connection = androidx.compose.runtime.remember(scroll, threshold) {
+    val connection = androidx.compose.runtime.remember(scroll, threshold, refreshAtEnd) {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
             override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
                 if (refresh != null && !busy && source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
-                    if ((scroll.value == 0 && available.y > 0) || (scroll.value == scroll.maxValue && available.y < 0)) pull += kotlin.math.abs(available.y)
+                    if ((scroll.value == 0 && available.y > 0) || (refreshAtEnd && scroll.value == scroll.maxValue && available.y < 0)) pull += kotlin.math.abs(available.y)
                     else if (consumed.y != 0f) pull = 0f
                 }
                 return androidx.compose.ui.geometry.Offset.Zero

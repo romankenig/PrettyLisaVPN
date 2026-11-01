@@ -117,6 +117,22 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("refreshes profile and countries from the Home refresh button", async () => {
+    const api = mockApi();
+    renderRestored(api);
+    const button = await screen.findByRole("button", {
+      name: "Обновить главную",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    const profileReads = vi.mocked(api.me).mock.calls.length;
+    const countryReads = vi.mocked(api.listVpnCountries).mock.calls.length;
+    fireEvent.click(button);
+    await waitFor(() => expect(api.me).toHaveBeenCalledTimes(profileReads + 1));
+    expect(vi.mocked(api.listVpnCountries).mock.calls.length).toBeGreaterThan(
+      countryReads,
+    );
+    await waitFor(() => expect(button).toBeEnabled());
+  });
   it("hides missing logos and keeps an ellipsis with spare room without changing rules", async () => {
     let width = 72;
     let resize = () => {};
@@ -273,7 +289,12 @@ describe("authenticated Home", () => {
       expect(screen.getByLabelText("локация VPN")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
       const dialog = within(await screen.findByRole("dialog"));
-      fireEvent.click(await dialog.findByRole("switch", { name: "YouTube" }));
+      fireEvent.click(
+        await within(dialog.getByTestId("traffic-group-all")).findByRole(
+          "switch",
+          { name: "YouTube" },
+        ),
+      );
       expect(dialog.queryByText("youtube.com, *.youtube.com")).toBeNull();
       fireEvent.change(dialog.getByLabelText("Маска сервиса"), {
         target: { value: "ifconfig.me" },
@@ -282,9 +303,17 @@ describe("authenticated Home", () => {
       fireEvent.click(
         dialog.getByRole("button", { name: "кроме выбранных сайтов" }),
       );
-      expect(dialog.getByRole("switch", { name: "YouTube" })).not.toBeChecked();
+      expect(
+        within(dialog.getByTestId("traffic-group-all")).getByRole("switch", {
+          name: "YouTube",
+        }),
+      ).not.toBeChecked();
       expect(dialog.queryByText("ifconfig.me")).toBeNull();
-      fireEvent.click(dialog.getByRole("switch", { name: "Instagram" }));
+      fireEvent.click(
+        within(dialog.getByTestId("traffic-group-all")).getByRole("switch", {
+          name: "Instagram",
+        }),
+      );
       fireEvent.click(dialog.getByRole("button", { name: "Сохранить" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       expect(screen.getByRole("img", { name: "YouTube" })).toBeVisible();
@@ -563,12 +592,12 @@ describe("authenticated Home", () => {
   it("shows backend errors and retries /me", async () => {
     const api = mockApi();
     vi.mocked(api.me)
-      .mockRejectedValueOnce(new ApiError("NETWORK_ERROR"))
+      .mockRejectedValueOnce(new ApiError("SERVER_ERROR"))
       .mockResolvedValueOnce(profile);
     await renderFresh(api);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Не удалось подключиться",
+      "Не удалось загрузить данные аккаунта",
     );
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
 

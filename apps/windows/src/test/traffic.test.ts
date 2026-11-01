@@ -10,6 +10,56 @@ import {
 } from "../vpn/traffic";
 
 describe("device traffic rules", () => {
+  it("accepts large preset selections plus manual masks within the engine bound", () => {
+    const services = Array.from({ length: 12 }, (_, i) => ({
+      id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+      slug: `service-${i}`,
+      name: `Service ${i}`,
+      icon: "generic",
+      domains: Array.from({ length: 64 }, (_, j) => `s${i}-${j}.example.com`),
+    }));
+    const masks = Array.from({ length: 256 }, (_, i) => `m${i}.example.com`);
+    const value = {
+      ...emptyTraffic(),
+      mode: "include" as const,
+      include: { services, masks },
+      exclude: { services, masks },
+    };
+    const memory = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, raw: string) => {
+        memory.set(key, raw);
+      },
+    };
+    createTrafficSelection(storage).save(value);
+    const restored = createTrafficSelection(storage).current();
+    for (const mode of ["include", "exclude"] as const) {
+      expect(routingPolicy({ ...restored, mode }).domains).toHaveLength(1024);
+    }
+    expect(() =>
+      routingPolicy({
+        ...value,
+        include: { services, masks: [...masks, "extra.com"] },
+      }),
+    ).toThrow();
+    expect(() =>
+      routingPolicy({
+        ...value,
+        include: {
+          masks,
+          services: [
+            ...services,
+            {
+              ...services[0],
+              id: "00000000-0000-4000-8000-999999999999",
+              domains: ["extra.com"],
+            },
+          ],
+        },
+      }),
+    ).toThrow();
+  });
   it("keeps service IP networks separate from manual domains and inverse lists", () => {
     const service = {
       id: "6cbb9213-108e-5bf7-b4f9-5f10a42d2b0c",

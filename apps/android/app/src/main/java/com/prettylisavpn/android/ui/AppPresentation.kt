@@ -150,12 +150,12 @@ internal class PresentationState(context: Context, private val network: Boolean)
     }
     private val mutableVersion = MutableStateFlow<String?>(null)
     val version = mutableVersion.asStateFlow()
-    private val mutableLocation = MutableStateFlow<PublicLocation?>(null)
-    val location = mutableLocation.asStateFlow()
+    private val locationRefresh = LocationRefresh { if (network) metadata.location() else null }
+    val location = locationRefresh.value
+    val locating = locationRefresh.loading
     suspend fun refreshServer(): Boolean = metadata.reachable()
-    suspend fun refreshLocation() {
-        if (network) mutableLocation.value = metadata.location()
-    }
+    suspend fun refreshLocation() = locationRefresh.refresh()
+    fun invalidateLocation(updating: Boolean) = locationRefresh.invalidate(updating)
     suspend fun vpnLocation(): PublicLocation? = if (network) metadata.vpnLocation() else null
     @Suppress("DEPRECATION")
     private fun vpnActive(): Boolean = runCatching {

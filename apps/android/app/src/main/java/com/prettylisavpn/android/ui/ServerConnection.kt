@@ -45,15 +45,20 @@ private fun internet(context: Context): Flow<Boolean> = callbackFlow {
 
 /** Probe only public GET /version; no authentication, device IDs or mutations. */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-internal fun serverConnections(network: Flow<Boolean>, intervalMillis: Long = 15_000, probe: suspend () -> Boolean): Flow<Boolean> =
+internal fun serverConnections(network: Flow<Boolean>, intervalMillis: Long = 15_000, failureGraceMillis: Long = 15_000, probe: suspend () -> Boolean): Flow<Boolean> =
     network.distinctUntilChanged().flatMapLatest { available ->
         if (!available) flowOf(false) else flow {
             while (true) {
                 val reachable = try { probe() } catch (e: CancellationException) { throw e } catch (_: Exception) { false }
                 emit(reachable)
-                delay(intervalMillis)
+                delay(if (reachable) intervalMillis else minOf(intervalMillis, 3_000))
             }
         }
+    }.distinctUntilChanged().transformLatest { reachable ->
+        // Repeated failed probes must not restart the grace period. Recovery
+        // cancels the pending warning immediately, including network handovers.
+        if (!reachable) delay(failureGraceMillis)
+        emit(reachable)
     }.distinctUntilChanged()
 
 @Composable
@@ -69,6 +74,7 @@ internal fun ServerConnectionNotice(enabled: Boolean) {
     var connected by remember { mutableStateOf<Boolean?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
     LaunchedEffect(enabled, started) {
+        connected = null
         if (enabled && started && PresentationStore.networkEnabled)
             serverConnections(internet(context)) { presentation.refreshServer() }.collect { connected = it }
     }

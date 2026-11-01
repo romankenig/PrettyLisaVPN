@@ -2,6 +2,7 @@ package com.prettylisavpn.android
 
 import android.os.Bundle
 import android.app.Activity
+import androidx.core.content.edit
 import androidx.activity.result.contract.ActivityResultContracts
 import com.prettylisavpn.android.vpn.VpnPermission
 import kotlinx.coroutines.CompletableDeferred
@@ -16,6 +17,11 @@ import com.prettylisavpn.android.ui.PrettyLisaTheme
 
 class MainActivity : ComponentActivity() {
     private var vpnConsent: CompletableDeferred<Boolean>? = null
+    private var notificationConsent: CompletableDeferred<Unit>? = null
+    private val notificationLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notificationConsent?.complete(Unit)
+        notificationConsent = null
+    }
     private val vpnLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vpnConsent?.complete(it.resultCode == Activity.RESULT_OK)
         vpnConsent = null
@@ -40,6 +46,19 @@ class MainActivity : ComponentActivity() {
             vpnLauncher.launch(intent)
             answer.await()
         }
+        VpnPermission.launchNotifications = {
+            val preferences = getSharedPreferences("vpn-notifications", MODE_PRIVATE)
+            if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                !preferences.getBoolean("asked", false)) {
+                // Denial never blocks VPN or causes another prompt on fallback.
+                preferences.edit { putBoolean("asked", true) }
+                val answer = CompletableDeferred<Unit>()
+                notificationConsent = answer
+                notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                answer.await()
+            }
+        }
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -53,6 +72,8 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         vpnConsent?.complete(false)
         VpnPermission.launch = null
+        notificationConsent?.complete(Unit)
+        VpnPermission.launchNotifications = null
         super.onDestroy()
     }
 }

@@ -284,11 +284,16 @@
     <string name="traffic_exclude_short">除所选外</string>
     <string name="traffic_selected">所选服务</string>
     <string name="traffic_search">搜索服务</string>
-    <string name="traffic_popular">热门服务</string>
-    <string name="traffic_whitelist">白名单</string>
     <string name="vpn_location">vpn 位置</string>
     <string name="vpn_location_loading">正在确定…</string>
     <string name="traffic_description_all">所有网站和应用均通过 vpn</string>
     <string name="traffic_description_include">其他流量直接连接</string>
     <string name="traffic_description_exclude">除列表外的所有流量均通过 vpn</string>
+    <string name="notification_vpn_connected">VPN 已开启</string>
+    <string name="notification_vpn_connecting">正在连接 VPN…</string>
+    <string name="notification_vpn_disconnecting">正在断开 VPN…</string>
+    <string name="notification_open">打开应用</string>
+    <string name="notification_disconnect">断开 VPN</string>
+    <string name="traffic_top">十大热门服务</string>
+    <string name="traffic_all_services">全部服务</string>
 </resources>

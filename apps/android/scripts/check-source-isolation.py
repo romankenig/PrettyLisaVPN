@@ -17,7 +17,11 @@ for variant in ("debug", "release"):
                 assert required in dex, (variant, required)
 manifest = ET.parse("app/src/main/AndroidManifest.xml")
 ns = "{http://schemas.android.com/apk/res/android}"
-assert {p.attrib[ns+"name"] for p in manifest.findall("uses-permission")} == {"android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED"}
+assert {p.attrib[ns+"name"] for p in manifest.findall("uses-permission")} == {
+    "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED",
+    "android.permission.POST_NOTIFICATIONS",
+}
 assert all(service.attrib[ns+"exported"] == "false" for service in manifest.find("application").findall("service"))
 assert manifest.find("application").attrib[ns+"usesCleartextTraffic"] == "false"
 print("Debug fixtures isolated; one APK with WireGuard and private managed engines")
