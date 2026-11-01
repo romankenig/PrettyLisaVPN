@@ -32,7 +32,7 @@ internal fun vpnNotification(context: android.content.Context, status: VpnStatus
         VpnPhase.FAILED -> R.string.vpn_cleanup
         else -> R.string.notification_vpn_connecting
     })
-    return Notification.Builder(context, "vpn").setSmallIcon(R.drawable.ic_launcher)
+    return Notification.Builder(context, "vpn").setSmallIcon(R.drawable.brand_mark)
         .setContentTitle("PrettyLisaVPN").setContentText(text)
         .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
         .setCategory(Notification.CATEGORY_SERVICE).setVisibility(Notification.VISIBILITY_PUBLIC)

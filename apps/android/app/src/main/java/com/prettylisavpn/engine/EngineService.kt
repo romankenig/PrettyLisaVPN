@@ -42,7 +42,7 @@ class EngineService : VpnService() {
         if (prepare(this) != null) { stopSelf(); return START_NOT_STICKY }
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel("vpn", "PrettyLisaVPN", NotificationManager.IMPORTANCE_LOW))
-        val notification = Notification.Builder(this, "vpn").setSmallIcon(R.drawable.ic_launcher)
+        val notification = Notification.Builder(this, "vpn").setSmallIcon(R.drawable.brand_mark)
             .setContentTitle("PrettyLisaVPN").setOngoing(true).build()
         if (Build.VERSION.SDK_INT >= 34) startForeground(32, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
         else startForeground(32, notification)
