@@ -36,7 +36,17 @@ function Run([string]$File, [string[]]$Arguments) {
 function Assert-Installed {
     $service = Get-CimInstance Win32_Service -Filter "Name='PrettyLisaVPNService'"
     Check 'automatic LocalSystem service is running' ($service.State -eq 'Running' -and $service.StartName -eq 'LocalSystem' -and $service.StartMode -eq 'Auto')
-    Check 'installed bytes match current build' ((Get-FileHash -LiteralPath $source).Hash -eq (Get-FileHash -LiteralPath $executable).Hash)
+    # Tauri 2.11 patches the first bundle marker for NSIS, then restores the raw
+    # build. Reproduce ONLY that documented substitution; compare all other bytes.
+    # https://github.com/tauri-apps/tauri/blob/dev/crates/tauri-bundler/src/bundle.rs
+    $expected = [IO.File]::ReadAllBytes($source)
+    $offset = [Text.Encoding]::ASCII.GetString($expected).IndexOf('__TAURI_BUNDLE_TYPE_VAR_UNK', [StringComparison]::Ordinal)
+    Check 'current build contains the expected Tauri bundle marker' ($offset -ge 0)
+    [Text.Encoding]::ASCII.GetBytes('__TAURI_BUNDLE_TYPE_VAR_NSS').CopyTo($expected, $offset)
+    $expectedHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($expected))
+    $installedHash = (Get-FileHash -LiteralPath $executable).Hash
+    $report.installed_sha256 = $installedHash.ToLowerInvariant()
+    Check 'installed bytes match current build with NSIS marker' ($expectedHash -eq $installedHash)
     Check 'service uses quoted protected executable' ($service.PathName -eq ('"' + $executable + '" --vpn-service'))
     Run $executable @('--service-check')
 }
@@ -52,13 +62,17 @@ try {
     Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $username
     Check 'test account is not an administrator' (-not ((Get-LocalGroupMember -SID 'S-1-5-32-544').SID.Value -contains $user.SID.Value))
     Start-Sleep -Seconds 2
-    $client = Start-Process -FilePath $executable -ArgumentList '--service-check' -Credential $credential -LoadUserProfile -WorkingDirectory $directory -WindowStyle Hidden -PassThru
+    $errorPath = Join-Path $env:RUNNER_TEMP 'pl-service-check.err'
+    $client = Start-Process -FilePath $executable -ArgumentList '--service-check' -Credential $credential -LoadUserProfile -WorkingDirectory $directory -WindowStyle Hidden -RedirectStandardError $errorPath -PassThru
     $null = $client.Handle
     Check 'standard user IPC completes without UAC' ($client.WaitForExit(30000))
+    if ($client.ExitCode -ne 0) { Get-Content -LiteralPath $errorPath }
     Check 'standard user receives engine DOWN' ($client.ExitCode -eq 0)
     Start-Sleep -Seconds 2
     # Identical bytes outside the protected installation are not authorized.
-    $foreign = Start-Process -FilePath $source -ArgumentList '--service-check' -WindowStyle Hidden -PassThru
+    $foreignExecutable = Join-Path $env:RUNNER_TEMP 'prettylisa-uninstalled.exe'
+    Copy-Item -LiteralPath $executable -Destination $foreignExecutable
+    $foreign = Start-Process -FilePath $foreignExecutable -ArgumentList '--service-check' -WindowStyle Hidden -PassThru
     $null = $foreign.Handle
     Check 'uninstalled client is rejected promptly' ($foreign.WaitForExit(15000))
     Check 'uninstalled client cannot control privileged service' ($foreign.ExitCode -ne 0)
