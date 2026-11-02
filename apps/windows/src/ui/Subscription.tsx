@@ -398,6 +398,13 @@ function SubscriptionContent() {
                     <time dateTime={data.paid_until!}>
                       {t(dateLabel(data.paid_until!))}
                     </time>
+                    {remainingPaidDays(data.paid_until, now) !== null ? (
+                      <span className="billing-remaining">
+                        {t(
+                          `осталось дней: ${remainingPaidDays(data.paid_until, now)}`,
+                        )}
+                      </span>
+                    ) : null}
                   </>
                 ) : data.status === "EXPIRED" ? (
                   "платный доступ не активен"
@@ -405,13 +412,6 @@ function SubscriptionContent() {
                   "бесплатный доступ"
                 )}
               </p>
-              {paid && remainingPaidDays(data.paid_until, now) !== null ? (
-                <p className="billing-current">
-                  {t(
-                    `осталось дней: ${remainingPaidDays(data.paid_until, now)}`,
-                  )}
-                </p>
-              ) : null}
               {paid && data.current_price ? (
                 <p className="billing-current">
                   {t("стоимость подписки:")}
