@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime, timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -18,9 +19,43 @@ from prettylisavpn.product_analytics.domain import (
     snapshot,
     two_months_before,
 )
+from prettylisavpn.product_analytics.service import ProductAnalyticsService
 
 NOW = datetime(2026, 11, 2, 9, tzinfo=UTC)
 START = datetime(2026, 8, 1, tzinfo=UTC)
+
+
+async def test_historical_late_heartbeat_does_not_invent_activity_at_expiry():
+    user = uuid4()
+    created = boundary(date(2026, 10, 1)) + timedelta(hours=1)
+    session = AsyncMock()
+    session.get.return_value = SimpleNamespace(started_at=NOW)
+    session.scalars.side_effect = [
+        SimpleNamespace(
+            all=lambda: [SimpleNamespace(id=user, email="member@gmail.com", created_at=created)]
+        ),
+        SimpleNamespace(all=lambda: []),
+        SimpleNamespace(all=lambda: []),
+        SimpleNamespace(all=lambda: []),
+        SimpleNamespace(
+            all=lambda: [
+                SimpleNamespace(
+                    user_id=user,
+                    created_at=created,
+                    is_free=True,
+                    verified_at=created + timedelta(seconds=5),
+                    heartbeat_at=boundary(date(2026, 11, 1)),
+                    expires_at=boundary(date(2026, 10, 31)),
+                    removed_at=NOW,
+                    method="WIREGUARD",
+                )
+            ]
+        ),
+    ]
+    session.scalar.side_effect = [START, START]
+    result = await ProductAnalyticsService(AsyncMock()).build(session, NOW)
+    point = next(p for p in result["points"] if p["date"] == "2026-10-31")
+    assert point["dau"]["total"] == 0
 
 
 def data(activity=(), attempts=(), registrations=(), now=NOW, observed=START, collected=START):

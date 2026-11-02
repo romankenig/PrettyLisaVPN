@@ -124,7 +124,9 @@ internal class PublicMetadata(
 
     suspend fun directLocation(network: Network): PublicLocation? = withContext(Dispatchers.IO) {
         val http = base.newBuilder().socketFactory(network.socketFactory)
-            .dns { host -> network.getAllByName(host).toList() }.proxy(java.net.Proxy.NO_PROXY)
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> = network.getAllByName(hostname).toList()
+            }).proxy(java.net.Proxy.NO_PROXY)
             .connectionPool(okhttp3.ConnectionPool()).build()
         try {
             for ((url, fallback) in listOfNotNull(countryUrl to false, fallbackCountryUrl?.let { it to true })) {

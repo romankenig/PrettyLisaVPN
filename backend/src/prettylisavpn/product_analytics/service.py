@@ -147,8 +147,14 @@ class ProductAnalyticsService:
                 if lease.verified_at < collection.started_at:
                     activity.append(Activity(lease.user_id, lease.verified_at))
                 # Evidence only at recorded heartbeat time, never stretch through delayed cleanup.
-                end = min(lease.heartbeat_at, lease.expires_at, lease.removed_at or cutoff)
-                if lease.verified_at <= end < min(cutoff, collection.started_at):
+                end = lease.heartbeat_at
+                if (
+                    lease.verified_at
+                    <= end
+                    < min(
+                        cutoff, collection.started_at, lease.expires_at, lease.removed_at or cutoff
+                    )
+                ):
                     activity.append(Activity(lease.user_id, end))
         attempts = [
             Attempt(row.created_at, row.verified_at, row.removed_at, row.method) for row in leases
