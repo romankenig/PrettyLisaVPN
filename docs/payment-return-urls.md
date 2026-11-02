@@ -35,6 +35,8 @@ environment file (the live path is
 `/opt/prettylisavpn/secrets/merchant-verification/1plat.txt`). `deploy.sh` exports
 this directory as `MERCHANT_VERIFICATION_DIR`; Caddy mounts it read-only. Direct
 Compose invocations must set that variable explicitly for non-default paths.
+The CI deployment explicitly selects the persistent `secrets/merchant-verification`
+directory because its input environment file is staged in a temporary incoming directory.
 The file is not committed or included in application images. Only the exact
 public path is served, without authentication or directory listing; unrelated
 paths remain 404. Verify HTTP 200 and SHA-256/byte equality with the source file
