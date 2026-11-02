@@ -279,15 +279,21 @@ function MessageDialog({
           ×
         </button>
       </div>
-      <h2 id="account-message-title">{message.title}</h2>
+      <h2 id="account-message-title">
+        <MessageLabel text={message.title} />
+      </h2>
       <div className="account-message-content">
         {message.blocks.map((block, index) =>
           block.type === "paragraph" ? (
-            <p key={index}>{block.text}</p>
+            <p key={index}>
+              <MessageLabel text={block.text} />
+            </p>
           ) : (
             <ul key={index}>
               {block.items.map((item, position) => (
-                <li key={position}>{item}</li>
+                <li key={position}>
+                  <MessageLabel text={item} />
+                </li>
               ))}
             </ul>
           ),
