@@ -236,8 +236,6 @@
     <string name="dash_no_countries">no hay países disponibles</string>
     <string name="dash_connect">conectar</string>
     <string name="dash_region">región actual</string>
-    <string name="dash_include">solo sitios seleccionados</string>
-    <string name="dash_exclude">excepto sitios seleccionados</string>
     <string name="dash_end_session">cerrar la sesión en este dispositivo</string>
     <string name="dash_added">añadido</string>
     <string name="dash_last_login">último acceso</string>
@@ -270,7 +268,6 @@
     <string name="connection_methods_hint">los cambios se aplican a la próxima conexión. selecciona al menos un método.</string>
     <string name="all_methods">todos los métodos</string>
     <string name="traffic_services">elegir servicios</string>
-    <string name="traffic_save_hint">guardar desconecta la VPN. las reglas se aplican en la próxima conexión.</string>
     <string name="traffic_catalog_unavailable">catálogo no disponible. los servicios y dominios guardados siguen disponibles.</string>
     <string name="traffic_mask">patrón de dominio</string>
     <string name="traffic_add">añadir</string>
@@ -287,8 +284,6 @@
     <string name="vpn_location">ubicación vpn</string>
     <string name="vpn_location_loading">determinando…</string>
     <string name="traffic_description_all">todos los sitios y apps por vpn</string>
-    <string name="traffic_description_include">el resto del tráfico va directamente</string>
-    <string name="traffic_description_exclude">vpn para todo excepto su lista</string>
     <string name="notification_vpn_connected">VPN activada</string>
     <string name="notification_vpn_connecting">conectando VPN…</string>
     <string name="notification_vpn_disconnecting">desconectando VPN…</string>

@@ -242,8 +242,6 @@
     <string name="dash_no_countries">no available countries</string>
     <string name="dash_connect">connect</string>
     <string name="dash_region">current region</string>
-    <string name="dash_include">only selected sites</string>
-    <string name="dash_exclude">except selected sites</string>
     <string name="dash_end_session">end the session on this device</string>
     <string name="dash_added">added</string>
     <string name="dash_last_login">last sign-in</string>
@@ -277,7 +275,6 @@
     <string name="connection_methods_hint">changes apply to the next connection. select at least one method.</string>
     <string name="all_methods">all methods</string>
     <string name="traffic_services">choose services</string>
-    <string name="traffic_save_hint">saving disconnects VPN. new rules apply on your next connection.</string>
     <string name="traffic_catalog_unavailable">catalog unavailable. saved services and your masks remain available.</string>
     <string name="traffic_mask">service domain mask</string>
     <string name="traffic_add">add</string>
@@ -294,8 +291,6 @@
     <string name="vpn_location">vpn location</string>
     <string name="vpn_location_loading">determining…</string>
     <string name="traffic_description_all">all sites and apps through vpn</string>
-    <string name="traffic_description_include">other traffic goes directly</string>
-    <string name="traffic_description_exclude">vpn for everything except your list</string>
     <string name="notification_vpn_connected">VPN is on</string>
     <string name="notification_vpn_connecting">connecting VPN…</string>
     <string name="notification_vpn_disconnecting">disconnecting VPN…</string>
