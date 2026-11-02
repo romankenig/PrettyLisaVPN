@@ -38,6 +38,11 @@ class LiveManagedTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val device = UiDevice.getInstance(instrumentation)
+        // This fresh emulator tests real routing. Notification permission UI is
+        // covered separately; it must not hide the mandatory VPN consent dialog.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         val credential = instrumentation.uiAutomation.executeShellCommand("cat /data/local/tmp/pl-managed-credentials.json").use { descriptor ->
             FileInputStream(descriptor.fileDescriptor).use { JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8)).asJsonObject }
         }
