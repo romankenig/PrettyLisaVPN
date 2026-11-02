@@ -27,6 +27,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
     val tr = strings()
@@ -42,7 +43,7 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
         if (selected.mode != "all" && vpn.phase == VpnPhase.CONNECTED) {
             while (true) {
                 locating = true
-                vpnLocation = presentation.vpnLocation()
+                vpnLocation = if (selected.mode == "exclude") presentation.directLocation() else presentation.vpnLocation()
                 locating = false
                 delay(60_000)
             }
@@ -67,12 +68,12 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
         }
     }
     BrandCard {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(tr(R.string.ui_what_to_protect), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            Box(Modifier.widthIn(max = 180.dp)) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(tr(R.string.ui_what_to_protect), Modifier.align(Alignment.CenterVertically), style = MaterialTheme.typography.titleMedium)
+            Box(Modifier.widthIn(max = 240.dp).align(Alignment.CenterVertically)) {
                 val options = listOf("all" to R.string.traffic_all_short, "include" to R.string.traffic_include_short, "exclude" to R.string.traffic_exclude_short)
-                OutlinedButton({ modeMenu = true }, enabled = !busy, contentPadding = PaddingValues(horizontal = 10.dp), modifier = Modifier.testTag("traffic-mode-menu")) {
-                    Text(tr(options.first { it.first == selected.mode }.second), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.labelMedium)
+                TextButton({ modeMenu = true }, enabled = !busy, contentPadding = PaddingValues(horizontal = 10.dp), modifier = Modifier.testTag("traffic-mode-menu")) {
+                    Text(tr(options.first { it.first == selected.mode }.second), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium)
                     Text("⌄", Modifier.padding(start = 6.dp))
                 }
                 DropdownMenu(modeMenu, { modeMenu = false }) {
@@ -84,10 +85,12 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
                 }
             }
         }
-        Text(tr(when(selected.mode) { "include" -> R.string.traffic_description_include; "exclude" -> R.string.traffic_description_exclude; else -> R.string.traffic_description_all }),
+        if (selected.mode == "all") Text(tr(R.string.traffic_description_all),
             modifier = Modifier.testTag("traffic-mode-description"), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion.copy(alpha = 0.65f))
         if (selected.mode != "all") {
-            TextButton({ opened = true; model.load(Area.TRAFFIC) }, Modifier.testTag("traffic-services"), enabled = !busy, contentPadding = PaddingValues(0.dp)) { Text(tr(R.string.traffic_services)) }
+            Button({ opened = true; model.load(Area.TRAFFIC) }, Modifier.fillMaxWidth().testTag("traffic-services"), enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black), shape = MaterialTheme.shapes.medium) { Text(tr(R.string.traffic_services)) }
+            Text(tr(R.string.traffic_selected_label), style = MaterialTheme.typography.bodyMedium)
             val list = if (selected.mode == "include") selected.include else selected.exclude
             val selectionLabel = tr(R.string.traffic_selected)
             val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }
@@ -111,7 +114,7 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
         if (selected.mode != "all") {
             HorizontalDivider(color = Brand.DustyGray)
             Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(tr(R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+                Text(tr(if (selected.mode == "exclude") R.string.direct_location else R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
                 if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("vpn-location-loading"), strokeWidth = 2.dp)
                 val value = vpnLocation
                 if (vpn.phase != VpnPhase.CONNECTED) Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.bodySmall)
@@ -135,10 +138,11 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
     val language by LocalPresentation.current.preference.language.collectAsState()
     val state by model.state.collectAsState()
     var draft by remember { mutableStateOf(initial) }
-    var tab by remember { mutableStateOf(if (initial.mode == "exclude") "exclude" else "include") }
+    val tab by remember { mutableStateOf(if (initial.mode == "exclude") "exclude" else "include") }
     var query by remember { mutableStateOf("") }
     var input by remember { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf(false) }
     val list = if (tab == "include") draft.include else draft.exclude
     fun update(value: TrafficList) { draft = if (tab == "include") draft.copy(include = value) else draft.copy(exclude = value) }
     val catalog = state.data.trafficServices
@@ -146,12 +150,6 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
     AlertDialog(onDismissRequest = { if (!busy) close() }, title = { Text(tr(R.string.traffic_services)) },
         modifier = Modifier.testTag("traffic-dialog"),
         text = { Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(tr(R.string.traffic_save_hint))
-            listOf("include" to R.string.dash_include, "exclude" to R.string.dash_exclude).forEach { (mode, label) ->
-                OutlinedButton({ tab = mode; input = ""; invalid = false }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("traffic-tab-$mode")) {
-                    Text((if (tab == mode) "✓ " else "") + tr(label))
-                }
-            }
             if (state.loads[Area.TRAFFIC]?.phase == LoadPhase.LOADING) {
                 Text(tr(R.string.traffic_loading))
                 LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -161,32 +159,37 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
                 TextButton({ model.load(Area.TRAFFIC) }) { Text(tr(R.string.ui_retry)) }
             }
             OutlinedTextField(query, { query = it }, singleLine = true, label = { Text(tr(R.string.traffic_search)) }, modifier = Modifier.fillMaxWidth().testTag("traffic-search"))
-            serviceGroups(services, tab, java.util.Locale.forLanguageTag(language.code)).forEach { (group, entries) ->
+            Button({ adding = !adding; input = ""; invalid = false }, enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black),
+                modifier = Modifier.fillMaxWidth().testTag("traffic-add-service")) { Text("＋ " + tr(R.string.traffic_add_service)) }
+            if (adding) {
+            OutlinedTextField(input, { input = it }, enabled = !busy, label = { Text(tr(R.string.traffic_mask)) },
+                placeholder = { Text("example.com, *.example.com") }, modifier = Modifier.fillMaxWidth().testTag("traffic-mask"))
+            TextButton({
+                try {
+                    val masks = input.split(',', '\n').map(::normalizeTrafficMask)
+                    require(list.masks.size + masks.size <= 256)
+                    update(list.copy(masks = (list.masks + masks).distinct())); input = ""; invalid = false; adding = false
+                } catch (_: Exception) { invalid = true }
+            }, enabled = !busy && input.isNotBlank()) { Text(tr(R.string.traffic_add)) }
+            if (invalid) Text(tr(R.string.traffic_mask_invalid), color = Brand.PersianRed)
+            }
+            list.masks.forEach { mask -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(mask, Modifier.weight(1f))
+                TextButton({ update(list.copy(masks = list.masks - mask)) }, enabled = !busy) { Text(tr(R.string.traffic_remove)) }
+            } }
+            serviceGroups(services, tab, java.util.Locale.forLanguageTag(language.code), (if (tab == "include") initial.include else initial.exclude).services.map { it.id }.toSet()).forEach { (group, entries) ->
                 Text(tr(if (group == "top") R.string.traffic_top else R.string.traffic_all_services), style = MaterialTheme.typography.titleSmall, color = Brand.Scorpion)
                 entries.filter { it.name.contains(query.trim(), ignoreCase = true) }.forEach { service ->
                     val checked = list.services.any { it.id == service.id }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ServiceIcon(service.icon)
+                        ServiceIcon(service.icon, brand = true)
                         Text(service.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Switch(checked, { update(list.copy(services = if (checked) list.services.filter { it.id != service.id } else list.services + service)) }, enabled = !busy,
                             modifier = Modifier.testTag(if (group == "all") "traffic-service-${service.slug}" else "traffic-top-service-${service.slug}").semantics { contentDescription = service.name })
                     }
                 }
             }
-            OutlinedTextField(input, { input = it }, enabled = !busy, label = { Text(tr(R.string.traffic_mask)) },
-                placeholder = { Text("youtube.com, *.youtube.com") }, modifier = Modifier.fillMaxWidth().testTag("traffic-mask"))
-            TextButton({
-                try {
-                    val masks = input.split(',', '\n').map(::normalizeTrafficMask)
-                    require(list.masks.size + masks.size <= 256)
-                    update(list.copy(masks = (list.masks + masks).distinct())); input = ""; invalid = false
-                } catch (_: Exception) { invalid = true }
-            }, enabled = !busy && input.isNotBlank()) { Text(tr(R.string.traffic_add)) }
-            if (invalid) Text(tr(R.string.traffic_mask_invalid), color = Brand.PersianRed)
-            list.masks.forEach { mask -> Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(mask, Modifier.weight(1f))
-                TextButton({ update(list.copy(masks = list.masks - mask)) }, enabled = !busy) { Text(tr(R.string.traffic_remove)) }
-            } }
             if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
         } },
         confirmButton = { TextButton({ save(draft.refreshServices(catalog)) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
@@ -262,7 +265,7 @@ private fun ServiceIcon(icon: String, brand: Boolean = false, iconSize: Dp = 26.
     }
 }
 
-/** Service identity colors on Home; the picker retains the PrettyLisaVPN palette. */
+/** Service identity colors on Home and in the picker. */
 private fun serviceColor(icon: String): Color = Color(when(icon) {
     "anthropic" -> 0xFF191919
     "spotify" -> 0xFF1ED760

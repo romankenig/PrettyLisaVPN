@@ -84,6 +84,11 @@ try {
           session,
           sessionRestoration,
           vpnConnection,
+          directLocation: createPublicLocationProvider(
+            createPublicLocationTransport(true),
+            import.meta.env.VITE_PUBLIC_LOCATION_URL,
+            config.environment === "test",
+          ),
           publicLocation: createPublicLocationProvider(
             createPublicLocationTransport(),
             import.meta.env.VITE_PUBLIC_LOCATION_URL,

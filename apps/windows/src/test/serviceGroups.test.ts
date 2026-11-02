@@ -20,7 +20,10 @@ it("promotes ten popular services in include and non-Russian exclude, then keeps
   ] as const) {
     const [top, all] = serviceGroups(catalog, mode, language);
     expect(top.services.map((service) => service.id)).toEqual(
-      catalog.slice(0, 10).map((service) => service.id),
+      catalog
+        .slice(0, 10)
+        .reverse()
+        .map((service) => service.id),
     );
     expect(all.services).toHaveLength(24);
     expect(all.services[0].name).toBe("Service 1");
@@ -43,4 +46,13 @@ it("Russian exclude promotes the allowlist with the requested popular heading", 
       "de",
     )[0].services,
   ).toHaveLength(10);
+});
+
+it("sorts each block by saved selection then alphabetically without changing top membership", () => {
+  const [top, all] = serviceGroups(catalog, "include", "en", ["0", "12", "1"]);
+  expect(top.services.slice(0, 2).map((s) => s.id)).toEqual(["1", "0"]);
+  expect(all.services.slice(0, 3).map((s) => s.id)).toEqual(["12", "1", "0"]);
+  expect(new Set(top.services.map((s) => s.id))).toEqual(
+    new Set(catalog.slice(0, 10).map((s) => s.id)),
+  );
 });

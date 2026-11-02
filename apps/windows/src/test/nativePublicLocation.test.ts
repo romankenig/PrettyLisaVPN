@@ -20,6 +20,22 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+it("observes direct egress through the protected native route without fallback", async () => {
+  bridge.invoke.mockResolvedValue({ success: true, ip: "203.0.113.42" });
+  const provider = createPublicLocationProvider(
+    createPublicLocationTransport(true),
+  );
+  expect((await provider.current(new AbortController().signal)).ip).toBe(
+    "203.0.113.42",
+  );
+  expect(bridge.invoke).toHaveBeenCalledWith("get_direct_location");
+  bridge.native = false;
+  await expect(
+    provider.current(new AbortController().signal),
+  ).rejects.toThrow();
+  expect(bridge.fetch).not.toHaveBeenCalled();
+});
+
 it("uses a separate VPN-bound observation and never falls back to browser egress", async () => {
   bridge.invoke.mockResolvedValue({
     success: true,

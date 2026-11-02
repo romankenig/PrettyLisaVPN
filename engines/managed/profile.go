@@ -21,7 +21,7 @@ import (
 	"github.com/xtls/xray-core/core"
 )
 
-const Version = "0.5.1"
+const Version = "0.5.2"
 const CoreVersion = "26.10.21"
 const MaxProfileBytes = 64 * 1024
 

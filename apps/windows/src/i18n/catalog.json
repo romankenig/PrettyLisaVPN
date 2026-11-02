@@ -299,7 +299,12 @@
     "Обновить главную": "Обновить главную",
     "Топ-10 популярных": "Топ-10 популярных",
     "Все сервисы": "Все сервисы",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно."
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.",
+    "Выбранные сервисы:": "Выбранные сервисы:",
+    "Добавить свой сервис": "Добавить свой сервис",
+    "локация без VPN": "локация без VPN",
+    "локация без VPN:": "локация без VPN:",
+    "обновить локацию без VPN": "обновить локацию без VPN"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -601,7 +606,12 @@
     "Обновить главную": "Refresh Home",
     "Топ-10 популярных": "Top 10 popular",
     "Все сервисы": "All services",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "The VPN service is unavailable. Run the PrettyLisaVPN installer again."
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "The VPN service is unavailable. Run the PrettyLisaVPN installer again.",
+    "Выбранные сервисы:": "Selected services:",
+    "Добавить свой сервис": "Add your own service",
+    "локация без VPN": "location without VPN",
+    "локация без VPN:": "location without VPN:",
+    "обновить локацию без VPN": "refresh location without VPN"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -903,7 +913,12 @@
     "Обновить главную": "刷新主页",
     "Топ-10 популярных": "十大热门服务",
     "Все сервисы": "全部服务",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "VPN 服务不可用。请重新运行 PrettyLisaVPN 安装程序。"
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "VPN 服务不可用。请重新运行 PrettyLisaVPN 安装程序。",
+    "Выбранные сервисы:": "所选服务：",
+    "Добавить свой сервис": "添加自定义服务",
+    "локация без VPN": "非 VPN 位置",
+    "локация без VPN:": "非 VPN 位置：",
+    "обновить локацию без VPN": "刷新非 VPN 位置"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1205,7 +1220,12 @@
     "Обновить главную": "Actualizar inicio",
     "Топ-10 популярных": "Top 10 populares",
     "Все сервисы": "Todos los servicios",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "El servicio VPN no está disponible. Ejecuta de nuevo el instalador de PrettyLisaVPN."
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "El servicio VPN no está disponible. Ejecuta de nuevo el instalador de PrettyLisaVPN.",
+    "Выбранные сервисы:": "Servicios seleccionados:",
+    "Добавить свой сервис": "Añadir servicio propio",
+    "локация без VPN": "ubicación sin VPN",
+    "локация без VPN:": "ubicación sin VPN:",
+    "обновить локацию без VPN": "actualizar ubicación sin VPN"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1507,7 +1527,12 @@
     "Обновить главную": "Startseite aktualisieren",
     "Топ-10 популярных": "Top 10 beliebt",
     "Все сервисы": "Alle Dienste",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Der VPN-Dienst ist nicht verfügbar. Führen Sie das PrettyLisaVPN-Installationsprogramm erneut aus."
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Der VPN-Dienst ist nicht verfügbar. Führen Sie das PrettyLisaVPN-Installationsprogramm erneut aus.",
+    "Выбранные сервисы:": "Ausgewählte Dienste:",
+    "Добавить свой сервис": "Eigenen Dienst hinzufügen",
+    "локация без VPN": "Standort ohne VPN",
+    "локация без VPN:": "Standort ohne VPN:",
+    "обновить локацию без VPN": "Standort ohne VPN aktualisieren"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1809,6 +1834,11 @@
     "Обновить главную": "Actualiser l’accueil",
     "Топ-10 популярных": "Top 10 populaires",
     "Все сервисы": "Tous les services",
-    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Le service VPN est indisponible. Relancez le programme d’installation PrettyLisaVPN."
+    "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.": "Le service VPN est indisponible. Relancez le programme d’installation PrettyLisaVPN.",
+    "Выбранные сервисы:": "Services sélectionnés :",
+    "Добавить свой сервис": "Ajouter un service",
+    "локация без VPN": "localisation sans VPN",
+    "локация без VPN:": "localisation sans VPN :",
+    "обновить локацию без VPN": "actualiser la localisation sans VPN"
   }
 }

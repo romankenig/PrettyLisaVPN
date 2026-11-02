@@ -16,6 +16,7 @@ import com.prettylisavpn.android.vpn.TrafficSelection
 import com.prettylisavpn.android.vpn.TrafficList
 import com.prettylisavpn.android.vpn.TrafficService
 import com.prettylisavpn.android.ui.PublicMetadata
+import com.prettylisavpn.android.ui.PresentationStore
 import kotlinx.coroutines.runBlocking
 import com.prettylisavpn.android.vpn.AndroidVpnHost
 import com.prettylisavpn.android.vpn.DeviceMethodSelection
@@ -151,6 +152,11 @@ class LiveManagedTest {
                                 }
                                 row["vpn_location_verified"] = runBlocking { PublicMetadata().vpnLocation()?.ip } == actual[2] && actual[2] in exits
                                 check(row["vpn_location_verified"] == true)
+                                if (mode == "exclude") {
+                                    val direct = runBlocking { PresentationStore.get(context).directLocation()?.ip }
+                                    row["direct_location_verified"] = direct == baseline[2] && direct !in exits
+                                    check(row["direct_location_verified"] == true)
+                                }
                                 val page = vpn.openConnection(URL("https://ifconfig.me/"), Proxy.NO_PROXY) as HttpsURLConnection
                                 try {
                                     page.connectTimeout = 15_000; page.readTimeout = 15_000; page.instanceFollowRedirects = false

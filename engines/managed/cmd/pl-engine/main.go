@@ -17,8 +17,9 @@ type command struct {
 	Profile json.RawMessage `json:"profile,omitempty"`
 }
 type response struct {
-	Status  string `json:"status"`
-	Version string `json:"version,omitempty"`
+	Status   string            `json:"status"`
+	Version  string            `json:"version,omitempty"`
+	Location *managed.Location `json:"location,omitempty"`
 }
 
 func main() {
@@ -57,6 +58,15 @@ func main() {
 				result.Status = "DOWN"
 				if engine.Running() {
 					result.Status = "RUNNING"
+				}
+			case "direct_location":
+				if len(c.Profile) == 0 {
+					if location, err := engine.DirectLocation(); err == nil {
+						result.Status = "OK"
+						result.Location = location
+					} else {
+						result.Status = "PUBLIC_LOCATION_UNAVAILABLE"
+					}
 				}
 			}
 		}

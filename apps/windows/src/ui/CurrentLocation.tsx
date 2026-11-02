@@ -18,17 +18,21 @@ type LocationState =
 export function CurrentLocation({
   connection,
   vpn = false,
+  direct = false,
   refreshKey = 0,
 }: {
   readonly connection: VpnConnectionState;
   readonly vpn?: boolean;
+  readonly direct?: boolean;
   readonly refreshKey?: number;
 }) {
   useLanguage();
   const application = useApplication();
-  const publicLocation = vpn
-    ? application.vpnLocation
-    : application.publicLocation;
+  const publicLocation = direct
+    ? application.directLocation
+    : vpn
+      ? application.vpnLocation
+      : application.publicLocation;
   const inactive = vpn && connection.phase !== "CONNECTED";
   const pending = [
     "RECONCILING",
@@ -37,7 +41,7 @@ export function CurrentLocation({
     "VERIFYING_INTERNET",
     "DISCONNECTING",
   ].includes(connection.phase);
-  const key = `${connection.phase}:${connection.tunnel}:${"session" in connection ? (connection.session?.countryCode ?? "") : ""}`;
+  const key = `${direct}:${connection.phase}:${connection.tunnel}:${"session" in connection ? (connection.session?.countryCode ?? "") : ""}`;
   const [state, setState] = useState<LocationState>({ key, phase: "loading" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -90,12 +94,20 @@ export function CurrentLocation({
   return (
     <div
       className="current-location"
-      aria-label={t(vpn ? "локация VPN" : "текущая локация")}
+      aria-label={t(
+        direct ? "локация без VPN" : vpn ? "локация VPN" : "текущая локация",
+      )}
       aria-live="polite"
       aria-busy={!inactive && visible.phase === "loading"}
     >
       <span className="current-location__label">
-        {t(vpn ? "локация VPN:" : "текущая локация:")}
+        {t(
+          direct
+            ? "локация без VPN:"
+            : vpn
+              ? "локация VPN:"
+              : "текущая локация:",
+        )}
       </span>
       {inactive ? (
         <span className="current-location__notice">
@@ -135,7 +147,11 @@ export function CurrentLocation({
           type="button"
           className="location-refresh"
           aria-label={t(
-            vpn ? "обновить локацию VPN" : "обновить текущую локацию",
+            direct
+              ? "обновить локацию без VPN"
+              : vpn
+                ? "обновить локацию VPN"
+                : "обновить текущую локацию",
           )}
           onClick={() => setAttempt((value) => value + 1)}
         >

@@ -50,6 +50,9 @@ from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.locations import router as locations_router
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
+from prettylisavpn.product_analytics.activity import DatabaseActivitySink
+from prettylisavpn.product_analytics.router import router as analytics_router
+from prettylisavpn.product_analytics.service import ProductAnalyticsService
 from prettylisavpn.readiness import Dependency, Readiness
 from prettylisavpn.support.delivery import (
     SupportMailPort,
@@ -141,6 +144,8 @@ def create_app(
             cache = valkey if valkey is not None else Valkey(config)
             try:
                 app.state.postgres = pg
+                app.state.product_analytics = ProductAnalyticsService(cast(Postgres, pg))
+                activity_sink = DatabaseActivitySink(cast(Postgres, pg))
                 app.state.fleet_settings = config
                 app.state.fleet = fleet or FleetService(cast(Postgres, pg), config)
                 app.state.valkey = cache
@@ -168,6 +173,7 @@ def create_app(
                         cast(Postgres, pg),
                         cast(ProductEventSink, app.state.product_events),
                         config,
+                        activity=activity_sink,
                     )
                 )
                 app.state.authenticated_sessions = (
@@ -177,6 +183,7 @@ def create_app(
                         cast(Postgres, pg),
                         cast(ProductEventSink, app.state.product_events),
                         config,
+                        activity=activity_sink,
                     )
                 )
                 app.state.account_messages = AccountMessagesService(
@@ -263,6 +270,7 @@ def create_app(
     app.include_router(support_router)
     app.include_router(billing_router)
     app.include_router(fleet_router)
+    app.include_router(analytics_router)
     app.include_router(traffic_router)
 
     @app.exception_handler(FleetError)

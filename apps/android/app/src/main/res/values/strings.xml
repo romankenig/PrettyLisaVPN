@@ -303,4 +303,7 @@
     <string name="notification_disconnect">disconnect VPN</string>
     <string name="traffic_top">top 10 popular</string>
     <string name="traffic_all_services">all services</string>
+    <string name="traffic_selected_label">Selected services:</string>
+    <string name="traffic_add_service">Add your own service</string>
+    <string name="direct_location">location without VPN:</string>
 </resources>

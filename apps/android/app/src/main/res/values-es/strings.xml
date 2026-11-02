@@ -296,4 +296,7 @@
     <string name="notification_disconnect">desconectar VPN</string>
     <string name="traffic_top">top 10 populares</string>
     <string name="traffic_all_services">todos los servicios</string>
+    <string name="traffic_selected_label">Servicios seleccionados:</string>
+    <string name="traffic_add_service">Añadir servicio propio</string>
+    <string name="direct_location">ubicación sin VPN:</string>
 </resources>

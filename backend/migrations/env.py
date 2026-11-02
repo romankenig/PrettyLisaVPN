@@ -17,6 +17,7 @@ from prettylisavpn.devices import model as devices_model  # noqa: F401
 from prettylisavpn.fleet import model as fleet_model  # noqa: F401
 from prettylisavpn.legacy_vpn import nodes as vpn_nodes_model  # noqa: F401
 from prettylisavpn.legacy_vpn import sessions as vpn_sessions_model  # noqa: F401
+from prettylisavpn.product_analytics import model as product_analytics_model  # noqa: F401
 from prettylisavpn.product_events import model as product_events_model  # noqa: F401
 from prettylisavpn.subscriptions import model as subscriptions_model  # noqa: F401
 from prettylisavpn.support import model as support_model  # noqa: F401
