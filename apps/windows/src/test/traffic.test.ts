@@ -7,9 +7,56 @@ import {
   routingPolicy,
   refreshServices,
   normalizeServiceNetwork,
+  seedTrafficDefaults,
 } from "../vpn/traffic";
 
 describe("device traffic rules", () => {
+  it("seeds new devices once from the catalog and preserves old or intentionally empty lists", () => {
+    const memory = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memory.set(key, value);
+      },
+    };
+    const store = createTrafficSelection(storage);
+    const catalog = ["youtube", "telegram", "gosuslugi", "max"].map(
+      (slug, index) => ({
+        id: `00000000-0000-4000-8000-00000000000${index}`,
+        slug,
+        name: slug,
+        icon: slug,
+        domains: [`${slug}.example.com`],
+      }),
+    );
+    expect(store.current().preset_defaults).toBe(true);
+    expect(seedTrafficDefaults(store.current(), catalog.slice(0, 2))).toBe(
+      store.current(),
+    );
+    const seeded = seedTrafficDefaults(
+      { ...store.current(), mode: "include" },
+      catalog,
+    );
+    expect(seeded.include.services.map((v) => v.slug)).toEqual([
+      "youtube",
+      "telegram",
+    ]);
+    expect(seeded.exclude.services.map((v) => v.slug)).toEqual([
+      "gosuslugi",
+      "max",
+    ]);
+    store.save(seeded);
+    expect(createTrafficSelection(storage).current()).toEqual(seeded);
+    const cleared = { ...seeded, include: emptyTraffic().include };
+    store.save(cleared);
+    expect(
+      seedTrafficDefaults(createTrafficSelection(storage).current(), catalog),
+    ).toEqual(cleared);
+    store.save(emptyTraffic());
+    expect(
+      seedTrafficDefaults(createTrafficSelection(storage).current(), catalog),
+    ).toEqual(emptyTraffic());
+  });
   it("accepts large preset selections plus manual masks within the engine bound", () => {
     const services = Array.from({ length: 12 }, (_, i) => ({
       id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,

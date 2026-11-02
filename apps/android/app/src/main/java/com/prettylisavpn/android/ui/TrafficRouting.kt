@@ -34,8 +34,20 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
     val context = LocalContext.current
     val store = remember { DeviceTrafficSelection.get(context) }
     val selected by store.selected.collectAsState()
+    val screenState by model.state.collectAsState()
     val presentation = LocalPresentation.current
     val vpn by (model.vpn?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
+    LaunchedEffect(model, selected.preset_defaults, refreshKey) {
+        if (selected.preset_defaults) model.load(Area.TRAFFIC)
+    }
+    LaunchedEffect(screenState.data.trafficServices, selected.preset_defaults, selected.mode, vpn.phase) {
+        if (selected.preset_defaults && (selected.mode == "all" || vpn.phase == VpnPhase.DISCONNECTED)) {
+            runCatching {
+                val next = store.current().seedDefaults(screenState.data.trafficServices)
+                if (next != store.current()) store.save(next)
+            }
+        }
+    }
     var vpnLocation by remember { mutableStateOf<PublicLocation?>(null) }
     var locating by remember { mutableStateOf(false) }
     LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method, refreshKey) {
@@ -144,8 +156,9 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
     var invalid by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
     val list = if (tab == "include") draft.include else draft.exclude
-    fun update(value: TrafficList) { draft = if (tab == "include") draft.copy(include = value) else draft.copy(exclude = value) }
+    fun update(value: TrafficList) { draft = if (tab == "include") draft.copy(include = value, preset_defaults = false) else draft.copy(exclude = value, preset_defaults = false) }
     val catalog = state.data.trafficServices
+    LaunchedEffect(catalog) { draft = draft.seedDefaults(catalog) }
     val services = catalog + list.services.filter { saved -> catalog.none { it.id == saved.id } }
     AlertDialog(onDismissRequest = { if (!busy) close() }, title = { Text(tr(R.string.traffic_services)) },
         modifier = Modifier.testTag("traffic-dialog"),
@@ -192,7 +205,7 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
             }
             if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
         } },
-        confirmButton = { TextButton({ save(draft.refreshServices(catalog)) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
+        confirmButton = { TextButton({ save(draft.refreshServices(catalog).copy(preset_defaults = false)) }, enabled = !busy && input.isBlank(), modifier = Modifier.testTag("traffic-save")) { Text(tr(R.string.traffic_save)) } },
         dismissButton = { TextButton(close, enabled = !busy) { Text(tr(R.string.ui_cancel)) } })
 }
 

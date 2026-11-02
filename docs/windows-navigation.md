@@ -1,3 +1,13 @@
+# FAQ and initial selections — Windows 0.25.0 / Android 0.21.0
+
+About → FAQ question dropdown → answer and Home, Subscription or Support action.
+Windows uses `/`, `/settings/subscription` and the existing SupportDialog;
+Android uses `HOME`, `SUBSCRIPTION`, `SUPPORT`. These are implemented internal
+transitions under the existing auth guard. No new external checkout or payment
+activation; provider integration is still pending. Home initializes only fresh
+split selections from the existing API and preserves both saved lists. See
+[handoff](subscription-management-followup.md) for behavior and validation.
+
 # Home upgrade shortcut — Windows 0.24.1 / Android 0.20.1
 
 Free Home → «улучшить план» → existing subscription screen

@@ -288,6 +288,14 @@ class AccountScreensTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("confirmation-dialog")
         click("dismiss-dialog");compose.onNodeWithTag("live-support-screen").assertExists();assertEquals(0,sends)
     }
+    @Test fun faqSelectionRevealsAnswerAndNavigatesToSubscription() {
+        click("tab_ABOUT"); waitFor("live-about")
+        click("faq-select"); click("faq-option-1")
+        compose.onNodeWithTag("faq-answer").assertTextEquals(compose.activity.getString(R.string.faq_free_a))
+        screenshot("about-faq-free")
+        click("faq-link"); waitFor("provider-mode")
+        assertEquals(0, starts)
+    }
     @Test fun homeMatchesWindowsAndMissingVpnPortCannotConnect() {
         compose.onNodeWithTag("account-email").assertTextEquals("screens@example.com")
         for(tag in listOf("live-devices","live-subscription","live-messages","live-support","account-refresh","live-logout")) compose.onNodeWithTag(tag).assertDoesNotExist()

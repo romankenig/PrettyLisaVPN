@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Windows — 0.25.0 / Android — 0.21.0
+
+- Add a concise FAQ dropdown in About with Home, Subscription and Support links.
+- Seed new split selections from the server catalog: YouTube + Telegram for
+  selected services, Gosuslugi + MAX for exclusions; preserve saved choices.
+- Show remaining paid days and clarify confirmed cancellation/method removal.
+  Android formats subscription dates and hides internal billing status codes.
+- 1Plat API access still blocks payment activation; recurring work is postponed
+  by the owner. Crypto remains a plan. See [handoff](docs/subscription-management-followup.md).
+
 ### Backend — 0.30.0
 
 - Add the public `/support` contact page with a button opening the user's mail

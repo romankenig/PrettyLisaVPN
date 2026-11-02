@@ -51,7 +51,7 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
-            composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }) }
+            composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }, navigate = { go(it) }) }
             composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
             composable("SUBSCRIPTION") { LiveSubscription(model) { nav.popBackStack() } }
@@ -121,6 +121,9 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     var confirmedRevision by rememberSaveable { mutableStateOf("") }
     var requestId by rememberSaveable { mutableStateOf(UUID.randomUUID().toString()) }
     val context = LocalContext.current
+    val language by LocalPresentation.current.preference.language.collectAsState()
+    var now by remember { mutableStateOf(java.time.Instant.now()) }
+    LaunchedEffect(Unit) { while (true) { now = java.time.Instant.now(); kotlinx.coroutines.delay(60_000) } }
     LaunchedEffect(state.data.billing?.revision, action) {
         if (action != null && confirmedRevision != state.data.billing?.revision) action = null
     }
@@ -129,13 +132,14 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
         LiveLoad(model, Area.BILLING) {
             val billing = state.data.billing
             if (billing != null) BrandCard {
-                Text("${planLabel(billing.plan)} · ${billing.status}", style = MaterialTheme.typography.titleLarge)
-                Text(tr(R.string.ui_paid_until_0, billing.paidUntil ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("live-paid-until"))
+                Text(planLabel(billing.plan), style = MaterialTheme.typography.titleLarge)
+                Text(tr(R.string.ui_paid_until_0, readableDate(billing.paidUntil, java.util.Locale.forLanguageTag(language.code), java.time.ZoneId.systemDefault()) ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("live-paid-until"))
+                if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(billing.paidUntil, now)?.let { Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left")) }
                 Text(tr(R.string.ui_auto_renewal_0, if (billing.autoRenew) tr(R.string.ui_on) else tr(R.string.ui_off)))
                 Text(tr(R.string.ui_payment_method_0, billing.method ?: tr(R.string.ui_none)))
                 Text(tr(R.string.ui_current_price_0, billing.currentPrice ?: tr(R.string.ui_unavailable)))
-                Text(tr(R.string.ui_provider_0, billing.mode), Modifier.testTag("provider-mode"))
-                if (billing.mode != "LIVE" || !billing.available) Text(tr(R.string.ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene))
+                if (billing.mode != "LIVE" || !billing.available) Text(tr(R.string.ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene), Modifier.testTag("provider-mode"), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                else Spacer(Modifier.testTag("provider-mode"))
                 listOf("RUB", "USD").forEach { code -> BrandActionButton("${code}${if (code == currency) " ✓" else ""}", { currency = code; route = if (code == "RUB") "MIR" else "BANK_CARD" }, enabled = !state.busy && !state.data.paymentPending) }
                 billing.offers.forEach { offer ->
                     offer.prices[currency]?.let { p -> Text(tr(R.string.ui_premium_month_0_1, money(p.amount, currency), p.original?.let { tr(R.string.ui_was_0, money(it, currency)) } ?: "")) }
@@ -148,6 +152,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                     val allowedRoute = !purchase || (billing.offers.size == 1 && billing.routes.any { it.id == route && currency in it.currencies })
                     BrandActionButton(tr.action(kind), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-${kind}"), enabled = state.data.operationsReady && billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
                 }
+                if (billing.permits("CANCEL")) Text(tr(R.string.billing_cancel_detail), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
                 if (state.data.paymentPending) {
                     Text(tr(R.string.ui_an_operation_needs_confirmation_refresh_its_status_before_startin))
                     BrandActionButton(tr(R.string.ui_check_operation), { model.perform(Command.ConfirmPayment) }, Modifier.testTag("live-check-payment"), loading = state.busy)

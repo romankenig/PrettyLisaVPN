@@ -10,7 +10,7 @@ import kotlinx.coroutines.withTimeout
 
 data class TrafficService(val id: String, val slug: String, val name: String, val icon: String, val domains: List<String>, val category: String? = null, val ipv4_cidrs: List<String>? = null, val popularity_rank: Int? = null)
 data class TrafficList(val services: List<TrafficService> = emptyList(), val masks: List<String> = emptyList())
-data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList())
+data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList(), val preset_defaults: Boolean = false)
 data class RoutingPolicy(val mode: String, val domains: List<String>, val ipv4_cidrs: List<String> = emptyList())
 
 fun normalizeServiceNetwork(value: String): String {
@@ -35,6 +35,15 @@ fun normalizeServiceNetwork(value: String): String {
 fun TrafficSelection.refreshServices(catalog: List<TrafficService>): TrafficSelection {
     fun refresh(list: TrafficList) = list.copy(services = list.services.map { saved -> catalog.find { it.id == saved.id } ?: saved })
     return copy(include = refresh(include), exclude = refresh(exclude))
+}
+
+fun TrafficSelection.seedDefaults(catalog: List<TrafficService>): TrafficSelection {
+    if (!preset_defaults) return this
+    val available = validateTrafficServices(catalog)
+    val includeServices = listOf("youtube", "telegram").map { slug -> available.find { it.slug == slug } }
+    val excludeServices = listOf("gosuslugi", "max").map { slug -> available.find { it.slug == slug } }
+    if ((includeServices + excludeServices).any { it == null }) return this
+    return copy(include = TrafficList(includeServices.filterNotNull()), exclude = TrafficList(excludeServices.filterNotNull()), preset_defaults = false)
 }
 
 fun normalizeTrafficMask(input: String): String {
@@ -76,7 +85,7 @@ class TrafficPreference(read: () -> String? = { null }, private val write: (Stri
         value.policy(); value.copy(mode = "include").policy(); value.copy(mode = "exclude").policy()
         return value
     }
-    private val mutable = MutableStateFlow(runCatching { read()?.let { checked(gson.fromJson(it, TrafficSelection::class.java)) } }.getOrNull() ?: TrafficSelection())
+    private val mutable = MutableStateFlow(runCatching { read()?.let { checked(gson.fromJson(it, TrafficSelection::class.java)) } }.getOrNull() ?: TrafficSelection(preset_defaults = true))
     val selected = mutable.asStateFlow()
     fun current() = mutable.value
     fun save(value: TrafficSelection) { checked(value); write(gson.toJson(value)); mutable.value = value }

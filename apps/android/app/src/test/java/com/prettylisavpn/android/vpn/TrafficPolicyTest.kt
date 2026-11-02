@@ -8,6 +8,23 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun newDeviceDefaultsWaitForCatalogAndNeverReplaceSavedChoices() {
+        var disk: String? = null
+        val store = TrafficPreference({ disk }, { disk = it })
+        val catalog = listOf("youtube", "telegram", "gosuslugi", "max").mapIndexed { index, slug -> TrafficService("00000000-0000-4000-8000-00000000000$index", slug, slug, slug, listOf("$slug.example.com")) }
+        assertTrue(store.current().preset_defaults)
+        assertEquals(store.current(), store.current().seedDefaults(catalog.take(2)))
+        val seeded = store.current().copy(mode = "include").seedDefaults(catalog)
+        assertEquals(listOf("youtube", "telegram"), seeded.include.services.map { it.slug })
+        assertEquals(listOf("gosuslugi", "max"), seeded.exclude.services.map { it.slug })
+        store.save(seeded)
+        assertEquals(seeded, TrafficPreference({ disk }).current())
+        val cleared = seeded.copy(include = TrafficList())
+        store.save(cleared)
+        assertEquals(cleared, TrafficPreference({ disk }).current().seedDefaults(catalog))
+        disk = """{"mode":"all","include":{"services":[],"masks":[]},"exclude":{"services":[],"masks":[]}}"""
+        assertEquals(TrafficSelection(), TrafficPreference({ disk }).current().seedDefaults(catalog))
+    }
     @Test fun expandedPresetsAndManualMasksFitBothSavedModes() {
         val services = List(12) { i -> TrafficService("00000000-0000-4000-8000-${i.toString().padStart(12, '0')}", "service-$i", "Service $i", "generic", List(64) { j -> "s$i-$j.example.com" }) }
         val masks = List(256) { "m$it.example.com" }

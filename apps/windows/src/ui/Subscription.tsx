@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { useApplication } from "../state/application";
 import {
   formatPrice,
+  remainingPaidDays,
   paymentsEnabled,
   type BillingAction,
   type BillingOperation,
@@ -55,6 +56,11 @@ function SubscriptionContent() {
   const latestData = useRef(data);
   latestData.current = data;
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [currency, setCurrency] = useState<Currency>(() =>
@@ -399,6 +405,13 @@ function SubscriptionContent() {
                   "бесплатный доступ"
                 )}
               </p>
+              {paid && remainingPaidDays(data.paid_until, now) !== null ? (
+                <p className="billing-current">
+                  {t(
+                    `осталось дней: ${remainingPaidDays(data.paid_until, now)}`,
+                  )}
+                </p>
+              ) : null}
               {paid && data.current_price ? (
                 <p className="billing-current">
                   {t("стоимость подписки:")}
@@ -587,7 +600,11 @@ function SubscriptionContent() {
               ) : null}
               {can("CANCEL") ? (
                 <div className="billing-cancel-area">
-                  <p>{t("доступ сохранится до оплаченной даты")}</p>
+                  <p>
+                    {t(
+                      "отмена продления отвяжет способ оплаты. доступ сохранится до конца оплаченного срока.",
+                    )}
+                  </p>
                   <button
                     className="billing-danger"
                     type="button"

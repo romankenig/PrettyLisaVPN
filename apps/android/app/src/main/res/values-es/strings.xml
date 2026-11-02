@@ -295,4 +295,19 @@
     <string name="traffic_add_service">añadir servicio propio</string>
     <string name="direct_location">ubicación sin VPN:</string>
     <string name="upgrade_plan">mejorar plan</string>
+    <string name="faq_question">pregunta</string>
+    <string name="faq_connect_q">¿cómo me conecto?</string>
+    <string name="faq_connect_a">elige un país y pulsa conectar. la primera conexión puede tardar un par de minutos.</string>
+    <string name="faq_free_q">¿qué incluye free?</string>
+    <string name="faq_free_a">una hora de VPN al día compartida por todos los dispositivos de la cuenta. se restablece a las 00:00 UTC.</string>
+    <string name="faq_manage_q">¿dónde gestiono mi suscripción?</string>
+    <string name="faq_manage_a">abre suscripción para ver el periodo pagado, el precio, el método de pago y las acciones disponibles.</string>
+    <string name="faq_cancel_q">¿qué pasa si cancelo la renovación?</string>
+    <string name="faq_cancel_a">el acceso pagado continúa hasta la fecha indicada. la cancelación se completa cuando la app la confirma.</string>
+    <string name="faq_split_q">¿cómo elijo sitios para el VPN?</string>
+    <string name="faq_split_a">en inicio elige seleccionados o excepto seleccionados y después elegir servicios. los cambios desconectan el VPN; vuelve a conectarte.</string>
+    <string name="faq_support_q">¿cómo contacto con soporte?</string>
+    <string name="faq_support_a">escribe desde la app o a help@prettylisavpn.com. indica el problema y la hora del error.</string>
+    <string name="billing_days_left">días restantes: %1$d</string>
+    <string name="billing_cancel_detail">cancelar la renovación desvincula el método de pago. el acceso continúa hasta el fin del periodo pagado.</string>
 </resources>

@@ -5,6 +5,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -14,7 +18,7 @@ import com.prettylisavpn.android.R
 
 /** Windows About content, shared by live and isolated fixture navigation. */
 @Composable
-internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = "about-support") {
+internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = "about-support", navigate: (String) -> Unit = {}) {
     val tr = strings()
     val backend by LocalPresentation.current.version.collectAsState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -29,9 +33,29 @@ internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = 
                     AboutVersion(tr(R.string.about_frontend), BuildConfig.VERSION_NAME, "about-frontend-version", Modifier.weight(1f))
                     AboutVersion(tr(R.string.about_backend), backend ?: tr(R.string.unavailable), "about-backend-version", Modifier.weight(1f))
                 }
-                // Windows has a heading-only FAQ card; do not invent questions or links.
                 BrandCard(Modifier.heightIn(min = 96.dp).testTag("about-faq")) {
                     Text(tr(R.string.about_faq), style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("about-faq-title"))
+                    val questions = listOf(
+                        Triple(R.string.faq_connect_q, R.string.faq_connect_a, "HOME"),
+                        Triple(R.string.faq_free_q, R.string.faq_free_a, "SUBSCRIPTION"),
+                        Triple(R.string.faq_manage_q, R.string.faq_manage_a, "SUBSCRIPTION"),
+                        Triple(R.string.faq_cancel_q, R.string.faq_cancel_a, "SUBSCRIPTION"),
+                        Triple(R.string.faq_split_q, R.string.faq_split_a, "HOME"),
+                        Triple(R.string.faq_support_q, R.string.faq_support_a, "SUPPORT"),
+                    )
+                    var question by rememberSaveable { mutableIntStateOf(0) }
+                    var expanded by remember { mutableStateOf(false) }
+                    val entry = questions[question]
+                    Box {
+                        TextButton({ expanded = true }, Modifier.testTag("faq-select")) { Text(tr(entry.first) + " ⌄") }
+                        DropdownMenu(expanded, { expanded = false }) {
+                            questions.forEachIndexed { index, item -> DropdownMenuItem(text = { Text(tr(item.first)) }, onClick = { question = index; expanded = false }, modifier = Modifier.testTag("faq-option-$index")) }
+                        }
+                    }
+                    Text(tr(entry.second), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("faq-answer"))
+                    TextButton({ if (entry.third == "SUPPORT") support() else navigate(entry.third) }, Modifier.testTag("faq-link")) {
+                        Text(tr(when (entry.third) { "HOME" -> R.string.home; "SUBSCRIPTION" -> R.string.ui_subscription; else -> R.string.about_contact_support }))
+                    }
                 }
                 BrandCard(Modifier.testTag("about-help")) {
                     Text(tr(R.string.about_support_title), style = MaterialTheme.typography.titleMedium)
