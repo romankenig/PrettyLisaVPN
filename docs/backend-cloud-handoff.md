@@ -1,5 +1,15 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Public support page — 2026-11-02
+
+Backend 0.29.0 → 0.30.0 for a new public page; schema remains 0041 and clients
+are unchanged. `/support` and `/support/` show a branded contact page with a fixed
+mailto link to help@prettylisavpn.com. The owner explicitly selected opening their
+mail application instead of a website submission form. No SMTP/API submission is
+performed by this page. Both payment return pages now link here. Shared static-page
+security headers retain no-store, no-referrer, no scripts/forms or framing.
+Source/build/run/attempt, live rollout and rollback evidence are recorded in PR #48.
+
 ## 1Plat merchant verification — 2026-11-02
 
 Infrastructure-only follow-up; backend stays 0.29.0 and clients/schema are unchanged.

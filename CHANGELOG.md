@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+### Backend — 0.30.0
+
+- Add the public `/support` contact page with a button opening the user's mail
+  application for `help@prettylisavpn.com`. Payment return pages link to it.
+- No automatic message sending, website form, new user-data storage or schema change.
+
 ### Infrastructure — version unchanged
 
 - Serve the owner-provided 1Plat domain verification file at `/1plat.txt` on

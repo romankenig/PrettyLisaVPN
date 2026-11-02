@@ -9,6 +9,12 @@ develop `66c26f243d6890686beb1e0d94271b5d7b849764`.
 | Successful payment return | https://prettylisavpn.com/payment/success | Browser return; directs the customer to the subscription screen while server confirmation is pending. |
 | Unsuccessful payment return | https://prettylisavpn.com/payment/failure | Browser return after cancellation/failure; directs the customer to check status before retrying. |
 | API callback | https://prettylisavpn.com/api/payments/1plat/callback | Reserved POST notification endpoint. Currently fails closed with HTTP 503 / BILLING_NOT_CONFIGURED. |
+| Support | https://prettylisavpn.com/support | Contact page; the button opens a message to help@prettylisavpn.com in the user's mail application. |
+
+The independent public-support follow-up raises backend 0.29.0 → 0.30.0, without
+schema/client changes. Both payment pages link to `/support`; `/support/` also works.
+The owner selected a mailto button, not a web form. No email is sent automatically,
+and this page does not invoke the authenticated in-app support API or store content.
 
 The public pages and their CSS/logo ship inside the backend image. Caddy terminates
 HTTPS on the main server and exposes only these paths on the apex domain. Other

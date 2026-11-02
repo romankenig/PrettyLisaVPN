@@ -111,6 +111,12 @@ p {
 .support:hover {
   filter: brightness(0.96);
 }
+.contact-email {
+  margin: 0 0 22px;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 .support:focus-visible {
   outline: 3px solid #5f22d9;
   outline-offset: 4px;

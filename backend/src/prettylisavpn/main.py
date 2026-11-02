@@ -61,6 +61,7 @@ from prettylisavpn.support.delivery import (
     SupportWorker,
     SupportWorkerPort,
 )
+from prettylisavpn.support.public_routes import router as support_public_router
 from prettylisavpn.support.router import router as support_router
 from prettylisavpn.support.service import SupportService
 from prettylisavpn.traffic.router import router as traffic_router
@@ -269,6 +270,7 @@ def create_app(
     app.include_router(locations_router)
     app.include_router(messages_router)
     app.include_router(support_router)
+    app.include_router(support_public_router)
     app.include_router(billing_router)
     app.include_router(payment_public_router)
     app.include_router(fleet_router)

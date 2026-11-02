@@ -10,19 +10,10 @@ from fastapi import APIRouter
 from starlette.responses import FileResponse, HTMLResponse, Response
 
 from prettylisavpn.main_errors import error_response
+from prettylisavpn.public_web import PUBLIC_PAGE_HEADERS as HEADERS
 
 router = APIRouter(tags=["payment-return"])
 ASSETS = Path(__file__).with_name("public")
-HEADERS = {
-    "Cache-Control": "no-store",
-    "Referrer-Policy": "no-referrer",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "Content-Security-Policy": (
-        "default-src 'none'; style-src 'self'; img-src 'self'; "
-        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
-    ),
-}
 
 
 @router.get("/payment/success", response_class=HTMLResponse, include_in_schema=False)

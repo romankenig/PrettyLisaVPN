@@ -11,7 +11,7 @@ prettylisavpn.com {
 		header Cache-Control "no-store"
 		file_server
 	}
-	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /api/payments/1plat/callback
+	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /api/payments/1plat/callback /support /support/
 	handle @payment {
 		request_body {
 			max_size 64KB
