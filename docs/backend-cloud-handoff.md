@@ -1,5 +1,12 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Payment return addresses — 2026-11-02
+
+Backend 0.28.0 → 0.29.0; schema 0041 unchanged. Public return pages and a fail-closed
+1Plat callback on the main server: [addresses and boundary](payment-return-urls.md).
+The merchant adapter is not enabled; callback replies 503 BILLING_NOT_CONFIGURED.
+Final source/build/runtime/deployment evidence belongs to the task PR.
+
 ## Permanent RU relay and Free balance — 2026-10-28
 
 Next source: backend **0.20.0**, schema **0032**, Windows **0.16.0**, Android

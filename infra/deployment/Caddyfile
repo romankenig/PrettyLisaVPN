@@ -3,6 +3,22 @@
 	admin off
 }
 
+# Public payment return URLs are separate from the private monitoring site.
+prettylisavpn.com {
+	encode zstd gzip
+	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /api/payments/1plat/callback
+	handle @payment {
+		request_body {
+			max_size 64KB
+		}
+		reverse_proxy backend:8000
+	}
+	handle {
+		respond "Not found" 404
+	}
+	# No access log: payment return query strings may contain provider identifiers.
+}
+
 {$API_DOMAIN} {
 	encode zstd gzip
 
@@ -25,4 +41,3 @@
 		format json
 	}
 }
-

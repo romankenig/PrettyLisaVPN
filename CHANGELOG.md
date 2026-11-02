@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Backend — 0.29.0
+
+- Add branded payment success/failure return pages on prettylisavpn.com and a
+  reserved 1Plat POST callback address, explicitly unavailable until configured.
+- Browser returns never grant subscription access. Keep payments disabled and
+  callback bodies out of logs; restrict the public host to payment paths.
+- See [addresses, callback boundary and deployment](docs/payment-return-urls.md).
+
 ### Windows — 0.24.0 / Android — 0.20.0 / Backend — 0.28.0 / dashboard — 0.5.0 / engines — 0.5.2
 
 - Make protection mode read as part of the Home heading, use a turquoise service
