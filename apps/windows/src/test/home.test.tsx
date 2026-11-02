@@ -471,7 +471,7 @@ describe("authenticated Home", () => {
       screen.queryByLabelText("способ подключения"),
     ).not.toBeInTheDocument();
   });
-  it("shows public connection details only after confirmation", async () => {
+  it("shows only the protocol after connection confirmation", async () => {
     const connectedState: ReturnType<VpnConnectionManager["current"]> = {
       phase: "CONNECTED",
       backend: "ACTIVE",
@@ -499,10 +499,18 @@ describe("authenticated Home", () => {
     };
     renderRestored(mockApi(), createTestCredentialStorage(), vpnConnection);
     const info = await screen.findByLabelText("способ подключения");
-    expect(info).toHaveTextContent("WireGuard · UDP · 192.0.2.20:51820");
-    expect(info).toHaveTextContent("ChaCha20-Poly1305 · mtu 1280");
-    fireEvent.click(within(info).getByText("параметры подключения"));
-    expect(info).toHaveTextContent("публичный ключ сервера");
+    expect(info).toHaveTextContent(/^WireGuard$/);
+    expect(info.querySelector("details")).toBeNull();
+    for (const detail of [
+      "UDP",
+      "192.0.2.20:51820",
+      "ChaCha20-Poly1305",
+      "1280",
+      "1.1.1.1",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    ]) {
+      expect(info).not.toHaveTextContent(detail);
+    }
     expect(info).not.toHaveTextContent("access-token");
   });
 
@@ -515,6 +523,29 @@ describe("authenticated Home", () => {
     vi.mocked(api.me).mockResolvedValue({ ...profile, plan });
     await renderFresh(api);
     expect(await screen.findByText(label)).toBeVisible();
+    const upgrade = screen.queryByRole("link", { name: "улучшить план" });
+    if (plan === "FREE") {
+      expect(upgrade).toHaveAttribute("href", "/settings/subscription");
+      fireEvent.click(upgrade!);
+      expect(
+        await screen.findByRole("heading", { name: "подписка" }),
+      ).toBeVisible();
+    } else {
+      expect(upgrade).toBeNull();
+    }
+  });
+
+  it("removes the upgrade shortcut when the current profile becomes paid", async () => {
+    const api = mockApi();
+    vi.mocked(api.me).mockResolvedValue({ ...profile, plan: "FREE" });
+    const { session } = await renderFresh(api);
+    expect(
+      await screen.findByRole("link", { name: "улучшить план" }),
+    ).toBeVisible();
+    act(() =>
+      session.updateProfile("access-token", { ...profile, plan: "PLATINUM" }),
+    );
+    expect(screen.queryByRole("link", { name: "улучшить план" })).toBeNull();
   });
 
   it("keeps controls on the left and shows traffic modes on the right", async () => {

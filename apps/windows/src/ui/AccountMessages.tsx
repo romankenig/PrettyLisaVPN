@@ -2,6 +2,7 @@ import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApplication } from "../state/application";
+import { ProductText as MessageLabel } from "./ProductText";
 import {
   MessagesError,
   messageExpired,
@@ -328,22 +329,5 @@ function MessageDialog({
         ) : null}
       </div>
     </dialog>
-  );
-}
-
-function MessageLabel({ text }: { readonly text: string }) {
-  useLanguage();
-  return (
-    <>
-      {text.split(/(PrettyLisaVPN)/g).map((part, index) =>
-        part === "PrettyLisaVPN" ? (
-          <span className="product-name" key={index}>
-            {part}
-          </span>
-        ) : (
-          part
-        ),
-      )}
-    </>
   );
 }

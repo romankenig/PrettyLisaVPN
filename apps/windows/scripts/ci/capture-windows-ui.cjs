@@ -137,12 +137,13 @@ async function screenshot(name) {
       if (brand.innerText !== "PrettyLisaVPN")
         throw new Error("Product name must preserve PrettyLisaVPN casing");
     }
-    for (const button of document.querySelectorAll("button")) {
-      if (
-        !button.closest(".language-selector") &&
-        getComputedStyle(button).textTransform !== "lowercase"
-      )
-        throw new Error("Buttons must use lowercase text");
+    for (const button of document.querySelectorAll(
+      "button, select, option, .method-checkbox, .connection-attempt, .connection-info, .upgrade-plan",
+    )) {
+      if (getComputedStyle(button).textTransform !== "lowercase")
+        throw new Error(
+          "Interface labels must use lowercase text: " + button.className,
+        );
     }
   });
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -551,6 +552,10 @@ async function main() {
     .filter({ hasText: "10:15" })
     .waitFor();
   await screenshot("04-home-free-balance");
+  await page.getByRole("link", { name: "улучшить план", exact: true }).click();
+  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  await screenshot("04-home-free-upgrade-subscription");
+  await page.getByRole("link", { name: "главная", exact: true }).click();
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -571,6 +576,10 @@ async function main() {
   await page.getByRole("link", { name: "настройки", exact: true }).click();
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await page.getByText("PREMIUM ⭐", { exact: true }).waitFor();
+  if (
+    await page.getByRole("link", { name: "улучшить план", exact: true }).count()
+  )
+    throw new Error("Paid accounts must not show the Free upgrade button");
   const combo = page.locator(".location-trigger");
   await combo.click();
   await page.getByRole("listbox").waitFor();

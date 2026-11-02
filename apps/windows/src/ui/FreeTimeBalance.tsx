@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { MeResponse } from "../api/client";
 import { t, useLanguage } from "../i18n";
 
@@ -65,6 +66,9 @@ export function FreeTimeBalance({ profile }: { profile: MeResponse }) {
       {resetText ? (
         <p className="field-help">{t(`Обновится: ${resetText}`)}</p>
       ) : null}
+      <Link className="upgrade-plan" to="/settings/subscription">
+        {t("улучшить план")}
+      </Link>
     </div>
   );
 }

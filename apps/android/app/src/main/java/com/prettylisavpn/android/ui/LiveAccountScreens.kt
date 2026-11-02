@@ -42,7 +42,7 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
         } },
     ) { padding ->
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
-            composable("HOME") { LiveHome(model) }
+            composable("HOME") { LiveHome(model) { go("SUBSCRIPTION") } }
             composable("SETTINGS") { PhoneScreen("live-settings") {
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
@@ -129,7 +129,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
         LiveLoad(model, Area.BILLING) {
             val billing = state.data.billing
             if (billing != null) BrandCard {
-                Text("${billing.plan} · ${billing.status}", style = MaterialTheme.typography.titleLarge)
+                Text("${planLabel(billing.plan)} · ${billing.status}", style = MaterialTheme.typography.titleLarge)
                 Text(tr(R.string.ui_paid_until_0, billing.paidUntil ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("live-paid-until"))
                 Text(tr(R.string.ui_auto_renewal_0, if (billing.autoRenew) tr(R.string.ui_on) else tr(R.string.ui_off)))
                 Text(tr(R.string.ui_payment_method_0, billing.method ?: tr(R.string.ui_none)))
