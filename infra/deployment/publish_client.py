@@ -96,7 +96,17 @@ def validate(
         or identity.get("event") != "push"
     ):
         raise ValueError("Unexpected Android build")
-    binary = directory / FILES[platform]
+    installed_windows = not android and tuple(map(int, version.split("."))) >= (
+        0,
+        23,
+        0,
+    )
+    if installed_windows and (
+        identity.get("package_kind") != "nsis"
+        or identity.get("installer") != "PrettyLisaVPN-Setup.exe"
+    ):
+        raise ValueError("Windows must be distributed as an installer")
+    binary = directory / ("PrettyLisaVPN-Setup.exe" if installed_windows else FILES[platform])
     if binary.is_symlink() or not 0 < binary.stat().st_size <= 512 * 1024 * 1024:
         raise ValueError("Invalid binary file")
     payload = binary.read_bytes()
@@ -131,6 +141,8 @@ def validate(
         "url": "/dashboard/downloads/" + DOWNLOADS[platform],
         "published_at": datetime.now(UTC).isoformat(),
     }
+    if installed_windows:
+        entry["package_kind"] = "nsis"
     if compact_android:
         entry["abi"] = "arm64-v8a"
     if companions:

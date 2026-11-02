@@ -55,16 +55,16 @@ jobs:
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - name: Build downloadable client using the real development API
-        run: pnpm tauri build --no-bundle
-      - name: Install signed official WireGuard for opt-in acceptance only
-        if: github.event_name == 'workflow_dispatch' && inputs.live_managed
-        run: |
-          $msi = Join-Path $env:RUNNER_TEMP 'wireguard-amd64-1.1.1.msi'
-          Invoke-WebRequest 'https://download.wireguard.com/windows-client/wireguard-amd64-1.1.1.msi' -OutFile $msi -TimeoutSec 60
-          $signature = Get-AuthenticodeSignature -LiteralPath $msi
-          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'WireGuard') { throw 'Invalid WireGuard installer signature' }
-          $install = Start-Process msiexec.exe -ArgumentList @('/i', $msi, '/qn', '/norestart', 'DO_NOT_LAUNCH=1') -WindowStyle Hidden -Wait -PassThru
-          if ($install.ExitCode -notin @(0, 3010)) { throw 'WireGuard installation failed' }
+        run: pnpm tauri build --bundles nsis
+      - name: Verify install, standard-user service access, repair and uninstall
+        run: ./scripts/ci/test-installer.ps1 -LeaveInstalled
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-acceptance-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/windows/artifacts/installer-acceptance/
+          if-no-files-found: error
+          retention-days: 14
       - name: Real packaged managed transport acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.live_managed
         env:
@@ -94,10 +94,12 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           New-Item -ItemType Directory -Force artifacts/client | Out-Null
-          Copy-Item src-tauri/target/release/prettylisavpn-windows.exe artifacts/client/PrettyLisaVPN.exe
+          $setups = @(Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe)
+          if ($setups.Count -ne 1) { throw 'Expected one installer' }
+          Copy-Item $setups[0].FullName artifacts/client/PrettyLisaVPN-Setup.exe
           Copy-Item src-tauri/engine/Wintun-Prebuilt-License.txt artifacts/client/
           Copy-Item src-tauri/engine/managed-source.tar.gz artifacts/client/
-          $binary = Get-Item artifacts/client/PrettyLisaVPN.exe
+          $binary = Get-Item artifacts/client/PrettyLisaVPN-Setup.exe
           @{
             source_sha = '${{ github.sha }}'
             pr_head_sha = $env:PR_HEAD_SHA
@@ -107,7 +109,9 @@ jobs:
             bytes = $binary.Length
             sha256 = (Get-FileHash -Algorithm SHA256 $binary.FullName).Hash.ToLowerInvariant()
             backend = 'https://api.prettylisavpn.com'
-            mode = 'WireGuard and private managed transports; Internet verification required'
+            package_kind = 'nsis'
+            installer = 'PrettyLisaVPN-Setup.exe'
+            mode = 'Installed service; no per-connection elevation; Internet verification required'
           } | ConvertTo-Json | Set-Content -Encoding utf8 artifacts/client/build-identity.json
       - uses: actions/upload-artifact@v4
         with:

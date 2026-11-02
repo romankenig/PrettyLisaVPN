@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Windows — 0.23.0
+
+- Ship a compact NSIS installer with shortcuts, repair/update and uninstaller.
+- Install a protected VPN service once; connections and fallback no longer invoke
+  UAC or require a separate WireGuard installation. Keep the WebView unelevated.
+- Use the managed WireGuard core for full and split traffic; preserve native-only
+  keys, tunnel verification, cleanup and backend lease contracts.
+- BREAKING: new Windows builds require installation. The stable dashboard Windows
+  download now contains setup; see [migration and rollback](docs/windows-installer-service.md).
+
 ### Android — 0.19.0 / Windows — 0.22.0 / Backend — 0.27.0 / engines — 0.5.1
 
 - Refresh Home manually, immediately recheck location after VPN transitions and

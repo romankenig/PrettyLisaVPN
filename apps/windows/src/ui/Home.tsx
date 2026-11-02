@@ -366,16 +366,11 @@ function unavailableMessage(
 function connectionUnavailableMessage(state: VpnConnectionState) {
   if (
     state.phase === "FAILED" &&
-    state.failure_code === "WIREGUARD_NOT_INSTALLED"
+    state.failure_code === "VPN_SERVICE_UNAVAILABLE"
   )
-    return "Установите официальный WireGuard для Windows и повторите подключение.";
+    return "Служба VPN недоступна. Запустите установщик PrettyLisaVPN повторно.";
   if (state.phase === "FAILED" && state.failure_code === "VPN_CONFLICT")
     return "Уже работает другой VPN. Отключите его перед подключением PrettyLisaVPN.";
-  if (
-    state.phase === "FAILED" &&
-    state.failure_code === "VPN_ADMIN_PERMISSION_REQUIRED"
-  )
-    return "Для WireGuard нужно подтвердить системный запрос Windows.";
   if (state.phase === "FAILED" && state.failure_code === "METHODS_EXHAUSTED")
     return `${state.attempt?.method ?? ""} не подключился. Все способы проверены; подключиться не удалось.`;
   if (state.phase === "FAILED" || state.phase === "DEGRADED")

@@ -1,12 +1,10 @@
-//! Manage the separately installed official WireGuard client. No driver is bundled.
-//! Only our fixed tunnel name is writable; private keys never leave this module.
+//! WireGuard uses the installed PrettyLisaVPN service, just like the other methods.
+//! Private keys are generated here and never enter the renderer or disk.
+use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::Deserialize;
 use std::{
-    ffi::OsStr,
-    fs::{self, OpenOptions},
-    io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket},
-    os::windows::{ffi::OsStrExt, process::CommandExt},
+    os::windows::process::CommandExt,
     path::PathBuf,
     process::{Command, Stdio},
     sync::Mutex,
@@ -14,21 +12,7 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 use tauri_plugin_http::reqwest::{redirect::Policy, Client};
-use windows_sys::Win32::{
-    Foundation::{CloseHandle, GetLastError, ERROR_SERVICE_DOES_NOT_EXIST},
-    System::{
-        Services::*,
-        Threading::{GetExitCodeProcess, WaitForSingleObject},
-    },
-    UI::{
-        Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW},
-        WindowsAndMessaging::SW_HIDE,
-    },
-};
 use zeroize::Zeroizing;
-
-const NAME: &str = "PrettyLisaVPN";
-const SERVICE: &str = "WireGuardTunnel$PrettyLisaVPN";
 const HOST: &str = "api.prettylisavpn.com";
 const FAILED: &str = "WIREGUARD_UNAVAILABLE";
 const NO_WINDOW: u32 = 0x08000000;
@@ -47,128 +31,15 @@ pub struct Configuration {
     mtu: u16,
 }
 
-fn wide(value: impl AsRef<OsStr>) -> Vec<u16> {
-    value.as_ref().encode_wide().chain(Some(0)).collect()
-}
 fn system(name: &str) -> PathBuf {
     PathBuf::from(std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into()))
         .join("System32")
         .join(name)
 }
-fn installed(name: &str) -> Result<PathBuf, &'static str> {
-    let path = PathBuf::from(std::env::var_os("ProgramFiles").ok_or(FAILED)?)
-        .join("WireGuard")
-        .join(name);
-    if !path.is_file() {
-        return Err("WIREGUARD_NOT_INSTALLED");
-    }
-    Ok(path)
-}
 fn command(program: PathBuf) -> Command {
     let mut command = Command::new(program);
     command.creation_flags(NO_WINDOW);
     command
-}
-
-fn service_state() -> Result<Option<u32>, &'static str> {
-    unsafe {
-        let manager = OpenSCManagerW(std::ptr::null(), std::ptr::null(), SC_MANAGER_CONNECT);
-        if manager.is_null() {
-            return Err(FAILED);
-        }
-        let service = OpenServiceW(manager, wide(SERVICE).as_ptr(), SERVICE_QUERY_STATUS);
-        if service.is_null() {
-            let error = GetLastError();
-            CloseServiceHandle(manager);
-            return if error == ERROR_SERVICE_DOES_NOT_EXIST {
-                Ok(None)
-            } else {
-                Err(FAILED)
-            };
-        }
-        let mut status: SERVICE_STATUS_PROCESS = std::mem::zeroed();
-        let mut needed = 0;
-        let ok = QueryServiceStatusEx(
-            service,
-            SC_STATUS_PROCESS_INFO,
-            &mut status as *mut _ as *mut u8,
-            std::mem::size_of_val(&status) as u32,
-            &mut needed,
-        );
-        CloseServiceHandle(service);
-        CloseServiceHandle(manager);
-        if ok == 0 {
-            Err(FAILED)
-        } else {
-            Ok(Some(status.dwCurrentState))
-        }
-    }
-}
-
-fn elevate(parameters: &str) -> Result<(), &'static str> {
-    let file = wide(installed("wireguard.exe")?);
-    let arguments = wide(parameters);
-    let verb = wide("runas");
-    unsafe {
-        let mut info: SHELLEXECUTEINFOW = std::mem::zeroed();
-        info.cbSize = std::mem::size_of_val(&info) as u32;
-        info.fMask = SEE_MASK_NOCLOSEPROCESS;
-        info.lpVerb = verb.as_ptr();
-        info.lpFile = file.as_ptr();
-        info.lpParameters = arguments.as_ptr();
-        info.nShow = SW_HIDE;
-        if ShellExecuteExW(&mut info) == 0 {
-            return Err("VPN_ADMIN_PERMISSION_REQUIRED");
-        }
-        if info.hProcess.is_null() {
-            return Err(FAILED);
-        }
-        let waited = WaitForSingleObject(info.hProcess, 30_000);
-        let mut exit = 1;
-        let result = GetExitCodeProcess(info.hProcess, &mut exit);
-        CloseHandle(info.hProcess);
-        if waited != 0 || result == 0 || exit != 0 {
-            return Err(FAILED);
-        }
-    }
-    Ok(())
-}
-
-fn config_path(app: &AppHandle) -> Result<PathBuf, &'static str> {
-    Ok(app
-        .path()
-        .app_config_dir()
-        .map_err(|_| FAILED)?
-        .join("wireguard")
-        .join(format!("{NAME}.conf")))
-}
-fn stop(app: &AppHandle) -> Result<(), &'static str> {
-    if service_state()?.is_some() {
-        elevate(&format!("/uninstalltunnelservice {NAME}"))?;
-        // SCM deletion can finish after wireguard.exe exits. Do not mistake
-        // that short transition for a permanently failed cleanup.
-        let until = std::time::Instant::now() + Duration::from_secs(10);
-        while service_state() != Ok(None) {
-            if std::time::Instant::now() >= until {
-                return Err("VPN_CLEANUP_FAILED");
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-    }
-    let path = config_path(app)?;
-    if path.exists() {
-        fs::remove_file(path).map_err(|_| "VPN_CLEANUP_FAILED")?;
-    }
-    *app.state::<WireGuardState>()
-        .key
-        .lock()
-        .map_err(|_| FAILED)? = None;
-    Ok(())
-}
-
-fn preflight() -> Result<(), &'static str> {
-    installed("wireguard.exe")?;
-    route_preflight()
 }
 pub(super) fn route_preflight() -> Result<(), &'static str> {
     // Read-only. In particular, never disable the user's Kaspersky tunnel.
@@ -187,62 +58,35 @@ pub(super) fn route_preflight() -> Result<(), &'static str> {
 }
 
 fn valid_key(key: &str) -> bool {
-    key.len() == 44
-        && key.ends_with('=')
-        && key[..43]
-            .bytes()
-            .all(|c| c.is_ascii_alphanumeric() || c == b'+' || c == b'/')
+    key.len() == 44 && STANDARD.decode(key).is_ok_and(|bytes| bytes.len() == 32)
 }
-fn prepare(app: &AppHandle) -> Result<String, &'static str> {
-    preflight()?;
-    if service_state()?.is_some() {
-        return Err("VPN_CLEANUP_REQUIRED");
-    }
-    let generated = command(installed("wg.exe")?)
-        .arg("genkey")
-        .stderr(Stdio::null())
-        .output()
-        .map_err(|_| FAILED)?;
-    if !generated.status.success() {
-        return Err(FAILED);
-    }
-    let key = Zeroizing::new(
-        String::from_utf8(generated.stdout)
-            .map_err(|_| FAILED)?
-            .trim()
-            .to_owned(),
-    );
-    if !valid_key(&key) {
-        return Err(FAILED);
-    }
-    let mut child = command(installed("wg.exe")?)
-        .arg("pubkey")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| FAILED)?;
-    child
-        .stdin
-        .take()
-        .ok_or(FAILED)?
-        .write_all(key.as_bytes())
-        .map_err(|_| FAILED)?;
-    let output = child.wait_with_output().map_err(|_| FAILED)?;
-    let public = String::from_utf8(output.stdout)
-        .map_err(|_| FAILED)?
-        .trim()
-        .to_owned();
-    if !output.status.success() || !valid_key(&public) {
-        return Err(FAILED);
-    }
-    *app.state::<WireGuardState>()
-        .key
-        .lock()
-        .map_err(|_| FAILED)? = Some(key);
-    Ok(public)
+fn generate_keypair() -> Result<(Zeroizing<String>, String), &'static str> {
+    let mut bytes = Zeroizing::new([0u8; 32]);
+    getrandom::fill(bytes.as_mut()).map_err(|_| FAILED)?;
+    let secret = x25519_dalek::StaticSecret::from(*bytes);
+    let public = x25519_dalek::PublicKey::from(&secret);
+    Ok((
+        Zeroizing::new(STANDARD.encode(secret.to_bytes())),
+        STANDARD.encode(public.as_bytes()),
+    ))
 }
-
+#[tauri::command]
+pub async fn wg_prepare(app: AppHandle) -> Result<String, &'static str> {
+    tauri::async_runtime::spawn_blocking(move || {
+        route_preflight()?;
+        if super::vpn_service::process_id()?.is_none() {
+            return Err(super::vpn_service::ERROR);
+        }
+        let (key, public) = generate_keypair()?;
+        *app.state::<WireGuardState>()
+            .key
+            .lock()
+            .map_err(|_| FAILED)? = Some(key);
+        Ok(public)
+    })
+    .await
+    .map_err(|_| FAILED)?
+}
 fn validate(config: &Configuration) -> Result<Ipv4Addr, &'static str> {
     let address: Ipv4Addr = config
         .address
@@ -260,69 +104,6 @@ fn validate(config: &Configuration) -> Result<Ipv4Addr, &'static str> {
         return Err(FAILED);
     }
     Ok(address)
-}
-
-fn start(app: &AppHandle, config: Configuration) -> Result<(), &'static str> {
-    validate(&config)?;
-    preflight()?;
-    if service_state()?.is_some() {
-        return Err("VPN_CLEANUP_REQUIRED");
-    }
-    let key = app
-        .state::<WireGuardState>()
-        .key
-        .lock()
-        .map_err(|_| FAILED)?
-        .take()
-        .ok_or(FAILED)?;
-    let path = config_path(app)?;
-    let directory = path.parent().ok_or(FAILED)?;
-    fs::create_dir_all(directory).map_err(|_| FAILED)?;
-    let user = command(system("whoami.exe"))
-        .args(["/user", "/fo", "csv", "/nh"])
-        .output()
-        .map_err(|_| FAILED)?;
-    let sid = String::from_utf8_lossy(&user.stdout)
-        .split(',')
-        .next_back()
-        .ok_or(FAILED)?
-        .trim()
-        .trim_matches('"')
-        .to_owned();
-    if !sid.starts_with("S-1-5-")
-        || !sid
-            .bytes()
-            .all(|c| c.is_ascii_digit() || c == b'-' || c == b'S')
-    {
-        return Err(FAILED);
-    }
-    let acl = command(system("icacls.exe"))
-        .arg(directory)
-        .args([
-            "/inheritance:r",
-            "/grant:r",
-            &format!("*{sid}:(OI)(CI)F"),
-            "*S-1-5-18:(OI)(CI)F",
-            "*S-1-5-32-544:(OI)(CI)F",
-        ])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|_| FAILED)?;
-    if !acl.success() {
-        return Err(FAILED);
-    }
-    let text = Zeroizing::new(format!("[Interface]\nPrivateKey = {}\nAddress = {}\nDNS = 1.1.1.1, 9.9.9.9\nMTU = {}\n[Peer]\nPublicKey = {}\nEndpoint = {}\nAllowedIPs = 0.0.0.0/0, ::/0\nPersistentKeepalive = 25\n", key.as_str(), config.address, config.mtu, config.server_public_key, config.endpoint));
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&path)
-        .map_err(|_| FAILED)?;
-    file.write_all(text.as_bytes()).map_err(|_| FAILED)?;
-    file.sync_all().map_err(|_| FAILED)?;
-    drop(file);
-    elevate(&format!("/installtunnelservice \"{}\"", path.display()))?;
-    Ok(())
 }
 
 // Fixed health hostname, random transaction, bound source: no OS resolver/cache or fallback route.
@@ -396,19 +177,6 @@ fn dns_answer(data: &[u8], id: [u8; 2]) -> Result<Ipv4Addr, &'static str> {
 }
 
 #[tauri::command]
-pub async fn wg_prepare(app: AppHandle) -> Result<String, &'static str> {
-    tauri::async_runtime::spawn_blocking(move || prepare(&app))
-        .await
-        .map_err(|_| FAILED)?
-}
-#[tauri::command]
-pub async fn wg_start(app: AppHandle, configuration: Configuration) -> Result<(), &'static str> {
-    tauri::async_runtime::spawn_blocking(move || start(&app, configuration))
-        .await
-        .map_err(|_| FAILED)?
-}
-
-#[tauri::command]
 pub async fn wg_start_routed(
     app: AppHandle,
     configuration: Configuration,
@@ -418,6 +186,7 @@ pub async fn wg_start_routed(
 ) -> Result<(), &'static str> {
     // The private key never enters the renderer. The engine validates the
     // bounded profile and routing schema before opening a tunnel.
+    validate(&configuration)?;
     let key = app
         .state::<WireGuardState>()
         .key
@@ -441,37 +210,11 @@ pub async fn wg_start_routed(
 }
 #[tauri::command]
 pub async fn wg_stop(app: AppHandle) -> Result<(), &'static str> {
-    tauri::async_runtime::spawn_blocking(move || stop(&app))
-        .await
-        .map_err(|_| FAILED)?
-}
-#[tauri::command]
-pub async fn wg_is_up() -> Result<bool, &'static str> {
-    tauri::async_runtime::spawn_blocking(|| {
-        service_state().map(|state| state == Some(SERVICE_RUNNING))
-    })
-    .await
-    .map_err(|_| FAILED)?
-}
-#[tauri::command]
-pub async fn wg_verify(
-    address: String,
-    session_id: String,
-    access_token: String,
-) -> Result<bool, &'static str> {
-    let local: Ipv4Addr = address
-        .strip_suffix("/32")
-        .ok_or(FAILED)?
-        .parse()
-        .map_err(|_| FAILED)?;
-    if !local.is_private() {
-        return Err(FAILED);
-    }
-    let identifier = uuid::Uuid::parse_str(&session_id).map_err(|_| FAILED)?;
-    if service_state()? != Some(SERVICE_RUNNING) {
-        return Err(FAILED);
-    }
-    verify_tunnel(local, identifier, access_token, false).await
+    *app.state::<WireGuardState>()
+        .key
+        .lock()
+        .map_err(|_| FAILED)? = None;
+    super::managed::engine_stop(app).await
 }
 pub(super) async fn verify_tunnel(
     local: Ipv4Addr,
@@ -520,6 +263,19 @@ pub(super) async fn verify_tunnel(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_keys_are_fresh_and_form_a_valid_x25519_pair() {
+        let (private, public) = generate_keypair().unwrap();
+        assert!(valid_key(&private) && valid_key(&public));
+        let raw: [u8; 32] = STANDARD
+            .decode(private.as_str())
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let derived = x25519_dalek::PublicKey::from(&x25519_dalek::StaticSecret::from(raw));
+        assert_eq!(STANDARD.encode(derived.as_bytes()), public);
+        assert_ne!(generate_keypair().unwrap().1, public);
+    }
     #[test]
     fn rejects_configuration_injection_and_non_tunnel_addresses() {
         let mut config = Configuration {

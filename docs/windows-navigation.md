@@ -607,3 +607,13 @@ implemented backend/native integrations, not pending mock screens. No new route,
 auth guard or external browser transition. Android's notification opens the same
 MainActivity or requests cleanup through the existing VPN controller.
 See [handoff](home-refresh-catalog.md) for release verification status.
+
+### Windows 0.23.0: installation and VPN permissions
+
+Setup adds system shortcuts and an uninstaller. Home Connect/Disconnect and
+automatic fallback use the installed PrettyLisaVPN service; no external WireGuard
+window or per-connection Windows elevation is opened. Missing service errors tell
+the user to rerun setup. Administrator consent belongs to setup/update/uninstall;
+the client remains unelevated. These are implemented native integrations, with
+remote validation tracked in [handoff](windows-installer-service.md). App routes,
+auth guards, browser transitions and account storage are unchanged.

@@ -33,30 +33,16 @@ export const wireGuardNative: WireGuardNative = {
     return invoke("wg_prepare");
   },
   start: ({ address, server_public_key, endpoint, mtu }, context) =>
-    routing.mode === "all"
-      ? invoke("wg_start", {
-          configuration: { address, server_public_key, endpoint, mtu },
-        })
-      : invoke("wg_start_routed", {
-          configuration: { address, server_public_key, endpoint, mtu },
-          sessionId: context.id,
-          country: context.country,
-          routing,
-        }),
-  stop: async () => {
-    try {
-      await invoke("engine_stop");
-    } finally {
-      await invoke("wg_stop");
-    }
-  },
-  verify: (address, sessionId, accessToken) =>
-    routing.mode === "all"
-      ? invoke("wg_verify", { address, sessionId, accessToken })
-      : invoke("engine_verify", { sessionId, accessToken }),
-  isUp: async () =>
-    (await invoke<boolean>("wg_is_up")) ||
-    (await invoke<boolean>("engine_is_up")),
+    invoke("wg_start_routed", {
+      configuration: { address, server_public_key, endpoint, mtu },
+      sessionId: context.id,
+      country: context.country,
+      routing,
+    }),
+  stop: () => invoke("wg_stop"),
+  verify: (_address, sessionId, accessToken) =>
+    invoke("engine_verify", { sessionId, accessToken }),
+  isUp: () => invoke<boolean>("engine_is_up"),
 };
 export function createWireGuardAdapter(options: {
   baseUrl: string;
@@ -86,7 +72,7 @@ export function createWireGuardAdapter(options: {
       server: configuration.endpoint,
       encryption: "ChaCha20-Poly1305",
       obfuscation: "none",
-      mtu: configuration.mtu,
+      mtu: 1280, // The managed WireGuard core and its TUN both use this MTU.
       dns: configuration.dns,
       clientAddress: configuration.address,
       allowedIps: configuration.allowed_ips,

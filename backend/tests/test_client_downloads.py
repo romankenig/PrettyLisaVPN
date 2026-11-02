@@ -134,6 +134,24 @@ class ClientDownloadsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exceeds 40 MB"):
             PUBLISHER.validate(directory, "android", SHA, 100, 1)
 
+    def test_windows_requires_the_installer_from_version_023(self):
+        directory = self.artifact("windows", version="0.23.0")
+        self.source_archive(directory, "windows")
+        with self.assertRaisesRegex(ValueError, "installer"):
+            PUBLISHER.validate(directory, "windows", SHA, 100, 1)
+        identity_path = directory / "build-identity.json"
+        identity = json.loads(identity_path.read_text())
+        identity.update(package_kind="nsis", installer="PrettyLisaVPN-Setup.exe")
+        identity_path.write_text(json.dumps(identity))
+        (directory / "PrettyLisaVPN.exe").rename(directory / "PrettyLisaVPN-Setup.exe")
+        entry, _, _ = PUBLISHER.validate(directory, "windows", SHA, 100, 1)
+        self.assertEqual(entry["package_kind"], "nsis")
+        self.assertEqual(entry["url"], "/dashboard/downloads/windows.exe")
+        identity["package_kind"] = "portable"
+        identity_path.write_text(json.dumps(identity))
+        with self.assertRaisesRegex(ValueError, "installer"):
+            PUBLISHER.validate(directory, "windows", SHA, 100, 1)
+
     @unittest.skipIf(os.name == "nt", "Publisher uses Linux flock and symlinks")
     def test_sources_switch_atomically_and_changed_source_replay_is_rejected(self):
         directory = self.artifact("windows", version="0.18.0")

@@ -1,5 +1,5 @@
-//! A separate elevated host owns the native engine. The WebView stays unelevated.
-//! Same-process-ID authenticated private pipe, typed JSON only, no secrets in argv.
+//! The installed Windows service owns the engine; the GUI stays unelevated.
+//! Local authenticated pipe, bounded typed profiles, no secrets in argv.
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -7,6 +7,7 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     os::windows::{
         ffi::OsStrExt,
+        fs::OpenOptionsExt,
         io::{AsRawHandle, FromRawHandle},
         process::CommandExt,
     },
@@ -23,7 +24,6 @@ use windows_sys::Win32::{
     },
     Storage::FileSystem::*,
     System::{JobObjects::*, Pipes::*, SystemInformation::GetSystemDirectoryW, Threading::*},
-    UI::{Shell::*, WindowsAndMessaging::SW_HIDE},
 };
 use zeroize::Zeroizing;
 
@@ -59,10 +59,14 @@ impl Drop for Handle {
 }
 struct Session {
     pipe: File,
-    process: Handle,
 }
 #[derive(Default)]
-pub struct ManagedState(Mutex<Option<Session>>);
+pub struct ManagedState(Mutex<Connection>);
+#[derive(Default)]
+struct Connection {
+    session: Option<Session>,
+    cleanup_pending: bool,
+}
 
 fn wide(value: impl AsRef<OsStr>) -> Vec<u16> {
     value.as_ref().encode_wide().chain(Some(0)).collect()
@@ -76,31 +80,6 @@ fn system_directory() -> Result<PathBuf, &'static str> {
     Ok(PathBuf::from(
         String::from_utf16(&buffer[..n]).map_err(|_| ERROR)?,
     ))
-}
-fn user_sid() -> Result<String, &'static str> {
-    let output = Command::new(system_directory()?.join("whoami.exe"))
-        .args(["/user", "/fo", "csv", "/nh"])
-        .creation_flags(NO_WINDOW)
-        .output()
-        .map_err(|_| ERROR)?;
-    if !output.status.success() {
-        return Err(ERROR);
-    }
-    let sid = String::from_utf8_lossy(&output.stdout)
-        .split(',')
-        .next_back()
-        .ok_or(ERROR)?
-        .trim()
-        .trim_matches('"')
-        .to_string();
-    if !sid.starts_with("S-1-5-")
-        || !sid
-            .bytes()
-            .all(|c| c.is_ascii_digit() || c == b'-' || c == b'S')
-    {
-        return Err(ERROR);
-    }
-    Ok(sid)
 }
 fn with_acl<T>(
     sddl: &str,
@@ -127,16 +106,13 @@ fn with_acl<T>(
         result
     }
 }
-fn pipe_name(id: &str) -> Result<String, &'static str> {
-    let id = uuid::Uuid::parse_str(id).map_err(|_| ERROR)?;
-    Ok(format!(r"\\.\pipe\PrettyLisaVPN-{id}"))
-}
-fn pipe_server(id: &str) -> Result<File, &'static str> {
+fn pipe_server(name: &str) -> Result<File, &'static str> {
+    // Interactive users may exchange data, but cannot create pipe instances.
     with_acl(
-        &format!("D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;{})", user_sid()?),
+        "D:P(D;;GA;;;NU)(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;IU)",
         |acl| unsafe {
             let pipe = CreateNamedPipeW(
-                wide(pipe_name(id)?).as_ptr(),
+                wide(name).as_ptr(),
                 PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS,
                 1,
@@ -152,12 +128,20 @@ fn pipe_server(id: &str) -> Result<File, &'static str> {
         },
     )
 }
+fn pipe_client(name: &str) -> Result<File, &'static str> {
+    OpenOptions::new()
+        .access_mode(0x120183)
+        // Never let a pipe impostor impersonate our interactive user.
+        .custom_flags(SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION)
+        .open(name)
+        .map_err(|_| super::vpn_service::ERROR)
+}
 fn running(process: &Handle) -> bool {
     unsafe { WaitForSingleObject(process.0, 0) == WAIT_TIMEOUT }
 }
 fn frame(
     pipe: &mut File,
-    process: &Handle,
+    process: Option<&Handle>,
     timeout: Duration,
 ) -> Result<Zeroizing<Vec<u8>>, &'static str> {
     let until = Instant::now() + timeout;
@@ -185,7 +169,7 @@ fn frame(
                 }
             }
             (0, _) if unsafe { GetLastError() } == ERROR_NO_DATA => {
-                if !running(process) {
+                if super::vpn_service::stopping() || process.is_some_and(|p| !running(p)) {
                     return Err(ERROR);
                 }
                 std::thread::sleep(Duration::from_millis(10));
@@ -212,77 +196,75 @@ fn write_frame(pipe: &mut impl Write, value: &Value) -> Result<(), &'static str>
 }
 fn exchange(session: &mut Session, request: Value) -> Result<Value, &'static str> {
     write_frame(&mut session.pipe, &request)?;
-    let bytes = frame(&mut session.pipe, &session.process, Duration::from_secs(40))?;
+    let bytes = frame(&mut session.pipe, None, Duration::from_secs(40))?;
     serde_json::from_slice(&bytes).map_err(|_| "ENGINE_INVALID_RESPONSE")
 }
-fn elevate(id: &str) -> Result<Handle, &'static str> {
-    let executable = wide(std::env::current_exe().map_err(|_| ERROR)?);
-    let arguments = wide(format!("--engine-host {id} {}", std::process::id()));
-    let verb = wide("runas");
-    unsafe {
-        let mut info: SHELLEXECUTEINFOW = std::mem::zeroed();
-        info.cbSize = std::mem::size_of_val(&info) as u32;
-        info.fMask = SEE_MASK_NOCLOSEPROCESS;
-        info.lpVerb = verb.as_ptr();
-        info.lpFile = executable.as_ptr();
-        info.lpParameters = arguments.as_ptr();
-        info.nShow = SW_HIDE;
-        if ShellExecuteExW(&mut info) == 0 || info.hProcess.is_null() {
-            return Err("VPN_ADMIN_PERMISSION_REQUIRED");
-        }
-        Ok(Handle(info.hProcess))
-    }
-}
 fn launch() -> Result<Session, &'static str> {
-    let id = uuid::Uuid::new_v4().to_string();
-    let pipe = pipe_server(&id)?;
-    let process = elevate(&id)?;
-    let until = Instant::now() + Duration::from_secs(15);
-    while Instant::now() < until && running(&process) {
-        unsafe {
-            let ok = ConnectNamedPipe(pipe.as_raw_handle(), std::ptr::null_mut());
-            if ok != 0 || GetLastError() == ERROR_PIPE_CONNECTED {
-                let mut pid = 0;
-                if GetNamedPipeClientProcessId(pipe.as_raw_handle(), &mut pid) == 0
-                    || pid != GetProcessId(process.0)
-                {
-                    return Err("ENGINE_OWNER_MISMATCH");
-                }
-                return Ok(Session { pipe, process });
+    let expected = super::vpn_service::process_id()?.ok_or(super::vpn_service::ERROR)?;
+    let pipe = pipe_client(super::vpn_service::PIPE)?;
+    unsafe {
+        let mut pid = 0;
+        if GetNamedPipeServerProcessId(pipe.as_raw_handle(), &mut pid) == 0 || pid != expected {
+            return Err("ENGINE_OWNER_MISMATCH");
+        }
+        let mode = PIPE_READMODE_BYTE | PIPE_NOWAIT;
+        if SetNamedPipeHandleState(
+            pipe.as_raw_handle(),
+            &mode,
+            std::ptr::null(),
+            std::ptr::null(),
+        ) == 0
+        {
+            return Err(ERROR);
+        }
+    }
+    Ok(Session { pipe })
+}
+fn recover(connection: &mut Connection) -> Result<(), &'static str> {
+    // The service accepts its next client only after closing the previous job.
+    // A disconnected pipe alone is NOT evidence of successful cleanup.
+    let until = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < until {
+        if super::vpn_service::process_id()?.is_none() {
+            connection.cleanup_pending = false;
+            return Ok(());
+        }
+        if let Ok(mut session) = launch() {
+            if exchange(&mut session, json!({"action":"status"}))?["status"] == "DOWN" {
+                connection.session = Some(session);
+                connection.cleanup_pending = false;
+                return Ok(());
             }
         }
-        std::thread::sleep(Duration::from_millis(20));
+        std::thread::sleep(Duration::from_millis(100));
     }
-    Err(ERROR)
+    Err("ENGINE_CLEANUP_FAILED")
 }
-
 fn stop(state: &ManagedState) -> Result<(), &'static str> {
     let mut guard = state.0.lock().map_err(|_| ERROR)?;
-    let Some(mut session) = guard.take() else {
-        return Ok(());
-    };
-    if matches!(exchange(&mut session, json!({"action":"stop"})), Ok(value) if value["status"] == "DOWN")
-    {
-        // Reuse the idle host so automatic fallback needs only one UAC approval.
-        *guard = Some(session);
-        return Ok(());
+    if let Some(mut session) = guard.session.take() {
+        if matches!(exchange(&mut session, json!({"action":"stop"})), Ok(value) if value["status"] == "DOWN")
+        {
+            guard.session = Some(session);
+            return Ok(());
+        }
+        guard.cleanup_pending = true;
+        drop(session);
     }
-    // An ambiguous stop closes the host and its kill-on-close job before fallback.
-    drop(session.pipe);
-    if unsafe { WaitForSingleObject(session.process.0, 8_000) } != WAIT_OBJECT_0 {
-        // Keep the process identity so a later stop cannot falsely report cleanup.
-        // The pipe is closed; the host watchdog must finish before another start.
-        *guard = Some(Session {
-            pipe: OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open("NUL")
-                .map_err(|_| ERROR)?,
-            process: session.process,
-        });
-        return Err("ENGINE_CLEANUP_FAILED");
+    if guard.cleanup_pending {
+        recover(&mut guard)?;
     }
     Ok(())
+}
+/// Read-only installed-client diagnostic used by installer acceptance tests.
+/// The caller cannot supply a command, path or profile via this entry point.
+pub fn service_check() -> Result<(), &'static str> {
+    let result = exchange(&mut launch()?, json!({"action":"status"}))?;
+    if result["status"] == "DOWN" {
+        Ok(())
+    } else {
+        Err("ENGINE_CLEANUP_REQUIRED")
+    }
 }
 
 #[tauri::command]
@@ -291,15 +273,18 @@ pub async fn engine_start(app: AppHandle, profile: Value) -> Result<(), &'static
         super::wireguard::route_preflight()?;
         let state = app.state::<ManagedState>();
         let mut guard = state.0.lock().map_err(|_| ERROR)?;
-        if let Some(session) = guard.as_mut() {
+        if guard.cleanup_pending {
+            recover(&mut guard)?;
+        }
+        if let Some(session) = guard.session.as_mut() {
             if exchange(session, json!({"action":"status"}))?["status"] != "DOWN" {
                 return Err("ENGINE_CLEANUP_REQUIRED");
             }
         } else {
-            *guard = Some(launch()?);
+            guard.session = Some(launch()?);
         }
         let result = exchange(
-            guard.as_mut().ok_or(ERROR)?,
+            guard.session.as_mut().ok_or(ERROR)?,
             json!({"action":"start","profile":profile}),
         )?;
         if result["status"] != "RUNNING" {
@@ -321,12 +306,9 @@ pub async fn engine_is_up(app: AppHandle) -> Result<bool, &'static str> {
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<ManagedState>();
         let mut guard = state.0.lock().map_err(|_| ERROR)?;
-        let Some(session) = guard.as_mut() else {
+        let Some(session) = guard.session.as_mut() else {
             return Ok(false);
         };
-        if !running(&session.process) {
-            return Ok(false);
-        }
         Ok(exchange(session, json!({"action":"status"}))?["status"] == "RUNNING")
     })
     .await
@@ -352,44 +334,57 @@ pub async fn engine_verify(
     .await
 }
 
-// Called before constructing Tauri. No arbitrary executable, working directory,
-// command line, profile file or environment is accepted by the elevated entry point.
-pub fn host(arguments: &[String]) -> Result<(), &'static str> {
-    if arguments.len() != 4 {
-        return Err(ERROR);
+pub fn serve_service(ready: impl FnOnce()) -> Result<(), &'static str> {
+    let mut pipe = pipe_server(super::vpn_service::PIPE)?;
+    ready();
+    while !super::vpn_service::stopping() {
+        let connected = unsafe {
+            ConnectNamedPipe(pipe.as_raw_handle(), std::ptr::null_mut()) != 0
+                || GetLastError() == ERROR_PIPE_CONNECTED
+        };
+        if !connected {
+            std::thread::sleep(Duration::from_millis(20));
+            continue;
+        }
+        if let Ok(parent) = authenticated_parent(&pipe) {
+            let _ = serve_owner(&mut pipe, &parent);
+        }
+        // Keep the first-instance handle to prevent namespace takeover between clients.
+        unsafe {
+            DisconnectNamedPipe(pipe.as_raw_handle());
+        }
     }
-    let parent_id: u32 = arguments[3].parse().map_err(|_| ERROR)?;
-    let parent = Handle(unsafe {
-        OpenProcess(
-            SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
-            0,
-            parent_id,
-        )
-    });
-    if parent.0.is_null() {
-        return Err(ERROR);
-    }
-    let mut pipe = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(pipe_name(&arguments[2])?)
-        .map_err(|_| ERROR)?;
+    Ok(())
+}
+fn authenticated_parent(pipe: &File) -> Result<Handle, &'static str> {
     unsafe {
         let mut pid = 0;
-        if GetNamedPipeServerProcessId(pipe.as_raw_handle(), &mut pid) == 0 || pid != parent_id {
-            return Err("ENGINE_OWNER_MISMATCH");
-        }
-        let mode = PIPE_READMODE_BYTE | PIPE_NOWAIT;
-        if SetNamedPipeHandleState(
-            pipe.as_raw_handle(),
-            &mode,
-            std::ptr::null(),
-            std::ptr::null(),
-        ) == 0
-        {
+        if GetNamedPipeClientProcessId(pipe.as_raw_handle(), &mut pid) == 0 {
             return Err(ERROR);
         }
+        let parent = Handle(OpenProcess(
+            SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
+            0,
+            pid,
+        ));
+        if parent.0.is_null() {
+            return Err(ERROR);
+        }
+        let mut path = vec![0u16; 32768];
+        let mut length = path.len() as u32;
+        if QueryFullProcessImageNameW(parent.0, 0, path.as_mut_ptr(), &mut length) == 0 {
+            return Err(ERROR);
+        }
+        let path = PathBuf::from(String::from_utf16(&path[..length as usize]).map_err(|_| ERROR)?);
+        if fs::canonicalize(path).map_err(|_| ERROR)?
+            != fs::canonicalize(super::vpn_service::installed_executable()?).map_err(|_| ERROR)?
+        {
+            return Err("ENGINE_OWNER_MISMATCH");
+        }
+        Ok(parent)
     }
+}
+fn serve_owner(pipe: &mut File, parent: &Handle) -> Result<(), &'static str> {
     // System32 is administrator-owned; a random new directory with a protected
     // DACL prevents DLL/executable replacement or junction planting by other users.
     let directory = system_directory()?.join(format!("PrettyLisaVPN-{}", uuid::Uuid::new_v4()));
@@ -399,7 +394,7 @@ pub fn host(arguments: &[String]) -> Result<(), &'static str> {
         }
         Ok(())
     })?;
-    let result = serve(&mut pipe, &parent, &directory);
+    let result = serve(pipe, parent, &directory);
     // Exact files in the directory created above; never recursive path deletion.
     for name in ["pl-engine.exe", "wintun.dll"] {
         let _ = fs::remove_file(directory.join(name));
@@ -476,19 +471,16 @@ fn serve_child(pipe: &mut File, parent: &Handle, child: &mut Child) -> Result<()
         }
     });
     loop {
-        let bytes = match frame(pipe, parent, Duration::from_secs(1)) {
+        let bytes = match frame(pipe, Some(parent), Duration::from_secs(1)) {
             Err("ENGINE_TIMEOUT") => continue,
             other => other?,
         };
         let value: Value = serde_json::from_slice(&bytes).map_err(|_| ERROR)?;
-        let action = value["action"].as_str().ok_or(ERROR)?;
-        if !matches!(action, "start" | "stop" | "status") {
-            return Err(ERROR);
-        }
+        validate_request(&value)?;
         write_frame(&mut input, &value)?;
         let until = Instant::now() + Duration::from_secs(35);
         let reply = loop {
-            if !running(parent) || Instant::now() >= until {
+            if super::vpn_service::stopping() || !running(parent) || Instant::now() >= until {
                 return Err(ERROR);
             }
             match receiver.recv_timeout(Duration::from_millis(100)) {
@@ -498,6 +490,15 @@ fn serve_child(pipe: &mut File, parent: &Handle, child: &mut Child) -> Result<()
             }
         };
         pipe.write_all(&reply).map_err(|_| ERROR)?;
+    }
+}
+
+fn validate_request(value: &Value) -> Result<(), &'static str> {
+    let object = value.as_object().ok_or(ERROR)?;
+    match value["action"].as_str() {
+        Some("start") if object.len() == 2 && value["profile"].is_object() => Ok(()),
+        Some("stop" | "status") if object.len() == 1 => Ok(()),
+        _ => Err("ENGINE_INVALID_CONFIGURATION"),
     }
 }
 
@@ -528,53 +529,59 @@ mod tests {
     }
 
     #[test]
-    fn pipe_namespace_rejects_paths_and_command_fragments() {
-        for id in [
-            "",
-            "../somewhere",
-            "a\nstart",
-            "00000000-0000-0000-0000-000000000001;cmd",
+    fn rejects_arbitrary_privileged_commands_and_extra_fields() {
+        for request in [
+            json!({"action":"exec", "path":"cmd.exe"}),
+            json!({"action":"status", "profile":{}}),
+            json!({"action":"start", "profile":{}, "args":[]}),
+            json!({"action":"start", "profile":"file.conf"}),
         ] {
-            assert!(pipe_name(id).is_err());
+            assert!(validate_request(&request).is_err());
         }
-        assert!(pipe_name("00000000-0000-0000-0000-000000000001")
-            .unwrap()
-            .starts_with(r"\\.\pipe\PrettyLisaVPN-"));
+        for request in [
+            json!({"action":"status"}),
+            json!({"action":"stop"}),
+            json!({"action":"start", "profile":{}}),
+        ] {
+            assert!(validate_request(&request).is_ok());
+        }
     }
-
+    fn test_pipe_name(id: &str) -> String {
+        format!(r"\\.\pipe\PrettyLisaVPN-test-{id}")
+    }
     #[test]
     fn private_pipe_cannot_be_replaced_and_preserves_frame_boundaries() {
         let id = uuid::Uuid::new_v4().to_string();
-        let mut server = pipe_server(&id).unwrap();
-        assert!(pipe_server(&id).is_err());
+        let mut server = pipe_server(&test_pipe_name(&id)).unwrap();
+        assert!(pipe_server(&test_pipe_name(&id)).is_err());
         let mut client = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(pipe_name(&id).unwrap())
+            .open(test_pipe_name(&id))
             .unwrap();
         let parent = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, std::process::id()) });
         assert!(!parent.0.is_null());
         write_frame(&mut client, &json!({"action":"status"})).unwrap();
         write_frame(&mut client, &json!({"action":"stop"})).unwrap();
         for action in ["status", "stop"] {
-            let data = frame(&mut server, &parent, Duration::from_secs(2)).unwrap();
+            let data = frame(&mut server, Some(&parent), Duration::from_secs(2)).unwrap();
             assert_eq!(
                 serde_json::from_slice::<Value>(&data).unwrap()["action"],
                 action
             );
         }
         drop(client);
-        assert!(frame(&mut server, &parent, Duration::from_secs(2)).is_err());
+        assert!(frame(&mut server, Some(&parent), Duration::from_secs(2)).is_err());
     }
 
     #[test]
     fn private_pipe_waits_for_delayed_fragmented_frames() {
         let id = uuid::Uuid::new_v4().to_string();
-        let mut server = pipe_server(&id).unwrap();
+        let mut server = pipe_server(&test_pipe_name(&id)).unwrap();
         let mut client = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(pipe_name(&id).unwrap())
+            .open(test_pipe_name(&id))
             .unwrap();
         let parent = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, std::process::id()) });
         let writer = std::thread::spawn(move || {
@@ -584,16 +591,16 @@ mod tests {
             client.write_all(b"\"RUNNING\"}\n").unwrap();
             client
         });
-        let result = frame(&mut server, &parent, Duration::from_secs(2));
+        let result = frame(&mut server, Some(&parent), Duration::from_secs(2));
         let client = writer.join().unwrap();
         assert_eq!(result.unwrap().as_slice(), b"{\"status\":\"RUNNING\"}");
         assert_eq!(
-            frame(&mut server, &parent, Duration::from_millis(100)).unwrap_err(),
+            frame(&mut server, Some(&parent), Duration::from_millis(100)).unwrap_err(),
             "ENGINE_TIMEOUT"
         );
         drop(client);
         assert_eq!(
-            frame(&mut server, &parent, Duration::from_secs(2)).unwrap_err(),
+            frame(&mut server, Some(&parent), Duration::from_secs(2)).unwrap_err(),
             ERROR
         );
     }
@@ -601,16 +608,16 @@ mod tests {
     #[test]
     fn incomplete_frame_timeout_is_fatal_instead_of_discarding_bytes() {
         let id = uuid::Uuid::new_v4().to_string();
-        let mut server = pipe_server(&id).unwrap();
+        let mut server = pipe_server(&test_pipe_name(&id)).unwrap();
         let mut client = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(pipe_name(&id).unwrap())
+            .open(test_pipe_name(&id))
             .unwrap();
         let parent = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, std::process::id()) });
         client.write_all(b"{\"action\":").unwrap();
         assert_eq!(
-            frame(&mut server, &parent, Duration::from_millis(100)).unwrap_err(),
+            frame(&mut server, Some(&parent), Duration::from_millis(100)).unwrap_err(),
             "ENGINE_INVALID_RESPONSE"
         );
     }
