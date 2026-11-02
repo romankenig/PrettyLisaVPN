@@ -296,7 +296,7 @@
     <string name="notification_disconnect">VPN trennen</string>
     <string name="traffic_top">top 10 beliebt</string>
     <string name="traffic_all_services">alle Dienste</string>
-    <string name="traffic_selected_label">Ausgewählte Dienste:</string>
-    <string name="traffic_add_service">Eigenen Dienst hinzufügen</string>
-    <string name="direct_location">Standort ohne VPN:</string>
+    <string name="traffic_selected_label">ausgewählte Dienste:</string>
+    <string name="traffic_add_service">eigenen Dienst hinzufügen</string>
+    <string name="direct_location">standort ohne VPN:</string>
 </resources>

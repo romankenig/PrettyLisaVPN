@@ -296,7 +296,7 @@
     <string name="notification_disconnect">отключить VPN</string>
     <string name="traffic_top">топ-10 популярных</string>
     <string name="traffic_all_services">все сервисы</string>
-    <string name="traffic_selected_label">Выбранные сервисы:</string>
-    <string name="traffic_add_service">Добавить свой сервис</string>
+    <string name="traffic_selected_label">выбранные сервисы:</string>
+    <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
 </resources>
