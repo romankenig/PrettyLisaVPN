@@ -60,7 +60,6 @@
     <string name="ui_payment_method_0">payment method: %1$s</string>
     <string name="ui_plan_0">plan: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / month: %1$s%2$s</string>
-    <string name="ui_provider_0">provider: %1$s</string>
     <string name="ui_queued_in_the_test_source">queued in the test source.</string>
     <string name="ui_reference_0">reference: %1$s</string>
     <string name="ui_reply_email">reply email</string>
@@ -302,7 +301,6 @@
     <string name="traffic_add_service">add your own service</string>
     <string name="direct_location">location without VPN:</string>
     <string name="upgrade_plan">upgrade plan</string>
-    <string name="faq_question">question</string>
     <string name="faq_connect_q">how do I connect?</string>
     <string name="faq_connect_a">choose a country and tap connect. the first connection may take a couple of minutes.</string>
     <string name="faq_free_q">what does free include?</string>

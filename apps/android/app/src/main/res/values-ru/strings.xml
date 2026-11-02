@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">способ оплаты: %1$s</string>
     <string name="ui_plan_0">тариф: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / месяц: %1$s%2$s</string>
-    <string name="ui_provider_0">провайдер: %1$s</string>
     <string name="ui_queued_in_the_test_source">в очереди тестового источника.</string>
     <string name="ui_reference_0">номер обращения: %1$s</string>
     <string name="ui_reply_email">email для ответа</string>
@@ -295,7 +294,6 @@
     <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
     <string name="upgrade_plan">улучшить план</string>
-    <string name="faq_question">вопрос</string>
     <string name="faq_connect_q">как подключиться?</string>
     <string name="faq_connect_a">выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.</string>
     <string name="faq_free_q">что входит в free?</string>

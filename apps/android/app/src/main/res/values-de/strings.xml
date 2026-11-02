@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">zahlungsmethode: %1$s</string>
     <string name="ui_plan_0">tarif: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / Monat: %1$s%2$s</string>
-    <string name="ui_provider_0">anbieter: %1$s</string>
     <string name="ui_queued_in_the_test_source">in der Warteschlange der Testquelle.</string>
     <string name="ui_reference_0">referenz: %1$s</string>
     <string name="ui_reply_email">antwortadresse</string>
@@ -295,7 +294,6 @@
     <string name="traffic_add_service">eigenen Dienst hinzufügen</string>
     <string name="direct_location">standort ohne VPN:</string>
     <string name="upgrade_plan">tarif verbessern</string>
-    <string name="faq_question">frage</string>
     <string name="faq_connect_q">wie verbinde ich mich?</string>
     <string name="faq_connect_a">wähle ein Land und tippe auf Verbinden. die erste Verbindung kann einige Minuten dauern.</string>
     <string name="faq_free_q">was bietet Free?</string>

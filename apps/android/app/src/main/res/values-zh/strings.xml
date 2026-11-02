@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">付款方式：%1$s</string>
     <string name="ui_plan_0">套餐：%1$s</string>
     <string name="ui_premium_month_0_1">Premium / 月：%1$s%2$s</string>
-    <string name="ui_provider_0">支付提供商：%1$s</string>
     <string name="ui_queued_in_the_test_source">已加入测试队列。</string>
     <string name="ui_reference_0">请求编号：%1$s</string>
     <string name="ui_reply_email">回复电子邮箱</string>
@@ -295,7 +294,6 @@
     <string name="traffic_add_service">添加自定义服务</string>
     <string name="direct_location">非 VPN 位置：</string>
     <string name="upgrade_plan">升级套餐</string>
-    <string name="faq_question">问题</string>
     <string name="faq_connect_q">如何连接？</string>
     <string name="faq_connect_a">选择国家并点击连接。首次连接可能需要几分钟。</string>
     <string name="faq_free_q">免费套餐包含什么？</string>
