@@ -277,6 +277,15 @@ async function main() {
                 location.ip === actual[2] && exits.includes(location.ip);
               if (!row.vpn_location_verified)
                 throw new Error("LOCATION_FAILED");
+              if (mode === "exclude") {
+                const direct = await page.evaluate(() =>
+                  window.__TAURI_INTERNALS__.invoke("get_direct_location"),
+                );
+                row.direct_location_verified =
+                  direct.ip === baseline[2] && !exits.includes(direct.ip);
+                if (!row.direct_location_verified)
+                  throw new Error("DIRECT_LOCATION_FAILED");
+              }
               const pageProbe = spawnSync(
                 "curl.exe",
                 [

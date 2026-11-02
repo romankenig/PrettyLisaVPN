@@ -19,6 +19,7 @@ var ErrStop = errors.New("ENGINE_STOP_FAILED")
 type Runtime struct {
 	mu       sync.Mutex
 	instance coreInstance
+	direct   bool
 	create   func(*core.Config) (coreInstance, error)
 }
 type coreInstance interface {
@@ -57,6 +58,7 @@ func (r *Runtime) start(profile string, mobile bool) error {
 		return ErrStart
 	}
 	r.instance = instance
+	r.direct = p.Routing != nil && p.Routing.Mode != "all"
 	if instance.Start() != nil {
 		if instance.Close() == nil {
 			r.instance = nil

@@ -27,6 +27,7 @@ from prettylisavpn.emailing.domain import (
 )
 from prettylisavpn.emailing.service import VerificationEmailService
 from prettylisavpn.otp import IssuedOtp, OtpServiceUnavailableError
+from prettylisavpn.product_analytics.activity import ActivitySink, record_activity
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.subscriptions.domain import Subscription
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
@@ -158,7 +159,10 @@ class LoginService:
         postgres: Postgres,
         events: ProductEventSink,
         settings: Settings,
+        *,
+        activity: ActivitySink | None = None,
     ) -> None:
+        self._activity = activity
         self._otp = otp
         self._postgres = postgres
         self._events = events
@@ -242,6 +246,7 @@ class LoginService:
             user_id=user.id,
             device_id=device.id,
         )
+        await record_activity(self._activity, user.id)
         return LoginResult(
             user=user,
             subscription=subscription,

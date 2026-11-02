@@ -1,6 +1,6 @@
 # PrettyLisaVPN managed engine (in development)
 
-Isolated engine, version 0.5.1. Xray-core 26.10.21 is pinned to source commit
+Isolated engine, version 0.5.2. Xray-core 26.10.21 is pinned to source commit
 `1b1647cd9ddf0abc34b981d4611fc03bcac1ca74` in go.mod/go.sum. The adapter is MIT;
 Xray is MPL-2.0. The unpublished sing-box implementation was removed following
 the owner's decision. No sing-box, sing-openvpn or sing-openconnect is linked.

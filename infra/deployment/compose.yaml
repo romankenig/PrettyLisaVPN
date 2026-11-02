@@ -58,6 +58,27 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  product-analytics:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE}
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    read_only: true
+    command: [python, -m, prettylisavpn.product_analytics.worker]
+    healthcheck:
+      disable: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment: *backend_environment
+    networks: [application]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   fleet-worker:
     image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE}
     profiles: [fleet]

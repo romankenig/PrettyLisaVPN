@@ -20,6 +20,22 @@ handle /dashboard/* {
                 header_up Authorization "Bearer @@MONITOR_TOKEN@@"
             }
         }
+        @analytics {
+            path /dashboard/api/product-analytics
+            method GET
+        }
+        handle @analytics {
+            rewrite * /admin/monitoring/product-analytics
+            reverse_proxy backend:8000 {
+                header_up Authorization "Bearer @@MONITOR_TOKEN@@"
+            }
+        }
+        @analytics_page path /dashboard/product-analytics /dashboard/product-analytics/
+        handle @analytics_page {
+            rewrite * /index.html
+            root * /etc/caddy/dashboard/site
+            file_server
+        }
         handle_path /dashboard/downloads/* {
             root * /etc/caddy/dashboard/downloads/current
             @binary path /android.apk /windows.exe

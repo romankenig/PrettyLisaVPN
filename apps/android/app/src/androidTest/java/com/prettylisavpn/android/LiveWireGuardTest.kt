@@ -32,6 +32,10 @@ class LiveWireGuardTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val device = UiDevice.getInstance(instrumentation)
+        // Keep notification consent from hiding the VPN consent on a fresh emulator.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         fun shell(command: String): String = instrumentation.uiAutomation.executeShellCommand(command).use { descriptor ->
             FileInputStream(descriptor.fileDescriptor).use { it.readBytes().toString(Charsets.UTF_8).trim() }
         }

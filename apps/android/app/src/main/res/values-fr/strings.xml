@@ -236,8 +236,6 @@
     <string name="dash_no_countries">aucun pays disponible</string>
     <string name="dash_connect">connecter</string>
     <string name="dash_region">région actuelle</string>
-    <string name="dash_include">uniquement les sites sélectionnés</string>
-    <string name="dash_exclude">sauf les sites sélectionnés</string>
     <string name="dash_end_session">fermer la session sur cet appareil</string>
     <string name="dash_added">ajouté</string>
     <string name="dash_last_login">dernière connexion</string>
@@ -270,7 +268,6 @@
     <string name="connection_methods_hint">les modifications prennent effet à la prochaine connexion. sélectionnez au moins une méthode.</string>
     <string name="all_methods">toutes les méthodes</string>
     <string name="traffic_services">choisir les services</string>
-    <string name="traffic_save_hint">enregistrer déconnecte le VPN. les règles seront appliquées à la prochaine connexion.</string>
     <string name="traffic_catalog_unavailable">catalogue indisponible. vos services et domaines enregistrés restent disponibles.</string>
     <string name="traffic_mask">masque de domaine</string>
     <string name="traffic_add">ajouter</string>
@@ -287,8 +284,6 @@
     <string name="vpn_location">localisation vpn</string>
     <string name="vpn_location_loading">détermination…</string>
     <string name="traffic_description_all">tous les sites et applis via vpn</string>
-    <string name="traffic_description_include">le reste du trafic passe directement</string>
-    <string name="traffic_description_exclude">vpn pour tout sauf votre liste</string>
     <string name="notification_vpn_connected">VPN activé</string>
     <string name="notification_vpn_connecting">connexion au VPN…</string>
     <string name="notification_vpn_disconnecting">déconnexion du VPN…</string>
@@ -296,4 +291,7 @@
     <string name="notification_disconnect">déconnecter le VPN</string>
     <string name="traffic_top">top 10 populaires</string>
     <string name="traffic_all_services">tous les services</string>
+    <string name="traffic_selected_label">services sélectionnés :</string>
+    <string name="traffic_add_service">ajouter un service</string>
+    <string name="direct_location">localisation sans VPN :</string>
 </resources>

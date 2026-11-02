@@ -22,20 +22,10 @@ import {
 } from "../vpn/traffic";
 import { createHttpTransport } from "../native/http";
 
-const labels: Record<Mode, string> = {
-  all: "весь трафик",
-  include: "только выбранные сайты",
-  exclude: "кроме выбранных сайтов",
-};
 const shortLabels: Record<Mode, string> = {
   all: "Всё",
   include: "Выбранное",
   exclude: "Кроме выбранного",
-};
-const details: Record<Mode, string> = {
-  all: "все сайты и приложения через VPN",
-  include: "остальной трафик — напрямую",
-  exclude: "VPN для всего, кроме вашего списка",
 };
 export function TrafficRouting({
   refreshKey = 0,
@@ -87,7 +77,9 @@ export function TrafficRouting({
         <select
           className="traffic-mode__select"
           aria-label={t("режим трафика")}
-          aria-describedby="traffic-mode-description"
+          aria-describedby={
+            selected.mode === "all" ? "traffic-mode-description" : undefined
+          }
           value={selected.mode}
           disabled={busy}
           onChange={(event) => {
@@ -103,9 +95,11 @@ export function TrafficRouting({
           ))}
         </select>
       </div>
-      <p id="traffic-mode-description" className="traffic-mode__hint">
-        {t(details[selected.mode])}
-      </p>
+      {selected.mode === "all" && (
+        <p id="traffic-mode-description" className="traffic-mode__hint">
+          {t("все сайты и приложения через VPN")}
+        </p>
+      )}
       {selected.mode !== "all" && (
         <>
           <button
@@ -114,8 +108,9 @@ export function TrafficRouting({
             disabled={busy}
             onClick={() => setOpen(true)}
           >
-            {t("Выбрать сервисы")} <span aria-hidden="true">›</span>
+            {t("Выбрать сервисы")}
           </button>
+          <p className="traffic-selected-label">{t("Выбранные сервисы:")}</p>
           <SelectedServiceIcons
             items={[
               ...selected[selected.mode].services.map((service) => ({
@@ -138,7 +133,12 @@ export function TrafficRouting({
         </p>
       )}
       {selected.mode !== "all" && (
-        <CurrentLocation connection={connection} vpn refreshKey={refreshKey} />
+        <CurrentLocation
+          connection={connection}
+          vpn
+          direct={selected.mode === "exclude"}
+          refreshKey={refreshKey}
+        />
       )}
       {open && (
         <TrafficDialog
@@ -223,6 +223,7 @@ function ServiceIcon({ name }: { name: string }) {
         height="26"
         viewBox="0 0 24 24"
         fill="currentColor"
+        style={{ color: serviceColors[name] ?? serviceColors.website }}
       >
         <path d={serviceIcons[name]} />
       </svg>
@@ -239,7 +240,13 @@ function ServiceIcon({ name }: { name: string }) {
   };
   if (badge[name])
     return (
-      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24">
+      <svg
+        aria-hidden="true"
+        width="26"
+        height="26"
+        viewBox="0 0 24 24"
+        style={{ color: serviceColors[name] ?? serviceColors.website }}
+      >
         <rect width="24" height="24" rx="6" fill="currentColor" />
         <text
           x="12"
@@ -285,7 +292,7 @@ function TrafficDialog({
   const dialog = useRef<HTMLDialogElement>(null);
   const app = useApplication();
   const [draft, setDraft] = useState(() => structuredClone(initial));
-  const [tab, setTab] = useState<"include" | "exclude">(
+  const [tab] = useState<"include" | "exclude">(
     initial.mode === "exclude" ? "exclude" : "include",
   );
   const [catalog, setCatalog] = useState<TrafficService[]>([]);
@@ -294,6 +301,7 @@ function TrafficDialog({
   const [query, setQuery] = useState("");
   const [input, setInput] = useState("");
   const [invalid, setInvalid] = useState(false);
+  const [adding, setAdding] = useState(false);
   useEffect(() => {
     const old = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -342,32 +350,6 @@ function TrafficDialog({
       }}
     >
       <h2 id="traffic-dialog-title">{t("Выбрать сервисы")}</h2>
-      <p>
-        {t(
-          "При сохранении VPN отключится. Новые правила — со следующего подключения.",
-        )}
-      </p>
-      <div
-        className="traffic-tabs"
-        role="group"
-        aria-label={t("режим трафика")}
-      >
-        {(["include", "exclude"] as const).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            aria-pressed={tab === mode}
-            disabled={busy}
-            onClick={() => {
-              setTab(mode);
-              setInput("");
-              setInvalid(false);
-            }}
-          >
-            {t(labels[mode])}
-          </button>
-        ))}
-      </div>
       <div className="traffic-dialog__body">
         {loading && <p role="status">{t("Загрузка сервисов…")}</p>}
         {unavailable && (
@@ -385,7 +367,93 @@ function TrafficDialog({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        {serviceGroups(services, tab, getLanguage()).map((group) => (
+        <button
+          type="button"
+          className="traffic-add-service"
+          disabled={busy}
+          aria-expanded={adding}
+          onClick={() => {
+            setAdding(!adding);
+            setInput("");
+            setInvalid(false);
+          }}
+        >
+          <span aria-hidden="true">＋</span> {t("Добавить свой сервис")}
+        </button>
+        {adding && (
+          <div className="traffic-mask-form">
+            <label htmlFor="traffic-mask">{t("Маска сервиса")}</label>
+            <div className="traffic-mask-entry">
+              <input
+                id="traffic-mask"
+                value={input}
+                disabled={busy}
+                autoFocus
+                placeholder="example.com, *.example.com"
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={busy || !input.trim()}
+                onClick={() => {
+                  try {
+                    const masks = [
+                      ...new Set([
+                        ...list.masks,
+                        ...input.split(/[,\n]+/).map(normalizeMask),
+                      ]),
+                    ];
+                    if (masks.length > 256) throw new Error();
+                    setDraft({ ...draft, [tab]: { ...list, masks } });
+                    setInput("");
+                    setInvalid(false);
+                    setAdding(false);
+                  } catch {
+                    setInvalid(true);
+                  }
+                }}
+              >
+                {t("Добавить")}
+              </button>
+            </div>
+            {invalid && (
+              <p role="alert">
+                {t(
+                  "Укажите домен или *.домен, без адреса страницы. Максимум 256 масок.",
+                )}
+              </p>
+            )}
+          </div>
+        )}
+        <ul className="traffic-masks">
+          {list.masks.map((mask) => (
+            <li key={mask}>
+              <span>{mask}</span>
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`${t("Удалить")} ${mask}`}
+                onClick={() =>
+                  setDraft({
+                    ...draft,
+                    [tab]: {
+                      ...list,
+                      masks: list.masks.filter((m) => m !== mask),
+                    },
+                  })
+                }
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+        {serviceGroups(
+          services,
+          tab,
+          getLanguage(),
+          initial[tab].services.map((s) => s.id),
+        ).map((group) => (
           <section
             key={group.key}
             className="traffic-category"
@@ -430,69 +498,6 @@ function TrafficDialog({
             </div>
           </section>
         ))}
-        <label htmlFor="traffic-mask">{t("Маска сервиса")}</label>
-        <div className="traffic-mask-entry">
-          <input
-            id="traffic-mask"
-            value={input}
-            disabled={busy}
-            placeholder="youtube.com, *.youtube.com"
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button
-            type="button"
-            disabled={busy || !input.trim()}
-            onClick={() => {
-              try {
-                const masks = input.split(/[,\n]+/).map(normalizeMask);
-                if (list.masks.length + masks.length > 256) throw new Error();
-                setDraft({
-                  ...draft,
-                  [tab]: {
-                    ...list,
-                    masks: [...new Set([...list.masks, ...masks])],
-                  },
-                });
-                setInput("");
-                setInvalid(false);
-              } catch {
-                setInvalid(true);
-              }
-            }}
-          >
-            {t("Добавить")}
-          </button>
-        </div>
-        {invalid && (
-          <p role="alert">
-            {t(
-              "Укажите домен или *.домен, без адреса страницы. Максимум 256 масок.",
-            )}
-          </p>
-        )}
-        <ul className="traffic-masks">
-          {list.masks.map((mask) => (
-            <li key={mask}>
-              <span>{mask}</span>
-              <button
-                type="button"
-                disabled={busy}
-                aria-label={`${t("Удалить")} ${mask}`}
-                onClick={() =>
-                  setDraft({
-                    ...draft,
-                    [tab]: {
-                      ...list,
-                      masks: list.masks.filter((m) => m !== mask),
-                    },
-                  })
-                }
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
       </div>
       {error && (
         <p role="alert">

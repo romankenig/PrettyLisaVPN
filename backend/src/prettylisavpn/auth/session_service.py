@@ -22,6 +22,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import Device, DeviceStatus
 from prettylisavpn.devices.repository import DeviceRepository
+from prettylisavpn.product_analytics.activity import ActivitySink, record_activity
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.subscriptions.domain import Subscription, SubscriptionPlan
 from prettylisavpn.subscriptions.entitlements import free_quota_resets_at
@@ -90,7 +91,10 @@ class AuthenticatedSessionService:
         postgres: Postgres,
         events: ProductEventSink,
         settings: Settings,
+        *,
+        activity: ActivitySink | None = None,
     ) -> None:
+        self._activity = activity
         self._postgres = postgres
         self._events = events
         self._access_tokens = AccessTokenService(settings)
@@ -107,6 +111,7 @@ class AuthenticatedSessionService:
             raise
         except SQLAlchemyError:
             raise AuthServiceUnavailableError("Authentication storage is unavailable") from None
+        await record_activity(self._activity, identity.user_id)
         return identity
 
     async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens:
@@ -145,6 +150,7 @@ class AuthenticatedSessionService:
             user_id=rotated.session.user_id,
             device_id=rotated.session.device_id,
         )
+        await record_activity(self._activity, rotated.session.user_id)
         return RefreshedTokens(auth_session=rotated, access_token=access_token)
 
     async def logout(self, access_token: str) -> None:
@@ -173,6 +179,7 @@ class AuthenticatedSessionService:
             device_id=identity.device_id,
             properties={"scope": "session"},
         )
+        await record_activity(self._activity, identity.user_id)
 
     async def me(self, access_token: str) -> MeSummary:
         identity = self._decode_identity(access_token)
@@ -206,6 +213,7 @@ class AuthenticatedSessionService:
         except SQLAlchemyError:
             raise AuthServiceUnavailableError("Authentication storage is unavailable") from None
 
+        await record_activity(self._activity, user.id)
         return MeSummary(
             user_id=user.id,
             email=user.email,

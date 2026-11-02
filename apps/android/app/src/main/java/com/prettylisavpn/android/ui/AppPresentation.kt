@@ -5,6 +5,8 @@ import androidx.core.content.edit
 import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Network
+import android.net.NetworkRequest
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -120,6 +122,22 @@ internal class PublicMetadata(
     }.getOrNull()
     suspend fun country(): String? = location()?.country
 
+    suspend fun directLocation(network: Network): PublicLocation? = withContext(Dispatchers.IO) {
+        val http = base.newBuilder().socketFactory(network.socketFactory)
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> = network.getAllByName(hostname).toList()
+            }).proxy(java.net.Proxy.NO_PROXY)
+            .connectionPool(okhttp3.ConnectionPool()).build()
+        try {
+            for ((url, fallback) in listOfNotNull(countryUrl to false, fallbackCountryUrl?.let { it to true })) {
+                currentCoroutineContext().ensureActive()
+                val value = read(url, http) ?: continue
+                parseLocation(value, fallback)?.let { return@withContext it }
+            }
+            null
+        } finally { http.connectionPool.evictAll() }
+    }
+
     suspend fun vpnLocation(): PublicLocation? = withContext(Dispatchers.IO) {
         val route = HttpRoutes.current
         val sockets = route.sockets ?: return@withContext null
@@ -157,6 +175,28 @@ internal class PresentationState(context: Context, private val network: Boolean)
     suspend fun refreshLocation() = locationRefresh.refresh()
     fun invalidateLocation(updating: Boolean) = locationRefresh.invalidate(updating)
     suspend fun vpnLocation(): PublicLocation? = if (network) metadata.vpnLocation() else null
+    suspend fun directLocation(): PublicLocation? {
+        if (!network) return null
+        val manager = app.getSystemService(ConnectivityManager::class.java)
+        val available = CompletableDeferred<Network>()
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { available.complete(network) }
+        }
+        return try {
+            // Ask Android to choose the best underlying network; do not guess
+            // Wi-Fi versus mobile, cache an old IP, or change process routing.
+            manager.requestNetwork(NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build(), callback)
+            val route = withTimeout(5_000) { available.await() }
+            metadata.directLocation(route)?.takeIf {
+                manager.getNetworkCapabilities(route)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
+            }
+        } catch (_: TimeoutCancellationException) { null }
+        catch (error: CancellationException) { throw error }
+        catch (_: Exception) { null }
+        finally { runCatching { manager.unregisterNetworkCallback(callback) } }
+    }
     @Suppress("DEPRECATION")
     private fun vpnActive(): Boolean = runCatching {
         val connectivity = app.getSystemService(ConnectivityManager::class.java)

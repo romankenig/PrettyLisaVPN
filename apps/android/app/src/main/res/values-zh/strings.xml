@@ -236,8 +236,6 @@
     <string name="dash_no_countries">暂无可用国家</string>
     <string name="dash_connect">连接</string>
     <string name="dash_region">当前地区</string>
-    <string name="dash_include">仅选定网站</string>
-    <string name="dash_exclude">排除选定网站</string>
     <string name="dash_end_session">结束此设备上的会话</string>
     <string name="dash_added">添加时间</string>
     <string name="dash_last_login">上次登录</string>
@@ -270,7 +268,6 @@
     <string name="connection_methods_hint">更改将在下次连接时生效。请至少选择一种方式。</string>
     <string name="all_methods">所有方式</string>
     <string name="traffic_services">选择服务</string>
-    <string name="traffic_save_hint">保存后将断开 VPN。新规则在下次连接时生效。</string>
     <string name="traffic_catalog_unavailable">目录暂不可用。仍可使用已保存的服务和域名规则。</string>
     <string name="traffic_mask">服务域名规则</string>
     <string name="traffic_add">添加</string>
@@ -287,8 +284,6 @@
     <string name="vpn_location">vpn 位置</string>
     <string name="vpn_location_loading">正在确定…</string>
     <string name="traffic_description_all">所有网站和应用均通过 vpn</string>
-    <string name="traffic_description_include">其他流量直接连接</string>
-    <string name="traffic_description_exclude">除列表外的所有流量均通过 vpn</string>
     <string name="notification_vpn_connected">VPN 已开启</string>
     <string name="notification_vpn_connecting">正在连接 VPN…</string>
     <string name="notification_vpn_disconnecting">正在断开 VPN…</string>
@@ -296,4 +291,7 @@
     <string name="notification_disconnect">断开 VPN</string>
     <string name="traffic_top">十大热门服务</string>
     <string name="traffic_all_services">全部服务</string>
+    <string name="traffic_selected_label">所选服务：</string>
+    <string name="traffic_add_service">添加自定义服务</string>
+    <string name="direct_location">非 VPN 位置：</string>
 </resources>

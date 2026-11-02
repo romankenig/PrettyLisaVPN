@@ -19,6 +19,8 @@ manifest = ET.parse("app/src/main/AndroidManifest.xml")
 ns = "{http://schemas.android.com/apk/res/android}"
 assert {p.attrib[ns+"name"] for p in manifest.findall("uses-permission")} == {
     "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
+    # Normal permission for selecting a NOT_VPN network for direct-location sockets.
+    "android.permission.CHANGE_NETWORK_STATE",
     "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED",
     "android.permission.POST_NOTIFICATIONS",
 }

@@ -236,8 +236,6 @@
     <string name="dash_no_countries">нет доступных стран</string>
     <string name="dash_connect">подключить</string>
     <string name="dash_region">текущий регион</string>
-    <string name="dash_include">только выбранные сайты</string>
-    <string name="dash_exclude">кроме выбранных сайтов</string>
     <string name="dash_end_session">завершить сессию на этом устройстве</string>
     <string name="dash_added">добавлено</string>
     <string name="dash_last_login">последний вход</string>
@@ -270,7 +268,6 @@
     <string name="connection_methods_hint">изменения применятся при следующем подключении. выберите хотя бы один способ.</string>
     <string name="all_methods">все способы</string>
     <string name="traffic_services">выбрать сервисы</string>
-    <string name="traffic_save_hint">при сохранении VPN отключится. новые правила — со следующего подключения.</string>
     <string name="traffic_catalog_unavailable">каталог недоступен. сохранённые сервисы и ваши маски доступны.</string>
     <string name="traffic_mask">маска сервиса</string>
     <string name="traffic_add">добавить</string>
@@ -287,8 +284,6 @@
     <string name="vpn_location">локация vpn</string>
     <string name="vpn_location_loading">определяем…</string>
     <string name="traffic_description_all">все сайты и приложения через vpn</string>
-    <string name="traffic_description_include">остальной трафик — напрямую</string>
-    <string name="traffic_description_exclude">vpn для всего, кроме вашего списка</string>
     <string name="notification_vpn_connected">VPN включён</string>
     <string name="notification_vpn_connecting">подключение VPN…</string>
     <string name="notification_vpn_disconnecting">отключение VPN…</string>
@@ -296,4 +291,7 @@
     <string name="notification_disconnect">отключить VPN</string>
     <string name="traffic_top">топ-10 популярных</string>
     <string name="traffic_all_services">все сервисы</string>
+    <string name="traffic_selected_label">выбранные сервисы:</string>
+    <string name="traffic_add_service">добавить свой сервис</string>
+    <string name="direct_location">локация без VPN:</string>
 </resources>

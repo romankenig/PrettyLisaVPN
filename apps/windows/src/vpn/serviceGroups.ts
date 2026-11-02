@@ -4,6 +4,7 @@ export function serviceGroups(
   services: TrafficService[],
   mode: TrafficMode,
   language: string,
+  savedSelection: readonly string[] = [],
 ) {
   const collator = new Intl.Collator(language, {
     sensitivity: "base",
@@ -22,8 +23,13 @@ export function serviceGroups(
         collator.compare(a.name, b.name),
     )
     .slice(0, 10);
+  const selected = new Set(savedSelection);
+  const order = (a: TrafficService, b: TrafficService) =>
+    Number(selected.has(b.id)) - Number(selected.has(a.id)) ||
+    collator.compare(a.name, b.name) ||
+    a.id.localeCompare(b.id);
   return [
-    { key: "top", title: "Топ-10 популярных", services: top },
-    { key: "all", title: "Все сервисы", services: all },
+    { key: "top", title: "Топ-10 популярных", services: top.sort(order) },
+    { key: "all", title: "Все сервисы", services: all.sort(order) },
   ];
 }

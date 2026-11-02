@@ -142,7 +142,7 @@ class AccountScreensTest {
         for (mode in listOf("include", "exclude")) {
             click("traffic-mode-menu"); click("traffic-mode-$mode")
             compose.onNodeWithTag("traffic-services").assertExists()
-            compose.onNodeWithTag("traffic-mode-description").assertExists()
+            compose.onNodeWithTag("traffic-mode-description").assertDoesNotExist()
             waitFor("vpn-location")
             compose.onNodeWithTag("vpn-location").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
@@ -165,7 +165,11 @@ class AccountScreensTest {
         click("traffic-service-youtube")
         compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
         screenshot("traffic-include")
-        click("traffic-tab-exclude")
+        compose.onNodeWithTag("traffic-tab-exclude").assertDoesNotExist()
+        click("traffic-save")
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("traffic-dialog").fetchSemanticsNodes().isEmpty() }
+        click("traffic-mode-menu"); click("traffic-mode-exclude")
+        click("traffic-services"); waitFor("traffic-service-youtube")
         compose.onNodeWithTag("traffic-service-youtube").assertIsOff()
         click("traffic-service-instagram")
         screenshot("traffic-exclude")
@@ -173,9 +177,14 @@ class AccountScreensTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("traffic-dialog").fetchSemanticsNodes().isEmpty() }
         compose.activityRule.scenario.recreate(); waitFor("live-account")
         click("traffic-services"); waitFor("traffic-service-youtube")
-        compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
-        click("traffic-tab-exclude")
         compose.onNodeWithTag("traffic-service-instagram").assertIsOn()
+        compose.onNodeWithTag("traffic-service-youtube").assertIsOff()
+        click("traffic-save")
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("traffic-dialog").fetchSemanticsNodes().isEmpty() }
+        click("traffic-mode-menu"); click("traffic-mode-include")
+        click("traffic-services"); waitFor("traffic-service-youtube")
+        compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
+        compose.onNodeWithTag("traffic-service-instagram").assertIsOff()
     }
     @Test fun messagesPopupOnlyNavigatesAfterSuccessfulAck() {
         messages=true;ackFail=true

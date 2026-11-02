@@ -1,3 +1,17 @@
+# Protection picker — Windows 0.24.0 / Android 0.20.0
+
+Home → adjacent large mode dropdown selects all / selected / except selected.
+Only all-mode keeps its description. Split modes show a turquoise Choose services
+button, selected-services label and compact service-colored icons. The modal
+inherits the Home mode and has no mode tabs. Add own service opens a mask form
+above custom entries and the top/all catalog groups; Cancel discards the draft.
+Saved selected presets sort alphabetically before unselected presets in each
+group; toggling a draft does not move the row. Save/mode changes still disconnect
+before persistence, with separate lists and manual next connection. Exclude mode
+measures direct egress; include measures VPN egress. All mode has one location.
+Native direct-location command is implemented; current-build acceptance is
+recorded in the task PR. See [handoff](protection-product-analytics.md).
+
 # Traffic mode dropdown — Windows 0.21.1 / Android 0.18.1
 
 Home → dropdown beside “what to protect” selects all / selected / except selected.

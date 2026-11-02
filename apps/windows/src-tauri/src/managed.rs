@@ -315,6 +315,21 @@ pub async fn engine_is_up(app: AppHandle) -> Result<bool, &'static str> {
     .map_err(|_| ERROR)?
 }
 
+pub async fn direct_location(app: AppHandle) -> Result<Value, &'static str> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<ManagedState>();
+        let mut guard = state.0.lock().map_err(|_| ERROR)?;
+        let session = guard.session.as_mut().ok_or(ERROR)?;
+        let result = exchange(session, json!({"action":"direct_location"}))?;
+        if result["status"] != "OK" {
+            return Err("PUBLIC_LOCATION_UNAVAILABLE");
+        }
+        Ok(result["location"].clone())
+    })
+    .await
+    .map_err(|_| ERROR)?
+}
+
 #[tauri::command]
 pub async fn engine_verify(
     app: AppHandle,
@@ -497,7 +512,7 @@ fn validate_request(value: &Value) -> Result<(), &'static str> {
     let object = value.as_object().ok_or(ERROR)?;
     match value["action"].as_str() {
         Some("start") if object.len() == 2 && value["profile"].is_object() => Ok(()),
-        Some("stop" | "status") if object.len() == 1 => Ok(()),
+        Some("stop" | "status" | "direct_location") if object.len() == 1 => Ok(()),
         _ => Err("ENGINE_INVALID_CONFIGURATION"),
     }
 }

@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Windows — 0.24.0 / Android — 0.20.0 / Backend — 0.28.0 / dashboard — 0.5.0 / engines — 0.5.2
+
+- Make protection mode read as part of the Home heading, use a turquoise service
+  button, name selected services and show service colors throughout the picker.
+- Keep mode selection on Home, sort saved selections first within each alphabetic
+  group, and move custom-mask creation into an explicit form above the lists.
+- Measure direct/home egress in exclude mode through the physical network;
+  include retains VPN egress and all-traffic mode retains one location.
+- Add private product analytics with daily two-month DAU/WAU/MAU and activity-time
+  tariff cohorts, including unknown historical tariffs. Migration 0041, daily
+  main-server worker, additional connection/registration/engagement metrics.
+- See [scope, definitions, validation and rollout](docs/protection-product-analytics.md).
+
 ### Windows — 0.23.0
 
 - Ship a compact NSIS installer with shortcuts, repair/update and uninstaller.

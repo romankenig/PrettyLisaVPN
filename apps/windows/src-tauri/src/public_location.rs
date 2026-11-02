@@ -104,6 +104,17 @@ pub async fn get_public_location() -> Result<Observation, &'static str> {
     first_location(fetch_location).await
 }
 
+#[tauri::command]
+pub async fn get_direct_location(app: tauri::AppHandle) -> Result<Observation, &'static str> {
+    let value = super::managed::direct_location(app)
+        .await
+        .map_err(|_| UNAVAILABLE)?;
+    parse_observation(
+        &serde_json::to_vec(&value).map_err(|_| UNAVAILABLE)?,
+        Provider::IpWho,
+    )
+}
+
 fn ifconfig_ip(body: &[u8]) -> Result<std::net::Ipv4Addr, &'static str> {
     if body.len() > MAX_BODY {
         return Err(UNAVAILABLE);

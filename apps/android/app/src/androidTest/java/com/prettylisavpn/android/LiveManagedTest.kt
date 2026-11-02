@@ -16,6 +16,7 @@ import com.prettylisavpn.android.vpn.TrafficSelection
 import com.prettylisavpn.android.vpn.TrafficList
 import com.prettylisavpn.android.vpn.TrafficService
 import com.prettylisavpn.android.ui.PublicMetadata
+import com.prettylisavpn.android.ui.PresentationStore
 import kotlinx.coroutines.runBlocking
 import com.prettylisavpn.android.vpn.AndroidVpnHost
 import com.prettylisavpn.android.vpn.DeviceMethodSelection
@@ -37,6 +38,11 @@ class LiveManagedTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val device = UiDevice.getInstance(instrumentation)
+        // This fresh emulator tests real routing. Notification permission UI is
+        // covered separately; it must not hide the mandatory VPN consent dialog.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         val credential = instrumentation.uiAutomation.executeShellCommand("cat /data/local/tmp/pl-managed-credentials.json").use { descriptor ->
             FileInputStream(descriptor.fileDescriptor).use { JsonParser.parseString(it.readBytes().toString(Charsets.UTF_8)).asJsonObject }
         }
@@ -151,6 +157,11 @@ class LiveManagedTest {
                                 }
                                 row["vpn_location_verified"] = runBlocking { PublicMetadata().vpnLocation()?.ip } == actual[2] && actual[2] in exits
                                 check(row["vpn_location_verified"] == true)
+                                if (mode == "exclude") {
+                                    val direct = runBlocking { PresentationStore.get(context).directLocation()?.ip }
+                                    row["direct_location_verified"] = direct == baseline[2] && direct !in exits
+                                    check(row["direct_location_verified"] == true)
+                                }
                                 val page = vpn.openConnection(URL("https://ifconfig.me/"), Proxy.NO_PROXY) as HttpsURLConnection
                                 try {
                                     page.connectTimeout = 15_000; page.readTimeout = 15_000; page.instanceFollowRedirects = false

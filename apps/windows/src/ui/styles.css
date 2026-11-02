@@ -54,7 +54,6 @@
   color: var(--color-scorpion);
   line-height: 1.4;
 }
-.traffic-tabs,
 .traffic-mask-entry,
 .traffic-dialog__actions {
   display: flex;
@@ -65,17 +64,6 @@
 .traffic-mask-entry {
   margin: 8px 0;
   align-items: center;
-}
-.traffic-tabs button {
-  flex: 1;
-  font-size: 13px;
-  border: 1px solid var(--color-purple-heart);
-  background: transparent;
-  color: var(--color-purple-heart);
-}
-.traffic-tabs button[aria-pressed="true"] {
-  background: var(--color-viking);
-  color: var(--color-black);
 }
 .traffic-dialog__body {
   display: block;
@@ -118,7 +106,6 @@
 }
 .traffic-services svg {
   flex-shrink: 0;
-  color: var(--color-purple-heart);
 }
 .traffic-services .service-switch {
   appearance: none;
@@ -1355,35 +1342,51 @@ main dd {
 .traffic-mode__heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   margin-bottom: 14px;
 }
 .traffic-mode h2 {
   margin: 0;
   font-size: 18px;
 }
-.traffic-edit {
-  align-self: flex-start;
+.traffic-mode .traffic-edit {
   margin: 0;
-  padding: 6px 0;
-  background: transparent;
-  color: var(--color-purple-heart);
-  font-size: 12px;
+  padding: 12px 18px;
+  background: var(--color-viking);
+  color: var(--color-black);
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
 }
 .traffic-mode__select {
   width: auto;
   min-width: 0;
-  max-width: 55%;
+  max-width: 100%;
   margin: 0;
-  padding: 8px 4px;
-  border: 1px solid rgb(95 34 217 / 25%);
-  border-radius: 10px;
+  padding: 6px 2px;
+  border: 0;
+  border-bottom: 1px solid rgb(95 34 217 / 30%);
+  border-radius: 0;
   background: transparent;
   color: var(--color-purple-heart);
   font: inherit;
-  font-size: 12px;
+  font-size: 18px;
+  font-weight: 600;
   cursor: pointer;
+}
+.traffic-selected-label {
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+.traffic-add-service {
+  background: var(--color-viking);
+  color: var(--color-black);
+  padding: 10px 14px;
+  width: 100%;
+}
+.traffic-mask-form {
+  margin-top: 12px;
 }
 .traffic-mode__hint {
   margin: 0 0 8px;

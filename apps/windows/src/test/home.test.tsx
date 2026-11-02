@@ -253,28 +253,29 @@ describe("authenticated Home", () => {
         this.open = true;
       },
     });
-    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          services: [
-            {
-              id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
-              slug: "youtube",
-              name: "YouTube",
-              icon: "youtube",
-              domains: ["youtube.com", "*.youtube.com"],
-            },
-            {
-              id: "4e2b8d7c-289f-4c57-8f26-aeb680408cda",
-              slug: "instagram",
-              name: "Instagram",
-              icon: "instagram",
-              domains: ["instagram.com"],
-            },
-          ],
-        }),
-        { status: 200 },
-      ),
+    const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            services: [
+              {
+                id: "0bd811da-f080-4f25-887a-67bf534ac2c6",
+                slug: "youtube",
+                name: "YouTube",
+                icon: "youtube",
+                domains: ["youtube.com", "*.youtube.com"],
+              },
+              {
+                id: "4e2b8d7c-289f-4c57-8f26-aeb680408cda",
+                slug: "instagram",
+                name: "Instagram",
+                icon: "instagram",
+                domains: ["instagram.com"],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
     );
     try {
       const rendered = renderRestored();
@@ -296,24 +297,21 @@ describe("authenticated Home", () => {
         ),
       );
       expect(dialog.queryByText("youtube.com, *.youtube.com")).toBeNull();
+      fireEvent.click(
+        dialog.getByRole("button", { name: /Добавить свой сервис/ }),
+      );
       fireEvent.change(dialog.getByLabelText("Маска сервиса"), {
         target: { value: "ifconfig.me" },
       });
       fireEvent.click(dialog.getByRole("button", { name: "Добавить" }));
-      fireEvent.click(
-        dialog.getByRole("button", { name: "кроме выбранных сайтов" }),
-      );
       expect(
-        within(dialog.getByTestId("traffic-group-all")).getByRole("switch", {
-          name: "YouTube",
-        }),
-      ).not.toBeChecked();
-      expect(dialog.queryByText("ifconfig.me")).toBeNull();
-      fireEvent.click(
-        within(dialog.getByTestId("traffic-group-all")).getByRole("switch", {
-          name: "Instagram",
-        }),
-      );
+        dialog.queryByRole("button", { name: "кроме выбранных сайтов" }),
+      ).toBeNull();
+      expect(
+        dialog.queryByText(
+          "При сохранении VPN отключится. Новые правила — со следующего подключения.",
+        ),
+      ).toBeNull();
       fireEvent.click(dialog.getByRole("button", { name: "Сохранить" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       expect(screen.getByRole("img", { name: "YouTube" })).toBeVisible();
@@ -321,6 +319,23 @@ describe("authenticated Home", () => {
       expect(getDeviceTrafficSelection().current().include.masks).toEqual([
         "ifconfig.me",
       ]);
+      fireEvent.change(
+        screen.getByRole("combobox", { name: "режим трафика" }),
+        { target: { value: "exclude" } },
+      );
+      await waitFor(() =>
+        expect(getDeviceTrafficSelection().current().mode).toBe("exclude"),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
+      const excluded = within(await screen.findByRole("dialog"));
+      const excludedList = within(excluded.getByTestId("traffic-group-all"));
+      expect(
+        await excludedList.findByRole("switch", { name: "YouTube" }),
+      ).not.toBeChecked();
+      expect(excluded.queryByText("ifconfig.me")).toBeNull();
+      fireEvent.click(excludedList.getByRole("switch", { name: "Instagram" }));
+      fireEvent.click(excluded.getByRole("button", { name: "Сохранить" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
       expect(getDeviceTrafficSelection().current().exclude.masks).toEqual([]);
       rendered.unmount();
       renderRestored();
@@ -332,13 +347,13 @@ describe("authenticated Home", () => {
         expect(screen.getByRole("img", { name: "Instagram" })).toBeVisible(),
       );
       expect(screen.queryByRole("img", { name: "YouTube" })).toBeNull();
-      expect(screen.getByLabelText("локация VPN")).toBeVisible();
+      expect(screen.getByLabelText("локация без VPN")).toBeVisible();
       fireEvent.change(
         screen.getByRole("combobox", { name: "режим трафика" }),
         { target: { value: "all" } },
       );
       await waitFor(() =>
-        expect(screen.queryByLabelText("локация VPN")).toBeNull(),
+        expect(screen.queryByLabelText("локация без VPN")).toBeNull(),
       );
     } finally {
       if (originalModal)

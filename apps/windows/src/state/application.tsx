@@ -25,6 +25,7 @@ export interface ApplicationState {
   vpnConnection: VpnConnectionManager;
   publicLocation?: PublicLocationProvider;
   vpnLocation?: PublicLocationProvider;
+  directLocation?: PublicLocationProvider;
 }
 const ApplicationContext = createContext<ApplicationState | null>(null);
 export function ApplicationProvider({
