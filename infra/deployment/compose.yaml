@@ -127,6 +127,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ${DASHBOARD_DIR:-/etc/prettylisavpn/dashboard}:/etc/caddy/dashboard:ro
+      - ${MERCHANT_VERIFICATION_DIR:-/etc/prettylisavpn/merchant-verification}:/etc/caddy/merchant-verification:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

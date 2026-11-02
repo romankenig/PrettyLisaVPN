@@ -1,5 +1,15 @@
 # Backend: актуальный статус и журнал продолжения
 
+## 1Plat merchant verification — 2026-11-02
+
+Infrastructure-only follow-up; backend stays 0.29.0 and clients/schema are unchanged.
+Caddy serves exactly `/1plat.txt` from an owner-managed read-only mount. The supplied
+file stays outside Git and application images. See [installation and verification](payment-return-urls.md#merchant-domain-verification).
+The backend image/runtime remains the already verified `651e82c` manual build;
+this change deploys only Caddy configuration. Final configuration SHA, live byte
+comparison and all CI runs are recorded in PR #48. Merchant verification does not
+activate the payment provider.
+
 ## Payment return addresses — 2026-11-02
 
 Backend 0.28.0 → 0.29.0; schema 0041 unchanged. Public return pages and a fail-closed

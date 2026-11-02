@@ -298,6 +298,12 @@ def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
     assert {port["target"] for port in caddy["ports"]} == {80, 443}
     volume_targets = {volume["target"] for volume in caddy["volumes"]}
     assert {"/config", "/data", "/etc/caddy/Caddyfile"} <= volume_targets
+    verification_mount = next(
+        volume
+        for volume in caddy["volumes"]
+        if volume["target"] == "/etc/caddy/merchant-verification"
+    )
+    assert verification_mount["read_only"]
 
 
 def test_caddyfile_is_valid():
@@ -316,6 +322,64 @@ def test_caddyfile_is_valid():
         "--config",
         "/etc/caddy/Caddyfile",
     )
+
+
+def test_merchant_verification_serves_exact_file_without_exposing_other_files(tmp_path):
+    source = (ROOT / "infra/deployment/Caddyfile").read_text()
+    public = source.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
+    (tmp_path / "Caddyfile").write_text(":8080 {" + public)
+    marker = b"test-merchant-id\n"
+    verification = tmp_path / "1plat.txt"
+    verification.write_bytes(marker)
+    (tmp_path / "private.txt").write_text("must-not-be-exposed")
+    name = "prettylisa-merchant-test-" + uuid4().hex[:10]
+    docker(
+        "run",
+        "-d",
+        "--name",
+        name,
+        "--network=none",
+        "-v",
+        f"{tmp_path}:/etc/caddy/merchant-verification:ro",
+        "caddy:2.10.2-alpine@sha256:"
+        "4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d",
+        "caddy",
+        "run",
+        "--config",
+        "/etc/caddy/merchant-verification/Caddyfile",
+        "--adapter",
+        "caddyfile",
+    )
+    try:
+
+        def request(path, *extra):
+            return docker(
+                "exec",
+                name,
+                "wget",
+                "-S",
+                "-O",
+                "-",
+                *extra,
+                "http://127.0.0.1:8080" + path,
+                check=False,
+            )
+
+        for _ in range(30):
+            response = request("/1plat.txt")
+            if response.returncode == 0:
+                break
+            time.sleep(0.2)
+        assert response.returncode == 0 and response.stdout.encode() == marker
+        assert "Content-Type: text/plain" in response.stderr
+        assert "Cache-Control: no-store" in response.stderr
+        for path in ("/", "/private.txt", "/Caddyfile", "/1plat.txt/", "/dashboard/"):
+            assert "404 Not Found" in request(path).stderr
+        assert "405 Method Not Allowed" in request("/1plat.txt", "--post-data=x").stderr
+        verification.unlink()
+        assert "404 Not Found" in request("/1plat.txt").stderr
+    finally:
+        docker("rm", "--force", name, check=False)
 
 
 def test_fleet_profile_mounts_credentials_only_in_worker(tmp_path):

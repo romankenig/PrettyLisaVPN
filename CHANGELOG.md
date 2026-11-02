@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+### Infrastructure — version unchanged
+
+- Serve the owner-provided 1Plat domain verification file at `/1plat.txt` on
+  prettylisavpn.com from a persistent, read-only directory outside application
+  releases. Other files in that directory remain inaccessible.
+
 ### Backend — 0.29.0
 
 - Add branded payment success/failure return pages on prettylisavpn.com and a

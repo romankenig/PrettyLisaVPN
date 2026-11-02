@@ -27,6 +27,26 @@ a callback cannot grant a subscription. The existing provider remains disabled.
 HTTP 503 is an explicit failure, not a claimed successful delivery. Do not send
 real customer payments to this endpoint before the next integration is complete.
 
+## Merchant domain verification
+
+The owner-provided TXT file is served at `https://prettylisavpn.com/1plat.txt`.
+Store its exact bytes in `merchant-verification/1plat.txt` beside the deployment
+environment file (the live path is
+`/opt/prettylisavpn/secrets/merchant-verification/1plat.txt`). `deploy.sh` exports
+this directory as `MERCHANT_VERIFICATION_DIR`; Caddy mounts it read-only. Direct
+Compose invocations must set that variable explicitly for non-default paths.
+The file is not committed or included in application images. Only the exact
+public path is served, without authentication or directory listing; unrelated
+paths remain 404. Verify HTTP 200 and SHA-256/byte equality with the source file
+before the owner presses "Проверить txt" in 1Plat. Payment processing stays disabled.
+
+This is an infrastructure-only change: backend remains 0.29.0, schema 0041 and
+client versions are unchanged. The existing backend image need not be rebuilt
+or restarted for this Caddy-only rollout. Keep the previous deployment directory
+for rollback; restoring its Caddy configuration removes this verification URL.
+
+## Provider documentation
+
 The owner supplied https://1plat.cash/doc/api. The HTML/browser initially exposed
 only marketing text; its public application bundle and documentation chunk were
 then retrieved successfully from the main server. The provider documents a

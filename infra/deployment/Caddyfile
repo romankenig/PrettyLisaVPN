@@ -6,6 +6,11 @@
 # Public payment return URLs are separate from the private monitoring site.
 prettylisavpn.com {
 	encode zstd gzip
+	handle /1plat.txt {
+		root * /etc/caddy/merchant-verification
+		header Cache-Control "no-store"
+		file_server
+	}
 	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /api/payments/1plat/callback
 	handle @payment {
 		request_body {
