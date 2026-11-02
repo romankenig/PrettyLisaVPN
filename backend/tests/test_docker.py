@@ -52,7 +52,10 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         ":8080 {\n" + route + "\nhandle {\nrespond 404\n}\n}\n:8000 {\n"
         "@authorized {\npath /admin/monitoring/availability\nquery days=7\n"
         f'header Authorization "Bearer {token}"\n}}\n'
-        'respond @authorized "monitoring-authorized" 200\nrespond 403\n}\n'
+        'respond @authorized "monitoring-authorized" 200\n'
+        "@analytics {\npath /admin/monitoring/product-analytics\n"
+        f'header Authorization "Bearer {token}"\n}}\n'
+        'respond @analytics "analytics-authorized" 200\nrespond 403\n}\n'
     )
     name = "prettylisa-dashboard-test-" + uuid4().hex[:10]
     docker(
@@ -89,6 +92,8 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         for path in (
             "/dashboard/",
             "/dashboard/api/availability",
+            "/dashboard/product-analytics",
+            "/dashboard/api/product-analytics",
             "/dashboard/downloads/index.json",
             "/dashboard/downloads/android.apk",
             "/dashboard/downloads/windows.exe",
@@ -100,6 +105,13 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         metrics = request("/dashboard/api/availability?days=1", "admin:" + password)
         assert metrics.returncode == 0 and metrics.stdout == "monitoring-authorized"
         assert "private, no-store" in metrics.stderr
+        for path in ("/dashboard/product-analytics", "/dashboard/product-analytics/"):
+            analytics = request(path, "admin:" + password)
+            assert analytics.returncode == 0 and analytics.stdout == page.stdout
+        analytics = request("/dashboard/api/product-analytics", "admin:" + password)
+        assert analytics.returncode == 0 and analytics.stdout == "analytics-authorized"
+        assert "private, no-store" in analytics.stderr
+        assert token not in analytics.stdout + analytics.stderr
         for file, expected in (("android.apk", "test-only-apk"), ("windows.exe", "test-only-exe")):
             binary = request("/dashboard/downloads/" + file, "admin:" + password)
             assert binary.returncode == 0 and binary.stdout == expected
@@ -261,7 +273,7 @@ def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
         env=deployment_env(),
     )
     config = json.loads(result.stdout)
-    assert set(config["services"]) == {"backend", "caddy"}
+    assert set(config["services"]) == {"backend", "caddy", "product-analytics"}
 
     backend = config["services"]["backend"]
     assert "ports" not in backend
@@ -272,6 +284,14 @@ def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
     assert backend["environment"]["VALKEY_URL"] == deployment_env()["VALKEY_URL"]
     assert backend["environment"]["OTP_HMAC_SECRET"] == deployment_env()["OTP_HMAC_SECRET"]
     assert "volumes" not in backend
+
+    analytics = config["services"]["product-analytics"]
+    assert analytics["image"] == backend["image"]
+    assert analytics["command"] == ["python", "-m", "prettylisavpn.product_analytics.worker"]
+    assert analytics["read_only"] and analytics["cap_drop"] == ["ALL"]
+    assert analytics["restart"] == "unless-stopped"
+    assert analytics["environment"]["POSTGRES_URL"] == backend["environment"]["POSTGRES_URL"]
+    assert "ports" not in analytics and "volumes" not in analytics
 
     caddy = config["services"]["caddy"]
     assert caddy["restart"] == "unless-stopped"
@@ -317,8 +337,10 @@ def test_fleet_profile_mounts_credentials_only_in_worker(tmp_path):
         env={**deployment_env(), "FLEET_ENV_FILE": str(fleet_env)},
     )
     services = json.loads(result.stdout)["services"]
-    assert set(services) == {"backend", "caddy", "fleet-worker"}
+    assert set(services) == {"backend", "caddy", "fleet-worker", "product-analytics"}
     assert "volumes" not in services["backend"]
+    assert "volumes" not in services["product-analytics"]
+    assert "FLEET_ADMIN_TOKEN" not in services["product-analytics"]["environment"]
     worker = services["fleet-worker"]
     assert worker["command"] == ["python", "-m", "prettylisavpn.fleet.worker"]
     assert worker["read_only"] and worker["cap_drop"] == ["ALL"]
