@@ -294,4 +294,5 @@
     <string name="traffic_selected_label">所选服务：</string>
     <string name="traffic_add_service">添加自定义服务</string>
     <string name="direct_location">非 VPN 位置：</string>
+    <string name="upgrade_plan">升级套餐</string>
 </resources>

@@ -53,6 +53,27 @@ beforeEach(() => {
   };
 });
 
+it("preserves product spelling inside lowercase message headings and content", async () => {
+  const branded = {
+    ...message(),
+    title: "новости PrettyLisaVPN",
+    blocks: [
+      { type: "paragraph" as const, text: "новости PrettyLisaVPN" },
+      { type: "list" as const, items: ["обновить PrettyLisaVPN"] },
+    ],
+  };
+  setup({
+    client: {
+      list: vi.fn().mockResolvedValue([branded]),
+      acknowledge: vi.fn(),
+    },
+  });
+  const dialog = await screen.findByRole("dialog");
+  const names = dialog.querySelectorAll(".product-name");
+  expect(names).toHaveLength(3);
+  for (const name of names) expect(name).toHaveTextContent(/^PrettyLisaVPN$/);
+});
+
 function activate(
   session: ReturnType<typeof createTestAuthenticationSession>,
   suffix = "one",

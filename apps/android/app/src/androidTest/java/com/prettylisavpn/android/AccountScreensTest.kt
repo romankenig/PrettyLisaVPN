@@ -20,6 +20,7 @@ class AccountScreensTest {
     private val current="30000000-0000-0000-0000-000000000004"
     private val message="30000000-0000-0000-0000-000000000003"
     private var mode="DISABLED"
+    private var plan="Premium"
     private var revision="r1"
     private var active=true
     private var ackFail=false
@@ -39,7 +40,7 @@ class AccountScreensTest {
         override suspend fun verifyOtp(email:String,code:String,installationId:String,deviceName:String)=tokens()
         fun tokens()=Tokens("fake",900,Credentials(device,"fake","2030-01-01T00:00:00Z"))
         override suspend fun refresh(credentials:Credentials)=tokens()
-        override suspend fun me(access:String):Profile { profileReads++; return Profile("screens@example.com","Premium",if(active)2 else 1,owner) }
+        override suspend fun me(access:String):Profile { profileReads++; return Profile("screens@example.com",plan,if(active)2 else 1,owner) }
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
@@ -52,7 +53,7 @@ class AccountScreensTest {
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
         override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION",expiresAt=messageExpiry))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
-        override suspend fun overview(token:String)=BillingOverview(revision,mode,true,"PREMIUM","ACTIVE","2030-01-01T00:00:00Z",true,"Test card","RUB 100.00",routeIds.map { PaymentRoute(it,it,setOf("RUB","USD"),emptySet()) },emptyList(),billingActions,null)
+        override suspend fun overview(token:String)=BillingOverview(revision,mode,true,plan.uppercase(java.util.Locale.ROOT),"ACTIVE","2030-01-01T00:00:00Z",true,"Test card","RUB 100.00",routeIds.map { PaymentRoute(it,it,setOf("RUB","USD"),emptySet()) },emptyList(),billingActions,null)
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
         override suspend fun supportStatus(token:String,id:String)=receipt
@@ -95,6 +96,29 @@ class AccountScreensTest {
         java.io.DataInputStream(file.inputStream()).use { it.readFully(header) }
         check(header.contentEquals(byteArrayOf(0x89.toByte(),0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)))
     }
+    @Test fun planBadgesAndFreeUpgradeFollowTheCurrentAccount() {
+        compose.waitUntil(10_000) { model.state.value.loads[Area.HOME]?.phase == LoadPhase.READY }
+        compose.onNodeWithText("Premium ⭐").assertExists()
+        compose.onNodeWithTag("home-upgrade").assertDoesNotExist()
+        screenshot("home-premium-plan")
+        compose.runOnUiThread { plan="Free"; model.load(Area.HOME) }
+        waitFor("home-upgrade")
+        compose.onNodeWithText("Free 🆓").assertExists()
+        screenshot("home-free-upgrade")
+        click("home-upgrade"); waitFor("provider-mode")
+        compose.onNodeWithTag("live-subscription-screen").assertExists()
+        compose.onNodeWithTag("live-pay-SUBSCRIBE").assertIsNotEnabled()
+        assertEquals(0, starts)
+        screenshot("home-upgrade-subscription")
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        waitFor("live-account")
+        compose.runOnUiThread { plan="Platinum"; model.load(Area.HOME) }
+        compose.waitUntil(10_000) { model.state.value.data.plan == "Platinum" }
+        compose.onNodeWithText("Platinum 💎").assertExists()
+        compose.onNodeWithTag("home-upgrade").assertDoesNotExist()
+        screenshot("home-platinum-plan")
+    }
+
     @Test fun devicesRevokeUpdatesHomeAndBack() {
         click("tab_SETTINGS");screenshot("settings-windows");click("settings-devices");waitFor("live-revoke-$device")
         compose.onNodeWithTag("live-refresh-DEVICES").assertDoesNotExist()

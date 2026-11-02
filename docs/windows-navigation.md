@@ -1,3 +1,12 @@
+# Home upgrade shortcut — Windows 0.24.1 / Android 0.20.1
+
+Free Home → «улучшить план» → existing subscription screen
+(`/settings/subscription` on Windows, `SUBSCRIPTION` on Android). Normal Home/back
+navigation returns to the account. Premium/Platinum have no upgrade shortcut.
+This is an implemented internal UI transition; payment execution remains subject
+to the existing backend LIVE/provider capability guards. No automatic purchase,
+external navigation or VPN disconnect occurs. See [handoff](client-home-polish.md).
+
 # Protection picker — Windows 0.24.0 / Android 0.20.0
 
 Home → adjacent large mode dropdown selects all / selected / except selected.
