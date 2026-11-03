@@ -95,20 +95,32 @@ describe("about and support", () => {
     expect(screen.getByText("0.1.0-dev")).toBeInTheDocument();
     expect(screen.queryByText("окружение")).not.toBeInTheDocument();
     expect(container.querySelector(".eyebrow")).toBeNull();
-    const faq = within(screen.getByRole("region", { name: "faq" }));
+    const faq = within(screen.getByRole("region", { name: "FAQ" }));
     expect(faq.getByRole("combobox", { name: "вопрос" })).toHaveValue("0");
-    expect(faq.getByRole("link", { name: "главная" })).toHaveAttribute(
+    expect(faq.getByRole("link", { name: "главной" })).toHaveAttribute(
       "href",
       "/",
     );
     fireEvent.change(faq.getByRole("combobox"), { target: { value: "1" } });
     expect(faq.getByText(/00:00 UTC/)).toBeInTheDocument();
-    expect(faq.getByRole("link", { name: "подписка" })).toHaveAttribute(
-      "href",
-      "/settings/subscription",
-    );
+    expect(faq.queryByRole("link")).not.toBeInTheDocument();
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "2" } });
+    const subscriptionLink = faq.getByRole("link", { name: "подписке" });
+    expect(subscriptionLink.closest("p")).not.toBeNull();
+    expect(subscriptionLink).toHaveAttribute("href", "/settings/subscription");
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "4" } });
+    expect(
+      faq.getByText(/«выбранное» — через VPN идут только/),
+    ).toBeInTheDocument();
+    expect(faq.getByText(/«кроме выбранного» — наоборот/)).toBeInTheDocument();
+    expect(
+      faq.getByText(/у двух режимов отдельные списки/),
+    ).toBeInTheDocument();
+    expect(
+      faq.getByRole("link", { name: "главной" }).closest("p"),
+    ).not.toBeNull();
     fireEvent.change(faq.getByRole("combobox"), { target: { value: "5" } });
-    fireEvent.click(faq.getByRole("button", { name: "написать в поддержку" }));
+    fireEvent.click(faq.getByRole("button", { name: "форму поддержки" }));
     expect(
       screen.getByRole("dialog", { name: "помощь и поддержка" }),
     ).toBeInTheDocument();

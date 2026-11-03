@@ -995,12 +995,26 @@ async function main() {
     throw new Error("About must not expose the environment");
   await about.getByText("frontend", { exact: true }).waitFor();
   await about.getByText("backend", { exact: true }).waitFor();
-  await about.getByRole("heading", { name: "faq", exact: true }).waitFor();
-  const faq = about.getByRole("region", { name: "faq", exact: true });
+  await about.getByRole("heading", { name: "FAQ", exact: true }).waitFor();
+  const faq = about.getByRole("region", { name: "FAQ", exact: true });
+  const faqStyle = await faq.getByRole("combobox").evaluate((select) => ({
+    border: parseFloat(getComputedStyle(select).borderTopWidth),
+    headingCase: getComputedStyle(document.getElementById("faq-title"))
+      .textTransform,
+  }));
+  if (faqStyle.border < 2 || faqStyle.headingCase !== "none")
+    throw new Error(
+      "FAQ must preserve uppercase heading and framed question selection",
+    );
   await faq.getByRole("combobox", { name: "вопрос" }).selectOption("1");
   await faq.getByText(/00:00 UTC/).waitFor();
   await screenshot("08-about-faq-free");
-  await faq.getByRole("link", { name: "подписка" }).click();
+  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("4");
+  await faq.getByText(/«выбранное» — через VPN идут только/).waitFor();
+  await faq.getByText(/«кроме выбранного» — наоборот/).waitFor();
+  await screenshot("08-about-faq-split");
+  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("2");
+  await faq.getByRole("link", { name: "подписке" }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
   if (!page.url().endsWith("#/settings/subscription"))
     throw new Error("FAQ must navigate to the real subscription route");

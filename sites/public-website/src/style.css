@@ -400,10 +400,19 @@ figcaption {
   align-items: start;
 }
 .questions {
-  border-top: 1px solid var(--line);
+  border: 2px solid var(--purple);
+  border-radius: 14px;
+  padding-inline: 20px;
+  min-width: 0;
+}
+.faq-title {
+  text-transform: none;
 }
 .questions details {
   border-bottom: 1px solid var(--line);
+}
+.questions details:last-child {
+  border-bottom: 0;
 }
 .questions summary {
   display: flex;
@@ -427,9 +436,18 @@ figcaption {
 .questions details[open] summary > span {
   transform: rotate(45deg);
 }
-.questions details > p {
+.questions .faq-answer {
   font-size: 14px;
-  padding: 0 32px 23px 0;
+  padding-bottom: 23px;
+  overflow-wrap: anywhere;
+}
+.faq-answer p + p {
+  margin-top: 14px;
+}
+.faq-answer a {
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .support-card {
   background: #f1edf7;

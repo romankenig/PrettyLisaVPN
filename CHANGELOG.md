@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Windows — 0.25.1 / Android — 0.21.1 / public website — 0.2.2
+
+- Preserve uppercase `FAQ` and add a clear frame around the question selector.
+- Put relevant navigation/support links inside answer sentences; remove detached
+  generic links and the unnecessary subscription link from the Free explanation.
+- Explain all/selected/except-selected traffic modes, practical examples, domain
+  patterns, independent lists and reconnect behavior in all six client languages.
+- Apply the same explanations, uppercase heading, framed accordion and meaningful
+  inline download/support links to the website in all six languages.
+- Backend unchanged. See [FAQ handoff](docs/faq-polish.md).
+
 ### Backend — 0.32.0 / public website — 0.2.1
 
 - Accept GET/HEAD/POST on payment result pages without trusting browser claims.

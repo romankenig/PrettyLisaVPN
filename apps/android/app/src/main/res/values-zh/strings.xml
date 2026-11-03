@@ -295,17 +295,17 @@
     <string name="direct_location">非 VPN 位置：</string>
     <string name="upgrade_plan">升级套餐</string>
     <string name="faq_connect_q">如何连接？</string>
-    <string name="faq_connect_a">选择国家并点击连接。首次连接可能需要几分钟。</string>
+    <string name="faq_connect_a">在[主页]选择国家，然后点击连接。首次连接可能需要几分钟。</string>
     <string name="faq_free_q">免费套餐包含什么？</string>
-    <string name="faq_free_a">账户下所有设备每天共享一小时 VPN。额度在 UTC 00:00 重置。</string>
+    <string name="faq_free_a">整个账号每天可使用一小时 VPN，每天 00:00 UTC 重置。</string>
     <string name="faq_manage_q">在哪里管理订阅？</string>
-    <string name="faq_manage_a">打开订阅即可查看已付款期限、价格、付款方式及可用操作。</string>
+    <string name="faq_manage_a">在[订阅]中可以查看已付费期限、价格、付款方式和可用操作。</string>
     <string name="faq_cancel_q">取消续订后会怎样？</string>
-    <string name="faq_cancel_a">已付款的访问权限保留至显示的日期。应用确认后，取消操作才算完成。</string>
+    <string name="faq_cancel_a">如果已开启自动续费，可在[订阅]中关闭。请等待取消确认；已付费的访问权限保留至显示的到期日期。</string>
     <string name="faq_split_q">如何选择使用 VPN 的网站？</string>
-    <string name="faq_split_a">在主页选择“所选”或“除所选外”，然后选择服务。修改会断开 VPN，请随后重新连接。</string>
+    <string name="faq_split_a">分流让你选择哪些服务通过 VPN，哪些使用普通网络。在[主页]的“保护哪些流量”中切换模式。\n\n“全部”：所有流量都通过 VPN。\n\n“所选”：只有列表中的服务通过 VPN，例如 YouTube 和 Telegram；其他网站和应用使用普通网络。\n\n“除所选外”：正好相反，列表中的服务直接联网，其余流量通过 VPN。例如，可以排除 Gosuslugi 和 MAX。\n\n点击“选择服务”并开启需要的服务，也可以添加自己的规则：youtube.com 表示该域名，*.youtube.com 表示它的子域名。一个服务可能使用多个域名，因此选择预设服务通常更方便。\n\n两种模式分别保存各自的列表。保存修改会断开 VPN，请重新连接以应用选择。</string>
     <string name="faq_support_q">如何联系支持？</string>
-    <string name="faq_support_a">通过应用或 help@prettylisavpn.com 联系我们。请说明问题及发生时间。</string>
+    <string name="faq_support_a">打开应用内的[支持表单]，或发送邮件至 help@prettylisavpn.com。请说明问题及发生时间。</string>
     <string name="billing_days_left">剩余天数：%1$d</string>
     <string name="billing_cancel_detail">取消续订将解绑付款方式。访问权限保留至已付款期限结束。</string>
 </resources>

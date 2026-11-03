@@ -25,6 +25,35 @@ const text = (value) =>
 const lines = (value) => text(value).replaceAll("\n", "<br>");
 const arrow = '<span aria-hidden="true">↗</span>';
 const mail = "mailto:help@prettylisavpn.com";
+function faqAnswer(lang, answer, index) {
+  const targets = [
+    [
+      routeFor(lang, "/download/android/"),
+      routeFor(lang, "/download/windows/"),
+    ],
+    [],
+    [],
+    [mail],
+    [mail],
+    [routeFor(lang, "/legal/payments/"), mail],
+  ][index];
+  let linkIndex = 0;
+  const paragraphs = answer.split("\n\n").map(
+    (paragraph) =>
+      `<p>${paragraph
+        .split(/(\[[^\]]+\])/)
+        .map((part) => {
+          if (!part.startsWith("[")) return text(part);
+          const target = targets[linkIndex++];
+          if (!target) throw new Error(`Unexpected FAQ link: ${lang}/${index}`);
+          return `<a href="${target}">${text(part.slice(1, -1))}</a>`;
+        })
+        .join("")}</p>`,
+  );
+  if (linkIndex !== targets.length)
+    throw new Error(`Missing FAQ link: ${lang}/${index}`);
+  return `<div class="faq-answer">${paragraphs.join("")}</div>`;
+}
 const icons = {
   android:
     '<path d="m7 5-2-3m12 3 2-3M4 11a8 8 0 0 1 16 0v8H4Z"/><path d="M8 19v3m8-3v3M1 12v6m22-6v6"/><path d="M8 8h.01M16 8h.01"/>',
@@ -70,7 +99,7 @@ function home(lang) {
   <section class="hero wrap"><p class="launch"><span aria-hidden="true"></span>${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
   <section class="features section wrap" id="features"><div class="section-heading"><p class="eyebrow">${text(t.features.eyebrow)}</p><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div><figure class="desktop-shot">${screenshot("windows-home", t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></section>
   <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><p class="eyebrow">${text(t.platforms.eyebrow)}</p><h2>${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div><figure class="phone-shot">${screenshot("android-services", t.screens.android)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></div></section>
-  <section class="help section wrap" id="help"><div class="section-heading"><p class="eyebrow">${text(t.help.eyebrow)}</p><h2>${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary><p>${text(a)}</p></details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
+  <section class="help section wrap" id="help"><div class="section-heading"><p class="eyebrow">${text(t.help.eyebrow)}</p><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
   );
 }
 function download(lang, platform) {

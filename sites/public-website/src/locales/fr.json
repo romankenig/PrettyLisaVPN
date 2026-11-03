@@ -104,14 +104,14 @@
   },
   "help": {
     "eyebrow": "l’essentiel",
-    "title": "questions et aide",
+    "title": "FAQ",
     "contactTitle": "besoin d’aide ?",
     "contactText": "décrivez le problème et précisez votre appareil, la version de l’application et l’heure de l’erreur. n’envoyez ni mot de passe ni code de connexion.",
     "contactButton": "contacter l’assistance",
     "questions": [
       {
         "q": "comment commencer ?",
-        "a": "téléchargez l’application android ou windows, connectez-vous avec le code reçu par e-mail et choisissez un pays. l’offre gratuite comprend une heure de connexion par jour, partagée sur tout le compte."
+        "a": "téléchargez l’application [android] ou [windows], connectez-vous avec le code reçu par e-mail et choisissez un pays. l’offre gratuite comprend une heure de connexion par jour, partagée sur tout le compte."
       },
       {
         "q": "que comprend premium ?",
@@ -119,19 +119,19 @@
       },
       {
         "q": "puis-je connecter uniquement certains services ?",
-        "a": "oui. dans « que protéger », choisissez « sélection » ou « sauf la sélection ». ajoutez des services du catalogue ou vos propres motifs de domaines. les modifications prendront effet à la prochaine connexion."
+        "a": "le routage sélectif permet de choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle. changez le mode dans « que protéger » sur l’accueil de l’application.\n\n« tout » — tout le trafic passe par le VPN.\n\n« sélection » — seuls les services de votre liste utilisent le VPN, par exemple YouTube et Telegram. les autres sites et applications utilisent la connexion habituelle.\n\n« sauf sélection » — c’est l’inverse : les services de la liste passent en direct, et le reste par le VPN. vous pouvez par exemple exclure Gosuslugi et MAX.\n\nappuyez sur « choisir les services » et activez ceux souhaités, ou ajoutez un motif : youtube.com pour ce domaine, *.youtube.com pour ses sous-domaines. un service peut utiliser plusieurs domaines ; choisir un service prédéfini est généralement plus simple.\n\nles deux modes conservent des listes distinctes. enregistrer les modifications déconnecte le VPN : reconnectez-vous pour les appliquer."
       },
       {
         "q": "le vpn ne se connecte pas. que faire ?",
-        "a": "vérifiez votre connexion internet sans vpn, mettez l’application à jour et essayez un autre pays ou une autre méthode de connexion dans les réglages. si l’erreur se reproduit, transmettez son texte et son heure à l’assistance."
+        "a": "vérifiez votre connexion internet sans vpn, mettez l’application à jour et essayez un autre pays ou une autre méthode de connexion dans les réglages. si l’erreur se reproduit, transmettez son texte et son heure à [l’assistance]."
       },
       {
         "q": "le code de connexion n’arrive pas ?",
-        "a": "vérifiez l’adresse saisie et le dossier des courriers indésirables. attendez de pouvoir demander un nouveau code. si le message n’arrive toujours pas, contactez l’assistance depuis l’adresse de votre compte."
+        "a": "vérifiez l’adresse saisie et le dossier des courriers indésirables. attendez de pouvoir demander un nouveau code. si le message n’arrive toujours pas, contactez [l’assistance] depuis l’adresse de votre compte."
       },
       {
         "q": "comment renouveler l’abonnement ou demander un remboursement ?",
-        "a": "l’offre et la date de fin sont disponibles dans l’application. le renouvellement nécessite un paiement distinct, sans prélèvement automatique. contactez l’assistance pour toute question sur les paiements, l’accès ou les remboursements."
+        "a": "consultez les [règles de paiement et de renouvellement]. l’offre et la date de fin sont disponibles dans l’application. le renouvellement nécessite un paiement distinct, sans prélèvement automatique. contactez [l’assistance] pour toute question sur les paiements, l’accès ou les remboursements."
       }
     ]
   },

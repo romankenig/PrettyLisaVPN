@@ -104,14 +104,14 @@
   },
   "help": {
     "eyebrow": "straight to the point",
-    "title": "questions and help",
+    "title": "FAQ",
     "contactTitle": "need help?",
     "contactText": "tell us what happened, your device, app version and the time of the error. do not include passwords or sign-in codes.",
     "contactButton": "contact support",
     "questions": [
       {
         "q": "how do i start?",
-        "a": "download the android or windows app, sign in with the code from your email and choose a country. the free plan gives your account one shared hour of connection time per day."
+        "a": "download the [android] or [windows] app, sign in with the code from your email and choose a country. the free plan gives your account one shared hour of connection time per day."
       },
       {
         "q": "what does premium include?",
@@ -119,19 +119,19 @@
       },
       {
         "q": "can i connect only selected services?",
-        "a": "yes. in ‘what to protect’, choose ‘selected’ or ‘except selected’. add services from the catalog or your own domain patterns. changes apply to your next connection."
+        "a": "split tunneling lets you choose what uses the VPN and what uses your regular connection. change the mode in “what to protect” on the app’s home screen.\n\n“all” — all traffic uses the VPN.\n\n“selected” — only the services in your list use the VPN. for example, YouTube and Telegram; other websites and apps use your regular connection.\n\n“except selected” — the reverse: listed services connect directly, while other traffic uses the VPN. for example, you can exclude Gosuslugi and MAX.\n\ntap “choose services” and enable the ones you need, or add your own pattern: youtube.com for that domain, *.youtube.com for its subdomains. a service may use several domains, so a preset is usually easier.\n\nthe two modes have separate lists. saving changes disconnects the VPN — reconnect to apply your selection."
       },
       {
         "q": "vpn will not connect. what should i do?",
-        "a": "check your internet without vpn, update the app and try another country or connection method in settings. if the error persists, send its text and the time it occurred to support."
+        "a": "check your internet without vpn, update the app and try another country or connection method in settings. if the error persists, send its text and the time it occurred to [support]."
       },
       {
         "q": "the sign-in code has not arrived?",
-        "a": "check your email address and spam folder. wait until you can request a new code. if the message does not arrive, contact support from your account email address."
+        "a": "check your email address and spam folder. wait until you can request a new code. if the message does not arrive, contact [support] from your account email address."
       },
       {
         "q": "how do i renew my subscription or request a refund?",
-        "a": "your plan and expiry date are available in the app. renewal requires a separate payment, with no automatic charges. contact support about payments, access or refunds."
+        "a": "see the [payment and renewal rules] for details. your plan and expiry date are available in the app. renewal requires a separate payment, with no automatic charges. contact [support] about payments, access or refunds."
       }
     ]
   },

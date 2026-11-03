@@ -104,14 +104,14 @@
   },
   "help": {
     "eyebrow": "lo esencial",
-    "title": "preguntas y ayuda",
+    "title": "FAQ",
     "contactTitle": "¿necesitas ayuda?",
     "contactText": "cuéntanos qué ha pasado e indica tu dispositivo, la versión de la aplicación y la hora del error. no envíes contraseñas ni códigos de acceso.",
     "contactButton": "contactar con soporte",
     "questions": [
       {
         "q": "¿cómo empiezo?",
-        "a": "descarga la aplicación para android o windows, accede con el código del correo y elige un país. el plan gratuito ofrece una hora de conexión al día, compartida por toda la cuenta."
+        "a": "descarga la aplicación para [android] o [windows], accede con el código del correo y elige un país. el plan gratuito ofrece una hora de conexión al día, compartida por toda la cuenta."
       },
       {
         "q": "¿qué incluye premium?",
@@ -119,19 +119,19 @@
       },
       {
         "q": "¿puedo conectar solo los servicios que necesito?",
-        "a": "sí. en «qué protegemos», elige «seleccionados» o «excepto seleccionados». añade servicios del catálogo o tus propios patrones de dominios. los cambios se aplicarán en la próxima conexión."
+        "a": "el túnel dividido permite elegir qué usa el VPN y qué usa tu conexión habitual. cambia el modo en « qué proteger » en la pantalla de inicio de la aplicación.\n\n« todo » — todo el tráfico pasa por el VPN.\n\n« seleccionados » — solo los servicios de tu lista usan el VPN, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usan la conexión habitual.\n\n« excepto seleccionados » — al revés: los servicios de la lista se conectan directamente y el resto pasa por el VPN. por ejemplo, puedes excluir Gosuslugi y MAX.\n\npulsa « elegir servicios » y activa los que necesites, o añade un patrón: youtube.com para ese dominio, *.youtube.com para sus subdominios. un servicio puede usar varios dominios, por lo que elegir uno predefinido suele ser más fácil.\n\nlos dos modos guardan listas separadas. al guardar los cambios se desconecta el VPN; vuelve a conectarte para aplicarlos."
       },
       {
         "q": "la vpn no se conecta. ¿qué hago?",
-        "a": "comprueba tu conexión a internet sin vpn, actualiza la aplicación y prueba otro país u otro método de conexión en los ajustes. si el error se repite, envía su texto y la hora a soporte."
+        "a": "comprueba tu conexión a internet sin vpn, actualiza la aplicación y prueba otro país u otro método de conexión en los ajustes. si el error se repite, envía su texto y la hora a [soporte]."
       },
       {
         "q": "¿no llega el código de acceso?",
-        "a": "comprueba la dirección y la carpeta de correo no deseado. espera hasta que puedas solicitar un código nuevo. si el mensaje no llega, escribe a soporte desde el correo de la cuenta."
+        "a": "comprueba la dirección y la carpeta de correo no deseado. espera hasta que puedas solicitar un código nuevo. si el mensaje no llega, escribe a [soporte] desde el correo de la cuenta."
       },
       {
         "q": "¿cómo renuevo la suscripción o solicito un reembolso?",
-        "a": "el plan y la fecha de vencimiento están disponibles en la aplicación. la renovación se realiza con un pago independiente, sin cargos automáticos. para dudas sobre pagos, acceso o reembolsos, escribe a soporte."
+        "a": "consulta las [reglas de pago y renovación]. el plan y la fecha de vencimiento están disponibles en la aplicación. la renovación se realiza con un pago independiente, sin cargos automáticos. para dudas sobre pagos, acceso o reembolsos, escribe a [soporte]."
       }
     ]
   },

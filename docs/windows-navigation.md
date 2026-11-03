@@ -1,3 +1,15 @@
+# FAQ — Windows 0.25.1 / Android 0.21.1
+
+The About question selector retains its selected answer and gains a visible frame.
+`FAQ` is an explicit uppercase exception to the lowercase presentation style.
+Links are part of answer sentences: connection/split guidance opens Home,
+subscription-management/cancellation guidance opens the existing Subscription
+screen, and the support sentence opens the existing support form. The Free answer
+has no unrelated subscription link. No new route, auth guard, external browser
+navigation, payment operation or VPN action is introduced. Rich-text link targets
+are fixed by the selected question; translations cannot provide arbitrary URLs.
+See [verification and versions](faq-polish.md).
+
 # Cardlink returns — backend 0.32.0 / website 0.2.1; clients unchanged
 
 Browser `/payment/success` and `/payment/failure` now accept provider POST returns

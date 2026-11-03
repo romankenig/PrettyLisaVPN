@@ -62,6 +62,22 @@ test("home has exactly four sections, one launch notice and seven distinct platf
     assert.equal((html.match(/class="launch"/g) ?? []).length, 1);
     assert.ok(html.includes(locales[language].launch));
     assert.equal((html.match(/class="platform-card /g) ?? []).length, 7);
+    assert.match(html, /<h2 class="faq-title">FAQ<\/h2>/);
+    const questions = html
+      .split('<div class="questions">')[1]
+      .split("<aside")[0];
+    assert.equal((questions.match(/<details>/g) ?? []).length, 6);
+    assert.doesNotMatch(questions, /\[[^\]]+\]/);
+    assert.match(questions, /<p>[^<]*<a href="[^"]*\/download\/android\/">/);
+    assert.match(questions, /<a href="mailto:help@prettylisavpn.com">/);
+    const splitAnswer = questions
+      .split('<div class="faq-answer">')[3]
+      .split("</details>")[0];
+    assert.equal((splitAnswer.match(/<p>/g) ?? []).length, 6);
+    assert.match(splitAnswer, /YouTube/);
+    assert.match(splitAnswer, /Telegram/);
+    assert.match(splitAnswer, /\*\.youtube.com/);
+    assert.doesNotMatch(splitAnswer, /<a /);
     for (const platform of platforms) {
       const page = all.get(routeFor(language, `/download/${platform.id}/`));
       assert.ok(page);
@@ -193,10 +209,15 @@ test("clean build removes stale routes and HTTP serves localized assets without 
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const verification = await fetch(origin + "/shop-verification-xO2ZZeK02A.txt");
+  const verification = await fetch(
+    origin + "/shop-verification-xO2ZZeK02A.txt",
+  );
   assert.equal(verification.status, 200);
   assert.match(verification.headers.get("content-type"), /^text\/plain/);
-  assert.equal((await verification.text()).trim(), "shop-verification-xO2ZZeK02A");
+  assert.equal(
+    (await verification.text()).trim(),
+    "shop-verification-xO2ZZeK02A",
+  );
   const identity = await (await fetch(origin + "/build-identity.json")).json();
   assert.equal(
     identity.version,

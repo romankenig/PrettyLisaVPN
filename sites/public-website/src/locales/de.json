@@ -104,14 +104,14 @@
   },
   "help": {
     "eyebrow": "kurz und klar",
-    "title": "fragen und hilfe",
+    "title": "FAQ",
     "contactTitle": "brauchen sie hilfe?",
     "contactText": "beschreiben sie, was passiert ist, und nennen sie gerät, app-version und zeitpunkt des fehlers. ohne passwörter oder anmeldecodes.",
     "contactButton": "support kontaktieren",
     "questions": [
       {
         "q": "wie fange ich an?",
-        "a": "laden sie die app für android oder windows herunter, melden sie sich mit dem code aus der e-mail an und wählen sie ein land. der kostenlose tarif bietet ihrem konto eine gemeinsame stunde verbindungszeit pro tag."
+        "a": "laden sie die app für [android] oder [windows] herunter, melden sie sich mit dem code aus der e-mail an und wählen sie ein land. der kostenlose tarif bietet ihrem konto eine gemeinsame stunde verbindungszeit pro tag."
       },
       {
         "q": "was bietet premium?",
@@ -119,19 +119,19 @@
       },
       {
         "q": "kann ich nur ausgewählte dienste verbinden?",
-        "a": "ja. wählen sie unter „was schützen wir“ die option „ausgewählte“ oder „außer ausgewählten“. fügen sie dienste aus dem katalog oder eigene domain-muster hinzu. änderungen gelten ab der nächsten verbindung."
+        "a": "mit Split-Tunneling wählst du, was über das VPN läuft und was deine normale Verbindung nutzt. ändere den Modus auf der Startseite der App unter „was schützen“.\n\n„alles“ — der gesamte Datenverkehr läuft über das VPN.\n\n„ausgewählte“ — nur Dienste aus deiner Liste nutzen das VPN, etwa YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n„außer ausgewählten“ — umgekehrt: Dienste aus der Liste verbinden sich direkt, alles andere läuft über das VPN. zum Beispiel kannst du Gosuslugi und MAX ausnehmen.\n\ntippe auf „Dienste wählen“ und aktiviere die gewünschten Dienste oder füge ein eigenes Muster hinzu: youtube.com für diese Domain, *.youtube.com für ihre Subdomains. ein Dienst kann mehrere Domains nutzen; ein fertiger Eintrag ist deshalb meist einfacher.\n\nbeide Modi speichern eigene Listen. beim Speichern wird das VPN getrennt — verbinde dich erneut, um die Auswahl anzuwenden."
       },
       {
         "q": "vpn verbindet sich nicht. was tun?",
-        "a": "prüfen sie das internet ohne vpn, aktualisieren sie die app und versuchen sie in den einstellungen ein anderes land oder eine andere verbindungsart. tritt der fehler erneut auf, senden sie dem support den fehlertext und den zeitpunkt."
+        "a": "prüfen sie das internet ohne vpn, aktualisieren sie die app und versuchen sie in den einstellungen ein anderes land oder eine andere verbindungsart. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
       },
       {
         "q": "der anmeldecode kommt nicht an?",
-        "a": "prüfen sie die e-mail-adresse und den spam-ordner. warten sie, bis sie einen neuen code anfordern können. kommt die nachricht nicht an, schreiben sie dem support von der e-mail-adresse ihres kontos."
+        "a": "prüfen sie die e-mail-adresse und den spam-ordner. warten sie, bis sie einen neuen code anfordern können. kommt die nachricht nicht an, schreiben sie dem [support] von der e-mail-adresse ihres kontos."
       },
       {
         "q": "wie verlängere ich mein abonnement oder beantrage eine erstattung?",
-        "a": "tarif und ablaufdatum finden sie in der app. die verlängerung erfolgt durch eine separate zahlung, ohne automatische abbuchungen. bei fragen zu zahlungen, zugang und erstattungen wenden sie sich an den support."
+        "a": "details stehen in den [zahlungs- und verlängerungsregeln]. tarif und ablaufdatum finden sie in der app. die verlängerung erfolgt durch eine separate zahlung, ohne automatische abbuchungen. bei fragen zu zahlungen, zugang und erstattungen wenden sie sich an den [support]."
       }
     ]
   },

@@ -295,17 +295,17 @@
     <string name="direct_location">ubicación sin VPN:</string>
     <string name="upgrade_plan">mejorar plan</string>
     <string name="faq_connect_q">¿cómo me conecto?</string>
-    <string name="faq_connect_a">elige un país y pulsa conectar. la primera conexión puede tardar un par de minutos.</string>
+    <string name="faq_connect_a">en [inicio], elige un país y pulsa conectar. la primera conexión puede tardar un par de minutos.</string>
     <string name="faq_free_q">¿qué incluye free?</string>
-    <string name="faq_free_a">una hora de VPN al día compartida por todos los dispositivos de la cuenta. se restablece a las 00:00 UTC.</string>
+    <string name="faq_free_a">una hora de VPN al día para toda la cuenta. el límite se restablece a las 00:00 UTC.</string>
     <string name="faq_manage_q">¿dónde gestiono mi suscripción?</string>
-    <string name="faq_manage_a">abre suscripción para ver el periodo pagado, el precio, el método de pago y las acciones disponibles.</string>
+    <string name="faq_manage_a">en [suscripción] puedes consultar el período pagado, el precio, el método de pago y las acciones disponibles.</string>
     <string name="faq_cancel_q">¿qué pasa si cancelo la renovación?</string>
-    <string name="faq_cancel_a">el acceso pagado continúa hasta la fecha indicada. la cancelación se completa cuando la app la confirma.</string>
+    <string name="faq_cancel_a">si la renovación automática está activada, desactívala en [suscripción]. espera la confirmación: el acceso pagado se mantiene hasta la fecha indicada.</string>
     <string name="faq_split_q">¿cómo elijo sitios para el VPN?</string>
-    <string name="faq_split_a">en inicio elige seleccionados o excepto seleccionados y después elegir servicios. los cambios desconectan el VPN; vuelve a conectarte.</string>
+    <string name="faq_split_a">el túnel dividido permite elegir qué usa el VPN y qué usa tu conexión habitual. cambia el modo en « qué proteger » en [inicio].\n\n« todo » — todo el tráfico pasa por el VPN.\n\n« seleccionados » — solo los servicios de tu lista usan el VPN, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usan la conexión habitual.\n\n« excepto seleccionados » — al revés: los servicios de la lista se conectan directamente y el resto pasa por el VPN. por ejemplo, puedes excluir Gosuslugi y MAX.\n\npulsa « elegir servicios » y activa los que necesites, o añade un patrón: youtube.com para ese dominio, *.youtube.com para sus subdominios. un servicio puede usar varios dominios, por lo que elegir uno predefinido suele ser más fácil.\n\nlos dos modos guardan listas separadas. al guardar los cambios se desconecta el VPN; vuelve a conectarte para aplicarlos.</string>
     <string name="faq_support_q">¿cómo contacto con soporte?</string>
-    <string name="faq_support_a">escribe desde la app o a help@prettylisavpn.com. indica el problema y la hora del error.</string>
+    <string name="faq_support_a">abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.</string>
     <string name="billing_days_left">días restantes: %1$d</string>
     <string name="billing_cancel_detail">cancelar la renovación desvincula el método de pago. el acceso continúa hasta el fin del periodo pagado.</string>
 </resources>

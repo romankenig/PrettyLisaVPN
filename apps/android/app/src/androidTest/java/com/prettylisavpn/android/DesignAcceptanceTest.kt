@@ -111,7 +111,7 @@ class DesignAcceptanceTest {
             assertTextFits()
             if (tab == "ABOUT") {
                 compose.onNodeWithTag("about-frontend-version").assertTextEquals(BuildConfig.VERSION_NAME)
-                compose.onNodeWithTag("about-faq-title").performScrollTo().assertTextEquals("faq")
+                compose.onNodeWithTag("about-faq-title").performScrollTo().assertTextEquals("FAQ")
                 compose.onNodeWithTag("about-dedication").performScrollTo().assertTextEquals("inspired by love of my life, Lisa")
                 // Keep the main evidence frame at the version/FAQ section; content below scrolls on phones.
                 compose.onNodeWithTag("about-frontend-version").performScrollTo()

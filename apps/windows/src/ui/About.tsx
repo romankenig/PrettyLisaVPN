@@ -1,44 +1,38 @@
 import { t, useLanguage } from "../i18n";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { SupportDialog } from "./SupportDialog";
 import { Link } from "react-router-dom";
 
 const faq = [
   [
     "как подключиться?",
-    "выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.",
+    "на [главной] выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.",
     "/",
-    "главная",
   ],
   [
     "что входит в free?",
     "один час VPN в сутки на весь аккаунт. лимит обновляется в 00:00 UTC.",
-    "/settings/subscription",
-    "подписка",
+    null,
   ],
   [
     "где управлять подпиской?",
-    "в разделе подписки: оплаченный срок, цена, способ оплаты и доступные действия.",
+    "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.",
     "/settings/subscription",
-    "подписка",
   ],
   [
     "что будет после отмены продления?",
-    "оплаченный доступ сохранится до указанной даты. отмена завершена после подтверждения в приложении.",
+    "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.",
     "/settings/subscription",
-    "подписка",
   ],
   [
     "как выбрать сайты для VPN?",
-    "на главной выберите «выбранное» или «кроме выбранного» и нажмите «выбрать сервисы». изменения отключат VPN; затем подключитесь снова.",
+    "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем».\n\n«всё» — весь трафик идёт через VPN.\n\n«выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение.\n\n«кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX.\n\nнажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант.\n\nу двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.",
     "/",
-    "главная",
   ],
   [
     "как связаться с поддержкой?",
-    "напишите из приложения или на help@prettylisavpn.com. укажите проблему и время ошибки.",
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.",
     "support",
-    "написать в поддержку",
   ],
 ] as const;
 
@@ -68,7 +62,7 @@ export function About({
       </dl>
       <div className="about-sections">
         <section className="about-card" aria-labelledby="faq-title">
-          <h2 id="faq-title">faq</h2>
+          <h2 id="faq-title">FAQ</h2>
           <select
             className="faq-select"
             aria-label={t("вопрос")}
@@ -82,14 +76,39 @@ export function About({
             ))}
           </select>
           <div className="faq-answer" aria-live="polite">
-            <p>{t(entry[1])}</p>
-            {entry[2] === "support" ? (
-              <button type="button" onClick={() => setSupportOpen(true)}>
-                {t(entry[3])}
-              </button>
-            ) : (
-              <Link to={entry[2]}>{t(entry[3])}</Link>
-            )}
+            {t(entry[1])
+              .split("\n\n")
+              .map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex}>
+                  {paragraph.split(/(\[[^\]]+\])/).map((part, index) => {
+                    if (
+                      !part.startsWith("[") ||
+                      !part.endsWith("]") ||
+                      !entry[2]
+                    )
+                      return <Fragment key={index}>{part}</Fragment>;
+                    const label = part.slice(1, -1);
+                    return entry[2] === "support" ? (
+                      <button
+                        className="faq-inline-link"
+                        type="button"
+                        key={index}
+                        onClick={() => setSupportOpen(true)}
+                      >
+                        {label}
+                      </button>
+                    ) : (
+                      <Link
+                        className="faq-inline-link"
+                        key={index}
+                        to={entry[2]}
+                      >
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </p>
+              ))}
           </div>
         </section>
         <section className="about-card" aria-labelledby="support-title">
