@@ -1,3 +1,12 @@
+# Website preview 0.1.0 — clients unchanged
+
+The separate website `/account/` page guides the user to the existing Settings →
+Subscription screen and About → Support. It does not launch a custom deep link,
+introduce web authentication, or change a client route/auth guard. Its `/checkout/`
+is unavailable; live Cardlink, order history and payment-status integration remain
+pending. The support form prepares a user-initiated `mailto:` instead of sending
+mail or calling the private support API. See [website handoff](public-website-preview.md).
+
 # FAQ and initial selections — Windows 0.25.0 / Android 0.21.0
 
 About → FAQ question dropdown → answer and Home, Subscription or Support action.

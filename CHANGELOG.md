@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Public website — 0.1.0 (preview)
+
+- Add a responsive Android/Windows service website, Free/Premium pricing,
+  installation instructions, existing-client account guidance, FAQ and support.
+- Show Cardlink as planned and unavailable; keep checkout disabled and unknown
+  commissions explicit. Other payment providers are deferred by the owner.
+- Add six visibly unapproved legal drafts and a readiness checklist based on
+  confirmed seller details and inspected data flows. No public deployment.
+- See [preview handoff](docs/public-website-preview.md) for checks and launch blockers.
+
 ### Backend — 0.31.0
 
 - BREAKING: remove the unused 1Plat callback (now 404), merchant verification

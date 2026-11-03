@@ -48,6 +48,7 @@
 | Backend | `backend/pyproject.toml:[project].version` | Локальный default `Settings.application_version` в `backend/src/prettylisavpn/config.py`, примеры окружения и release metadata; запущенный сервер сообщает фактический `APPLICATION_VERSION` через `GET /version` |
 | Android | `apps/android/app/build.gradle.kts:defaultConfig.versionName` | `versionCode` там же; UI читает сгенерированный `BuildConfig.VERSION_NAME`. Первая версия 0.1.0 / code 1; последующие поставляемые версии увеличивают code независимо от Windows и CI run ID. `BuildConfig.SOURCE_SHA` / build-identity.json различают сборки одной версии. |
 | Другие клиенты | Манифест пакета конкретной платформы, когда клиент вводится в работу | В той же задаче документировать путь, UI-источник и платформенный build number; до этого не присваивать версии заготовкам |
+| Публичный сайт | `sites/public-website/package.json:version` | `src/model.mjs:website.version`; CI проверяет равенство и записывает версию, build SHA/run/attempt в `dist/build-identity.json`. Начальная версия 0.1.0 — локальный preview, не опубликованный релиз. |
 
 При повышении версии Windows все четыре места проверяются в одной задаче.
 Lock-файлы обновляются штатным инструментом, если затронуты их данные; не заменять
