@@ -1,0 +1,83 @@
+name: Apple clients
+
+on:
+  push:
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+  pull_request:
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Swift contracts and lifecycle
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Test actual shared Swift sources
+        working-directory: apps/apple
+        run: swift test
+      - name: Validate packaging boundaries
+        run: python3 apps/apple/scripts/check-project.py
+
+  build:
+    name: Apple SDK builds and native UI
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Install pinned project generator
+        run: |
+          brew install xcodegen
+          xcodegen --version
+          xcodebuild -version
+          swift --version
+      - name: Check Go format and Apple-only policies
+        working-directory: engines/managed
+        run: |
+          python3 prepare_core.py
+          test -z "$(gofmt -l apple_darwin.go apple_darwin_test.go cmd/pl-apple)"
+          go test -ldflags=-checklinkname=0 ./...
+          go vet ./...
+      - name: Build real engine for iPhone, Simulator and Mac architectures
+        run: bash apps/apple/scripts/build-engine.sh
+      - name: Generate project and compile all shipping targets without signing
+        working-directory: apps/apple
+        run: |
+          xcodegen generate
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+      - name: Exercise simulator UI and capture native images
+        working-directory: apps/apple
+        run: bash scripts/ui-review.sh
+      - name: Exercise native macOS UI
+        working-directory: apps/apple
+        run: |
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= test
+      - name: Package corresponding sources, licenses and exact build identity
+        run: bash apps/apple/scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/*.zip
+            apps/apple/artifacts/*.tar.gz
+            apps/apple/artifacts/*.json
+            apps/apple/artifacts/*.png
+            apps/apple/artifacts/*.xcresult
+          if-no-files-found: warn
+          retention-days: 14

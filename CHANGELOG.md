@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0
+
+- Add native Apple apps and real Packet Tunnel extensions using existing encrypted
+  transports, Keychain exchange, server-verified egress, cleanup, expiry and recovery.
+- Admit IOS/MACOS through existing backend VPN principal checks; preserve quotas,
+  account/device/session fencing and Android/Windows behavior. No migration.
+- Add Apple SDK builds, shared logic tests, explicit Debug Simulator simulation,
+  six locales and native UI review. Real iPhone/macOS VPN acceptance is unconfirmed.
+- Subscription overview is read-only; domain split/payment initiation not exposed.
+  See [Apple handoff](docs/apple-vpn-handoff.md).
+
 ### Windows — 0.25.2 / Android — 0.21.2
 
 - Move “choose services” below the selected-service label and icon strip in both

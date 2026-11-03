@@ -1,2 +1,3 @@
 # gofmt requires canonical line endings on Windows and Linux checkouts alike.
 engines/**/*.go text eol=lf
+apps/apple/**/*.sh text eol=lf

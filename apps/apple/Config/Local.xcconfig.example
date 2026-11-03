@@ -1,0 +1,5 @@
+// Copy to Local.xcconfig (gitignored); identifiers must be registered to YOUR team.
+DEVELOPMENT_TEAM = YOURTEAMID
+BUNDLE_ID_PREFIX = com.yourcompany.prettylisavpn
+// Keep HTTPS. Override only if testing a real deployed PrettyLisaVPN API.
+API_HOST = api.prettylisavpn.com

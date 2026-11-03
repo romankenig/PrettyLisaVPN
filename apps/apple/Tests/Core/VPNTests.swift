@@ -1,0 +1,79 @@
+import XCTest
+@testable import PrettyLisaCore
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
+@MainActor final class TestDriver: TunnelDriver {
+    var status: DriverStatus = .down
+    var leaseID: UUID?
+    var onStatus: (() -> Void)?
+    var starts = 0
+    var stops = 0
+    var traffic = true
+    func reload() async throws {}
+    func start(_ payload: TunnelPayload) async throws { starts += 1; status = .up; leaseID = payload.leaseID }
+    func stop() async throws { stops += 1; status = .down }
+    func hasTraffic() async throws -> Bool { traffic }
+}
+actor VPNTransport: HTTPTransport {
+    var creates = 0
+    var deletes = 0
+    var closed = false
+    func send(_ request: URLRequest) async throws -> (Data, Int) {
+        if request.url!.path.hasSuffix("/current") { return (Data("null".utf8), 200) }
+        if request.httpMethod == "POST" {
+            creates += 1
+            XCTAssertNotNil(request.value(forHTTPHeaderField: "Idempotency-Key"))
+            let body = String(decoding: request.httpBody!, as: UTF8.self)
+            XCTAssertFalse(body.contains("private_key"))
+            return (try leaseData(), 202)
+        }
+        if request.httpMethod == "DELETE" { deletes += 1; closed = true }
+        if request.url!.path.hasSuffix("/probe") { return (Data(#"{"verified":true,"ip":"8.8.4.4"}"#.utf8), 200) }
+        if closed {
+            var value = try JSONSerialization.jsonObject(with: leaseData()) as! [String: Any]
+            value["status"] = "CLOSED"; value.removeValue(forKey: "configuration")
+            return (try JSONSerialization.data(withJSONObject: value), 200)
+        }
+        return (try leaseData(), 200)
+    }
+}
+final class VPNTests: XCTestCase {
+    @MainActor func testVerifiedConnectionSerializesDuplicatesAndConfirmsCleanup() async throws {
+        let http = VPNTransport(), driver = TestDriver()
+        let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
+        let vpn = VPNCoordinator(session: session, driver: driver, keyPair: { (testKey, testKey) })
+        vpn.connect(country: "DE", methods: ["wireguard"])
+        vpn.connect(country: "DE", methods: ["wireguard"])
+        for _ in 0..<100 {
+            if vpn.state.protected { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(vpn.state, .connected("wireguard"))
+        XCTAssertEqual(vpn.verifiedIP, "8.8.4.4")
+        XCTAssertEqual(driver.starts, 1)
+        let creates = await http.creates
+        XCTAssertEqual(creates, 1)
+        await vpn.disconnect()
+        XCTAssertEqual(vpn.state, .disconnected)
+        XCTAssertNil(vpn.verifiedIP)
+        let deletes = await http.deletes
+        XCTAssertEqual(deletes, 1)
+    }
+    @MainActor func testOSReassertionImmediatelyRemovesConnectedClaim() async throws {
+        let http = VPNTransport(), driver = TestDriver()
+        let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
+        let vpn = VPNCoordinator(session: session, driver: driver, keyPair: { (testKey, testKey) })
+        vpn.connect(country: "AUTO", methods: ["wireguard"])
+        for _ in 0..<100 {
+            if vpn.state.protected { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        driver.status = .reasserting; driver.onStatus?()
+        XCTAssertEqual(vpn.state, .reconnecting)
+        XCTAssertFalse(vpn.state.protected)
+        XCTAssertNil(vpn.verifiedIP)
+        await vpn.disconnect()
+    }
+}
