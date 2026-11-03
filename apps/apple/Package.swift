@@ -7,6 +7,7 @@ let package = Package(
     products: [.library(name: "PrettyLisaCore", targets: ["PrettyLisaCore"])],
     targets: [
         .target(name: "PrettyLisaCore", path: "Core"),
+        .executableTarget(name: "LiveAPIProbe", dependencies: ["PrettyLisaCore"], path: "Tools/LiveAPIProbe"),
         .testTarget(name: "PrettyLisaCoreTests", dependencies: ["PrettyLisaCore"], path: "Tests/Core")
     ]
 )

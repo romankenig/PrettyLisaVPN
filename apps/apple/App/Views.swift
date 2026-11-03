@@ -15,6 +15,7 @@ struct RootView: View {
                 NavigationSplitView {
                     List(AppModel.Page.allCases, selection: Binding<AppModel.Page?>(get: { model.page }, set: { model.page = $0 ?? .home })) { page in
                         NavigationLink(value: page) { Label(L(page.key), systemImage: page.icon) }
+                            .accessibilityIdentifier("nav-" + page.rawValue)
                     }
                     .navigationTitle("PrettyLisaVPN")
                     .safeAreaInset(edge: .bottom) {
@@ -144,8 +145,10 @@ struct HomeView: View {
                         HStack {
                             Button(L("dash_connect")) { model.connect() }.buttonStyle(.borderedProminent)
                                 .disabled(model.busy || model.vpn.busy || model.connection.protected || model.countries == nil)
+                                .accessibilityIdentifier("connect")
                             Button(L("vpn_disconnect")) { Task { await model.disconnect() } }.buttonStyle(.bordered)
                                 .disabled(model.connection == .disconnected)
+                                .accessibilityIdentifier("disconnect")
                         }.controlSize(.large)
                     }.padding().frame(maxWidth: .infinity)
                 }

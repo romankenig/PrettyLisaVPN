@@ -73,7 +73,9 @@ public enum ConnectionState: Equatable, Sendable {
                         try await Task { try await self.cleanup() }.value
                         try Task.checkCancellation()
                         if let failure = error as? ClientError,
-                           failure.terminal || ["FREE_QUOTA_EXHAUSTED", "COUNTRY_UNAVAILABLE", "UNSUPPORTED_CONFIGURATION"].contains(failure.code) {
+                           failure.terminal || ["FREE_QUOTA_EXHAUSTED", "FREE_QUOTA_RESERVED", "VPN_CLEANUP_PENDING",
+                                                "VPN_IDEMPOTENCY_CONFLICT", "VPN_KEY_IN_USE", "COUNTRY_UNAVAILABLE",
+                                                "UNSUPPORTED_CONFIGURATION"].contains(failure.code) {
                             throw failure
                         }
                     }
@@ -96,6 +98,7 @@ public enum ConnectionState: Equatable, Sendable {
             lease = try await row(identifier.uuidString.lowercased())
         }
         guard let ready = lease, ready.id == identifier, ready.method == method else { throw ClientError("VPN_SETUP_FAILED") }
+        guard ready.status == .READY else { throw ClientError(ready.code ?? "VPN_SETUP_FAILED") }
         let payload = try TunnelPayload.make(lease: ready, privateKey: keys.privateKey, apiBase: session.api.base)
         try Task.checkCancellation()
         try await driver.start(payload)

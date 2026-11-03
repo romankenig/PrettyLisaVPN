@@ -180,6 +180,7 @@ import PrettyLisaCore
         perform {
             // Explicit local reset never claims that server-side logout or quota release succeeded.
             await self.disconnect()
+            guard self.vpn.localTunnelDown else { throw ClientError("TUNNEL_STOP_FAILED") }
             try await self.session.forget(); self.resetAccount()
         }
     }

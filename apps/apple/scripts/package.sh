@@ -13,7 +13,8 @@ go-licenses save ./cmd/pl-apple --save_path="$out/licenses"
 tar -czf "$out/corresponding-source-and-licenses.tar.gz" -C "$out" source licenses
 cd "$root/apps/apple"
 ditto -c -k --sequesterRsrc --keepParent DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app "$out/PrettyLisaVPN-iOS-Simulator.zip"
-ditto -c -k --sequesterRsrc --keepParent DerivedData/Build/Products/Debug/PrettyLisaVPN.app "$out/PrettyLisaVPN-macOS-debug-unsigned.zip"
+ditto -c -k --sequesterRsrc --keepParent DerivedData/Build/Products/Debug/PrettyLisaVPN.app "$out/PrettyLisaVPN-macOS-UI-ad-hoc.zip"
+ditto -c -k --sequesterRsrc --keepParent DerivedData/Build/Products/Release/PrettyLisaVPN.app "$out/PrettyLisaVPN-macOS-release-unsigned.zip"
 ditto -c -k --sequesterRsrc --keepParent DerivedData/Build/Products/Release-iphoneos/PrettyLisaVPN.app "$out/PrettyLisaVPN-iOS-device-unsigned.zip"
 python3 - <<'PY'
 import json, os, subprocess

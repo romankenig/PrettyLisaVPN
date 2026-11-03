@@ -11,6 +11,18 @@ func leaseData(changes: [String: Any] = [:]) throws -> Data {
                                                         "expires_at": "2099-01-01T00:00:00Z", "heartbeat_seconds": 30, "heartbeat_required": false, "configuration": config])
 }
 final class ContractTests: XCTestCase {
+    func testManagedProfilePreservesTLSAndTransportParameters() throws {
+        let profile: [String: Any] = ["version": 1, "session": "22222222-2222-4222-8222-222222222222",
+                                      "country": "DE", "method": "VLESS_TLS", "server": "8.8.4.4", "port": 443,
+                                      "secret": "33333333-3333-4333-8333-333333333333", "server_name": "node.example.com",
+                                      "certificate_pin": String(repeating: "ab", count: 32), "transport": "ws", "path": "/vpn"]
+        var object = try JSONSerialization.jsonObject(with: leaseData(changes: ["engine_profile": profile])) as! [String: Any]
+        object["method"] = "vless"
+        let lease = try WireJSON.decode(Lease.self, from: JSONSerialization.data(withJSONObject: object))
+        let payload = try TunnelPayload.make(lease: lease, privateKey: testKey, apiBase: URL(string: "https://api.example.com")!)
+        let forwarded = try JSONSerialization.jsonObject(with: WireJSON.encode(payload.profile)) as! NSDictionary
+        XCTAssertEqual(forwarded, profile as NSDictionary)
+    }
     func testWireGuardPreservesAuthorizedPeerAndDNS() throws {
         let lease = try WireJSON.decode(Lease.self, from: leaseData())
         let payload = try TunnelPayload.make(lease: lease, privateKey: testKey, apiBase: URL(string: "https://api.example.com")!)

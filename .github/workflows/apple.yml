@@ -26,6 +26,9 @@ jobs:
         run: swift test
       - name: Validate packaging boundaries
         run: python3 apps/apple/scripts/check-project.py
+      - name: Check real public API through the Apple HTTPS transport
+        working-directory: apps/apple
+        run: swift run LiveAPIProbe
 
   build:
     name: Apple SDK builds and native UI

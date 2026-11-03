@@ -23,7 +23,7 @@ public struct ClientError: Error, Equatable, Sendable {
     }
     public var terminal: Bool {
         ["invalid_session", "invalid_refresh_token", "device_revoked", "user_blocked",
-         "account_unavailable", "AUTH_INVALID", "authentication_required", "REAUTH_REQUIRED"].contains(code)
+         "account_unavailable", "ACCOUNT_UNAVAILABLE", "AUTH_INVALID", "authentication_required", "REAUTH_REQUIRED"].contains(code)
         && status != 401 || ["REAUTH_REQUIRED", "invalid_refresh_token", "ROTATION_UNCERTAIN"].contains(code)
     }
 }
@@ -127,6 +127,8 @@ public struct EngineProfile: Codable, Sendable {
     public var public_key: String?
     public var short_id: String?
     public var obfs_secret: String?
+    public var transport: String?
+    public var path: String?
     public var address: String?
     public var certificate_pin: String?
 }

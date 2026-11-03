@@ -24,6 +24,7 @@ bash scripts/build.sh simulator CODE_SIGNING_ALLOWED=NO
 open PrettyLisaVPN.xcodeproj
 # Select PrettyLisaVPN-iOS, an iPhone Simulator, then Run.
 swift test
+swift run LiveAPIProbe # real unauthenticated health/version/auth fence; no VPN proof
 python3 scripts/check-project.py
 bash scripts/ui-review.sh
 ```

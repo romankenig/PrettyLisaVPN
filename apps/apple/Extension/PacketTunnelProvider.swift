@@ -18,7 +18,6 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             let value = try WireJSON.decode(TunnelPayload.self, from: KeychainStore.resolve(reference))
             guard value.expiresAt > Date(), !value.dns.isEmpty,
                   value.dns.allSatisfy(TunnelPayload.isIPv4) else { throw ClientError("LEASE_EXPIRED") }
-            payload = value
             let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: value.profile.server)
             // Existing managed core terminates an inner IP stack. Server-assigned WG address stays in its outbound.
             let ipv4 = NEIPv4Settings(addresses: ["172.30.255.1"], subnetMasks: ["255.255.255.252"])
@@ -29,15 +28,22 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             let dns = NEDNSSettings(servers: value.dns)
             dns.matchDomains = [""]; dns.matchDomainsNoSearch = true
             settings.dnsSettings = dns; settings.mtu = 1280
-            setTunnelNetworkSettings(settings) { error in
-                self.work.async {
-                    if error != nil { completionHandler(self.failure("NETWORK_SETTINGS_FAILED")); return }
-                    do {
-                        try self.bridge.start(profile: value.profile, flow: self.packetFlow)
-                        self.armExpiry(value.expiresAt)
-                        self.pathObservation = self.observe(\.defaultPath, options: [.new]) { [weak self] _, _ in self?.pathChanged() }
-                        completionHandler(nil)
-                    } catch { completionHandler(self.failure("ENGINE_START_FAILED")) }
+            work.async {
+                self.stopped = false; self.generation += 1; self.payload = value
+                let generation = self.generation
+                self.setTunnelNetworkSettings(settings) { error in
+                    self.work.async {
+                        guard !self.stopped, self.generation == generation else {
+                            completionHandler(self.failure("TUNNEL_START_CANCELLED")); return
+                        }
+                        if error != nil { completionHandler(self.failure("NETWORK_SETTINGS_FAILED")); return }
+                        do {
+                            try self.bridge.start(profile: value.profile, flow: self.packetFlow)
+                            self.armExpiry(value.expiresAt)
+                            self.pathObservation = self.observe(\.defaultPath, options: [.new]) { [weak self] _, _ in self?.pathChanged() }
+                            completionHandler(nil)
+                        } catch { completionHandler(self.failure("ENGINE_START_FAILED")) }
+                    }
                 }
             }
         } catch { completionHandler(failure((error as? ClientError)?.code ?? "INVALID_CONFIGURATION")) }
@@ -108,8 +114,11 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
     override func wake() {
-        if payload?.expiresAt ?? .distantPast <= Date() { cancelTunnelWithError(failure("LEASE_EXPIRED")) }
-        else { pathChanged() }
+        work.async {
+            guard !self.stopped else { return }
+            if self.payload?.expiresAt ?? .distantPast <= Date() { self.cancelTunnelWithError(self.failure("LEASE_EXPIRED")) }
+            else { self.pathChanged() }
+        }
     }
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         completionHandler?(messageData == Data("status".utf8) ? bridge.status() : nil)

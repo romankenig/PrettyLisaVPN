@@ -19,15 +19,20 @@ import FoundationNetworking
 }
 actor VPNTransport: HTTPTransport {
     var creates = 0
+    var attempts = 0
     var deletes = 0
     var closed = false
     var loseCreateResponse = false
     var wrongEgress = false
+    var quotaUnavailable = false
     func loseResponse() { loseCreateResponse = true }
     func rejectEgress() { wrongEgress = true }
+    func reserveQuotaElsewhere() { quotaUnavailable = true }
     func send(_ request: URLRequest) async throws -> (Data, Int) {
         if request.url!.path.hasSuffix("/current") { return (creates > 0 && !closed ? try leaseData() : Data("null".utf8), 200) }
         if request.httpMethod == "POST" {
+            attempts += 1
+            if quotaUnavailable { return (Data(#"{"error":{"code":"FREE_QUOTA_RESERVED"}}"#.utf8), 409) }
             creates += 1
             XCTAssertNotNil(request.value(forHTTPHeaderField: "Idempotency-Key"))
             let body = String(decoding: request.httpBody!, as: UTF8.self)
@@ -48,6 +53,17 @@ actor VPNTransport: HTTPTransport {
     }
 }
 final class VPNTests: XCTestCase {
+    @MainActor func testAccountWideQuotaRejectionDoesNotTryOtherMethods() async throws {
+        let http = VPNTransport(), driver = TestDriver(); await http.reserveQuotaElsewhere()
+        let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
+        let vpn = VPNCoordinator(session: session, driver: driver, keyPair: { (testKey, testKey) })
+        vpn.connect(country: "AUTO", methods: Methods.all)
+        for _ in 0..<100 { if !vpn.busy { break }; try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(vpn.state, .failed("FREE_QUOTA_RESERVED"))
+        let attempts = await http.attempts, creates = await http.creates
+        XCTAssertEqual(attempts, 1); XCTAssertEqual(creates, 0)
+        XCTAssertEqual(driver.starts, 0)
+    }
     @MainActor func testDisconnectCancelsReconciliationAndBlocksConcurrentStart() async throws {
         let http = VPNTransport(), driver = TestDriver(); driver.reloadDelay = 1_000_000_000
         let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))

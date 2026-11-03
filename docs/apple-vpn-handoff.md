@@ -21,6 +21,12 @@ them; 0.33.0 extends the same admission/renewal fences, with unit and PostgreSQL
 integration coverage. **The reviewed backend patch must actually be deployed**
 before live Apple VPN testing; implementing or pushing it is not deployment.
 
+Public HTTPS checked on 2026-11-03: `/health` reports `ok`; `/version` reports
+`0.32.0-dev.41623185534+g34e496f0fa71bd4f636dd814664f46ae3f931d0b` in development.
+The Swift `LiveAPIProbe` command checks health/version and the unauthenticated
+401 fence using the production Apple HTTP adapter. This does not verify OTP,
+account data or a VPN tunnel. Final CI results belong in the PR evidence record.
+
 The initiating environment is Windows with no Xcode, physical iPhone, Apple Team
 or provisioning profiles. No private credentials are requested in chat. Exact
 local setup and acceptance steps: [Apple README](../apps/apple/README.md).
