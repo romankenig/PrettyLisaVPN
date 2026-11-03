@@ -17,21 +17,21 @@ PY
 index=0
 while IFS= read -r device; do
   index=$((index + 1))
+  # One runner installation per device; XCTest exercises BOTH appearances internally.
+  # Reinstalling the runner between themes races CoreSimulator's install/uninstall state.
+  xcrun simctl boot "$device" || xcrun simctl bootstatus "$device" -b
+  xcrun simctl bootstatus "$device" -b
+  xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug \
+    -destination "platform=iOS Simulator,id=$device" -derivedDataPath DerivedData \
+    -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
+    -resultBundlePath "artifacts/iphone-$index.xcresult" CODE_SIGNING_ALLOWED=NO test </dev/null
+  bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app/Info.plist)
   for theme in light dark; do
-    # End the previous runner's installation/launch session before changing appearance.
-    # Keeping one boot session per review avoids CoreSimulator's install/uninstall race.
-    xcrun simctl boot "$device" || xcrun simctl bootstatus "$device" -b
-    xcrun simctl bootstatus "$device" -b
     xcrun simctl ui "$device" appearance "$theme"
-    xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug \
-      -destination "platform=iOS Simulator,id=$device" -derivedDataPath DerivedData \
-      -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
-      -resultBundlePath "artifacts/iphone-$index-$theme.xcresult" CODE_SIGNING_ALLOWED=NO test
-    bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app/Info.plist)
-    xcrun simctl launch "$device" "$bundle" -ui-fixtures -simulate-vpn -AppleLanguages '(ru)'
+    xcrun simctl launch "$device" "$bundle" -ui-fixtures -simulate-vpn -AppleLanguages '(ru)' -theme "$theme"
     sleep 2
     xcrun simctl io "$device" screenshot "artifacts/iphone-$index-$theme.png"
     xcrun simctl terminate "$device" "$bundle"
-    xcrun simctl shutdown "$device"
   done
+  xcrun simctl shutdown "$device"
 done < artifacts/simulators.txt

@@ -77,10 +77,6 @@ jobs:
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
-      - name: Exercise simulator UI and capture native images
-        timeout-minutes: 20
-        working-directory: apps/apple
-        run: bash scripts/ui-review.sh
       - name: Exercise native macOS UI
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         timeout-minutes: 10
@@ -88,6 +84,11 @@ jobs:
         run: |
           # Ad-hoc fixture UI only. No team/profile is available; this is not a VPN acceptance build.
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test
+      - name: Exercise simulator UI and capture native images
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        timeout-minutes: 25
+        working-directory: apps/apple
+        run: bash scripts/ui-review.sh
       - name: Package corresponding sources, licenses and exact build identity
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         run: bash apps/apple/scripts/package.sh

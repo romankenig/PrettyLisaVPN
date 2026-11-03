@@ -2,8 +2,11 @@ import XCTest
 
 final class AppleUITests: XCTestCase {
     func testSimulatorClearlyLabelsSimulation() {
+        for theme in ["light", "dark"] { reviewSimulation(theme: theme) }
+    }
+    private func reviewSimulation(theme: String) {
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-fixtures", "-simulate-vpn", "-AppleLanguages", "(ru)"]
+        app.launchArguments = ["-ui-fixtures", "-simulate-vpn", "-AppleLanguages", "(ru)", "-theme", theme]
         app.launch()
         XCTAssertTrue(app.staticTexts["simulation-banner"].waitForExistence(timeout: 15))
         if !app.buttons["connect"].isHittable {
@@ -22,13 +25,17 @@ final class AppleUITests: XCTestCase {
         expectation(for: NSPredicate(format: "label == %@", disconnected), evaluatedWith: status)
         waitForExpectations(timeout: 5)
         let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = "simulator-explicit-fixture"; shot.lifetime = .keepAlways; add(shot)
+        shot.name = "simulator-\(theme)-explicit-fixture"; shot.lifetime = .keepAlways; add(shot)
+        app.terminate()
     }
     func testDefaultLaunchShowsRealOTPForm() {
-        let app = XCUIApplication(); app.launch()
-        XCTAssertTrue(app.textFields["email"].waitForExistence(timeout: 15))
-        XCTAssertFalse(app.staticTexts["simulation-banner"].exists)
-        let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = "real-api-login-no-vpn-proof"; shot.lifetime = .keepAlways; add(shot)
+        for theme in ["light", "dark"] {
+            let app = XCUIApplication(); app.launchArguments = ["-theme", theme]; app.launch()
+            XCTAssertTrue(app.textFields["email"].waitForExistence(timeout: 15))
+            XCTAssertFalse(app.staticTexts["simulation-banner"].exists)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "real-api-login-\(theme)-no-vpn-proof"; shot.lifetime = .keepAlways; add(shot)
+            app.terminate()
+        }
     }
 }
