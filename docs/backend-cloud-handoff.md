@@ -1,5 +1,31 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Discontinued payment provider removal — 2026-11-03
+
+Backend 0.30.0 → 0.31.0; Windows 0.25.0 and Android 0.21.0 unchanged.
+BREAKING: the unused provider callback now returns 404 instead of 503/405.
+The domain verification route, mount and deploy variable are removed. Billing,
+subscriptions, paid dates, static payment returns and support remain intact.
+Schema remains 0041. [Removal scope and operational handoff](payment-provider-removal.md)
+records the rollout procedure; final exact source/build/runtime, remote cleanup,
+HTTP verification and all CI results are recorded in PR #49.
+
+## Public support page — 2026-11-02
+
+Backend 0.29.0 → 0.30.0 for a new public page; schema remains 0041 and clients
+are unchanged. `/support` and `/support/` show a branded contact page with a fixed
+mailto link to help@prettylisavpn.com. The owner explicitly selected opening their
+mail application instead of a website submission form. No SMTP/API submission is
+performed by this page. Both payment return pages now link here. Shared static-page
+security headers retain no-store, no-referrer, no scripts/forms or framing.
+Source/build/run/attempt, live rollout and rollback evidence are recorded in PR #48.
+
+## Payment return addresses — 2026-11-02
+
+Backend 0.28.0 → 0.29.0 originally added public payment returns. The subsequent
+0.31.0 removal keeps only provider-independent pages; the discontinued callback
+and verification configuration must not be restored. See [current addresses](payment-return-urls.md).
+
 ## Permanent RU relay and Free balance — 2026-10-28
 
 Next source: backend **0.20.0**, schema **0032**, Windows **0.16.0**, Android

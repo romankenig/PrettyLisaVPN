@@ -318,6 +318,64 @@ def test_caddyfile_is_valid():
     )
 
 
+def test_public_host_rejects_removed_provider_and_private_paths(tmp_path):
+    source = (ROOT / "infra/deployment/Caddyfile").read_text()
+    public = source.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
+    (tmp_path / "Caddyfile").write_text(":8080 {" + public)
+    name = "prettylisa-public-host-test-" + uuid4().hex[:10]
+    docker(
+        "run",
+        "-d",
+        "--name",
+        name,
+        "--network=none",
+        "-v",
+        f"{tmp_path}:/etc/caddy/public-test:ro",
+        "caddy:2.10.2-alpine@sha256:"
+        "4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d",
+        "caddy",
+        "run",
+        "--config",
+        "/etc/caddy/public-test/Caddyfile",
+        "--adapter",
+        "caddyfile",
+    )
+    try:
+
+        def request(path, *extra):
+            return docker(
+                "exec",
+                name,
+                "wget",
+                "-S",
+                "-O",
+                "-",
+                *extra,
+                "http://127.0.0.1:8080" + path,
+                check=False,
+            )
+
+        for _ in range(30):
+            response = request("/1plat.txt")
+            if "404 Not Found" in response.stderr:
+                break
+            time.sleep(0.2)
+        assert "404 Not Found" in response.stderr
+        for path in (
+            "/",
+            "/private.txt",
+            "/Caddyfile",
+            "/1plat.txt",
+            "/1plat.txt/",
+            "/dashboard/",
+            "/api/payments/1plat/callback",
+        ):
+            assert "404 Not Found" in request(path).stderr
+            assert "404 Not Found" in request(path, "--post-data=x").stderr
+    finally:
+        docker("rm", "--force", name, check=False)
+
+
 def test_fleet_profile_mounts_credentials_only_in_worker(tmp_path):
     fleet_env = tmp_path / "fleet.env"
     fleet_env.write_text(

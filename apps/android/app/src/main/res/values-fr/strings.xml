@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">moyen de paiement : %1$s</string>
     <string name="ui_plan_0">forfait : %1$s</string>
     <string name="ui_premium_month_0_1">Premium / mois : %1$s%2$s</string>
-    <string name="ui_provider_0">prestataire : %1$s</string>
     <string name="ui_queued_in_the_test_source">en attente dans la source de test.</string>
     <string name="ui_reference_0">référence : %1$s</string>
     <string name="ui_reply_email">e-mail de réponse</string>
@@ -295,4 +294,18 @@
     <string name="traffic_add_service">ajouter un service</string>
     <string name="direct_location">localisation sans VPN :</string>
     <string name="upgrade_plan">améliorer le forfait</string>
+    <string name="faq_connect_q">comment me connecter ?</string>
+    <string name="faq_connect_a">choisissez un pays puis appuyez sur connecter. la première connexion peut prendre quelques minutes.</string>
+    <string name="faq_free_q">que comprend free ?</string>
+    <string name="faq_free_a">une heure de VPN par jour, partagée entre les appareils du compte. remise à zéro à 00:00 UTC.</string>
+    <string name="faq_manage_q">où gérer mon abonnement ?</string>
+    <string name="faq_manage_a">ouvrez abonnement pour voir la période payée, le prix, le moyen de paiement et les actions disponibles.</string>
+    <string name="faq_cancel_q">que se passe-t-il si je résilie ?</string>
+    <string name="faq_cancel_a">votre accès payé reste actif jusqu’à la date affichée. la résiliation est terminée après confirmation dans l’application.</string>
+    <string name="faq_split_q">comment choisir les sites pour le VPN ?</string>
+    <string name="faq_split_a">sur l’accueil, choisissez sélection ou sauf sélection puis choisir les services. les modifications déconnectent le VPN ; reconnectez-vous ensuite.</string>
+    <string name="faq_support_q">comment contacter le support ?</string>
+    <string name="faq_support_a">écrivez depuis l’application ou à help@prettylisavpn.com. précisez le problème et l’heure de l’erreur.</string>
+    <string name="billing_days_left">jours restants : %1$d</string>
+    <string name="billing_cancel_detail">la résiliation supprime le moyen de paiement enregistré. l’accès reste actif jusqu’à la fin de la période payée.</string>
 </resources>

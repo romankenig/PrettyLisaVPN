@@ -246,6 +246,14 @@ function parsePrice(value: unknown): Price {
     original_amount_minor: p.original_amount_minor as number | null,
   };
 }
+/** Display only; server remains authoritative for access and renewal. */
+export function remainingPaidDays(
+  until: string | null,
+  now = Date.now(),
+): number | null {
+  if (!until || !Number.isFinite(Date.parse(until))) return null;
+  return Math.max(0, Math.ceil((Date.parse(until) - now) / 86_400_000));
+}
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("INVALID_BILLING_RESPONSE");

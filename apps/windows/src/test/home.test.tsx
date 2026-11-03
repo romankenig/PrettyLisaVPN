@@ -117,6 +117,64 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("loads first-use split defaults through the authenticated catalog and renders both lists", async () => {
+    const catalog = ["youtube", "telegram", "gosuslugi", "max"].map(
+      (slug, index) => ({
+        id: `00000000-0000-4000-8000-00000000000${index}`,
+        slug,
+        name: slug,
+        icon: slug,
+        domains: [`${slug}.example.com`],
+      }),
+    );
+    const fetch = vi
+      .fn()
+      .mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ services: catalog }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    getDeviceTrafficSelection().save({
+      ...emptyTraffic(),
+      preset_defaults: true,
+    });
+    const view = renderRestored();
+    try {
+      await waitFor(() =>
+        expect(getDeviceTrafficSelection().current().preset_defaults).toBe(
+          false,
+        ),
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({
+          headers: { Authorization: "Bearer access-token" },
+        }),
+      );
+      expect(String(fetch.mock.calls[0][0])).toMatch(
+        /\/vpn\/traffic\/services$/,
+      );
+      const mode = screen.getByRole("combobox", { name: "режим трафика" });
+      fireEvent.change(mode, { target: { value: "include" } });
+      await waitFor(() => expect(mode).toHaveValue("include"));
+      expect(
+        getDeviceTrafficSelection()
+          .current()
+          .include.services.map((v) => v.slug),
+      ).toEqual(["youtube", "telegram"]);
+      fireEvent.change(mode, { target: { value: "exclude" } });
+      await waitFor(() => expect(mode).toHaveValue("exclude"));
+      expect(
+        getDeviceTrafficSelection()
+          .current()
+          .exclude.services.map((v) => v.slug),
+      ).toEqual(["gosuslugi", "max"]);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      view.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
   it("refreshes profile and countries from the Home refresh button", async () => {
     const api = mockApi();
     renderRestored(api);

@@ -60,7 +60,6 @@
     <string name="ui_payment_method_0">payment method: %1$s</string>
     <string name="ui_plan_0">plan: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / month: %1$s%2$s</string>
-    <string name="ui_provider_0">provider: %1$s</string>
     <string name="ui_queued_in_the_test_source">queued in the test source.</string>
     <string name="ui_reference_0">reference: %1$s</string>
     <string name="ui_reply_email">reply email</string>
@@ -302,4 +301,18 @@
     <string name="traffic_add_service">add your own service</string>
     <string name="direct_location">location without VPN:</string>
     <string name="upgrade_plan">upgrade plan</string>
+    <string name="faq_connect_q">how do I connect?</string>
+    <string name="faq_connect_a">choose a country and tap connect. the first connection may take a couple of minutes.</string>
+    <string name="faq_free_q">what does free include?</string>
+    <string name="faq_free_a">one hour of VPN per day shared by all account devices. the allowance resets at 00:00 UTC.</string>
+    <string name="faq_manage_q">where can I manage my subscription?</string>
+    <string name="faq_manage_a">open subscription to see your paid period, price, payment method and available actions.</string>
+    <string name="faq_cancel_q">what happens if I cancel renewal?</string>
+    <string name="faq_cancel_a">paid access remains until the displayed date. cancellation is complete once the app confirms it.</string>
+    <string name="faq_split_q">how do I select sites for VPN?</string>
+    <string name="faq_split_a">on home choose selected or except selected, then choose services. changes disconnect the VPN; reconnect when ready.</string>
+    <string name="faq_support_q">how do I contact support?</string>
+    <string name="faq_support_a">write from the app or to help@prettylisavpn.com. include the issue and the time it happened.</string>
+    <string name="billing_days_left">days remaining: %1$d</string>
+    <string name="billing_cancel_detail">canceling renewal unlinks the payment method. access remains until the paid period ends.</string>
 </resources>

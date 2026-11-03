@@ -17,6 +17,7 @@ export interface TrafficSelection {
   mode: TrafficMode;
   include: TrafficList;
   exclude: TrafficList;
+  preset_defaults?: boolean;
 }
 export interface RoutingPolicy {
   mode: TrafficMode;
@@ -88,6 +89,25 @@ export const emptyTraffic = (): TrafficSelection => ({
   include: { services: [], masks: [] },
   exclude: { services: [], masks: [] },
 });
+
+export function seedTrafficDefaults(
+  value: TrafficSelection,
+  catalog: TrafficService[],
+): TrafficSelection {
+  if (!value.preset_defaults) return value;
+  const available = parseTrafficCatalog({ services: catalog });
+  const choose = (slugs: string[]) =>
+    slugs.map((slug) => available.find((service) => service.slug === slug));
+  const include = choose(["youtube", "telegram"]);
+  const exclude = choose(["gosuslugi", "max"]);
+  if ([...include, ...exclude].some((service) => !service)) return value;
+  return {
+    ...value,
+    preset_defaults: false,
+    include: { services: include as TrafficService[], masks: [] },
+    exclude: { services: exclude as TrafficService[], masks: [] },
+  };
+}
 
 export function normalizeMask(input: string): string {
   const raw = input.trim().toLowerCase();
@@ -180,7 +200,7 @@ export function routingPolicy(value: TrafficSelection): RoutingPolicy {
 export function createTrafficSelection(
   storage?: Pick<Storage, "getItem" | "setItem">,
 ) {
-  let current = emptyTraffic();
+  let current: TrafficSelection = { ...emptyTraffic(), preset_defaults: true };
   try {
     const raw = storage?.getItem(KEY);
     if (raw) {

@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">付款方式：%1$s</string>
     <string name="ui_plan_0">套餐：%1$s</string>
     <string name="ui_premium_month_0_1">Premium / 月：%1$s%2$s</string>
-    <string name="ui_provider_0">支付提供商：%1$s</string>
     <string name="ui_queued_in_the_test_source">已加入测试队列。</string>
     <string name="ui_reference_0">请求编号：%1$s</string>
     <string name="ui_reply_email">回复电子邮箱</string>
@@ -295,4 +294,18 @@
     <string name="traffic_add_service">添加自定义服务</string>
     <string name="direct_location">非 VPN 位置：</string>
     <string name="upgrade_plan">升级套餐</string>
+    <string name="faq_connect_q">如何连接？</string>
+    <string name="faq_connect_a">选择国家并点击连接。首次连接可能需要几分钟。</string>
+    <string name="faq_free_q">免费套餐包含什么？</string>
+    <string name="faq_free_a">账户下所有设备每天共享一小时 VPN。额度在 UTC 00:00 重置。</string>
+    <string name="faq_manage_q">在哪里管理订阅？</string>
+    <string name="faq_manage_a">打开订阅即可查看已付款期限、价格、付款方式及可用操作。</string>
+    <string name="faq_cancel_q">取消续订后会怎样？</string>
+    <string name="faq_cancel_a">已付款的访问权限保留至显示的日期。应用确认后，取消操作才算完成。</string>
+    <string name="faq_split_q">如何选择使用 VPN 的网站？</string>
+    <string name="faq_split_a">在主页选择“所选”或“除所选外”，然后选择服务。修改会断开 VPN，请随后重新连接。</string>
+    <string name="faq_support_q">如何联系支持？</string>
+    <string name="faq_support_a">通过应用或 help@prettylisavpn.com 联系我们。请说明问题及发生时间。</string>
+    <string name="billing_days_left">剩余天数：%1$d</string>
+    <string name="billing_cancel_detail">取消续订将解绑付款方式。访问权限保留至已付款期限结束。</string>
 </resources>

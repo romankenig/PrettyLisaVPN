@@ -12,6 +12,7 @@ import { createApiClient } from "../api/client";
 import { loadConfig } from "../config/config";
 import { ApplicationProvider } from "../state/application";
 import { About } from "../ui/About";
+import { MemoryRouter } from "react-router-dom";
 import {
   supportDiagnostics,
   validateScreenshots,
@@ -59,7 +60,9 @@ function setup(sender?: SupportSender) {
         support: sender,
       }}
     >
-      <About frontend="0.7.0" backend="0.1.0-dev" />
+      <MemoryRouter>
+        <About frontend="0.7.0" backend="0.1.0-dev" />
+      </MemoryRouter>
     </ApplicationProvider>,
   );
   return { ...view, session, vpn, transport };
@@ -85,16 +88,30 @@ const png = () =>
   });
 
 describe("about and support", () => {
-  it("shows component versions, an empty FAQ and the exact dedication", () => {
+  it("shows component versions, FAQ answers and links without opening external pages", () => {
     const { container } = setup();
     expect(screen.getByText("frontend")).toBeInTheDocument();
     expect(screen.getByText("backend")).toBeInTheDocument();
     expect(screen.getByText("0.1.0-dev")).toBeInTheDocument();
     expect(screen.queryByText("окружение")).not.toBeInTheDocument();
     expect(container.querySelector(".eyebrow")).toBeNull();
-    expect(screen.getByRole("region", { name: "faq" }).children).toHaveLength(
-      1,
+    const faq = within(screen.getByRole("region", { name: "faq" }));
+    expect(faq.getByRole("combobox", { name: "вопрос" })).toHaveValue("0");
+    expect(faq.getByRole("link", { name: "главная" })).toHaveAttribute(
+      "href",
+      "/",
     );
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "1" } });
+    expect(faq.getByText(/00:00 UTC/)).toBeInTheDocument();
+    expect(faq.getByRole("link", { name: "подписка" })).toHaveAttribute(
+      "href",
+      "/settings/subscription",
+    );
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "5" } });
+    fireEvent.click(faq.getByRole("button", { name: "написать в поддержку" }));
+    expect(
+      screen.getByRole("dialog", { name: "помощь и поддержка" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("inspired by love of my life, Lisa"),
     ).toBeInTheDocument();

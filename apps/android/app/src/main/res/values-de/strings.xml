@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">zahlungsmethode: %1$s</string>
     <string name="ui_plan_0">tarif: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / Monat: %1$s%2$s</string>
-    <string name="ui_provider_0">anbieter: %1$s</string>
     <string name="ui_queued_in_the_test_source">in der Warteschlange der Testquelle.</string>
     <string name="ui_reference_0">referenz: %1$s</string>
     <string name="ui_reply_email">antwortadresse</string>
@@ -295,4 +294,18 @@
     <string name="traffic_add_service">eigenen Dienst hinzufügen</string>
     <string name="direct_location">standort ohne VPN:</string>
     <string name="upgrade_plan">tarif verbessern</string>
+    <string name="faq_connect_q">wie verbinde ich mich?</string>
+    <string name="faq_connect_a">wähle ein Land und tippe auf Verbinden. die erste Verbindung kann einige Minuten dauern.</string>
+    <string name="faq_free_q">was bietet Free?</string>
+    <string name="faq_free_a">eine Stunde VPN täglich für alle Geräte des Kontos zusammen. das Kontingent wird um 00:00 UTC erneuert.</string>
+    <string name="faq_manage_q">wo verwalte ich mein Abo?</string>
+    <string name="faq_manage_a">unter Abonnement findest du Laufzeit, Preis, Zahlungsart und verfügbare Aktionen.</string>
+    <string name="faq_cancel_q">was passiert nach der Kündigung?</string>
+    <string name="faq_cancel_a">der bezahlte Zugang bleibt bis zum angezeigten Datum. die Kündigung ist nach Bestätigung in der App abgeschlossen.</string>
+    <string name="faq_split_q">wie wähle ich Websites für das VPN?</string>
+    <string name="faq_split_a">wähle auf der Startseite Ausgewählte oder Außer ausgewählten und dann Dienste wählen. änderungen trennen das VPN; verbinde dich danach erneut.</string>
+    <string name="faq_support_q">wie erreiche ich den Support?</string>
+    <string name="faq_support_a">schreibe über die App oder an help@prettylisavpn.com. nenne das Problem und den Zeitpunkt.</string>
+    <string name="billing_days_left">verbleibende Tage: %1$d</string>
+    <string name="billing_cancel_detail">die Kündigung entfernt die Zahlungsart. der Zugang bleibt bis zum Ende der bezahlten Laufzeit.</string>
 </resources>

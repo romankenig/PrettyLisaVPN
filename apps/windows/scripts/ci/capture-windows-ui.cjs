@@ -996,6 +996,21 @@ async function main() {
   await about.getByText("frontend", { exact: true }).waitFor();
   await about.getByText("backend", { exact: true }).waitFor();
   await about.getByRole("heading", { name: "faq", exact: true }).waitFor();
+  const faq = about.getByRole("region", { name: "faq", exact: true });
+  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("1");
+  await faq.getByText(/00:00 UTC/).waitFor();
+  await screenshot("08-about-faq-free");
+  await faq.getByRole("link", { name: "подписка" }).click();
+  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  if (!page.url().endsWith("#/settings/subscription"))
+    throw new Error("FAQ must navigate to the real subscription route");
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "о приложении", exact: true })
+    .click();
+  await about
+    .getByRole("heading", { name: "о приложении", exact: true })
+    .waitFor();
   await about
     .getByText("inspired by love of my life, Lisa", { exact: true })
     .waitFor();

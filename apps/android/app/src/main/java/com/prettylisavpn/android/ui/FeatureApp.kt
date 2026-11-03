@@ -101,7 +101,7 @@ internal fun FeatureApp(model: ScreenModel) {
                 }
             }
             composable("ABOUT") {
-                AboutScreen("screen_ABOUT", { go("SUPPORT") }, "open-support")
+                AboutScreen("screen_ABOUT", { go("SUPPORT") }, "open-support", { go(it) })
             }
             composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("LOGIN") { AuthScreen(model, false, { go("OTP") }, { nav.popBackStack() }) }

@@ -1,0 +1,143 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #010101;
+  background: #2c016d;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: radial-gradient(ellipse at top, #5f22d9 0%, #2c016d 78%);
+}
+main {
+  width: min(100% - 40px, 520px);
+  margin: auto;
+  padding: 36px 0;
+}
+header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+header img {
+  display: block;
+  width: 220px;
+  height: 92px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+.card {
+  padding: 36px;
+  border-radius: 28px;
+  background: #f8f7fc;
+  box-shadow: 0 20px 70px #18003d45;
+}
+.status {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #51d6ca;
+  color: #2c016d;
+  font-size: 30px;
+}
+.status.failure {
+  color: #c82b28;
+  background: #f7e4e4;
+}
+.eyebrow {
+  margin: 24px 0 12px;
+  color: #5f22d9;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+h1 {
+  margin: 0 0 18px;
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+p {
+  line-height: 1.55;
+}
+.description {
+  color: #5b5b5b;
+  margin: 0 0 24px;
+  font-size: 17px;
+}
+.next-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #e8e1f7;
+  border-radius: 16px;
+  padding: 16px;
+}
+.next-step p {
+  margin: 0;
+  font-size: 15px;
+}
+.next-step span {
+  color: #5b5b5b;
+}
+.next-step .step-number {
+  color: #5f22d9;
+  font-size: 26px;
+}
+.product-name {
+  white-space: nowrap;
+}
+.note {
+  color: #5b5b5b;
+  font-size: 13px;
+  margin: 22px 0;
+}
+.support {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  background: #51d6ca;
+  border-radius: 12px;
+  color: #010101;
+  text-decoration: none;
+  font-weight: 600;
+}
+.support:hover {
+  filter: brightness(0.96);
+}
+.contact-email {
+  margin: 0 0 22px;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.support:focus-visible {
+  outline: 3px solid #5f22d9;
+  outline-offset: 4px;
+}
+footer {
+  margin-top: 24px;
+  color: #e4e4e4;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 420px) {
+  main {
+    padding: 20px 0;
+    width: min(100% - 24px, 520px);
+  }
+  .card {
+    padding: 26px 22px;
+    border-radius: 22px;
+  }
+  header {
+    margin-bottom: 14px;
+  }
+}

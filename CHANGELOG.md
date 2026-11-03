@@ -6,6 +6,35 @@
 
 ## Unreleased
 
+### Backend — 0.31.0
+
+- BREAKING: remove the unused 1Plat callback (now 404), merchant verification
+  route, read-only mount and deployment variable after abandoning the provider.
+- Preserve provider-independent payment return/support pages and general billing.
+  No client or database changes. See [removal handoff](docs/payment-provider-removal.md).
+
+### Windows — 0.25.0 / Android — 0.21.0
+
+- Add a concise FAQ dropdown in About with Home, Subscription and Support links.
+- Seed new split selections from the server catalog: YouTube + Telegram for
+  selected services, Gosuslugi + MAX for exclusions; preserve saved choices.
+- Show remaining paid days and clarify confirmed cancellation/method removal.
+  Android formats subscription dates and hides internal billing status codes.
+- Payment activation and recurring work remain postponed. Crypto remains a plan. See [handoff](docs/subscription-management-followup.md).
+
+### Backend — 0.30.0
+
+- Add the public `/support` contact page with a button opening the user's mail
+  application for `help@prettylisavpn.com`. Payment return pages link to it.
+- No automatic message sending, website form, new user-data storage or schema change.
+
+### Backend — 0.29.0
+
+- Add branded payment success/failure return pages on prettylisavpn.com.
+- Browser returns never grant subscription access. Keep payments disabled and
+  sensitive payment data out of logs; restrict the public host to payment paths.
+- See [current addresses and deployment](docs/payment-return-urls.md).
+
 ### Windows — 0.24.1 / Android — 0.20.1
 
 - Show only the connected protocol on Windows and apply lowercase interface

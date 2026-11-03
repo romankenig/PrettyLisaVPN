@@ -1535,6 +1535,12 @@ input,
   margin: 8px 0;
   font-size: 13px;
 }
+.billing-remaining {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--color-scorpion);
+  font-size: 11px;
+}
 .billing-current {
   margin: 8px 0;
   color: var(--color-scorpion);
@@ -1888,6 +1894,23 @@ input,
 }
 .about-card button {
   margin-top: 18px;
+  font-size: 13px;
+}
+.faq-select {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid var(--color-purple-heart);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-black);
+  font: inherit;
+  font-size: 14px;
+}
+.faq-answer a {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--color-purple-heart);
   font-size: 13px;
 }
 .about-dedication {

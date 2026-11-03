@@ -15,6 +15,7 @@ import {
   normalizeMask,
   parseTrafficCatalog,
   refreshServices,
+  seedTrafficDefaults,
   routingPolicy,
   type TrafficSelection,
   type TrafficService,
@@ -33,7 +34,7 @@ export function TrafficRouting({
   readonly refreshKey?: number;
 }) {
   useLanguage();
-  const { vpnConnection, session } = useApplication();
+  const { vpnConnection, session, api, config } = useApplication();
   const connection = useSyncExternalStore(
     vpnConnection.subscribe,
     vpnConnection.current,
@@ -48,6 +49,50 @@ export function TrafficRouting({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  useEffect(() => {
+    if (
+      !selected.preset_defaults ||
+      (selected.mode !== "all" &&
+        !["DISCONNECTED", "UNAVAILABLE"].includes(connection.phase))
+    )
+      return;
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const appToken = await session.bearer(api);
+        const response = await createHttpTransport()(
+          new URL("/vpn/traffic/services", config.backendBaseUrl),
+          {
+            headers: { Authorization: `Bearer ${appToken}` },
+            signal: AbortSignal.any([
+              controller.signal,
+              AbortSignal.timeout(15000),
+            ]),
+            cache: "no-store",
+          },
+        );
+        if (!response.ok || controller.signal.aborted) return;
+        const next = seedTrafficDefaults(
+          store.current(),
+          parseTrafficCatalog(await response.json()),
+        );
+        if (!controller.signal.aborted && next !== store.current())
+          store.save(next);
+      } catch {
+        /* Retry when Home is refreshed; a failed fetch never marks defaults saved. */
+      }
+    })();
+    return () => controller.abort();
+  }, [
+    selected.preset_defaults,
+    selected.mode,
+    connection.phase,
+    refreshKey,
+    session,
+    store,
+    config.backendBaseUrl,
+    api,
+  ]);
   async function save(next: TrafficSelection) {
     setBusy(true);
     setError(false);
@@ -325,7 +370,10 @@ function TrafficDialog({
         );
         if (!response.ok) throw new Error("CATALOG_UNAVAILABLE");
         const data = parseTrafficCatalog(await response.json());
-        if (!controller.signal.aborted) setCatalog(data);
+        if (!controller.signal.aborted) {
+          setCatalog(data);
+          setDraft((value) => seedTrafficDefaults(value, data));
+        }
       } catch {
         if (!controller.signal.aborted) setUnavailable(true);
       } finally {
@@ -404,7 +452,11 @@ function TrafficDialog({
                       ]),
                     ];
                     if (masks.length > 256) throw new Error();
-                    setDraft({ ...draft, [tab]: { ...list, masks } });
+                    setDraft({
+                      ...draft,
+                      preset_defaults: false,
+                      [tab]: { ...list, masks },
+                    });
                     setInput("");
                     setInvalid(false);
                     setAdding(false);
@@ -436,6 +488,7 @@ function TrafficDialog({
                 onClick={() =>
                   setDraft({
                     ...draft,
+                    preset_defaults: false,
                     [tab]: {
                       ...list,
                       masks: list.masks.filter((m) => m !== mask),
@@ -480,6 +533,7 @@ function TrafficDialog({
                       onChange={() =>
                         setDraft({
                           ...draft,
+                          preset_defaults: false,
                           [tab]: {
                             ...list,
                             services: list.services.some(
@@ -512,7 +566,10 @@ function TrafficDialog({
           type="button"
           disabled={busy || !!input.trim()}
           onClick={() => {
-            void onSave(refreshServices(draft, catalog)).catch(() => {});
+            void onSave({
+              ...refreshServices(draft, catalog),
+              preset_defaults: false,
+            }).catch(() => {});
           }}
         >
           {t("Сохранить")}

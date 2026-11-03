@@ -59,7 +59,6 @@
     <string name="ui_payment_method_0">способ оплаты: %1$s</string>
     <string name="ui_plan_0">тариф: %1$s</string>
     <string name="ui_premium_month_0_1">Premium / месяц: %1$s%2$s</string>
-    <string name="ui_provider_0">провайдер: %1$s</string>
     <string name="ui_queued_in_the_test_source">в очереди тестового источника.</string>
     <string name="ui_reference_0">номер обращения: %1$s</string>
     <string name="ui_reply_email">email для ответа</string>
@@ -295,4 +294,18 @@
     <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
     <string name="upgrade_plan">улучшить план</string>
+    <string name="faq_connect_q">как подключиться?</string>
+    <string name="faq_connect_a">выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.</string>
+    <string name="faq_free_q">что входит в free?</string>
+    <string name="faq_free_a">один час VPN в сутки на весь аккаунт. лимит обновляется в 00:00 UTC.</string>
+    <string name="faq_manage_q">где управлять подпиской?</string>
+    <string name="faq_manage_a">в разделе подписки: оплаченный срок, цена, способ оплаты и доступные действия.</string>
+    <string name="faq_cancel_q">что будет после отмены продления?</string>
+    <string name="faq_cancel_a">оплаченный доступ сохранится до указанной даты. отмена завершена после подтверждения в приложении.</string>
+    <string name="faq_split_q">как выбрать сайты для VPN?</string>
+    <string name="faq_split_a">на главной выберите «выбранное» или «кроме выбранного» и нажмите «выбрать сервисы». изменения отключат VPN; затем подключитесь снова.</string>
+    <string name="faq_support_q">как связаться с поддержкой?</string>
+    <string name="faq_support_a">напишите из приложения или на help@prettylisavpn.com. укажите проблему и время ошибки.</string>
+    <string name="billing_days_left">осталось дней: %1$d</string>
+    <string name="billing_cancel_detail">отмена продления отвяжет способ оплаты. доступ сохранится до конца оплаченного срока.</string>
 </resources>
