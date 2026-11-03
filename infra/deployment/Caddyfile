@@ -3,15 +3,39 @@
 	admin off
 }
 
-# Public payment return URLs are separate from the private monitoring site.
+# Public draft website and payment returns are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
-	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /support /support/
+	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg
 	handle @payment {
 		request_body {
 			max_size 64KB
 		}
 		reverse_proxy backend:8000
+	}
+	@checkout_post {
+		method POST
+		path /checkout /checkout/
+	}
+	handle @checkout_post {
+		header Content-Type application/json
+		respond `{"error":{"code":"WEB_CHECKOUT_DISABLED"}}` 503
+	}
+	@website {
+		method GET HEAD
+		path / /plans /plans/* /checkout /checkout/* /payment /payment/ /setup /setup/* /account /account/* /support /support/* /legal /legal/* /readiness /readiness/* /404 /404/* /assets/* /robots.txt /build-identity.json
+	}
+	handle @website {
+		root * /srv/public-website/current
+		header {
+			Cache-Control "no-store"
+			X-Robots-Tag "noindex, nofollow"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+			Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		}
+		file_server
 	}
 	handle {
 		respond "Not found" 404

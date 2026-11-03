@@ -13,8 +13,11 @@
 - Show Cardlink as planned and unavailable; keep checkout disabled and unknown
   commissions explicit. Other payment providers are deferred by the owner.
 - Add six visibly unapproved legal drafts and a readiness checklist based on
-  confirmed seller details and inspected data flows. No public deployment.
+  confirmed seller details and inspected data flows.
 - See [preview handoff](docs/public-website-preview.md) for checks and launch blockers.
+- Publish the same draft on the owner's existing HTTPS domain after explicit
+  authorization. Persist static snapshots separately from backend releases;
+  preserve disabled checkout, private monitoring and payment return routes.
 
 ### Backend — 0.31.0
 
