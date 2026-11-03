@@ -10,7 +10,7 @@ struct RootView: View {
     @State private var logout = false
     var body: some View {
         Group {
-            if model.profile == nil { LoginView(model: model) }
+            if model.profile == nil || model.needsSignIn { LoginView(model: model) }
             else {
                 NavigationSplitView {
                     List(AppModel.Page.allCases, selection: $model.page) { page in

@@ -14,6 +14,7 @@ import (
 	"io"
 	"math/big"
 	"net"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -99,6 +100,7 @@ func TestEncryptedTCPUDPAndIdentity(t *testing.T) {
 		}
 	}()
 	c := newTestClient(t, p.LocalAddr().String(), "test-authorization-123", "vpn.example.com", pin)
+	var expected int64
 	for _, network := range []string{"tcp", "udp"} {
 		t.Run(network, func(t *testing.T) {
 			address := tcp.Addr().String()
@@ -112,6 +114,14 @@ func TestEncryptedTCPUDPAndIdentity(t *testing.T) {
 			defer conn.Close()
 			_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
 			body := bytes.Repeat([]byte("payload-"), 4000)
+			if network == "udp" && runtime.GOOS == "darwin" {
+				// Darwin's default net.inet.udp.maxdgram is 9216. Keep the real
+				// loopback echo below that OS limit while still exercising eight
+				// encrypted protocol fragments. Large framing remains covered by
+				// TestProtocolGoldenAndBounds and the Linux/Windows 32KB echo.
+				body = body[:8000]
+			}
+			expected += int64(len(body))
 			if _, e = conn.Write(body); e != nil {
 				t.Fatal(e)
 			}
@@ -127,7 +137,7 @@ func TestEncryptedTCPUDPAndIdentity(t *testing.T) {
 	// A peer can receive bytes before the writer returns and accounts for them.
 	deadline := time.NewTimer(time.Second)
 	defer deadline.Stop()
-	for up.Load() < 64000 || down.Load() < 64000 {
+	for up.Load() < expected || down.Load() < expected {
 		select {
 		case <-counted:
 		case <-deadline.C:

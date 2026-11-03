@@ -19,6 +19,7 @@ import PrettyLisaCore
     @Published var error: String?
     @Published var busy = false
     @Published var otpSent = false
+    @Published var needsSignIn = false
     @Published var country = "AUTO"
     @Published var methods = Methods.all
     @Published var supportReceipt: SupportReceipt?
@@ -71,7 +72,7 @@ import PrettyLisaCore
         #endif
         if let saved = UserDefaults.standard.stringArray(forKey: "methods"), !saved.isEmpty, saved.allSatisfy(Methods.all.contains) { methods = saved }
         vpn.onChange = { [weak self] in self?.objectWillChange.send() }
-        vpn.onAuthorizationLost = { [weak self] in self?.error = "REAUTH_REQUIRED" }
+        vpn.onAuthorizationLost = { [weak self] in self?.error = "REAUTH_REQUIRED"; self?.needsSignIn = true }
         #if DEBUG && targetEnvironment(simulator)
         simulator.onChange = { [weak self] in self?.objectWillChange.send() }
         #endif
@@ -89,8 +90,13 @@ import PrettyLisaCore
         Task {
             defer { busy = false }
             do { try await action() }
-            catch { self.error = (error as? ClientError)?.code ?? "NETWORK_UNCERTAIN" }
+            catch { self.handle(error) }
         }
+    }
+    private func handle(_ failure: Error) {
+        let value = failure as? ClientError
+        error = value?.code ?? "NETWORK_UNCERTAIN"
+        if value?.terminal == true || value?.status == 401 { needsSignIn = true }
     }
     func restore() async {
         #if DEBUG
@@ -107,7 +113,7 @@ import PrettyLisaCore
         do {
             backendVersion = try? WireJSON.decode(BackendVersion.self, from: await session.api.data("version")).application_version
             if try await session.hasCredentials() { try await refresh(); await vpn.reconcile() }
-        } catch { self.error = (error as? ClientError)?.code ?? "NETWORK_UNCERTAIN" }
+        } catch { handle(error) }
     }
     func requestOTP(_ email: String) {
         perform { try await self.session.requestOTP(email: email.trimmingCharacters(in: .whitespacesAndNewlines)); self.otpSent = true }
@@ -116,6 +122,7 @@ import PrettyLisaCore
         perform {
             try await self.session.login(email: email.trimmingCharacters(in: .whitespacesAndNewlines), code: code,
                                          installation: self.vault.installationID(), platform: self.platform, name: "PrettyLisaVPN " + self.platform)
+            self.needsSignIn = false
             try await self.refresh(); await self.vpn.reconcile()
         }
     }
@@ -140,7 +147,7 @@ import PrettyLisaCore
             case .home: try await refresh(); await vpn.reconcile()
             default: break
             }
-        } catch { self.error = (error as? ClientError)?.code ?? "NETWORK_UNCERTAIN" }
+        } catch { handle(error) }
     }
     func connect() {
         if simulation {
@@ -174,7 +181,7 @@ import PrettyLisaCore
     private func resetAccount() {
         profile = nil; billing = nil; devices = []; messages = []; countries = nil
         supportRequest = nil; supportImages = []; supportReceipt = nil; supportFrozen = false
-        otpSent = false; page = .home
+        otpSent = false; needsSignIn = false; page = .home
     }
     func revoke(_ device: Device) {
         perform {
@@ -215,8 +222,8 @@ import PrettyLisaCore
             if let data = try vault.data(supportKey) {
                 let saved = try WireJSON.decode(SupportJournal.self, from: data)
                 supportRequest = saved.report; supportImages = saved.images; supportFrozen = true
-                try await supportStatus()
             }
+            try await supportStatus()
         } catch { self.error = (error as? ClientError)?.code ?? "NETWORK_UNCERTAIN" }
     }
     private func sendSavedSupport() async throws {

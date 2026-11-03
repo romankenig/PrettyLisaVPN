@@ -66,7 +66,8 @@ jobs:
       - name: Exercise native macOS UI
         working-directory: apps/apple
         run: |
-          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= test
+          # Ad-hoc fixture UI only. No team/profile is available; this is not a VPN acceptance build.
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test
       - name: Package corresponding sources, licenses and exact build identity
         run: bash apps/apple/scripts/package.sh
       - uses: actions/upload-artifact@v4

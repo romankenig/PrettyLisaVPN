@@ -45,7 +45,7 @@ targetTemplates:
         INFOPLIST_KEY_SharedKeychainGroup: $(KEYCHAIN_GROUP)
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: YES
     info:
-      path: Config/App-Info-${platform}.plist
+      path: Config/App-Info-${target_name}.plist
       properties:
         CFBundleDisplayName: PrettyLisaVPN
         APIBaseURL: $(API_BASE_URL)
@@ -72,7 +72,7 @@ targetTemplates:
         CODE_SIGN_ENTITLEMENTS: Config/Tunnel.entitlements
         OTHER_LDFLAGS: ['$(inherited)', '-lresolv']
     info:
-      path: Config/Tunnel-Info-${platform}.plist
+      path: Config/Tunnel-Info-${target_name}.plist
       properties:
         CFBundleDisplayName: PrettyLisaVPN Tunnel
         NSExtension:
