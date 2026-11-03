@@ -3,9 +3,9 @@
 No crypto checkout or automatic debit is enabled by this document.
 
 1. Verify provider eligibility, assets/networks, settlement currency, fees, refunds,
-   webhook authentication and idempotency. 1Plat's public API describes crypto
-   orders; this shop's availability is still unverified. Reuse the replaceable
-   billing port and prefer hosted checkout. Never request wallet keys/seed phrases.
+   webhook authentication and idempotency. No provider has been selected. Reuse the
+   replaceable billing port and prefer hosted checkout. Never request wallet keys
+   or seed phrases.
 2. Start with a prepaid month. Show asset, network, exact amount, exchange quote
    and expiry before checkout. Keep contract prices immutable in PostgreSQL and
    invoice conversion in a separate immutable record. Crypto selection is not

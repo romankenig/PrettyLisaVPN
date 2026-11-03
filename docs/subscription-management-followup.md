@@ -24,23 +24,12 @@ engines, dashboard, database schema and payment contracts are unchanged.
 
 ## Payment work not activated
 
-The owner verified the 1Plat merchant domain and supplied a private API credential.
-A read-only authenticated methods request from the management server was rejected
-by Cloudflare HTTP 403 / Error 1010 before merchant authentication. No charge,
-invoice, card binding or subscription mutation was performed. No provider-block
-bypass was attempted. Credentials remain outside Git, clients and artifacts.
-
-The public [1Plat documentation](https://1plat.cash/doc/api), including its API-page
-bundle, describes orders/status/callback signatures but did not establish recurring
-charges or tokenized methods. The owner postponed recurring-capability investigation
-on 2026-11-02. Monthly invoices must not be described as automatic recurring debits.
-
-Follow-up: allow server API access, verify shop capabilities, currency units and
-idempotency, implement the replaceable live adapter, authoritative reconciliation,
-authenticated durable callback deduplication and contract settlement. Only then
-enable LIVE capabilities and run an owner-approved real payment test. Callback
-remains 503 BILLING_NOT_CONFIGURED; browser returns never grant access. Crypto is
-a [separate plan](crypto-payment-plan.md), not an enabled method.
+The originally investigated provider was abandoned by the owner on 2026-11-03.
+Its callback, merchant verification and configuration have been removed; see
+[removal handoff](payment-provider-removal.md). No charge, invoice, card binding or
+subscription mutation was performed. Payment capabilities remain disabled.
+Recurring billing is postponed; monthly invoices are not automatic debits. Crypto
+remains a [separate provider-independent plan](crypto-payment-plan.md).
 
 ## Verification and rollback
 

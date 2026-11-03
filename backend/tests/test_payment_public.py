@@ -54,22 +54,22 @@ def test_payment_assets_are_packaged_and_have_expected_types(client, asset, mime
         ("application/json", b"invalid-json"),
     ],
 )
-def test_unconfigured_callback_never_acknowledges_a_payment(client, caplog, content_type, body):
+def test_removed_callback_is_not_found_and_cannot_change_billing(
+    client, caplog, content_type, body
+):
     response = client.post(
         "/api/payments/1plat/callback", content=body, headers={"Content-Type": content_type}
     )
-    assert response.status_code == 503
-    assert response.json() == {"error": {"code": "BILLING_NOT_CONFIGURED"}}
-    assert response.headers["cache-control"] == "no-store"
-    assert response.headers["retry-after"] == "60"
+    assert response.status_code == 404
     assert "private-marker" not in response.text + caplog.text
     client.app.state.billing_operations.start.assert_not_called()
     client.app.state.billing_operations.get.assert_not_called()
 
 
-def test_callback_is_post_only_and_cannot_be_activated_by_browser_navigation(client):
+def test_removed_callback_is_absent_from_browser_routes_and_openapi(client):
     response = client.get("/api/payments/1plat/callback?status=success")
-    assert response.status_code == 405
+    assert response.status_code == 404
+    assert "/api/payments/1plat/callback" not in client.get("/openapi.json").json()["paths"]
     assert client.get("/payment/assets/unknown.txt").status_code == 404
 
 
@@ -77,7 +77,8 @@ def test_public_domain_does_not_expose_private_dashboard_or_account_api():
     caddy = Path("../infra/deployment/Caddyfile").read_text()
     public = caddy.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
     assert "/payment/success /payment/failure" in public
-    assert "/api/payments/1plat/callback" in public
+    assert "/api/payments/1plat/callback" not in public
+    assert "/1plat.txt" not in public
     assert "max_size 64KB" in public
     assert 'respond "Not found" 404' in public
     assert "/dashboard" not in public

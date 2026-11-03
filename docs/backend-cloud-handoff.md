@@ -1,5 +1,15 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Discontinued payment provider removal — 2026-11-03
+
+Backend 0.30.0 → 0.31.0; Windows 0.25.0 and Android 0.21.0 unchanged.
+BREAKING: the unused provider callback now returns 404 instead of 503/405.
+The domain verification route, mount and deploy variable are removed. Billing,
+subscriptions, paid dates, static payment returns and support remain intact.
+Schema remains 0041. [Removal scope and operational handoff](payment-provider-removal.md)
+records the rollout procedure; final exact source/build/runtime, remote cleanup,
+HTTP verification and all CI results are recorded in PR #49.
+
 ## Public support page — 2026-11-02
 
 Backend 0.29.0 → 0.30.0 for a new public page; schema remains 0041 and clients
@@ -10,22 +20,11 @@ performed by this page. Both payment return pages now link here. Shared static-p
 security headers retain no-store, no-referrer, no scripts/forms or framing.
 Source/build/run/attempt, live rollout and rollback evidence are recorded in PR #48.
 
-## 1Plat merchant verification — 2026-11-02
-
-Infrastructure-only follow-up; backend stays 0.29.0 and clients/schema are unchanged.
-Caddy serves exactly `/1plat.txt` from an owner-managed read-only mount. The supplied
-file stays outside Git and application images. See [installation and verification](payment-return-urls.md#merchant-domain-verification).
-The backend image/runtime remains the already verified `651e82c` manual build;
-this change deploys only Caddy configuration. Final configuration SHA, live byte
-comparison and all CI runs are recorded in PR #48. Merchant verification does not
-activate the payment provider.
-
 ## Payment return addresses — 2026-11-02
 
-Backend 0.28.0 → 0.29.0; schema 0041 unchanged. Public return pages and a fail-closed
-1Plat callback on the main server: [addresses and boundary](payment-return-urls.md).
-The merchant adapter is not enabled; callback replies 503 BILLING_NOT_CONFIGURED.
-Final source/build/runtime/deployment evidence belongs to the task PR.
+Backend 0.28.0 → 0.29.0 originally added public payment returns. The subsequent
+0.31.0 removal keeps only provider-independent pages; the discontinued callback
+and verification configuration must not be restored. See [current addresses](payment-return-urls.md).
 
 ## Permanent RU relay and Free balance — 2026-10-28
 

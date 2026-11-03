@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Backend — 0.31.0
+
+- BREAKING: remove the unused 1Plat callback (now 404), merchant verification
+  route, read-only mount and deployment variable after abandoning the provider.
+- Preserve provider-independent payment return/support pages and general billing.
+  No client or database changes. See [removal handoff](docs/payment-provider-removal.md).
+
 ### Windows — 0.25.0 / Android — 0.21.0
 
 - Add a concise FAQ dropdown in About with Home, Subscription and Support links.
@@ -13,8 +20,7 @@
   selected services, Gosuslugi + MAX for exclusions; preserve saved choices.
 - Show remaining paid days and clarify confirmed cancellation/method removal.
   Android formats subscription dates and hides internal billing status codes.
-- 1Plat API access still blocks payment activation; recurring work is postponed
-  by the owner. Crypto remains a plan. See [handoff](docs/subscription-management-followup.md).
+- Payment activation and recurring work remain postponed. Crypto remains a plan. See [handoff](docs/subscription-management-followup.md).
 
 ### Backend — 0.30.0
 
@@ -22,19 +28,12 @@
   application for `help@prettylisavpn.com`. Payment return pages link to it.
 - No automatic message sending, website form, new user-data storage or schema change.
 
-### Infrastructure — version unchanged
-
-- Serve the owner-provided 1Plat domain verification file at `/1plat.txt` on
-  prettylisavpn.com from a persistent, read-only directory outside application
-  releases. Other files in that directory remain inaccessible.
-
 ### Backend — 0.29.0
 
-- Add branded payment success/failure return pages on prettylisavpn.com and a
-  reserved 1Plat POST callback address, explicitly unavailable until configured.
+- Add branded payment success/failure return pages on prettylisavpn.com.
 - Browser returns never grant subscription access. Keep payments disabled and
-  callback bodies out of logs; restrict the public host to payment paths.
-- See [addresses, callback boundary and deployment](docs/payment-return-urls.md).
+  sensitive payment data out of logs; restrict the public host to payment paths.
+- See [current addresses and deployment](docs/payment-return-urls.md).
 
 ### Windows — 0.24.1 / Android — 0.20.1
 

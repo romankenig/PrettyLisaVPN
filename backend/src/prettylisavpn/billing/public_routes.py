@@ -1,15 +1,10 @@
-"""Public payment return pages and a fail-closed 1Plat callback address.
-
-Browser navigation is never payment evidence. Until the live provider adapter is
-configured, do not acknowledge callbacks or consume/store their sensitive bodies.
-"""
+"""Provider-independent payment return pages; browser navigation is not payment evidence."""
 
 from pathlib import Path
 
 from fastapi import APIRouter
-from starlette.responses import FileResponse, HTMLResponse, Response
+from starlette.responses import FileResponse, HTMLResponse
 
-from prettylisavpn.main_errors import error_response
 from prettylisavpn.public_web import PUBLIC_PAGE_HEADERS as HEADERS
 
 router = APIRouter(tags=["payment-return"])
@@ -34,10 +29,3 @@ async def payment_styles() -> FileResponse:
 @router.get("/payment/assets/logo.svg", include_in_schema=False)
 async def payment_logo() -> FileResponse:
     return FileResponse(ASSETS / "logo.svg", media_type="image/svg+xml", headers=HEADERS)
-
-
-@router.post("/api/payments/1plat/callback", status_code=503)
-async def oneplat_callback() -> Response:
-    response = error_response("BILLING_NOT_CONFIGURED", 503)
-    response.headers.update({"Cache-Control": "no-store", "Retry-After": "60"})
-    return response
