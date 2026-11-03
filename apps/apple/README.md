@@ -111,8 +111,8 @@ captures or browsing history. Free acceptance sessions consume real quota.
   payment management and payment deep links are **not exposed**. Existing live
   provider configuration is disabled; StoreKit/distribution decisions remain
   necessary. No invented checkout or simulated payment success.
-- Support uses the real multipart/status contract and an account-scoped encrypted
-  journal; no Windows-only diagnostics. Account messages ACK account/revision only
+- Support uses the real multipart/status contract and an account-scoped AES-GCM
+  journal with a Keychain key, deleted after acceptance or 30 days; no Windows-only diagnostics. Account messages ACK account/revision only
   after explicit action. Supported actions route to subscription/settings/about.
 - Six existing locales derive from Android. New copy is in `Config/AppleStrings.json`;
   regenerate with Python + Pillow: `python3 scripts/sync-resources.py`.

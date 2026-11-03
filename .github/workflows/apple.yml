@@ -38,11 +38,18 @@ jobs:
           go-version: '1.27.3'
           cache-dependency-path: engines/managed/go.sum
       - name: Install pinned project generator
+        id: apple-tools
         run: |
           brew install xcodegen
           xcodegen --version
           xcodebuild -version
           swift --version
+          echo "sdk=$(xcodebuild -version | tr '\n' '-')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: engine-cache
+        with:
+          path: apps/apple/Vendor
+          key: apple-engine-${{ runner.arch }}-${{ steps.apple-tools.outputs.sdk }}-${{ hashFiles('engines/managed/**/*.go', '!engines/managed/**/*_test.go', 'engines/managed/go.mod', 'engines/managed/go.sum', 'engines/managed/prepare_core.py', 'apps/apple/scripts/build-engine.sh') }}
       - name: Check Go format and Apple-only policies
         working-directory: engines/managed
         run: |
@@ -51,6 +58,7 @@ jobs:
           go test -ldflags=-checklinkname=0 ./...
           go vet ./...
       - name: Build real engine for iPhone, Simulator and Mac architectures
+        if: steps.engine-cache.outputs.cache-hit != 'true'
         run: bash apps/apple/scripts/build-engine.sh
       - name: Generate project and compile all shipping targets without signing
         working-directory: apps/apple

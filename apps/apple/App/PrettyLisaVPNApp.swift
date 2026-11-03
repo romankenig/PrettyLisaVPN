@@ -1,6 +1,6 @@
 import SwiftUI
 
-@main struct PrettyLisaVPNApp: App {
+@main @MainActor struct PrettyLisaVPNApp: App {
     @StateObject private var holder = AppHolder()
     @AppStorage("theme") private var theme = "system"
     var body: some Scene {

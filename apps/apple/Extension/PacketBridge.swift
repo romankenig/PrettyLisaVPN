@@ -22,7 +22,7 @@ final class PacketBridge {
             var fds: [Int32] = [-1, -1]
             guard socketpair(AF_UNIX, SOCK_DGRAM, 0, &fds) == 0 else { throw ClientError("PACKET_BRIDGE_FAILED") }
             let payload = try WireJSON.encode(profile)
-            let result = String(decoding: payload, as: UTF8.self).withCString { PLStart($0, fds[1]) }
+            let result = String(decoding: payload, as: UTF8.self).withCString { PLStart(UnsafeMutablePointer(mutating: $0), fds[1]) }
             close(fds[1])
             guard result == 0 else { close(fds[0]); throw ClientError("ENGINE_START_FAILED") }
             socket = fds[0]; self.flow = flow; running = true; generation += 1; received = 0; sent = 0

@@ -208,7 +208,8 @@ import PrettyLisaCore
                 _ = try report.multipart(images: images)
                 let saved = SupportJournal(report: report, images: images)
                 // Account-scoped journal survives lost responses and restarts, encrypted in Keychain.
-                try self.vault.save(WireJSON.encode(saved), account: self.supportKey)
+                guard let account = self.profile?.id else { throw ClientError("REAUTH_REQUIRED") }
+                try SupportJournalStore(vault: self.vault).save(WireJSON.encode(saved), account: account)
                 self.supportRequest = report; self.supportImages = images; self.supportFrozen = true
             }
             try await self.sendSavedSupport()
@@ -217,9 +218,9 @@ import PrettyLisaCore
     private var supportKey: String { "support-" + (profile?.id.uuidString ?? "signed-out") }
     private struct SupportJournal: Codable { let report: SupportReport; let images: [SupportImage] }
     func recoverSupport() async {
-        guard profile != nil, !fixtures else { return }
+        guard let account = profile?.id, !fixtures else { return }
         do {
-            if let data = try vault.data(supportKey) {
+            if let data = try SupportJournalStore(vault: vault).read(account: account) {
                 let saved = try WireJSON.decode(SupportJournal.self, from: data)
                 supportRequest = saved.report; supportImages = saved.images; supportFrozen = true
             }
@@ -232,9 +233,9 @@ import PrettyLisaCore
         supportReceipt = try WireJSON.decode(SupportReceipt.self, from: await session.request("support/requests", method: "POST", body: body.body, headers: ["Content-Type": body.contentType]))
         guard supportReceipt?.request_id == request.request_id else { throw ClientError("INVALID_RESPONSE") }
         // Retain only the account-scoped identifier after acceptance, not attachments/content.
-        try vault.delete(supportKey)
         try vault.save(WireJSON.encode(supportReceipt), account: supportKey + "-receipt")
-        supportImages = []
+        if let account = profile?.id { try SupportJournalStore(vault: vault).remove(account: account) }
+        supportImages = []; supportRequest = nil
     }
     func supportStatus() async throws {
         if supportReceipt == nil, let data = try vault.data(supportKey + "-receipt") { supportReceipt = try WireJSON.decode(SupportReceipt.self, from: data) }
@@ -249,7 +250,8 @@ import PrettyLisaCore
     func newSupport() {
         guard supportReceipt != nil else { return }
         supportRequest = nil; supportImages = []; supportReceipt = nil; supportFrozen = false
-        try? vault.delete(supportKey); try? vault.delete(supportKey + "-receipt")
+        if let account = profile?.id { try? SupportJournalStore(vault: vault).remove(account: account) }
+        try? vault.delete(supportKey + "-receipt")
     }
     #if DEBUG
     private func fixture<T: Decodable>(_ name: String, _ type: T.Type) throws -> T {

@@ -43,9 +43,9 @@ public struct SupportReport: Codable, Sendable {
     public let subject: String
     public let description: String
     public let reply_email: String
-    public let diagnostics: String? = nil
+    public let diagnostics: String?
     public init(id: UUID, subject: String, description: String, email: String) {
-        request_id = id; self.subject = subject; self.description = description; reply_email = email
+        request_id = id; self.subject = subject; self.description = description; reply_email = email; diagnostics = nil
     }
     public func multipart(images: [SupportImage]) throws -> (body: Data, contentType: String) {
         guard images.count <= 3, images.allSatisfy({ $0.data.count <= 5 * 1024 * 1024 }),

@@ -13,7 +13,7 @@ struct RootView: View {
             if model.profile == nil || model.needsSignIn { LoginView(model: model) }
             else {
                 NavigationSplitView {
-                    List(AppModel.Page.allCases, selection: $model.page) { page in
+                    List(AppModel.Page.allCases, selection: Binding<AppModel.Page?>(get: { model.page }, set: { model.page = $0 ?? .home })) { page in
                         NavigationLink(value: page) { Label(L(page.key), systemImage: page.icon) }
                     }
                     .navigationTitle("PrettyLisaVPN")
