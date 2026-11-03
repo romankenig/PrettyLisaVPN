@@ -116,6 +116,7 @@ struct LoginView: View {
 
 struct HomeView: View {
     @ObservedObject var model: AppModel
+    @Environment(\.locale) private var locale
     var stateKey: String {
         switch model.connection {
         case .disconnected: return "ui_not_connected"
@@ -136,8 +137,8 @@ struct HomeView: View {
                         Image(systemName: model.connection.protected && !model.simulation ? "checkmark.shield.fill" : "shield.slash")
                             .font(.system(size: 52)).foregroundStyle(model.connection.protected && !model.simulation ? Color.teal : Color.secondary)
                         Text(L(stateKey)).font(.title2.bold()).accessibilityIdentifier("vpn-status")
-                        if case .connecting(let method) = model.connection { Text(method).font(.callout).foregroundStyle(.secondary) }
-                        if case .connected(let method) = model.connection { Text(method).font(.callout).foregroundStyle(.secondary) }
+                        if case .connecting(let method) = model.connection { Text(Methods.label(method)).font(.callout).foregroundStyle(.secondary) }
+                        if case .connected(let method) = model.connection { Text(Methods.label(method)).font(.callout).foregroundStyle(.secondary) }
                         if case .failed(let code) = model.connection { Text(errorText(code)).foregroundStyle(.red).font(.callout) }
                         if let ip = model.vpn.verifiedIP, !model.simulation { Text(ip).font(.body.monospaced()).textSelection(.enabled) }
                         HStack {
@@ -152,7 +153,7 @@ struct HomeView: View {
                     Picker(L("dash_where"), selection: $model.country) {
                         Text(L("ui_autopilot")).tag("AUTO")
                         ForEach(model.countries?.countries ?? []) { country in
-                            Text((Locale.current.localizedString(forRegionCode: country.country_code) ?? country.country_code) + " · \(country.quality)%")
+                            Text((locale.localizedString(forRegionCode: country.country_code) ?? country.country_code) + " · \(country.quality)%")
                                 .tag(country.country_code).disabled(!country.available)
                         }
                     }.disabled(model.connection != .disconnected && !isFailed).padding(8)
@@ -318,7 +319,7 @@ struct SettingsView: View {
             Section(L("apple_methods")) {
                 Text(L("apple_methods_detail")).font(.footnote).foregroundStyle(.secondary)
                 ForEach(Methods.all, id: \.self) { method in
-                    Toggle(method, isOn: Binding(get: { model.methods.contains(method) }, set: { enabled in
+                    Toggle(Methods.label(method), isOn: Binding(get: { model.methods.contains(method) }, set: { enabled in
                         var selected = Set(model.methods)
                         if enabled { selected.insert(method) } else if selected.count > 1 { selected.remove(method) }
                         model.methods = Methods.all.filter(selected.contains)

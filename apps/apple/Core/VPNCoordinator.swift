@@ -25,9 +25,11 @@ public enum ConnectionState: Equatable, Sendable {
     private let driver: any TunnelDriver
     private let keyPair: () -> (privateKey: String, publicKey: String)
     private var operation: Task<Void, Never>?
-    private var checking = false
+    private var checkTask: Task<Void, Never>?
+    private var checkID: UUID?
     private var stopping = false
-    public var busy: Bool { operation != nil || stopping }
+    public var busy: Bool { operation != nil || stopping || checkTask != nil }
+    public var localTunnelDown: Bool { driver.status == .down }
     public init(session: Session, driver: any TunnelDriver, keyPair: @escaping () -> (String, String)) {
         self.session = session; self.driver = driver; self.keyPair = keyPair
         driver.onStatus = { [weak self] in self?.statusChanged() }
@@ -36,7 +38,7 @@ public enum ConnectionState: Equatable, Sendable {
         try WireJSON.decode(Lease?.self, from: await session.request("vpn/sessions/" + suffix))
     }
     private func statusChanged() {
-        guard !stopping else { return }
+        guard !stopping, operation == nil else { return }
         switch driver.status {
         case .reasserting: state = .reconnecting; verifiedIP = nil
         case .down:
@@ -123,12 +125,19 @@ public enum ConnectionState: Equatable, Sendable {
         verifiedIP = proof.ip
     }
     public func reconcile() async {
-        guard !busy, !checking else { return }
-        checking = true
-        defer { checking = false }
+        guard !busy else { return }
+        let id = UUID()
+        let task = Task { await self.reconcileState() }
+        checkTask = task; checkID = id
+        await task.value
+        if checkID == id { checkTask = nil; checkID = nil }
+    }
+    private func reconcileState() async {
         do {
             try await driver.reload()
+            try Task.checkCancellation()
             lease = try await row("current")
+            try Task.checkCancellation()
             guard let current = lease else {
                 if driver.status != .down { try await driver.stop() }
                 state = .disconnected; verifiedIP = nil; return
@@ -140,7 +149,9 @@ public enum ConnectionState: Equatable, Sendable {
             if driver.status == .reasserting { state = .reconnecting; return }
             state = .verifying
             try await verify(current)
+            try Task.checkCancellation()
             state = .connected(current.method)
+        } catch is CancellationError { return
         } catch let error as ClientError where error.terminal || error.status == 403 {
             // An ambiguous refresh is not proof of server revocation. Keep OS tunnel visible, ask for OTP.
             if error.code != "ROTATION_UNCERTAIN" { try? await driver.stop() }
@@ -155,6 +166,9 @@ public enum ConnectionState: Equatable, Sendable {
         stopping = true
         state = .disconnecting
         operation?.cancel()
+        checkTask?.cancel()
+        await checkTask?.value
+        checkTask = nil; checkID = nil
         await operation?.value
         operation = nil
         do { try await cleanup(); state = .disconnected }

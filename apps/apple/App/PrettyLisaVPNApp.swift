@@ -23,6 +23,8 @@ import SwiftUI
                 Button(L("ui_refresh")) { Task { await holder.model?.loadPage() } }.keyboardShortcut("r", modifiers: [.command])
             }
         }
+        #endif
+        #if os(macOS)
         Settings { if let model = holder.model { SettingsView(model: model).frame(width: 480, height: 560) } }
         #endif
     }

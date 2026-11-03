@@ -189,6 +189,14 @@ public enum Methods {
     public static let families = ["wireguard", "amneziawg", "sstp", "softether", "shadowsocks2022",
                                   "vmess", "vless", "vless_reality", "hysteria", "hysteria2", "hysteria2_salamander"]
     public static let all = families.flatMap { [$0, $0 + "_relay"] }
+    public static func label(_ method: String) -> String {
+        let relay = method.hasSuffix("_relay")
+        let base = relay ? String(method.dropLast(6)) : method
+        let name = ["wireguard": "WireGuard", "amneziawg": "AmneziaWG", "sstp": "SSTP", "softether": "SoftEther",
+                    "shadowsocks2022": "SS2022", "vmess": "VMess", "vless": "VLESS", "vless_reality": "REALITY",
+                    "hysteria": "Hysteria", "hysteria2": "Hysteria 2", "hysteria2_salamander": "Salamander"][base] ?? method
+        return name + (relay ? "+" : "")
+    }
     public static func engineName(for method: String) -> String? {
         let base = method.hasSuffix("_relay") ? String(method.dropLast(6)) : method
         return ["wireguard": "WIREGUARD", "amneziawg": "AMNEZIA", "sstp": "SSTP", "softether": "SOFTETHER",

@@ -120,8 +120,13 @@ import PrettyLisaCore
     }
     func login(email: String, code: String) {
         perform {
+            // Stop the previous identity's tunnel before replacing credentials. A revoked/expired
+            // session may prevent remote cleanup, but cannot justify keeping its local tunnel up.
+            await self.vpn.disconnect()
+            guard self.vpn.localTunnelDown else { throw ClientError("TUNNEL_STOP_FAILED") }
             try await self.session.login(email: email.trimmingCharacters(in: .whitespacesAndNewlines), code: code,
                                          installation: self.vault.installationID(), platform: self.platform, name: "PrettyLisaVPN " + self.platform)
+            self.resetAccount()
             self.needsSignIn = false
             try await self.refresh(); await self.vpn.reconcile()
         }
@@ -207,7 +212,7 @@ import PrettyLisaCore
                 let report = SupportReport(id: UUID(), subject: subject, description: description, email: email)
                 _ = try report.multipart(images: images)
                 let saved = SupportJournal(report: report, images: images)
-                // Account-scoped journal survives lost responses and restarts, encrypted in Keychain.
+                // Account-scoped journal survives lost responses and restarts; only its key is in Keychain.
                 guard let account = self.profile?.id else { throw ClientError("REAUTH_REQUIRED") }
                 try SupportJournalStore(vault: self.vault).save(WireJSON.encode(saved), account: account)
                 self.supportRequest = report; self.supportImages = images; self.supportFrozen = true
@@ -230,19 +235,22 @@ import PrettyLisaCore
     private func sendSavedSupport() async throws {
         guard let request = supportRequest else { return }
         let body = try request.multipart(images: supportImages)
-        supportReceipt = try WireJSON.decode(SupportReceipt.self, from: await session.request("support/requests", method: "POST", body: body.body, headers: ["Content-Type": body.contentType]))
-        guard supportReceipt?.request_id == request.request_id else { throw ClientError("INVALID_RESPONSE") }
+        let receipt = try WireJSON.decode(SupportReceipt.self, from: await session.request("support/requests", method: "POST", body: body.body, headers: ["Content-Type": body.contentType]))
+        try acceptSupport(receipt, expectedID: request.request_id)
+    }
+    private func acceptSupport(_ receipt: SupportReceipt, expectedID: UUID) throws {
+        guard receipt.request_id == expectedID else { throw ClientError("INVALID_RESPONSE") }
         // Retain only the account-scoped identifier after acceptance, not attachments/content.
-        try vault.save(WireJSON.encode(supportReceipt), account: supportKey + "-receipt")
+        try vault.save(WireJSON.encode(receipt), account: supportKey + "-receipt")
         if let account = profile?.id { try SupportJournalStore(vault: vault).remove(account: account) }
-        supportImages = []; supportRequest = nil
+        supportReceipt = receipt; supportFrozen = true; supportImages = []; supportRequest = nil
     }
     func supportStatus() async throws {
         if supportReceipt == nil, let data = try vault.data(supportKey + "-receipt") { supportReceipt = try WireJSON.decode(SupportReceipt.self, from: data) }
         guard let id = supportRequest?.request_id ?? supportReceipt?.request_id else { return }
         do {
-            supportReceipt = try WireJSON.decode(SupportReceipt.self, from: await session.request("support/requests/" + id.uuidString.lowercased()))
-            supportFrozen = true
+            let receipt = try WireJSON.decode(SupportReceipt.self, from: await session.request("support/requests/" + id.uuidString.lowercased()))
+            try acceptSupport(receipt, expectedID: id)
         } catch let error as ClientError where error.code == "SUPPORT_NOT_FOUND" {
             if supportRequest != nil { try await sendSavedSupport() } else { throw error }
         }

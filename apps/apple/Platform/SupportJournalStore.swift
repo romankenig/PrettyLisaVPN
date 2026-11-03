@@ -28,10 +28,9 @@ struct SupportJournalStore {
     func save(_ data: Data, account: UUID) throws {
         guard data.count <= 15 * 1024 * 1024, let sealed = try AES.GCM.seal(data, using: key()).combined else { throw ClientError("INVALID_REQUEST") }
         let url = try file(account)
-        #if os(iOS)
-        try sealed.write(to: url, options: [.atomic, .completeUntilFirstUserAuthentication])
-        #else
         try sealed.write(to: url, options: .atomic)
+        #if os(iOS)
+        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path)
         #endif
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }

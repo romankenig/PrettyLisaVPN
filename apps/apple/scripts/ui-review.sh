@@ -22,7 +22,10 @@ while IFS= read -r device; do
     xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug \
       -destination "platform=iOS Simulator,id=$device" -derivedDataPath DerivedData \
       -resultBundlePath "artifacts/iphone-$index-$theme.xcresult" CODE_SIGNING_ALLOWED=NO test
+    xcrun simctl launch "$device" com.prettylisavpn.ios -ui-fixtures -simulate-vpn -AppleLanguages '(ru)'
+    sleep 2
     xcrun simctl io "$device" screenshot "artifacts/iphone-$index-$theme.png"
+    xcrun simctl terminate "$device" com.prettylisavpn.ios
   done
   xcrun simctl shutdown "$device"
 done < artifacts/simulators.txt

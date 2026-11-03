@@ -37,7 +37,7 @@ jobs:
         with:
           go-version: '1.27.3'
           cache-dependency-path: engines/managed/go.sum
-      - name: Install pinned project generator
+      - name: Install project generator and record Apple toolchain
         id: apple-tools
         run: |
           brew install xcodegen
@@ -45,7 +45,7 @@ jobs:
           xcodebuild -version
           swift --version
           echo "sdk=$(xcodebuild -version | tr '\n' '-')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: engine-cache
         with:
           path: apps/apple/Vendor
@@ -60,6 +60,11 @@ jobs:
       - name: Build real engine for iPhone, Simulator and Mac architectures
         if: steps.engine-cache.outputs.cache-hit != 'true'
         run: bash apps/apple/scripts/build-engine.sh
+      - uses: actions/cache/save@v4
+        if: steps.engine-cache.outputs.cache-hit != 'true'
+        with:
+          path: apps/apple/Vendor
+          key: ${{ steps.engine-cache.outputs.cache-primary-key }}
       - name: Generate project and compile all shipping targets without signing
         working-directory: apps/apple
         run: |

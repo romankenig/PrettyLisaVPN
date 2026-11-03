@@ -11,7 +11,8 @@ import FoundationNetworking
     var starts = 0
     var stops = 0
     var traffic = true
-    func reload() async throws {}
+    var reloadDelay: UInt64 = 0
+    func reload() async throws { if reloadDelay > 0 { try await Task.sleep(nanoseconds: reloadDelay) } }
     func start(_ payload: TunnelPayload) async throws { starts += 1; status = .up; leaseID = payload.leaseID }
     func stop() async throws { stops += 1; status = .down }
     func hasTraffic() async throws -> Bool { traffic }
@@ -47,6 +48,20 @@ actor VPNTransport: HTTPTransport {
     }
 }
 final class VPNTests: XCTestCase {
+    @MainActor func testDisconnectCancelsReconciliationAndBlocksConcurrentStart() async throws {
+        let http = VPNTransport(), driver = TestDriver(); driver.reloadDelay = 1_000_000_000
+        let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
+        let vpn = VPNCoordinator(session: session, driver: driver, keyPair: { (testKey, testKey) })
+        let restore = Task { await vpn.reconcile() }
+        for _ in 0..<100 { if vpn.busy { break }; try await Task.sleep(nanoseconds: 1_000_000) }
+        vpn.connect(country: "DE", methods: ["wireguard"])
+        await vpn.disconnect(); await restore.value
+        XCTAssertEqual(vpn.state, .disconnected)
+        XCTAssertFalse(vpn.busy)
+        XCTAssertEqual(driver.starts, 0)
+        let creates = await http.creates
+        XCTAssertEqual(creates, 0)
+    }
     @MainActor func testLostCreateResponseDiscoversAndRemovesPeerBeforeFailing() async throws {
         let http = VPNTransport(), driver = TestDriver(); await http.loseResponse()
         let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
