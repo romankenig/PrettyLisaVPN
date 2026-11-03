@@ -102,7 +102,6 @@
 .traffic-services span {
   min-width: 0;
   flex: 1;
-  text-transform: none;
 }
 .traffic-services svg {
   flex-shrink: 0;
@@ -315,6 +314,11 @@ h1 {
 .backend-details dd {
   overflow-wrap: anywhere;
 }
+select,
+option {
+  text-transform: lowercase;
+  font: inherit;
+}
 button {
   text-transform: lowercase;
   margin-top: 18px;
@@ -463,6 +467,26 @@ dd {
 }
 .account-home {
   width: min(100%, 720px);
+}
+.upgrade-plan {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  background: var(--color-viking);
+  color: var(--color-black);
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: lowercase;
+}
+.upgrade-plan:hover {
+  filter: brightness(0.96);
+}
+.upgrade-plan:focus-visible {
+  outline: 2px solid var(--color-heliotrope);
+  outline-offset: 3px;
 }
 .account-summary {
   display: grid;
@@ -999,7 +1023,6 @@ h1 {
   align-items: center;
   gap: 0.75rem;
   min-height: 44px;
-  text-transform: none;
   cursor: pointer;
 }
 .method-checkbox input {
@@ -1086,8 +1109,7 @@ input,
 .verified-email,
 .account-summary strong[title],
 .device-card h2,
-.sidebar-versions dd,
-main dd {
+.sidebar-versions dd {
   text-transform: none;
 }
 .auth-card input::placeholder {
@@ -1282,7 +1304,6 @@ main dd {
 }
 .connection-card .connection-attempt {
   color: var(--color-scorpion);
-  text-transform: none;
   overflow-wrap: anywhere;
 }
 .current-location {
@@ -1445,41 +1466,13 @@ main dd {
 .quality-bars i.filled {
   background: var(--color-purple-heart);
 }
-.home-connect-panel .connection-info,
-.home-connect-panel .connection-info p,
-.connection-info summary,
-.connection-info dl {
-  color: rgb(1 1 1 / 58%);
-  font-size: 11px;
-  line-height: 1.4;
-}
-.connection-info {
+.home-connect-panel .connection-info {
   flex-shrink: 0;
-  margin-top: 8px;
-}
-.home-connect-panel .connection-info p {
-  margin: 2px 0;
+  margin: 8px 0 0;
+  color: var(--color-scorpion);
+  font-size: 14px;
+  line-height: 1.4;
   overflow-wrap: anywhere;
-}
-.connection-info summary {
-  margin-top: 6px;
-  cursor: pointer;
-}
-.connection-info dl {
-  display: grid;
-  gap: 8px;
-  margin: 10px 0;
-}
-.connection-info dt {
-  color: inherit;
-  font-weight: 600;
-}
-.connection-info dd {
-  color: inherit;
-  margin: 2px 0 0;
-  overflow-wrap: anywhere;
-  text-transform: none;
-  user-select: text;
 }
 
 .sr-only {
@@ -1691,7 +1684,6 @@ main dd {
 }
 .billing-method-value strong {
   font-weight: 600;
-  text-transform: none;
 }
 .billing-method-value span {
   font-size: 12px;
@@ -2119,7 +2111,6 @@ main dd {
   margin: 0 0 16px;
   font-size: 26px;
   line-height: 1.2;
-  text-transform: none;
   overflow-wrap: anywhere;
 }
 .account-message-content {
@@ -2129,7 +2120,6 @@ main dd {
   color: var(--color-scorpion);
   font-size: 14px;
   line-height: 1.6;
-  text-transform: none;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -2185,12 +2175,10 @@ main dd {
 .language-selector {
   position: relative;
   width: 100%;
-  text-transform: none;
   z-index: 30;
 }
 .language-selector button {
   margin: 0;
-  text-transform: none;
   font-family: inherit;
 }
 .language-trigger {

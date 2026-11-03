@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 import type { MeResponse } from "../api/client";
 import { FreeTimeBalance, freeTimeRemaining } from "../ui/FreeTimeBalance";
@@ -38,6 +39,7 @@ it("does not invent an hour for missing/invalid data and hides Free balance on p
   ).toBeNull();
   const { rerender } = render(
     <FreeTimeBalance profile={{ ...profile, quotaReceivedAt: Date.now() }} />,
+    { wrapper: MemoryRouter },
   );
   expect(screen.getByRole("timer")).toHaveTextContent("10:00");
   rerender(<FreeTimeBalance profile={{ ...profile, plan: "PREMIUM" }} />);
@@ -58,7 +60,9 @@ it("honors an explicit account allowance without counting down while disconnecte
   expect(freeTimeRemaining(extended, extended.quotaReceivedAt + 60000)).toBe(
     10800,
   );
-  const { unmount } = render(<FreeTimeBalance profile={extended} />);
+  const { unmount } = render(<FreeTimeBalance profile={extended} />, {
+    wrapper: MemoryRouter,
+  });
   expect(screen.getByRole("timer")).toHaveTextContent("180:00");
   unmount();
   expect(

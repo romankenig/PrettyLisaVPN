@@ -291,10 +291,10 @@ private fun FixtureHome(state: ScreenState, model: ScreenModel, countries: () ->
     BrandCard {
         Text(tr(R.string.ui_account), style = MaterialTheme.typography.titleMedium)
         Text(state.data.email)
-        Text(tr(R.string.ui_plan_0, state.data.plan))
+        Text(tr(R.string.ui_plan_0, planLabel(state.data.plan)))
         Text(tr(R.string.ui_active_devices_0_5, state.data.devices.count { it.active }), Modifier.testTag("device-count"))
         if (state.data.plan == "Free") Text(tr(R.string.ui_free_preview_1_hour_per_utc_day_no_real_quota_is_consumed))
-        BrandActionButton(tr(R.string.ui_subscription), subscription, Modifier.testTag("home-subscription"))
+        BrandActionButton(tr(if (state.data.plan == "Free") R.string.upgrade_plan else R.string.ui_subscription), subscription, Modifier.testTag("home-subscription"))
         BrandActionButton(tr(R.string.ui_messages_0, state.data.messages.size), messages, Modifier.testTag("home-messages"))
     }
     LocationCard(model)
@@ -346,7 +346,7 @@ private fun ColumnScope.SubscriptionScreen(state: ScreenState, model: ScreenMode
     val data = state.data
     BrandCard {
         Text(tr(R.string.ui_your_plan), style = MaterialTheme.typography.titleMedium)
-        Text(data.plan, style = MaterialTheme.typography.titleLarge)
+        Text(planLabel(data.plan), style = MaterialTheme.typography.titleLarge)
         Text(tr(R.string.ui_paid_until_0, data.paidUntil ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("paid-until"))
         if (data.plan == "Platinum") Text(tr(R.string.ui_manually_assigned_premium_capabilities_no_purchase_needed))
         Text(tr(R.string.ui_auto_renewal_0, if (data.autoRenew) tr(R.string.ui_on) else tr(R.string.ui_off)), Modifier.testTag("auto-renewal"))

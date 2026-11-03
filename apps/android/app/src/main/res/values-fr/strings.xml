@@ -294,4 +294,5 @@
     <string name="traffic_selected_label">services sélectionnés :</string>
     <string name="traffic_add_service">ajouter un service</string>
     <string name="direct_location">localisation sans VPN :</string>
+    <string name="upgrade_plan">améliorer le forfait</string>
 </resources>

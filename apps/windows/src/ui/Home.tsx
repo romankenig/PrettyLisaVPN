@@ -20,6 +20,7 @@ import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 import { attemptMessage } from "../vpn/attempt";
 import { FreeTimeBalance } from "./FreeTimeBalance";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
+import { ProductText } from "./ProductText";
 
 type ProfileState =
   | { phase: "loading" }
@@ -253,10 +254,12 @@ export function Home() {
               connectionState.phase,
             ) ? (
               <p className="connection-error" role="alert">
-                {t(
-                  connectionErrorMessage ??
-                    connectionUnavailableMessage(connectionState),
-                )}
+                <ProductText
+                  text={t(
+                    connectionErrorMessage ??
+                      connectionUnavailableMessage(connectionState),
+                  )}
+                />
               </p>
             ) : null}
             {connectionState.phase === "DISCONNECTED" &&

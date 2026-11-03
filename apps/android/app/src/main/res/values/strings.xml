@@ -301,4 +301,5 @@
     <string name="traffic_selected_label">selected services:</string>
     <string name="traffic_add_service">add your own service</string>
     <string name="direct_location">location without VPN:</string>
+    <string name="upgrade_plan">upgrade plan</string>
 </resources>

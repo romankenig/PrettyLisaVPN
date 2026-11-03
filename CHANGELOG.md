@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Windows — 0.24.1 / Android — 0.20.1
+
+- Show only the connected protocol on Windows and apply lowercase interface
+  typography consistently while preserving PrettyLisaVPN and user data.
+- Add Android plan badges: Free 🆓, Premium ⭐ and Platinum 💎.
+- Add a Free-only Home shortcut to the existing subscription screen on both
+  clients; payment availability and entitlement rules are unchanged.
+- See [scope, compatibility and validation](docs/client-home-polish.md).
+
 ### Windows — 0.24.0 / Android — 0.20.0 / Backend — 0.28.0 / dashboard — 0.5.0 / engines — 0.5.2
 
 - Make protection mode read as part of the Home heading, use a turquoise service

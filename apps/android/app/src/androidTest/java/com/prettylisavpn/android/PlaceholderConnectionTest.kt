@@ -46,7 +46,7 @@ class PlaceholderConnectionTest {
                     }
                 }
             }
-            compose.activity.setContent { PrettyLisaTheme { LocalizedApp { LiveHome(model) } } }
+            compose.activity.setContent { PrettyLisaTheme { LocalizedApp { LiveHome(model) {} } } }
         }
         try {
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()

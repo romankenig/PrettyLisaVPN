@@ -304,7 +304,8 @@
     "Добавить свой сервис": "Добавить свой сервис",
     "локация без VPN": "локация без VPN",
     "локация без VPN:": "локация без VPN:",
-    "обновить локацию без VPN": "обновить локацию без VPN"
+    "обновить локацию без VPN": "обновить локацию без VPN",
+    "улучшить план": "улучшить план"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -611,7 +612,8 @@
     "Добавить свой сервис": "Add your own service",
     "локация без VPN": "location without VPN",
     "локация без VPN:": "location without VPN:",
-    "обновить локацию без VPN": "refresh location without VPN"
+    "обновить локацию без VPN": "refresh location without VPN",
+    "улучшить план": "upgrade plan"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -918,7 +920,8 @@
     "Добавить свой сервис": "添加自定义服务",
     "локация без VPN": "非 VPN 位置",
     "локация без VPN:": "非 VPN 位置：",
-    "обновить локацию без VPN": "刷新非 VPN 位置"
+    "обновить локацию без VPN": "刷新非 VPN 位置",
+    "улучшить план": "升级套餐"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1225,7 +1228,8 @@
     "Добавить свой сервис": "Añadir servicio propio",
     "локация без VPN": "ubicación sin VPN",
     "локация без VPN:": "ubicación sin VPN:",
-    "обновить локацию без VPN": "actualizar ubicación sin VPN"
+    "обновить локацию без VPN": "actualizar ubicación sin VPN",
+    "улучшить план": "mejorar plan"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1532,7 +1536,8 @@
     "Добавить свой сервис": "Eigenen Dienst hinzufügen",
     "локация без VPN": "Standort ohne VPN",
     "локация без VPN:": "Standort ohne VPN:",
-    "обновить локацию без VPN": "Standort ohne VPN aktualisieren"
+    "обновить локацию без VPN": "Standort ohne VPN aktualisieren",
+    "улучшить план": "tarif verbessern"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1839,6 +1844,7 @@
     "Добавить свой сервис": "Ajouter un service",
     "локация без VPN": "localisation sans VPN",
     "локация без VPN:": "localisation sans VPN :",
-    "обновить локацию без VPN": "actualiser la localisation sans VPN"
+    "обновить локацию без VPN": "actualiser la localisation sans VPN",
+    "улучшить план": "améliorer le forfait"
   }
 }

@@ -36,7 +36,7 @@ internal fun DetailValue(label: String, value: String, modifier: Modifier = Modi
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun AccountSummary(data: Snapshot) {
+internal fun AccountSummary(data: Snapshot, upgrade: () -> Unit) {
     val tr = strings()
     BrandCard(Modifier.testTag("account-summary")) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -44,10 +44,13 @@ internal fun AccountSummary(data: Snapshot) {
             Text(data.email, Modifier.testTag("account-email"), style = MaterialTheme.typography.titleSmall)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(36.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            DetailValue(tr(R.string.dash_plan), data.plan)
+            DetailValue(tr(R.string.dash_plan), planLabel(data.plan))
             DetailValue(tr(R.string.dash_devices), "${data.activeDeviceCount} / 5", Modifier.testTag("account-device-count"))
         }
-        if (data.plan == "Free") FreeTimeBalance(data.freeTime)
+        if (data.plan == "Free") {
+            FreeTimeBalance(data.freeTime)
+            BrandActionButton(tr(R.string.upgrade_plan), upgrade, Modifier.testTag("home-upgrade"))
+        }
     }
 }
 
@@ -81,7 +84,7 @@ internal fun SettingsOption(title: String, detail: String, icon: Int, tag: Strin
 }
 
 @Composable
-internal fun LiveHome(model: ScreenModel) {
+internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
     val tr = strings()
     val state by model.state.collectAsState()
     val presentation = LocalPresentation.current
@@ -125,7 +128,7 @@ internal fun LiveHome(model: ScreenModel) {
             } finally { refreshing = false }
         }
     }, refreshing = refreshing, refreshAtEnd = false) {
-        AccountSummary(state.data)
+        AccountSummary(state.data, upgrade)
         OperationError(state.loads[Area.HOME]?.error)
         BrandCard {
             Text(tr(R.string.dash_where), style = MaterialTheme.typography.titleMedium)
