@@ -9,7 +9,8 @@ struct RootView: View {
     @AppStorage("language") private var language = "system"
     @State private var logout = false
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            banners
             if model.profile == nil || model.needsSignIn { LoginView(model: model) }
             else {
                 NavigationSplitView {
@@ -31,14 +32,6 @@ struct RootView: View {
         }
         .tint(colors == .dark ? Color(red: 0.675, green: 0.451, blue: 1) : Color(red: 0.373, green: 0.133, blue: 0.851))
         .environment(\.locale, language == "system" ? .current : Locale(identifier: language))
-        .safeAreaInset(edge: .top) {
-            VStack(spacing: 0) {
-                if model.simulation { Text(L("apple_simulation")).font(.callout.bold()).frame(maxWidth: .infinity).padding(10).background(Color.yellow).foregroundStyle(.black).accessibilityIdentifier("simulation-banner") }
-                if model.fixtures { Text(L("test_data_notice")).font(.callout.bold()).frame(maxWidth: .infinity).padding(8).background(Color.orange).foregroundStyle(.black) }
-                if let error = model.error { ErrorBanner(code: error) { model.error = nil } }
-                if model.busy { ProgressView().frame(maxWidth: .infinity).padding(6).accessibilityLabel(L("processing")) }
-            }
-        }
         .task { await model.restore() }
         .task(id: model.page) { await model.loadPage() }
         .task(id: phase) {
@@ -52,6 +45,14 @@ struct RootView: View {
         .confirmationDialog(L("ui_sign_out_54"), isPresented: $logout, titleVisibility: .visible) {
             Button(L("ui_sign_out"), role: .destructive) { model.logout() }
         } message: { Text(L("ui_end_this_server_session_on_this_device_if_the_network_is_unavaila")) }
+    }
+    var banners: some View {
+        VStack(spacing: 0) {
+            if model.simulation { Text(L("apple_simulation")).font(.callout.bold()).frame(maxWidth: .infinity).padding(10).background(Color(red: 0.843, green: 0.678, blue: 0.051)).foregroundStyle(.black).accessibilityIdentifier("simulation-banner") }
+            if model.fixtures { Text(L("test_data_notice")).font(.callout.bold()).frame(maxWidth: .infinity).padding(8).background(Color(red: 0.894, green: 0.894, blue: 0.894)).foregroundStyle(.black) }
+            if let error = model.error { ErrorBanner(code: error) { model.error = nil } }
+            if model.busy { ProgressView().frame(maxWidth: .infinity).padding(6).accessibilityLabel(L("processing")) }
+        }
     }
     @ViewBuilder var pageContent: some View {
         switch model.page {

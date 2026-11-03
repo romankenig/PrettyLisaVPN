@@ -11,6 +11,7 @@ final class PacketBridge {
     private var socket: Int32 = -1
     private var source: DispatchSourceRead?
     private var running = false
+    private var readPending = false
     private var generation = 0
     private var received: UInt64 = 0
     private var sent: UInt64 = 0
@@ -36,20 +37,26 @@ final class PacketBridge {
         }
     }
     private func read() {
-        guard running else { return }
+        guard running, !readPending, let flow else { return }
         let generation = self.generation
-        flow?.readPackets { [weak self] packets, _ in
+        readPending = true
+        flow.readPackets { [weak self] packets, _ in
             guard let self else { return }
             self.queue.async {
-                guard self.running, self.generation == generation else { return }
-                for packet in packets {
-                    guard let first = packet.first, packet.count <= 65535 else { continue }
-                    let family: UInt8 = first >> 4 == 4 ? UInt8(AF_INET) : UInt8(AF_INET6)
-                    var framed = Data([0, 0, 0, family]); framed.append(packet)
-                    let count = framed.withUnsafeBytes { Darwin.send(self.socket, $0.baseAddress, $0.count, MSG_DONTWAIT) }
-                    if count == framed.count { self.sent += UInt64(packet.count) }
-                    // Bounded queue: congestion drops a packet; TCP retransmits. Never fall back to direct sockets.
+                self.readPending = false
+                guard self.running else { return }
+                if self.generation == generation {
+                    for packet in packets {
+                        guard let first = packet.first, packet.count <= 65535 else { continue }
+                        let family: UInt8 = first >> 4 == 4 ? UInt8(AF_INET) : UInt8(AF_INET6)
+                        var framed = Data([0, 0, 0, family]); framed.append(packet)
+                        let count = framed.withUnsafeBytes { Darwin.send(self.socket, $0.baseAddress, $0.count, MSG_DONTWAIT) }
+                        if count == framed.count { self.sent += UInt64(packet.count) }
+                        // Bounded queue: congestion drops a packet; TCP retransmits. Never fall back to direct sockets.
+                    }
                 }
+                // A path restart cannot cancel Apple's outstanding read. Drain that callback,
+                // discard its old-generation packets, then arm exactly one read on the new core.
                 self.read()
             }
         }

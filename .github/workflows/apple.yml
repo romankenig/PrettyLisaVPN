@@ -86,6 +86,26 @@ jobs:
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test
       - name: Package corresponding sources, licenses and exact build identity
         run: bash apps/apple/scripts/package.sh
+      - name: Export native screenshot attachments
+        if: always()
+        working-directory: apps/apple
+        run: |
+          shopt -s nullglob
+          for result in artifacts/*.xcresult; do
+            name=$(basename "$result" .xcresult)
+            xcrun xcresulttool export attachments --path "$result" --output-path "artifacts/previews/$name"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-ui-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/*.png
+            apps/apple/artifacts/simulators.json
+            apps/apple/artifacts/previews/**/*.png
+            apps/apple/artifacts/previews/**/manifest.json
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
