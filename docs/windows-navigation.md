@@ -1,11 +1,14 @@
-# Website preview 0.1.0 — clients unchanged
+# Website 0.2.0 — clients unchanged
 
-The separate website `/account/` page guides the user to the existing Settings →
-Subscription screen and About → Support. It does not launch a custom deep link,
-introduce web authentication, or change a client route/auth guard. Its `/checkout/`
-is unavailable; live Cardlink, order history and payment-status integration remain
-pending. The support form prepares a user-initiated `mailto:` instead of sending
-mail or calling the private support API. See [website handoff](public-website-preview.md).
+The public homepage now links to `/download/<platform>/`, four `/legal/<document>/`
+pages and the FAQ/support section. Six language prefixes preserve page context.
+Android/Windows pages link to fixed same-origin APK/installer and source files;
+they do not execute an installer or launch a client automatically. Stores and
+future-platform downloads are disabled. The support button opens a fixed mailto.
+`/support` and `/setup` redirect to homepage sections; the old `/account/`, pricing
+and checkout summary pages are removed. Existing client routes/auth guards and
+backend payment return URLs stay unchanged. Checkout POST remains denied. Cardlink
+and order integration still await implementation. See [handoff](public-website-redesign.md).
 
 # FAQ and initial selections — Windows 0.25.0 / Android 0.21.0
 

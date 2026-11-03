@@ -21,10 +21,11 @@ backend, SHA, run и attempt. Проверять фактические health/r
 
 ## Public draft website
 
-The owner authorized publishing website 0.1.0 on https://prettylisavpn.com after
-reviewing its local preview. It remains a visibly marked draft: payment disabled,
-legal documents unapproved, noindex retained. This infrastructure-only publication
-does not bump website/backend/client versions or imply provider approval.
+The owner authorized publishing the website on https://prettylisavpn.com and then
+requested the minimalist 0.2.0 revision. The current prelaunch site has one launch
+notice, six languages, four documents and public downloads. Commercial payment
+activation remains separate; noindex is retained. Backend/client versions do not
+change and this publication does not imply provider approval.
 
 Caddy serves allowlisted static routes from `/srv/public-website/current`, mounted
 read-only from `PUBLIC_WEBSITE_DIR` (default `/opt/prettylisavpn/public-website`).
@@ -33,10 +34,18 @@ The host directory contains `releases/<source SHA>-<run>-<attempt>` and a **rela
 credentials in this directory. Only verified CI website artifacts belong here.
 
 `/payment/success`, `/payment/failure` and their existing assets still proxy to the
-backend. `/support` now serves the website's support page. Checkout POST returns
+backend. `/support` redirects to `/#help`, `/setup` to `/#download`. Checkout POST returns
 503 / `WEB_CHECKOUT_DISABLED`; unknown and private API/dashboard paths remain 404
 on the apex domain. API-domain dashboard authentication is unchanged. Public-host
 access logs stay disabled, and security/no-store/noindex headers cover the website.
+
+Public GET/HEAD `/downloads/{android.apk,windows.exe,android-sources.tar.gz,
+windows-sources.tar.gz,windows-licenses.txt,index.json}` reads the existing verified
+client publisher's `downloads/current` snapshot through the read-only dashboard
+mount. This is an exact file allowlist, not a public dashboard root. No other paths
+or methods expose it; API-host dashboard authentication remains unchanged. Client
+updates through `publish_client.py` update both download channels automatically.
+The browser ignores URL fields in `index.json` and uses fixed public file paths.
 
 Before first activation, validate the candidate Caddyfile and run
 `python3 sites/public-website/tests/test_caddy.py` against the built artifact.

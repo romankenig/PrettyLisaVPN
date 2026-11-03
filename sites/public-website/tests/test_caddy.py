@@ -1,4 +1,4 @@
-"""Serve the built draft with the production proxy; never touch a live container."""
+"""Serve the built website with an isolated production proxy and dummy binaries."""
 
 import subprocess
 import tempfile
@@ -28,6 +28,18 @@ class PublicWebsiteTests(unittest.TestCase):
             raise RuntimeError("Build the website before testing Caddy")
         cls.temp = tempfile.TemporaryDirectory(prefix="pl-public-test-")
         cls.addClassCleanup(cls.temp.cleanup)
+        downloads = Path(cls.temp.name) / "downloads/current"
+        downloads.mkdir(parents=True)
+        for name in (
+            "android.apk",
+            "windows.exe",
+            "android-sources.tar.gz",
+            "windows-sources.tar.gz",
+            "windows-licenses.txt",
+            "index.json",
+        ):
+            (downloads / name).write_text("verified-client-fixture")
+        (Path(cls.temp.name) / "private.txt").write_text("private-marker")
         config = (ROOT / "infra/deployment/Caddyfile").read_text()
         public = config.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
         public = public.replace("backend:8000", "127.0.0.1:8000")
@@ -46,6 +58,8 @@ class PublicWebsiteTests(unittest.TestCase):
             f"{cls.temp.name}:/etc/caddy/test:ro",
             "-v",
             f"{cls.dist}:/srv/public-website/current:ro",
+            "-v",
+            f"{cls.temp.name}:/etc/caddy/dashboard:ro",
             IMAGE,
             "caddy",
             "run",
@@ -85,11 +99,38 @@ class PublicWebsiteTests(unittest.TestCase):
                 self.assertIn("noindex, nofollow", result.stderr)
                 self.assertIn("no-store", result.stderr)
                 self.assertIn("form-action 'none'", result.stderr)
-        for asset in ("app.js", "model.mjs", "style.css", "lock.svg", "Rubik.ttf"):
+        for asset in (
+            "app.js",
+            "downloads.mjs",
+            "style.css",
+            "lock.svg",
+            "Rubik.ttf",
+            "screenshots/android-services.png",
+        ):
             # --spider checks headers without decoding binary fonts as text.
             result = self.request("/assets/" + asset, "--spider")
             self.assertIn("200 OK", result.stderr)
-        self.assertIn("text/javascript", self.request("/assets/model.mjs").stderr)
+        self.assertIn("text/javascript", self.request("/assets/downloads.mjs").stderr)
+
+    def test_client_files_are_public_but_dashboard_is_not(self):
+        for name in (
+            "android.apk",
+            "windows.exe",
+            "android-sources.tar.gz",
+            "windows-sources.tar.gz",
+            "windows-licenses.txt",
+            "index.json",
+        ):
+            result = self.request("/downloads/" + name)
+            self.assertIn("200 OK", result.stderr)
+            self.assertEqual(result.stdout, "verified-client-fixture")
+            self.assertIn("no-store", result.stderr)
+            if name.endswith((".apk", ".exe", ".tar.gz")):
+                self.assertIn("Content-Disposition: attachment", result.stderr)
+            self.assertIn(
+                "404 Not Found",
+                self.request("/downloads/" + name, "--post-data=private-marker").stderr,
+            )
 
     def test_private_paths_and_removed_provider_stay_closed(self):
         for route in (
@@ -104,6 +145,13 @@ class PublicWebsiteTests(unittest.TestCase):
             "/deployment.env",
             "/private.txt",
             "/unknown/",
+            "/downloads/",
+            "/downloads/private.txt",
+            "/downloads/../private.txt",
+            "/en/deployment.env",
+            "/plans/",
+            "/readiness/",
+            "/account/",
         ):
             for options in ((), ("--post-data=private-marker",)):
                 with self.subTest(route=route, options=options):
@@ -123,8 +171,15 @@ class PublicWebsiteTests(unittest.TestCase):
             result = self.request(route)
             self.assertIn("200 OK", result.stderr)
             self.assertEqual("payment-return-stub", result.stdout)
-        self.assertIn("PrettyLisaVPN", self.request("/support").stdout)
-        self.assertIn("PrettyLisaVPN", self.request("/support/").stdout)
+        # BusyBox wget does not resolve fragment-only targets like a browser.
+        for route, target in (
+            ("/support", "/#help"),
+            ("/support/", "/#help"),
+            ("/setup/", "/#download"),
+        ):
+            result = self.request(route)
+            self.assertIn("308 Permanent Redirect", result.stderr)
+            self.assertIn("Location: " + target, result.stderr)
 
 
 if __name__ == "__main__":

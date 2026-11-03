@@ -1,0 +1,187 @@
+{
+  "name": "english",
+  "title": "vpn for your everyday needs",
+  "description": "PrettyLisaVPN for android and windows. choose which traffic to protect and connect with one account.",
+  "nav": {
+    "features": "features",
+    "download": "download",
+    "help": "help",
+    "language": "language",
+    "menu": "menu",
+    "home": "home",
+    "skip": "skip to content"
+  },
+  "launch": "launch planned for november 15",
+  "hero": {
+    "title": "your internet.\nyour rules.",
+    "text": "vpn for everyday needs. on your phone and computer — with clear settings and one account.",
+    "button": "choose your device",
+    "link": "how it works"
+  },
+  "features": {
+    "eyebrow": "fewer steps",
+    "title": "a connection\nthat adapts to you",
+    "items": [
+      {
+        "title": "protect what you need",
+        "text": "all traffic, selected services or everything except your selection. lists for the two modes are saved separately."
+      },
+      {
+        "title": "a connection method that fits",
+        "text": "the app tries available methods and remembers the successful one. you can also choose a method manually."
+      },
+      {
+        "title": "one account, five devices",
+        "text": "sign in with a code sent to your email. no separate password, with device management in the app."
+      }
+    ]
+  },
+  "screens": {
+    "caption": "actual app screens · demo data",
+    "windows": "windows app home screen",
+    "android": "service selection in the android app",
+    "settings": "connection method settings for windows"
+  },
+  "platforms": {
+    "eyebrow": "where it suits you",
+    "title": "on your devices",
+    "text": "choose your platform and install the app. one account connects your phone and computer.",
+    "soon": "coming soon",
+    "open": "download",
+    "planned": "platforms",
+    "names": {
+      "android": "android",
+      "windows": "windows",
+      "ios": "ios",
+      "macos": "macos",
+      "linux": "linux",
+      "android-tv": "android tv",
+      "chrome": "chrome"
+    },
+    "descriptions": {
+      "android": "for phones and tablets",
+      "windows": "for desktops and laptops",
+      "ios": "for iphone and ipad",
+      "macos": "for mac computers",
+      "linux": "for linux computers",
+      "android-tv": "for televisions and set-top boxes",
+      "chrome": "an extension for browser traffic"
+    }
+  },
+  "download": {
+    "title": "for",
+    "text": "download the installer directly from the website and sign in with a code sent to your email.",
+    "file": "download file",
+    "sources": "source code and licenses",
+    "licenses": "license notices",
+    "stores": "in app stores",
+    "direct": "directly from the website",
+    "latest": "latest version",
+    "size": "size",
+    "checksum": "sha-256 checksum",
+    "requirements": {
+      "android": "android 8.0 or later · arm64",
+      "windows": "windows 10 / 11 · x64"
+    },
+    "setup": "three steps to connect",
+    "steps": [
+      "download and install the app. approve the system vpn permission if your device requests it.",
+      "enter your email and the one-time code from the message.",
+      "choose a country, set which traffic to protect and tap ‘connect’."
+    ],
+    "upcoming": "this option will be available later. for now, you can use the android and windows apps.",
+    "alternatives": "other devices",
+    "other": "view all platforms",
+    "help": "installation help",
+    "storeNames": {
+      "google": "google play",
+      "rustore": "rustore",
+      "microsoft": "microsoft store",
+      "apple": "app store",
+      "chrome": "chrome web store",
+      "flathub": "flathub"
+    }
+  },
+  "help": {
+    "eyebrow": "straight to the point",
+    "title": "questions and help",
+    "contactTitle": "need help?",
+    "contactText": "tell us what happened, your device, app version and the time of the error. do not include passwords or sign-in codes.",
+    "contactButton": "contact support",
+    "questions": [
+      {
+        "q": "how do i start?",
+        "a": "download the android or windows app, sign in with the code from your email and choose a country. the free plan gives your account one shared hour of connection time per day."
+      },
+      {
+        "q": "what does premium include?",
+        "a": "premium has no daily time limit during the paid period. a subscription lasts one calendar month and is renewed manually. your plan and access period are shown in the app."
+      },
+      {
+        "q": "can i connect only selected services?",
+        "a": "yes. in ‘what to protect’, choose ‘selected’ or ‘except selected’. add services from the catalog or your own domain patterns. changes apply to your next connection."
+      },
+      {
+        "q": "vpn will not connect. what should i do?",
+        "a": "check your internet without vpn, update the app and try another country or connection method in settings. if the error persists, send its text and the time it occurred to support."
+      },
+      {
+        "q": "the sign-in code has not arrived?",
+        "a": "check your email address and spam folder. wait until you can request a new code. if the message does not arrive, contact support from your account email address."
+      },
+      {
+        "q": "how do i renew my subscription or request a refund?",
+        "a": "your plan and expiry date are available in the app. renewal requires a separate payment, with no automatic charges. contact support about payments, access or refunds."
+      }
+    ]
+  },
+  "footer": {
+    "seller": "Кениг Роман Сергеевич · self-employed, russia · tax id 183475316809",
+    "copyright": "PrettyLisaVPN",
+    "terms": "terms of service",
+    "privacy": "privacy policy",
+    "refunds": "refunds and complaints",
+    "payments": "payment, cancellation and renewal"
+  },
+  "legal": {
+    "updated": "version dated november 3, 2026",
+    "terms": [
+      "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com.",
+      "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
+      "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
+      "you can route all traffic, selected services or everything except selected services through vpn. speed and availability depend on the network, device, server and external resources. vpn does not replace device security or provide absolute anonymity.",
+      "use the service lawfully. unauthorized access to other people's systems, malware, spam and attacks on infrastructure are prohibited.",
+      "contact support for questions about the app. payment terms and the handling of monetary claims are described on separate pages. these terms do not limit rights granted by applicable law."
+    ],
+    "privacy": [
+      "Кениг Роман Сергеевич, tax id 183475316809, is responsible for data processing by PrettyLisaVPN. personal data inquiries: help@prettylisavpn.com.",
+      "account operation uses an email address, identifier, status, and creation and modification dates. device management uses the installation identifier, device name and platform, and dates of sign-in and access revocation.",
+      "the service processes information about the plan, access period, sign-in events, vpn sessions and technical connection results. this information is needed for authorization, time accounting, connection management, support and evaluation of service performance.",
+      "product analytics records account usage events and the technical operation of the service. its events do not include browsing history, visited page addresses, dns queries or packet contents. this describes analytics and is not a claim that no technical logs exist.",
+      "when you contact support, your message and attachments are processed. do not send passwords, one-time codes or complete bank card details.",
+      "daily analytics records and reports older than 180 days are removed. support request content and attachments are removed from the operational support database after 30 days. these periods do not mean that all correspondence or all account data is deleted.",
+      "the website does not use advertising trackers, cookies or browser local storage. the language is determined by the page address. fonts and images are loaded from the service's infrastructure.",
+      "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
+    ],
+    "refunds": [
+      "for questions about service quality, ending paid access or refunds, write to help@prettylisavpn.com.",
+      "include your account email address, payment date and amount, currency, transaction number if available, and a description of your request. for a technical issue, it helps to include the platform, app version, server, approximate time and error text.",
+      "do not send a full card number, cvc, banking passwords or one-time codes. hide unnecessary personal data in attached documents.",
+      "claims are reviewed in light of the circumstances of the request, the service provided and applicable law. after reviewing the request, support will communicate the decision and next steps.",
+      "disconnecting vpn or uninstalling the app does not itself submit a refund request. you must contact support for a monetary claim to be considered.",
+      "these rules do not limit rights granted by applicable law."
+    ],
+    "payments": [
+      "a paid subscription provides premium access for one calendar month. the period starts after payment confirmation. the exact expiry date is shown in the app.",
+      "a calendar month ends on the corresponding day of the following month; if that day does not exist, it ends on the last day of the month. this is not a fixed 30-day period.",
+      "renewal is manual. a repeat payment via a link is a separate payment. automatic charges and saving a payment method for future charges are not used.",
+      "to stop renewing your subscription, do not make the next payment. the access period already granted remains valid until the specified expiry date.",
+      "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
+      "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment."
+    ]
+  },
+  "notFound": {
+    "title": "page not found",
+    "text": "go to the home page to download the app or find help."
+  }
+}

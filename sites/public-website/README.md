@@ -1,61 +1,46 @@
-# PrettyLisaVPN public website · 0.1.0 preview
+# PrettyLisaVPN website · 0.2.0
 
-Реальный адаптивный сайт для проверки владельцем. Только Cardlink входит в текущий
-объём; провайдер ещё не подключён и не одобрил проект. Документы явно обозначены
-как черновики. Владелец отдельно разрешил публикацию текущего черновика на
-https://prettylisavpn.com; результаты выкладки и точная сборка указаны в PR50.
+Minimal static website on https://prettylisavpn.com. Four homepage sections,
+seven platform pages, four documents and six fully translated languages.
+The owner authorized public publication. Commercial checkout remains separate.
 
-## Запуск
+## Run and verify
 
-Нужен Node.js 24. Внешних npm-зависимостей нет.
-
-```powershell
-cd C:\Users\kenro\Desktop\main\PrettyLisaVPN\sites\public-website
-npm run dev
-```
-
-Открыть <http://127.0.0.1:4180/>. Сервер слушает только loopback. Переменная `PORT`
-позволяет выбрать другой порт. После изменения исходников выполнить `npm run build`
-и обновить страницу: автоматического HMR нет.
+Node.js 24, no external npm dependencies. From this directory:
 
 ```text
+npm run dev
 npm run check
 npm test
 npm run build
-npm run check:release
+python3 tests/test_caddy.py
 ```
 
-Последняя команда **намеренно завершается ошибкой** с перечнем незакрытых условий
-готового магазина. `SITE_RELEASE=1` также запрещает коммерческий выпуск. Публикация
-текущего черновика отдельно разрешена владельцем: без активации оплаты, без снятия
-пометок и noindex. Это не утверждение документов или условий продажи.
+Preview listens only on http://127.0.0.1:4180. `PORT` selects another port.
+Rebuild and reload after edits. Caddy integration tests require Docker and use an
+isolated disposable container without host ports or production changes.
 
-## Структура
+`npm run check:release` / `SITE_RELEASE=1` intentionally fail while commercial
+requirements remain unresolved. They do not block the authorized informational
+website publication and do not activate payments.
 
-- `src/model.mjs` — подтверждённые параметры, недостающие сведения и валидация формы.
-- `src/pages.mjs`, `src/legal.mjs` — 16 страниц, включая 6 отдельных документов и 404.
-- `src/app.js`, `src/style.css` — меню, валюты, подготовка письма, адаптивный интерфейс.
-- `scripts/build.mjs` — статическая сборка с локальными Rubik и фирменным знаком.
-- `scripts/preview.mjs` — локальный сервер без авторизации или платёжных мутаций.
-- `tests/site.test.mjs` — правила цен/периода, ссылки, HTTP, формы, запрет платежей.
+## Structure
 
-`Public website preview` собирает ZIP в Actions, но не выполняет deploy.
-Дополнительно проверяет реальный Caddy в изолированном контейнере:
-`python3 tests/test_caddy.py` после сборки (нужен Docker).
-`build-identity.json` в ZIP содержит фактический build SHA, run и attempt; PR-сборка
-может использовать временный merge SHA, push-сборка — SHA ветки. Локальная сборка
-не выдаёт HEAD за проверенный commit и оставляет эти поля пустыми.
+- `src/locales/*.json`: complete ru/en/de/fr/es/zh UI and legal content.
+- `src/structure.mjs`, `src/pages.mjs`: 78 static pages; contextual language links.
+- `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
+  version/size/hash metadata. No cookies, local storage, tracking or payment forms.
+- `src/model.mjs`: internal commercial readiness; not shipped to browsers.
+- `assets/screenshots/`: unchanged native captures and exact CI provenance.
+- `scripts/build.mjs`: clean static output, local Rubik/brand assets and build ID.
+- `tests/`: Node and real Caddy checks, including public-file/private-path boundary.
 
-## Границы preview
+`Public website preview` checks and packages a CI ZIP; it never deploys. Deployment
+uses the verified push artifact and an atomic website symlink on the main server.
+The existing verified client publisher supplies `/downloads/android.apk` and
+`/downloads/windows.exe`, source archives, licenses and metadata automatically.
+Only those exact files become public; dashboard authentication is preserved.
 
-Веб-авторизация и обработка карт не добавлены. `/account/` объясняет существующее
-управление подпиской в приложениях; история заказов ожидает серверной интеграции.
-`POST /checkout/` всегда возвращает 503 / `WEB_CHECKOUT_DISABLED`. Удаление disabled
-в браузере или параметры `approved=true` не включают оплату. Форма поддержки лишь
-создаёт `mailto:` с фиксированным получателем; отправляет письмо сам пользователь.
-
-До продаж нужен отдельный серверный адаптер Cardlink в существующем FastAPI billing,
-а не платёжная логика в Node preview. Цены и заказы должны читаться из PostgreSQL;
-текущие локальные цены — только подтверждённое владельцем содержимое черновика.
-
-Подробнее: [handoff и недостающие сведения](../../docs/public-website-preview.md).
+See [handoff](../../docs/public-website-redesign.md) for versions, validation,
+commercial follow-up, publication evidence and rollback. Build identity records
+source SHA/run/attempt; live deployment evidence is separate and recorded in PR50.

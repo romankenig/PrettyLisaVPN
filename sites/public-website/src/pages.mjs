@@ -1,6 +1,14 @@
-import { website, releaseBlockers } from "./model.mjs";
-import { legalPages } from "./legal.mjs";
+import { readFileSync } from "node:fs";
+import { languages, platforms, legalKeys, routeFor } from "./structure.mjs";
 
+export const locales = Object.fromEntries(
+  languages.map((code) => [
+    code,
+    JSON.parse(
+      readFileSync(new URL(`./locales/${code}.json`, import.meta.url), "utf8"),
+    ),
+  ]),
+);
 export const escape = (value) =>
   String(value).replace(
     /[&<>"']/g,
@@ -9,183 +17,116 @@ export const escape = (value) =>
         c
       ],
   );
-const link = (href, text, secondary = false) =>
-  `<a class="button${secondary ? " secondary" : ""}" href="${href}">${text}</a>`;
-const intro = (eyebrow, title, text) =>
-  `<div class="page-intro"><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="lead">${text}</p></div>`;
-const legalLinks = () =>
-  Object.entries(legalPages)
-    .map(([key, page]) => `<a href="/legal/${key}/">${page.title}</a>`)
-    .join("");
-const previewNotice =
-  '<div class="preview-banner"><span class="draft-dot" aria-hidden="true"></span><strong>Предпросмотр сайта</strong><span>Оплата ещё не подключена. Документы — черновики.</span><a href="/readiness/">Что осталось</a></div>';
-
-export function shell(path, title, description, body) {
-  const nav = [
-    ["/plans/", "Тарифы"],
-    ["/setup/", "Приложения"],
-    ["/support/", "Поддержка"],
-  ];
-  return `<!doctype html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="description" content="${escape(description)}"><meta name="theme-color" content="#2c016d"><title>${escape(title)} — PrettyLisaVPN</title><link rel="icon" href="/assets/lock.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/style.css"><script type="module" src="/assets/app.js"></script></head><body><a class="skip-link" href="#main">К содержимому</a>${previewNotice}<header class="header wrap"><a class="brand" href="/" aria-label="PrettyLisaVPN — главная"><img src="/assets/lock.svg" alt="" width="34" height="40"><span>PrettyLisaVPN</span></a><button class="menu-toggle" aria-controls="navigation" aria-expanded="false">Меню <span aria-hidden="true">☰</span></button><nav id="navigation" aria-label="Основная навигация">${nav.map(([url, label]) => `<a href="${url}"${path === url ? ' aria-current="page"' : ""}>${label}</a>`).join("")}<a class="nav-account" href="/account/"${path === "/account/" ? ' aria-current="page"' : ""}>Моя подписка <span aria-hidden="true">↗</span></a></nav></header><main id="main" class="wrap" tabindex="-1">${body}</main><footer><div class="wrap footer-grid"><div><a class="brand" href="/"><img src="/assets/lock.svg" alt="" width="34" height="40"><span>PrettyLisaVPN</span></a><p>VPN для Android и Windows.<br>Вы выбираете, что защищать.</p><a href="mailto:${website.seller.email}">${website.seller.email}</a></div><div><h2>Сервис</h2><a href="/plans/">Тарифы</a><a href="/payment/">Оплата</a><a href="/setup/">Получение и настройка</a><a href="/account/">Управление подпиской</a><a href="/support/">Поддержка</a></div><div class="footer-docs"><h2>Документы <span>черновики</span></h2>${legalLinks()}</div></div><div class="wrap footer-bottom"><span>© ${website.reviewedOn.slice(0, 4)} PrettyLisaVPN</span><span>Кениг Роман Сергеевич · НПД · ИНН ${website.seller.inn}</span><a href="/readiness/">Статус готовности сайта</a></div></footer></body></html>`;
-}
-
-function home() {
-  return `<section class="hero"><div class="hero-copy"><p class="eyebrow"><span class="small-dot"></span> Android + Windows</p><h1>Ваш интернет.<br>Ваш <span class="purple">выбор.</span></h1><p class="lead">PrettyLisaVPN направляет трафик через VPN-сервер. Выбирайте, что подключать: всё устройство или отдельные сервисы.</p><div class="actions">${link("/plans/", 'Выбрать тариф <span aria-hidden="true">↗</span>')}${link("/setup/", "Начать с Free", true)}</div><p class="hero-note">Один аккаунт. До 5 активных устройств.</p></div><div class="hero-visual" aria-label="Схема возможностей PrettyLisaVPN"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="visual-label">ВЫ РЕШАЕТЕ, ЧТО ЗАЩИЩАТЬ</div><div class="product-sheet"><div class="sheet-top"><span class="mini-symbol">↗</span><span>PrettyLisaVPN</span><span class="demo-label">схема</span></div><div class="sheet-row"><span>Куда подключиться</span><b>Выбрать страну</b></div><div class="sheet-connection"><span class="line-node"></span><i></i><span class="route-pill">VPN</span><i></i><span class="line-node outline"></span></div><div class="sheet-row"><span>Что защищаем</span><b>Выбранное</b></div><div class="service-row"><span class="service-chip youtube" aria-label="YouTube">▶</span><span class="service-chip telegram" aria-label="Telegram">➤</span><span class="service-chip add" aria-label="Другие сервисы">+</span><span class="service-caption">Выбираете вы</span></div><div class="sheet-bottom">Всё · Выбранное · Кроме выбранного</div></div><div class="visual-foot"><span>Телефон</span><span>Компьютер</span><span>Один аккаунт</span></div></div></section>
-  <section class="facts-strip" aria-label="Коротко о сервисе"><div><b>5</b><span>активных устройств<br>на аккаунт</span></div><div><b>1 час</b><span>в сутки UTC<br>на Free</span></div><div><b>Без рекламы</b><span>на Free<br>и Premium</span></div></section>
-  <section class="section"><div class="section-heading"><p class="eyebrow">ПОДКЛЮЧЕНИЕ ПОД ВАШИ ЗАДАЧИ</p><h2>Меньше лишнего.<br>Больше контроля.</h2></div><div class="feature-grid"><article><span class="feature-mark" aria-hidden="true">↔</span><h3>Выбор трафика</h3><p>Защитите всё, только выбранные сервисы или всё, кроме выбранного. Настройки каждого режима сохраняются отдельно.</p></article><article><span class="feature-mark" aria-hidden="true">⌁</span><h3>Несколько способов</h3><p>Приложение перебирает доступные способы подключения и проверяет результат. Среди реализованных — WireGuard и AmneziaWG.</p></article><article><span class="feature-mark" aria-hidden="true">＠</span><h3>Вход по почте</h3><p>Получите одноразовый код на email. Тариф и доступ к устройствам связаны с аккаунтом.</p></article></div><p class="muted section-note">VPN не гарантирует работу во всех сетях. Скорость и устойчивость зависят от вашего соединения и доступности сервера.</p></section>
-  <section class="journey section"><div><p class="eyebrow">ОТ ВЫБОРА ДО ПОДКЛЮЧЕНИЯ</p><h2>Понятно на<br>каждом шаге.</h2><a class="text-link" href="/setup/">Посмотреть инструкцию →</a></div><ol class="steps"><li><span>01</span><div><h3>Выберите тариф</h3><p>Попробуйте Free или изучите условия Premium.</p></div></li><li><span>02</span><div><h3>Проверьте оплату</h3><p>Для Premium будут показаны сумма, срок и условия. Приём платежей пока не открыт.</p></div></li><li><span>03</span><div><h3>Войдите в приложение</h3><p>Используйте email своего аккаунта. Оплаченный доступ должен появиться после подтверждения платежа.</p></div></li><li><span>04</span><div><h3>Настройте подключение</h3><p>Выберите сервер и режим защиты. Free доступен без покупки.</p></div></li></ol></section>
-  <section class="cta"><div><p class="eyebrow">СНАЧАЛА ПОПРОБУЙТЕ</p><h2>Начните с одного часа.</h2><p>Free — один общий час в сутки на весь аккаунт, без рекламы.</p></div>${link("/setup/", 'Как начать <span aria-hidden="true">→</span>')}</section>
-  <section class="section faq"><h2>Коротко о главном</h2>${faqItems()}</section>`;
-}
-
-function faqItems() {
-  return [
-    [
-      "Какие устройства поддерживаются сейчас?",
-      'Рабочие клиенты есть для Android и Windows. Сайт не обещает готовые версии для iOS, macOS, Linux, телевизоров или браузера. <a href="/setup/">Получение приложений</a>.',
-    ],
-    [
-      "Чем Free отличается от Premium?",
-      'Free даёт один час в сутки UTC на аккаунт. У Premium нет суточного лимита времени в течение оплаченного периода. До пяти активных устройств доступно на обоих тарифах. <a href="/plans/">Сравнить тарифы</a>.',
-    ],
-    [
-      "Будут ли автоматические списания?",
-      'Сейчас автосписания не подключены. Для первого варианта оплаты согласовано ручное продление: новый платёж по вашему действию. <a href="/legal/payments/">Проект правил оплаты</a>.',
-    ],
-    [
-      "Можно ли уже оплатить на сайте?",
-      'Пока нет. Cardlink ещё не одобрил проект, платёжный адаптер и документы не готовы к продажам. <a href="/payment/">Статус оплаты</a>.',
-    ],
-    [
-      "Как обратиться за помощью?",
-      'Напишите на help@prettylisavpn.com или откройте поддержку в приложении. Не отправляйте коды входа и данные карты. <a href="/support/">Подготовить письмо</a>.',
-    ],
-  ]
-    .map(
-      ([q, a]) =>
-        `<details><summary>${q}<span aria-hidden="true">+</span></summary><div>${a}</div></details>`,
-    )
-    .join("");
-}
-
-function plans() {
-  return `${intro("ТАРИФЫ", "Выберите свой ритм.", "Попробуйте Free. Для более долгих подключений — Premium с ручным продлением.")}<div class="currency-control" role="group" aria-label="Валюта отображения"><button data-currency="RUB" aria-pressed="true">₽ RUB</button><button data-currency="USD" aria-pressed="false">$ USD</button></div><div class="plan-grid"><article class="plan"><p class="eyebrow">ПОЗНАКОМИТЬСЯ С СЕРВИСОМ</p><h2>Free</h2><p class="price">0 ₽</p><p class="muted">Без покупки и привязки карты</p><ul class="check-list"><li>1 общий час в сутки UTC</li><li>До 5 активных устройств</li><li>Без рекламы</li><li>Выбор доступных Free-серверов</li><li>Режимы разделения трафика</li></ul>${link("/setup/", "Начать с Free", true)}<p class="fine-print">Лимит обновляется в 00:00 UTC. Время общее для всех устройств аккаунта.</p></article><article class="plan featured"><div class="plan-tag">ДЛЯ ДОЛГИХ ПОДКЛЮЧЕНИЙ</div><p class="eyebrow">ОПЛАЧЕННЫЙ ПЕРИОД</p><h2>Premium</h2><p class="price" data-premium-price>199 ₽</p><p class="muted">за один календарный месяц</p><ul class="check-list"><li>Без суточного лимита времени</li><li>До 5 активных устройств</li><li>Без рекламы</li><li>Выбор страны из доступных серверов</li><li>Режимы разделения трафика</li></ul>${link("/checkout/?currency=RUB", 'Посмотреть условия <span aria-hidden="true">→</span>')}<p class="fine-print">Ручное продление. Приём платежей пока не открыт.</p></article></div><section class="section compact"><h2>До оплаты — все условия.</h2><div class="terms-grid"><article><h3>Когда начинается месяц</h3><p>После подтверждения оплаты. Календарный месяц заканчивается в соответствующий день следующего месяца; если такого дня нет — в последний.</p></article><article><h3>Что с комиссией</h3><p>Комиссия Cardlink ещё не подтверждена. Пока она неизвестна, итог не рассчитывается и оплата недоступна.</p></article><article><h3>Что с продлением</h3><p>Новый платёж совершаете вы сами. Автоматических ежемесячных списаний сейчас нет.</p></article></div><p class="notice">Лимит объёма трафика, ограничения скорости и коммерческие условия доступности ещё нужно окончательно подтвердить. Они не подменяются обещанием «без ограничений».</p><div class="inline-links"><a href="/legal/payments/">Правила оплаты</a><a href="/legal/refunds/">Возвраты</a><a href="/legal/terms/">Соглашение</a></div></section>`;
-}
-
-function checkout() {
-  return `${intro("ПРОВЕРКА УСЛОВИЙ", "Premium на месяц.", "Проверьте срок, стоимость и способ продления до перехода к оплате.")}<div class="checkout-grid"><section class="checkout-main"><h2>Условия подписки</h2><dl class="facts"><div><dt>Тариф</dt><dd>Premium</dd></div><div><dt>Срок</dt><dd>Один календарный месяц</dd></div><div><dt>Начало</dt><dd>После подтверждения оплаты</dd></div><div><dt>Продление</dt><dd>Вручную, новым платежом</dd></div><div><dt>Устройства</dt><dd>До 5 активных на аккаунт</dd></div></dl><label class="field-label" for="checkout-currency">Валюта цены</label><select id="checkout-currency"><option value="RUB">Рубли · RUB</option><option value="USD">Доллары США · USD</option></select><p class="muted">Валюты приёма Cardlink ещё нужно подтвердить. Указанные цены согласованы для черновика.</p><div class="provider-row"><span class="provider-icon" aria-hidden="true">▤</span><div><h3>Российская карта · Cardlink</h3><p>Заявка на подключение проекта ещё не подана.</p></div><span class="status">Недоступно</span></div><p class="fine-print">Название провайдера обозначает план подключения, а не партнёрство или одобрение. Данные карты здесь не запрашиваются.</p><div class="checkout-documents"><h3>Документы перед оплатой</h3><p>Документы ещё не утверждены. Приём согласий и платежей закрыт.</p><div class="inline-links">${legalLinks()}</div></div></section><aside class="order-summary" aria-labelledby="order-title"><p class="eyebrow">ВАШ ВЫБОР</p><h2 id="order-title">Premium</h2><div class="summary-line"><span>Календарный месяц</span><b data-premium-price>199 ₽</b></div><div class="summary-line"><span>Комиссия</span><span>Не подтверждена</span></div><div class="summary-total"><span>Итого к оплате</span><b>Пока не рассчитано</b></div><p class="notice" id="checkout-reason">Оплата откроется после одобрения Cardlink, подключения API и утверждения документов.</p><button class="button" disabled aria-describedby="checkout-reason">Оплата пока недоступна</button><p class="fine-print">Заказ не создан. Деньги не списываются. Вы можете начать с Free.</p><a class="text-link" href="/setup/">Попробовать Free →</a></aside></div>`;
-}
-
-function payment() {
-  return `${intro("ОПЛАТА", "Сначала — ясные условия.", "В текущем плане подключения — российские карты через Cardlink. Реальная оплата ещё не включена.")}<section class="payment-card"><div><p class="eyebrow">ПЛАНИРУЕМЫЙ СПОСОБ</p><h2>Банковская карта</h2><p>Платёжная страница Cardlink будет открываться только после одобрения проекта и проверки интеграции.</p></div><span class="status">Не подключено</span></section><div class="terms-grid section compact"><article><h3>Без карты на этом сайте</h3><p>Номер карты и CVC нужно будет вводить у платёжного провайдера. PrettyLisaVPN не размещает здесь карточную форму.</p></article><article><h3>Итог до платежа</h3><p>Цена, валюта, комиссия и сумма должны быть показаны заранее. Неизвестная комиссия не считается нулевой.</p></article><article><h3>Без автосписаний</h3><p>Первый согласованный вариант — ручное продление. Возможность рекуррентных платежей отдельно не подтверждена.</p></article></div><div class="notice"><h3>Текущий статус</h3><p>Аккаунт Cardlink создан, заявка ещё не подана. Приём платежей и отправка картовых данных недоступны. Действующий тариф можно проверить в приложении.</p></div><div class="actions">${link("/checkout/", "Проверить условия Premium")}${link("/account/", "Моя подписка", true)}</div>`;
-}
-
-function setup() {
-  return `${intro("ПРИЛОЖЕНИЯ И НАСТРОЙКА", "Подключитесь с вашего устройства.", "Сейчас реально поддерживаются Android и Windows. Вход — по одноразовому коду на email.")}<div class="download-grid"><article class="download-card"><div class="platform-mark" aria-hidden="true">◉</div><h2>Android</h2><p>Один APK. Установка поверх существующей версии сохраняет приложение и его настройки.</p><a class="button secondary" href="https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719117/artifacts/13210046686">Тестовая сборка 0.21.0 ↗</a><p class="fine-print">ZIP-архив с APK. Для скачивания нужен доступ к GitHub-репозиторию. Это временный канал тестирования.</p></article><article class="download-card"><div class="platform-mark windows-mark" aria-hidden="true">⊞</div><h2>Windows</h2><p>Установщик настраивает приложение и необходимые компоненты VPN.</p><a class="button secondary" href="https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719139/artifacts/13209642463">Тестовая сборка 0.25.0 ↗</a><p class="fine-print">ZIP-архив с PrettyLisaVPN-Setup.exe. Нужен доступ к GitHub-репозиторию.</p></article></div><p class="notice">Общедоступные загрузки для новых пользователей ещё нужно подготовить до запуска продаж. Если нет доступа к тестовым сборкам, <a href="/support/?topic=access">напишите в поддержку</a>.</p><section class="section"><div class="section-heading"><p class="eyebrow">ПОШАГОВО</p><h2>От установки до VPN.</h2></div><div class="setup-columns"><article><h3>Android</h3><ol><li>Распакуйте ZIP и установите единственный app-debug.apk.</li><li>Если Android попросит разрешение установки из выбранного источника, подтвердите его только для скачанного вами файла.</li><li>Откройте PrettyLisaVPN, укажите email и введите полученный код.</li><li>Выберите страну и нажмите «подключить». Подтвердите системное разрешение VPN при первом подключении.</li><li>Дождитесь проверки соединения. Первое подключение может занять несколько минут.</li></ol></article><article><h3>Windows</h3><ol><li>Распакуйте ZIP и запустите PrettyLisaVPN-Setup.exe.</li><li>Следуйте установщику; при установке системных компонентов может потребоваться разрешение администратора.</li><li>Войдите в PrettyLisaVPN по email и одноразовому коду.</li><li>Выберите страну и нажмите «подключить».</li><li>Проверьте статус подключения. В «что защищаем» можно выбрать режим маршрутизации.</li></ol></article></div></section><section class="access-help"><h2>Доступ не появился?</h2><p>Для Free покупать подписку не нужно. Для будущего платного подключения потребуется подтверждённый платёж и вход с правильным email. Точный предельный срок активации платного доступа ещё согласуется.</p><p>Обновите экран подписки. Если доступ не появился, сообщите поддержке email аккаунта и номер заказа, если он есть. Не оплачивайте повторно до выяснения статуса.</p>${link("/support/?topic=access", "Связаться с поддержкой")}</section>`;
-}
-
-function account() {
-  return `${intro("МОЯ ПОДПИСКА", "Управление — в приложении.", "Используйте существующий интерфейс PrettyLisaVPN. Веб-кабинета с отдельным входом пока нет.")}<div class="account-guide"><div class="account-path"><span>PrettyLisaVPN</span><span aria-hidden="true">→</span><span>Настройки</span><span aria-hidden="true">→</span><strong>Подписка</strong></div><div class="terms-grid"><article><h3>Ваш тариф и срок</h3><p>Текущий план, дата окончания и оставшиеся оплаченные дни отображаются после входа в приложение.</p></article><article><h3>Продление и оплата</h3><p>Действия доступны только при подключённом провайдере. Сейчас экран позволяет изучить условия, но реальные платежи отключены.</p></article><article><h3>Поддержка</h3><p>Откройте «О приложении» → «Поддержка» или подготовьте письмо на сайте.</p></article></div></div><section class="section compact"><h2>История заказов и отмена</h2><p class="prose">Общая история оплаченных заказов на сайте ещё не реализована. Отображение статусов и обращений после реального платежа нужно проверить вместе с Cardlink до запуска продаж. Не показываем вымышленные заказы или статус чужой подписки.</p><p class="prose">Автосписания сейчас не подключены. Если они появятся, способ отмены и её подтверждение должны быть доступны до начала приёма согласий.</p><div class="actions">${link("/support/?topic=refund", "Запросить возврат", true)}${link("/setup/", "Получить приложение")}</div></section>`;
-}
-
-function support() {
-  return `${intro("ПОДДЕРЖКА", "Поможем разобраться.", "Подготовьте письмо: оно откроется в вашей почтовой программе. Сайт не отправляет сообщение автоматически.")}<div class="support-grid"><form id="support-form" method="post" action="/support/" novalidate><label for="support-topic">Тема</label><select id="support-topic" name="topic"><option value="question">Вопрос о сервисе</option><option value="access">Не получен доступ</option><option value="refund">Запрос возврата</option><option value="privacy">Персональные данные</option></select><label for="support-message">Что произошло?</label><textarea id="support-message" name="message" rows="7" minlength="10" maxlength="1500" placeholder="Опишите проблему, устройство и время. Для оплаты — дата и номер заказа, если он есть." aria-describedby="support-hint support-error" required></textarea><p id="support-hint" class="fine-print">Не указывайте номер карты, CVC, пароли или одноразовые коды.</p><p id="support-error" class="form-error" role="alert"></p><button class="button" type="submit">Подготовить письмо <span aria-hidden="true">→</span></button><p id="support-result" class="muted" role="status"></p></form><aside><p class="eyebrow">НАПИСАТЬ НАПРЯМУЮ</p><a class="email-link" href="mailto:help@prettylisavpn.com">help@prettylisavpn.com</a><p>Если почтовая программа не настроена, скопируйте адрес и отправьте письмо привычным способом.</p><h3>О сроках</h3><p>Регламент ответа ещё согласуется. Не обещаем круглосуточную поддержку или ответ за определённое время.</p><div class="inline-links"><a href="/legal/seller/">Продавец и контакты</a><a href="/legal/refunds/">Запросы возврата</a><a href="/legal/privacy/">Персональные данные</a></div></aside></div>`;
-}
-
-function documents() {
-  return `${intro("ДОКУМЕНТЫ", "Условия без мелкого шрифта.", "Все документы ниже — проекты на согласование, а не готовые условия продажи.")}<div class="document-grid">${Object.entries(
-    legalPages,
-  )
-    .map(
-      ([key, page], i) =>
-        `<a href="/legal/${key}/"><span class="doc-number">0${i + 1}</span><h2>${page.title}</h2><p>${page.lead}</p><span class="text-link">Открыть черновик →</span></a>`,
-    )
-    .join("")}</div>`;
-}
-function legalPage(page) {
-  return `<a class="back-link" href="/legal/">← Все документы</a>${intro("ЧЕРНОВИК · НЕ УТВЕРЖДЁН", page.title, page.lead)}<div class="legal-layout"><aside class="legal-nav" aria-label="Документы">${legalLinks()}</aside><article class="legal-document"><div class="draft-note"><strong>Не использовать как действующий документ.</strong><p>Редакция для проверки от 3 ноября 2026 года. Незаполненные условия отмечены. Приём платежей закрыт.</p></div>${page.sections.map(([heading, html]) => `<section><h2>${heading}</h2>${html}</section>`).join("")}<p class="fine-print">Применимая юрисдикция проекта: Россия. Полный текст и процедуры требуют согласования до публикации.</p></article></div>`;
-}
-function readiness() {
-  return `${intro("ПРЕДПРОСМОТР · ДЛЯ ВЛАДЕЛЬЦА И ПРОВЕРКИ", "Что готово. Что ещё нет.", "Прозрачный статус проекта без утверждений об одобрении платёжного провайдера.")}<div class="readiness-grid"><section><h2>Можно проверить сейчас</h2><ul class="check-list"><li>Главная, тарифы и условия месяца</li><li>Сведения о продавце и контакт поддержки</li><li>Инструкции Android и Windows</li><li>Путь к управлению подпиской в приложениях</li><li>Форма подготовки письма и запрос возврата</li><li>Шесть отдельных черновиков документов</li></ul></section><section><h2>До приёма платежей</h2><ul class="blocker-list">${releaseBlockers()
-    .map((x) => `<li>${escape(x)}</li>`)
-    .join(
-      "",
-    )}<li>Комиссия, валюты и срок активации доступа не подтверждены</li><li>История заказов и обработка статусов реального платежа не проверены</li></ul></section></div><section class="section compact prose"><h2>Вопросы Cardlink</h2><ol><li>Принимаете ли вы VPN-сервис российского самозанятого на НПД? Какие сведения и документы нужны?</li><li>Какие карты и валюты доступны этому продавцу? Как узнать комиссию и итог до создания платежа?</li><li>Как проверять подлинность уведомления, сверять статус и безопасно повторять запросы после тайм-аута?</li><li>Как выполняются полный/частичный возврат и обработка спорного платежа?</li><li>Кто и как передаёт данные для чека НПД? Есть ли интеграция с «Мой налог»?</li><li>Если позже понадобятся автосписания: есть ли подтверждённый API, требования к согласию и способ отзыва?</li></ol><p>Текущий фокус — только Cardlink. Заявка ещё не подана; условия совместного использования других провайдеров в этой версии не реализуются.</p><a href="https://cardlink.link/en/reference" class="text-link">Официальные требования Cardlink ↗</a><h2>Сведения от владельца</h2><p>Получены: имя, статус НПД, Россия, ИНН, email поддержки, цены 199 ₽ / $2,99, календарный месяц, начало после подтверждения оплаты и ручное продление. Не получены: адрес для претензий, возвраты, выдача чеков, сроки активации и ответа, полные условия хранения данных и инфраструктуры.</p></section>`;
-}
-
-export function pages() {
-  const list = [
-    [
-      "/",
-      "VPN для Android и Windows",
-      "PrettyLisaVPN: выбор трафика, Free и Premium, приложения и поддержка.",
-      home(),
-    ],
-    [
-      "/plans/",
-      "Тарифы",
-      "Free и Premium: цены, сроки, устройства и ручное продление.",
-      plans(),
-    ],
-    [
-      "/checkout/",
-      "Условия Premium",
-      "Проверка цены и условий перед будущей оплатой. Платежи пока недоступны.",
-      checkout(),
-    ],
-    [
-      "/payment/",
-      "Оплата",
-      "Статус подключения Cardlink и правила безопасной оплаты.",
-      payment(),
-    ],
-    [
-      "/setup/",
-      "Получение и настройка",
-      "Инструкции для Android и Windows и действия при неполучении доступа.",
-      setup(),
-    ],
-    [
-      "/account/",
-      "Управление подпиской",
-      "Как проверить подписку и обратиться в поддержку через приложения.",
-      account(),
-    ],
-    [
-      "/support/",
-      "Поддержка",
-      "Подготовьте письмо в поддержку PrettyLisaVPN.",
-      support(),
-    ],
-    [
-      "/legal/",
-      "Документы",
-      "Черновики документов и сведений о продавце.",
-      documents(),
-    ],
-    [
-      "/readiness/",
-      "Готовность к запуску",
-      "Что уже реализовано и что требуется перед приёмом оплаты.",
-      readiness(),
-    ],
-    ...Object.entries(legalPages).map(([key, page]) => [
-      `/legal/${key}/`,
-      page.title,
-      page.lead,
-      legalPage(page),
-    ]),
-    [
-      "/404/",
-      "Страница не найдена",
-      "Проверьте адрес или вернитесь на главную.",
-      `${intro("404", "Здесь пока ничего нет.", "Возможно, ссылка устарела. Вернитесь на главную или напишите в поддержку.")}<div class="actions">${link("/", "На главную")}${link("/support/", "Поддержка", true)}</div>`,
-    ],
-  ];
-  return new Map(
-    list.map(([path, title, description, body]) => [
-      path,
-      shell(path, title, description, body),
-    ]),
+const text = (value) =>
+  escape(value).replaceAll(
+    "PrettyLisaVPN",
+    '<span class="product-name">PrettyLisaVPN</span>',
   );
+const lines = (value) => text(value).replaceAll("\n", "<br>");
+const arrow = '<span aria-hidden="true">↗</span>';
+const mail = "mailto:help@prettylisavpn.com";
+const icons = {
+  android:
+    '<path d="m7 5-2-3m12 3 2-3M4 11a8 8 0 0 1 16 0v8H4Z"/><path d="M8 19v3m8-3v3M1 12v6m22-6v6"/><path d="M8 8h.01M16 8h.01"/>',
+  windows:
+    '<path d="M2 4 10 3v8H2Zm11-1 9-1v9h-9ZM2 14h8v8l-8-1Zm11 0h9v10l-9-1Z"/>',
+  ios: '<rect x="6" y="1" width="12" height="22" rx="3"/><path d="M10 4h4m-3 16h2"/>',
+  macos:
+    '<rect x="4" y="3" width="16" height="13" rx="2"/><path d="M4 16 1 21h22l-3-5M9 20h6"/>',
+  linux:
+    '<path d="M9 11V6a3 3 0 0 1 6 0v5l4 7-3 3H8l-3-3Z"/><path d="m9 9 3 2 3-2M5 21H2m17 0h3"/>',
+  "android-tv":
+    '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8m-4-4v4m-2-14-3 3 3 3m4-6 3 3-3 3"/>',
+  chrome:
+    '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 8h9M8.5 14 4 6m10 10-4 6"/>',
+};
+function icon(id) {
+  return `<svg class="platform-icon" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[id]}</svg>`;
+}
+function screenshot(file, alt) {
+  const android = file.startsWith("android");
+  return `<img class="app-screen" src="/assets/screenshots/${file}.png" alt="${escape(alt)}" width="${android ? 1080 : 960}" height="${android ? 1920 : 640}" loading="lazy" decoding="async">`;
+}
+function shell(lang, route, title, content) {
+  const t = locales[lang],
+    home = routeFor(lang);
+  return `<!doctype html><html lang="${lang === "zh" ? "zh-CN" : lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="${escape(t.description)}"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#2c016d"><title>${escape(title)} · PrettyLisaVPN</title><link rel="icon" href="/assets/lock.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/style.css">${languages.map((code) => `<link rel="alternate" hreflang="${code === "zh" ? "zh-CN" : code}" href="https://prettylisavpn.com${routeFor(code, route)}">`).join("")}<script src="/assets/app.js" type="module"></script></head><body>
+  <a class="skip" href="#main">${text(t.nav.skip)}</a><header class="header wrap"><a class="brand" href="${home}" aria-label="PrettyLisaVPN — ${escape(t.nav.home)}"><img src="/assets/lock.svg" width="28" height="38" alt=""><span class="product-name">PrettyLisaVPN</span></a>
+  <nav aria-label="${escape(t.nav.menu)}"><a href="${home}#features">${text(t.nav.features)}</a><a href="${home}#download">${text(t.nav.download)}</a><a href="${home}#help">${text(t.nav.help)}</a></nav>
+  <details class="language"><summary aria-label="${escape(t.nav.language)}"><span aria-hidden="true">◎</span> ${lang} <span aria-hidden="true">⌄</span></summary><div>${languages.map((code) => `<a lang="${code}" hreflang="${code}" href="${routeFor(code, route)}" ${code === lang ? 'aria-current="true"' : ""}>${escape(locales[code].name)}</a>`).join("")}</div></details></header>
+  <main id="main">${content}</main><footer class="footer wrap"><a class="brand" href="${home}"><img src="/assets/lock.svg" width="24" height="34" alt=""><span class="product-name">PrettyLisaVPN</span></a><div class="legal-links">${legalKeys.map((key) => `<a href="${routeFor(lang, `/legal/${key}/`)}">${text(t.footer[key])}</a>`).join("")}</div><div class="footer-bottom"><small>${text(t.footer.seller)}</small><a href="${mail}">help@prettylisavpn.com</a><small>© 2026 <span class="product-name">PrettyLisaVPN</span></small></div></footer></body></html>`;
+}
+function platformCard(lang, platform) {
+  const t = locales[lang];
+  return `<a class="platform-card ${platform.file ? "" : "soon"}" href="${routeFor(lang, `/download/${platform.id}/`)}">${icon(platform.id)}<span><strong>${text(t.platforms.names[platform.id])}</strong><small>${text(t.platforms.descriptions[platform.id])}</small></span><span class="platform-status">${platform.file ? arrow : text(t.platforms.soon)}</span></a>`;
+}
+function home(lang) {
+  const t = locales[lang];
+  return shell(
+    lang,
+    "/",
+    t.title,
+    `
+  <section class="hero wrap"><p class="launch"><span aria-hidden="true"></span>${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
+  <section class="features section wrap" id="features"><div class="section-heading"><p class="eyebrow">${text(t.features.eyebrow)}</p><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div><figure class="desktop-shot">${screenshot("windows-home", t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></section>
+  <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><p class="eyebrow">${text(t.platforms.eyebrow)}</p><h2>${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div><figure class="phone-shot">${screenshot("android-services", t.screens.android)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></div></section>
+  <section class="help section wrap" id="help"><div class="section-heading"><p class="eyebrow">${text(t.help.eyebrow)}</p><h2>${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary><p>${text(a)}</p></details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
+  );
+}
+function download(lang, platform) {
+  const t = locales[lang],
+    d = t.download,
+    name = t.platforms.names[platform.id];
+  const route = `/download/${platform.id}/`;
+  const sources = platform.file
+    ? `<div class="source-links"><a href="/downloads/${platform.id}-sources.tar.gz" download>${text(d.sources)}</a>${platform.id === "windows" ? `<a href="/downloads/windows-licenses.txt">${text(d.licenses)}</a>` : ""}</div>`
+    : "";
+  const choices = `<div class="download-card"><h2>${text(d.direct)}</h2>${platform.file ? `<p>${text(d.requirements[platform.id])}</p><a class="button" href="/downloads/${platform.file}" download>${text(d.file)} <span aria-hidden="true">↓</span></a><div class="release-meta" data-release="${platform.id}" hidden><p><span>${text(d.latest)}</span> <strong data-version></strong> · <span data-size></span></p><details><summary>${text(d.checksum)}</summary><code data-checksum></code></details></div>${sources}` : `<button class="button" disabled>${text(t.platforms.soon)}</button>`}</div><div class="download-card stores"><h2>${text(d.stores)}</h2>${platform.stores.map((store) => `<button class="store-option" disabled><span>${text(d.storeNames[store])}</span><small>${text(t.platforms.soon)}</small></button>`).join("")}</div>`;
+  return shell(
+    lang,
+    route,
+    `${d.title} ${name}`,
+    `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">← ${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
+      platform.file
+        ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${d.steps.map((step) => `<li>${text(step)}</li>`).join("")}</ol></section><figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-services" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure>`
+        : `<p class="upcoming-copy">${text(d.upcoming)}</p><div class="alternative-platforms">${platforms
+            .filter((p) => p.file)
+            .map((p) => platformCard(lang, p))
+            .join("")}</div>`
+    }<p class="download-help"><a href="${routeFor(lang)}#help">${text(d.help)} ${arrow}</a></p></div>`,
+  );
+}
+export function pages() {
+  const result = new Map();
+  for (const lang of languages) {
+    const t = locales[lang];
+    result.set(routeFor(lang), home(lang));
+    for (const platform of platforms)
+      result.set(
+        routeFor(lang, `/download/${platform.id}/`),
+        download(lang, platform),
+      );
+    for (const key of legalKeys) {
+      const route = `/legal/${key}/`;
+      result.set(
+        routeFor(lang, route),
+        shell(
+          lang,
+          route,
+          t.footer[key],
+          `<article class="legal-page wrap"><a class="back" href="${routeFor(lang)}">← ${text(t.nav.home)}</a><h1>${text(t.footer[key])}</h1><p class="document-date">${text(t.legal.updated)}</p>${t.legal[key].map((p) => `<p>${text(p).replaceAll("help@prettylisavpn.com", `<a href="${mail}">help@prettylisavpn.com</a>`)}</p>`).join("")}</article>`,
+        ),
+      );
+    }
+    result.set(
+      routeFor(lang, "/404/"),
+      shell(
+        lang,
+        "/404/",
+        t.notFound.title,
+        `<section class="not-found wrap"><h1>${text(t.notFound.title)}</h1><p>${text(t.notFound.text)}</p><a class="button" href="${routeFor(lang)}">${text(t.nav.home)} ${arrow}</a></section>`,
+      ),
+    );
+  }
+  return result;
 }

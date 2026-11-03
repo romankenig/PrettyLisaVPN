@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Public website — 0.2.0
+
+- Replace the draft storefront with four compact sections: introduction, real
+  app features/screenshots, seven platforms, and FAQ/troubleshooting/support.
+- Add complete Russian, English, German, French, Spanish and Chinese pages,
+  context-preserving language navigation and a single November 15 launch notice.
+- Add platform download pages with disabled store options and public verified
+  Android/Windows files, corresponding sources and licenses on the main domain.
+- Reduce the footer to four concise documents; remove readiness, checkout
+  summaries and extra account/pricing pages. Live payment activation stays separate.
+- See [redesign handoff](docs/public-website-redesign.md) for evidence and remaining
+  commercial/legal preparation. Backend/client versions are unchanged.
+
 ### Public website — 0.1.0 (preview)
 
 - Add a responsive Android/Windows service website, Free/Premium pricing,

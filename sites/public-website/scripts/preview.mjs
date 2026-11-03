@@ -19,6 +19,7 @@ const types = {
   ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
   ".ttf": "font/ttf",
   ".txt": "text/plain; charset=utf-8",
   ".json": "application/json; charset=utf-8",
@@ -91,6 +92,6 @@ if (
   await build();
   const port = Number(process.env.PORT ?? 4180);
   createPreviewServer().listen(port, "127.0.0.1", () =>
-    console.log(`PrettyLisaVPN draft preview: http://127.0.0.1:${port}/`),
+    console.log(`PrettyLisaVPN preview: http://127.0.0.1:${port}/`),
   );
 }

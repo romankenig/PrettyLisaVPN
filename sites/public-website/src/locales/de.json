@@ -1,0 +1,187 @@
+{
+  "name": "deutsch",
+  "title": "vpn für ihren alltag",
+  "description": "PrettyLisaVPN für android und windows. wählen sie, welchen datenverkehr sie schützen möchten, und verbinden sie sich mit einem konto.",
+  "nav": {
+    "features": "funktionen",
+    "download": "herunterladen",
+    "help": "hilfe",
+    "language": "sprache",
+    "menu": "menü",
+    "home": "zur startseite",
+    "skip": "zum inhalt"
+  },
+  "launch": "start für den 15. november geplant",
+  "hero": {
+    "title": "ihr internet.\nihre regeln.",
+    "text": "vpn für den alltag. auf telefon und computer — mit verständlichen einstellungen und einem konto.",
+    "button": "gerät auswählen",
+    "link": "so funktioniert es"
+  },
+  "features": {
+    "eyebrow": "weniger schritte",
+    "title": "eine verbindung,\ndie sich ihnen anpasst",
+    "items": [
+      {
+        "title": "schützen sie, was sie brauchen",
+        "text": "den gesamten datenverkehr, ausgewählte dienste oder alles außer ihrer auswahl. die listen für beide modi werden getrennt gespeichert."
+      },
+      {
+        "title": "die passende verbindungsart",
+        "text": "die app probiert verfügbare verbindungsarten aus und merkt sich die erfolgreiche. sie können die verbindungsart auch selbst auswählen."
+      },
+      {
+        "title": "ein konto, fünf geräte",
+        "text": "anmeldung mit einem code per e-mail. ohne zusätzliches passwort, mit geräteverwaltung in der app."
+      }
+    ]
+  },
+  "screens": {
+    "caption": "echte app-ansichten · demodaten",
+    "windows": "startseite der windows-app",
+    "android": "dienstauswahl in der android-app",
+    "settings": "einstellungen der verbindungsarten für windows"
+  },
+  "platforms": {
+    "eyebrow": "wo es für sie passt",
+    "title": "auf ihren geräten",
+    "text": "wählen sie ihre plattform und installieren sie die app. ein konto verbindet telefon und computer.",
+    "soon": "bald verfügbar",
+    "open": "herunterladen",
+    "planned": "plattformen",
+    "names": {
+      "android": "android",
+      "windows": "windows",
+      "ios": "ios",
+      "macos": "macos",
+      "linux": "linux",
+      "android-tv": "android tv",
+      "chrome": "chrome"
+    },
+    "descriptions": {
+      "android": "für telefone und tablets",
+      "windows": "für computer und laptops",
+      "ios": "für iphone und ipad",
+      "macos": "für mac-computer",
+      "linux": "für linux-computer",
+      "android-tv": "für fernseher und tv-boxen",
+      "chrome": "erweiterung für den browser-datenverkehr"
+    }
+  },
+  "download": {
+    "title": "für",
+    "text": "laden sie die installationsdatei direkt von der website herunter und melden sie sich mit einem code per e-mail an.",
+    "file": "datei herunterladen",
+    "sources": "quellcode und lizenzen",
+    "licenses": "lizenzhinweise",
+    "stores": "in app-stores",
+    "direct": "direkt von der website",
+    "latest": "aktuelle version",
+    "size": "größe",
+    "checksum": "sha-256-prüfsumme",
+    "requirements": {
+      "android": "android 8.0 oder neuer · arm64",
+      "windows": "windows 10 / 11 · x64"
+    },
+    "setup": "in drei schritten verbinden",
+    "steps": [
+      "laden sie die app herunter und installieren sie sie. bestätigen sie die vpn-berechtigung des systems, wenn ihr gerät danach fragt.",
+      "geben sie ihre e-mail-adresse und den einmalcode aus der nachricht ein.",
+      "wählen sie ein land, legen sie den zu schützenden datenverkehr fest und tippen sie auf „verbinden“."
+    ],
+    "upcoming": "diese option wird später verfügbar sein. bis dahin können sie die apps für android und windows nutzen.",
+    "alternatives": "andere geräte",
+    "other": "alle plattformen ansehen",
+    "help": "hilfe bei der installation",
+    "storeNames": {
+      "google": "google play",
+      "rustore": "rustore",
+      "microsoft": "microsoft store",
+      "apple": "app store",
+      "chrome": "chrome web store",
+      "flathub": "flathub"
+    }
+  },
+  "help": {
+    "eyebrow": "kurz und klar",
+    "title": "fragen und hilfe",
+    "contactTitle": "brauchen sie hilfe?",
+    "contactText": "beschreiben sie, was passiert ist, und nennen sie gerät, app-version und zeitpunkt des fehlers. ohne passwörter oder anmeldecodes.",
+    "contactButton": "support kontaktieren",
+    "questions": [
+      {
+        "q": "wie fange ich an?",
+        "a": "laden sie die app für android oder windows herunter, melden sie sich mit dem code aus der e-mail an und wählen sie ein land. der kostenlose tarif bietet ihrem konto eine gemeinsame stunde verbindungszeit pro tag."
+      },
+      {
+        "q": "was bietet premium?",
+        "a": "während des bezahlten zeitraums gibt es mit premium kein tägliches zeitlimit. das abonnement gilt für einen kalendermonat und wird manuell verlängert. tarif und zugangszeitraum sind in der app sichtbar."
+      },
+      {
+        "q": "kann ich nur ausgewählte dienste verbinden?",
+        "a": "ja. wählen sie unter „was schützen wir“ die option „ausgewählte“ oder „außer ausgewählten“. fügen sie dienste aus dem katalog oder eigene domain-muster hinzu. änderungen gelten ab der nächsten verbindung."
+      },
+      {
+        "q": "vpn verbindet sich nicht. was tun?",
+        "a": "prüfen sie das internet ohne vpn, aktualisieren sie die app und versuchen sie in den einstellungen ein anderes land oder eine andere verbindungsart. tritt der fehler erneut auf, senden sie dem support den fehlertext und den zeitpunkt."
+      },
+      {
+        "q": "der anmeldecode kommt nicht an?",
+        "a": "prüfen sie die e-mail-adresse und den spam-ordner. warten sie, bis sie einen neuen code anfordern können. kommt die nachricht nicht an, schreiben sie dem support von der e-mail-adresse ihres kontos."
+      },
+      {
+        "q": "wie verlängere ich mein abonnement oder beantrage eine erstattung?",
+        "a": "tarif und ablaufdatum finden sie in der app. die verlängerung erfolgt durch eine separate zahlung, ohne automatische abbuchungen. bei fragen zu zahlungen, zugang und erstattungen wenden sie sich an den support."
+      }
+    ]
+  },
+  "footer": {
+    "seller": "Кениг Роман Сергеевич · selbstständig, russland · steuernummer 183475316809",
+    "copyright": "PrettyLisaVPN",
+    "terms": "nutzungsbedingungen",
+    "privacy": "datenschutzerklärung",
+    "refunds": "erstattungen und beschwerden",
+    "payments": "zahlung, kündigung und verlängerung"
+  },
+  "legal": {
+    "updated": "fassung vom 3. november 2026",
+    "terms": [
+      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com.",
+      "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
+      "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
+      "sie können den gesamten datenverkehr, ausgewählte dienste oder alles außer ausgewählten diensten über vpn leiten. geschwindigkeit und verfügbarkeit hängen von netzwerk, gerät, server und externen ressourcen ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
+      "nutzen sie den dienst rechtmäßig. unbefugter zugriff auf fremde systeme, schadsoftware, spam und angriffe auf die infrastruktur sind unzulässig.",
+      "wenden sie sich bei fragen zur app an den support. zahlungsbedingungen und die bearbeitung finanzieller ansprüche werden auf gesonderten seiten beschrieben. diese bedingungen schränken keine rechte nach anwendbarem recht ein."
+    ],
+    "privacy": [
+      "für die datenverarbeitung durch PrettyLisaVPN ist Кениг Роман Сергеевич, steuernummer 183475316809, verantwortlich. fragen zu personenbezogenen daten: help@prettylisavpn.com.",
+      "für den kontobetrieb werden e-mail-adresse, kennung, status sowie erstellungs- und änderungsdatum verwendet. die geräteverwaltung verwendet die installationskennung, gerätename und plattform sowie zeitpunkte der anmeldung und des zugangsentzugs.",
+      "der dienst verarbeitet informationen zum tarif, zugangszeitraum, zu anmeldeereignissen, vpn-sitzungen und technischen verbindungsergebnissen. sie werden für die autorisierung, zeiterfassung, verbindungsverwaltung, unterstützung und bewertung der dienstleistung benötigt.",
+      "die produktanalyse erfasst ereignisse der kontonutzung und den technischen betrieb des dienstes. ihre ereignisse enthalten keinen browserverlauf, keine adressen besuchter seiten, dns-anfragen oder paketinhalte. dies beschreibt die analyse und behauptet nicht, dass keinerlei technische protokolle existieren.",
+      "bei einer supportanfrage werden ihre nachricht und beigefügte materialien verarbeitet. senden sie keine passwörter, einmalcodes oder vollständigen bankkartendaten.",
+      "tägliche analytikdatensätze und berichte werden nach mehr als 180 tagen gelöscht. inhalte von supportanfragen und anhänge werden nach 30 tagen aus der operativen supportdatenbank gelöscht. diese fristen bedeuten nicht, dass die gesamte korrespondenz oder alle kontodaten gelöscht werden.",
+      "die website verwendet keine werbetracker, cookies oder den lokalen browserspeicher. die sprache wird durch die seitenadresse bestimmt. schriftarten und bilder werden von der infrastruktur des dienstes geladen.",
+      "für auskunft über ihre daten, eine berichtigung oder löschung schreiben sie dem support von der e-mail-adresse ihres kontos. möglicherweise müssen sie bestätigen, dass die adresse ihnen gehört."
+    ],
+    "refunds": [
+      "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an help@prettylisavpn.com.",
+      "geben sie die e-mail-adresse ihres kontos, datum und betrag der zahlung, die währung, gegebenenfalls die transaktionsnummer und den grund ihrer anfrage an. bei technischen problemen sind plattform, app-version, server, ungefährer zeitpunkt und fehlertext hilfreich.",
+      "senden sie keine vollständige kartennummer, cvc, banking-passwörter oder einmalcodes. machen sie nicht benötigte personenbezogene daten in beigefügten dokumenten unkenntlich.",
+      "ansprüche werden unter berücksichtigung der umstände der anfrage, der erbrachten leistung und des anwendbaren rechts geprüft. nach der prüfung teilt der support die entscheidung und die nächsten schritte mit.",
+      "das trennen der vpn-verbindung oder deinstallieren der app stellt für sich genommen keinen erstattungsantrag dar. für die prüfung eines finanziellen anspruchs müssen sie sich an den support wenden.",
+      "diese regeln schränken keine rechte nach anwendbarem recht ein."
+    ],
+    "payments": [
+      "ein bezahltes abonnement bietet premium-zugang für einen kalendermonat. der zeitraum beginnt nach bestätigung der zahlung. das genaue ablaufdatum wird in der app angezeigt.",
+      "ein kalendermonat endet am entsprechenden tag des folgenden monats; gibt es diesen tag nicht, endet er am letzten tag des monats. dies sind keine festen 30 tage.",
+      "die verlängerung erfolgt manuell. eine erneute zahlung über einen link ist eine separate zahlung. automatische abbuchungen und das speichern eines zahlungsmittels für künftige abbuchungen werden nicht verwendet.",
+      "um das abonnement nicht zu verlängern, leisten sie keine weitere zahlung. der bereits gewährte zugangszeitraum bleibt bis zum angegebenen ablaufdatum bestehen.",
+      "prüfen sie bei der zahlung tarif, währung, gesamtbetrag und gebührenangaben auf der zahlungsseite. kartendaten und cvc werden nur auf der zahlungsseite des anbieters eingegeben, nicht auf der website von PrettyLisaVPN oder in e-mails an den support.",
+      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt."
+    ]
+  },
+  "notFound": {
+    "title": "seite nicht gefunden",
+    "text": "gehen sie zur startseite, um die app herunterzuladen oder hilfe zu finden."
+  }
+}

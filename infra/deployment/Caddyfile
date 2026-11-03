@@ -3,7 +3,7 @@
 	admin off
 }
 
-# Public draft website and payment returns are separate from private monitoring.
+# Public website and client files are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
 	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg
@@ -21,9 +21,30 @@ prettylisavpn.com {
 		header Content-Type application/json
 		respond `{"error":{"code":"WEB_CHECKOUT_DISABLED"}}` 503
 	}
+	# Only verified publisher outputs are public. Never expose the dashboard directory.
+	@client_downloads {
+		method GET HEAD
+		path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz /downloads/windows-licenses.txt /downloads/index.json
+	}
+	handle @client_downloads {
+		uri strip_prefix /downloads
+		root * /etc/caddy/dashboard/downloads/current
+		header {
+			Cache-Control "no-store"
+			X-Content-Type-Options "nosniff"
+			X-Robots-Tag "noindex, nofollow"
+		}
+		@binary path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz
+		header @binary Content-Disposition "attachment"
+		file_server
+	}
+	@old_support path /support /support/
+	redir @old_support /#help 308
+	@old_setup path /setup /setup/
+	redir @old_setup /#download 308
 	@website {
 		method GET HEAD
-		path / /plans /plans/* /checkout /checkout/* /payment /payment/ /setup /setup/* /account /account/* /support /support/* /legal /legal/* /readiness /readiness/* /404 /404/* /assets/* /robots.txt /build-identity.json
+		path / /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json
 	}
 	handle @website {
 		root * /srv/public-website/current

@@ -1,0 +1,187 @@
+{
+  "name": "français",
+  "title": "un vpn pour votre quotidien",
+  "description": "PrettyLisaVPN pour android et windows. choisissez le trafic à protéger et connectez-vous avec un seul compte.",
+  "nav": {
+    "features": "fonctionnalités",
+    "download": "télécharger",
+    "help": "aide",
+    "language": "langue",
+    "menu": "menu",
+    "home": "accueil",
+    "skip": "aller au contenu"
+  },
+  "launch": "lancement prévu le 15 novembre",
+  "hero": {
+    "title": "votre internet.\nvos règles.",
+    "text": "un vpn pour votre quotidien. sur téléphone et ordinateur, avec des réglages simples et un seul compte.",
+    "button": "choisir un appareil",
+    "link": "comment ça marche"
+  },
+  "features": {
+    "eyebrow": "moins de manipulations",
+    "title": "une connexion\nqui s’adapte à vous",
+    "items": [
+      {
+        "title": "protégez ce qui compte",
+        "text": "tout le trafic, certains services ou tout sauf les services choisis. les listes des deux modes sont enregistrées séparément."
+      },
+      {
+        "title": "une méthode de connexion adaptée",
+        "text": "l’application essaie les méthodes disponibles et mémorise celle qui fonctionne. vous pouvez aussi choisir une méthode manuellement."
+      },
+      {
+        "title": "un compte, cinq appareils",
+        "text": "connectez-vous avec un code reçu par e-mail. aucun mot de passe supplémentaire, et gérez vos appareils dans l’application."
+      }
+    ]
+  },
+  "screens": {
+    "caption": "véritables écrans des applications · données de démonstration",
+    "windows": "écran d’accueil de l’application windows",
+    "android": "sélection des services dans l’application android",
+    "settings": "réglages des méthodes de connexion pour windows"
+  },
+  "platforms": {
+    "eyebrow": "là où vous en avez besoin",
+    "title": "sur vos appareils",
+    "text": "choisissez votre plateforme et installez l’application. un seul compte pour votre téléphone et votre ordinateur.",
+    "soon": "bientôt",
+    "open": "télécharger",
+    "planned": "plateformes",
+    "names": {
+      "android": "android",
+      "windows": "windows",
+      "ios": "ios",
+      "macos": "macos",
+      "linux": "linux",
+      "android-tv": "android tv",
+      "chrome": "chrome"
+    },
+    "descriptions": {
+      "android": "pour téléphones et tablettes",
+      "windows": "pour ordinateurs fixes et portables",
+      "ios": "pour iphone et ipad",
+      "macos": "pour ordinateurs mac",
+      "linux": "pour ordinateurs sous linux",
+      "android-tv": "pour téléviseurs et boîtiers tv",
+      "chrome": "extension pour le trafic du navigateur"
+    }
+  },
+  "download": {
+    "title": "pour",
+    "text": "téléchargez le fichier d’installation directement depuis le site, puis connectez-vous avec le code reçu par e-mail.",
+    "file": "télécharger le fichier",
+    "sources": "code source et licences",
+    "licenses": "mentions de licences",
+    "stores": "dans les boutiques d’applications",
+    "direct": "directement depuis le site",
+    "latest": "version actuelle",
+    "size": "taille",
+    "checksum": "somme de contrôle sha-256",
+    "requirements": {
+      "android": "android 8.0 ou version ultérieure · arm64",
+      "windows": "windows 10 / 11 · x64"
+    },
+    "setup": "trois étapes pour vous connecter",
+    "steps": [
+      "téléchargez et installez l’application. accordez l’autorisation vpn du système si votre appareil la demande.",
+      "saisissez votre e-mail et le code à usage unique reçu par message.",
+      "choisissez un pays, sélectionnez le trafic à protéger et appuyez sur « connecter »."
+    ],
+    "upcoming": "cette option sera disponible plus tard. en attendant, vous pouvez utiliser les applications android et windows.",
+    "alternatives": "autres appareils",
+    "other": "voir toutes les plateformes",
+    "help": "aide à l’installation",
+    "storeNames": {
+      "google": "google play",
+      "rustore": "rustore",
+      "microsoft": "microsoft store",
+      "apple": "app store",
+      "chrome": "chrome web store",
+      "flathub": "flathub"
+    }
+  },
+  "help": {
+    "eyebrow": "l’essentiel",
+    "title": "questions et aide",
+    "contactTitle": "besoin d’aide ?",
+    "contactText": "décrivez le problème et précisez votre appareil, la version de l’application et l’heure de l’erreur. n’envoyez ni mot de passe ni code de connexion.",
+    "contactButton": "contacter l’assistance",
+    "questions": [
+      {
+        "q": "comment commencer ?",
+        "a": "téléchargez l’application android ou windows, connectez-vous avec le code reçu par e-mail et choisissez un pays. l’offre gratuite comprend une heure de connexion par jour, partagée sur tout le compte."
+      },
+      {
+        "q": "que comprend premium ?",
+        "a": "aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’abonnement dure un mois calendaire et se renouvelle manuellement. l’offre et la date de fin d’accès sont visibles dans l’application."
+      },
+      {
+        "q": "puis-je connecter uniquement certains services ?",
+        "a": "oui. dans « que protéger », choisissez « sélection » ou « sauf la sélection ». ajoutez des services du catalogue ou vos propres motifs de domaines. les modifications prendront effet à la prochaine connexion."
+      },
+      {
+        "q": "le vpn ne se connecte pas. que faire ?",
+        "a": "vérifiez votre connexion internet sans vpn, mettez l’application à jour et essayez un autre pays ou une autre méthode de connexion dans les réglages. si l’erreur se reproduit, transmettez son texte et son heure à l’assistance."
+      },
+      {
+        "q": "le code de connexion n’arrive pas ?",
+        "a": "vérifiez l’adresse saisie et le dossier des courriers indésirables. attendez de pouvoir demander un nouveau code. si le message n’arrive toujours pas, contactez l’assistance depuis l’adresse de votre compte."
+      },
+      {
+        "q": "comment renouveler l’abonnement ou demander un remboursement ?",
+        "a": "l’offre et la date de fin sont disponibles dans l’application. le renouvellement nécessite un paiement distinct, sans prélèvement automatique. contactez l’assistance pour toute question sur les paiements, l’accès ou les remboursements."
+      }
+    ]
+  },
+  "footer": {
+    "seller": "Кениг Роман Сергеевич · indépendant, russie · identifiant fiscal 183475316809",
+    "copyright": "PrettyLisaVPN",
+    "terms": "conditions d’utilisation",
+    "privacy": "politique de confidentialité",
+    "refunds": "remboursements et réclamations",
+    "payments": "paiement, annulation et renouvellement"
+  },
+  "legal": {
+    "updated": "version du 3 novembre 2026",
+    "terms": [
+      "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. le service est fourni par Кениг Роман Сергеевич, contribuable au régime russe de l’impôt sur le revenu professionnel, identifiant fiscal 183475316809. contact : help@prettylisavpn.com.",
+      "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
+      "l’offre free comprend une heure de connexion par jour, partagée sur tout le compte. le quota est réinitialisé à 00:00 utc. aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’offre, le temps restant et la période d’accès sont affichés dans l’application.",
+      "vous pouvez faire passer par le vpn tout le trafic, certains services ou tout sauf les services choisis. la vitesse et la disponibilité dépendent du réseau, de l’appareil, du serveur et des ressources externes. un vpn ne remplace pas la protection de l’appareil et ne garantit pas un anonymat absolu.",
+      "utilisez le service dans le respect de la loi. les accès non autorisés aux systèmes d’autrui, les logiciels malveillants, le spam et les attaques contre l’infrastructure sont interdits.",
+      "contactez l’assistance pour toute question sur le fonctionnement de l’application. les conditions de paiement et de traitement des demandes financières figurent sur des pages distinctes. ces conditions ne limitent pas les droits prévus par la législation applicable."
+    ],
+    "privacy": [
+      "Кениг Роман Сергеевич, identifiant fiscal 183475316809, est responsable du traitement des données de PrettyLisaVPN. pour les questions relatives aux données personnelles : help@prettylisavpn.com.",
+      "le fonctionnement du compte utilise l’e-mail, l’identifiant, le statut et les dates de création et de modification. la gestion des appareils utilise l’identifiant d’installation, le nom et la plateforme de l’appareil, ainsi que les dates de connexion et de révocation d’accès.",
+      "le service traite les informations relatives à l’offre, à la période d’accès, aux événements de connexion au compte, aux sessions vpn et aux résultats techniques des connexions. ces informations servent à l’authentification, au décompte du temps, à la gestion des connexions, à l’assistance et à l’évaluation du fonctionnement du service.",
+      "l’analyse du produit porte sur les événements d’utilisation du compte et le fonctionnement technique du service. ses événements n’incluent ni historique de navigation, ni adresses de pages visitées, ni requêtes dns, ni contenu des paquets. cela décrit l’analyse du produit et ne signifie pas l’absence de tout journal technique.",
+      "lors d’un contact avec l’assistance, le message et les pièces jointes sont traités. n’envoyez pas de mots de passe, de codes à usage unique ou de coordonnées complètes de carte bancaire.",
+      "les données quotidiennes d’analyse et les rapports datant de plus de 180 jours sont supprimés. le contenu des demandes et les pièces jointes sont supprimés de la base de travail de l’assistance après 30 jours. ces délais ne signifient pas la suppression de toute la correspondance ou de toutes les données du compte.",
+      "le site n’utilise ni traceurs publicitaires, ni cookies, ni stockage local du navigateur. la langue est déterminée par l’adresse de la page. les polices et les images sont chargées depuis l’infrastructure du service.",
+      "pour demander des renseignements sur vos données, leur rectification ou leur suppression, écrivez à l’assistance depuis l’adresse de votre compte. une vérification de la propriété de l’adresse peut être nécessaire."
+    ],
+    "refunds": [
+      "pour toute question sur la qualité du service, la fin de l’accès payant ou les remboursements, écrivez à help@prettylisavpn.com.",
+      "indiquez l’adresse du compte, la date et le montant du paiement, la devise, la référence de l’opération si vous la possédez, ainsi que l’objet de votre demande. pour un problème technique, précisez la plateforme, la version de l’application, le serveur, l’heure approximative et le texte de l’erreur.",
+      "n’envoyez pas de numéro complet de carte, de cvc, de mots de passe bancaires ou de codes à usage unique. masquez les données personnelles superflues dans les documents joints.",
+      "les demandes sont examinées en tenant compte de leurs circonstances, du service fourni et de la législation applicable. après vérification, l’assistance vous communiquera la décision et les étapes suivantes.",
+      "déconnecter le vpn ou désinstaller l’application n’envoie pas automatiquement de demande de remboursement. vous devez contacter l’assistance pour faire examiner une demande financière.",
+      "ces règles ne limitent pas les droits prévus par la législation applicable."
+    ],
+    "payments": [
+      "l’abonnement payant donne accès à premium pendant un mois calendaire. la période commence après confirmation du paiement. la date exacte de fin est affichée dans l’application.",
+      "le mois calendaire se termine au même jour du mois suivant ; si ce jour n’existe pas, il se termine le dernier jour de ce mois. il ne s’agit pas d’une durée fixe de 30 jours.",
+      "le renouvellement est manuel. un nouveau paiement par lien constitue un paiement distinct. aucun prélèvement automatique ni enregistrement d’un moyen de paiement pour de futurs prélèvements n’est utilisé.",
+      "pour ne pas renouveler l’abonnement, n’effectuez pas le paiement suivant. la période d’accès déjà accordée reste valable jusqu’à la date de fin indiquée.",
+      "lors du paiement, vérifiez l’offre, la devise, le montant total et les informations sur les frais sur la page de paiement. les coordonnées de carte et le cvc doivent être saisis uniquement sur la page de paiement du prestataire, jamais sur le site de PrettyLisaVPN ni dans les messages à l’assistance.",
+      "pour toute question sur un paiement, un reçu, la période d’accès ou un débit erroné, écrivez à help@prettylisavpn.com. indiquez l’adresse du compte et les informations permettant de retrouver le paiement."
+    ]
+  },
+  "notFound": {
+    "title": "page introuvable",
+    "text": "revenez à l’accueil pour télécharger l’application ou obtenir de l’aide."
+  }
+}

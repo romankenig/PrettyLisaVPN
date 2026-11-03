@@ -1,4 +1,4 @@
-import { mkdir, copyFile, writeFile } from "node:fs/promises";
+import { mkdir, copyFile, writeFile, cp, rm, lstat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { pages } from "../src/pages.mjs";
@@ -15,6 +15,18 @@ export async function build() {
       "Public payment deployment requires a separately reviewed server integration.",
     );
   }
+  // Remove obsolete generated routes; the deletion is confined to this site's dist.
+  if (
+    path.dirname(dist) !== path.resolve(root) ||
+    path.basename(dist) !== "dist"
+  )
+    throw new Error("Unexpected build directory");
+  const previous = await lstat(dist).catch((error) => {
+    if (error.code !== "ENOENT") throw error;
+  });
+  if (previous?.isSymbolicLink())
+    throw new Error("Refusing symlink build directory");
+  await rm(dist, { recursive: true, force: true });
   await mkdir(path.join(dist, "assets"), { recursive: true });
   await writeFile(
     path.join(dist, "build-identity.json"),
@@ -39,15 +51,19 @@ export async function build() {
   }
   const sources = {
     "lock.svg": "../../apps/windows/src/assets/lock.svg",
-    "logo.svg": "../../backend/src/prettylisavpn/billing/public/logo.svg",
     "Rubik.ttf": "../../apps/windows/public/fonts/rubik/Rubik.ttf",
     "OFL.txt": "../../apps/windows/public/fonts/rubik/OFL.txt",
     "app.js": "./src/app.js",
-    "model.mjs": "./src/model.mjs",
+    "downloads.mjs": "./src/downloads.mjs",
     "style.css": "./src/style.css",
   };
   for (const [name, source] of Object.entries(sources))
     await copyFile(path.resolve(root, source), path.join(dist, "assets", name));
+  await cp(
+    path.join(root, "assets/screenshots"),
+    path.join(dist, "assets/screenshots"),
+    { recursive: true },
+  );
   await writeFile(
     path.join(dist, "robots.txt"),
     "User-agent: *\nDisallow: /\n",
@@ -56,7 +72,7 @@ export async function build() {
     path.join(dist, "_headers"),
     "/*\n  X-Robots-Tag: noindex, nofollow\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n",
   );
-  console.log(`Built ${pages().size} draft pages in ${dist}`);
+  console.log(`Built ${pages().size} localized pages in ${dist}`);
 }
 if (
   process.argv[1] &&
