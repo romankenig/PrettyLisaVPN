@@ -59,7 +59,7 @@ class PublicWebsiteTests(unittest.TestCase):
             "-v",
             f"{cls.dist}:/srv/public-website/current:ro",
             "-v",
-            f"{cls.temp.name}:/etc/caddy/dashboard:ro",
+            f"{Path(cls.temp.name) / 'downloads'}:/srv/client-downloads:ro",
             IMAGE,
             "caddy",
             "run",

@@ -41,8 +41,9 @@ access logs stay disabled, and security/no-store/noindex headers cover the websi
 
 Public GET/HEAD `/downloads/{android.apk,windows.exe,android-sources.tar.gz,
 windows-sources.tar.gz,windows-licenses.txt,index.json}` reads the existing verified
-client publisher's `downloads/current` snapshot through the read-only dashboard
-mount. This is an exact file allowlist, not a public dashboard root. No other paths
+client publisher's `downloads/current` snapshot through a separate read-only
+`/srv/client-downloads` mount containing only the downloads subdirectory.
+This is an exact file allowlist, not a public dashboard root. No other paths
 or methods expose it; API-host dashboard authentication remains unchanged. Client
 updates through `publish_client.py` update both download channels automatically.
 The browser ignores URL fields in `index.json` and uses fixed public file paths.

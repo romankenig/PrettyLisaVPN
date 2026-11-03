@@ -28,7 +28,7 @@ prettylisavpn.com {
 	}
 	handle @client_downloads {
 		uri strip_prefix /downloads
-		root * /etc/caddy/dashboard/downloads/current
+		root * /srv/client-downloads/current
 		header {
 			Cache-Control "no-store"
 			X-Content-Type-Options "nosniff"

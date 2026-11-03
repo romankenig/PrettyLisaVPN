@@ -41,7 +41,8 @@ capture source/build SHA, run/artifact and file hashes are in
 `sites/public-website/assets/screenshots/sources.json`.
 
 Public files use the existing verified publisher snapshot:
-`/opt/prettylisavpn/secrets/dashboard/downloads/current`. Only six exact files are
+`/opt/prettylisavpn/secrets/dashboard/downloads/current`, mounted separately as
+`/srv/client-downloads` (downloads subdirectory only, read-only). Only six exact files are
 exposed on the apex domain: Android APK, Windows NSIS installer, corresponding
 source archives, Windows license notices and the metadata index. No directory
 listing, dashboard configuration, secret or private API becomes public. API-host
