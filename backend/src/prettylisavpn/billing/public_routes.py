@@ -11,12 +11,22 @@ router = APIRouter(tags=["payment-return"])
 ASSETS = Path(__file__).with_name("public")
 
 
-@router.get("/payment/success", response_class=HTMLResponse, include_in_schema=False)
+@router.api_route(
+    "/payment/success",
+    methods=["GET", "HEAD", "POST"],
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
 async def payment_success() -> HTMLResponse:
     return HTMLResponse((ASSETS / "success.html").read_text(encoding="utf-8"), headers=HEADERS)
 
 
-@router.get("/payment/failure", response_class=HTMLResponse, include_in_schema=False)
+@router.api_route(
+    "/payment/failure",
+    methods=["GET", "HEAD", "POST"],
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
 async def payment_failure() -> HTMLResponse:
     return HTMLResponse((ASSETS / "failure.html").read_text(encoding="utf-8"), headers=HEADERS)
 

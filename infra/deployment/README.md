@@ -33,6 +33,11 @@ The host directory contains `releases/<source SHA>-<run>-<attempt>` and a **rela
 `current` symlink, so atomic selection works inside the container. Never place
 credentials in this directory. Only verified CI website artifacts belong here.
 
+`/api/payments/cardlink/callback` is an exact public provider-notification route;
+missing credentials fail closed. `CARDLINK_ENV_FILE` is a separate optional 0600
+file, injected only into the API container. See [Cardlink handoff](../../docs/cardlink-callback.md).
+The exact `/shop-verification-xO2ZZeK02A.txt` file is served from the website build.
+
 `/payment/success`, `/payment/failure` and their existing assets still proxy to the
 backend. `/support` redirects to `/#help`, `/setup` to `/#download`. Checkout POST returns
 503 / `WEB_CHECKOUT_DISABLED`; unknown and private API/dashboard paths remain 404

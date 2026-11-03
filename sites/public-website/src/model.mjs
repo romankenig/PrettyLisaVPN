@@ -1,5 +1,5 @@
 export const website = Object.freeze({
-  version: "0.2.0",
+  version: "0.2.1",
   reviewedOn: "2026-11-03",
   mode: "prelaunch",
   seller: Object.freeze({

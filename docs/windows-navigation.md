@@ -1,3 +1,11 @@
+# Cardlink returns — backend 0.32.0 / website 0.2.1; clients unchanged
+
+Browser `/payment/success` and `/payment/failure` now accept provider POST returns
+as well as GET/HEAD. They never trust form/query payment claims or grant access.
+The public Result URL is server-to-server only; client payment creation and
+recurring management remain pending backend/provider integration. The domain
+verification TXT file is not a client route. See [handoff](cardlink-callback.md).
+
 # Website 0.2.0 — clients unchanged
 
 The public homepage now links to `/download/<platform>/`, four `/legal/<document>/`

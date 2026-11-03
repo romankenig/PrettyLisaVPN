@@ -16,6 +16,8 @@ services:
     env_file:
       - path: ${FLEET_ENV_FILE:-/etc/prettylisavpn/fleet.env}
         required: false
+      - path: ${CARDLINK_ENV_FILE:-/etc/prettylisavpn/cardlink.env}
+        required: false
     environment: &backend_environment
       APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}
       APPLICATION_VERSION: ${APPLICATION_VERSION:?Set APPLICATION_VERSION}

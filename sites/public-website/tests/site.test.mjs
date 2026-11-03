@@ -193,6 +193,10 @@ test("clean build removes stale routes and HTTP serves localized assets without 
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const origin = `http://127.0.0.1:${server.address().port}`;
+  const verification = await fetch(origin + "/shop-verification-xO2ZZeK02A.txt");
+  assert.equal(verification.status, 200);
+  assert.match(verification.headers.get("content-type"), /^text\/plain/);
+  assert.equal((await verification.text()).trim(), "shop-verification-xO2ZZeK02A");
   const identity = await (await fetch(origin + "/build-identity.json")).json();
   assert.equal(
     identity.version,

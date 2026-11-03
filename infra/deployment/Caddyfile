@@ -6,6 +6,12 @@
 # Public website and client files are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
+	handle /api/payments/cardlink/callback {
+		request_body {
+			max_size 16KB
+		}
+		reverse_proxy backend:8000
+	}
 	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg
 	handle @payment {
 		request_body {
@@ -44,7 +50,7 @@ prettylisavpn.com {
 	redir @old_setup /#download 308
 	@website {
 		method GET HEAD
-		path / /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json
+		path / /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json /shop-verification-xO2ZZeK02A.txt
 	}
 	handle @website {
 		root * /srv/public-website/current

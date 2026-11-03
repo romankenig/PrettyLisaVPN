@@ -132,6 +132,14 @@ class PublicWebsiteTests(unittest.TestCase):
                 self.request("/downloads/" + name, "--post-data=private-marker").stderr,
             )
 
+    def test_cardlink_merchant_verification(self):
+        result = self.request("/shop-verification-xO2ZZeK02A.txt")
+        self.assertIn("200 OK", result.stderr)
+        self.assertIn("Content-Type: text/plain", result.stderr)
+        self.assertEqual(result.stdout.strip(), "shop-verification-xO2ZZeK02A")
+        for route in ("/shop-verification-wrong.txt", "/public/shop-verification-xO2ZZeK02A.txt"):
+            self.assertIn("404 Not Found", self.request(route).stderr)
+
     def test_private_paths_and_removed_provider_stay_closed(self):
         for route in (
             "/api/me",
@@ -167,8 +175,13 @@ class PublicWebsiteTests(unittest.TestCase):
             "/payment/success",
             "/payment/failure",
             "/payment/assets/style.css",
+            "/api/payments/cardlink/callback",
         ):
             result = self.request(route)
+            self.assertIn("200 OK", result.stderr)
+            self.assertEqual("payment-return-stub", result.stdout)
+        for route in ("/payment/success", "/payment/failure", "/api/payments/cardlink/callback"):
+            result = self.request(route, "--post-data=InvId=private-marker")
             self.assertIn("200 OK", result.stderr)
             self.assertEqual("payment-return-stub", result.stdout)
         # BusyBox wget does not resolve fragment-only targets like a browser.

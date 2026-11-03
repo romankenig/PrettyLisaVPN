@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.32.0 / public website — 0.2.1
+
+- Accept GET/HEAD/POST on payment result pages without trusting browser claims.
+- Add the public Cardlink Result URL with fail-closed token configuration,
+  signature verification, independent provider API reconciliation and a durable,
+  deduplicated receipt inbox for pre-bound orders (migration 0042).
+- Keep checkout, subscription settlement and recurring charges disabled until the
+  live provider integration is approved, implemented and tested. The owner's
+  requested renewal target is now monthly automatic payments with explicit consent.
+- Publish the owner's exact Cardlink domain-verification file at the website root.
+- Clients unchanged. See [Cardlink handoff](docs/cardlink-callback.md).
+
 ### Public website — 0.2.0
 
 - Replace the draft storefront with four compact sections: introduction, real

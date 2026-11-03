@@ -29,6 +29,9 @@ from prettylisavpn.auth.session_service import (
     AuthenticatedSessionHandler,
     AuthenticatedSessionService,
 )
+from prettylisavpn.billing.cardlink import CallbackHandler, CardlinkAPI, CardlinkCallbacks
+from prettylisavpn.billing.cardlink_routes import router as cardlink_router
+from prettylisavpn.billing.cardlink_store import PostgresCardlinkReceipts
 from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.billing.provider import BillingProvider, validate_provider
 from prettylisavpn.billing.public_routes import router as payment_public_router
@@ -127,6 +130,7 @@ def create_app(
     billing: BillingOverviewPort | None = None,
     billing_provider: BillingProvider | None = None,
     billing_worker: BillingWorkerPort | None = None,
+    cardlink_callbacks: CallbackHandler | None = None,
     fleet: FleetService | None = None,
     client_vpn: ClientVpnService | None = None,
 ) -> FastAPI:
@@ -146,6 +150,12 @@ def create_app(
             cache = valkey if valkey is not None else Valkey(config)
             try:
                 app.state.postgres = pg
+                if cardlink_callbacks is None and config.cardlink_api_token is not None:
+                    app.state.cardlink_callbacks = CardlinkCallbacks(
+                        config.cardlink_api_token,
+                        CardlinkAPI(config.cardlink_api_token),
+                        PostgresCardlinkReceipts(cast(Postgres, pg)),
+                    )
                 app.state.product_analytics = ProductAnalyticsService(cast(Postgres, pg))
                 activity_sink = DatabaseActivitySink(cast(Postgres, pg))
                 app.state.fleet_settings = config
@@ -262,6 +272,7 @@ def create_app(
         title=config.application_name, version=config.application_version, lifespan=lifespan
     )
     app.add_middleware(SafeExceptionMiddleware)
+    app.state.cardlink_callbacks = cardlink_callbacks
     app.include_router(auth_router)
     app.include_router(client_vpn_router)
     app.include_router(client_sessions_router)
@@ -273,6 +284,7 @@ def create_app(
     app.include_router(support_public_router)
     app.include_router(billing_router)
     app.include_router(payment_public_router)
+    app.include_router(cardlink_router)
     app.include_router(fleet_router)
     app.include_router(analytics_router)
     app.include_router(traffic_router)

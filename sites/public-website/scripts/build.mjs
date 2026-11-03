@@ -28,6 +28,10 @@ export async function build() {
     throw new Error("Refusing symlink build directory");
   await rm(dist, { recursive: true, force: true });
   await mkdir(path.join(dist, "assets"), { recursive: true });
+  await copyFile(
+    path.join(root, "public/shop-verification-xO2ZZeK02A.txt"),
+    path.join(dist, "shop-verification-xO2ZZeK02A.txt"),
+  );
   await writeFile(
     path.join(dist, "build-identity.json"),
     JSON.stringify(
