@@ -52,6 +52,18 @@ artifact/download links and inspected native screenshots are recorded in PR50
 after the complete CI audit. Do not claim these changed screens were tested using
 an older APK/installer. Client publishing is a separate operation from code push.
 
+Product source: `6072b157069a2d4337d7a27b9f477196c0984754`.
+Local Windows lint/typecheck, 331 tests and frontend build passed; Android's six
+language catalogs passed consistency checks. Website's seven test groups and all
+78 generated pages passed. Desktop and 390px mobile FAQ views were inspected in
+the browser, including expanded split guidance and inline download links.
+Website 0.2.2 was published from push CI run `41617241925`, attempt 1, artifact
+`13222246274`, on 2026-11-03 at 10:14:10 UTC. All six public pages and build identity
+were checked. Previous website, backend containers and client download metadata
+were preserved. Rollback record:
+`/opt/prettylisavpn/website-deployments/6072b157-faq/publication.json`.
+Subsequent documentation-only commits do not change this published product SHA.
+
 Cardlink credential retrieval is independent. The authenticated in-app browser's
 API page says a token is only available after at least one shop passes moderation.
 No API token has been retrieved or saved; no browser security check was bypassed.
