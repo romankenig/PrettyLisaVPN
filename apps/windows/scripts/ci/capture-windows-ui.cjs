@@ -518,12 +518,18 @@ async function main() {
   await page.locator(".traffic-selected").evaluate((strip) => {
     const row = strip.getBoundingClientRect();
     if (
-      strip.children.length !== 3 ||
-      strip.querySelectorAll("svg").length !== 2
+      strip.children.length < 4 ||
+      strip.querySelectorAll("svg").length < 3 ||
+      strip.children[2].getAttribute("aria-label") !== "site0.example.com"
     )
       throw new Error(
-        "Sites without a logo must use one ellipsis, not generic icons",
+        "Custom service icons must follow the original service logos",
       );
+    const picker = document
+      .querySelector(".traffic-edit")
+      .getBoundingClientRect();
+    if (picker.top < row.bottom)
+      throw new Error("Service picker must appear below selected icons");
     const icons = [...strip.children].map((node) =>
       node.getBoundingClientRect(),
     );
@@ -1013,6 +1019,12 @@ async function main() {
   await faq.getByText(/«выбранное» — через VPN идут только/).waitFor();
   await faq.getByText(/«кроме выбранного» — наоборот/).waitFor();
   await screenshot("08-about-faq-split");
+  await faq.locator(".faq-answer").evaluate((node) => {
+    if (getComputedStyle(node).overflowY !== "auto")
+      throw new Error("Long FAQ answer must scroll within its card");
+    node.scrollTop = node.scrollHeight;
+  });
+  await screenshot("08-about-faq-split-bottom");
   await faq.getByRole("combobox", { name: "вопрос" }).selectOption("2");
   await faq.getByRole("link", { name: "подписке" }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();

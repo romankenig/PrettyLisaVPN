@@ -172,7 +172,13 @@ class AccountScreensTest {
             waitFor("vpn-location")
             compose.onNodeWithTag("vpn-location").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
-            compose.onNodeWithContentDescription("site0.example.com").assertDoesNotExist()
+            val custom = compose.onNodeWithContentDescription("site0.example.com")
+            custom.assertIsDisplayed()
+            val original = compose.onNodeWithContentDescription("YouTube")
+            assertTrue(original.fetchSemanticsNode().boundsInRoot.left < custom.fetchSemanticsNode().boundsInRoot.left)
+            val strip = compose.onNodeWithTag("traffic-selected-strip").fetchSemanticsNode().boundsInRoot
+            val picker = compose.onNodeWithTag("traffic-services").fetchSemanticsNode().boundsInRoot
+            assertTrue(strip.bottom <= picker.top)
             assertEquals(32, store.current().include.masks.size)
             assertEquals(32, store.current().exclude.masks.size)
             screenshot("vpn-location-$mode")

@@ -61,7 +61,7 @@ export function About({
         </div>
       </dl>
       <div className="about-sections">
-        <section className="about-card" aria-labelledby="faq-title">
+        <section className="about-card faq-card" aria-labelledby="faq-title">
           <h2 id="faq-title">FAQ</h2>
           <select
             className="faq-select"
@@ -75,7 +75,13 @@ export function About({
               </option>
             ))}
           </select>
-          <div className="faq-answer" aria-live="polite">
+          <div
+            className="faq-answer"
+            aria-live="polite"
+            aria-label={t(entry[0])}
+            key={question}
+            tabIndex={0}
+          >
             {t(entry[1])
               .split("\n\n")
               .map((paragraph, paragraphIndex) => (

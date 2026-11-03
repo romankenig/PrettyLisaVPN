@@ -100,18 +100,17 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
         if (selected.mode == "all") Text(tr(R.string.traffic_description_all),
             modifier = Modifier.testTag("traffic-mode-description"), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion.copy(alpha = 0.65f))
         if (selected.mode != "all") {
-            Button({ opened = true; model.load(Area.TRAFFIC) }, Modifier.fillMaxWidth().testTag("traffic-services"), enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black), shape = MaterialTheme.shapes.medium) { Text(tr(R.string.traffic_services)) }
             Text(tr(R.string.traffic_selected_label), style = MaterialTheme.typography.bodyMedium)
             val list = if (selected.mode == "include") selected.include else selected.exclude
             val selectionLabel = tr(R.string.traffic_selected)
             val items = list.services.map { it.name to it.icon } + list.masks.map { it to "website" }
             BoxWithConstraints(Modifier.fillMaxWidth().semantics { contentDescription = selectionLabel }.testTag("traffic-selected-strip")) {
                 val slots = ((maxWidth.value + 4) / 24).toInt().coerceAtLeast(1)
-                val logos = items.indices.filter { serviceDrawable(items[it].second) != null }
-                val needsMore = logos.size < items.size || logos.size > slots
-                val visible = logos.take((slots - if (needsMore) 1 else 0).coerceAtLeast(0))
-                val hidden = items.filterIndexed { index, _ -> index !in visible }.joinToString(", ") { it.first }
+                val ordered = items.indices.filter { serviceDrawable(items[it].second) != null } +
+                    items.indices.filter { serviceDrawable(items[it].second) == null }
+                val needsMore = ordered.size > slots
+                val visible = ordered.take((slots - if (needsMore) 1 else 0).coerceAtLeast(0))
+                val hidden = ordered.filter { it !in visible }.joinToString(", ") { items[it].first }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     visible.forEach { index -> val (name, icon) = items[index]; Box(Modifier.semantics { contentDescription = name }) { ServiceIcon(icon, brand = true, iconSize = 20.dp) } }
                     if (hidden.isNotEmpty()) {
@@ -121,6 +120,8 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
                     }
                 }
             }
+            Button({ opened = true; model.load(Area.TRAFFIC) }, Modifier.fillMaxWidth().testTag("traffic-services"), enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black), shape = MaterialTheme.shapes.medium) { Text(tr(R.string.traffic_services)) }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
         if (selected.mode != "all") {

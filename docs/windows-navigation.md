@@ -1,3 +1,11 @@
+# Selected services — Windows 0.25.2 / Android 0.21.2
+
+Home's split modes show the selected-service label, the compact icon strip, then
+the existing choose-services button. Original logos precede fallback badges and
+generic domain icons; overflow alone uses an ellipsis. The existing picker route,
+separate lists, disconnect-on-save behavior and routing rules are unchanged.
+See [versions and checks](selected-service-icons.md).
+
 # FAQ — Windows 0.25.1 / Android 0.21.1
 
 The About question selector retains its selected answer and gains a visible frame.

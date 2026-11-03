@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Windows — 0.25.2 / Android — 0.21.2
+
+- Move “choose services” below the selected-service label and icon strip in both
+  split modes. Show original logos first, then existing letter badges and generic
+  website icons; reserve an ellipsis only for icons that do not fit.
+- Preserve all selections and routing rules. Backend and website unchanged.
+- See [selected-service UI handoff](docs/selected-service-icons.md).
+
 ### Windows — 0.25.1 / Android — 0.21.1 / public website — 0.2.2
 
 - Preserve uppercase `FAQ` and add a clear frame around the question selector.
