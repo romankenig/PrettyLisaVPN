@@ -69,6 +69,7 @@ jobs:
           path: apps/apple/Vendor
           key: ${{ steps.engine-cache.outputs.cache-primary-key }}
       - name: Generate project and compile all shipping targets without signing
+        id: sdk-build
         working-directory: apps/apple
         run: |
           xcodegen generate
@@ -77,14 +78,18 @@ jobs:
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
       - name: Exercise simulator UI and capture native images
+        timeout-minutes: 20
         working-directory: apps/apple
         run: bash scripts/ui-review.sh
       - name: Exercise native macOS UI
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        timeout-minutes: 10
         working-directory: apps/apple
         run: |
           # Ad-hoc fixture UI only. No team/profile is available; this is not a VPN acceptance build.
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test
       - name: Package corresponding sources, licenses and exact build identity
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         run: bash apps/apple/scripts/package.sh
       - name: Export native screenshot attachments
         if: always()
