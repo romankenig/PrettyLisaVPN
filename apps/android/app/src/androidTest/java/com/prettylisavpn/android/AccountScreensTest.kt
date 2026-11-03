@@ -1,6 +1,8 @@
 package com.prettylisavpn.android
 
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -170,7 +172,13 @@ class AccountScreensTest {
             waitFor("vpn-location")
             compose.onNodeWithTag("vpn-location").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
-            compose.onNodeWithContentDescription("site0.example.com").assertDoesNotExist()
+            val custom = compose.onNodeWithContentDescription("site0.example.com")
+            custom.assertIsDisplayed()
+            val original = compose.onNodeWithContentDescription("YouTube")
+            assertTrue(original.fetchSemanticsNode().boundsInRoot.left < custom.fetchSemanticsNode().boundsInRoot.left)
+            val strip = compose.onNodeWithTag("traffic-selected-strip").fetchSemanticsNode().boundsInRoot
+            val picker = compose.onNodeWithTag("traffic-services").fetchSemanticsNode().boundsInRoot
+            assertTrue(strip.bottom <= picker.top)
             assertEquals(32, store.current().include.masks.size)
             assertEquals(32, store.current().exclude.masks.size)
             screenshot("vpn-location-$mode")
@@ -271,7 +279,7 @@ class AccountScreensTest {
         click("tab_ABOUT");waitFor("live-about")
         compose.onNodeWithTag("about-frontend-version").assertTextEquals(BuildConfig.VERSION_NAME)
         compose.onNodeWithTag("about-backend-version").assertTextEquals(compose.activity.getString(R.string.unavailable))
-        compose.onNodeWithTag("about-faq-title").assertTextEquals("faq")
+        compose.onNodeWithTag("about-faq-title").assertTextEquals("FAQ")
         compose.onNodeWithTag("build-source").assertDoesNotExist()
         compose.onNodeWithTag("about-dedication").performScrollTo().assertTextEquals("inspired by love of my life, Lisa")
         screenshot("about-windows-content")
@@ -293,7 +301,22 @@ class AccountScreensTest {
         click("faq-select"); click("faq-option-1")
         compose.onNodeWithTag("faq-answer").assertTextEquals(compose.activity.getString(R.string.faq_free_a))
         screenshot("about-faq-free")
-        click("faq-link"); waitFor("provider-mode")
+        compose.onNodeWithTag("faq-link").assertDoesNotExist()
+        click("faq-select"); click("faq-option-4")
+        val split = compose.activity.getString(R.string.faq_split_a)
+            .replace("[", "").replace("]", "")
+        compose.onNodeWithTag("faq-answer").assertTextEquals(split)
+        screenshot("about-faq-split")
+        click("faq-select"); click("faq-option-2")
+        val answer = compose.onNodeWithTag("faq-answer").performScrollTo()
+        val layouts = mutableListOf<TextLayoutResult>()
+        answer.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        val source = compose.activity.getString(R.string.faq_manage_a)
+        val linkStart = source.indexOf('[')
+        val linkEnd = source.indexOf(']') - 1
+        val linkCenter = layouts.single().getBoundingBox((linkStart + linkEnd) / 2).center
+        answer.performTouchInput { click(linkCenter) }
+        waitFor("provider-mode")
         assertEquals(0, starts)
     }
     @Test fun homeMatchesWindowsAndMissingVpnPortCannotConnect() {

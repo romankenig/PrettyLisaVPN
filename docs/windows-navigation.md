@@ -1,3 +1,43 @@
+# Selected services — Windows 0.25.2 / Android 0.21.2
+
+Home's split modes show the selected-service label, the compact icon strip, then
+the existing choose-services button. Original logos precede fallback badges and
+generic domain icons; overflow alone uses an ellipsis. The existing picker route,
+separate lists, disconnect-on-save behavior and routing rules are unchanged.
+See [versions and checks](selected-service-icons.md).
+
+# FAQ — Windows 0.25.1 / Android 0.21.1
+
+The About question selector retains its selected answer and gains a visible frame.
+`FAQ` is an explicit uppercase exception to the lowercase presentation style.
+Links are part of answer sentences: connection/split guidance opens Home,
+subscription-management/cancellation guidance opens the existing Subscription
+screen, and the support sentence opens the existing support form. The Free answer
+has no unrelated subscription link. No new route, auth guard, external browser
+navigation, payment operation or VPN action is introduced. Rich-text link targets
+are fixed by the selected question; translations cannot provide arbitrary URLs.
+See [verification and versions](faq-polish.md).
+
+# Cardlink returns — backend 0.32.0 / website 0.2.1; clients unchanged
+
+Browser `/payment/success` and `/payment/failure` now accept provider POST returns
+as well as GET/HEAD. They never trust form/query payment claims or grant access.
+The public Result URL is server-to-server only; client payment creation and
+recurring management remain pending backend/provider integration. The domain
+verification TXT file is not a client route. See [handoff](cardlink-callback.md).
+
+# Website 0.2.0 — clients unchanged
+
+The public homepage now links to `/download/<platform>/`, four `/legal/<document>/`
+pages and the FAQ/support section. Six language prefixes preserve page context.
+Android/Windows pages link to fixed same-origin APK/installer and source files;
+they do not execute an installer or launch a client automatically. Stores and
+future-platform downloads are disabled. The support button opens a fixed mailto.
+`/support` and `/setup` redirect to homepage sections; the old `/account/`, pricing
+and checkout summary pages are removed. Existing client routes/auth guards and
+backend payment return URLs stay unchanged. Checkout POST remains denied. Cardlink
+and order integration still await implementation. See [handoff](public-website-redesign.md).
+
 # FAQ and initial selections — Windows 0.25.0 / Android 0.21.0
 
 About → FAQ question dropdown → answer and Home, Subscription or Support action.

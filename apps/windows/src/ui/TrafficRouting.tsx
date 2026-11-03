@@ -147,14 +147,6 @@ export function TrafficRouting({
       )}
       {selected.mode !== "all" && (
         <>
-          <button
-            type="button"
-            className="traffic-edit"
-            disabled={busy}
-            onClick={() => setOpen(true)}
-          >
-            {t("Выбрать сервисы")}
-          </button>
           <p className="traffic-selected-label">{t("Выбранные сервисы:")}</p>
           <SelectedServiceIcons
             items={[
@@ -170,6 +162,14 @@ export function TrafficRouting({
               })),
             ]}
           />
+          <button
+            type="button"
+            className="traffic-edit"
+            disabled={busy}
+            onClick={() => setOpen(true)}
+          >
+            {t("Выбрать сервисы")}
+          </button>
         </>
       )}
       {error && (
@@ -217,14 +217,16 @@ function SelectedServiceIcons({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const logos = items.filter((item) => serviceIcons[item.icon]);
-  const needsMore =
-    logos.length < items.length || (slots !== null && logos.length > slots);
-  const visible = logos.slice(
+  const ordered = [
+    ...items.filter((item) => serviceIcons[item.icon]),
+    ...items.filter((item) => !serviceIcons[item.icon]),
+  ];
+  const needsMore = slots !== null && ordered.length > slots;
+  const visible = ordered.slice(
     0,
-    slots === null ? logos.length : Math.max(0, slots - (needsMore ? 1 : 0)),
+    slots === null ? ordered.length : Math.max(0, slots - (needsMore ? 1 : 0)),
   );
-  const hidden = items
+  const hidden = ordered
     .filter((item) => !visible.includes(item))
     .map((item) => item.name)
     .join(", ");

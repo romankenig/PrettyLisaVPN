@@ -191,7 +191,7 @@ describe("authenticated Home", () => {
     );
     await waitFor(() => expect(button).toBeEnabled());
   });
-  it("hides missing logos and keeps an ellipsis with spare room without changing rules", async () => {
+  it("shows original icons before fallback badges, below the label and above the picker", async () => {
     let width = 72;
     let resize = () => {};
     const bounds = HTMLElement.prototype.getBoundingClientRect;
@@ -268,13 +268,64 @@ describe("authenticated Home", () => {
         resize();
       });
       expect(screen.getByRole("img", { name: "Telegram" })).toBeVisible();
-      expect(screen.queryByRole("img", { name: "Yandex" })).toBeNull();
+      expect(screen.getByRole("img", { name: "Yandex" })).toBeVisible();
       expect(screen.queryByRole("img", { name: "two.example.com" })).toBeNull();
       expect(screen.getByText("…")).toHaveAttribute(
         "title",
-        "Yandex, one.example.com, two.example.com",
+        "one.example.com, two.example.com",
       );
+      act(() => {
+        width = 168;
+        resize();
+      });
+      const strip = screen.getByLabelText("Выбранные сервисы");
+      expect(
+        within(strip)
+          .getAllByRole("img")
+          .map((node) => node.getAttribute("aria-label")),
+      ).toEqual([
+        "YouTube",
+        "Instagram",
+        "Telegram",
+        "Yandex",
+        "one.example.com",
+        "two.example.com",
+      ]);
+      expect(screen.queryByText("…")).toBeNull();
+      const picker = screen.getByRole("button", { name: "Выбрать сервисы" });
+      expect(
+        strip.compareDocumentPosition(picker) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        screen.getByText("Выбранные сервисы:").compareDocumentPosition(strip) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
       expect(getDeviceTrafficSelection().current()).toEqual(selection);
+      act(() => {
+        getDeviceTrafficSelection().save({
+          ...selection,
+          include: {
+            ...selection.include,
+            services: [
+              selection.include.services[3],
+              ...selection.include.services.slice(0, 3),
+            ],
+          },
+        });
+      });
+      expect(
+        within(strip)
+          .getAllByRole("img")
+          .map((node) => node.getAttribute("aria-label")),
+      ).toEqual([
+        "YouTube",
+        "Instagram",
+        "Telegram",
+        "Yandex",
+        "one.example.com",
+        "two.example.com",
+      ]);
       act(() => {
         getDeviceTrafficSelection().save({
           ...selection,

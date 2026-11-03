@@ -3,15 +3,66 @@
 	admin off
 }
 
-# Public payment return URLs are separate from the private monitoring site.
+# Public website and client files are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
-	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg /support /support/
+	handle /api/payments/cardlink/callback {
+		request_body {
+			max_size 16KB
+		}
+		reverse_proxy backend:8000
+	}
+	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg
 	handle @payment {
 		request_body {
 			max_size 64KB
 		}
 		reverse_proxy backend:8000
+	}
+	@checkout_post {
+		method POST
+		path /checkout /checkout/
+	}
+	handle @checkout_post {
+		header Content-Type application/json
+		respond `{"error":{"code":"WEB_CHECKOUT_DISABLED"}}` 503
+	}
+	# Only verified publisher outputs are public. Never expose the dashboard directory.
+	@client_downloads {
+		method GET HEAD
+		path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz /downloads/windows-licenses.txt /downloads/index.json
+	}
+	handle @client_downloads {
+		uri strip_prefix /downloads
+		root * /srv/client-downloads/current
+		header {
+			Cache-Control "no-store"
+			X-Content-Type-Options "nosniff"
+			X-Robots-Tag "noindex, nofollow"
+		}
+		@binary path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz
+		header @binary Content-Disposition "attachment"
+		file_server
+	}
+	@old_support path /support /support/
+	redir @old_support /#help 308
+	@old_setup path /setup /setup/
+	redir @old_setup /#download 308
+	@website {
+		method GET HEAD
+		path / /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json /shop-verification-xO2ZZeK02A.txt
+	}
+	handle @website {
+		root * /srv/public-website/current
+		header {
+			Cache-Control "no-store"
+			X-Robots-Tag "noindex, nofollow"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+			Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		}
+		file_server
 	}
 	handle {
 		respond "Not found" 404

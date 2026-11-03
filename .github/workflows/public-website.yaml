@@ -1,0 +1,45 @@
+name: Public website preview
+on:
+  push:
+    paths:
+      - "sites/public-website/**"
+      - ".github/workflows/public-website.yaml"
+      - "apps/windows/src/assets/lock.svg"
+      - "apps/windows/public/fonts/rubik/**"
+      - "backend/src/prettylisavpn/billing/public/logo.svg"
+      - "infra/deployment/Caddyfile"
+      - "infra/deployment/compose.yaml"
+  pull_request:
+    paths:
+      - "sites/public-website/**"
+      - ".github/workflows/public-website.yaml"
+      - "apps/windows/src/assets/lock.svg"
+      - "apps/windows/public/fonts/rubik/**"
+      - "backend/src/prettylisavpn/billing/public/logo.svg"
+      - "infra/deployment/Caddyfile"
+      - "infra/deployment/compose.yaml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - run: npm run check && npm test && npm run build
+        working-directory: sites/public-website
+        env:
+          WEBSITE_SOURCE_SHA: ${{ github.sha }}
+          WEBSITE_BUILD_RUN: ${{ github.run_id }}
+          WEBSITE_BUILD_ATTEMPT: ${{ github.run_attempt }}
+      - name: Verify public Caddy routing in an isolated container
+        run: python3 sites/public-website/tests/test_caddy.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrettyLisaVPN-website-preview-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sites/public-website/dist/
+          if-no-files-found: error
+      # There is deliberately no website deploy or payment activation job.

@@ -71,6 +71,11 @@ compose=(docker compose --project-name "$project_name" \
 export DASHBOARD_DIR="${DASHBOARD_DIR:-$(dirname "$environment_file")/dashboard}"
 export FLEET_ENV_FILE="${FLEET_ENV_FILE:-$(dirname "$environment_file")/fleet.env}"
 export FLEET_CREDENTIALS_DIR="${FLEET_CREDENTIALS_DIR:-$(dirname "$environment_file")/fleet}"
+export CARDLINK_ENV_FILE="${CARDLINK_ENV_FILE:-$(dirname "$environment_file")/cardlink.env}"
+if [[ -f "$CARDLINK_ENV_FILE" && "$(stat -c '%a' "$CARDLINK_ENV_FILE")" != "600" ]]; then
+    printf 'Cardlink environment file must have mode 600.\n' >&2
+    exit 1
+fi
 if [[ -f "$FLEET_ENV_FILE" ]]; then
     if [[ "$(stat -c '%a' "$FLEET_ENV_FILE")" != "600" ]]; then
         printf 'Fleet environment file must have mode 600.\n' >&2

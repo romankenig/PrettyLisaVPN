@@ -295,17 +295,17 @@
     <string name="direct_location">standort ohne VPN:</string>
     <string name="upgrade_plan">tarif verbessern</string>
     <string name="faq_connect_q">wie verbinde ich mich?</string>
-    <string name="faq_connect_a">wähle ein Land und tippe auf Verbinden. die erste Verbindung kann einige Minuten dauern.</string>
+    <string name="faq_connect_a">wähle auf der [startseite] ein Land und tippe auf Verbinden. die erste Verbindung kann einige Minuten dauern.</string>
     <string name="faq_free_q">was bietet Free?</string>
-    <string name="faq_free_a">eine Stunde VPN täglich für alle Geräte des Kontos zusammen. das Kontingent wird um 00:00 UTC erneuert.</string>
+    <string name="faq_free_a">eine Stunde VPN pro Tag für das gesamte Konto. das Kontingent wird um 00:00 UTC zurückgesetzt.</string>
     <string name="faq_manage_q">wo verwalte ich mein Abo?</string>
-    <string name="faq_manage_a">unter Abonnement findest du Laufzeit, Preis, Zahlungsart und verfügbare Aktionen.</string>
+    <string name="faq_manage_a">unter [Abonnement] findest du den bezahlten Zeitraum, Preis, die Zahlungsmethode und verfügbare Aktionen.</string>
     <string name="faq_cancel_q">was passiert nach der Kündigung?</string>
-    <string name="faq_cancel_a">der bezahlte Zugang bleibt bis zum angezeigten Datum. die Kündigung ist nach Bestätigung in der App abgeschlossen.</string>
+    <string name="faq_cancel_a">wenn die automatische Verlängerung aktiv ist, schalte sie unter [Abonnement] aus. warte auf die Bestätigung: der bezahlte Zugang bleibt bis zum angezeigten Datum bestehen.</string>
     <string name="faq_split_q">wie wähle ich Websites für das VPN?</string>
-    <string name="faq_split_a">wähle auf der Startseite Ausgewählte oder Außer ausgewählten und dann Dienste wählen. änderungen trennen das VPN; verbinde dich danach erneut.</string>
+    <string name="faq_split_a">mit Split-Tunneling wählst du, was über das VPN läuft und was deine normale Verbindung nutzt. ändere den Modus auf der [Startseite] unter „was schützen“.\n\n„alles“ — der gesamte Datenverkehr läuft über das VPN.\n\n„ausgewählte“ — nur Dienste aus deiner Liste nutzen das VPN, etwa YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n„außer ausgewählten“ — umgekehrt: Dienste aus der Liste verbinden sich direkt, alles andere läuft über das VPN. zum Beispiel kannst du Gosuslugi und MAX ausnehmen.\n\ntippe auf „Dienste wählen“ und aktiviere die gewünschten Dienste oder füge ein eigenes Muster hinzu: youtube.com für diese Domain, *.youtube.com für ihre Subdomains. ein Dienst kann mehrere Domains nutzen; ein fertiger Eintrag ist deshalb meist einfacher.\n\nbeide Modi speichern eigene Listen. beim Speichern wird das VPN getrennt — verbinde dich erneut, um die Auswahl anzuwenden.</string>
     <string name="faq_support_q">wie erreiche ich den Support?</string>
-    <string name="faq_support_a">schreibe über die App oder an help@prettylisavpn.com. nenne das Problem und den Zeitpunkt.</string>
+    <string name="faq_support_a">öffne das [Supportformular] in der App oder schreibe an help@prettylisavpn.com. beschreibe das Problem und wann es auftrat.</string>
     <string name="billing_days_left">verbleibende Tage: %1$d</string>
     <string name="billing_cancel_detail">die Kündigung entfernt die Zahlungsart. der Zugang bleibt bis zum Ende der bezahlten Laufzeit.</string>
 </resources>

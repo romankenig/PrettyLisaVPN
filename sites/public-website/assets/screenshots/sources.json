@@ -1,0 +1,57 @@
+{
+  "product": "PrettyLisaVPN",
+  "captured_ui": "Unmodified PNG screenshots from successful native CI review runs; not generated mockups.",
+  "demo_data_notice": "Account details, server ratings and locations are synthetic test fixtures. Screenshots demonstrate the application interface, not a live VPN connection or current server availability. No real customer email, IP address, credentials or browsing data is included.",
+  "publication_caption": "Application screenshots with demo data.",
+  "asset_processing": "Byte-for-byte copies; no crop, retouching, text replacement, or fabricated connected state.",
+  "assets": [
+    {
+      "platform": "android",
+      "version": "0.21.0",
+      "source_sha": "eed488ac1fe5dd4fbb8ffcbc0d320340bcf6d465",
+      "build_sha": "eed488ac1fe5dd4fbb8ffcbc0d320340bcf6d465",
+      "run_id": 41589719117,
+      "run_attempt": 1,
+      "artifact_id": 13210167115,
+      "artifact_name": "android-emulator-api35-eed488ac1fe5dd4fbb8ffcbc0d320340bcf6d465-41589719117-1",
+      "capture": "Native Android Compose UI on API 35 emulator, account API fixtures",
+      "locale": "en",
+      "evidence": [
+        "build-identity.json",
+        "apps/android/app/src/androidTest/java/com/prettylisavpn/android/AccountScreensTest.kt"
+      ],
+      "file": "android-services.png",
+      "original_path": "account-api/traffic-include.png",
+      "scenario": "Service selection for split tunneling",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 142024,
+      "sha256": "27fb78881e539966abf1d8c028769e28cb7e2091752790f5bd0861d8745982c6",
+      "run_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719117",
+      "artifact_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719117/artifacts/13210167115"
+    },
+    {
+      "platform": "windows",
+      "version": "0.25.0",
+      "source_sha": "44169cc2fefd76122d0a0ac83f65ac2f4ccee37d",
+      "build_sha": "e33dfdb327927a0b2c5be4a70f0b131463b2e2b2",
+      "run_id": 41587181694,
+      "run_attempt": 1,
+      "artifact_id": 13208453227,
+      "artifact_name": "windows-ui-review",
+      "capture": "Real native Tauri window and WebView2 on Windows with loopback API fixtures",
+      "source_equivalence": "git diff 44169cc2fefd76122d0a0ac83f65ac2f4ccee37d eed488ac1fe5dd4fbb8ffcbc0d320340bcf6d465 -- apps/windows is empty",
+      "evidence": ["README.txt", "capture-result.json"],
+      "file": "windows-home.png",
+      "original_path": "13-home-en.png",
+      "scenario": "Home with Germany selected; disconnected",
+      "locale": "en",
+      "width": 960,
+      "height": 640,
+      "bytes": 64633,
+      "sha256": "91c902a01506f753dd0567aff4e19c39f0b7d5e25759f6f899746b394f66ebd2",
+      "run_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41587181694",
+      "artifact_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41587181694/artifacts/13208453227"
+    }
+  ]
+}

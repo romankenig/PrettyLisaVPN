@@ -16,6 +16,8 @@ services:
     env_file:
       - path: ${FLEET_ENV_FILE:-/etc/prettylisavpn/fleet.env}
         required: false
+      - path: ${CARDLINK_ENV_FILE:-/etc/prettylisavpn/cardlink.env}
+        required: false
     environment: &backend_environment
       APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}
       APPLICATION_VERSION: ${APPLICATION_VERSION:?Set APPLICATION_VERSION}
@@ -127,6 +129,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ${DASHBOARD_DIR:-/etc/prettylisavpn/dashboard}:/etc/caddy/dashboard:ro
+      - ${DASHBOARD_DIR:-/etc/prettylisavpn/dashboard}/downloads:/srv/client-downloads:ro
+      - ${PUBLIC_WEBSITE_DIR:-/opt/prettylisavpn/public-website}:/srv/public-website:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

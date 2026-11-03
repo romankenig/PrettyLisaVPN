@@ -6,6 +6,63 @@
 
 ## Unreleased
 
+### Windows — 0.25.2 / Android — 0.21.2
+
+- Move “choose services” below the selected-service label and icon strip in both
+  split modes. Show original logos first, then existing letter badges and generic
+  website icons; reserve an ellipsis only for icons that do not fit.
+- Preserve all selections and routing rules. Backend and website unchanged.
+- See [selected-service UI handoff](docs/selected-service-icons.md).
+
+### Windows — 0.25.1 / Android — 0.21.1 / public website — 0.2.2
+
+- Preserve uppercase `FAQ` and add a clear frame around the question selector.
+- Put relevant navigation/support links inside answer sentences; remove detached
+  generic links and the unnecessary subscription link from the Free explanation.
+- Explain all/selected/except-selected traffic modes, practical examples, domain
+  patterns, independent lists and reconnect behavior in all six client languages.
+- Apply the same explanations, uppercase heading, framed accordion and meaningful
+  inline download/support links to the website in all six languages.
+- Backend unchanged. See [FAQ handoff](docs/faq-polish.md).
+
+### Backend — 0.32.0 / public website — 0.2.1
+
+- Accept GET/HEAD/POST on payment result pages without trusting browser claims.
+- Add the public Cardlink Result URL with fail-closed token configuration,
+  signature verification, independent provider API reconciliation and a durable,
+  deduplicated receipt inbox for pre-bound orders (migration 0042).
+- Keep checkout, subscription settlement and recurring charges disabled until the
+  live provider integration is approved, implemented and tested. The owner's
+  requested renewal target is now monthly automatic payments with explicit consent.
+- Publish the owner's exact Cardlink domain-verification file at the website root.
+- Clients unchanged. See [Cardlink handoff](docs/cardlink-callback.md).
+
+### Public website — 0.2.0
+
+- Replace the draft storefront with four compact sections: introduction, real
+  app features/screenshots, seven platforms, and FAQ/troubleshooting/support.
+- Add complete Russian, English, German, French, Spanish and Chinese pages,
+  context-preserving language navigation and a single November 15 launch notice.
+- Add platform download pages with disabled store options and public verified
+  Android/Windows files, corresponding sources and licenses on the main domain.
+- Reduce the footer to four concise documents; remove readiness, checkout
+  summaries and extra account/pricing pages. Live payment activation stays separate.
+- See [redesign handoff](docs/public-website-redesign.md) for evidence and remaining
+  commercial/legal preparation. Backend/client versions are unchanged.
+
+### Public website — 0.1.0 (preview)
+
+- Add a responsive Android/Windows service website, Free/Premium pricing,
+  installation instructions, existing-client account guidance, FAQ and support.
+- Show Cardlink as planned and unavailable; keep checkout disabled and unknown
+  commissions explicit. Other payment providers are deferred by the owner.
+- Add six visibly unapproved legal drafts and a readiness checklist based on
+  confirmed seller details and inspected data flows.
+- See [preview handoff](docs/public-website-preview.md) for checks and launch blockers.
+- Publish the same draft on the owner's existing HTTPS domain after explicit
+  authorization. Persist static snapshots separately from backend releases;
+  preserve disabled checkout, private monitoring and payment return routes.
+
 ### Backend — 0.31.0
 
 - BREAKING: remove the unused 1Plat callback (now 404), merchant verification

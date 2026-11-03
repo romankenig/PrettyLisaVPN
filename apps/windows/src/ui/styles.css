@@ -1372,7 +1372,7 @@ input,
   font-size: 18px;
 }
 .traffic-mode .traffic-edit {
-  margin: 0;
+  margin: 12px 0 0;
   padding: 12px 18px;
   background: var(--color-viking);
   color: var(--color-black);
@@ -1397,7 +1397,7 @@ input,
   cursor: pointer;
 }
 .traffic-selected-label {
-  margin: 16px 0 0;
+  margin: 0;
   font-size: 14px;
 }
 .traffic-add-service {
@@ -1873,6 +1873,10 @@ input,
 }
 .about-sections {
   display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
@@ -1900,18 +1904,42 @@ input,
   width: 100%;
   margin-top: 14px;
   padding: 10px;
-  border: 1px solid var(--color-purple-heart);
+  border: 2px solid var(--color-purple-heart);
   border-radius: 8px;
   background: transparent;
   color: var(--color-black);
   font: inherit;
   font-size: 14px;
 }
-.faq-answer a {
-  display: inline-block;
-  margin-top: 14px;
+.about-card #faq-title {
+  font-size: 22px;
+  text-transform: none;
+}
+.about-card.faq-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+}
+.faq-card .faq-answer {
+  min-height: 0;
+  overflow-y: auto;
+}
+.faq-card > h2,
+.faq-card > .faq-select {
+  flex-shrink: 0;
+}
+.faq-answer .faq-inline-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-purple-heart);
-  font-size: 13px;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 .about-dedication {
   margin: auto 0 0;

@@ -295,17 +295,17 @@
     <string name="direct_location">localisation sans VPN :</string>
     <string name="upgrade_plan">améliorer le forfait</string>
     <string name="faq_connect_q">comment me connecter ?</string>
-    <string name="faq_connect_a">choisissez un pays puis appuyez sur connecter. la première connexion peut prendre quelques minutes.</string>
+    <string name="faq_connect_a">sur [l’accueil], choisissez un pays puis appuyez sur connecter. la première connexion peut prendre quelques minutes.</string>
     <string name="faq_free_q">que comprend free ?</string>
-    <string name="faq_free_a">une heure de VPN par jour, partagée entre les appareils du compte. remise à zéro à 00:00 UTC.</string>
+    <string name="faq_free_a">une heure de VPN par jour pour tout le compte. le quota est réinitialisé à 00:00 UTC.</string>
     <string name="faq_manage_q">où gérer mon abonnement ?</string>
-    <string name="faq_manage_a">ouvrez abonnement pour voir la période payée, le prix, le moyen de paiement et les actions disponibles.</string>
+    <string name="faq_manage_a">dans [abonnement], consultez la période payée, le prix, le moyen de paiement et les actions disponibles.</string>
     <string name="faq_cancel_q">que se passe-t-il si je résilie ?</string>
-    <string name="faq_cancel_a">votre accès payé reste actif jusqu’à la date affichée. la résiliation est terminée après confirmation dans l’application.</string>
+    <string name="faq_cancel_a">si le renouvellement automatique est activé, désactivez-le dans [abonnement]. attendez la confirmation : l’accès payé reste valable jusqu’à la date affichée.</string>
     <string name="faq_split_q">comment choisir les sites pour le VPN ?</string>
-    <string name="faq_split_a">sur l’accueil, choisissez sélection ou sauf sélection puis choisir les services. les modifications déconnectent le VPN ; reconnectez-vous ensuite.</string>
+    <string name="faq_split_a">le routage sélectif permet de choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle. changez le mode dans « que protéger » sur [l’accueil].\n\n« tout » — tout le trafic passe par le VPN.\n\n« sélection » — seuls les services de votre liste utilisent le VPN, par exemple YouTube et Telegram. les autres sites et applications utilisent la connexion habituelle.\n\n« sauf sélection » — c’est l’inverse : les services de la liste passent en direct, et le reste par le VPN. vous pouvez par exemple exclure Gosuslugi et MAX.\n\nappuyez sur « choisir les services » et activez ceux souhaités, ou ajoutez un motif : youtube.com pour ce domaine, *.youtube.com pour ses sous-domaines. un service peut utiliser plusieurs domaines ; choisir un service prédéfini est généralement plus simple.\n\nles deux modes conservent des listes distinctes. enregistrer les modifications déconnecte le VPN : reconnectez-vous pour les appliquer.</string>
     <string name="faq_support_q">comment contacter le support ?</string>
-    <string name="faq_support_a">écrivez depuis l’application ou à help@prettylisavpn.com. précisez le problème et l’heure de l’erreur.</string>
+    <string name="faq_support_a">ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.</string>
     <string name="billing_days_left">jours restants : %1$d</string>
     <string name="billing_cancel_detail">la résiliation supprime le moyen de paiement enregistré. l’accès reste actif jusqu’à la fin de la période payée.</string>
 </resources>

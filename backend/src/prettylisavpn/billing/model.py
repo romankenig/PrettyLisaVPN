@@ -144,6 +144,33 @@ class BillingOperationRecord(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class CardlinkBillRecord(Base):
+    """Server-owned binding. Only future invoice admission may create these rows."""
+
+    __tablename__ = "billing_cardlink_bills"
+    operation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("billing_operations.id", ondelete="CASCADE"), primary_key=True
+    )
+    bill_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+
+
+class CardlinkReceiptRecord(Base):
+    """API-verified snapshots; never erase a previous successful observation."""
+
+    __tablename__ = "billing_cardlink_receipts"
+    operation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("billing_cardlink_bills.operation_id", ondelete="CASCADE"), primary_key=True
+    )
+    status: Mapped[str] = mapped_column(String(16), primary_key=True)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('UNDERPAID', 'SUCCESS', 'OVERPAID', 'FAIL')",
+            name="ck_cardlink_receipt_status",
+        ),
+    )
+
+
 class SandboxPaymentRecord(Base):
     """Independent simulated provider receipt, committed before local settlement."""
 
