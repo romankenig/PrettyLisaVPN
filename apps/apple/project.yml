@@ -114,6 +114,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).macos
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
     dependencies:
       - target: PacketTunnel-macOS
         embed: true

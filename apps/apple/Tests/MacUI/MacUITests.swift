@@ -7,7 +7,14 @@ final class MacUITests: XCTestCase {
             app.launchArguments = ["-ui-fixtures", "-theme", theme]
             app.launch()
             let window = app.windows.firstMatch
-            XCTAssertTrue(window.waitForExistence(timeout: 20))
+            guard window.waitForExistence(timeout: 20) else {
+                let hierarchy = XCTAttachment(string: app.debugDescription)
+                hierarchy.name = "macOS-missing-window-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+                let screen = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                screen.name = "macOS-missing-window-screen"; screen.lifetime = .keepAlways; add(screen)
+                XCTFail("PrettyLisaVPN launched without an accessible native window")
+                return
+            }
             XCTAssertTrue(app.staticTexts["vpn-status"].waitForExistence(timeout: 15))
             let attachment = XCTAttachment(screenshot: window.screenshot())
             attachment.name = "macOS-\(theme)-fixture-not-vpn-proof"
