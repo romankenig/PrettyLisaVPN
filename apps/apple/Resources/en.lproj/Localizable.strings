@@ -118,6 +118,8 @@
 "free_time_resets" = "resets: %1$@";
 "home" = "home";
 "invalid_email" = "enter a valid email.";
+"ios_back" = "Back";
+"ios_legal" = "Service and licenses";
 "location_quality" = "availability %1$@ out of 100";
 "notification_disconnect" = "disconnect VPN";
 "notification_open" = "open app";

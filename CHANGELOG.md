@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### iOS — 0.2.0
+
+- Match the supplied mobile reference: purple shell, Rubik, light account and VPN
+  cards, mint actions, bottom Home/Settings/About navigation, device cards and FAQ.
+- Preserve real account/VPN state, confirmed egress and cleanup; keep unavailable
+  split modes honest. macOS and backend behavior/versions are unchanged.
+- Add native phone navigation checks and screenshots; see
+  [iOS UI handoff](docs/ios-reference-ui.md). Real VPN acceptance remains pending.
+
 ### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0
 
 - Add native Apple apps and real Packet Tunnel extensions using existing encrypted

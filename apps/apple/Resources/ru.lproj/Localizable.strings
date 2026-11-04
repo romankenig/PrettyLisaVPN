@@ -113,6 +113,8 @@
 "free_time_resets" = "обновится: %1$@";
 "home" = "главная";
 "invalid_email" = "введите корректный email.";
+"ios_back" = "назад";
+"ios_legal" = "сервис и лицензии";
 "location_quality" = "доступность %1$@ из 100";
 "notification_disconnect" = "отключить VPN";
 "notification_open" = "открыть приложение";

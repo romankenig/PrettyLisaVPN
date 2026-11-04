@@ -113,6 +113,8 @@
 "free_time_resets" = "重置时间：%1$@";
 "home" = "首页";
 "invalid_email" = "请输入有效邮箱。";
+"ios_back" = "返回";
+"ios_legal" = "服务与许可";
 "location_quality" = "可用性 %1$@ / 100";
 "notification_disconnect" = "断开 VPN";
 "notification_open" = "打开应用";

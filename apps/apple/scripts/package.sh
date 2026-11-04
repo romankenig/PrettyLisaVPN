@@ -21,7 +21,7 @@ import json, os, subprocess
 from pathlib import Path
 identity = {'source_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
             'run': os.environ.get('GITHUB_RUN_ID'), 'attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
-            'ios_version': '0.1.0', 'macos_version': '0.1.0', 'real_vpn_verified': False,
+            'ios_version': '0.2.0', 'macos_version': '0.1.0', 'real_vpn_verified': False,
             'signing': 'unsigned/ad-hoc; no Apple team or provisioning profiles'}
 Path('artifacts/build-identity.json').write_text(json.dumps(identity, indent=2) + '\n')
 PY

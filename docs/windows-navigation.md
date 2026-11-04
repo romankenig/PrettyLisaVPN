@@ -1,4 +1,15 @@
-# Apple navigation — iOS 0.1.0 / macOS 0.1.0
+# iOS reference navigation — iOS 0.2.0
+
+iOS now uses Home / Settings / About bottom tabs. Settings opens Subscription,
+Devices and Advanced; About opens Support; Home opens unread Messages. Nested
+screens return to their parent using Back. Country selection and connect/disconnect
+use existing APIs and the VPN coordinator. The All protection card opens a policy
+sheet; unavailable include/exclude routing is not a selectable iOS mode. Language
+is available in the header. OTP guards, logout/revoke confirmations and billing
+read-only behavior remain. macOS and Windows navigation are unchanged. See
+[screens, verification and compatibility](ios-reference-ui.md).
+
+# Apple navigation — iOS 0.1.0 / macOS 0.1.0 (original port)
 
 Windows routes and version remain unchanged. Apple adds native OTP → authenticated
 home, subscription, devices, account messages, support, settings and about routes.

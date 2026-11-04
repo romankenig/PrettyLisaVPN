@@ -113,6 +113,8 @@
 "free_time_resets" = "se renueva: %1$@";
 "home" = "inicio";
 "invalid_email" = "introduce un correo válido.";
+"ios_back" = "Atrás";
+"ios_legal" = "Servicio y licencias";
 "location_quality" = "disponibilidad %1$@ de 100";
 "notification_disconnect" = "desconectar VPN";
 "notification_open" = "abrir aplicación";
