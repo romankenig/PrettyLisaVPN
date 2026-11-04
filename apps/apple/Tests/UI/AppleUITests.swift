@@ -65,7 +65,10 @@ final class AppleUITests: XCTestCase {
         }
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        let shot = XCTAttachment(screenshot: app.screenshot())
+        XCTAssertTrue(app.staticTexts["component-versions"].waitForExistence(timeout: 5))
+        // Capture the composited display: application-only snapshots can omit
+        // unchanged SwiftUI layers after navigation on the simulator.
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
     func testDefaultLaunchShowsRealOTPForm() {
