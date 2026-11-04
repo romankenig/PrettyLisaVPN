@@ -42,7 +42,13 @@ async def principals_valid(session: AsyncSession, identity: AccessIdentity, now:
         and device
         and device.user_id == identity.user_id
         and device.status == DeviceStatus.ACTIVE
-        and device.platform in (DevicePlatform.ANDROID, DevicePlatform.WINDOWS)
+        and device.platform
+        in (
+            DevicePlatform.ANDROID,
+            DevicePlatform.WINDOWS,
+            DevicePlatform.IOS,
+            DevicePlatform.MACOS,
+        )
         and auth
         and auth.user_id == identity.user_id
         and auth.device_id == identity.device_id

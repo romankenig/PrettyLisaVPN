@@ -1,3 +1,12 @@
+# Apple navigation — iOS 0.1.0 / macOS 0.1.0
+
+Windows routes and version remain unchanged. Apple adds native OTP → authenticated
+home, subscription, devices, account messages, support, settings and about routes.
+Logout/revocation confirm local VPN teardown; message actions allow only the three
+existing internal destinations. API is real by default; Debug Simulator simulation
+is explicit. Payment initiation/deep links and split routing are not exposed.
+See [Apple implementation and pending live acceptance](apple-vpn-handoff.md).
+
 # Selected services — Windows 0.25.2 / Android 0.21.2
 
 Home's split modes show the selected-service label, the compact icon strip, then

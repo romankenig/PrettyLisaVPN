@@ -23,6 +23,8 @@ from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.client_vpn.service import ClientVpnService
 from prettylisavpn.client_vpn.worker import ClientVpnWorker
+from prettylisavpn.devices.domain import DevicePlatform
+from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.worker import FleetWorker
@@ -79,8 +81,15 @@ async def connect(service, **kwargs):
     return await service.connect("token", ConnectRequest(public_key=KEY, **kwargs), uuid4())
 
 
-async def test_grant_probe_scope_idempotency_and_confirmed_quota_release(vpn_state):
+@pytest.mark.parametrize("platform", ["ANDROID", "WINDOWS", "IOS", "MACOS"])
+async def test_grant_probe_scope_idempotency_and_confirmed_quota_release(vpn_state, platform):
     postgres, service, worker, provider, identity = vpn_state
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(DeviceRecord)
+            .where(DeviceRecord.id == identity.device_id)
+            .values(platform=DevicePlatform(platform))
+        )
     key = uuid4()
     data = ConnectRequest(public_key=KEY, country="DE")
     first = await service.connect("token", data, key)

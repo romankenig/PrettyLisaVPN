@@ -1,0 +1,10 @@
+// Public environment only. No tokens, OTPs or signing credentials belong here.
+API_HOST = api.prettylisavpn.com
+API_BASE_URL = https:/$()/$(API_HOST)
+BUNDLE_ID_PREFIX = com.prettylisavpn
+KEYCHAIN_GROUP = $(AppIdentifierPrefix)$(BUNDLE_ID_PREFIX).apple.shared
+SWIFT_VERSION = 5.0
+CODE_SIGN_STYLE = Automatic
+CURRENT_PROJECT_VERSION = 1
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+#include? "Local.xcconfig"

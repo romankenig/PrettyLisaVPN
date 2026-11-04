@@ -1,0 +1,148 @@
+name: Apple clients
+
+on:
+  push:
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+  pull_request:
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Swift contracts and lifecycle
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Test actual shared Swift sources
+        working-directory: apps/apple
+        run: swift test
+      - name: Validate packaging boundaries
+        run: python3 apps/apple/scripts/check-project.py
+      - name: Check real public API through the Apple HTTPS transport
+        working-directory: apps/apple
+        run: swift run LiveAPIProbe
+
+  build:
+    name: Apple SDK builds and native UI
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: engines/managed/go.sum
+      - name: Install project generator and record Apple toolchain
+        id: apple-tools
+        run: |
+          brew install xcodegen
+          xcodegen --version
+          xcodebuild -version
+          swift --version
+          echo "sdk=$(xcodebuild -version | tr '\n' '-')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v4
+        id: engine-cache
+        with:
+          path: apps/apple/Vendor
+          key: apple-engine-${{ runner.arch }}-${{ steps.apple-tools.outputs.sdk }}-${{ hashFiles('engines/managed/**/*.go', '!engines/managed/**/*_test.go', 'engines/managed/go.mod', 'engines/managed/go.sum', 'engines/managed/prepare_core.py', 'apps/apple/scripts/build-engine.sh') }}
+      - name: Check Go format and Apple-only policies
+        working-directory: engines/managed
+        run: |
+          python3 prepare_core.py
+          test -z "$(gofmt -l apple_darwin.go apple_darwin_test.go cmd/pl-apple)"
+          go test -ldflags=-checklinkname=0 ./...
+          go vet ./...
+      - name: Build real engine for iPhone, Simulator and Mac architectures
+        if: steps.engine-cache.outputs.cache-hit != 'true'
+        run: bash apps/apple/scripts/build-engine.sh
+      - uses: actions/cache/save@v4
+        if: steps.engine-cache.outputs.cache-hit != 'true'
+        with:
+          path: apps/apple/Vendor
+          key: ${{ steps.engine-cache.outputs.cache-primary-key }}
+      - name: Generate project and compile all shipping targets without signing
+        id: sdk-build
+        working-directory: apps/apple
+        run: |
+          xcodegen generate
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          mkdir -p artifacts
+          plutil -convert json -o artifacts/macOS-app-info.json DerivedData/Build/Products/Debug/PrettyLisaVPN.app/Contents/Info.plist
+      - name: Exercise native macOS UI
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        timeout-minutes: 10
+        working-directory: apps/apple
+        run: |
+          set -o pipefail
+          # Ad-hoc fixture UI only. No team/profile is available; this is not a VPN acceptance build.
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test 2>&1 | tee artifacts/macOS-ui.log
+      - name: Export macOS review before starting Simulator
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        working-directory: apps/apple
+        run: xcrun xcresulttool export attachments --path artifacts/macOS.xcresult --output-path artifacts/previews/macOS
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        with:
+          name: apple-mac-ui-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/macOS-ui.log
+            apps/apple/artifacts/macOS-app-info.json
+            apps/apple/artifacts/previews/macOS/*.png
+            apps/apple/artifacts/previews/macOS/*.txt
+            apps/apple/artifacts/previews/macOS/manifest.json
+          retention-days: 14
+      - name: Exercise simulator UI and capture native images
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        timeout-minutes: 25
+        working-directory: apps/apple
+        run: bash scripts/ui-review.sh
+      - name: Package corresponding sources, licenses and exact build identity
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        run: bash apps/apple/scripts/package.sh
+      - name: Export native screenshot attachments
+        if: always()
+        working-directory: apps/apple
+        run: |
+          shopt -s nullglob
+          for result in artifacts/*.xcresult; do
+            name=$(basename "$result" .xcresult)
+            if [ ! -f "artifacts/previews/$name/manifest.json" ]; then
+              xcrun xcresulttool export attachments --path "$result" --output-path "artifacts/previews/$name"
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-ui-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/*.png
+            apps/apple/artifacts/simulators.json
+            apps/apple/artifacts/previews/**/*.png
+            apps/apple/artifacts/previews/**/*.txt
+            apps/apple/artifacts/previews/**/manifest.json
+            apps/apple/artifacts/macOS-app-info.json
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/*.zip
+            apps/apple/artifacts/*.tar.gz
+            apps/apple/artifacts/*.json
+            apps/apple/artifacts/*.png
+            apps/apple/artifacts/*.xcresult
+          if-no-files-found: warn
+          retention-days: 14

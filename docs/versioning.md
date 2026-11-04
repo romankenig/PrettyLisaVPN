@@ -62,6 +62,14 @@ Lock-файлы обновляются штатным инструментом, 
 результат в PR. Если будет добавлен автоматический bump/check, его команды
 сначала нужно документировать и проверить.
 
+### Apple clients
+
+iOS source: `apps/apple/Config/iOS.xcconfig:MARKETING_VERSION`; macOS source:
+`apps/apple/Config/macOS.xcconfig:MARKETING_VERSION`. Both start at 0.1.0 and are
+independently versioned. Each app/extension pair shares its platform version.
+UI reads `CFBundleShortVersionString`; `CURRENT_PROJECT_VERSION` is build number.
+CI identity records SHA/run/attempt and never implies real VPN acceptance.
+
 ## Версия продукта и идентификатор сборки
 
 Версия описывает изменение продукта. Для точного различения сборок дополнительно

@@ -1,6 +1,6 @@
 # PrettyLisaVPN managed engine (in development)
 
-Isolated engine, version 0.5.2. Xray-core 26.10.21 is pinned to source commit
+Isolated engine, version 0.6.0. Xray-core 26.10.21 is pinned to source commit
 `1b1647cd9ddf0abc34b981d4611fc03bcac1ca74` in go.mod/go.sum. The adapter is MIT;
 Xray is MPL-2.0. The unpublished sing-box implementation was removed following
 the owner's decision. No sing-box, sing-openvpn or sing-openconnect is linked.
@@ -21,6 +21,13 @@ and reserves ifconfig.me for VPN egress in both split modes. See
 [Telegram routing and locations](../../docs/telegram-service-routing.md).
 Linux builds include the isolated server binary; automatic desktop client routing
 targets Windows, not a Linux product release.
+
+Version 0.6.0 adds `cmd/pl-apple`, a Darwin/iOS C archive used by the Apple
+Network Extension. Its bounded socketpair receives packets through the public
+`NEPacketTunnelFlow` API; no private utun descriptor lookup is used. The existing
+typed profile and transports are reused, with no system route/DNS mutation by
+the core. See [Apple acceptance](../../docs/apple-vpn-handoff.md). Physical
+iPhone and signed macOS VPN acceptance are separate from compilation.
 
 The private protocol is newline-delimited JSON on inherited stdin/stdout:
 `version`, `start` with a typed `profile`, `status`, `stop`. No listening API,

@@ -1,0 +1,9 @@
+Config/Local.xcconfig
+Config/*-Info-*.plist
+.build/
+.swiftpm/
+*.xcodeproj/
+DerivedData/
+Vendor/
+artifacts/
+*.xcuserstate
