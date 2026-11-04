@@ -12,8 +12,9 @@ import FoundationNetworking
     var stops = 0
     var traffic = true
     var reloadDelay: UInt64 = 0
+    var deferStart = false
     func reload() async throws { if reloadDelay > 0 { try await Task.sleep(nanoseconds: reloadDelay) } }
-    func start(_ payload: TunnelPayload) async throws { starts += 1; status = .up; leaseID = payload.leaseID }
+    func start(_ payload: TunnelPayload) async throws { starts += 1; if !deferStart { status = .up }; leaseID = payload.leaseID }
     func stop() async throws { stops += 1; status = .down }
     func hasTraffic() async throws -> Bool { traffic }
 }
@@ -53,6 +54,22 @@ actor VPNTransport: HTTPTransport {
     }
 }
 final class VPNTests: XCTestCase {
+    @MainActor func testOSStatusMayRemainDownAfterAcceptingStartRequest() async throws {
+        let http = VPNTransport(), driver = TestDriver(); driver.deferStart = true
+        let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))
+        let vpn = VPNCoordinator(session: session, driver: driver, keyPair: { (testKey, testKey) })
+        vpn.connect(country: "DE", methods: ["wireguard"])
+        for _ in 0..<100 { if driver.starts == 1 { break }; try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(driver.starts, 1)
+        XCTAssertEqual(vpn.state, .verifying)
+        XCTAssertNil(vpn.verifiedIP)
+        driver.status = .up
+        for _ in 0..<200 { if vpn.state.protected { break }; try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(vpn.state, .connected("wireguard"))
+        XCTAssertEqual(driver.starts, 1)
+        await vpn.disconnect()
+        XCTAssertEqual(vpn.state, .disconnected)
+    }
     @MainActor func testAccountWideQuotaRejectionDoesNotTryOtherMethods() async throws {
         let http = VPNTransport(), driver = TestDriver(); await http.reserveQuotaElsewhere()
         let session = Session(api: try API(base: URL(string: "https://api.example.com")!, transport: http), store: MemoryCredentials(Credentials(tokens: tokens())))

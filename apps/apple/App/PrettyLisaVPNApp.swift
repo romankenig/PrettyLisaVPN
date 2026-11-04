@@ -4,16 +4,8 @@ import SwiftUI
     @StateObject private var holder = AppHolder()
     @AppStorage("theme") private var theme = "system"
     var body: some Scene {
-        WindowGroup {
-            if let model = holder.model {
-                RootView(model: model)
-                    .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
-                    #if os(macOS)
-                    .frame(minWidth: 760, minHeight: 600)
-                    #endif
-            } else { ContentUnavailableView("PrettyLisaVPN", systemImage: "exclamationmark.triangle", description: Text(L("apple_configuration_error"))) }
-        }
         #if os(macOS)
+        Window("PrettyLisaVPN", id: "main") { content.frame(minWidth: 760, minHeight: 600) }
         .defaultSize(width: 1000, height: 740)
         .commands {
             CommandGroup(after: .appInfo) { Button(L("about")) { holder.model?.page = .about } }
@@ -23,10 +15,18 @@ import SwiftUI
                 Button(L("ui_refresh")) { Task { await holder.model?.loadPage() } }.keyboardShortcut("r", modifiers: [.command])
             }
         }
-        #endif
-        #if os(macOS)
         Settings { if let model = holder.model { SettingsView(model: model).frame(width: 480, height: 560) } }
+        #else
+        WindowGroup { content }
         #endif
+    }
+    @ViewBuilder private var content: some View {
+        if let model = holder.model {
+            RootView(model: model)
+                .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
+        } else {
+            ContentUnavailableView("PrettyLisaVPN", systemImage: "exclamationmark.triangle", description: Text(L("apple_configuration_error")))
+        }
     }
 }
 @MainActor final class AppHolder: ObservableObject {

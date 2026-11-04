@@ -1,6 +1,13 @@
 import XCTest
 
 final class MacUITests: XCTestCase {
+    func testDefaultLaunchShowsRealOTPForm() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.textFields["email"].waitForExistence(timeout: 10))
+        app.terminate()
+    }
     func testNativeWindowAndAppearance() {
         for theme in ["light", "dark"] {
             let app = XCUIApplication()

@@ -104,14 +104,18 @@ public enum ConnectionState: Equatable, Sendable {
         try await driver.start(payload)
         state = .verifying
         let end = Date().addingTimeInterval(35)
+        var observedStart = false
         while Date() < end {
             try Task.checkCancellation()
+            if driver.status != .down { observedStart = true }
             if driver.status == .up {
                 do { try await verify(ready); state = .connected(method); return }
                 catch let error as ClientError where error.terminal { throw error }
                 catch { }
             }
-            if driver.status == .down { throw ClientError("TUNNEL_START_FAILED") }
+            // startTunnel() submits an asynchronous OS request. A still-disconnected
+            // status before the first transition is not evidence that startup failed.
+            if driver.status == .down && observedStart { throw ClientError("TUNNEL_START_FAILED") }
             try await Task.sleep(nanoseconds: 1_000_000_000)
         }
         throw ClientError("INTERNET_UNVERIFIED")
