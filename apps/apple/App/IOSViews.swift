@@ -63,9 +63,11 @@ struct IOSRootView<Banners: View>: View {
                 if nested { backButton }
                 content.frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(advanced ? "advanced" : model.page.rawValue)
+                    .environment(\.colorScheme, .light)
             } else {
                 LoginView(model: model).foregroundStyle(PhoneStyle.ink)
                     .background(PhoneStyle.card)
+                    .environment(\.colorScheme, .light)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             footer
@@ -75,7 +77,6 @@ struct IOSRootView<Banners: View>: View {
         .background(PhoneStyle.chrome.ignoresSafeArea())
         // The supplied reference uses fixed light cards in its purple shell in both OS themes.
         // System sheets/forms remain light too so their field contrast matches those cards.
-        .environment(\.colorScheme, .light)
         .onChange(of: model.page) { _, _ in advanced = false }
     }
     private var header: some View {
@@ -241,7 +242,7 @@ private struct IOSHomeView: View {
                         Text("\(max(0, seconds) / 60):" + String(format: "%02d", max(0, seconds) % 60)).monospacedDigit()
                     }.font(PhoneStyle.font(12)).foregroundStyle(PhoneStyle.secondary)
                 }
-            }.accessibilityIdentifier("account-card")
+            }
             PhoneCard {
                 Text(L("dash_where")).font(PhoneStyle.font(18, .bold))
                 Menu {
@@ -281,7 +282,7 @@ private struct IOSHomeView: View {
                         }.font(PhoneStyle.font(12)).foregroundStyle(PhoneStyle.secondary)
                     }.accessibilityIdentifier("verified-egress")
                 }
-            }.accessibilityIdentifier("connection-card")
+            }
             PhoneCard {
                 HStack(alignment: .firstTextBaseline) {
                     Text(L("ui_what_to_protect")).font(PhoneStyle.font(18, .bold))
