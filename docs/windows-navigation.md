@@ -1,3 +1,13 @@
+# Website navigation — 0.3.0
+
+The public homepage adds `#pricing` and active currency-specific Buy links. They
+open a payment-unavailability dialog, or navigate to the same notice under
+`/legal/payments/#payment-unavailable` without JavaScript. This is implemented UI;
+payment-provider/backend checkout integration remains unavailable. Claims/payment
+links use `feedback@prettylisavpn.com`, technical support uses the existing help
+address. Client routes and auth guards are unchanged. See
+[website handoff](website-platega-moderation.md).
+
 # Apple navigation — iOS 0.1.0 / macOS 0.1.0
 
 Windows routes and version remain unchanged. Apple adds native OTP → authenticated

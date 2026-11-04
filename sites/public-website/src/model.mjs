@@ -1,6 +1,6 @@
 export const website = Object.freeze({
-  version: "0.2.2",
-  reviewedOn: "2026-11-03",
+  version: "0.3.0",
+  reviewedOn: "2026-11-04",
   mode: "prelaunch",
   seller: Object.freeze({
     name: "Кениг Роман Сергеевич",
@@ -9,8 +9,10 @@ export const website = Object.freeze({
     inn: "183475316809",
     address: null,
     email: "help@prettylisavpn.com",
+    claimsEmail: "feedback@prettylisavpn.com",
   }),
-  prices: Object.freeze({ RUB: 19900, USD: 299 }),
+  prices: Object.freeze({ RUB: 39900, USD: 500 }),
+  referencePrices: Object.freeze({ RUB: 49900, USD: 700 }),
   period: "CALENDAR_MONTH",
   renewal: "MANUAL",
   priceConfirmed: true,
@@ -20,6 +22,11 @@ export const website = Object.freeze({
   publicDownloadsReady: true,
   paymentAdapterImplemented: false,
   providers: Object.freeze({
+    platega: Object.freeze({
+      approved: false,
+      configured: false,
+      status: "Сайт подготовлен к модерации. Приём платежей не подключён.",
+    }),
     cardlink: Object.freeze({
       approved: false,
       configured: false,

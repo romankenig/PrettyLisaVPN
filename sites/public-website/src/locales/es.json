@@ -9,7 +9,8 @@
     "language": "idioma",
     "menu": "menú",
     "home": "inicio",
-    "skip": "ir al contenido"
+    "skip": "ir al contenido",
+    "pricing": "planes"
   },
   "launch": "lanzamiento previsto para el 15 de noviembre",
   "hero": {
@@ -141,12 +142,13 @@
     "terms": "condiciones de uso",
     "privacy": "política de privacidad",
     "refunds": "reembolsos y reclamaciones",
-    "payments": "pago, cancelación y renovación"
+    "payments": "pago, cancelación y renovación",
+    "claims": "reclamaciones y pagos"
   },
   "legal": {
-    "updated": "versión del 3 de noviembre de 2026",
+    "updated": "actualizado el 4 de noviembre de 2026",
     "terms": [
-      "PrettyLisaVPN proporciona acceso a una vpn mediante aplicaciones para android y windows. el servicio lo presta Кениг Роман Сергеевич, contribuyente del régimen ruso del impuesto sobre la renta profesional, identificación fiscal 183475316809. contacto: help@prettylisavpn.com.",
+      "PrettyLisaVPN proporciona acceso a una vpn mediante aplicaciones para android y windows. el servicio lo presta Кениг Роман Сергеевич, contribuyente del régimen ruso del impuesto sobre la renta profesional, identificación fiscal 183475316809. contacto: help@prettylisavpn.com. reclamaciones y pagos: feedback@prettylisavpn.com.",
       "para iniciar sesión se utilizan una dirección de correo y un código de un solo uso. una cuenta puede tener hasta cinco dispositivos activos. no compartas los códigos de acceso con otras personas.",
       "el plan free ofrece una hora de conexión al día, compartida por toda la cuenta. el límite se restablece a las 00:00 utc. durante el periodo pagado de premium no hay límite diario de tiempo. el plan, el tiempo restante y el periodo de acceso se muestran en la aplicación.",
       "puedes enviar por la vpn todo el tráfico, los servicios elegidos o todo excepto los servicios elegidos. la velocidad y la disponibilidad dependen de la red, el dispositivo, el servidor y los recursos externos. una vpn no sustituye la protección del dispositivo ni garantiza el anonimato absoluto.",
@@ -164,7 +166,7 @@
       "para solicitar información sobre tus datos, su rectificación o su eliminación, escribe a soporte desde el correo de la cuenta. puede ser necesario confirmar que la dirección te pertenece."
     ],
     "refunds": [
-      "para cuestiones sobre la calidad del servicio, la finalización del acceso de pago o los reembolsos, escribe a help@prettylisavpn.com.",
+      "para cuestiones sobre la calidad del servicio, la finalización del acceso de pago o los reembolsos, escribe a feedback@prettylisavpn.com.",
       "indica el correo de la cuenta, la fecha y el importe del pago, la moneda, el número de operación si lo tienes y el motivo de la solicitud. para un problema técnico, son útiles la plataforma, la versión de la aplicación, el servidor, la hora aproximada y el texto del error.",
       "no envíes el número completo de la tarjeta, el cvc, contraseñas bancarias ni códigos de un solo uso. oculta los datos personales innecesarios en los documentos adjuntos.",
       "las solicitudes se examinan teniendo en cuenta sus circunstancias, el servicio prestado y la legislación aplicable. tras la revisión, soporte comunicará la decisión y los siguientes pasos.",
@@ -177,11 +179,39 @@
       "la renovación se realiza manualmente. un nuevo pago mediante un enlace es un pago independiente. no se realizan cargos automáticos ni se guarda el método de pago para cargos futuros.",
       "para no renovar la suscripción, no realices el siguiente pago. el periodo de acceso ya concedido se mantiene hasta la fecha de finalización indicada.",
       "al realizar un pago, comprueba el plan, la moneda, el importe total y la información sobre comisiones en la página de pago. los datos de la tarjeta y el cvc se introducen únicamente en la página de pago del proveedor, no en el sitio de PrettyLisaVPN ni en correos a soporte.",
-      "para dudas sobre un pago, un recibo, el periodo de acceso o un cargo erróneo, escribe a help@prettylisavpn.com. indica el correo de la cuenta y los datos que permitan localizar el pago."
+      "para dudas sobre un pago, un recibo, el periodo de acceso o un cargo erróneo, escribe a feedback@prettylisavpn.com. indica el correo de la cuenta y los datos que permitan localizar el pago."
     ]
   },
   "notFound": {
     "title": "página no encontrada",
     "text": "vuelve al inicio para descargar la aplicación o encontrar ayuda."
+  },
+  "pricing": {
+    "eyebrow": "a tu ritmo",
+    "title": "una cuenta. un precio claro.",
+    "intro": "empieza gratis o elige premium por un mes natural.",
+    "free": "una hora de vpn compartida por cuenta al día, sin anuncios. el límite se renueva a las 00:00 UTC.",
+    "freeButton": "empezar gratis",
+    "description": "vpn sin límite diario de tiempo durante el período pagado.",
+    "features": [
+      "elige un país de servidor disponible",
+      "hasta cinco dispositivos activos por cuenta",
+      "sin anuncios"
+    ],
+    "currencies": {
+      "RUB": "en rublos",
+      "USD": "en dólares"
+    },
+    "basePrice": "precio base",
+    "currentPrice": "precio actual",
+    "period": "por mes natural",
+    "buy": "comprar",
+    "renewal": "un pago por un mes. renovación manual, sin cobros automáticos.",
+    "availability": "los pagos aún no están disponibles. ya puedes probar el plan gratuito en la aplicación.",
+    "documents": "condiciones de compra",
+    "contact": "consultas sobre pagos",
+    "unavailableTitle": "pago temporalmente no disponible",
+    "unavailableText": "el procesamiento de pagos aún no está conectado. no se ha cobrado dinero ni se ha creado una suscripción. inténtalo más tarde o escríbenos para consultas sobre pagos.",
+    "close": "entendido"
   }
 }

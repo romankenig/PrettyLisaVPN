@@ -9,7 +9,8 @@
     "language": "sprache",
     "menu": "menü",
     "home": "zur startseite",
-    "skip": "zum inhalt"
+    "skip": "zum inhalt",
+    "pricing": "tarife"
   },
   "launch": "start für den 15. november geplant",
   "hero": {
@@ -141,12 +142,13 @@
     "terms": "nutzungsbedingungen",
     "privacy": "datenschutzerklärung",
     "refunds": "erstattungen und beschwerden",
-    "payments": "zahlung, kündigung und verlängerung"
+    "payments": "zahlung, kündigung und verlängerung",
+    "claims": "reklamationen & zahlungen"
   },
   "legal": {
-    "updated": "fassung vom 3. november 2026",
+    "updated": "stand: 4. november 2026",
     "terms": [
-      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com.",
+      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com. reklamationen & zahlungen: feedback@prettylisavpn.com.",
       "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
       "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
       "sie können den gesamten datenverkehr, ausgewählte dienste oder alles außer ausgewählten diensten über vpn leiten. geschwindigkeit und verfügbarkeit hängen von netzwerk, gerät, server und externen ressourcen ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
@@ -164,7 +166,7 @@
       "für auskunft über ihre daten, eine berichtigung oder löschung schreiben sie dem support von der e-mail-adresse ihres kontos. möglicherweise müssen sie bestätigen, dass die adresse ihnen gehört."
     ],
     "refunds": [
-      "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an help@prettylisavpn.com.",
+      "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an feedback@prettylisavpn.com.",
       "geben sie die e-mail-adresse ihres kontos, datum und betrag der zahlung, die währung, gegebenenfalls die transaktionsnummer und den grund ihrer anfrage an. bei technischen problemen sind plattform, app-version, server, ungefährer zeitpunkt und fehlertext hilfreich.",
       "senden sie keine vollständige kartennummer, cvc, banking-passwörter oder einmalcodes. machen sie nicht benötigte personenbezogene daten in beigefügten dokumenten unkenntlich.",
       "ansprüche werden unter berücksichtigung der umstände der anfrage, der erbrachten leistung und des anwendbaren rechts geprüft. nach der prüfung teilt der support die entscheidung und die nächsten schritte mit.",
@@ -177,11 +179,39 @@
       "die verlängerung erfolgt manuell. eine erneute zahlung über einen link ist eine separate zahlung. automatische abbuchungen und das speichern eines zahlungsmittels für künftige abbuchungen werden nicht verwendet.",
       "um das abonnement nicht zu verlängern, leisten sie keine weitere zahlung. der bereits gewährte zugangszeitraum bleibt bis zum angegebenen ablaufdatum bestehen.",
       "prüfen sie bei der zahlung tarif, währung, gesamtbetrag und gebührenangaben auf der zahlungsseite. kartendaten und cvc werden nur auf der zahlungsseite des anbieters eingegeben, nicht auf der website von PrettyLisaVPN oder in e-mails an den support.",
-      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt."
+      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an feedback@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt."
     ]
   },
   "notFound": {
     "title": "seite nicht gefunden",
     "text": "gehen sie zur startseite, um die app herunterzuladen oder hilfe zu finden."
+  },
+  "pricing": {
+    "eyebrow": "in ihrem tempo",
+    "title": "ein konto. ein klarer preis.",
+    "intro": "kostenlos starten oder premium für einen kalendermonat wählen.",
+    "free": "eine gemeinsame stunde vpn pro konto und tag, ohne werbung. das kontingent wird um 00:00 UTC erneuert.",
+    "freeButton": "kostenlos starten",
+    "description": "vpn ohne tägliches zeitlimit während des bezahlten zeitraums.",
+    "features": [
+      "ein verfügbares serverland wählen",
+      "bis zu fünf aktive geräte pro konto",
+      "ohne werbung"
+    ],
+    "currencies": {
+      "RUB": "in rubel",
+      "USD": "in dollar"
+    },
+    "basePrice": "basispreis",
+    "currentPrice": "aktueller preis",
+    "period": "pro kalendermonat",
+    "buy": "kaufen",
+    "renewal": "eine zahlung für einen monat. manuelle verlängerung ohne automatische abbuchungen.",
+    "availability": "zahlungen sind noch nicht verfügbar. den kostenlosen tarif können sie bereits in der app testen.",
+    "documents": "kaufbedingungen",
+    "contact": "fragen zur zahlung",
+    "unavailableTitle": "zahlungen sind vorübergehend nicht verfügbar",
+    "unavailableText": "die zahlungsabwicklung ist noch nicht angeschlossen. es wurde kein geld abgebucht und kein abonnement abgeschlossen. versuchen sie es später erneut oder kontaktieren sie uns bei zahlungsfragen.",
+    "close": "verstanden"
   }
 }

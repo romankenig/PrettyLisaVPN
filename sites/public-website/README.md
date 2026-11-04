@@ -1,8 +1,10 @@
-# PrettyLisaVPN website · 0.2.0
+# PrettyLisaVPN website · 0.3.0
 
-Minimal static website on https://prettylisavpn.com. Four homepage sections,
+Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents and six fully translated languages.
-The owner authorized public publication. Commercial checkout remains separate.
+The owner authorized public publication. The purchase UI displays the confirmed
+monthly prices (399 RUB / 5 USD, reference 499 RUB / 7 USD) and a clickable
+unavailability notice. Commercial checkout remains separate.
 
 ## Run and verify
 
@@ -29,8 +31,11 @@ website publication and do not activate payments.
 - `src/locales/*.json`: complete ru/en/de/fr/es/zh UI and legal content.
 - `src/structure.mjs`, `src/pages.mjs`: 78 static pages; contextual language links.
 - `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
-  version/size/hash metadata. No cookies, local storage, tracking or payment forms.
-- `src/model.mjs`: internal commercial readiness; not shipped to browsers.
+  version/size/hash metadata and the accessible payment-unavailability dialog.
+  Ordinary purchase links work without JavaScript through the payment document.
+  No cookies, local storage, tracking or payment forms.
+- `src/model.mjs`: public price source and internal commercial readiness; the
+  module itself is not shipped to browsers. HTML contains only the public values.
 - `assets/screenshots/`: unchanged native captures and exact CI provenance.
 - `scripts/build.mjs`: clean static output, local Rubik/brand assets and build ID.
 - `tests/`: Node and real Caddy checks, including public-file/private-path boundary.
@@ -44,3 +49,5 @@ Only those exact files become public; dashboard authentication is preserved.
 See [handoff](../../docs/public-website-redesign.md) for versions, validation,
 commercial follow-up, publication evidence and rollback. Build identity records
 source SHA/run/attempt; live deployment evidence is separate and recorded in PR50.
+The current [Platega moderation handoff](../../docs/website-platega-moderation.md)
+records the purchase UI, contact update and remaining commercial requirements.

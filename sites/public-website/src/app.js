@@ -1,5 +1,20 @@
 import { releaseMetadata } from "./downloads.mjs";
 
+const paymentDialog = document.querySelector("#payment-dialog");
+document.querySelectorAll("[data-purchase]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    // The ordinary link remains a working no-JS/no-dialog fallback.
+    if (typeof paymentDialog?.showModal !== "function") return;
+    event.preventDefault();
+    paymentDialog.querySelector("[data-payment-price]").textContent =
+      link.dataset.price;
+    paymentDialog.showModal();
+  });
+});
+document
+  .querySelector("[data-payment-close]")
+  ?.addEventListener("click", () => paymentDialog.close());
+
 const language = document.querySelector(".language");
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && language?.open) {

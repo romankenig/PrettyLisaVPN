@@ -53,12 +53,12 @@ test("all six client languages have complete UI, download instructions and four 
   assert.throws(() => routeFor("unknown"));
   assert.equal(escape('<script>"&'), "&lt;script&gt;&quot;&amp;");
 });
-test("home has exactly four sections, one launch notice and seven distinct platform pages", () => {
+test("home has five sections including plans, one launch notice and seven distinct platform pages", () => {
   const all = pages();
   assert.equal(all.size, 78);
   for (const language of languages) {
     const html = all.get(routeFor(language));
-    assert.equal((html.match(/<section /g) ?? []).length, 4);
+    assert.equal((html.match(/<section /g) ?? []).length, 5);
     assert.equal((html.match(/class="launch"/g) ?? []).length, 1);
     assert.ok(html.includes(locales[language].launch));
     assert.equal((html.match(/class="platform-card /g) ?? []).length, 7);
@@ -94,6 +94,52 @@ test("home has exactly four sections, one launch notice and seven distinct platf
         assert.match(page, /class="button" disabled/);
       }
     }
+  }
+});
+test("purchase path exposes exact owner prices, working fallback and honest payment unavailability in every language", () => {
+  assert.deepEqual(website.prices, { RUB: 39900, USD: 500 });
+  assert.deepEqual(website.referencePrices, { RUB: 49900, USD: 700 });
+  assert.equal(website.period, "CALENDAR_MONTH");
+  assert.equal(website.seller.claimsEmail, "feedback@prettylisavpn.com");
+  const all = pages();
+  for (const language of languages) {
+    const html = all.get(routeFor(language));
+    const terms = all.get(routeFor(language, "/legal/payments/"));
+    for (const [currency, amount] of Object.entries(website.prices)) {
+      const format = (value) =>
+        new Intl.NumberFormat(language, {
+          style: "currency",
+          currency,
+          maximumFractionDigits: 0,
+        }).format(value / 100);
+      assert.ok(
+        html.includes(`<s>${format(website.referencePrices[currency])}</s>`),
+      );
+      assert.ok(html.includes(`<strong>${format(amount)}</strong>`));
+      assert.ok(
+        html.includes(
+          `data-purchase="${currency}" data-amount-minor="${amount}" data-price="${format(amount)}"`,
+        ),
+      );
+      assert.ok(terms.includes(`<strong>${format(amount)}</strong>`));
+    }
+    assert.match(
+      html,
+      /<dialog[^>]+aria-labelledby="payment-title"[^>]+aria-describedby="payment-message"/,
+    );
+    assert.equal((html.match(/data-purchase=/g) ?? []).length, 2);
+    assert.ok(
+      html.includes(
+        `${routeFor(language, "/legal/payments/")}#payment-unavailable`,
+      ),
+    );
+    assert.ok(terms.includes('id="payment-unavailable"'));
+    assert.ok(html.includes(escape(locales[language].pricing.unavailableText)));
+    assert.ok(
+      terms.includes(escape(locales[language].pricing.unavailableText)),
+    );
+    assert.match(html, /href="mailto:feedback@prettylisavpn.com"/);
+    assert.doesNotMatch(html, /<form|paymentMethod|X-Secret|X-MerchantId/);
   }
 });
 test("all links and anchors resolve; documents and language links preserve context", () => {
@@ -191,6 +237,8 @@ test("commercial launch remains separate from authorized informational publicati
   assert.equal(website.renewal, "MANUAL");
   assert.equal(website.paymentAdapterImplemented, false);
   assert.equal(website.providers.cardlink.approved, false);
+  assert.equal(website.providers.platega.approved, false);
+  assert.equal(website.providers.platega.configured, false);
   assert.ok(releaseBlockers().length >= 6);
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,

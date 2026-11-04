@@ -9,7 +9,8 @@
     "language": "language",
     "menu": "menu",
     "home": "home",
-    "skip": "skip to content"
+    "skip": "skip to content",
+    "pricing": "plans"
   },
   "launch": "launch planned for november 15",
   "hero": {
@@ -141,12 +142,13 @@
     "terms": "terms of service",
     "privacy": "privacy policy",
     "refunds": "refunds and complaints",
-    "payments": "payment, cancellation and renewal"
+    "payments": "payment, cancellation and renewal",
+    "claims": "claims & payments"
   },
   "legal": {
-    "updated": "version dated november 3, 2026",
+    "updated": "updated november 4, 2026",
     "terms": [
-      "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com.",
+      "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com. claims & payments: feedback@prettylisavpn.com.",
       "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
       "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
       "you can route all traffic, selected services or everything except selected services through vpn. speed and availability depend on the network, device, server and external resources. vpn does not replace device security or provide absolute anonymity.",
@@ -164,7 +166,7 @@
       "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
     ],
     "refunds": [
-      "for questions about service quality, ending paid access or refunds, write to help@prettylisavpn.com.",
+      "for questions about service quality, ending paid access or refunds, write to feedback@prettylisavpn.com.",
       "include your account email address, payment date and amount, currency, transaction number if available, and a description of your request. for a technical issue, it helps to include the platform, app version, server, approximate time and error text.",
       "do not send a full card number, cvc, banking passwords or one-time codes. hide unnecessary personal data in attached documents.",
       "claims are reviewed in light of the circumstances of the request, the service provided and applicable law. after reviewing the request, support will communicate the decision and next steps.",
@@ -177,11 +179,39 @@
       "renewal is manual. a repeat payment via a link is a separate payment. automatic charges and saving a payment method for future charges are not used.",
       "to stop renewing your subscription, do not make the next payment. the access period already granted remains valid until the specified expiry date.",
       "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
-      "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment."
+      "send questions about a payment, receipt, access period or incorrect charge to feedback@prettylisavpn.com. include your account email address and information that can identify the payment."
     ]
   },
   "notFound": {
     "title": "page not found",
     "text": "go to the home page to download the app or find help."
+  },
+  "pricing": {
+    "eyebrow": "at your own pace",
+    "title": "one account. a clear price.",
+    "intro": "start free or choose premium for one calendar month.",
+    "free": "one shared hour of vpn per account each day, without ads. the allowance resets at 00:00 UTC.",
+    "freeButton": "start free",
+    "description": "vpn without a daily time limit throughout your paid period.",
+    "features": [
+      "choose an available server country",
+      "up to five active devices per account",
+      "no ads"
+    ],
+    "currencies": {
+      "RUB": "in rubles",
+      "USD": "in dollars"
+    },
+    "basePrice": "base price",
+    "currentPrice": "current price",
+    "period": "per calendar month",
+    "buy": "buy",
+    "renewal": "one payment for one month. renew manually, with no automatic charges.",
+    "availability": "payments are not available yet. you can already try the free plan in the app.",
+    "documents": "purchase terms",
+    "contact": "payment questions",
+    "unavailableTitle": "payments are temporarily unavailable",
+    "unavailableText": "payment processing is not connected yet. no money was charged and no subscription was created. please try again later or contact us about payments.",
+    "close": "got it"
   }
 }
