@@ -48,8 +48,8 @@ struct RootView: View {
     }
     var banners: some View {
         VStack(spacing: 0) {
-            if model.simulation { Text(L("apple_simulation")).font(.callout.bold()).frame(maxWidth: .infinity).padding(10).background(Color(red: 0.843, green: 0.678, blue: 0.051)).foregroundStyle(.black).accessibilityIdentifier("simulation-banner") }
-            if model.fixtures { Text(L("test_data_notice")).font(.callout.bold()).frame(maxWidth: .infinity).padding(8).background(Color(red: 0.894, green: 0.894, blue: 0.894)).foregroundStyle(.black) }
+            if model.simulation { Text(L("apple_simulation")).font(.callout.bold()).frame(maxWidth: .infinity).padding(10).background(Color(red: 0.843, green: 0.678, blue: 0.051), ignoresSafeAreaEdges: []).foregroundStyle(.black).accessibilityIdentifier("simulation-banner") }
+            if model.fixtures { Text(L("test_data_notice")).font(.callout.bold()).frame(maxWidth: .infinity).padding(8).background(Color(red: 0.894, green: 0.894, blue: 0.894), ignoresSafeAreaEdges: []).foregroundStyle(.black) }
             if let error = model.error { ErrorBanner(code: error) { model.error = nil } }
             if model.busy { ProgressView().frame(maxWidth: .infinity).padding(6).accessibilityLabel(L("processing")) }
         }
@@ -376,7 +376,7 @@ struct ErrorBanner: View {
             VStack(alignment: .leading) { Text(errorText(code)); Text(code).font(.caption.monospaced()) }
             Spacer()
             Button(action: dismiss) { Image(systemName: "xmark") }.accessibilityLabel(L("ui_close"))
-        }.padding().background(Color.red.opacity(0.14)).accessibilityElement(children: .contain)
+        }.padding().background(Color.red.opacity(0.14), ignoresSafeAreaEdges: []).accessibilityElement(children: .contain)
     }
 }
 func errorText(_ code: String) -> String {
