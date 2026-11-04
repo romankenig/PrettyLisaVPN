@@ -44,8 +44,10 @@ final class AppleUITests: XCTestCase {
             capture(app, "reference-settings-\(theme)")
             app.buttons["settings-devices"].tap()
             XCTAssertTrue(app.staticTexts["iPhone Preview"].waitForExistence(timeout: 5))
-            XCTAssertFalse(app.buttons["device-revoke"].isEnabled)
             capture(app, "reference-devices-\(theme)")
+            let revokeButtons = app.buttons.matching(identifier: "device-revoke")
+            XCTAssertEqual(revokeButtons.count, 2)
+            for button in revokeButtons.allElementsBoundByIndex { XCTAssertFalse(button.isEnabled) }
             app.buttons["nav-back"].tap()
             app.buttons["settings-advanced"].tap()
             XCTAssertTrue(app.switches["WireGuard"].waitForExistence(timeout: 5))
@@ -53,6 +55,7 @@ final class AppleUITests: XCTestCase {
             app.buttons["nav-about"].tap()
             XCTAssertTrue(app.buttons["about-support"].waitForExistence(timeout: 5))
             capture(app, "reference-about-\(theme)")
+            for _ in 0..<3 where !app.buttons["about-support"].isHittable { app.swipeUp() }
             app.buttons["about-support"].tap()
             XCTAssertTrue(app.textFields["тема"].waitForExistence(timeout: 5))
             app.buttons["nav-back"].tap()
