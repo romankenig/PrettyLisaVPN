@@ -66,8 +66,11 @@ final class AppleUITests: XCTestCase {
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
         XCTAssertTrue(app.staticTexts["component-versions"].waitForExistence(timeout: 5))
-        // Capture the composited display: application-only snapshots can omit
-        // unchanged SwiftUI layers after navigation on the simulator.
+        // Exercise foreground restoration and force the simulator to composite
+        // persistent chrome too, rather than capturing a navigation damage frame.
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(app.staticTexts["component-versions"].waitForExistence(timeout: 5))
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
