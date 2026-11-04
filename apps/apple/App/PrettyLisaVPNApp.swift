@@ -5,7 +5,14 @@ import SwiftUI
     @AppStorage("theme") private var theme = "system"
     var body: some Scene {
         #if os(macOS)
-        Window("PrettyLisaVPN", id: "main") { content.frame(minWidth: 760, minHeight: 600) }
+        Window("PrettyLisaVPN", id: "main") {
+            content.frame(minWidth: 760, minHeight: 600)
+                .onChange(of: theme, initial: true) { _, selected in
+                    // Apply the preference to AppKit chrome, menus and Settings too.
+                    NSApplication.shared.appearance = selected == "dark" ? NSAppearance(named: .darkAqua)
+                        : selected == "light" ? NSAppearance(named: .aqua) : nil
+                }
+        }
         .defaultSize(width: 1000, height: 740)
         .commands {
             CommandGroup(after: .appInfo) { Button(L("about")) { holder.model?.page = .about } }

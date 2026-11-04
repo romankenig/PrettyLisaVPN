@@ -34,7 +34,7 @@ macOS `.appex` targets signed Xcode development / Mac App Store. Developer ID
 direct distribution needs a system-extension package; see
 [Apple TN3134](https://developer.apple.com/documentation/technotes/tn3134-network-extension-provider-deployment).
 
-The task PR records final checked HEAD, all Actions events/jobs and exact build
+[PR #51](https://github.com/romankenig/PrettyLisaVPN/pull/51) records final checked HEAD, all Actions events/jobs and exact build
 SHA/run/attempt after the last push. PR temporary merge SHA is distinct from the
 source head. CI emits `build-identity.json` with `real_vpn_verified=false`.
 No historical Android/Windows artifact proves Apple behavior. Native UI reviews
@@ -61,3 +61,10 @@ Owner actions: configure Apple Team/profiles locally, install on a real iPhone
 and signed Mac, approve VPN, deploy the reviewed backend gate through the normal
 separate workflow, then record **every** live checklist row on both platforms.
 No source-only feature is presented as a successfully tested real VPN.
+
+Native validation reached source `2464d5ec5417931eceeec55cd0dc31c76de53c38`
+in Apple run `41810681639`, attempt 1: 18 shared Swift tests, four Apple SDK
+builds and all four Mac UI tests passed (OTP launch, fixtures, forced appearance,
+navigation and window resizing). Native screenshots exposed a remaining AppKit
+chrome appearance mismatch; its correction must be checked by subsequent runs.
+The PR contains the final evidence, including any superseding source/build SHA.

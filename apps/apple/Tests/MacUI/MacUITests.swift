@@ -25,7 +25,7 @@ final class MacUITests: XCTestCase {
             let app = XCUIApplication()
             // AppKit interprets a value-less defaults flag as consuming the next
             // argument, leaving the theme value as a document to open.
-            app.launchArguments = ["-ui-fixtures", "YES", "-theme", theme]
+            app.launchArguments = ["-ui-fixtures", "YES", "-AppleLanguages", "(ru)", "-theme", theme]
             app.launch()
             let window = app.windows.firstMatch
             guard window.waitForExistence(timeout: 20) else {
