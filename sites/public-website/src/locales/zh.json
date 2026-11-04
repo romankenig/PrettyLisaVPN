@@ -192,7 +192,7 @@
     "intro": "免费开始，或选择一个自然月的 premium 服务。",
     "free": "每个账户每天一小时 vpn。",
     "freeButton": "免费开始",
-    "description": "在已付费的有效期内，VPN 无每日时长限制。",
+    "description": "不限时使用 vpn。",
     "features": ["选择可用的服务器国家", "每个账号最多五台活跃设备", "无广告"],
     "currencies": {
       "RUB": "卢布价格",
@@ -200,7 +200,7 @@
     },
     "basePrice": "基础价格",
     "currentPrice": "当前价格",
-    "period": "每个自然月",
+    "period": "每月",
     "buy": "购买",
     "renewal": "一次付款购买一个月。手动续费，不自动扣款。",
     "availability": "暂未开放付款。您现在可以在应用中体验免费套餐。",

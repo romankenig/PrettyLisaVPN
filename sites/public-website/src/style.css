@@ -348,6 +348,15 @@ figcaption {
   line-height: 1.2;
   margin: 25px 0 14px;
 }
+.free-price [data-free-currency="USD"] {
+  display: none;
+}
+.plans:has(input[value="USD"]:checked) [data-free-currency="RUB"] {
+  display: none;
+}
+.plans:has(input[value="USD"]:checked) [data-free-currency="USD"] {
+  display: inline;
+}
 .free-plan .text-link {
   display: inline-flex;
   margin-top: 26px;
@@ -475,21 +484,10 @@ figcaption {
   background: #85e8de;
   color: var(--deep);
 }
-.renewal-note {
-  font-size: 12px;
-  margin-top: 22px;
-}
 .purchase-details {
   margin-top: 26px;
   font-size: 13px;
 }
-.purchase-details nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 24px;
-  margin-block: 14px 8px;
-}
-.purchase-details a,
 .payment-dialog > a,
 .payment-notice > a {
   color: var(--purple);
@@ -587,10 +585,6 @@ figcaption {
   }
   .payment-dialog {
     padding: 26px;
-  }
-  .purchase-details nav {
-    display: grid;
-    gap: 10px;
   }
 }
 .platform-layout {

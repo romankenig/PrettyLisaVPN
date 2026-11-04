@@ -21,14 +21,17 @@ The separate Apple port PR #51 and its merge/deployment are not website validati
 - Premium, one calendar month: **499 RUB crossed out → 399 RUB**;
   **7 USD crossed out → 5 USD**. Values are minor-unit integers in `src/model.mjs`;
   cards, purchase buttons and the payment document use the same values.
-- A native RUB / USD radio switch shows one price and one Buy link at a time.
+- A native RUB / USD radio switch shows one price and one Buy link at a time,
+  including the matching currency on the Free zero price. Premium's card copy is
+  shortened to unlimited time / per month; renewal details are in the payment document.
   CSS switches the price even without JavaScript; older browsers without `:has`
   retain both links instead of a non-working switch. Keyboard arrows select currency.
 - The active Buy link opens a native HTML dialog with that currency's amount,
   the period and an explicit unavailable/no-charge/no-subscription message.
   Close and Escape restore focus. Without dialog support/JavaScript, the ordinary
   link reaches `/legal/payments/#payment-unavailable` with the same notice/prices.
-- Four documents appear next to pricing; the owner removed the email from this block.
+- Four documents are available in the common footer; the owner removed their
+  duplicate row and the email from the pricing block.
   The unavailable dialog and fallback notice use **help@prettylisavpn.com**.
   Existing seven platform pages, verified downloads and FAQ remain available.
 - All six languages have complete pricing/dialog/document/contact copy.

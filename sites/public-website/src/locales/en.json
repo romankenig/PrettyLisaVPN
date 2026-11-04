@@ -192,7 +192,7 @@
     "intro": "start free or choose premium for one calendar month.",
     "free": "one hour of vpn per day per account.",
     "freeButton": "start free",
-    "description": "vpn without a daily time limit throughout your paid period.",
+    "description": "vpn with unlimited connection time.",
     "features": [
       "choose an available server country",
       "up to five active devices per account",
@@ -204,7 +204,7 @@
     },
     "basePrice": "base price",
     "currentPrice": "current price",
-    "period": "per calendar month",
+    "period": "per month",
     "buy": "buy",
     "renewal": "one payment for one month. renew manually, with no automatic charges.",
     "availability": "payments are not available yet. you can already try the free plan in the app.",

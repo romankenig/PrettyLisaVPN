@@ -1,7 +1,8 @@
 # Website navigation — 0.3.0
 
 The public homepage adds `#pricing` and a RUB/USD radio switch with one visible
-price and Buy link. The link opens a payment-unavailability dialog, or navigates
+price and Buy link; Free's zero price follows the selected currency too. Legal
+links live in the common footer. The link opens a payment-unavailability dialog, or navigates
 to the same notice under
 `/legal/payments/#payment-unavailable` without JavaScript. This is implemented UI;
 payment-provider/backend checkout integration remains unavailable. The payment

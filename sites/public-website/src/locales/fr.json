@@ -192,7 +192,7 @@
     "intro": "commencez gratuitement ou choisissez premium pour un mois calendaire.",
     "free": "une heure de vpn par jour et par compte.",
     "freeButton": "commencer gratuitement",
-    "description": "vpn sans limite de temps quotidienne pendant la période payée.",
+    "description": "vpn sans limite de temps.",
     "features": [
       "choix parmi les pays de serveur disponibles",
       "jusqu’à cinq appareils actifs par compte",
@@ -204,7 +204,7 @@
     },
     "basePrice": "prix de base",
     "currentPrice": "prix actuel",
-    "period": "par mois calendaire",
+    "period": "par mois",
     "buy": "acheter",
     "renewal": "un paiement pour un mois. renouvellement manuel, sans prélèvement automatique.",
     "availability": "les paiements ne sont pas encore disponibles. vous pouvez déjà essayer le forfait gratuit dans l’application.",

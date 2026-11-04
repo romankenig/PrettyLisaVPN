@@ -192,7 +192,7 @@
     "intro": "kostenlos starten oder premium für einen kalendermonat wählen.",
     "free": "eine stunde vpn pro tag und konto.",
     "freeButton": "kostenlos starten",
-    "description": "vpn ohne tägliches zeitlimit während des bezahlten zeitraums.",
+    "description": "vpn ohne zeitlimit.",
     "features": [
       "ein verfügbares serverland wählen",
       "bis zu fünf aktive geräte pro konto",
@@ -204,7 +204,7 @@
     },
     "basePrice": "basispreis",
     "currentPrice": "aktueller preis",
-    "period": "pro kalendermonat",
+    "period": "pro monat",
     "buy": "kaufen",
     "renewal": "eine zahlung für einen monat. manuelle verlängerung ohne automatische abbuchungen.",
     "availability": "zahlungen sind noch nicht verfügbar. den kostenlosen tarif können sie bereits in der app testen.",

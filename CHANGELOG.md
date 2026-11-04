@@ -12,6 +12,8 @@
   399 RUB / 5 USD per calendar month, with reference 499 RUB / 7 USD crossed out.
 - Switch RUB/USD with one visible price and Buy action; shorten the Free card.
   Pricing has no email; payment placeholders use help@prettylisavpn.com.
+- Match Free's zero-price currency to the switch, simplify Premium/month copy,
+  and keep renewal details and legal links in the payment document/common footer.
 - Show an explicit payment-unavailability notice, including a no-JavaScript
   fallback, and link purchase documents in all six languages. No payment is made.
 - Use feedback@prettylisavpn.com for written claims; retain technical

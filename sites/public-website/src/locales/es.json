@@ -192,7 +192,7 @@
     "intro": "empieza gratis o elige premium por un mes natural.",
     "free": "una hora de vpn al día por cuenta.",
     "freeButton": "empezar gratis",
-    "description": "vpn sin límite diario de tiempo durante el período pagado.",
+    "description": "vpn sin límite de tiempo.",
     "features": [
       "elige un país de servidor disponible",
       "hasta cinco dispositivos activos por cuenta",
@@ -204,7 +204,7 @@
     },
     "basePrice": "precio base",
     "currentPrice": "precio actual",
-    "period": "por mes natural",
+    "period": "al mes",
     "buy": "comprar",
     "renewal": "un pago por un mes. renovación manual, sin cobros automáticos.",
     "availability": "los pagos aún no están disponibles. ya puedes probar el plan gratuito en la aplicación.",

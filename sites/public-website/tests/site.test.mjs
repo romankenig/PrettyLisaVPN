@@ -134,6 +134,12 @@ test("purchase path exposes exact owner prices, working fallback and honest paym
       /<section[^>]*id="pricing">([\s\S]*?)<\/section>/,
     )[1];
     assert.doesNotMatch(pricingBlock, /mailto:|@prettylisavpn\.com/);
+    assert.doesNotMatch(
+      pricingBlock,
+      /class="renewal-note"|<nav|\/legal\/(terms|privacy|refunds)\//,
+    );
+    assert.match(pricingBlock, /data-free-currency="RUB"/);
+    assert.match(pricingBlock, /data-free-currency="USD"/);
     const dialog = html.match(/<dialog[\s\S]*?<\/dialog>/)[0];
     const notice = terms.match(
       /<aside[^>]*id="payment-unavailable">([\s\S]*?)<\/aside>/,
