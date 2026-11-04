@@ -84,8 +84,24 @@ jobs:
         timeout-minutes: 10
         working-directory: apps/apple
         run: |
+          set -o pipefail
           # Ad-hoc fixture UI only. No team/profile is available; this is not a VPN acceptance build.
-          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData -resultBundlePath artifacts/macOS.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS= DEVELOPMENT_TEAM= test 2>&1 | tee artifacts/macOS-ui.log
+      - name: Export macOS review before starting Simulator
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        working-directory: apps/apple
+        run: xcrun xcresulttool export attachments --path artifacts/macOS.xcresult --output-path artifacts/previews/macOS
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
+        with:
+          name: apple-mac-ui-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/apple/artifacts/macOS-ui.log
+            apps/apple/artifacts/macOS-app-info.json
+            apps/apple/artifacts/previews/macOS/*.png
+            apps/apple/artifacts/previews/macOS/*.txt
+            apps/apple/artifacts/previews/macOS/manifest.json
+          retention-days: 14
       - name: Exercise simulator UI and capture native images
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         timeout-minutes: 25
@@ -101,7 +117,9 @@ jobs:
           shopt -s nullglob
           for result in artifacts/*.xcresult; do
             name=$(basename "$result" .xcresult)
-            xcrun xcresulttool export attachments --path "$result" --output-path "artifacts/previews/$name"
+            if [ ! -f "artifacts/previews/$name/manifest.json" ]; then
+              xcrun xcresulttool export attachments --path "$result" --output-path "artifacts/previews/$name"
+            fi
           done
       - uses: actions/upload-artifact@v4
         if: always()

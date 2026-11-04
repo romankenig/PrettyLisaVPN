@@ -8,6 +8,18 @@ final class MacUITests: XCTestCase {
         XCTAssertTrue(app.textFields["email"].waitForExistence(timeout: 10))
         app.terminate()
     }
+    func testFixtureWithoutAppearanceOverride() {
+        let app = XCUIApplication(); app.launchArguments = ["-ui-fixtures"]; app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts["vpn-status"].waitForExistence(timeout: 10))
+        app.terminate()
+    }
+    func testForcedAppearanceWithoutFixtures() {
+        let app = XCUIApplication(); app.launchArguments = ["-theme", "light"]; app.launch()
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.textFields["email"].waitForExistence(timeout: 10))
+        app.terminate()
+    }
     func testNativeWindowAndAppearance() {
         for theme in ["light", "dark"] {
             let app = XCUIApplication()
