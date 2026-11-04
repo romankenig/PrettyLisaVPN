@@ -10,9 +10,11 @@
 
 - Add Free/Premium pricing and a clickable purchase path for Platega moderation:
   399 RUB / 5 USD per calendar month, with reference 499 RUB / 7 USD crossed out.
+- Switch RUB/USD with one visible price and Buy action; shorten the Free card.
+  Pricing has no email; payment placeholders use help@prettylisavpn.com.
 - Show an explicit payment-unavailability notice, including a no-JavaScript
   fallback, and link purchase documents in all six languages. No payment is made.
-- Use feedback@prettylisavpn.com for claims/payment questions; retain technical
+- Use feedback@prettylisavpn.com for written claims; retain technical
   support at help@prettylisavpn.com. See [handoff](docs/website-platega-moderation.md).
 
 ### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0

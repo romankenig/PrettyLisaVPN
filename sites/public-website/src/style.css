@@ -383,6 +383,62 @@ figcaption {
 .price-option {
   min-width: 0;
 }
+.currency-switch {
+  display: none;
+  border: 1px solid #ffffff60;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  margin: 0 0 18px;
+}
+.currency-switch label {
+  position: relative;
+  cursor: pointer;
+}
+.currency-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.currency-switch span {
+  display: grid;
+  place-items: center;
+  min-width: 88px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+.currency-switch input:checked + span {
+  background: var(--mint);
+  color: var(--deep);
+  font-weight: 500;
+}
+.currency-switch input:focus-visible + span {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+/* Native radios also switch prices without JavaScript. Older browsers retain
+   both ordinary purchase links instead of displaying a non-working switch. */
+@supports selector(:has(*)) {
+  .currency-switch {
+    display: inline-flex;
+  }
+  .currency-picker .price-options {
+    grid-template-columns: 1fr;
+  }
+  .currency-picker:has(input[value="RUB"]:checked) [data-currency="USD"],
+  .currency-picker:has(input[value="USD"]:checked) [data-currency="RUB"] {
+    display: none;
+  }
+  .currency-picker .currency-label {
+    display: none;
+  }
+  .currency-picker .price-option + .price-option {
+    border: 0;
+    padding-top: 0;
+  }
+}
 .currency-label,
 .price-period {
   font-size: 12px;

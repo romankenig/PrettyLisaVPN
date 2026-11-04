@@ -3,7 +3,7 @@
 Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents and six fully translated languages.
 The owner authorized public publication. The purchase UI displays the confirmed
-monthly prices (399 RUB / 5 USD, reference 499 RUB / 7 USD) and a clickable
+switchable monthly prices (399 RUB / 5 USD, reference 499 RUB / 7 USD) and a clickable
 unavailability notice. Commercial checkout remains separate.
 
 ## Run and verify

@@ -128,6 +128,20 @@ test("purchase path exposes exact owner prices, working fallback and honest paym
       /<dialog[^>]+aria-labelledby="payment-title"[^>]+aria-describedby="payment-message"/,
     );
     assert.equal((html.match(/data-purchase=/g) ?? []).length, 2);
+    assert.match(html, /type="radio" name="currency" value="RUB" checked/);
+    assert.match(html, /type="radio" name="currency" value="USD"/);
+    const pricingBlock = html.match(
+      /<section[^>]*id="pricing">([\s\S]*?)<\/section>/,
+    )[1];
+    assert.doesNotMatch(pricingBlock, /mailto:|@prettylisavpn\.com/);
+    const dialog = html.match(/<dialog[\s\S]*?<\/dialog>/)[0];
+    const notice = terms.match(
+      /<aside[^>]*id="payment-unavailable">([\s\S]*?)<\/aside>/,
+    )[1];
+    for (const placeholder of [dialog, notice]) {
+      assert.match(placeholder, /href="mailto:help@prettylisavpn.com"/);
+      assert.doesNotMatch(placeholder, /feedback@prettylisavpn\.com/);
+    }
     assert.ok(
       html.includes(
         `${routeFor(language, "/legal/payments/")}#payment-unavailable`,

@@ -190,7 +190,7 @@
     "eyebrow": "in ihrem tempo",
     "title": "ein konto. ein klarer preis.",
     "intro": "kostenlos starten oder premium für einen kalendermonat wählen.",
-    "free": "eine gemeinsame stunde vpn pro konto und tag, ohne werbung. das kontingent wird um 00:00 UTC erneuert.",
+    "free": "eine stunde vpn pro tag und konto.",
     "freeButton": "kostenlos starten",
     "description": "vpn ohne tägliches zeitlimit während des bezahlten zeitraums.",
     "features": [
@@ -212,6 +212,7 @@
     "contact": "fragen zur zahlung",
     "unavailableTitle": "zahlungen sind vorübergehend nicht verfügbar",
     "unavailableText": "die zahlungsabwicklung ist noch nicht angeschlossen. es wurde kein geld abgebucht und kein abonnement abgeschlossen. versuchen sie es später erneut oder kontaktieren sie uns bei zahlungsfragen.",
-    "close": "verstanden"
+    "close": "verstanden",
+    "currency": "währung"
   }
 }

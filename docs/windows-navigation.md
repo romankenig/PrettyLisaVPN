@@ -1,11 +1,13 @@
 # Website navigation — 0.3.0
 
-The public homepage adds `#pricing` and active currency-specific Buy links. They
-open a payment-unavailability dialog, or navigate to the same notice under
+The public homepage adds `#pricing` and a RUB/USD radio switch with one visible
+price and Buy link. The link opens a payment-unavailability dialog, or navigates
+to the same notice under
 `/legal/payments/#payment-unavailable` without JavaScript. This is implemented UI;
-payment-provider/backend checkout integration remains unavailable. Claims/payment
-links use `feedback@prettylisavpn.com`, technical support uses the existing help
-address. Client routes and auth guards are unchanged. See
+payment-provider/backend checkout integration remains unavailable. The payment
+placeholder uses `help@prettylisavpn.com`; pricing has no email. Written claims in
+legal documents/footer retain `feedback@prettylisavpn.com`. Technical support uses
+the existing help address. Client routes and auth guards are unchanged. See
 [website handoff](website-platega-moderation.md).
 
 # Apple navigation — iOS 0.1.0 / macOS 0.1.0

@@ -21,14 +21,19 @@ The separate Apple port PR #51 and its merge/deployment are not website validati
 - Premium, one calendar month: **499 RUB crossed out → 399 RUB**;
   **7 USD crossed out → 5 USD**. Values are minor-unit integers in `src/model.mjs`;
   cards, purchase buttons and the payment document use the same values.
-- Each active Buy link opens a native HTML dialog with that currency's amount,
+- A native RUB / USD radio switch shows one price and one Buy link at a time.
+  CSS switches the price even without JavaScript; older browsers without `:has`
+  retain both links instead of a non-working switch. Keyboard arrows select currency.
+- The active Buy link opens a native HTML dialog with that currency's amount,
   the period and an explicit unavailable/no-charge/no-subscription message.
   Close and Escape restore focus. Without dialog support/JavaScript, the ordinary
   link reaches `/legal/payments/#payment-unavailable` with the same notice/prices.
-- Four documents and the claims contact appear next to the pricing section.
+- Four documents appear next to pricing; the owner removed the email from this block.
+  The unavailable dialog and fallback notice use **help@prettylisavpn.com**.
   Existing seven platform pages, verified downloads and FAQ remain available.
 - All six languages have complete pricing/dialog/document/contact copy.
-- Owner supplied **feedback@prettylisavpn.com** for claims/payment enquiries.
+- Owner supplied **feedback@prettylisavpn.com** for written claims; it remains in
+  the legal documents/footer, outside the pricing block and payment placeholder.
   Technical support stays **help@prettylisavpn.com**. This task does not create a
   mailbox or verify delivery by sending mail. No postal street address was supplied.
 
@@ -41,7 +46,7 @@ No provider approval, successful payment, subscription or recurring debit is imp
 
 Local: Node syntax checks, all eight test groups, static build of 78 pages,
 Prettier and diff checks. Browser review covers six locales at 320/390/1280 px,
-both purchase amounts, Escape/close and links to the fallback document. Screenshots
+currency switching, a single visible purchase amount, Escape/close and fallback links. Screenshots
 are actual browser captures. Local Caddy tests cannot run because the Windows
 Docker daemon is unavailable; the required isolated Caddy suite runs in CI.
 

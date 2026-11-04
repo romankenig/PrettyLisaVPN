@@ -190,7 +190,7 @@
     "eyebrow": "a tu ritmo",
     "title": "una cuenta. un precio claro.",
     "intro": "empieza gratis o elige premium por un mes natural.",
-    "free": "una hora de vpn compartida por cuenta al día, sin anuncios. el límite se renueva a las 00:00 UTC.",
+    "free": "una hora de vpn al día por cuenta.",
     "freeButton": "empezar gratis",
     "description": "vpn sin límite diario de tiempo durante el período pagado.",
     "features": [
@@ -212,6 +212,7 @@
     "contact": "consultas sobre pagos",
     "unavailableTitle": "pago temporalmente no disponible",
     "unavailableText": "el procesamiento de pagos aún no está conectado. no se ha cobrado dinero ni se ha creado una suscripción. inténtalo más tarde o escríbenos para consultas sobre pagos.",
-    "close": "entendido"
+    "close": "entendido",
+    "currency": "moneda"
   }
 }

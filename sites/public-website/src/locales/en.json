@@ -190,7 +190,7 @@
     "eyebrow": "at your own pace",
     "title": "one account. a clear price.",
     "intro": "start free or choose premium for one calendar month.",
-    "free": "one shared hour of vpn per account each day, without ads. the allowance resets at 00:00 UTC.",
+    "free": "one hour of vpn per day per account.",
     "freeButton": "start free",
     "description": "vpn without a daily time limit throughout your paid period.",
     "features": [
@@ -212,6 +212,7 @@
     "contact": "payment questions",
     "unavailableTitle": "payments are temporarily unavailable",
     "unavailableText": "payment processing is not connected yet. no money was charged and no subscription was created. please try again later or contact us about payments.",
-    "close": "got it"
+    "close": "got it",
+    "currency": "currency"
   }
 }

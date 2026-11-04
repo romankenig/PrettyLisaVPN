@@ -190,7 +190,7 @@
     "eyebrow": "à votre rythme",
     "title": "un compte. un prix clair.",
     "intro": "commencez gratuitement ou choisissez premium pour un mois calendaire.",
-    "free": "une heure de vpn partagée par compte et par jour, sans publicité. le quota est renouvelé à 00:00 UTC.",
+    "free": "une heure de vpn par jour et par compte.",
     "freeButton": "commencer gratuitement",
     "description": "vpn sans limite de temps quotidienne pendant la période payée.",
     "features": [
@@ -212,6 +212,7 @@
     "contact": "questions de paiement",
     "unavailableTitle": "paiement temporairement indisponible",
     "unavailableText": "le traitement des paiements n’est pas encore connecté. aucun montant n’a été débité et aucun abonnement n’a été créé. réessayez plus tard ou contactez-nous pour les questions de paiement.",
-    "close": "compris"
+    "close": "compris",
+    "currency": "devise"
   }
 }
