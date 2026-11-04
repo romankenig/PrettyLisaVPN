@@ -62,6 +62,10 @@ and signed Mac, approve VPN, deploy the reviewed backend gate through the normal
 separate workflow, then record **every** live checklist row on both platforms.
 No source-only feature is presented as a successfully tested real VPN.
 
+Signing configuration separates iOS from macOS App Sandbox entitlements. The Mac
+provider grants both outgoing and incoming networking for encrypted UDP transport;
+unsigned/ad-hoc UI checks do not validate these entitlements against owner profiles.
+
 Native validation reached source `2464d5ec5417931eceeec55cd0dc31c76de53c38`
 in Apple run `41810681639`, attempt 1: 18 shared Swift tests, four Apple SDK
 builds and all four Mac UI tests passed (OTP launch, fixtures, forced appearance,

@@ -41,6 +41,11 @@ flag is active in Release. Fixture data never enables a real tunnel.
 
 ## Signing — perform locally, never send private keys/passwords in chat
 
+iOS targets use `App-iOS.entitlements` / `Tunnel-iOS.entitlements`; the macOS
+App Sandbox permissions stay in `App.entitlements` / `Tunnel.entitlements`.
+The Mac provider enables both network client and server permissions because
+[sandboxed UDP needs receive permission](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.network.client).
+
 1. Copy `Config/Local.xcconfig.example` to gitignored `Config/Local.xcconfig`.
    Set `DEVELOPMENT_TEAM` and a `BUNDLE_ID_PREFIX` you own. API overrides must use
    HTTPS; no ATS exception or TLS bypass is provided.

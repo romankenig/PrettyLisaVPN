@@ -88,6 +88,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).ios
+        CODE_SIGN_ENTITLEMENTS: Config/App-iOS.entitlements
         TARGETED_DEVICE_FAMILY: '1,2'
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
@@ -103,6 +104,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).ios.tunnel
+        CODE_SIGN_ENTITLEMENTS: Config/Tunnel-iOS.entitlements
         TARGETED_DEVICE_FAMILY: '1,2'
   PrettyLisaVPN-macOS:
     templates: [Application]
