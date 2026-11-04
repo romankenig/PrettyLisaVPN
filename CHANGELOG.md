@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Infrastructure — version unchanged
+
+- Enroll `timeweb-nl-001` (`81.31.245.143`, NL) in the FREE pool using the existing
+  fleet lifecycle. Configure WireGuard and managed transports, verify real exit
+  traffic and disposable Free-account allocation/cleanup, and enable monitoring.
+- See [NL enrollment evidence](docs/timeweb-nl-enrollment.md). No application,
+  API, schema, quota or client-version change.
+
 ### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0
 
 - Add native Apple apps and real Packet Tunnel extensions using existing encrypted
