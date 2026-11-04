@@ -6,7 +6,7 @@ final class AppleUITests: XCTestCase {
     }
     private func reviewSimulation(theme: String) {
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-fixtures", "-simulate-vpn", "-AppleLanguages", "(ru)", "-theme", theme]
+        app.launchArguments = ["-ui-fixtures", "YES", "-simulate-vpn", "YES", "-AppleLanguages", "(ru)", "-theme", theme]
         app.launch()
         XCTAssertTrue(app.staticTexts["simulation-banner"].waitForExistence(timeout: 15))
         if !app.buttons["connect"].isHittable {

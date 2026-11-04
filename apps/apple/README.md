@@ -31,10 +31,12 @@ bash scripts/ui-review.sh
 
 Default launches use real HTTPS API/OTP at **https://api.prettylisavpn.com**.
 Simulator Connect reports the physical-device requirement before reserving quota.
-For explicit **Debug Simulator simulation**, add `-simulate-vpn` in scheme Run →
-Arguments. A persistent localized banner says **«Симуляция VPN — трафик не защищён»**;
+For explicit **Debug Simulator simulation**, add `-simulate-vpn` and `YES` as two
+separate scheme Run → Arguments. A persistent localized banner says **«Симуляция VPN — трафик не защищён»**;
 Settings exposes disconnected/connecting/connected/disconnecting/error/reconnecting
-scenarios. Separately add `-ui-fixtures` for synthetic account UI tests. Neither
+scenarios. Separately add `-ui-fixtures` and `YES` for synthetic account UI tests.
+Keep each defaults flag paired with its value, especially before `-theme light`
+or `-theme dark`: AppKit can treat an orphan value as a document-open request. Neither
 flag is active in Release. Fixture data never enables a real tunnel.
 
 ## Signing — perform locally, never send private keys/passwords in chat
@@ -113,7 +115,8 @@ captures or browsing history. Free acceptance sessions consume real quota.
   provider configuration is disabled; StoreKit/distribution decisions remain
   necessary. No invented checkout or simulated payment success.
 - Support uses the real multipart/status contract and an account-scoped AES-GCM
-  journal with a Keychain key, deleted after acceptance or 30 days; no Windows-only diagnostics. Account messages ACK account/revision only
+  journal with a Keychain key, deleted after acceptance; expired drafts are removed
+  on their next access after 30 days. No Windows-only diagnostics. Account messages ACK account/revision only
   after explicit action. Supported actions route to subscription/settings/about.
 - Six existing locales derive from Android. New copy is in `Config/AppleStrings.json`;
   regenerate with Python + Pillow: `python3 scripts/sync-resources.py`.

@@ -28,7 +28,7 @@ while IFS= read -r device; do
   bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app/Info.plist)
   for theme in light dark; do
     xcrun simctl ui "$device" appearance "$theme"
-    xcrun simctl launch "$device" "$bundle" -ui-fixtures -simulate-vpn -AppleLanguages '(ru)' -theme "$theme"
+    xcrun simctl launch "$device" "$bundle" -ui-fixtures YES -simulate-vpn YES -AppleLanguages '(ru)' -theme "$theme"
     sleep 2
     xcrun simctl io "$device" screenshot "artifacts/iphone-$index-$theme.png"
     xcrun simctl terminate "$device" "$bundle"

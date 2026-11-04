@@ -9,7 +9,7 @@ final class MacUITests: XCTestCase {
         app.terminate()
     }
     func testFixtureWithoutAppearanceOverride() {
-        let app = XCUIApplication(); app.launchArguments = ["-ui-fixtures"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["-ui-fixtures", "YES"]; app.launch()
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["vpn-status"].waitForExistence(timeout: 10))
         app.terminate()
@@ -23,7 +23,9 @@ final class MacUITests: XCTestCase {
     func testNativeWindowAndAppearance() {
         for theme in ["light", "dark"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-ui-fixtures", "-theme", theme]
+            // AppKit interprets a value-less defaults flag as consuming the next
+            // argument, leaving the theme value as a document to open.
+            app.launchArguments = ["-ui-fixtures", "YES", "-theme", theme]
             app.launch()
             let window = app.windows.firstMatch
             guard window.waitForExistence(timeout: 20) else {
