@@ -106,14 +106,14 @@ struct IOSRootView<Banners: View>: View {
     private struct Language {
         let code: String; let english: String; let native: String; let flag: String
     }
-    private static let languages = [
+    private static var languages: [Language] { [
         Language(code: "en", english: "English", native: "English", flag: "🇬🇧"),
         Language(code: "ru", english: "Russian", native: "Русский", flag: "🇷🇺"),
         Language(code: "de", english: "German", native: "Deutsch", flag: "🇩🇪"),
         Language(code: "es", english: "Spanish", native: "Español", flag: "🇪🇸"),
         Language(code: "fr", english: "French", native: "Français", flag: "🇫🇷"),
         Language(code: "zh-Hans", english: "Chinese", native: "简体中文", flag: "🇨🇳")
-    ]
+    ] }
     private var selectedLanguage: Language {
         let code = language == "system" ? Bundle.main.preferredLocalizations.first ?? "en" : language
         return Self.languages.first { $0.code == code } ?? Self.languages[0]
