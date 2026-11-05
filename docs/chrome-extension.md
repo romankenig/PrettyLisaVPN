@@ -63,6 +63,54 @@ Scope and limitations are listed in [the client README](../apps/chrome-extension
 Support is real API delivery, billing read-only; no payment-provider changes.
 No history, URLs, DNS queries, packet contents or OTP/credential values are logged.
 
+## Verified on 2026-11-05
+
+Product implementation: `93ae093be799ccf37a7c48a08bb5f410206aeb60`;
+tested branch head: `6a855fcfeaef7bcd79877fa80600160b39ba7423` (only the
+country-monitoring test fixture changed after the product commit). Chrome 0.1.0
+was loaded as an unpacked local build in isolated Chromium 156.0.8078.4. The node
+helper matched the source with SHA-256
+`e224547860fd2cad5414acce3e2b18b97f42c8ceafd9c709752531a117bea865`.
+Final distributable build SHA/run/attempt and all workflow results are recorded in
+[PR #55](https://github.com/romankenig/PrettyLisaVPN/pull/55), separately from this
+local transport acceptance.
+
+| Check | Observed result |
+| --- | --- |
+| Browser HTTP and HTTPS external IP | `81.31.245.143`, the NL exit |
+| HTTPS page content | Public PrettyLisaVPN website loaded through the proxy |
+| WSS | Encrypted WebSocket echo round trip passed |
+| Private destinations | IPv4 loopback, link-local and IPv6 loopback requests rejected |
+| Temporary offline / online | Data path resumed with the NL exit IP |
+| Disconnect | Previous browser exit IP restored |
+| Invalid proxy password | HTTP 407, no authenticated tunnel |
+| Invalid TLS hostname | Certificate validation rejected the connection |
+
+The browser test used fixture auth/lease API responses and the real proxy process
+with disposable credentials. Direct TCP from this workstation to the NL proxy
+port timed out, so its isolated browser used an SSH TCP forward through the main
+host. TLS still validated `proxy-nl.prettylisavpn.com` against the public CA store;
+no certificate exception was used. Independent curl checks from the main host
+connected directly to the NL proxy and confirmed HTTP/HTTPS exit IP, authentication
+rejection and hostname rejection. The temporary process, grant credentials,
+forward, helper copy and isolated browser profile were removed; the port was
+confirmed released. Existing native sessions and managed grants were not changed.
+
+This proves the implemented data transport, **not** the complete live
+OTP → backend allocation → authenticated Connected chain. Live backend remains
+0.33.0; migration 0043, the new worker/helper, proxy node capability and the Caddy
+probe alias still require rollout. Full live quota/device revocation, lease renewal
+and direct workstation reachability must be checked after rollout. Unit and
+integration tests cover these lifecycle rules but do not replace live acceptance.
+
+The repository certificate playbook completed successfully on NL. Its publicly
+trusted Let's Encrypt certificate is valid from 2026-11-05 to 2027-02-03;
+`certbot.timer` is enabled and active. Private TLS keys stayed on the node. The
+existing Timeweb Ubuntu package mirror was switched from HTTP to HTTPS because
+HTTP timed out; the original source file was retained as
+`/etc/apt/sources.list.d/ubuntu.sources.before-chrome-tls`, with Ubuntu signature
+verification unchanged. DE/US DNS and certificates are still pending.
+
 ## Operator rollout and real acceptance
 
 1. Review/merge and deploy backend 0.34.0 with migration 0043 using the normal
