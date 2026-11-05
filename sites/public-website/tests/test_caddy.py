@@ -96,6 +96,8 @@ class PublicWebsiteTests(unittest.TestCase):
                 result = self.request(route)
                 self.assertIn("200 OK", result.stderr)
                 self.assertIn("PrettyLisaVPN", result.stdout)
+                self.assertIn("platega test", result.stdout)
+                self.assertEqual(result.stdout.count('class="document-button"'), 4)
                 self.assertIn("noindex, nofollow", result.stderr)
                 self.assertIn("no-store", result.stderr)
                 self.assertIn("form-action 'none'", result.stderr)
@@ -105,12 +107,16 @@ class PublicWebsiteTests(unittest.TestCase):
             "style.css",
             "lock.svg",
             "Rubik.ttf",
-            "screenshots/android-services.png",
+            "screenshots/android-home.png",
         ):
             # --spider checks headers without decoding binary fonts as text.
             result = self.request("/assets/" + asset, "--spider")
             self.assertIn("200 OK", result.stderr)
         self.assertIn("text/javascript", self.request("/assets/downloads.mjs").stderr)
+        self.assertIn(
+            "404 Not Found",
+            self.request("/assets/screenshots/android-services.png", "--spider").stderr,
+        )
 
     def test_client_files_are_public_but_dashboard_is_not(self):
         for name in (
