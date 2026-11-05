@@ -2,9 +2,9 @@ name: Apple clients
 
 on:
   push:
-    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/prepare_client_download.py', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   pull_request:
-    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml']
+    paths: ['apps/apple/**', 'engines/managed/**', '.github/workflows/apple.yml', '.github/workflows/client-download-publish.yml', 'infra/deployment/prepare_client_download.py', 'infra/deployment/publish_client.py', 'infra/deployment/publish_client_container.sh']
   workflow_dispatch:
 
 permissions:
@@ -110,6 +110,24 @@ jobs:
       - name: Package corresponding sources, licenses and exact build identity
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         run: bash apps/apple/scripts/package.sh
+      - name: Prepare unsigned device downloads with corresponding sources
+        run: |
+          for platform in ios macos; do
+            python3 infra/deployment/prepare_client_download.py --platform "$platform" \
+              --directory apps/apple/artifacts --output "apps/apple/download-$platform" \
+              --sha "${{ github.sha }}" --run "${{ github.run_id }}" \
+              --attempt "${{ github.run_attempt }}" --event "${{ github.event_name }}"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-download-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/apple/download-ios/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-download-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/apple/download-macos/
+          if-no-files-found: error
       - name: Export native screenshot attachments
         if: always()
         working-directory: apps/apple
@@ -134,6 +152,7 @@ jobs:
             apps/apple/artifacts/macOS-app-info.json
           if-no-files-found: warn
           retention-days: 14
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -146,3 +165,15 @@ jobs:
             apps/apple/artifacts/*.xcresult
           if-no-files-found: warn
           retention-days: 14
+
+  publish-client:
+    needs: [core, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    strategy:
+      matrix:
+        platform: [ios, macos]
+    uses: ./.github/workflows/client-download-publish.yml
+    with:
+      platform: ${{ matrix.platform }}
+      artifact: ${{ matrix.platform }}-download-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    secrets: inherit

@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          case "$PLATFORM" in android|windows) ;; *) exit 1 ;; esac
+          case "$PLATFORM" in android|windows|chrome|ios|macos) ;; *) exit 1 ;; esac
           test -n "$DEV_VPS_HOST" && test -n "$DEV_VPS_PORT" && test -n "$DEV_VPS_USER"
           python - <<'PY'
           import importlib.util, os

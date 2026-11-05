@@ -38,7 +38,7 @@ handle /dashboard/* {
         }
         handle_path /dashboard/downloads/* {
             root * /etc/caddy/dashboard/downloads/current
-            @binary path /android.apk /windows.exe
+            @binary path /android.apk /windows.exe /chrome-extension.zip /ios-unsigned.zip /macos-unsigned.zip /android-sources.tar.gz /windows-sources.tar.gz /ios-sources.tar.gz /macos-sources.tar.gz /windows-licenses.txt
             header @binary Content-Disposition attachment
             file_server
         }

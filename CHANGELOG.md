@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Fleet dashboard — 0.6.0
+
+- Add Chrome Extension, iOS and macOS downloads at the private API dashboard,
+  with fixed links, build versions, dates and platform installation instructions.
+- Publish successful develop Chrome/Apple builds through the existing atomic
+  catalog. Validate archive contents, SHA/run/attempt, checksums and matching
+  Apple engine sources/licenses; preserve Android/Windows downloads.
+- Apple downloads are explicitly unsigned device/app ZIPs, not App Store,
+  TestFlight or verified live VPN releases. Client/backend versions unchanged.
+  See [download publication handoff](docs/dashboard-client-downloads.md).
+
 ### Chrome Extension — 0.1.0 / backend — 0.34.0
 
 - Add a browser-only Manifest V3 client with Windows-inspired UI, email OTP,

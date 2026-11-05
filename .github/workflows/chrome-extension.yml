@@ -2,9 +2,9 @@ name: Chrome extension
 on:
   workflow_dispatch:
   push:
-    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml"]
+    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
   pull_request:
-    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml"]
+    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
 permissions:
   contents: read
 concurrency:
@@ -34,6 +34,17 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/review.mjs
+      - name: Package installable extension directory
+        run: >-
+          python ../../infra/deployment/prepare_client_download.py --platform chrome
+          --directory dist --output client-download
+          --sha "${{ github.sha }}" --run "${{ github.run_id }}"
+          --attempt "${{ github.run_attempt }}" --event "${{ github.event_name }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-download-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/chrome-extension/client-download/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -42,3 +53,11 @@ jobs:
             apps/chrome-extension/dist/
             apps/chrome-extension/review/
           if-no-files-found: error
+  publish-client:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/client-download-publish.yml
+    with:
+      platform: chrome
+      artifact: chrome-download-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    secrets: inherit

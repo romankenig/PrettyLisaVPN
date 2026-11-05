@@ -75,3 +75,13 @@ class ClientPublisherContainerTests(unittest.TestCase):
             result = subprocess.run(["bash", str(SCRIPT), *args], env=self.env, check=False)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(self.log.exists())
+
+    def test_chrome_and_apple_use_the_same_restricted_publisher(self):
+        for platform in ("chrome", "ios", "macos"):
+            args = self.args.copy()
+            args[0] = platform
+            args[1] = f"/opt/prettylisavpn/incoming/client-{platform}-123-1"
+            subprocess.run(["bash", str(SCRIPT), *args], env=self.env, check=True)
+            call = json.loads(self.log.read_text())
+            self.assertEqual(call[call.index("--platform") + 1], platform)
+            self.assertEqual(call[call.index("--network") + 1], "none")

@@ -9,7 +9,7 @@ incoming="$2"
 sha="$3"
 run="$4"
 attempt="$5"
-case "$platform" in android|windows) ;; *) exit 1 ;; esac
+case "$platform" in android|windows|chrome|ios|macos) ;; *) exit 1 ;; esac
 [[ "$sha" =~ ^[a-f0-9]{40}$ && "$run" =~ ^[1-9][0-9]*$ && "$attempt" =~ ^[1-9][0-9]*$ ]]
 [[ "$incoming" == "/opt/prettylisavpn/incoming/client-${platform}-${run}-${attempt}" ]]
 
