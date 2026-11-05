@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### iOS — 0.1.1
+
+- Give the downloaded Simulator app an ad-hoc application identity and private
+  Keychain group, fixing secure-storage failure after installation. Verify real
+  Keychain read/write/update/delete inside the exact archive before publication.
+- Keep physical-device signing requirements and macOS 0.1.0 unchanged.
+
 ### Fleet dashboard — 0.6.1
 
 - Separate iOS Simulator and iPhone ZIP downloads so browser simulators receive

@@ -226,8 +226,9 @@ publication lock; do not overwrite immutable files or catalog coordinates.
 ## iOS Simulator download — 2026-11-05
 
 Dashboard **0.6.0 → 0.6.1** fixes selection of the wrong SDK package for browser
-simulators. iOS/macOS remain 0.1.0, Chrome 0.1.0, backend 0.34.0, Windows 0.25.2
-and Android 0.21.2: only dashboard, packaging, CI and infrastructure change.
+simulators. iOS **0.1.0 → 0.1.1** also fixes missing Simulator Keychain entitlements
+found during exact-archive launch review. macOS remains 0.1.0, Chrome 0.1.1,
+backend 0.34.0, Windows 0.25.2 and Android 0.21.2.
 
 Use `/dashboard/downloads/ios-simulator.zip` for Appetize or Apple Simulator
 (ARM64, iOS 17+). It contains the original `PrettyLisaVPN.app` built with the
@@ -238,9 +239,18 @@ dashboard authentication; download locally before uploading to an external servi
 No external service account or app has been created or changed by this task.
 
 Apple CI packages both archives from its own run, installs and launches the exact
-Simulator ZIP without fixture arguments, records its SHA256 and captures
+Simulator ZIP, verifies read/write/update/delete through the real Keychain adapter
+with a disposable noncredential value, then relaunches without fixture arguments,
+records its SHA256 and captures
 `simulator-download.png`. This proves native Simulator launch, not an Appetize
-upload or a real VPN tunnel. Appetize format requirements:
+upload or a real VPN tunnel. Simulator-only ad-hoc signing supplies the app's own
+application identifier/access group; no Apple team, shared native-device group or
+plaintext credential fallback is introduced. The diagnostic exists only in Debug
+Simulator builds and runs solely with `-verify-keychain`. The earlier 0.1.0 archive
+from PR build `75051b7dcf270f0c066ee7d8d7688ea2d3d0475e`, run 42032440782/1,
+launched but showed SECURE_STORAGE_UNAVAILABLE; it is not storage acceptance of
+0.1.1. Final source/build and native evidence belong in PR #58.
+Appetize format requirements:
 https://docs.appetize.io/platform/app-management/uploading-apps/ios.
 
 The existing iOS entry has optional `simulator_url`, `simulator_sha256` and

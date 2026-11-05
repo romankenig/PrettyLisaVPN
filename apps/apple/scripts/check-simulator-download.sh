@@ -14,6 +14,21 @@ xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
 xcrun simctl uninstall "$device" "$bundle"
 xcrun simctl install "$device" "$app"
+xcrun simctl launch "$device" "$bundle" -verify-keychain
+container=$(xcrun simctl get_app_container "$device" "$bundle" data)
+receipt="$container/Documents/simulator-keychain-check.json"
+for attempt in {1..30}; do
+  if [ -f "$receipt" ]; then break; fi
+  sleep 1
+done
+python3 - "$receipt" <<'PY'
+import json, sys
+from pathlib import Path
+value = json.loads(Path(sys.argv[1]).read_text())
+assert value == {'read_write_update_delete': True}
+Path('artifacts/simulator-keychain-check.json').write_text(json.dumps(value) + '\n')
+PY
+xcrun simctl terminate "$device" "$bundle"
 xcrun simctl launch "$device" "$bundle"
 sleep 3
 xcrun simctl io "$device" screenshot artifacts/simulator-download.png
@@ -25,6 +40,7 @@ archive = Path('artifacts/PrettyLisaVPN-iOS-Simulator.zip')
 Path('artifacts/simulator-download-check.json').write_text(json.dumps({
     'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
     'installed_and_launched': True, 'fixture_arguments': False,
+    'keychain_read_write_update_delete': True,
     'sdk': 'iphonesimulator', 'required_architecture': 'arm64',
 }, indent=2) + '\n')
 PY
