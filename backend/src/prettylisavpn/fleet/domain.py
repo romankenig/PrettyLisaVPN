@@ -23,6 +23,19 @@ class FleetError(Exception):
 NodeGroup = Literal["INTERMEDIATE", "FREE", "PREMIUM"]
 
 
+def proxy_address_supported(host: object, *, allow_ip: bool = False) -> bool:
+    """Keep literal addresses away from clients with the original DNS-only contract."""
+    if not isinstance(host, str) or not host:
+        return False
+    if all(char in "0123456789." for char in host):
+        try:
+            address = IPv4Address(host)
+        except ValueError:
+            return False
+        return allow_ip and address.is_global and str(address) == host
+    return True
+
+
 class NodeInput(Value):
     name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}$")
     country_code: str = Field(pattern=r"^[A-Z]{2}$")
@@ -184,6 +197,14 @@ class ManagedConfig(Value):
         pattern=r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$",
         max_length=253,
     )
+
+    @field_validator("proxy_host")
+    @classmethod
+    def public_proxy_address(cls, value: str | None) -> str | None:
+        if value and all(char in "0123456789." for char in value):
+            if not IPv4Address(value).is_global:
+                raise ValueError("A public proxy address is required")
+        return value
 
     @field_validator("reality_target")
     @classmethod

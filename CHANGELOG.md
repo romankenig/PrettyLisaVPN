@@ -22,6 +22,15 @@
   versions unchanged; real VPN acceptance remains a physical-device task.
   See [Simulator download handoff](docs/dashboard-client-downloads.md#ios-simulator-download--2026-11-05).
 
+### Chrome Extension — 0.1.2 / backend — 0.34.1
+
+- Allow the existing HTTPS proxy to use the enrolled exit's public IPv4 address
+  with a publicly trusted IP certificate when DNS cannot be configured.
+- Advertise IP support explicitly; older extensions continue receiving DNS-only
+  endpoints. Keep TLS verification, expected egress checks and browser-only scope.
+- Automate short-lived certificate issuance and renewal on exit nodes. No native
+  transport, quota or schema change. See [Chrome handoff](docs/chrome-extension.md).
+
 ### Chrome Extension — 0.1.1
 
 - Retain sign-in across browser restarts in trusted local extension storage;
