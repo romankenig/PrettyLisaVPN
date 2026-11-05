@@ -118,12 +118,17 @@ async def test_browser_country_selection_filters_proxy_capability_and_free_nodes
                     "is_available_for_free": node.is_available_for_free,
                     "available": True,
                     "quality": 90,
+                    "capacity": node.capacity,
                 }
                 for node in nodes
             ]
         }
     )
     assert (await fleet.countries(True, browser_proxy=True))["countries"]
+    for node in fleet.monitoring.return_value["nodes"]:
+        node["is_available_for_free"] = False
+    assert not (await fleet.countries(True, browser_proxy=True))["countries"]
+    assert (await fleet.countries(False, browser_proxy=True))["countries"]
     async with postgres.session() as session, session.begin():
         for method in await session.scalars(
             select(FleetMethodRecord).where(FleetMethodRecord.method == "managed")
