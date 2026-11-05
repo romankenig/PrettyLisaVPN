@@ -6,6 +6,16 @@
 # Public website and client files are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
+	# Only authenticated browser egress probes use this second hostname.
+	# The extension keeps the API control plane reachable outside its proxy.
+	@browser_probe {
+		method GET
+		path_regexp browser_probe ^/vpn/sessions/[0-9a-fA-F-]{36}/probe$
+	}
+	handle @browser_probe {
+		header Cache-Control "no-store"
+		reverse_proxy backend:8000
+	}
 	handle /api/payments/cardlink/callback {
 		request_body {
 			max_size 16KB

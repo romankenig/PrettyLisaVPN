@@ -6,6 +6,21 @@
 
 ## Unreleased
 
+### Chrome Extension — 0.1.0 / backend — 0.34.0
+
+- Add a browser-only Manifest V3 client with Windows-inspired UI, email OTP,
+  countries, five-device management, read-only subscription and real support API.
+- Add authenticated HTTPS forward-proxy leases on existing exit nodes, migration
+  0043, shared Free quota, short grants, browser heartbeat expiry and cleanup.
+  Native transport admission and device sleep behavior remain compatible.
+- Keep control-plane API requests reachable directly; route the authenticated
+  egress probe through the proxy using the public site's narrowly scoped alias.
+  Connected requires actual Chrome ownership and verified expected egress.
+- Use publicly trusted node-local certificates, credential-scoped proxy auth and
+  session-only secret storage. Never log browsing destinations or page contents.
+- See [Chrome handoff](docs/chrome-extension.md) for DNS, build identity, live
+  verification and rollout requirements. This entry does not imply deployment.
+
 ### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0
 
 - Add native Apple apps and real Packet Tunnel extensions using existing encrypted

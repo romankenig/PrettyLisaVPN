@@ -127,7 +127,7 @@ class ClientVpnWorker:
                 node = next(item for item in locked if item.id == row.node_id)
                 relay = next((item for item in locked if item.id == row.relay_node_id), None)
                 identity = AccessIdentity(row.user_id, row.device_id, row.auth_session_id)
-                valid = self.enabled and await principals_valid(session, identity, now)
+                valid = self.enabled and await principals_valid(session, identity, now, row.method)
                 is_managed = base_method(row.method) != "wireguard"
                 if is_managed and not self.managed_enabled:
                     valid = False
@@ -150,6 +150,10 @@ class ClientVpnWorker:
                     row.status, row.code = "REVOKING", "VPN_ACCESS_ENDED"
                 elif row.expires_at <= now:
                     row.status, row.code = "REVOKING", "VPN_SESSION_EXPIRED"
+                elif (
+                    row.method == "https_proxy" and row.heartbeat_at + timedelta(seconds=90) <= now
+                ):
+                    row.status, row.code = "REVOKING", "VPN_HEARTBEAT_EXPIRED"
                 elif (
                     row.status in ("PROVISIONING", "READY")
                     and row.verified_at is None

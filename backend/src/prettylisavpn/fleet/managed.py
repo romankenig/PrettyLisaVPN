@@ -62,7 +62,11 @@ class ManagedVpnMethod(VpnMethod):
     async def grant_access(self, node: Node, access: Access) -> None:
         if not isinstance(access, ManagedAccess):
             raise FleetError("VPN_METHOD_UNSUPPORTED", 422)
-        method = MANAGED_METHODS[base_method(access.method)]
+        engine = (
+            "HTTPS_PROXY"
+            if access.method == "https_proxy"
+            else MANAGED_METHODS[base_method(access.method)].engine
+        )
         response = await self.transport.call(
             node,
             "managed-grant",
@@ -70,7 +74,7 @@ class ManagedVpnMethod(VpnMethod):
                 "access": {
                     "id": str(access.id),
                     "purpose": access.purpose,
-                    "method": method.engine,
+                    "method": engine,
                     "port": access.listen_port,
                     "secret": lease_credential(self.key, access.id, node.id).get_secret_value(),
                     "expires_at": access.expires_at.isoformat(),

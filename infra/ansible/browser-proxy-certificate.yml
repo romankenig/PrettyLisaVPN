@@ -1,0 +1,47 @@
+---
+# Run against an enrolled exit node with: -e proxy_host=proxy-nl.prettylisavpn.com
+# DNS must point directly to that node. Keep port 80 available for HTTP-01 renewal.
+- name: Prepare public TLS for a browser-only proxy
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Validate owned public hostname and supported host
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - proxy_host is match('^proxy-[a-z0-9-]+\.prettylisavpn\.com$')
+    - name: Install distribution certificate automation
+      ansible.builtin.apt:
+        name: [certbot, dnsutils]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Check direct public DNS binding
+      ansible.builtin.command:
+        argv: [dig, '+short', A, '{{ proxy_host }}', '@1.1.1.1']
+      changed_when: false
+      register: proxy_dns
+    - name: Require the enrolled exit address
+      ansible.builtin.assert:
+        that:
+          - ansible_host in proxy_dns.stdout_lines
+    - name: Obtain or retain the public certificate
+      ansible.builtin.command:
+        argv:
+          - certbot
+          - certonly
+          - --standalone
+          - --non-interactive
+          - --agree-tos
+          - --register-unsafely-without-email
+          - --keep-until-expiring
+          - --domain
+          - '{{ proxy_host }}'
+      register: certificate_result
+      changed_when: "'successfully' in certificate_result.stdout | lower"
+    - name: Enable automatic renewal
+      ansible.builtin.systemd_service:
+        name: certbot.timer
+        enabled: true
+        state: started

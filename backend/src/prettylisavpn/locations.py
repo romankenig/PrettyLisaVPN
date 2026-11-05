@@ -1,6 +1,6 @@
 """Country metadata retained while real VPN connectivity is being rebuilt."""
 
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -39,7 +39,9 @@ class Countries(BaseModel):
 
 @router.get("/countries", response_model=Countries)
 async def countries(
-    request: Request, token: Annotated[str | None, Depends(bearer_token)]
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+    method: Literal["https_proxy"] | None = None,
 ) -> Countries | JSONResponse:
     if token is None:
         return error_response("authentication_required", 401)
@@ -47,8 +49,12 @@ async def countries(
     try:
         if cast(Settings, request.app.state.fleet_settings).fleet_enabled:
             account = await auth.me(token)
-            snapshot = await cast(FleetService, request.app.state.fleet).countries(
-                free_only=entitlements_for_plan(account.plan).free_nodes_only
+            fleet = cast(FleetService, request.app.state.fleet)
+            free_only = entitlements_for_plan(account.plan).free_nodes_only
+            snapshot = (
+                await fleet.countries(free_only=free_only, browser_proxy=True)
+                if method == "https_proxy"
+                else await fleet.countries(free_only=free_only)
             )
             return Countries.model_validate(snapshot)
         await auth.authenticate(token)
