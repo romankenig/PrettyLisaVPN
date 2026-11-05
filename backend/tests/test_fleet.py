@@ -301,7 +301,8 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
         (SubscriptionPlan.PLATINUM, False),
     ],
 )
-async def test_country_ratings_respect_effective_plan(plan, free_only):
+@pytest.mark.parametrize("method", [None, "https_proxy"])
+async def test_country_ratings_respect_effective_plan(plan, free_only, method):
     fleet, auth = AsyncMock(), AsyncMock()
     auth.me.return_value = SimpleNamespace(plan=plan)
     fleet.countries.return_value = {
@@ -320,9 +321,15 @@ async def test_country_ratings_respect_effective_plan(plan, free_only):
         AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
     ):
         assert (
-            await client.get("/vpn/countries", headers={"Authorization": "Bearer user"})
+            await client.get(
+                "/vpn/countries",
+                params={"method": method} if method else {},
+                headers={"Authorization": "Bearer user"},
+            )
         ).json()["autopilot"]["quality"] == 90
-    fleet.countries.assert_awaited_once_with(free_only=free_only)
+    fleet.countries.assert_awaited_once_with(
+        free_only=free_only, **({"browser_proxy": True} if method else {})
+    )
 
 
 async def test_active_users_still_receive_full_synthetic_probe():

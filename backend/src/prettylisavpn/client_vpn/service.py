@@ -16,7 +16,7 @@ from prettylisavpn.client_vpn.domain import (
     allocate_address,
     deadline,
 )
-from prettylisavpn.client_vpn.methods import base_method, profile
+from prettylisavpn.client_vpn.methods import base_method, lease_credential, profile
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.config import Settings
@@ -32,7 +32,9 @@ from prettylisavpn.users.domain import UserStatus
 from prettylisavpn.users.model import UserRecord
 
 
-async def principals_valid(session: AsyncSession, identity: AccessIdentity, now: datetime) -> bool:
+async def principals_valid(
+    session: AsyncSession, identity: AccessIdentity, now: datetime, method: str = "wireguard"
+) -> bool:
     user = await session.get(UserRecord, identity.user_id)
     device = await session.get(DeviceRecord, identity.device_id)
     auth = await session.get(AuthSessionRecord, identity.session_id)
@@ -42,12 +44,18 @@ async def principals_valid(session: AsyncSession, identity: AccessIdentity, now:
         and device
         and device.user_id == identity.user_id
         and device.status == DeviceStatus.ACTIVE
-        and device.platform
-        in (
-            DevicePlatform.ANDROID,
-            DevicePlatform.WINDOWS,
-            DevicePlatform.IOS,
-            DevicePlatform.MACOS,
+        and (
+            (device.platform == DevicePlatform.CHROME_EXTENSION and method == "https_proxy")
+            or (
+                method != "https_proxy"
+                and device.platform
+                in (
+                    DevicePlatform.ANDROID,
+                    DevicePlatform.WINDOWS,
+                    DevicePlatform.IOS,
+                    DevicePlatform.MACOS,
+                )
+            )
         )
         and auth
         and auth.user_id == identity.user_id
@@ -79,7 +87,25 @@ async def view(
         "heartbeat_required": False,
         "removed_at": row.removed_at,
     }
-    if row.status == "READY" and managed:
+    if row.method == "https_proxy":
+        result["heartbeat_required"] = True
+    if row.status == "READY" and row.method == "https_proxy":
+        result["configuration"] = {
+            "proxy": {
+                "scheme": "https",
+                "host": method.configuration["proxy_host"],
+                "port": row.engine_port,
+                "username": str(row.id),
+                "password": lease_credential(
+                    settings.managed_vpn_secret if settings else None, row.id, row.node_id
+                ).get_secret_value(),
+            },
+            "expected_egress_ips": node.expected_egress_ips,
+            "scope": "browser",
+            "dns": "remote",
+            "ipv6": "blocked",
+        }
+    elif row.status == "READY" and managed:
         assert row.engine_port is not None
         result["configuration"] = {
             "engine_profile": profile(
@@ -143,7 +169,7 @@ class ClientVpnService:
             await session.scalar(
                 select(UserRecord).where(UserRecord.id == identity.user_id).with_for_update()
             )
-            if not await principals_valid(session, identity, now):
+            if not await principals_valid(session, identity, now, data.method):
                 raise FleetError("ACCOUNT_UNAVAILABLE", 403)
             previous = await session.scalar(
                 select(ClientLeaseRecord).where(
@@ -241,6 +267,8 @@ class ClientVpnService:
                     FleetMethodRecord, (node.id, "managed" if managed else "wireguard")
                 )
                 if not method or method.state != "READY" or not method.public_key:
+                    continue
+                if data.method == "https_proxy" and not method.configuration.get("proxy_host"):
                     continue
                 leases = list(
                     (

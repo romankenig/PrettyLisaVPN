@@ -58,6 +58,43 @@ def test_grant_journal_precedes_mutation_and_retry_reuses_identity(host):
             managed.grant({**grant, **changed})
 
 
+def test_proxy_requires_public_certificate_on_initial_grant_and_renewal(host, monkeypatch):
+    root, _ = host
+    managed.write(root / "state.json", json.dumps({"proxy_host": "proxy-nl.prettylisavpn.com"}))
+    certificate = Mock(return_value={"tls_certificate": "test", "tls_key": "test"})
+    monkeypatch.setattr(managed, "proxy_certificate", certificate)
+    grant = access("HTTPS_PROXY")
+    managed.lease_path(grant["id"]).with_suffix(".ready").write_text("ready")
+    assert managed.grant(grant) == {"granted": True}
+    certificate.assert_called_once_with("proxy-nl.prettylisavpn.com")
+    certificate.side_effect = managed.Failure("INVALID_PUBLIC_CERTIFICATE")
+    with pytest.raises(managed.Failure, match="INVALID_PUBLIC_CERTIFICATE"):
+        managed.grant(grant)
+    assert certificate.call_count == 2
+
+
+def test_proxy_certificate_uses_public_trust_exact_hostname_and_matching_key(tmp_path, monkeypatch):
+    monkeypatch.setattr(managed, "CERTIFICATES", tmp_path)
+    folder = tmp_path / "proxy-nl.prettylisavpn.com"
+    folder.mkdir()
+    (folder / "fullchain.pem").write_text("certificate fixture")
+    (folder / "privkey.pem").write_text("key fixture")
+    command, context = Mock(), Mock()
+    monkeypatch.setattr(managed, "cmd", command)
+    monkeypatch.setattr(managed.ssl, "SSLContext", Mock(return_value=context))
+    managed.proxy_certificate(folder.name)
+    argv = command.call_args.args[0]
+    assert argv[:2] == ["openssl", "verify"]
+    assert argv[argv.index("-verify_hostname") + 1] == folder.name
+    assert argv[argv.index("-CApath") + 1] == "/etc/ssl/certs"
+    context.load_cert_chain.assert_called_once_with(
+        folder / "fullchain.pem", folder / "privkey.pem"
+    )
+    for name in ("../../private", "proxy-nl.prettylisavpn.com/other", "127.0.0.1;echo"):
+        with pytest.raises(managed.Failure, match="PROXY_HOST_INVALID"):
+            managed.proxy_certificate(name)
+
+
 def test_revoke_tombstone_is_durable_even_when_process_cannot_be_stopped(host):
     _, command = host
     grant = access()

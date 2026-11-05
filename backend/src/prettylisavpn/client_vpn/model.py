@@ -46,7 +46,7 @@ class ClientLeaseRecord(Base):
             "'hysteria','hysteria_relay',"
             "'sstp','sstp_relay','softether','softether_relay',"
             "'shadowsocks2022','shadowsocks2022_relay','hysteria2','hysteria2_relay',"
-            "'hysteria2_salamander','hysteria2_salamander_relay')",
+            "'hysteria2_salamander','hysteria2_salamander_relay','https_proxy')",
             name="ck_client_lease_method",
         ),
         Index(

@@ -1,3 +1,20 @@
+# Chrome Extension navigation — 0.1.0
+
+Windows is the visual reference and remains unchanged. Chrome popup uses sidebar
+Home / Settings / About after email OTP. Home selects AUTO/country and starts or
+disconnects a browser-only HTTPS lease; Connected requires a verified proxy probe.
+Settings opens Devices (confirmation before revoke), read-only Subscription, or
+confirmed Logout. About opens FAQ/privacy and the real support request form.
+Subscription links externally to `https://prettylisavpn.com/#pricing`; no payment
+initiation is implemented. Closing the popup keeps the lease; closing the browser
+ends the in-memory sign-in and server heartbeat/TTL removes remaining access.
+Browser restart/auth revocation returns to OTP. RU/EN language choice persists.
+
+Implemented adapters call the existing private APIs and the new `https_proxy`
+contract. They require backend 0.34.0, migration 0043 and node provisioning; current
+production activation is recorded separately in [Chrome handoff](chrome-extension.md).
+Fixture UI captures must not be described as a live proxy connection.
+
 # Apple navigation — iOS 0.1.0 / macOS 0.1.0
 
 Windows routes and version remain unchanged. Apple adds native OTP → authenticated

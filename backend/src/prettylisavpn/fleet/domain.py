@@ -179,6 +179,11 @@ class ManagedAccess(Access):
 class ManagedConfig(Value):
     server_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]{1,251}[A-Za-z0-9]$")
     reality_target: IPv4Address
+    proxy_host: str | None = Field(
+        default=None,
+        pattern=r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$",
+        max_length=253,
+    )
 
     @field_validator("reality_target")
     @classmethod
