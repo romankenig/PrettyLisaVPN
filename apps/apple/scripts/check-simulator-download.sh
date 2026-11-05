@@ -8,7 +8,7 @@ trap 'xcrun simctl shutdown "$device" || true; rm -rf "$unpacked"' EXIT
 ditto -x -k artifacts/PrettyLisaVPN-iOS-Simulator.zip "$unpacked"
 app="$unpacked/PrettyLisaVPN.app"
 test "$(/usr/libexec/PlistBuddy -c 'Print DTPlatformName' "$app/Info.plist")" = iphonesimulator
-lipo -verify_arch arm64 "$app/PrettyLisaVPN"
+lipo "$app/PrettyLisaVPN" -verify_arch arm64
 bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
