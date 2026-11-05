@@ -50,6 +50,7 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
     new_downloads = (
         "chrome-extension.zip",
         "ios-unsigned.zip",
+        "ios-simulator.zip",
         "macos-unsigned.zip",
         "ios-sources.tar.gz",
         "macos-sources.tar.gz",

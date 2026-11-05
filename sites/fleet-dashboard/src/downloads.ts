@@ -6,7 +6,7 @@ export const installNotes: Record<Platform, string> = {
   android: "Установите APK поверх приложения.",
   windows: "Сохраните и запустите установщик EXE.",
   chrome: "Распакуйте ZIP. В chrome://extensions включите режим разработчика и выберите «Загрузить распакованное расширение». Защита действует только в Chrome.",
-  ios: "Неподписанная сборка для устройства. Для установки на iPhone нужны подпись и профиль Apple; это не App Store или TestFlight. Работа VPN на устройстве пока не подтверждена.",
+  ios: "Для Appetize и Apple Simulator скачайте ZIP «Симулятор» (iOS 17+). Для установки сборки «iPhone» нужны подпись и профиль Apple. Симулятор предназначен для проверки интерфейса; работа реального VPN на устройстве пока не подтверждена.",
   macos: "Неподписанная сборка приложения. Для работы VPN нужны подпись Apple и разрешения Network Extension. Работа VPN на Mac пока не подтверждена.",
 };
 export const downloadUrls: Record<Platform, string> = {
@@ -22,7 +22,8 @@ export const sourceUrls: Partial<Record<Platform, string>> = {
   ios: "/dashboard/downloads/ios-sources.tar.gz",
   macos: "/dashboard/downloads/macos-sources.tar.gz",
 };
-export type Client = { version: string; published_at: string; bytes: number; has_sources?: true; abi?: "arm64-v8a" };
+export const simulatorUrl = "/dashboard/downloads/ios-simulator.zip";
+export type Client = { version: string; published_at: string; bytes: number; has_sources?: true; has_simulator?: true; abi?: "arm64-v8a" };
 export type Clients = Partial<Record<Platform, Client>>;
 
 export function readClients(value: unknown): Clients {
@@ -37,6 +38,7 @@ export function readClients(value: unknown): Clients {
     if (platform === "chrome" && client.package_kind !== "unpacked-extension") continue;
     result[platform] = { version: client.version, published_at: client.published_at, bytes: client.bytes };
     if (platform === "android" && client.abi === "arm64-v8a") result[platform]!.abi = "arm64-v8a";
+    if (platform === "ios" && client.simulator_url === simulatorUrl && typeof client.simulator_sha256 === "string" && /^[a-f0-9]{64}$/.test(client.simulator_sha256) && typeof client.simulator_bytes === "number" && client.simulator_bytes > 0) result[platform]!.has_simulator = true;
     if (sourceUrls[platform] && client.sources_url === sourceUrls[platform] && typeof client.sources_sha256 === "string" && /^[a-f0-9]{64}$/.test(client.sources_sha256)) result[platform]!.has_sources = true;
   }
   return result;

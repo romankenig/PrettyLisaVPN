@@ -110,7 +110,9 @@ jobs:
       - name: Package corresponding sources, licenses and exact build identity
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         run: bash apps/apple/scripts/package.sh
-      - name: Prepare unsigned device downloads with corresponding sources
+      - name: Install and launch the exact Simulator download
+        run: bash apps/apple/scripts/check-simulator-download.sh
+      - name: Prepare device and Simulator downloads with corresponding sources
         run: |
           for platform in ios macos; do
             python3 infra/deployment/prepare_client_download.py --platform "$platform" \
