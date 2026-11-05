@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Public website — 0.3.1
+
+- Apply provider moderation feedback in all six languages: permanent document
+  buttons, neutral product copy, no personal seller details, and `platega test`.
+- Replace the Android service-selection screenshot with the verified native
+  account/home capture and remove the old asset from the public bundle.
+- Reject RUB catalog/reference prices above 10,000 RUB before publication;
+  preserve the approved 399 RUB / 5 USD offer. Real checkout remains disabled.
+- See [moderation handoff](docs/website-platega-moderation.md) for scope,
+  verification, final settlement-limit follow-up and the unreviewed bot/channel.
+
 ### Public website — 0.3.0
 
 - Add Free/Premium pricing and a clickable purchase path for Platega moderation:

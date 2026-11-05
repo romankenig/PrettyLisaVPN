@@ -11,7 +11,12 @@ import {
   legalKeys,
   routeFor,
 } from "../src/structure.mjs";
-import { website, releaseBlockers } from "../src/model.mjs";
+import {
+  website,
+  releaseBlockers,
+  assertPricePolicy,
+  MAX_TRANSACTION_RUB_MINOR,
+} from "../src/model.mjs";
 import { releaseMetadata } from "../src/downloads.mjs";
 import { build, dist, root } from "../scripts/build.mjs";
 import { createPreviewServer } from "../scripts/preview.mjs";
@@ -43,7 +48,6 @@ test("all six client languages have complete UI, download instructions and four 
     assert.deepEqual(shape(locales[code]), shape(locales.ru), code);
     assert.ok(windows.includes(`"${code}"`), code);
     assert.ok(android.includes(`"${code}"`), code);
-    assert.ok(locales[code].footer.seller.includes("183475316809"));
     assert.equal(
       (JSON.stringify(locales[code]).match(/prettylisavpn(?!\.com)/g) ?? [])
         .length,
@@ -70,14 +74,11 @@ test("home has five sections including plans, one launch notice and seven distin
     assert.doesNotMatch(questions, /\[[^\]]+\]/);
     assert.match(questions, /<p>[^<]*<a href="[^"]*\/download\/android\/">/);
     assert.match(questions, /<a href="mailto:help@prettylisavpn.com">/);
-    const splitAnswer = questions
+    const protectionAnswer = questions
       .split('<div class="faq-answer">')[3]
       .split("</details>")[0];
-    assert.equal((splitAnswer.match(/<p>/g) ?? []).length, 6);
-    assert.match(splitAnswer, /YouTube/);
-    assert.match(splitAnswer, /Telegram/);
-    assert.match(splitAnswer, /\*\.youtube.com/);
-    assert.doesNotMatch(splitAnswer, /<a /);
+    assert.match(protectionAnswer, /https/i);
+    assert.doesNotMatch(protectionAnswer, /<a /);
     for (const platform of platforms) {
       const page = all.get(routeFor(language, `/download/${platform.id}/`));
       assert.ok(page);
@@ -100,7 +101,7 @@ test("purchase path exposes exact owner prices, working fallback and honest paym
   assert.deepEqual(website.prices, { RUB: 39900, USD: 500 });
   assert.deepEqual(website.referencePrices, { RUB: 49900, USD: 700 });
   assert.equal(website.period, "CALENDAR_MONTH");
-  assert.equal(website.seller.claimsEmail, "feedback@prettylisavpn.com");
+  assert.equal(website.seller.email, "help@prettylisavpn.com");
   const all = pages();
   for (const language of languages) {
     const html = all.get(routeFor(language));
@@ -158,7 +159,7 @@ test("purchase path exposes exact owner prices, working fallback and honest paym
     assert.ok(
       terms.includes(escape(locales[language].pricing.unavailableText)),
     );
-    assert.match(html, /href="mailto:feedback@prettylisavpn.com"/);
+    assert.doesNotMatch(html, /feedback@prettylisavpn.com/);
     assert.doesNotMatch(html, /<form|paymentMethod|X-Secret|X-MerchantId/);
   }
 });
@@ -207,6 +208,42 @@ test("all links and anchors resolve; documents and language links preserve conte
     assert.ok(!all.has(route));
   assert.equal(legalKeys.length, 4);
 });
+test("moderation documents and marker are public on every page without personal seller data or access claims", () => {
+  for (const [route, html] of pages()) {
+    assert.match(html, /<nav class="legal-links" id="documents"/);
+    assert.equal(
+      (html.match(/class="document-button"/g) ?? []).length,
+      4,
+      route,
+    );
+    assert.equal((html.match(/platega test/g) ?? []).length, 1, route);
+    assert.doesNotMatch(
+      html,
+      /183475316809|Кениг|Роман|Сергеевич|tax id|steuernummer|identifiant fiscal|identificación fiscal|税号|самозанят|\bИНН\b|feedback@/i,
+      route,
+    );
+    assert.doesNotMatch(
+      html,
+      /(?<![а-я])обход|блокиров|цензур|\bDPI\b|ТСПУ|глушил|белых списк|bypass|unblock|censorship|whitelist|umgeh|zensur|contourn|censure|desbloque|censura|绕过|审查制度|封锁|YouTube|Telegram|Instagram|Gosuslugi|Госуслуги|android-services/i,
+      route,
+    );
+  }
+});
+test("catalog rejects over-limit prices before any pages can be published", () => {
+  assert.equal(MAX_TRANSACTION_RUB_MINOR, 1_000_000);
+  assert.doesNotThrow(() => assertPricePolicy());
+  for (const key of ["prices", "referencePrices"]) {
+    const patched = (currency, amount) => ({
+      ...website,
+      [key]: { ...website[key], [currency]: amount },
+    });
+    assert.doesNotThrow(() => assertPricePolicy(patched("RUB", 1_000_000)));
+    for (const value of [1_000_001, -1, 0, 39900.5, NaN, Infinity, "39900"])
+      assert.throws(() => assertPricePolicy(patched("RUB", value)));
+    assert.throws(() => assertPricePolicy(patched("USD", 701)));
+    assert.throws(() => assertPricePolicy(patched("EUR", 500)));
+  }
+});
 test("release metadata is optional, validated and cannot change download destinations", () => {
   const data = {
     version: "0.21.0",
@@ -244,7 +281,7 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
     await readFile(path.join(root, "assets/screenshots/sources.json"), "utf8"),
   );
   const raw = JSON.stringify(provenance);
-  for (const file of ["windows-home", "android-services"]) {
+  for (const file of ["windows-home", "android-home"]) {
     const bytes = await readFile(
       path.join(root, `assets/screenshots/${file}.png`),
     );
@@ -259,7 +296,7 @@ test("commercial launch remains separate from authorized informational publicati
   assert.equal(website.providers.cardlink.approved, false);
   assert.equal(website.providers.platega.approved, false);
   assert.equal(website.providers.platega.configured, false);
-  assert.ok(releaseBlockers().length >= 6);
+  assert.equal(releaseBlockers().length, 5);
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,
     env: { ...process.env, SITE_RELEASE: "1" },
@@ -309,9 +346,13 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "downloads.mjs",
     "style.css",
     "screenshots/windows-home.png",
-    "screenshots/android-services.png",
+    "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
+  assert.equal(
+    (await fetch(origin + "/assets/screenshots/android-services.png")).status,
+    404,
+  );
   for (const route of ["/readiness/", "/plans/", "/account/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);

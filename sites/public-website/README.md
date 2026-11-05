@@ -1,10 +1,12 @@
-# PrettyLisaVPN website · 0.3.0
+# PrettyLisaVPN website · 0.3.1
 
 Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents and six fully translated languages.
 The owner authorized public publication. The purchase UI displays the confirmed
 switchable monthly prices (399 RUB / 5 USD, reference 499 RUB / 7 USD) and a clickable
 unavailability notice. Commercial checkout remains separate.
+Every page includes four document buttons and the temporary `platega test`
+moderation marker. Catalog generation rejects RUB prices over 10,000 RUB.
 
 ## Run and verify
 

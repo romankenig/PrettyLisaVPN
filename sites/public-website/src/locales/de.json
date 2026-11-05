@@ -1,7 +1,7 @@
 {
   "name": "deutsch",
   "title": "vpn für ihren alltag",
-  "description": "PrettyLisaVPN für android und windows. wählen sie, welchen datenverkehr sie schützen möchten, und verbinden sie sich mit einem konto.",
+  "description": "PrettyLisaVPN für android und windows. eine verschlüsselte verbindung und ein konto für ihre geräte.",
   "nav": {
     "features": "funktionen",
     "download": "herunterladen",
@@ -14,22 +14,22 @@
   },
   "launch": "start für den 15. november geplant",
   "hero": {
-    "title": "ihr internet.\nihre regeln.",
+    "title": "verbindungsschutz.\nauf ihren geräten.",
     "text": "vpn für den alltag. auf telefon und computer — mit verständlichen einstellungen und einem konto.",
     "button": "gerät auswählen",
     "link": "so funktioniert es"
   },
   "features": {
     "eyebrow": "weniger schritte",
-    "title": "eine verbindung,\ndie sich ihnen anpasst",
+    "title": "eine verschlüsselte verbindung\nfür den alltag",
     "items": [
       {
-        "title": "schützen sie, was sie brauchen",
-        "text": "den gesamten datenverkehr, ausgewählte dienste oder alles außer ihrer auswahl. die listen für beide modi werden getrennt gespeichert."
+        "title": "schutz des netzwerkverkehrs",
+        "text": "vpn stellt eine verschlüsselte verbindung zwischen ihrem gerät und dem server des dienstes her."
       },
       {
-        "title": "die passende verbindungsart",
-        "text": "die app probiert verfügbare verbindungsarten aus und merkt sich die erfolgreiche. sie können die verbindungsart auch selbst auswählen."
+        "title": "übersichtliche bedienung",
+        "text": "mit einer taste verbinden und trennen. die app zeigt den verbindungsstatus an."
       },
       {
         "title": "ein konto, fünf geräte",
@@ -40,7 +40,7 @@
   "screens": {
     "caption": "echte app-ansichten · demodaten",
     "windows": "startseite der windows-app",
-    "android": "dienstauswahl in der android-app",
+    "android": "startbildschirm der android-app",
     "settings": "einstellungen der verbindungsarten für windows"
   },
   "platforms": {
@@ -88,7 +88,7 @@
     "steps": [
       "laden sie die app herunter und installieren sie sie. bestätigen sie die vpn-berechtigung des systems, wenn ihr gerät danach fragt.",
       "geben sie ihre e-mail-adresse und den einmalcode aus der nachricht ein.",
-      "wählen sie ein land, legen sie den zu schützenden datenverkehr fest und tippen sie auf „verbinden“."
+      "wählen sie ein land und tippen sie auf verbinden. der startbildschirm zeigt den verbindungsstatus an."
     ],
     "upcoming": "diese option wird später verfügbar sein. bis dahin können sie die apps für android und windows nutzen.",
     "alternatives": "andere geräte",
@@ -119,12 +119,12 @@
         "a": "während des bezahlten zeitraums gibt es mit premium kein tägliches zeitlimit. das abonnement gilt für einen kalendermonat und wird manuell verlängert. tarif und zugangszeitraum sind in der app sichtbar."
       },
       {
-        "q": "kann ich nur ausgewählte dienste verbinden?",
-        "a": "mit Split-Tunneling wählst du, was über das VPN läuft und was deine normale Verbindung nutzt. ändere den Modus auf der Startseite der App unter „was schützen“.\n\n„alles“ — der gesamte Datenverkehr läuft über das VPN.\n\n„ausgewählte“ — nur Dienste aus deiner Liste nutzen das VPN, etwa YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n„außer ausgewählten“ — umgekehrt: Dienste aus der Liste verbinden sich direkt, alles andere läuft über das VPN. zum Beispiel kannst du Gosuslugi und MAX ausnehmen.\n\ntippe auf „Dienste wählen“ und aktiviere die gewünschten Dienste oder füge ein eigenes Muster hinzu: youtube.com für diese Domain, *.youtube.com für ihre Subdomains. ein Dienst kann mehrere Domains nutzen; ein fertiger Eintrag ist deshalb meist einfacher.\n\nbeide Modi speichern eigene Listen. beim Speichern wird das VPN getrennt — verbinde dich erneut, um die Auswahl anzuwenden."
+        "q": "was schützt ein vpn?",
+        "a": "vpn verschlüsselt den datenverkehr zwischen ihrem gerät und dem server des dienstes, auch in öffentlichen wlan-netzen. nutzen sie außerdem https, app-updates und sichere anmeldeverfahren zum schutz ihrer konten. vpn ersetzt keinen geräteschutz."
       },
       {
         "q": "vpn verbindet sich nicht. was tun?",
-        "a": "prüfen sie das internet ohne vpn, aktualisieren sie die app und versuchen sie in den einstellungen ein anderes land oder eine andere verbindungsart. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
+        "a": "prüfen sie ihre internetverbindung ohne vpn und aktualisieren sie die app. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
       },
       {
         "q": "der anmeldecode kommt nicht an?",
@@ -137,26 +137,26 @@
     ]
   },
   "footer": {
-    "seller": "Кениг Роман Сергеевич · selbstständig, russland · steuernummer 183475316809",
     "copyright": "PrettyLisaVPN",
     "terms": "nutzungsbedingungen",
     "privacy": "datenschutzerklärung",
     "refunds": "erstattungen und beschwerden",
     "payments": "zahlung, kündigung und verlängerung",
-    "claims": "reklamationen & zahlungen"
+    "claims": "reklamationen & zahlungen",
+    "documents": "dokumente"
   },
   "legal": {
-    "updated": "stand: 4. november 2026",
+    "updated": "stand: 5. november 2026",
     "terms": [
-      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com. reklamationen & zahlungen: feedback@prettylisavpn.com.",
+      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. fragen zum dienst, zu zahlungen und reklamationen: help@prettylisavpn.com.",
       "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
       "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
-      "sie können den gesamten datenverkehr, ausgewählte dienste oder alles außer ausgewählten diensten über vpn leiten. geschwindigkeit und verfügbarkeit hängen von netzwerk, gerät, server und externen ressourcen ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
+      "vpn verschlüsselt die verbindung zwischen ihrem gerät und dem server des dienstes. geschwindigkeit und verfügbarkeit hängen vom netzwerk, gerät und server ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
       "nutzen sie den dienst rechtmäßig. unbefugter zugriff auf fremde systeme, schadsoftware, spam und angriffe auf die infrastruktur sind unzulässig.",
       "wenden sie sich bei fragen zur app an den support. zahlungsbedingungen und die bearbeitung finanzieller ansprüche werden auf gesonderten seiten beschrieben. diese bedingungen schränken keine rechte nach anwendbarem recht ein."
     ],
     "privacy": [
-      "für die datenverarbeitung durch PrettyLisaVPN ist Кениг Роман Сергеевич, steuernummer 183475316809, verantwortlich. fragen zu personenbezogenen daten: help@prettylisavpn.com.",
+      "fragen zur verarbeitung personenbezogener daten bei PrettyLisaVPN: help@prettylisavpn.com.",
       "für den kontobetrieb werden e-mail-adresse, kennung, status sowie erstellungs- und änderungsdatum verwendet. die geräteverwaltung verwendet die installationskennung, gerätename und plattform sowie zeitpunkte der anmeldung und des zugangsentzugs.",
       "der dienst verarbeitet informationen zum tarif, zugangszeitraum, zu anmeldeereignissen, vpn-sitzungen und technischen verbindungsergebnissen. sie werden für die autorisierung, zeiterfassung, verbindungsverwaltung, unterstützung und bewertung der dienstleistung benötigt.",
       "die produktanalyse erfasst ereignisse der kontonutzung und den technischen betrieb des dienstes. ihre ereignisse enthalten keinen browserverlauf, keine adressen besuchter seiten, dns-anfragen oder paketinhalte. dies beschreibt die analyse und behauptet nicht, dass keinerlei technische protokolle existieren.",
@@ -166,7 +166,7 @@
       "für auskunft über ihre daten, eine berichtigung oder löschung schreiben sie dem support von der e-mail-adresse ihres kontos. möglicherweise müssen sie bestätigen, dass die adresse ihnen gehört."
     ],
     "refunds": [
-      "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an feedback@prettylisavpn.com.",
+      "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an help@prettylisavpn.com.",
       "geben sie die e-mail-adresse ihres kontos, datum und betrag der zahlung, die währung, gegebenenfalls die transaktionsnummer und den grund ihrer anfrage an. bei technischen problemen sind plattform, app-version, server, ungefährer zeitpunkt und fehlertext hilfreich.",
       "senden sie keine vollständige kartennummer, cvc, banking-passwörter oder einmalcodes. machen sie nicht benötigte personenbezogene daten in beigefügten dokumenten unkenntlich.",
       "ansprüche werden unter berücksichtigung der umstände der anfrage, der erbrachten leistung und des anwendbaren rechts geprüft. nach der prüfung teilt der support die entscheidung und die nächsten schritte mit.",
@@ -179,7 +179,8 @@
       "die verlängerung erfolgt manuell. eine erneute zahlung über einen link ist eine separate zahlung. automatische abbuchungen und das speichern eines zahlungsmittels für künftige abbuchungen werden nicht verwendet.",
       "um das abonnement nicht zu verlängern, leisten sie keine weitere zahlung. der bereits gewährte zugangszeitraum bleibt bis zum angegebenen ablaufdatum bestehen.",
       "prüfen sie bei der zahlung tarif, währung, gesamtbetrag und gebührenangaben auf der zahlungsseite. kartendaten und cvc werden nur auf der zahlungsseite des anbieters eingegeben, nicht auf der website von PrettyLisaVPN oder in e-mails an den support.",
-      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an feedback@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt."
+      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt.",
+      "der höchstbetrag pro transaktion beträgt 10.000 RUB. guthabenaufladungen und frei wählbare beträge werden nicht angeboten. zahlungen sind noch nicht verfügbar."
     ]
   },
   "notFound": {

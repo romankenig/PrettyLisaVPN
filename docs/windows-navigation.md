@@ -1,14 +1,15 @@
-# Website navigation — 0.3.0
+# Website navigation — 0.3.1
 
 The public homepage adds `#pricing` and a RUB/USD radio switch with one visible
 price and Buy link; Free's zero price follows the selected currency too. Legal
-links live in the common footer. The link opens a payment-unavailability dialog, or navigates
+buttons live in the common footer on every page; a header "documents" link
+scrolls to them without JavaScript. The Buy link opens a payment-unavailability dialog, or navigates
 to the same notice under
 `/legal/payments/#payment-unavailable` without JavaScript. This is implemented UI;
 payment-provider/backend checkout integration remains unavailable. The payment
-placeholder uses `help@prettylisavpn.com`; pricing has no email. Written claims in
-legal documents/footer retain `feedback@prettylisavpn.com`. Technical support uses
-the existing help address. Client routes and auth guards are unchanged. See
+placeholder uses `help@prettylisavpn.com`; pricing has no email. Legal documents,
+written claims and the footer now use the same help address. The footer displays
+the temporary moderation marker `platega test`. Client routes and auth guards are unchanged. See
 [website handoff](website-platega-moderation.md).
 
 # Apple navigation — iOS 0.1.0 / macOS 0.1.0

@@ -1,15 +1,10 @@
 export const website = Object.freeze({
-  version: "0.3.0",
-  reviewedOn: "2026-11-04",
+  version: "0.3.1",
+  reviewedOn: "2026-11-05",
   mode: "prelaunch",
+  moderationMarker: "platega test",
   seller: Object.freeze({
-    name: "Кениг Роман Сергеевич",
-    status: "Самозанятый (НПД)",
-    country: "Россия",
-    inn: "183475316809",
-    address: null,
     email: "help@prettylisavpn.com",
-    claimsEmail: "feedback@prettylisavpn.com",
   }),
   prices: Object.freeze({ RUB: 39900, USD: 500 }),
   referencePrices: Object.freeze({ RUB: 49900, USD: 700 }),
@@ -35,12 +30,31 @@ export const website = Object.freeze({
   }),
 });
 
+// RUB limit supplied by the provider; all amounts are integer minor units.
+export const MAX_TRANSACTION_RUB_MINOR = 1_000_000;
+// Only the owner's existing $5 offer / $7 reference price is approved for display.
+// This is not an exchange rate or a USD transaction limit from the provider.
+const MAX_APPROVED_USD_PRICE_MINOR = 700;
+export function assertPricePolicy(config = website) {
+  for (const prices of [config.prices, config.referencePrices]) {
+    if (Object.keys(prices).sort().join(",") !== "RUB,USD")
+      throw new Error("Unapproved price currency");
+    for (const [currency, amount] of Object.entries(prices)) {
+      const maximum =
+        currency === "RUB"
+          ? MAX_TRANSACTION_RUB_MINOR
+          : MAX_APPROVED_USD_PRICE_MINOR;
+      if (!Number.isSafeInteger(amount) || amount <= 0 || amount > maximum)
+        throw new Error(`Price exceeds approved policy: ${currency}`);
+    }
+  }
+}
+
 export function releaseBlockers(config = website) {
   return [
-    !config.seller.address && "Не указан адрес для письменных претензий",
     !config.legalApproved && "Документы не утверждены",
     !config.refundPolicyApproved && "Не утверждены правила возврата",
-    !config.receiptProcessApproved && "Не определена отправка чеков НПД",
+    !config.receiptProcessApproved && "Не определена отправка чеков",
     !config.publicDownloadsReady &&
       "Нет общедоступной доставки клиентских сборок",
     !config.paymentAdapterImplemented &&

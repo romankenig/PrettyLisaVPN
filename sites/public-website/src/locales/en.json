@@ -1,7 +1,7 @@
 {
   "name": "english",
   "title": "vpn for your everyday needs",
-  "description": "PrettyLisaVPN for android and windows. choose which traffic to protect and connect with one account.",
+  "description": "PrettyLisaVPN for android and windows. an encrypted connection and one account for your devices.",
   "nav": {
     "features": "features",
     "download": "download",
@@ -14,22 +14,22 @@
   },
   "launch": "launch planned for november 15",
   "hero": {
-    "title": "your internet.\nyour rules.",
+    "title": "connection protection.\non your devices.",
     "text": "vpn for everyday needs. on your phone and computer — with clear settings and one account.",
     "button": "choose your device",
     "link": "how it works"
   },
   "features": {
     "eyebrow": "fewer steps",
-    "title": "a connection\nthat adapts to you",
+    "title": "an encrypted connection\nfor everyday needs",
     "items": [
       {
-        "title": "protect what you need",
-        "text": "all traffic, selected services or everything except your selection. lists for the two modes are saved separately."
+        "title": "protect your network traffic",
+        "text": "vpn creates an encrypted connection between your device and the service server."
       },
       {
-        "title": "a connection method that fits",
-        "text": "the app tries available methods and remembers the successful one. you can also choose a method manually."
+        "title": "clear controls",
+        "text": "connect and disconnect with one button. the app displays your connection status."
       },
       {
         "title": "one account, five devices",
@@ -40,7 +40,7 @@
   "screens": {
     "caption": "actual app screens · demo data",
     "windows": "windows app home screen",
-    "android": "service selection in the android app",
+    "android": "android app home screen",
     "settings": "connection method settings for windows"
   },
   "platforms": {
@@ -88,7 +88,7 @@
     "steps": [
       "download and install the app. approve the system vpn permission if your device requests it.",
       "enter your email and the one-time code from the message.",
-      "choose a country, set which traffic to protect and tap ‘connect’."
+      "choose a country and press connect. the home screen will show your connection status."
     ],
     "upcoming": "this option will be available later. for now, you can use the android and windows apps.",
     "alternatives": "other devices",
@@ -119,12 +119,12 @@
         "a": "premium has no daily time limit during the paid period. a subscription lasts one calendar month and is renewed manually. your plan and access period are shown in the app."
       },
       {
-        "q": "can i connect only selected services?",
-        "a": "split tunneling lets you choose what uses the VPN and what uses your regular connection. change the mode in “what to protect” on the app’s home screen.\n\n“all” — all traffic uses the VPN.\n\n“selected” — only the services in your list use the VPN. for example, YouTube and Telegram; other websites and apps use your regular connection.\n\n“except selected” — the reverse: listed services connect directly, while other traffic uses the VPN. for example, you can exclude Gosuslugi and MAX.\n\ntap “choose services” and enable the ones you need, or add your own pattern: youtube.com for that domain, *.youtube.com for its subdomains. a service may use several domains, so a preset is usually easier.\n\nthe two modes have separate lists. saving changes disconnects the VPN — reconnect to apply your selection."
+        "q": "what does a vpn protect?",
+        "a": "vpn encrypts traffic between your device and the service server, including on public wi-fi. also use https, app updates and secure sign-in methods to protect your accounts. vpn does not replace device security."
       },
       {
         "q": "vpn will not connect. what should i do?",
-        "a": "check your internet without vpn, update the app and try another country or connection method in settings. if the error persists, send its text and the time it occurred to [support]."
+        "a": "check your internet connection without vpn and update the app. if the error persists, send its text and time to [support]."
       },
       {
         "q": "the sign-in code has not arrived?",
@@ -137,26 +137,26 @@
     ]
   },
   "footer": {
-    "seller": "Кениг Роман Сергеевич · self-employed, russia · tax id 183475316809",
     "copyright": "PrettyLisaVPN",
     "terms": "terms of service",
     "privacy": "privacy policy",
     "refunds": "refunds and complaints",
     "payments": "payment, cancellation and renewal",
-    "claims": "claims & payments"
+    "claims": "claims & payments",
+    "documents": "documents"
   },
   "legal": {
-    "updated": "updated november 4, 2026",
+    "updated": "updated november 5, 2026",
     "terms": [
-      "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com. claims & payments: feedback@prettylisavpn.com.",
+      "PrettyLisaVPN provides vpn access through apps for android and windows. for service, payment and complaint inquiries: help@prettylisavpn.com.",
       "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
       "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
-      "you can route all traffic, selected services or everything except selected services through vpn. speed and availability depend on the network, device, server and external resources. vpn does not replace device security or provide absolute anonymity.",
+      "vpn encrypts the connection between your device and the service server. speed and availability depend on the network, device and server. vpn does not replace device security or provide absolute anonymity.",
       "use the service lawfully. unauthorized access to other people's systems, malware, spam and attacks on infrastructure are prohibited.",
       "contact support for questions about the app. payment terms and the handling of monetary claims are described on separate pages. these terms do not limit rights granted by applicable law."
     ],
     "privacy": [
-      "Кениг Роман Сергеевич, tax id 183475316809, is responsible for data processing by PrettyLisaVPN. personal data inquiries: help@prettylisavpn.com.",
+      "for questions about personal data processing by PrettyLisaVPN: help@prettylisavpn.com.",
       "account operation uses an email address, identifier, status, and creation and modification dates. device management uses the installation identifier, device name and platform, and dates of sign-in and access revocation.",
       "the service processes information about the plan, access period, sign-in events, vpn sessions and technical connection results. this information is needed for authorization, time accounting, connection management, support and evaluation of service performance.",
       "product analytics records account usage events and the technical operation of the service. its events do not include browsing history, visited page addresses, dns queries or packet contents. this describes analytics and is not a claim that no technical logs exist.",
@@ -166,7 +166,7 @@
       "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
     ],
     "refunds": [
-      "for questions about service quality, ending paid access or refunds, write to feedback@prettylisavpn.com.",
+      "for questions about service quality, ending paid access or refunds, write to help@prettylisavpn.com.",
       "include your account email address, payment date and amount, currency, transaction number if available, and a description of your request. for a technical issue, it helps to include the platform, app version, server, approximate time and error text.",
       "do not send a full card number, cvc, banking passwords or one-time codes. hide unnecessary personal data in attached documents.",
       "claims are reviewed in light of the circumstances of the request, the service provided and applicable law. after reviewing the request, support will communicate the decision and next steps.",
@@ -179,7 +179,8 @@
       "renewal is manual. a repeat payment via a link is a separate payment. automatic charges and saving a payment method for future charges are not used.",
       "to stop renewing your subscription, do not make the next payment. the access period already granted remains valid until the specified expiry date.",
       "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
-      "send questions about a payment, receipt, access period or incorrect charge to feedback@prettylisavpn.com. include your account email address and information that can identify the payment."
+      "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment.",
+      "the maximum amount per transaction is 10,000 RUB. balance top-ups and custom amounts are not offered. payments are not available yet."
     ]
   },
   "notFound": {

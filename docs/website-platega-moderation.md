@@ -1,4 +1,47 @@
-# Website 0.3.0 — purchase path for Platega moderation
+# Website 0.3.1 — moderation feedback
+
+## Follow-up dated 2026-11-05
+
+Website **0.3.0 → 0.3.1** (PATCH: public copy, document visibility and catalog
+validation). Backend and all client versions remain unchanged. No migrations,
+payment API calls, merchant credentials or new checkout endpoints.
+
+- All 78 public pages in ru/en/de/fr/es/zh have four permanently available
+  document buttons in the shared footer and a header link to that footer.
+- Replace the "your rules" headline, transport-selection promotion and named
+  service-routing examples with neutral encryption, account and connection
+  descriptions. Replace the Android service picker with the unchanged native
+  account/home capture from the same previously verified Android artifact.
+  Remove the old PNG from the published bundle; source hash/provenance is updated.
+- Remove personal seller name, tax ID and tax status from every locale and the
+  site model. Public service/data/claims contact is help@prettylisavpn.com.
+  This follows the owner's supplied moderation comments, not a claim of legal
+  approval; final document/refund/receipt approval remains a launch prerequisite.
+- Display the exact temporary marker `platega test` on every page. Remove it
+  only after the owner confirms cash-register registration.
+- RUB current/reference prices cannot exceed 1,000,000 kopeks (10,000 RUB):
+  page generation fails for an excessive, fractional or invalid amount. The
+  existing USD display remains capped at the owner-approved $7 reference price
+  ($5 payable), not at an invented exchange-rate equivalent. There is no cart,
+  quantity multiplier, balance top-up or arbitrary-amount form. Payments remain
+  disabled. Before real provider integration, enforce the same 10,000 RUB limit
+  server-side on the final settlement amount including any currency conversion;
+  a display/build guard is not evidence of transaction enforcement.
+
+Validation: ten Node test groups cover all routes, translated document buttons,
+marker, removed claims/personal seller data, exact screenshot bytes, RUB boundary
+10,000 / 10,000.01 and rejected unapproved USD changes. Browser review covers
+six languages at 320/390/1280 px, documents, currency switching and disabled
+checkout. Existing CI additionally tests actual Caddy routes in Docker.
+The PR records the final product SHA, build SHA/run/attempt, artifact and actual
+publication/rollback evidence. Only that verified artifact may be deployed.
+
+Scope: public website HTML, metadata, documents and shipped screenshot assets.
+No access to the Telegram bot/channel was available for a content audit; no
+messages were sent and no posts were changed. Internal engineering documents
+and application functionality are outside this website copy revision.
+
+## Historical 0.3.0 implementation (superseded contact/visibility details below)
 
 Owner request dated 2026-11-04, based on the Platega manager's screenshots,
 [purchase-path guide](https://docs.google.com/document/d/1KZ7-iHcOHmHNZkscIdZbA0Wn-0Xgoc9PbHWubkjYrZ8/edit)
