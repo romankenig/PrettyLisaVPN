@@ -5,10 +5,64 @@ New Chrome client 0.1.0; backend 0.33.0 → 0.34.0 for browser-only HTTPS leases
 Windows 0.25.2, Android, Apple and the managed engine versions remain unchanged.
 Build SHA/run/attempt, final CI and live evidence belong to the task PR.
 
-## DNS reminder requested by the owner
+## Current IP fallback — 2026-11-05
 
-On the next continuation of Chrome Extension work, remind the owner if these
-records are still missing. The owner deferred DE/US on 2026-11-04:
+Chrome **0.1.1 → 0.1.2**, backend **0.34.0 → 0.34.1**: compatible PATCH fixes
+address validation for the existing HTTPS proxy. Schema remains 0043; Windows,
+Android, Apple and the managed engine versions are unchanged. Baseline is
+`ce3c97ea59c1c1877be842636593c37c6c29d0d7` (merged auth/OTP PR #59).
+The owner cannot add DE/US DNS records now. These records are optional when using
+the IP certificate path below; do not block continuation on another DNS request.
+
+Chrome sends `X-PrettyLisaVPN-Proxy-IP: 1` on authenticated VPN requests. Backend
+uses it for country filtering and new allocations only; missing/unknown values
+preserve the original DNS-only selection. Old backend versions ignore the header,
+so either deployment order remains compatible. Idempotent replay still returns
+the same lease, and all existing account, device, Free/Premium and cleanup rules
+remain in force. The client accepts a canonical public IPv4 only if it is also
+listed in the lease's expected egress addresses. The node requires it to match
+its enrolled address and verifies the exact IP SAN against the system CA store.
+There is no plaintext or certificate-validation fallback.
+
+Use `infra/ansible/browser-proxy-ip-certificate.yml -e proxy_ip=<enrolled IPv4>`
+with the existing pinned SSH inventory. It installs isolated Certbot 5.4.0,
+requests the `shortlived` profile via HTTP-01 and enables
+`prettylisa-proxy-certificate.timer` every four hours with up to 30 minutes jitter.
+Keep port 80 reachable for renewal. TLS private keys stay on the exit. Existing
+managed supervision detects certificate replacement and restarts proxy processes
+on their next grant; normal client verification/recovery applies. Existing native
+listeners and their keys are not replaced.
+
+DE (`5.181.49.183`, root) and US (`204.48.17.50`, vpnadmin/sudo) certificate
+preparation and renewal dry-runs succeeded on 2026-11-05. OpenSSL verified public
+trust and exact IP SAN; both timers were enabled/active. Certificates expire on
+2026-11-12 around 04:11/04:18 UTC, so automatic renewal is required. At preparation
+time no new backend/helper was deployed and no node capability was activated.
+Certificate issuance alone is not a successful browser VPN connection.
+
+Validation: 19 Chrome unit tests, TypeScript/Vite, ESLint/Prettier and installed
+isolated Chromium review; 136 targeted backend tests including real disposable
+PostgreSQL allocation/country filtering and lifecycle, Ruff, strict mypy and
+Alembic upgrade/check. Final product SHA, CI build SHA/run/attempt, artifact hashes,
+all workflow results and direct transport/live API evidence belong to the task PR.
+Do not attribute the older NL SSH-forward test below to direct DE/US acceptance.
+
+After approved merge/development deployment, configure managed DE/US with their
+existing server_name/reality_target plus `proxy_host` equal to the enrolled IP.
+Verify helper hashes and an actual OTP → allocation → browser egress chain using
+the exact published Chrome ZIP, then confirm cleanup. The existing shared publisher
+updates `/dashboard/downloads/chrome-extension.zip` after successful develop CI.
+Rollback preserves certificate timers/history and existing leases; avoid assigning
+IP endpoints to old extensions. The capability header does not add native protocols:
+independent Chrome remains a browser-only HTTPS proxy client.
+
+References: [Let's Encrypt IP certificates](https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability),
+[Certbot IP support and renewal](https://letsencrypt.org/2026/03/11/shorter-certs-certbot).
+
+## Historical DNS setup at 0.1.0
+
+The owner deferred DE/US DNS on 2026-11-04 and again on 2026-11-05. The IP path
+above supersedes the original requirement to wait for those records:
 
 | Record (A, DNS only) | Exit IP | State at task start |
 | --- | --- | --- |
@@ -16,7 +70,7 @@ records are still missing. The owner deferred DE/US on 2026-11-04:
 | proxy-de.prettylisavpn.com | 5.181.49.183 | Awaiting owner DNS change |
 | proxy-us.prettylisavpn.com | 204.48.17.50 | Awaiting owner DNS change |
 
-Each exit needs a stable name and publicly trusted certificate. The provided
+The original DNS path needs a stable name and publicly trusted certificate. The provided
 Ansible playbook automates issuance/renewal after DNS exists. Future DNS automation
 can use the owner's provider API; no credentials should be sent in chat. The RU
 INTERMEDIATE node is not advertised as a direct exit. Chrome relay mode is not

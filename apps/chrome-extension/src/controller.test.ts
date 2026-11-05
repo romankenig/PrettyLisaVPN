@@ -71,6 +71,13 @@ describe("browser lease lifecycle", () => {
     expect(io.verify).toHaveBeenCalledTimes(2);
     expect(calls.some((c) => c.path.endsWith("/probe"))).toBe(true);
     expect(
+      calls.every(
+        (c) =>
+          new Headers(c.options.headers).get("X-PrettyLisaVPN-Proxy-IP") ===
+          "1",
+      ),
+    ).toBe(true);
+    expect(
       calls
         .filter((c) => c.path.endsWith("/probe"))
         .every((c) => c.origin === "https://prettylisavpn.com"),
@@ -243,5 +250,29 @@ describe("proxy credential boundaries", () => {
         proxy,
       ),
     ).toBe(true);
+  });
+  it("accepts an advertised public exit IP with HTTPS and rejects private or unrelated IPs", () => {
+    const value = ready();
+    value.configuration!.proxy.host = "81.31.245.143";
+    expect(validateLease(value)).toEqual(value);
+    for (const host of [
+      "5.181.49.183",
+      "127.0.0.1",
+      "10.0.0.1",
+      "100.64.0.1",
+      "169.254.169.254",
+      "172.16.0.1",
+      "192.168.1.1",
+      "198.18.0.1",
+      "203.0.113.1",
+      "224.0.0.1",
+      "999.1.1.1",
+      "081.31.245.143",
+    ]) {
+      value.configuration!.proxy.host = host;
+      if (host !== "5.181.49.183")
+        value.configuration!.expected_egress_ips = [host];
+      expect(() => validateLease(value)).toThrow("UNSUPPORTED_CONFIGURATION");
+    }
   });
 });

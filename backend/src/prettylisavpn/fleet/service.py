@@ -18,6 +18,7 @@ from prettylisavpn.fleet.domain import (
     NodeUpdate,
     Observation,
     WireGuardConfig,
+    proxy_address_supported,
     server_quality,
 )
 from prettylisavpn.fleet.model import (
@@ -346,7 +347,9 @@ class FleetService:
             },
         }
 
-    async def countries(self, free_only: bool, *, browser_proxy: bool = False) -> dict[str, Any]:
+    async def countries(
+        self, free_only: bool, *, browser_proxy: bool = False, allow_proxy_ip: bool = False
+    ) -> dict[str, Any]:
         snapshot = await self.monitoring(days=1)
         proxy_nodes: set[str] = set()
         if browser_proxy:
@@ -356,7 +359,9 @@ class FleetService:
                         FleetMethodRecord.method == "managed", FleetMethodRecord.state == "READY"
                     )
                 ):
-                    if method.configuration.get("proxy_host"):
+                    if proxy_address_supported(
+                        method.configuration.get("proxy_host"), allow_ip=allow_proxy_ip
+                    ):
                         proxy_nodes.add(str(method.node_id))
         by_country: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for node in snapshot["nodes"]:

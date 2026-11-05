@@ -101,6 +101,8 @@ export class Controller {
     if (authenticated) {
       if (!this.state.session) throw new Error("SIGN_IN_REQUIRED");
       headers.set("Authorization", "Bearer " + this.state.session.access_token);
+      if (path.startsWith("/vpn/"))
+        headers.set("X-PrettyLisaVPN-Proxy-IP", "1");
     }
     let response: Response;
     try {

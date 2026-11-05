@@ -302,7 +302,8 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
     ],
 )
 @pytest.mark.parametrize("method", [None, "https_proxy"])
-async def test_country_ratings_respect_effective_plan(plan, free_only, method):
+@pytest.mark.parametrize("proxy_ip", [None, "1", "unknown"])
+async def test_country_ratings_respect_effective_plan(plan, free_only, method, proxy_ip):
     fleet, auth = AsyncMock(), AsyncMock()
     auth.me.return_value = SimpleNamespace(plan=plan)
     fleet.countries.return_value = {
@@ -324,11 +325,15 @@ async def test_country_ratings_respect_effective_plan(plan, free_only, method):
             await client.get(
                 "/vpn/countries",
                 params={"method": method} if method else {},
-                headers={"Authorization": "Bearer user"},
+                headers={
+                    "Authorization": "Bearer user",
+                    **({"X-PrettyLisaVPN-Proxy-IP": proxy_ip} if proxy_ip else {}),
+                },
             )
         ).json()["autopilot"]["quality"] == 90
     fleet.countries.assert_awaited_once_with(
-        free_only=free_only, **({"browser_proxy": True} if method else {})
+        free_only=free_only,
+        **({"browser_proxy": True, "allow_proxy_ip": proxy_ip == "1"} if method else {}),
     )
 
 

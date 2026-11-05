@@ -59,8 +59,14 @@ def proxy_certificate(name: str) -> dict[str, str]:
         or len(name) > 253
     ):
         raise Failure("PROXY_HOST_INVALID")
+    literal = bool(re.fullmatch(r"[0-9.]+", name))
+    if literal:
+        try:
+            public_ip(name)
+        except (ValueError, Failure) as error:
+            raise Failure("PROXY_HOST_INVALID") from error
     chain, key = CERTIFICATES / name / "fullchain.pem", CERTIFICATES / name / "privkey.pem"
-    # System public trust and exact DNS-name verification are mandatory. Chrome
+    # System public trust and exact DNS-name/IP SAN verification are mandatory. Chrome
     # cannot use the pinned, self-signed certificates of the native VPN core.
     cmd(
         [
@@ -68,7 +74,7 @@ def proxy_certificate(name: str) -> dict[str, str]:
             "verify",
             "-purpose",
             "sslserver",
-            "-verify_hostname",
+            "-verify_ip" if literal else "-verify_hostname",
             name,
             "-CApath",
             "/etc/ssl/certs",
@@ -117,6 +123,8 @@ def configuration(payload: dict[str, Any]) -> dict[str, Any]:
     desired = {"host": host, "server_name": name, "reality_target": target}
     proxy_host = value.get("proxy_host")
     if proxy_host:
+        if re.fullmatch(r"[0-9.]+", str(proxy_host)) and str(proxy_host) != host:
+            raise Failure("PROXY_HOST_INVALID")
         proxy_certificate(str(proxy_host))
         desired["proxy_host"] = str(proxy_host)
     state = read(ROOT / "state.json")
