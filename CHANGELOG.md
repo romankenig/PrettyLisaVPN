@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Chrome Extension — 0.1.1
+
+- Retain sign-in across browser restarts in trusted local extension storage;
+  clear stale proxy settings without persisting short-lived proxy credentials.
+- Restore the requested email/code-entry screen after closing the popup to read
+  email; also allow opening sign-in in a normal extension tab. Never store OTPs.
+- Verify actual popup reopening and full browser/profile restart in installed MV3
+  tests. Backend/client protocols unchanged. See [Chrome handoff](docs/chrome-extension.md).
+
 ### Fleet dashboard — 0.6.0
 
 - Add Chrome Extension, iOS and macOS downloads at the private API dashboard,

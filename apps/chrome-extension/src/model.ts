@@ -65,6 +65,7 @@ export interface Snapshot {
   phase: Phase;
   error: string | null;
   signedIn: boolean;
+  otpEmail: string | null;
   account: Account | null;
   countries: Country[];
   backend: string | null;
