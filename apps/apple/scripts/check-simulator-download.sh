@@ -4,7 +4,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 unpacked=$(mktemp -d)
 device=$(head -n 1 artifacts/simulators.txt)
-trap 'xcrun simctl shutdown "$device" || true; rm -rf "$unpacked"' EXIT
+cleanup() {
+  result=$?
+  if [ "$result" -ne 0 ]; then
+    xcrun simctl io "$device" screenshot artifacts/simulator-download-failed.png || true
+  fi
+  xcrun simctl shutdown "$device" || true
+  rm -rf "$unpacked"
+  exit "$result"
+}
+trap cleanup EXIT
 ditto -x -k artifacts/PrettyLisaVPN-iOS-Simulator.zip "$unpacked"
 app="$unpacked/PrettyLisaVPN.app"
 test "$(/usr/libexec/PlistBuddy -c 'Print DTPlatformName' "$app/Info.plist")" = iphonesimulator

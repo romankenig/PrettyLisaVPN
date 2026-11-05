@@ -18,8 +18,8 @@
 - Separate iOS Simulator and iPhone ZIP downloads so browser simulators receive
   an actual iphonesimulator app. Publish both variants atomically from the same
   successful Apple build and retain the existing device URL.
-- Install and launch the packaged Simulator ZIP in Apple CI. App/client/backend
-  versions unchanged; real VPN acceptance remains a physical-device task.
+- Install and launch the packaged Simulator ZIP in Apple CI; the companion iOS
+  0.1.1 fix above adds Keychain acceptance. Real VPN remains a physical-device task.
   See [Simulator download handoff](docs/dashboard-client-downloads.md#ios-simulator-download--2026-11-05).
 
 ### Chrome Extension — 0.1.2 / backend — 0.34.1

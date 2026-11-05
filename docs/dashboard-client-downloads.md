@@ -227,8 +227,8 @@ publication lock; do not overwrite immutable files or catalog coordinates.
 
 Dashboard **0.6.0 → 0.6.1** fixes selection of the wrong SDK package for browser
 simulators. iOS **0.1.0 → 0.1.1** also fixes missing Simulator Keychain entitlements
-found during exact-archive launch review. macOS remains 0.1.0, Chrome 0.1.1,
-backend 0.34.0, Windows 0.25.2 and Android 0.21.2.
+found during exact-archive launch review. macOS remains 0.1.0; backend is 0.34.1
+and Chrome 0.1.2 after PR #60; Windows stays 0.25.2 and Android 0.21.2.
 
 Use `/dashboard/downloads/ios-simulator.zip` for Appetize or Apple Simulator
 (ARM64, iOS 17+). It contains the original `PrettyLisaVPN.app` built with the
@@ -244,7 +244,8 @@ with a disposable noncredential value, then relaunches without fixture arguments
 records its SHA256 and captures
 `simulator-download.png`. This proves native Simulator launch, not an Appetize
 upload or a real VPN tunnel. Simulator-only ad-hoc signing supplies the app's own
-application identifier/access group; no Apple team, shared native-device group or
+application identifier/access group through Xcode's Simulator build settings;
+packaging preserves that signature. No Apple team, shared native-device group or
 plaintext credential fallback is introduced. The diagnostic exists only in Debug
 Simulator builds and runs solely with `-verify-keychain`. The earlier 0.1.0 archive
 from PR build `75051b7dcf270f0c066ee7d8d7688ea2d3d0475e`, run 42032440782/1,
