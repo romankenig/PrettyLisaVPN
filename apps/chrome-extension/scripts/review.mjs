@@ -10,19 +10,22 @@ const extension = path.resolve("dist");
 const profile = await mkdtemp(path.join(tmpdir(), "pl-chrome-review-"));
 const output = path.resolve("review");
 await mkdir(output, { recursive: true });
-const context = await chromium.launchPersistentContext(profile, {
-  channel: "chromium",
-  headless: true,
-  viewport: { width: 480, height: 600 },
-  args: [
-    `--disable-extensions-except=${extension}`,
-    `--load-extension=${extension}`,
-  ],
-});
+const launch = (offline = false) =>
+  chromium.launchPersistentContext(profile, {
+    channel: "chromium",
+    headless: true,
+    viewport: { width: 480, height: 600 },
+    offline,
+    args: [
+      `--disable-extensions-except=${extension}`,
+      `--load-extension=${extension}`,
+    ],
+  });
+let context = await launch();
 const id = "11111111-1111-4111-8111-111111111111";
 const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
-try {
+async function mockAPI() {
   await context.route("https://api.prettylisavpn.com/**", async (route) => {
     const p = new URL(route.request().url()).pathname;
     let value;
@@ -84,19 +87,55 @@ try {
       body: JSON.stringify(value),
     });
   });
+}
+try {
+  await mockAPI();
   const worker =
     context.serviceWorkers()[0] ??
     (await context.waitForEvent("serviceworker"));
   const extensionId = new URL(worker.url()).host;
-  const page = await context.newPage();
+  let page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
   await page.getByLabel("ваша почта").fill("preview@example.com");
   await page.screenshot({ path: path.join(output, "login-fixture.png") });
   await page.getByRole("button", { name: "получить код" }).click();
+  await page.getByLabel("код из письма").waitFor();
+  await page.close(); // Switching to webmail closes a real action popup.
+  page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.getByLabel("код из письма").waitFor();
+  assert.equal(
+    await page.getByLabel("ваша почта").inputValue(),
+    "preview@example.com",
+  );
+  await page.screenshot({
+    path: path.join(output, "otp-reopened-fixture.png"),
+  });
+  const opened = context.waitForEvent("page");
+  await page.getByRole("button", { name: "открыть вход во вкладке" }).click();
+  const loginTab = await opened;
+  await loginTab.getByLabel("код из письма").waitFor();
+  await loginTab.close();
   await page.getByLabel("код из письма").fill("123456");
   await page.getByRole("button", { name: "войти", exact: true }).click();
   await page.getByText("preview@example.com", { exact: true }).waitFor();
+  await context.close();
+  // Start offline so a restored fixture token never reaches the real API before
+  // routes are installed. This is a genuine browser/profile restart.
+  context = await launch(true);
+  await mockAPI();
+  await context.setOffline(false);
+  page = await context.newPage();
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.getByText("preview@example.com", { exact: true }).waitFor();
+  assert.equal(await page.getByLabel("код из письма").count(), 0);
+  assert.equal(
+    (await page.evaluate(() => chrome.storage.local.get("auth"))).auth
+      .refresh_token,
+    "fixture-refresh",
+  );
   for (const [screen, label] of [
     ["home", "главная"],
     ["settings", "настройки"],
@@ -138,7 +177,7 @@ try {
   await page.getByText("manage account access").waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "Installed MV3 artifact: OTP, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",
+    "Installed MV3 artifact: reopened OTP, sign-in tab, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",
   );
 } finally {
   await context.close();

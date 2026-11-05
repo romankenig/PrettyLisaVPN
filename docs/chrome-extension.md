@@ -45,7 +45,8 @@ this capability appear in Chrome country selection. Configure it only after DNS,
 certificate and the helper are prepared. Changing it with active proxy leases is
 refused. Existing native transports and their node-owned identities are preserved.
 
-Chrome session state survives MV3 worker suspension, but not browser shutdown.
+In 0.1.0, Chrome session state survived MV3 worker suspension, but not browser shutdown.
+Version 0.1.1 preserves authentication across shutdown as documented below.
 The restored worker revalidates Chrome proxy ownership and authenticated egress
 before Connected. No direct fallback is configured; user Disconnect clears only
 this extension's overrides. Unknown allocation retries preserve the original UUID.
@@ -136,3 +137,41 @@ Official platform references: [Chrome proxy](https://developer.chrome.com/docs/e
 [proxy authentication](https://developer.chrome.com/docs/extensions/reference/api/webRequest),
 [privacy settings](https://developer.chrome.com/docs/extensions/reference/api/privacy),
 [MV3 lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle).
+
+## Authentication recovery — 2026-11-05
+
+Chrome **0.1.0 → 0.1.1** fixes login loss at browser exit and OTP screen loss when
+the popup closes. Backend remains 0.34.0, Windows 0.25.2, Android 0.21.2 and Apple
+clients 0.1.0. No schema, API, entitlement or proxy-protocol change.
+
+Only auth tokens persist in local profile storage, restricted to trusted extension
+contexts (no content scripts, Chrome Sync, new permissions or OS-keychain claim).
+Session storage still holds lease credentials/pending allocations and the requested
+OTP email. Never store the OTP itself. Successful OTP sending commits its state in
+the worker before responding to the popup; another email clears it, successful
+login removes it. A tab can host the same `popup.html` login flow without losing
+state when the user switches to webmail. Snapshots expose neither auth nor proxy
+secrets. Existing active auth migrates when the worker next runs.
+
+After a browser restart, retain sign-in but clear Chrome proxy overrides because
+their ephemeral credentials are gone. Connect retrieves any previous lease and
+confirms cleanup before allocating again. Token rotation persists before volatile
+state; a null durable marker prevents stale session storage from restoring a logged
+out account. Definitive revocation clears auth; transient network errors retain it.
+
+Validation includes 18 unit tests, lint/types/format/build and installed Chromium
+tests of popup close/reopen, sign-in tab, real browser/profile restart and existing
+screens. API fixtures prove UI/storage behavior only. Record the final product HEAD,
+actual CI build SHA/run/attempt and artifact in the PR; publishing the updated ZIP
+still uses the successful develop build and authenticated dashboard link.
+
+Read-only rollout inspection on 2026-11-05 confirmed backend
+`0.34.0-dev.42021407979+g46ed711e8df85bcceff66e34c9374ca1f6ba5ab5`, migration
+0043, and the NL managed method READY with its proxy hostname. Earlier complete
+OTP/lease tests used an SSH forward and did not prove direct workstation reachability.
+Current direct TCP checks to NL ports 22/8443 time out; DE/US SSH is reachable but
+`proxy-de`/`proxy-us` DNS is missing. This is a transport rollout dependency, not
+evidence that the new login code repairs reachability. Add the documented A records,
+issue trusted certificates and enable corresponding node capabilities, then verify
+real browser traffic directly. The owner selected an independent browser-only
+extension; native Windows tunnels/helpers are outside this task.

@@ -716,3 +716,15 @@ the user to rerun setup. Administrator consent belongs to setup/update/uninstall
 the client remains unelevated. These are implemented native integrations, with
 remote validation tracked in [handoff](windows-installer-service.md). App routes,
 auth guards, browser transitions and account storage are unchanged.
+
+
+### Chrome 0.1.1: persistent login and webmail round trip
+
+The Chrome popup restores its code-entry screen and requested email after it closes.
+The user can open webmail in another tab and return, or use the new button to open
+the same sign-in page in a normal extension tab. The implemented worker owns OTP
+request state; no external mailbox URL is inferred and no OTP is stored. Existing
+real backend OTP verification is unchanged. Authentication survives browser restart;
+old proxy overrides are cleared and a new connection requires explicit Connect.
+Windows navigation is unchanged. See [Chrome handoff](chrome-extension.md) for
+verification and the separate proxy node/DNS rollout dependency.

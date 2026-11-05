@@ -54,9 +54,10 @@ const labels = {
     "No password. We will email you a six-digit code.",
   ],
   sessionDetail: [
-    "Вход действует до закрытия браузера. Секреты сессии не сохраняются на диск расширением.",
-    "Sign-in lasts until the browser closes. The extension does not persist session secrets to disk.",
+    "Вход сохраняется после закрытия браузера. Можно открыть почту и вернуться сюда: экран ввода кода сохранится.",
+    "You stay signed in after closing the browser. Open your email and return here: the code entry screen is preserved.",
   ],
+  openTab: ["открыть вход во вкладке", "open sign-in in a tab"],
   current: ["это устройство", "this device"],
   added: ["добавлено", "added"],
   lastLogin: ["последний вход", "last sign-in"],
@@ -135,10 +136,11 @@ function App() {
   const [state, setState] = useState<Snapshot | null>(null),
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
-  const [email, setEmail] = useState(""),
+  const [draftEmail, setEmail] = useState(""),
     [code, setCode] = useState(""),
-    [otp, setOtp] = useState(false),
     [country, setCountry] = useState("AUTO");
+  const otp = Boolean(state?.otpEmail);
+  const email = state?.otpEmail ?? draftEmail;
   const [devices, setDevices] = useState<Device[]>([]),
     [billing, setBilling] = useState<Billing | null>(null);
   const [subject, setSubject] = useState(""),
@@ -311,7 +313,6 @@ function App() {
                     setCode("");
                   } else {
                     await send("requestOtp", { email });
-                    setOtp(true);
                   }
                 });
               }}
@@ -351,14 +352,28 @@ function App() {
                   className="text"
                   disabled={busy}
                   onClick={() => {
-                    setOtp(false);
-                    setCode("");
+                    void action(async () => {
+                      await send("resetOtp");
+                      setEmail("");
+                      setCode("");
+                    });
                   }}
                 >
                   {t("otherEmail")}
                 </button>
               )}
             </form>
+            <button
+              type="button"
+              className="text"
+              onClick={() => {
+                void chrome.tabs.create({
+                  url: chrome.runtime.getURL("popup.html"),
+                });
+              }}
+            >
+              {t("openTab")}
+            </button>
             <p className="muted">{t("sessionDetail")}</p>
           </section>
         ) : (
