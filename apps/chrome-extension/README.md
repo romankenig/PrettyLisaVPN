@@ -1,6 +1,6 @@
 # PrettyLisaVPN Chrome Extension
 
-Manifest V3 browser-only client, version **0.1.0**. The Windows client is the UI
+Manifest V3 browser-only client, version **0.1.1**. The Windows client is the UI
 reference: canonical logo, Rubik, purple surfaces, mint actions, sidebar Home /
 Settings / About, account, country, devices, billing overview and support screens.
 
@@ -36,9 +36,16 @@ extension's overrides. Other applications and system VPN settings are untouched.
 - Backend >= this task's 0.34.0 implementation and migration 0043 are required.
   Existing backend 0.33.0 does not admit browser proxy leases.
 - Existing five-device limit, paid entitlements and account-wide Free quota apply.
-- Session/refresh/proxy credentials live in `chrome.storage.session`, restricted to
-  trusted extension contexts. Reopening the browser requires email sign-in again.
-  Only installation UUID and language persist in local storage. No browsing data.
+- Authentication tokens persist in `chrome.storage.local` inside the local browser
+  profile, restricted to trusted extension contexts and never synced to Chrome Sync.
+  Rotation updates them; logout/confirmed revocation clears them. A network outage
+  does not sign the user out. This is profile storage, not an encrypted OS keychain.
+- Proxy credentials, pending leases and requested OTP email remain in
+  `chrome.storage.session`. The code itself is never stored. Closing the popup
+  preserves the code-entry screen, and sign-in can also open in a normal tab.
+  After browser exit, stale proxy overrides are cleared and sign-in is retained;
+  the user starts a new connection. Existing server heartbeat expiry frees the old
+  lease, and Connect confirms cleanup before allocating another. No browsing data.
 - Proxy credentials are provided only to the exact configured proxy host, port and
   realm. There are no content scripts, external message handlers or remote scripts.
 - `<all_urls>` is required for proxy authentication on web requests; the listener
@@ -63,7 +70,8 @@ extension's overrides. Other applications and system VPN settings are untouched.
 ## Verification
 
 `scripts/review.mjs` loads the real built MV3 artifact in isolated Chromium. API
-responses are clearly named fixtures; it checks OTP/navigation/support and honest
+responses are clearly named fixtures; it checks reopened OTP, sign-in tab, a full
+browser/profile restart, navigation/support and honest
 connection failure. Its screenshots do **not** prove live proxy connectivity.
 Current live acceptance, deployment identity and required DNS follow-up are in
 [the Chrome handoff](../../docs/chrome-extension.md).
