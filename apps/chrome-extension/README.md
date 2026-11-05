@@ -1,6 +1,6 @@
 # PrettyLisaVPN Chrome Extension
 
-Manifest V3 browser-only client, version **0.1.1**. The Windows client is the UI
+Manifest V3 browser-only client, version **0.1.2**. The Windows client is the UI
 reference: canonical logo, Rubik, purple surfaces, mint actions, sidebar Home /
 Settings / About, account, country, devices, billing overview and support screens.
 
@@ -32,7 +32,9 @@ extension's overrides. Other applications and system VPN settings are untouched.
 ## Security and operating boundaries
 
 - HTTPS forward proxy, never a system WireGuard tunnel or a native helper install.
-- Publicly trusted, name-verified TLS; unique short-lived credentials per lease.
+- Publicly trusted TLS with exact hostname or IP SAN verification; unique
+  short-lived credentials per lease. Backend 0.34.1 can advertise enrolled public
+  IP endpoints to capable clients when proxy DNS records are unavailable.
 - Backend >= this task's 0.34.0 implementation and migration 0043 are required.
   Existing backend 0.33.0 does not admit browser proxy leases.
 - Existing five-device limit, paid entitlements and account-wide Free quota apply.
@@ -73,5 +75,5 @@ extension's overrides. Other applications and system VPN settings are untouched.
 responses are clearly named fixtures; it checks reopened OTP, sign-in tab, a full
 browser/profile restart, navigation/support and honest
 connection failure. Its screenshots do **not** prove live proxy connectivity.
-Current live acceptance, deployment identity and required DNS follow-up are in
+Current live acceptance, deployment identity and node rollout follow-up are in
 [the Chrome handoff](../../docs/chrome-extension.md).

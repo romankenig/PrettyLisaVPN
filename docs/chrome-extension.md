@@ -40,6 +40,23 @@ trust and exact IP SAN; both timers were enabled/active. Certificates expire on
 time no new backend/helper was deployed and no node capability was activated.
 Certificate issuance alone is not a successful browser VPN connection.
 
+Direct data-plane acceptance on DE succeeded with product source
+`471597c7a0a73a205d33c1589166d55c36641845`, exact Chrome push artifact
+`13417913079` from run `42034982600` attempt 1. Inner ZIP SHA-256:
+`805c17360f5b3efbe29fdee8fa5c5f549d5a5a861e8eea834d7e8cd7fe9ace8e`.
+Installed Chromium confirmed HTTP/HTTPS exit IP `5.181.49.183`, a full HTTPS page,
+WSS echo, private/IPv6 destination rejection, offline/online recovery and original
+IP restoration on Disconnect. No SSH forward or certificate exception. Auth/lease
+API responses were fixtures, and the backend proof remained explicitly unverified;
+this does not prove real OTP/allocation/Connected on backend 0.34.1.
+
+US direct HTTP/HTTPS IP checks reached `204.48.17.50`, but a full page stalled;
+curl independently received only 8151 of 16426 bytes before timeout. An isolated
+MSS diagnostic did not fix it and is not part of the shipped code. Keep US proxy
+capability disabled until complete direct acceptance succeeds. Temporary test
+processes/files were removed and ports released on both nodes; native sessions
+were untouched. DE can be enabled after approved backend/helper rollout.
+
 Validation: 19 Chrome unit tests, TypeScript/Vite, ESLint/Prettier and installed
 isolated Chromium review; 136 targeted backend tests including real disposable
 PostgreSQL allocation/country filtering and lifecycle, Ruff, strict mypy and
