@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
@@ -42,6 +42,7 @@ async def countries(
     request: Request,
     token: Annotated[str | None, Depends(bearer_token)],
     method: Literal["https_proxy"] | None = None,
+    proxy_ip: Annotated[str | None, Header(alias="X-PrettyLisaVPN-Proxy-IP")] = None,
 ) -> Countries | JSONResponse:
     if token is None:
         return error_response("authentication_required", 401)
@@ -52,7 +53,9 @@ async def countries(
             fleet = cast(FleetService, request.app.state.fleet)
             free_only = entitlements_for_plan(account.plan).free_nodes_only
             snapshot = (
-                await fleet.countries(free_only=free_only, browser_proxy=True)
+                await fleet.countries(
+                    free_only=free_only, browser_proxy=True, allow_proxy_ip=proxy_ip == "1"
+                )
                 if method == "https_proxy"
                 else await fleet.countries(free_only=free_only)
             )

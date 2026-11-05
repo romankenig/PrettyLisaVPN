@@ -1,5 +1,15 @@
 # Backend: актуальный статус и журнал продолжения
 
+## Chrome public IP HTTPS proxy — 2026-11-05
+
+Backend 0.34.0 → 0.34.1; Chrome 0.1.1 → 0.1.2; schema remains 0043.
+Optional client capability preserves DNS-only allocation for older extensions;
+new clients can use enrolled public IPv4 with trusted IP SAN certificates.
+DE/US certificate preparation and renewal dry-runs passed; that is not deployment
+or live VPN acceptance. See [Chrome handoff](chrome-extension.md) for compatibility,
+renewal, helper rollout and rollback. Final product/build SHA, run/attempt, artifact
+hashes, deployment and exact-source acceptance are recorded in the task PR.
+
 ## Discontinued payment provider removal — 2026-11-03
 
 Backend 0.30.0 → 0.31.0; Windows 0.25.0 and Android 0.21.0 unchanged.

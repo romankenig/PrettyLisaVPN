@@ -3,14 +3,16 @@
 import os
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import select, update
+from test_client_vpn import KEY
 from test_client_vpn_integration import connect, vpn_state  # noqa: F401
 from test_fleet_integration import fleet_state  # noqa: F401
 from test_managed_vpn_integration import managed_state  # noqa: F401
 
+from prettylisavpn.client_vpn.domain import ConnectRequest
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.devices.model import DeviceRecord
@@ -69,7 +71,8 @@ async def test_proxy_lifecycle_and_missed_heartbeat_revoke(browser_state):
     assert await worker.tick()
     ready = await service.get("token", identifier)
     proxy = ready["configuration"]["proxy"]
-    assert proxy["scheme"] == "https" and proxy["host"] == "proxy-de.prettylisavpn.com"
+    assert proxy["scheme"] == "https"
+    assert proxy["host"] == "proxy-de.prettylisavpn.com"
     assert proxy["username"] == str(identifier) and UUID(proxy["password"])
     assert "engine_profile" not in ready["configuration"]
     assert ready["configuration"]["dns"] == "remote"
@@ -136,3 +139,43 @@ async def test_browser_country_selection_filters_proxy_capability_and_free_nodes
             method.configuration = {}
     assert not (await fleet.countries(False, browser_proxy=True))["countries"]
     assert (await fleet.countries(False))["countries"]
+
+
+async def test_ip_proxy_requires_client_capability_for_countries_and_allocation(browser_state):
+    postgres, service, worker, _, _, _ = browser_state
+    async with postgres.session() as session, session.begin():
+        for method in await session.scalars(
+            select(FleetMethodRecord).where(FleetMethodRecord.method == "managed")
+        ):
+            method.configuration = {**method.configuration, "proxy_host": "1.1.1.1"}
+    with pytest.raises(FleetError, match="VPN_NO_AVAILABLE_NODE"):
+        await connect(service, method="https_proxy", country="DE")
+    fleet = FleetService(postgres, service.settings)
+    async with postgres.session() as session:
+        nodes = list(await session.scalars(select(FleetNodeRecord)))
+    fleet.monitoring = AsyncMock(
+        return_value={
+            "nodes": [
+                {
+                    "id": str(node.id),
+                    "country_code": node.country_code,
+                    "group": node.group,
+                    "is_available_for_free": node.is_available_for_free,
+                    "available": True,
+                    "quality": 90,
+                    "capacity": node.capacity,
+                }
+                for node in nodes
+            ]
+        }
+    )
+    assert not (await fleet.countries(True, browser_proxy=True))["countries"]
+    assert (await fleet.countries(True, browser_proxy=True, allow_proxy_ip=True))["countries"]
+    data = ConnectRequest(public_key=KEY, method="https_proxy", country="DE")
+    key = uuid4()
+    created = await service.connect("token", data, key, allow_proxy_ip=True)
+    assert (await service.connect("token", data, key))["id"] == created["id"]
+    assert await worker.tick()
+    ready = await service.get("token", UUID(created["id"]))
+    assert ready["configuration"]["proxy"]["host"] == "1.1.1.1"
+    assert (await service.get("token", UUID(created["id"]), "probe", "1.1.1.1"))["verified"]

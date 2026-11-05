@@ -84,7 +84,8 @@ def test_allocator_never_uses_server_monitor_or_broadcast_addresses():
     ],
 )
 @pytest.mark.parametrize("prefix", ["/vpn/wireguard/sessions", "/vpn/sessions"])
-async def test_all_customer_endpoints_are_private_and_delegate(method, path, prefix):
+@pytest.mark.parametrize("proxy_ip", [None, "1", "unknown"])
+async def test_all_customer_endpoints_are_private_and_delegate(method, path, prefix, proxy_ip):
     identifier, request_id = uuid4(), uuid4()
     path = prefix + path.format(id=identifier)
     backend = SimpleNamespace(
@@ -104,6 +105,8 @@ async def test_all_customer_endpoints_are_private_and_delegate(method, path, pre
         AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
     ):
         kwargs = {"headers": {"Idempotency-Key": str(request_id)}}
+        if proxy_ip:
+            kwargs["headers"]["X-PrettyLisaVPN-Proxy-IP"] = proxy_ip
         if method == "POST" and path.endswith("/sessions"):
             kwargs["json"] = {"public_key": KEY}
         response = await client.request(method, path, **kwargs)
@@ -115,6 +118,8 @@ async def test_all_customer_endpoints_are_private_and_delegate(method, path, pre
         assert response.headers["Vary"] == "Authorization"
         action = backend.connect if path.endswith("/sessions") else backend.get
         assert action.await_args.args[0] == "access"
+        if path.endswith("/sessions"):
+            assert action.await_args.kwargs == ({"allow_proxy_ip": True} if proxy_ip == "1" else {})
         action.side_effect = InvalidSessionError
         assert (await client.request(method, path, **kwargs)).status_code == 401
 
