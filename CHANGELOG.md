@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Документация — подключение новых серверов (version unchanged)
+
+- Добавлена инструкция для VPN-узлов на любом хостинге: SSH/fleet, отдельный
+  доступ к авторитетному DNS API, DNS/TLS/Chrome capability и реальная приёмка.
+- Разделены провайдер VPS и DNS домена; обновлены ссылки из README, Ansible и
+  fleet/Chrome handoff. Backend 0.34.0 и Chrome 0.1.0 не изменены.
+- Записи DE/US ещё ожидают DNS-доступа; инструкция не заявляет их создание.
+
 ### Chrome Extension — 0.1.0 / backend — 0.34.0
 
 - Add a browser-only Manifest V3 client with Windows-inspired UI, email OTP,

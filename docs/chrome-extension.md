@@ -5,6 +5,11 @@ New Chrome client 0.1.0; backend 0.33.0 → 0.34.0 for browser-only HTTPS leases
 Windows 0.25.2, Android, Apple and the managed engine versions remain unchanged.
 Build SHA/run/attempt, final CI and live evidence belong to the task PR.
 
+Update 2026-11-05: PR #55 was merged and backend 0.34.0 / migration 0043 deployed;
+NL proxy capability and real OTP/lease acceptance are recorded in that PR. The
+pre-rollout observations below remain historical. Provider-independent enrollment,
+DNS API access and certificate steps are in [server enrollment](server-enrollment.md).
+
 ## DNS reminder requested by the owner
 
 On the next continuation of Chrome Extension work, remind the owner if these

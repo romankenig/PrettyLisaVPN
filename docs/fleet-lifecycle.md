@@ -1,5 +1,9 @@
 # Server lifecycle and monitoring — backend 0.17.0
 
+Актуальный порядок подключения нового узла, включая различие VPS/DNS, API DNS,
+сертификат и Chrome-прокси: [добавление сервера](server-enrollment.md).
+Версии и исходники ниже описывают исторический этап внедрения fleet.
+
 Base: develop `227704b044f0b5a6ea67b4f64d6142a813eddec0`. Backend 0.16.0 → 0.17.0,
 migration 0029; Ubuntu helper starts at 0.1.0. Windows remains 0.14.1 and Android
 0.11.1; their VPN adapters remain placeholders. Legacy credential endpoints stay removed.

@@ -1,4 +1,17 @@
-# Infrastructure after the VPN reset
+# Установка и обслуживание VPN-узлов
+
+Для новых серверов на любом хостинге используйте
+[инструкцию подключения узла](../../docs/server-enrollment.md).
+Текущий fleet worker устанавливает базовые инструменты через
+[configure.yml](../../backend/src/prettylisavpn/fleet/ubuntu/configure.yml).
+
+Для Chrome-прокси [browser-proxy-certificate.yml](browser-proxy-certificate.yml)
+выпускает и продлевает публичный сертификат после настройки DNS. Он не создаёт
+DNS-записей: это отдельный авторизованный вызов API DNS-провайдера домена,
+независимо от хостинга VPS. Перед включением proxy_host обязательны проверки
+DNS, сертификата, firewall и реального трафика из инструкции.
+
+## Исторический VPN reset
 
 The previous node-agent, WireGuard, OpenVPN, profile and obfuscator roles/playbooks
 have been removed. No replacement VPN server is provisioned in this task.
