@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { clock, date, TIME_ZONE_LABEL } from "../src/time.ts";
-import { readClients, downloadUrls, sourceUrls } from "../src/downloads.ts";
+import { readClients, downloadUrls, sourceUrls, installNotes } from "../src/downloads.ts";
 
 test("GMT+3 remains fixed, including midnight rollover and summer/winter", () => {
   assert.equal(TIME_ZONE_LABEL, "GMT+3");
@@ -29,4 +29,22 @@ test("download CPU label accepts only the verified phone architecture", () => {
   assert.equal(parse("arm64-v8a")?.abi, "arm64-v8a");
   assert.equal(parse("untrusted")?.abi, undefined);
   assert.equal(parse(undefined)?.abi, undefined);
+});
+
+test("Chrome and unsigned Apple packages use fixed links and explicit installation instructions", () => {
+  const client = { version: "0.1.0", published_at: "2026-11-05T12:00:00Z", bytes: 20000 };
+  const clients = readClients({ schema: 1, clients: {
+    chrome: { ...client, package_kind: "unpacked-extension", url: "https://untrusted.invalid" },
+    ios: { ...client, package_kind: "unsigned-app", sources_url: sourceUrls.ios, sources_sha256: "a".repeat(64) },
+    macos: { ...client, package_kind: "unsigned-app" },
+  } });
+  assert.deepEqual(Object.keys(clients), ["chrome", "ios", "macos"]);
+  assert.equal(clients.ios?.has_sources, true);
+  assert.equal(downloadUrls.chrome, "/dashboard/downloads/chrome-extension.zip");
+  assert.equal(downloadUrls.ios, "/dashboard/downloads/ios-unsigned.zip");
+  assert.equal(downloadUrls.macos, "/dashboard/downloads/macos-unsigned.zip");
+  assert.match(installNotes.chrome, /chrome:\/\/extensions/);
+  assert.match(installNotes.ios, /подпись и профиль Apple/);
+  assert.match(installNotes.macos, /Network Extension/);
+  assert.deepEqual(readClients({ schema: 1, clients: { ios: client, chrome: { ...client, package_kind: "store" }, macos: { ...client, package_kind: "simulator" } } }), {});
 });

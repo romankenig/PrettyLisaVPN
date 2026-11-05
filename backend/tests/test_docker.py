@@ -47,6 +47,15 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
     (snapshot / "index.json").write_text('{"schema":1,"clients":{}}')
     (snapshot / "android.apk").write_text("test-only-apk")
     (snapshot / "windows.exe").write_text("test-only-exe")
+    new_downloads = (
+        "chrome-extension.zip",
+        "ios-unsigned.zip",
+        "macos-unsigned.zip",
+        "ios-sources.tar.gz",
+        "macos-sources.tar.gz",
+    )
+    for file in new_downloads:
+        (snapshot / file).write_text("test-only-archive")
     (downloads / "current").symlink_to("snapshots/first")
     (tmp_path / "Caddyfile").write_text(
         ":8080 {\n" + route + "\nhandle {\nrespond 404\n}\n}\n:8000 {\n"
@@ -97,6 +106,7 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
             "/dashboard/downloads/index.json",
             "/dashboard/downloads/android.apk",
             "/dashboard/downloads/windows.exe",
+            *("/dashboard/downloads/" + file for file in new_downloads),
         ):
             assert "401 Unauthorized" in request(path).stderr
             assert "401 Unauthorized" in request(path, "admin:wrong").stderr
@@ -112,7 +122,11 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         assert analytics.returncode == 0 and analytics.stdout == "analytics-authorized"
         assert "private, no-store" in analytics.stderr
         assert token not in analytics.stdout + analytics.stderr
-        for file, expected in (("android.apk", "test-only-apk"), ("windows.exe", "test-only-exe")):
+        for file, expected in (
+            ("android.apk", "test-only-apk"),
+            ("windows.exe", "test-only-exe"),
+            *((file, "test-only-archive") for file in new_downloads),
+        ):
             binary = request("/dashboard/downloads/" + file, "admin:" + password)
             assert binary.returncode == 0 and binary.stdout == expected
             assert "Content-Disposition: attachment" in binary.stderr

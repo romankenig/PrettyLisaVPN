@@ -66,7 +66,7 @@ effective at their check time, even after later changes.
 All routes require the existing dashboard login/password over HTTPS. Downloads
 are development builds: one Android debug APK installed over the existing app,
 and the Windows development EXE. They do not require GitHub login. Other platforms
-have no current binaries and are not shown. No release tags or public releases
+were added in 0.6.0 as documented below. No release tags or public releases
 are created. A failed catalog refresh is shown separately from fleet availability.
 
 ## Automatic publication
@@ -164,3 +164,60 @@ and a publisher launched directly as the non-root SSH user. Correct the env
 ownership and use the restricted container helper. Retain those failed runs
 as evidence; final successful source/build/run/attempt identities belong in
 the follow-up PR after deployment and publication have actually completed.
+
+## Chrome and Apple downloads — 2026-11-05
+
+Dashboard **0.5.0 → 0.6.0** adds three platforms. Client versions remain
+Chrome 0.1.0, iOS 0.1.0, macOS 0.1.0 on the develop baseline; backend 0.34.0,
+Windows 0.25.2 and Android 0.21.2 are unchanged. The separate iOS 0.2.0 PR
+is not a published develop build and must not be silently substituted.
+No API/database/authentication change and no public website change.
+
+| Platform | Permanent authenticated download | Installation |
+| --- | --- | --- |
+| Chrome Extension | `/dashboard/downloads/chrome-extension.zip` | Extract, enable developer mode at `chrome://extensions`, load the extracted directory. Browser-only HTTPS proxy. |
+| iOS | `/dashboard/downloads/ios-unsigned.zip` | Unsigned device app; requires an Apple signature and provisioning profile. Not directly installable from Safari, App Store or TestFlight. |
+| macOS | `/dashboard/downloads/macos-unsigned.zip` | Unsigned Release app; real VPN requires appropriate Apple signing and Network Extension provisioning. |
+
+Both Apple downloads have corresponding engine source/license archives at
+`/dashboard/downloads/{ios,macos}-sources.tar.gz`. Neither Apple download claims
+real-device VPN acceptance. Simulator and ad-hoc UI fixture builds are excluded.
+The UI reads version/date/size from the shared catalog every minute. Buttons
+only appear for validated entries with the expected package kind, and all URLs
+remain fixed in code. Existing Android/Windows schema-1 entries stay compatible.
+
+`prepare_client_download.py` normalizes artifacts from their own CI run into the
+existing publisher contract. Chrome carries its original build identity inside
+the ZIP; Apple preserves exact Release ZIP bytes and original run provenance,
+adds a source SHA marker to the matching corresponding-source archive, and reads
+the version from the actual app plist rather than hardcoded packaging metadata.
+Packaging is deterministic so repeating the same original artifact is idempotent.
+The publisher checks MV3/app structure, device SDK (rejecting Simulator), version,
+size, SHA256, original SHA/run/attempt and Apple source/license presence.
+
+Successful Chrome build/lint/test/browser checks and both Apple jobs gate the
+shared publisher. Only a `push` to `develop` publishes; PR/manual/failed builds
+do not. Packaging/publisher/reusable-workflow changes trigger both platform CIs.
+The existing lock and atomic snapshot preserve all five platforms. No release
+tag, Apple signing identity, store publication or extra server token is introduced.
+
+Initial bootstrap candidates are the latest successful develop push artifacts:
+Chrome `0c70d8185664d8ca80c4513205acb3b3c0e8e1a6`, run `41984959319/1`;
+Apple `05d945dbd5da35f1c85523d00b4ab57415882a3c`, run `41822292829/1`.
+Check every job and the artifact's original identity before using them. These
+are existing clients, not builds of the new dashboard/publisher source.
+The task PR records the verified dashboard HEAD/build run, actual HTTP checks,
+artifact hashes, deployment and final CI results; this text alone is not evidence
+of a deployment. Automatic future publication starts when the workflow change
+reaches develop through an approved merge. Keep these links and this rule current
+for subsequent client tasks, as required by the owner and AGENTS.md.
+
+Validation covers five-platform snapshot preservation, immutable/idempotent
+replays, wrong SHA/run/attempt/hash/size/version/kind, missing sources, Simulator
+rejection and unsafe ZIP paths. Caddy tests cover authentication, attachment and
+no-store headers for all new binaries/sources. Dashboard unit tests, TypeScript
+and production build cover catalog parsing and fixed destinations.
+No backend follow-up is needed for downloads; Apple signing/distribution and
+real-device VPN acceptance remain separate work. Restore the retained dashboard
+site and download snapshot symlinks for a deliberate rollback under the existing
+publication lock; do not overwrite immutable files or catalog coordinates.
