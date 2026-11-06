@@ -42,7 +42,7 @@ it aggregates only the currently selected group and server filters.
 
 ## Calculations
 
-- Speed: arithmetic mean of valid measurements, separately for download/upload.
+- Speed: median of valid measurements, separately for download/upload (dashboard 0.6.3). For even N, average the two middle values.
 - Rating: median, with the arithmetic mean of the two middle values for even N.
 - Active connections: sum across selected FREE/PREMIUM servers; repeated checks never increase weight.
 - History uses the latest observation for each server in each UTC hour. Display

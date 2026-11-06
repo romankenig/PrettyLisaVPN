@@ -72,7 +72,7 @@ export default function Dashboard() {
         <article className="metric"><span>Последняя проверка</span><strong className="time">{newest ? clock(newest.observed_at) : "—"}</strong><p>{newest ? modes[newest.mode] : "Ожидаем первое наблюдение"}</p></article>
       </section>
       <section className="panel selection-summary" aria-label="Общие показатели выбранных серверов">
-        <div><span>Средняя скорость ↓ / ↑</span><strong>{number(summary.download.value, 1)} / {number(summary.upload.value, 1)} <small>Мбит/с</small></strong><p>Данные: ↓ {summary.download.covered}/{nodes.length}, ↑ {summary.upload.covered}/{nodes.length} серверов</p></div>
+        <div><span>Медиана скорости ↓ / ↑</span><strong>{number(summary.download.value, 1)} / {number(summary.upload.value, 1)} <small>Мбит/с</small></strong><p>Данные: ↓ {summary.download.covered}/{nodes.length}, ↑ {summary.upload.covered}/{nodes.length} серверов</p></div>
         <div><span>Медиана рейтинга</span><strong>{number(summary.rating.value, 1)} <small>/ 100</small></strong><p>Данные: {summary.rating.covered}/{nodes.length} серверов</p></div>
         <div><span>Активные устройства — сумма</span><strong>{number(summary.active.value)}</strong><p>Данные: {summary.active.covered}/{summary.active.total} серверов FREE / PREMIUM{summary.active.covered < summary.active.total ? " · неполная выборка" : ""}</p></div>
       </section>

@@ -142,6 +142,11 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
         ScreenHeading(tr(R.string.ui_subscription), back)
         LiveLoad(model, Area.BILLING) {
             val billing = state.data.billing
+            if (billing == null) BrandCard(Modifier.testTag("billing-reference-prices")) {
+                Text("Premium", style = MaterialTheme.typography.titleLarge)
+                Text(tr(R.string.billing_reference_month))
+                Text(tr(R.string.billing_reference_prices), style = MaterialTheme.typography.bodySmall)
+            }
             if (billing != null) BrandCard {
                 Text(planLabel(billing.plan), style = MaterialTheme.typography.titleLarge)
                 BrandActionButton(tr(R.string.billing_portal), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, Modifier.testTag("billing-portal"), enabled = !state.busy && !model.fixture)

@@ -315,4 +315,6 @@
     <string name="billing_replace_card">更换银行卡</string>
     <string name="billing_portal">管理订阅和付款</string>
     <string name="billing_sbp_account">已绑定 SBP 银行账户</string>
+    <string name="billing_reference_prices">新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。</string>
+    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / 月</string>
 </resources>

@@ -21,6 +21,7 @@ from prettylisavpn.fleet.domain import (
     WireGuardConfig,
     hourly_slot,
     monitoring_slot,
+    retry_source_order,
     server_quality,
     source_order,
 )
@@ -152,6 +153,23 @@ def test_every_new_node_becomes_source_and_target_with_spread_slots():
         assert selected == set(roster) - {target}
     assert source_order(roster[0], NOW, roster[:1]) == []
     assert hourly_slot(roster[0], NOW + timedelta(days=3), roster) > NOW + timedelta(days=3)
+
+
+def test_retry_sources_are_randomized_without_self_or_previous_source(monkeypatch):
+    roster = [UUID(int=index) for index in range(1, 6)]
+    calls = []
+
+    def shuffle(values):
+        calls.append(list(values))
+        values.reverse()
+
+    monkeypatch.setattr("prettylisavpn.fleet.domain.random.shuffle", shuffle)
+    result = retry_source_order(roster[0], roster + roster, roster[1])
+    assert calls == [roster[2:]]
+    assert result == roster[:1:-1]
+    assert retry_source_order(roster[0], roster[:1], None) == []
+    assert retry_source_order(roster[0], roster[:2], roster[1]) == [roster[1]]
+    assert set(retry_source_order(roster[0], roster, None)) == set(roster[1:])
 
 
 def test_zero_rating_slots_repeat_every_three_minutes_without_synchronizing_nodes():

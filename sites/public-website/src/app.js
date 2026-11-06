@@ -1,5 +1,7 @@
 import { releaseMetadata } from "./downloads.mjs";
 import {
+  cachedPrices,
+  savePublicPrices,
   acquisitionPrices,
   acquisitionReferencePrices,
   formatMonthlyPrice,
@@ -7,6 +9,36 @@ import {
 
 const pricing = document.querySelector("[data-pricing]");
 if (pricing) {
+  let storage;
+  try {
+    storage = localStorage;
+  } catch {
+    /* Private mode may block storage. */
+  }
+  const render = ({ prices, original }, reference) => {
+    for (const node of pricing.querySelectorAll("[data-price]")) {
+      const currency = node.dataset.price;
+      node.textContent = formatMonthlyPrice(
+        prices[currency],
+        currency,
+        document.documentElement.lang,
+      );
+    }
+    for (const node of pricing.querySelectorAll("[data-reference-price]")) {
+      const currency = node.dataset.referencePrice;
+      node.hidden = original[currency] == null;
+      node.textContent = node.hidden
+        ? ""
+        : formatMonthlyPrice(
+            original[currency],
+            currency,
+            document.documentElement.lang,
+          );
+    }
+    pricing.querySelector("[data-price-reference-note]").hidden = !reference;
+  };
+  const saved = cachedPrices(storage);
+  if (saved) render(saved, true);
   fetch("/api/billing/catalog", {
     cache: "no-store",
     credentials: "omit",
@@ -16,28 +48,11 @@ if (pricing) {
     .then((value) => {
       const prices = acquisitionPrices(value);
       if (!prices) return;
-      const original = acquisitionReferencePrices(value);
-      for (const node of pricing.querySelectorAll("[data-price]")) {
-        const currency = node.dataset.price;
-        node.textContent = formatMonthlyPrice(
-          prices[currency],
-          currency,
-          document.documentElement.lang,
-        );
-      }
-      for (const node of pricing.querySelectorAll("[data-reference-price]")) {
-        const currency = node.dataset.referencePrice;
-        if (original[currency] == null) continue;
-        node.textContent = formatMonthlyPrice(
-          original[currency],
-          currency,
-          document.documentElement.lang,
-        );
-        node.hidden = false;
-      }
+      render({ prices, original: acquisitionReferencePrices(value) }, false);
+      savePublicPrices(storage, value);
     })
     .catch(() => {
-      /* Missing prices stay unavailable; never substitute a hardcoded amount. */
+      /* Keep last known public prices or the approved reference prices. */
     });
 }
 

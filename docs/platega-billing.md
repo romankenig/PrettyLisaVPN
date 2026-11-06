@@ -1,5 +1,24 @@
 # Platega: ежемесячная СБП-подписка и кабинет оплаты
 
+## Website price correction — 0.4.1
+
+Owner-requested follow-up: website 0.4.0 → 0.4.1 (PATCH for the acquisition button).
+Premium homepage buttons use «купить» and its existing translations, with the same
+authenticated portal destination. See [price resilience](price-resilience.md) for the
+client patch versions and the owner-approved display-only fallback.
+
+The default-group monthly acquisition price is RUB 39900 minor units with reference
+49900, and USD 500 with reference 700. Publish a new offer UUID using the existing
+`prettylisavpn.billing.catalog` operator command with an expected catalog revision;
+close the previous interval at the new offer's UTC start. Keep other groups and
+scheduled offers intact. Do not modify immutable subscription prices or contracts,
+historical seed migrations or provider configuration. Public reference prices are
+a display-only fallback; they never supply payment authority or contract amounts.
+
+Validation includes all localized button labels, API-driven prices and browser
+currency switching. Actual catalog revision/time, source/build SHA, CI run/attempt
+and static publication evidence belong in the task PR. Real payments stay disabled.
+
 Задача от 2026-11-06. Провайдер выбран владельцем: Platega. После уточнения
 владелец поручил сначала реализовать СБП, затем проверить платёжные ссылки.
 Merchant ID пока не выдан (проверка СБ). Реальные платежи не включены.

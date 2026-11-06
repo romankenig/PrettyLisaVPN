@@ -329,7 +329,8 @@
     "заменить карту": "заменить карту",
     "управлять подпиской и оплатой": "управлять подпиской и оплатой",
     "не удалось открыть кабинет оплаты": "не удалось открыть кабинет оплаты",
-    "СБП · привязанный банковский счёт": "СБП · привязанный банковский счёт"
+    "СБП · привязанный банковский счёт": "СБП · привязанный банковский счёт",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -661,7 +662,8 @@
     "заменить карту": "change card",
     "управлять подпиской и оплатой": "manage subscription and payments",
     "не удалось открыть кабинет оплаты": "could not open the billing portal",
-    "СБП · привязанный банковский счёт": "SBP · linked bank account"
+    "СБП · привязанный банковский счёт": "SBP · linked bank account",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -993,7 +995,8 @@
     "заменить карту": "更换银行卡",
     "управлять подпиской и оплатой": "管理订阅和付款",
     "не удалось открыть кабинет оплаты": "无法打开付款页面",
-    "СБП · привязанный банковский счёт": "SBP · 已绑定银行账户"
+    "СБП · привязанный банковский счёт": "SBP · 已绑定银行账户",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1325,7 +1328,8 @@
     "заменить карту": "cambiar tarjeta",
     "управлять подпиской и оплатой": "gestionar suscripción y pagos",
     "не удалось открыть кабинет оплаты": "no se pudo abrir el portal de pago",
-    "СБП · привязанный банковский счёт": "SBP · cuenta bancaria vinculada"
+    "СБП · привязанный банковский счёт": "SBP · cuenta bancaria vinculada",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "Precios orientativos para una nueva suscripción. Confirmaremos las condiciones antes del pago. El precio de tu contrato actual no cambia."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1657,7 +1661,8 @@
     "заменить карту": "Karte wechseln",
     "управлять подпиской и оплатой": "Abonnement und Zahlungen verwalten",
     "не удалось открыть кабинет оплаты": "Zahlungsportal konnte nicht geöffnet werden",
-    "СБП · привязанный банковский счёт": "SBP · verknüpftes Bankkonto"
+    "СБП · привязанный банковский счёт": "SBP · verknüpftes Bankkonto",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "Richtpreise für ein neues Abonnement. Die aktuellen Konditionen werden vor der Zahlung bestätigt. Ihr bestehender Vertragspreis bleibt unverändert."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1989,6 +1994,7 @@
     "заменить карту": "changer de carte",
     "управлять подпиской и оплатой": "gérer l’abonnement et les paiements",
     "не удалось открыть кабинет оплаты": "impossible d’ouvrir le portail de paiement",
-    "СБП · привязанный банковский счёт": "SBP · compte bancaire lié"
+    "СБП · привязанный банковский счёт": "SBP · compte bancaire lié",
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.": "Prix indicatifs pour un nouvel abonnement. Les conditions seront confirmées avant le paiement. Le prix de votre contrat actuel reste inchangé."
   }
 }

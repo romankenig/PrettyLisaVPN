@@ -36,6 +36,15 @@
 "back" = "back";
 "billing_cancel_detail" = "canceling renewal unlinks the payment method. access remains until the paid period ends.";
 "billing_days_left" = "days remaining: %1$d";
+"billing_fixed_price" = "your agreed price stays fixed until you cancel and subscribe again";
+"billing_next_charge" = "next payment: %1$@ · %2$@";
+"billing_portal" = "manage subscription and payments";
+"billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / month";
+"billing_reference_prices" = "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.";
+"billing_replace_card" = "change card";
+"billing_replace_prompt" = "change your card instead? your subscription terms and paid access stay the same";
+"billing_resubscribe" = "no more automatic payments. you can subscribe again at the current price";
+"billing_sbp_account" = "linked SBP bank account";
 "component_versions" = "frontend %1$@ · backend %2$@";
 "connection_methods" = "connection methods";
 "connection_methods_hint" = "changes apply to the next connection. select at least one method.";
@@ -335,11 +344,3 @@
 "vpn_switching_method" = "%1$@ did not connect. trying %2$@…";
 "vpn_trying_method" = "trying %1$@…";
 "vpn_wireguard_relay" = "WireGuard+";
-"billing_fixed_price" = "your agreed price stays fixed until you cancel and subscribe again";
-"billing_resubscribe" = "no more automatic payments. you can subscribe again at the current price";
-"billing_next_payment" = "next payment";
-"billing_method_title" = "payment method";
-
-"billing_portal" = "Manage subscription and payments";
-"billing_portal_hint" = "The secure billing portal opens in your browser.";
-"billing_sbp_account" = "SBP · linked bank account";

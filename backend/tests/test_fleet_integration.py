@@ -126,6 +126,7 @@ async def test_expired_worker_claim_is_fenced_and_nodes_are_exclusive(fleet_stat
     assert await worker.claim(now) is None
     recovered = await worker.claim(now + timedelta(minutes=21))
     assert recovered.id == first.id and recovered.token != first.token
+    assert recovered.source.id != first.source.id
     assert await worker.finish(first, {}, healthy(datetime.now(UTC))) is False
     assert await worker.finish(recovered, {}, healthy(datetime.now(UTC))) is True
     assert await worker.finish(recovered, {}, healthy(datetime.now(UTC))) is False
@@ -270,6 +271,90 @@ async def test_passive_observation_has_no_fictitious_source(fleet_state):
         )
         assert observation.source_id is None
         assert (await session.get(FleetOperationRecord, claim.id)).source_id is None
+
+
+@pytest.mark.parametrize(
+    "status,mode,code",
+    [
+        ("FAILED", "SYNTHETIC", "HANDSHAKE_FAILED"),
+        ("UNKNOWN", "CONTROL", "PROBE_SOURCE_UNREACHABLE"),
+    ],
+)
+async def test_retry_changes_real_source_after_worker_restart(fleet_state, status, mode, code):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids)
+    request = uuid4()
+    original = await service.enqueue(ids[0], "wireguard", "CHECK", request)
+    worker = FleetWorker(postgres, {})
+    first = await worker.claim(datetime.now(UTC))
+    failed = Observation(status=status, mode=mode, code=code, observed_at=datetime.now(UTC))
+    await worker.finish(first, {}, failed)
+    assert (await service.enqueue(ids[0], "wireguard", "CHECK", request))["id"] == original["id"]
+    async with postgres.session() as session, session.begin():
+        previous = await session.get(FleetOperationRecord, first.id)
+        assert previous.result["probe_source_id"] == str(first.source.id)
+        assert previous.parameters == {}
+        saved = await session.scalar(
+            select(FleetObservationRecord).where(FleetObservationRecord.operation_id == first.id)
+        )
+        assert saved.quality == (None if status == "UNKNOWN" else 0)
+        assert saved.source_id == (None if mode == "CONTROL" else first.source.id)
+        session.add(
+            FleetOperationRecord(
+                node_id=ids[0],
+                method="wireguard",
+                kind="CHECK",
+                request_key="retry:" + str(uuid4()),
+            )
+        )
+    restarted = FleetWorker(postgres, {})
+    second = await restarted.claim(datetime.now(UTC))
+    assert second.target.id == first.target.id
+    assert second.source.id not in (first.source.id, first.target.id)
+    await restarted.finish(second, {}, healthy(datetime.now(UTC)))
+    snapshot = await service.monitoring(ids[0])
+    assert snapshot["nodes"][0]["latest_source_id"] == str(second.source.id)
+
+
+async def test_retry_waits_for_busy_alternative_instead_of_reusing_failed_observer(fleet_state):
+    postgres, service, ids = fleet_state
+    await configured(postgres, ids)
+    worker = FleetWorker(postgres, {})
+    await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
+    first = await worker.claim(datetime.now(UTC))
+    await worker.finish(
+        first,
+        {},
+        Observation(
+            status="FAILED",
+            mode="SYNTHETIC",
+            code="HANDSHAKE_FAILED",
+            observed_at=datetime.now(UTC),
+        ),
+    )
+    alternative = next(
+        identifier for identifier in ids if identifier not in (first.target.id, first.source.id)
+    )
+    async with postgres.session() as session, session.begin():
+        node = await session.get(FleetNodeRecord, alternative)
+        node.lock_owner, node.lock_until = uuid4(), datetime.now(UTC) + timedelta(minutes=5)
+        job = FleetOperationRecord(
+            node_id=ids[0], method="wireguard", kind="CHECK", request_key="retry:" + str(uuid4())
+        )
+        session.add(job)
+        await session.flush()
+        retry_id = job.id
+    assert await worker.claim(datetime.now(UTC)) is None
+    async with postgres.session() as session, session.begin():
+        job = await session.get(FleetOperationRecord, retry_id)
+        assert job.status == "QUEUED" and job.attempts == 0
+        assert job.next_attempt_at > datetime.now(UTC)
+        node = await session.get(FleetNodeRecord, alternative)
+        node.lock_owner, node.lock_until = None, None
+        job.next_attempt_at = datetime.now(UTC) - timedelta(seconds=1)
+    claim = await worker.claim(datetime.now(UTC))
+    assert claim.source.id == alternative
+    await worker.finish(claim, {}, healthy(datetime.now(UTC)))
 
 
 async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_state):

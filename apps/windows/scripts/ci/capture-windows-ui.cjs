@@ -837,9 +837,16 @@ async function main() {
   await page.getByRole("button", { name: "обновить", exact: true }).click();
   await page.getByRole("alert").waitFor();
   if (await page.getByLabel("цена в рублях").count())
-    throw new Error(
-      "Unavailable backend must not show stale or invented prices",
-    );
+    throw new Error("Unavailable backend must not expose a checkout quote");
+  await page.getByText("399 ₽", { exact: true }).waitFor();
+  await page.getByText("$5", { exact: true }).waitFor();
+  await page.getByText(/Справочные цены для новой подписки/).waitFor();
+  if (
+    await page
+      .getByRole("button", { name: "оформить подписку", exact: true })
+      .count()
+  )
+    throw new Error("Reference prices must not enable checkout");
   await screenshot("05f-subscription-unavailable");
   for (const scenario of ["sandbox", "disabled"]) {
     await billingScenario(scenario);
