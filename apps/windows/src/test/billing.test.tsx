@@ -171,6 +171,8 @@ describe("subscription screen", () => {
     );
     fireEvent.focus(window);
     await waitFor(() => expect(billing.overview).toHaveBeenCalledTimes(2));
+    fireEvent.focus(window);
+    await waitFor(() => expect(billing.overview).toHaveBeenCalledTimes(3));
     expect(billing.start).not.toHaveBeenCalled();
   });
   it("shows verified card summary and the authoritative next payment", async () => {

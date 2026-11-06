@@ -84,7 +84,6 @@ function SubscriptionContent() {
   useEffect(() => {
     const refreshOnReturn = () => {
       if (!portalOpened.current || inFlight.current) return;
-      portalOpened.current = false;
       setAttempt((value) => value + 1);
     };
     window.addEventListener("focus", refreshOnReturn);

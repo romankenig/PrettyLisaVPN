@@ -874,6 +874,9 @@ async function main() {
       "SBP recurring authority must not offer an unsupported manual renewal",
     );
   await screenshot("05fb-subscription-sbp");
+  await page.evaluate(
+    () => delete document.documentElement.dataset.paymentReviewUrl,
+  );
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
     .click();
