@@ -313,6 +313,6 @@
     <string name="billing_resubscribe">списаний больше не будет. новую подписку можно оформить по текущей цене</string>
     <string name="billing_replace_prompt">хотите заменить карту? условия подписки и оплаченный срок сохранятся</string>
     <string name="billing_replace_card">заменить карту</string>
-    <string name="billing_portal">Управлять подпиской и оплатой</string>
-    <string name="billing_sbp_account">СБП · привязанный банковский счёт</string>
+    <string name="billing_portal">управлять подпиской и оплатой</string>
+    <string name="billing_sbp_account">привязанный банковский счёт СБП</string>
 </resources>

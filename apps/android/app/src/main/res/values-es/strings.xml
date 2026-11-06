@@ -313,6 +313,6 @@
     <string name="billing_resubscribe">no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual</string>
     <string name="billing_replace_prompt">¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado</string>
     <string name="billing_replace_card">cambiar tarjeta</string>
-    <string name="billing_portal">Gestionar suscripción y pagos</string>
-    <string name="billing_sbp_account">SBP · cuenta bancaria vinculada</string>
+    <string name="billing_portal">gestionar suscripción y pagos</string>
+    <string name="billing_sbp_account">cuenta bancaria SBP vinculada</string>
 </resources>

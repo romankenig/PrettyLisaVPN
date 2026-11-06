@@ -313,6 +313,6 @@
     <string name="billing_resubscribe">aucun autre prélèvement automatique. vous pouvez souscrire à nouveau au prix actuel</string>
     <string name="billing_replace_prompt">changer plutôt de carte ? les conditions et la période payée restent inchangées</string>
     <string name="billing_replace_card">changer de carte</string>
-    <string name="billing_portal">Gérer l’abonnement et les paiements</string>
-    <string name="billing_sbp_account">SBP · compte bancaire lié</string>
+    <string name="billing_portal">gérer l’abonnement et les paiements</string>
+    <string name="billing_sbp_account">compte bancaire SBP lié</string>
 </resources>

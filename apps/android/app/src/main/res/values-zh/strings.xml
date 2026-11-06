@@ -314,5 +314,5 @@
     <string name="billing_replace_prompt">是否改为更换银行卡？订阅条件和已付费期限保持不变</string>
     <string name="billing_replace_card">更换银行卡</string>
     <string name="billing_portal">管理订阅和付款</string>
-    <string name="billing_sbp_account">SBP · 已绑定银行账户</string>
+    <string name="billing_sbp_account">已绑定 SBP 银行账户</string>
 </resources>

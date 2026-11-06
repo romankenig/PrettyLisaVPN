@@ -320,6 +320,6 @@
     <string name="billing_resubscribe">no more automatic payments. you can subscribe again at the current price</string>
     <string name="billing_replace_prompt">change your card instead? your subscription terms and paid access stay the same</string>
     <string name="billing_replace_card">change card</string>
-    <string name="billing_portal">Manage subscription and payments</string>
-    <string name="billing_sbp_account">SBP · linked bank account</string>
+    <string name="billing_portal">manage subscription and payments</string>
+    <string name="billing_sbp_account">linked SBP bank account</string>
 </resources>
