@@ -1,10 +1,13 @@
-# PrettyLisaVPN website · 0.3.0
+# PrettyLisaVPN website · 0.4.0
 
-Minimal static website on https://prettylisavpn.com. Four homepage sections,
+Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents, a billing portal and six translated languages.
 The informational website was previously authorized for publication. The new billing
 portal is implemented, but real Platega payments remain disabled pending merchant
 credentials and live acceptance. See [billing handoff](../../docs/platega-billing.md).
+This revision preserves the deployed 0.3.1 moderation copy, document buttons,
+currency layout and native Android capture from PR #52. Its prices now come from
+the database API, and purchase/manage links open the authenticated billing portal.
 
 ## Run and verify
 

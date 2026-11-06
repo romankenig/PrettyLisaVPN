@@ -12,6 +12,21 @@ export function acquisitionPrices(value) {
   return result;
 }
 
+export function acquisitionReferencePrices(value) {
+  const prices = acquisitionPrices(value);
+  if (!prices) return {};
+  return Object.fromEntries(
+    Object.entries(prices).flatMap(([currency, current]) => {
+      const original = value.offers[0].prices[currency].original_amount_minor;
+      return Number.isSafeInteger(original) &&
+        original > current &&
+        original <= 1e12
+        ? [[currency, original]]
+        : [];
+    }),
+  );
+}
+
 export function formatMonthlyPrice(amount, currency, language) {
   return new Intl.NumberFormat(language, {
     style: "currency",

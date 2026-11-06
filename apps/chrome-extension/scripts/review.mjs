@@ -188,16 +188,39 @@ try {
   await page.screenshot({
     path: path.join(output, "subscription-fixture.png"),
   });
+  // A tab opened by an extension worker can navigate before Playwright attaches
+  // request interception. Capture the real destination and create a blank tab,
+  // then navigate it only after attachment so fixture handoffs never hit the site.
+  const billingWorker =
+    context.serviceWorkers()[0] ??
+    (await context.waitForEvent("serviceworker"));
+  await billingWorker.evaluate(() => {
+    const createTab = chrome.tabs.create.bind(chrome.tabs);
+    globalThis.billingReviewDestination = null;
+    chrome.tabs.create = (details, ...args) => {
+      if (details.url?.startsWith("https://prettylisavpn.com/account/")) {
+        globalThis.billingReviewDestination = details.url;
+        chrome.tabs.create = createTab;
+        return createTab({ ...details, url: "about:blank" }, ...args);
+      }
+      return createTab(details, ...args);
+    };
+  });
   const billingOpened = context.waitForEvent("page");
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
     .click();
   const portal = await billingOpened;
-  await portal.waitForURL("https://prettylisavpn.com/account/**");
+  const destination = await billingWorker.evaluate(
+    () => globalThis.billingReviewDestination,
+  );
   assert.equal(
-    portal.url(),
+    destination,
     "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
   );
+  await portal.goto(destination);
+  assert.equal(portal.url(), destination);
+  assert.equal(await portal.title(), "Fixture billing portal");
   await portal.close();
 
   await page.getByRole("button", { name: "о приложении", exact: true }).click();

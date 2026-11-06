@@ -1,7 +1,7 @@
 {
   "name": "deutsch",
   "title": "vpn für ihren alltag",
-  "description": "PrettyLisaVPN für android und windows. wählen sie, welchen datenverkehr sie schützen möchten, und verbinden sie sich mit einem konto.",
+  "description": "PrettyLisaVPN für android und windows. eine verschlüsselte verbindung und ein konto für ihre geräte.",
   "nav": {
     "features": "funktionen",
     "download": "herunterladen",
@@ -9,26 +9,27 @@
     "language": "sprache",
     "menu": "menü",
     "home": "zur startseite",
-    "skip": "zum inhalt"
+    "skip": "zum inhalt",
+    "pricing": "tarife"
   },
   "launch": "start für den 15. november geplant",
   "hero": {
-    "title": "ihr internet.\nihre regeln.",
+    "title": "verbindungsschutz.\nauf ihren geräten.",
     "text": "vpn für den alltag. auf telefon und computer — mit verständlichen einstellungen und einem konto.",
     "button": "gerät auswählen",
     "link": "so funktioniert es"
   },
   "features": {
     "eyebrow": "weniger schritte",
-    "title": "eine verbindung,\ndie sich ihnen anpasst",
+    "title": "eine verschlüsselte verbindung\nfür den alltag",
     "items": [
       {
-        "title": "schützen sie, was sie brauchen",
-        "text": "den gesamten datenverkehr, ausgewählte dienste oder alles außer ihrer auswahl. die listen für beide modi werden getrennt gespeichert."
+        "title": "schutz des netzwerkverkehrs",
+        "text": "vpn stellt eine verschlüsselte verbindung zwischen ihrem gerät und dem server des dienstes her."
       },
       {
-        "title": "die passende verbindungsart",
-        "text": "die app probiert verfügbare verbindungsarten aus und merkt sich die erfolgreiche. sie können die verbindungsart auch selbst auswählen."
+        "title": "übersichtliche bedienung",
+        "text": "mit einer taste verbinden und trennen. die app zeigt den verbindungsstatus an."
       },
       {
         "title": "ein konto, fünf geräte",
@@ -39,7 +40,7 @@
   "screens": {
     "caption": "echte app-ansichten · demodaten",
     "windows": "startseite der windows-app",
-    "android": "dienstauswahl in der android-app",
+    "android": "startbildschirm der android-app",
     "settings": "einstellungen der verbindungsarten für windows"
   },
   "platforms": {
@@ -87,7 +88,7 @@
     "steps": [
       "laden sie die app herunter und installieren sie sie. bestätigen sie die vpn-berechtigung des systems, wenn ihr gerät danach fragt.",
       "geben sie ihre e-mail-adresse und den einmalcode aus der nachricht ein.",
-      "wählen sie ein land, legen sie den zu schützenden datenverkehr fest und tippen sie auf „verbinden“."
+      "wählen sie ein land und tippen sie auf verbinden. der startbildschirm zeigt den verbindungsstatus an."
     ],
     "upcoming": "diese option wird später verfügbar sein. bis dahin können sie die apps für android und windows nutzen.",
     "alternatives": "andere geräte",
@@ -118,12 +119,12 @@
         "a": "während des bezahlten zeitraums gibt es mit premium kein tägliches zeitlimit. das abonnement gilt für einen kalendermonat und wird manuell verlängert. tarif und zugangszeitraum sind in der app sichtbar."
       },
       {
-        "q": "kann ich nur ausgewählte dienste verbinden?",
-        "a": "mit Split-Tunneling wählst du, was über das VPN läuft und was deine normale Verbindung nutzt. ändere den Modus auf der Startseite der App unter „was schützen“.\n\n„alles“ — der gesamte Datenverkehr läuft über das VPN.\n\n„ausgewählte“ — nur Dienste aus deiner Liste nutzen das VPN, etwa YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n„außer ausgewählten“ — umgekehrt: Dienste aus der Liste verbinden sich direkt, alles andere läuft über das VPN. zum Beispiel kannst du Gosuslugi und MAX ausnehmen.\n\ntippe auf „Dienste wählen“ und aktiviere die gewünschten Dienste oder füge ein eigenes Muster hinzu: youtube.com für diese Domain, *.youtube.com für ihre Subdomains. ein Dienst kann mehrere Domains nutzen; ein fertiger Eintrag ist deshalb meist einfacher.\n\nbeide Modi speichern eigene Listen. beim Speichern wird das VPN getrennt — verbinde dich erneut, um die Auswahl anzuwenden."
+        "q": "was schützt ein vpn?",
+        "a": "vpn verschlüsselt den datenverkehr zwischen ihrem gerät und dem server des dienstes, auch in öffentlichen wlan-netzen. nutzen sie außerdem https, app-updates und sichere anmeldeverfahren zum schutz ihrer konten. vpn ersetzt keinen geräteschutz."
       },
       {
         "q": "vpn verbindet sich nicht. was tun?",
-        "a": "prüfen sie das internet ohne vpn, aktualisieren sie die app und versuchen sie in den einstellungen ein anderes land oder eine andere verbindungsart. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
+        "a": "prüfen sie ihre internetverbindung ohne vpn und aktualisieren sie die app. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
       },
       {
         "q": "der anmeldecode kommt nicht an?",
@@ -136,25 +137,26 @@
     ]
   },
   "footer": {
-    "seller": "Кениг Роман Сергеевич · selbstständig, russland · steuernummer 183475316809",
     "copyright": "PrettyLisaVPN",
     "terms": "nutzungsbedingungen",
     "privacy": "datenschutzerklärung",
     "refunds": "erstattungen und beschwerden",
-    "payments": "zahlung, kündigung und verlängerung"
+    "payments": "zahlung, kündigung und verlängerung",
+    "claims": "reklamationen & zahlungen",
+    "documents": "dokumente"
   },
   "legal": {
     "updated": "fassung vom 6. november 2026",
     "terms": [
-      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com.",
+      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. fragen zum dienst, zu zahlungen und reklamationen: help@prettylisavpn.com.",
       "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
       "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
-      "sie können den gesamten datenverkehr, ausgewählte dienste oder alles außer ausgewählten diensten über vpn leiten. geschwindigkeit und verfügbarkeit hängen von netzwerk, gerät, server und externen ressourcen ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
+      "vpn verschlüsselt die verbindung zwischen ihrem gerät und dem server des dienstes. geschwindigkeit und verfügbarkeit hängen vom netzwerk, gerät und server ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
       "nutzen sie den dienst rechtmäßig. unbefugter zugriff auf fremde systeme, schadsoftware, spam und angriffe auf die infrastruktur sind unzulässig.",
       "wenden sie sich bei fragen zur app an den support. zahlungsbedingungen und die bearbeitung finanzieller ansprüche werden auf gesonderten seiten beschrieben. diese bedingungen schränken keine rechte nach anwendbarem recht ein."
     ],
     "privacy": [
-      "für die datenverarbeitung durch PrettyLisaVPN ist Кениг Роман Сергеевич, steuernummer 183475316809, verantwortlich. fragen zu personenbezogenen daten: help@prettylisavpn.com.",
+      "fragen zur verarbeitung personenbezogener daten bei PrettyLisaVPN: help@prettylisavpn.com.",
       "für den kontobetrieb werden e-mail-adresse, kennung, status sowie erstellungs- und änderungsdatum verwendet. die geräteverwaltung verwendet die installationskennung, gerätename und plattform sowie zeitpunkte der anmeldung und des zugangsentzugs.",
       "der dienst verarbeitet informationen zum tarif, zugangszeitraum, zu anmeldeereignissen, vpn-sitzungen und technischen verbindungsergebnissen. sie werden für die autorisierung, zeiterfassung, verbindungsverwaltung, unterstützung und bewertung der dienstleistung benötigt.",
       "die produktanalyse erfasst ereignisse der kontonutzung und den technischen betrieb des dienstes. ihre ereignisse enthalten keinen browserverlauf, keine adressen besuchter seiten, dns-anfragen oder paketinhalte. dies beschreibt die analyse und behauptet nicht, dass keinerlei technische protokolle existieren.",
@@ -178,7 +180,8 @@
       "SBP-Abonnements verlängern sich nach Ihrer Zustimmung einmal pro Kalendermonat automatisch. Der vereinbarte Betrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert. Ein einmaliger Zahlungslink aktiviert keine automatische Verlängerung.",
       "In der Abonnementverwaltung können Sie künftige Abbuchungen stoppen und das Bankkonto entfernen. Der bezahlte Zugang bleibt bis zum angezeigten Datum erhalten. Bei einem neuen Abschluss gilt der dann aktuelle Preis.",
       "prüfen sie bei der zahlung tarif, währung, gesamtbetrag und gebührenangaben auf der zahlungsseite. kartendaten und cvc werden nur auf der zahlungsseite des anbieters eingegeben, nicht auf der website von PrettyLisaVPN oder in e-mails an den support.",
-      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt."
+      "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt.",
+      "der höchstbetrag pro transaktion beträgt 10.000 RUB. guthabenaufladungen und frei wählbare beträge werden nicht angeboten. zahlungen sind noch nicht verfügbar."
     ]
   },
   "notFound": {
@@ -186,12 +189,36 @@
     "text": "gehen sie zur startseite, um die app herunterzuladen oder hilfe zu finden."
   },
   "pricing": {
-    "title": "das passende Abo",
+    "eyebrow": "in ihrem tempo",
+    "title": "ein konto. ein klarer preis.",
+    "intro": "kostenlos starten oder premium für einen kalendermonat wählen.",
+    "free": "eine stunde vpn pro tag und konto.",
+    "freeButton": "kostenlos starten",
+    "description": "vpn ohne zeitlimit.",
+    "features": [
+      "ein verfügbares serverland wählen",
+      "bis zu fünf aktive geräte pro konto",
+      "ohne werbung"
+    ],
+    "currencies": {
+      "RUB": "in rubel",
+      "USD": "in dollar"
+    },
+    "basePrice": "basispreis",
+    "currentPrice": "aktueller preis",
+    "period": "pro monat",
+    "buy": "kaufen",
+    "renewal": "eine zahlung für einen monat. manuelle verlängerung ohne automatische abbuchungen.",
+    "availability": "zahlungen sind noch nicht verfügbar. den kostenlosen tarif können sie bereits in der app testen.",
+    "documents": "kaufbedingungen",
+    "contact": "fragen zur zahlung",
+    "unavailableTitle": "zahlungen sind vorübergehend nicht verfügbar",
+    "unavailableText": "die zahlungsabwicklung ist noch nicht angeschlossen. es wurde kein geld abgebucht und kein abonnement abgeschlossen. versuchen sie es später erneut oder kontaktieren sie uns bei zahlungsfragen.",
+    "close": "verstanden",
+    "currency": "währung",
     "text": "ein Konto für alle Geräte",
-    "free": "1 Stunde täglich, ohne Werbung",
     "premium": "unbegrenzte Zeit · Länderwahl",
     "unavailable": "Preise nicht verfügbar",
-    "period": "pro Monat",
     "unavailableCheckout": "Abo-Abschluss bald verfügbar",
     "terms": "monatliche Verlängerung. der vereinbarte Preis bleibt bis zur Kündigung erhalten.",
     "manage": "Abonnement verwalten",

@@ -67,6 +67,88 @@ try {
     locale: "ru-RU",
   });
   page.on("pageerror", (error) => errors.push(error.message));
+  let catalogAvailable = true;
+  await page.route("**/api/billing/catalog", (route) =>
+    route.fulfill({
+      status: catalogAvailable ? 200 : 503,
+      json: {
+        offers: [
+          {
+            id: offer,
+            plan: "PREMIUM",
+            period: "MONTH",
+            prices: {
+              RUB: { amount_minor: 12345, original_amount_minor: 15000 },
+              USD: { amount_minor: 789, original_amount_minor: 999 },
+            },
+          },
+        ],
+      },
+    }),
+  );
+  for (const language of ["", "en", "de", "fr", "es", "zh"]) {
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(origin + (language ? `/${language}/` : "/"));
+      await page.waitForFunction(() =>
+        globalThis.document
+          .querySelector('[data-price="RUB"]')
+          ?.textContent.includes("123"),
+      );
+      assert.match(
+        await page.locator('[data-reference-price="RUB"]').textContent(),
+        /150/,
+      );
+      assert.equal(await page.locator('[data-price="RUB"]').isVisible(), true);
+      assert.equal(
+        await page.locator('[data-free-currency="RUB"]').isVisible(),
+        true,
+      );
+      assert.equal(await page.locator(".document-button").count(), 4);
+      assert.equal(
+        await page.evaluate(
+          () =>
+            globalThis.document.documentElement.scrollWidth <=
+            globalThis.innerWidth,
+        ),
+        true,
+      );
+      if (!language && width === 1280)
+        await page
+          .locator("#pricing")
+          .screenshot({ path: `${output}/00-pricing-desktop.png` });
+      await page.getByText("$ USD", { exact: true }).click();
+      assert.equal(await page.locator('[data-price="USD"]').isVisible(), true);
+      assert.equal(await page.locator('[data-price="RUB"]').isVisible(), false);
+      assert.equal(
+        await page.locator('[data-free-currency="USD"]').isVisible(),
+        true,
+      );
+      assert.match(
+        await page.locator('[data-price="USD"]').textContent(),
+        /7[.,]89/,
+      );
+      if (!language && width === 390)
+        await page
+          .locator("#pricing")
+          .screenshot({ path: `${output}/00-pricing-mobile.png` });
+    }
+  }
+  catalogAvailable = false;
+  await Promise.all([
+    page.waitForResponse("**/api/billing/catalog"),
+    page.goto(origin + "/"),
+  ]);
+  assert.equal(
+    await page.locator('[data-reference-price="RUB"]').isVisible(),
+    false,
+  );
+  assert.equal(
+    await page.locator('[data-price="RUB"]').textContent(),
+    "цены пока недоступны",
+  );
+  catalogAvailable = true;
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await page.route("**/api/web/billing/**", async (route) => {
     const path = new URL(route.request().url()).pathname.replace(
       "/api/web/billing",
