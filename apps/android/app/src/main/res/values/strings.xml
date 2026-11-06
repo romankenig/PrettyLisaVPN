@@ -322,6 +322,6 @@
     <string name="billing_replace_card">change card</string>
     <string name="billing_portal">manage subscription and payments</string>
     <string name="billing_sbp_account">linked SBP bank account</string>
-    <string name="billing_reference_prices">reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.</string>
+    <string name="billing_reference_prices">reference prices for a new subscription. we will confirm current terms before payment. your existing contract price stays unchanged.</string>
     <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / month</string>
 </resources>

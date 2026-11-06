@@ -35,7 +35,7 @@
 "billing_next_charge" = "nächste Abbuchung: %1$@ · %2$@";
 "billing_portal" = "abonnement und Zahlungen verwalten";
 "billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / Monat";
-"billing_reference_prices" = "richtpreise für ein neues Abonnement. Die aktuellen Konditionen werden vor der Zahlung bestätigt. Ihr bestehender Vertragspreis bleibt unverändert.";
+"billing_reference_prices" = "richtpreise für ein neues Abonnement. die aktuellen Konditionen werden vor der Zahlung bestätigt. ihr bestehender Vertragspreis bleibt unverändert.";
 "billing_replace_card" = "karte wechseln";
 "billing_replace_prompt" = "möchten Sie stattdessen die Karte wechseln? die Abobedingungen und die bezahlte Laufzeit bleiben erhalten";
 "billing_resubscribe" = "keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich";

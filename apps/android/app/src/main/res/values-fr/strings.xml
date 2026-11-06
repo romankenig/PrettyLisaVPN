@@ -315,6 +315,6 @@
     <string name="billing_replace_card">changer de carte</string>
     <string name="billing_portal">gérer l’abonnement et les paiements</string>
     <string name="billing_sbp_account">compte bancaire SBP lié</string>
-    <string name="billing_reference_prices">prix indicatifs pour un nouvel abonnement. Les conditions seront confirmées avant le paiement. Le prix de votre contrat actuel reste inchangé.</string>
+    <string name="billing_reference_prices">prix indicatifs pour un nouvel abonnement. les conditions seront confirmées avant le paiement. le prix de votre contrat actuel reste inchangé.</string>
     <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / mois</string>
 </resources>
