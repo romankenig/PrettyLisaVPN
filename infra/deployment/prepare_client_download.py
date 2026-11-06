@@ -14,7 +14,7 @@ import tarfile
 import zipfile
 from pathlib import Path
 
-from publish_client import FILES, PACKAGE_KINDS, SOURCES, archive_version
+from publish_client import FILES, PACKAGE_KINDS, SIMULATOR_FILE, SOURCES, archive_version
 
 
 def prepare(
@@ -74,6 +74,15 @@ def prepare(
         "sha256": hashlib.sha256(payload).hexdigest(),
         "bytes": len(payload),
     }
+    if platform == "ios":
+        simulator = (directory / SIMULATOR_FILE).read_bytes()
+        if archive_version(simulator, "ios", simulator=True) != identity["version"]:
+            raise ValueError("Simulator and device versions differ")
+        (output / SIMULATOR_FILE).write_bytes(simulator)
+        identity["simulator"] = {
+            "sha256": hashlib.sha256(simulator).hexdigest(),
+            "bytes": len(simulator),
+        }
     (output / "build-identity.json").write_text(
         json.dumps(identity, indent=2) + "\n", encoding="utf-8"
     )

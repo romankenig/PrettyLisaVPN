@@ -35,6 +35,8 @@ PACKAGE_KINDS = {
 }
 VERSION = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 SOURCES = "managed-source.tar.gz"
+SIMULATOR_FILE = "PrettyLisaVPN-iOS-Simulator.zip"
+SIMULATOR_DOWNLOAD = "ios-simulator.zip"
 
 
 def sources(directory: Path, platform: str, version: str, sha: str) -> dict[str, bytes]:
@@ -93,7 +95,7 @@ def order(entry: dict[str, Any]) -> tuple[int, ...]:
     )
 
 
-def archive_version(payload: bytes, platform: str) -> str:
+def archive_version(payload: bytes, platform: str, *, simulator: bool = False) -> str:
     """Check the actual extension/app, never infer installability from a ZIP suffix."""
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         names = archive.namelist()
@@ -122,17 +124,21 @@ def archive_version(payload: bytes, platform: str) -> str:
             prefix = "PrettyLisaVPN.app/" + ("Contents/" if platform == "macos" else "")
             info = plistlib.loads(read_metadata(prefix + "Info.plist"))
             executable = prefix + ("MacOS/" if platform == "macos" else "") + "PrettyLisaVPN"
+            sdk = (
+                "iphonesimulator" if simulator else "macosx" if platform == "macos" else "iphoneos"
+            )
             if (
                 info.get("CFBundleExecutable") != "PrettyLisaVPN"
                 or info.get("CFBundlePackageType") != "APPL"
-                or info.get("DTPlatformName") != ("macosx" if platform == "macos" else "iphoneos")
+                or info.get("DTPlatformName") != sdk
                 or executable not in names
                 or not any(
                     name.startswith(prefix + "PlugIns/") and name.endswith("Info.plist")
                     for name in names
                 )
             ):
-                raise ValueError("Expected a device release app with its tunnel extension")
+                kind = "Simulator" if simulator else "device release"
+                raise ValueError(f"Expected a {kind} app with its tunnel extension")
             version = info.get("CFBundleShortVersionString")
         if not isinstance(version, str) or not VERSION.fullmatch(version):
             raise ValueError("Invalid archive version")
@@ -239,6 +245,30 @@ def validate(
             entry["licenses_sha256"] = hashlib.sha256(
                 companions["windows-licenses.txt"]
             ).hexdigest()
+    # Optional for legacy catalogs; new Apple CI packages always include it.
+    # Both variants share the parent build coordinates and corresponding sources.
+    if platform == "ios" and "simulator" in identity:
+        metadata = identity["simulator"]
+        path = directory / SIMULATOR_FILE
+        if (
+            not isinstance(metadata, dict)
+            or path.is_symlink()
+            or not path.is_file()
+            or not 0 < path.stat().st_size <= 512 * 1024 * 1024
+        ):
+            raise ValueError("Invalid Simulator package")
+        simulator_payload = path.read_bytes()
+        simulator_digest = hashlib.sha256(simulator_payload).hexdigest()
+        if (
+            metadata.get("sha256") != simulator_digest
+            or metadata.get("bytes") != len(simulator_payload)
+            or archive_version(simulator_payload, "ios", simulator=True) != version
+        ):
+            raise ValueError("Simulator identity mismatch")
+        companions[SIMULATOR_DOWNLOAD] = simulator_payload
+        entry["simulator_url"] = "/dashboard/downloads/" + SIMULATOR_DOWNLOAD
+        entry["simulator_sha256"] = simulator_digest
+        entry["simulator_bytes"] = len(simulator_payload)
     return entry, payload, companions
 
 
@@ -265,6 +295,7 @@ def publish(root: Path, directory: Path, platform: str, sha: str, run: int, atte
                         "source_sha",
                         "sources_sha256",
                         "licenses_sha256",
+                        "simulator_sha256",
                     )
                 ):
                     raise ValueError("Conflicting immutable build")
@@ -303,6 +334,7 @@ def publish(root: Path, directory: Path, platform: str, sha: str, run: int, atte
             for key, name in (
                 ("sources_sha256", f"{client}-sources.tar.gz"),
                 ("licenses_sha256", "windows-licenses.txt"),
+                ("simulator_sha256", SIMULATOR_DOWNLOAD),
             ):
                 if key in item:
                     (snapshot / name).symlink_to(

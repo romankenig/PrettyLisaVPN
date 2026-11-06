@@ -728,3 +728,14 @@ real backend OTP verification is unchanged. Authentication survives browser rest
 old proxy overrides are cleared and a new connection requires explicit Connect.
 Windows navigation is unchanged. See [Chrome handoff](chrome-extension.md) for
 verification and the separate proxy node/DNS rollout dependency.
+
+### Dashboard 0.6.1: separate iOS download destinations
+
+The authenticated API dashboard now offers separate iOS buttons for Simulator
+(`/dashboard/downloads/ios-simulator.zip`) and physical iPhone
+(`/dashboard/downloads/ios-unsigned.zip`). Simulator instructions describe uploading
+the downloaded ARM64 ZIP to a compatible browser service; there is no automatic
+upload, external account creation or inferred service URL. Device signing and
+Simulator limitations stay visible. These implemented download transitions do not
+change Windows navigation. Publication and exact-archive Keychain/launch acceptance
+are tracked in [the download handoff](dashboard-client-downloads.md).

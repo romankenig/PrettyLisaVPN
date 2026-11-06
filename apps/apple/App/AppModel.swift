@@ -75,6 +75,9 @@ import PrettyLisaCore
         vpn.onAuthorizationLost = { [weak self] in self?.error = "REAUTH_REQUIRED"; self?.needsSignIn = true }
         #if DEBUG && targetEnvironment(simulator)
         simulator.onChange = { [weak self] in self?.objectWillChange.send() }
+        if ProcessInfo.processInfo.arguments.contains("-verify-keychain") {
+            try verifySimulatorKeychain(vault)
+        }
         #endif
     }
     var controller: any VPNControlling {

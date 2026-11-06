@@ -7,6 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 for path in (ROOT / "Config").glob("*.entitlements"):
     value = plistlib.loads(path.read_bytes())
+    if path.stem == 'Simulator':
+        assert value == {'application-identifier': '$(PRODUCT_BUNDLE_IDENTIFIER)',
+                         'keychain-access-groups': ['$(PRODUCT_BUNDLE_IDENTIFIER)']}
+        continue
     assert value["com.apple.developer.networking.networkextension"] == ["packet-tunnel-provider"]
     assert value["keychain-access-groups"] == ["$(KEYCHAIN_GROUP)"]
     if path.stem.endswith('-iOS'):
@@ -23,8 +27,8 @@ for target, entitlement in (('PrettyLisaVPN-iOS', 'App-iOS'), ('PacketTunnel-iOS
         rf'^  {target}:\n(.*?)(?=^  \S|\Z)', project, re.MULTILINE | re.DOTALL
     ).group(1)
     assert f'CODE_SIGN_ENTITLEMENTS: Config/{entitlement}.entitlements' in settings
-for platform in ("iOS", "macOS"):
-    assert "MARKETING_VERSION = 0.1.0" in (ROOT / f"Config/{platform}.xcconfig").read_text()
+for platform, version in {"iOS": "0.1.1", "macOS": "0.1.0"}.items():
+    assert f"MARKETING_VERSION = {version}" in (ROOT / f"Config/{platform}.xcconfig").read_text()
 model = (ROOT / "App/AppModel.swift").read_text()
 assert '#if DEBUG' in model
 assert '#if targetEnvironment(simulator)' in model

@@ -66,6 +66,18 @@ class DownloadArchiveTests(unittest.TestCase):
                     b"test-only",
                 )
                 archive.writestr(prefix + "PlugIns/Tunnel.appex/Info.plist", b"test-only")
+            if platform == "ios":
+                with (
+                    zipfile.ZipFile(directory / PUBLISHER.FILES[platform]) as source,
+                    zipfile.ZipFile(directory / PUBLISHER.SIMULATOR_FILE, "w") as simulator,
+                ):
+                    for name in source.namelist():
+                        data = source.read(name)
+                        if name == prefix + "Info.plist":
+                            info = plistlib.loads(data)
+                            info["DTPlatformName"] = "iphonesimulator"
+                            data = plistlib.dumps(info)
+                        simulator.writestr(name, data)
             with tarfile.open(
                 directory / "corresponding-source-and-licenses.tar.gz", "w:gz"
             ) as archive:
@@ -144,6 +156,38 @@ class DownloadArchiveTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unsafe"):
             PUBLISHER.archive_version(stream.getvalue(), "ios")
 
+    def test_simulator_is_a_distinct_verified_companion_and_legacy_is_supported(self):
+        directory = self.package("ios")
+        entry, _, companions = PUBLISHER.validate(directory, "ios", SHA, 100, 1)
+        self.assertEqual(entry["simulator_url"], "/dashboard/downloads/ios-simulator.zip")
+        self.assertEqual(
+            entry["simulator_sha256"],
+            hashlib.sha256(companions[PUBLISHER.SIMULATOR_DOWNLOAD]).hexdigest(),
+        )
+        identity_path = directory / "build-identity.json"
+        identity = json.loads(identity_path.read_text())
+        for metadata in (None, {}, {"sha256": "0" * 64, "bytes": entry["simulator_bytes"]}):
+            identity_path.write_text(json.dumps({**identity, "simulator": metadata}))
+            with self.assertRaises(ValueError):
+                PUBLISHER.validate(directory, "ios", SHA, 100, 1)
+        identity_path.write_text(json.dumps(identity))
+        simulator = directory / PUBLISHER.SIMULATOR_FILE
+        simulator.unlink()
+        with self.assertRaisesRegex(ValueError, "Invalid Simulator"):
+            PUBLISHER.validate(directory, "ios", SHA, 100, 1)
+        del identity["simulator"]
+        identity_path.write_text(json.dumps(identity))
+        legacy, _, _ = PUBLISHER.validate(directory, "ios", SHA, 100, 1)
+        self.assertNotIn("simulator_url", legacy)
+
+    def test_device_archive_cannot_be_substituted_for_simulator(self):
+        original = self.original("ios")
+        (original / PUBLISHER.SIMULATOR_FILE).write_bytes(
+            (original / PUBLISHER.FILES["ios"]).read_bytes()
+        )
+        with self.assertRaisesRegex(ValueError, "Simulator app"):
+            PREPARE.prepare(original, self.base / "bad", "ios", SHA, 100, 1, "push")
+
     @unittest.skipIf(os.name == "nt", "Publisher uses Linux flock and symlinks")
     def test_new_platforms_preserve_existing_downloads_and_replay_atomically(self):
         root = self.base / "served"
@@ -166,3 +210,20 @@ class DownloadArchiveTests(unittest.TestCase):
                 ).hexdigest(),
                 entry["sha256"],
             )
+        self.assertEqual(
+            hashlib.sha256((root / "current/ios-simulator.zip").read_bytes()).hexdigest(),
+            clients["ios"]["simulator_sha256"],
+        )
+        directory = self.base / "ios-download"
+        path = directory / PUBLISHER.SIMULATOR_FILE
+        with zipfile.ZipFile(path, "a") as archive:
+            archive.writestr("test-only.txt", "changed simulator, same device")
+        identity_path = directory / "build-identity.json"
+        identity = json.loads(identity_path.read_text())
+        identity["simulator"] = {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "bytes": path.stat().st_size,
+        }
+        identity_path.write_text(json.dumps(identity))
+        with self.assertRaisesRegex(ValueError, "Conflicting immutable"):
+            PUBLISHER.publish(root, directory, "ios", SHA, 100, 1)

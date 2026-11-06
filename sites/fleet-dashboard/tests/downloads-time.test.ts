@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { clock, date, TIME_ZONE_LABEL } from "../src/time.ts";
-import { readClients, downloadUrls, sourceUrls, installNotes } from "../src/downloads.ts";
+import { readClients, downloadUrls, sourceUrls, simulatorUrl, installNotes } from "../src/downloads.ts";
 
 test("GMT+3 remains fixed, including midnight rollover and summer/winter", () => {
   assert.equal(TIME_ZONE_LABEL, "GMT+3");
@@ -10,6 +10,19 @@ test("GMT+3 remains fixed, including midnight rollover and summer/winter", () =>
   assert.equal(clock("2026-01-01T10:30:00Z"), "13:30");
   assert.equal(clock("2026-07-01T10:30:00Z"), "13:30");
   assert.equal(date(null), "—");
+});
+
+test("Simulator link requires its own verified companion; legacy iOS keeps device only", () => {
+  const client = { version: "0.1.0", published_at: "2026-11-05T12:00:00Z", bytes: 20000, package_kind: "unsigned-app" };
+  const companion = { simulator_url: simulatorUrl, simulator_sha256: "a".repeat(64), simulator_bytes: 19000 };
+  const parse = (fields: object) => readClients({ schema: 1, clients: { ios: { ...client, ...fields } } }).ios;
+  assert.equal(parse({})?.has_simulator, undefined);
+  assert.equal(parse(companion)?.has_simulator, true);
+  for (const fields of [{ simulator_url: downloadUrls.ios }, { simulator_url: "https://untrusted.invalid" }, { simulator_sha256: "bad" }, { simulator_bytes: 0 }]) {
+    assert.equal(parse({ ...companion, ...fields })?.has_simulator, undefined);
+  }
+  assert.equal(simulatorUrl, "/dashboard/downloads/ios-simulator.zip");
+  assert.match(installNotes.ios, /Appetize/);
 });
 
 test("downloads tolerate a missing platform and never use catalog-controlled links", () => {

@@ -181,7 +181,8 @@ No API/database/authentication change and no public website change.
 
 Both Apple downloads have corresponding engine source/license archives at
 `/dashboard/downloads/{ios,macos}-sources.tar.gz`. Neither Apple download claims
-real-device VPN acceptance. Simulator and ad-hoc UI fixture builds are excluded.
+real-device VPN acceptance. The initial 0.6.0 links excluded Simulator and ad-hoc
+UI fixture builds; 0.6.1 adds a distinct Simulator companion as documented below.
 The UI reads version/date/size from the shared catalog every minute. Buttons
 only appear for validated entries with the expected package kind, and all URLs
 remain fixed in code. Existing Android/Windows schema-1 entries stay compatible.
@@ -221,3 +222,50 @@ No backend follow-up is needed for downloads; Apple signing/distribution and
 real-device VPN acceptance remain separate work. Restore the retained dashboard
 site and download snapshot symlinks for a deliberate rollback under the existing
 publication lock; do not overwrite immutable files or catalog coordinates.
+
+## iOS Simulator download — 2026-11-05
+
+Dashboard **0.6.0 → 0.6.1** fixes selection of the wrong SDK package for browser
+simulators. iOS **0.1.0 → 0.1.1** also fixes missing Simulator Keychain entitlements
+found during exact-archive launch review. macOS remains 0.1.0; backend is 0.34.1
+and Chrome 0.1.2 after PR #60; Windows stays 0.25.2 and Android 0.21.2.
+
+Use `/dashboard/downloads/ios-simulator.zip` for Appetize or Apple Simulator
+(ARM64, iOS 17+). It contains the original `PrettyLisaVPN.app` built with the
+`iphonesimulator` SDK. Upload the ZIP to the browser service's Simulator/ARM
+environment. `/dashboard/downloads/ios-unsigned.zip` remains the unsigned physical
+iPhone build and cannot be uploaded as a Simulator app. Both links use existing
+dashboard authentication; download locally before uploading to an external service.
+No external service account or app has been created or changed by this task.
+
+Apple CI packages both archives from its own run, installs and launches the exact
+Simulator ZIP, verifies read/write/update/delete through the real Keychain adapter
+with a disposable noncredential value, then relaunches without fixture arguments,
+records its SHA256 and captures
+`simulator-download.png`. This proves native Simulator launch, not an Appetize
+upload or a real VPN tunnel. Simulator-only ad-hoc signing supplies the app's own
+application identifier/access group through Xcode's Simulator build settings;
+packaging preserves that signature. No Apple team, shared native-device group or
+plaintext credential fallback is introduced. The diagnostic exists only in Debug
+Simulator builds and runs solely with `-verify-keychain`. The earlier 0.1.0 archive
+from PR build `75051b7dcf270f0c066ee7d8d7688ea2d3d0475e`, run 42032440782/1,
+launched but showed SECURE_STORAGE_UNAVAILABLE; it is not storage acceptance of
+0.1.1. Final source/build and native evidence belong in PR #58.
+Appetize format requirements:
+https://docs.appetize.io/platform/app-management/uploading-apps/ios.
+
+The existing iOS entry has optional `simulator_url`, `simulator_sha256` and
+`simulator_bytes`; legacy catalogs remain compatible and show only the device
+button. The publisher checks the separate Simulator SDK, version, hash and size,
+retains the companion across all platform updates, and rejects conflicting
+immutable companions. Device, Simulator and sources share original SHA/run/attempt
+and one atomic publication. New Apple packaging requires the Simulator archive;
+missing/invalid archives fail the build. Preserve this companion in future changes.
+
+Tests cover swapped SDKs, corrupt/missing companions, legacy catalogs, fixed URLs,
+five-platform preservation, immutable replay conflicts and Caddy authentication/
+attachment headers. Record exact product HEAD, PR merge/build SHA, run/attempt,
+artifact hashes, all CI jobs and deployment evidence in the task PR after checks.
+No new endpoint, migration, credential or backend follow-up is required. Install
+the new publisher before the next publication; old publishers omit this companion
+when recreating snapshots. Follow the existing retained-snapshot rollback process.
