@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Fleet dashboard — 0.6.2
+
+- Show each hour as a proportional gradient of selected servers' states, so one
+  failed node no longer paints the entire fleet as failed. Tooltips and accessible
+  labels report exact counts; unknown/pending states remain distinct.
+- Align history by UTC timestamp and keep missing observations unknown. Servers
+  not yet registered do not dilute outages. See [history handoff](docs/dashboard-group-metrics.md#proportional-availability-history--2026-11-06).
+
 ### Billing — backend 0.35.0 / Windows 0.26.0 / Android 0.22.0 / Chrome, iOS, macOS 0.2.0 / website 0.3.0
 
 - Add monthly Platega SBP subscriptions, verified callbacks and ledger recovery,

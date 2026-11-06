@@ -1,8 +1,10 @@
-# PrettyLisaVPN website · 0.2.0
+# PrettyLisaVPN website · 0.3.0
 
 Minimal static website on https://prettylisavpn.com. Four homepage sections,
-seven platform pages, four documents and six fully translated languages.
-The owner authorized public publication. Commercial checkout remains separate.
+seven platform pages, four documents, a billing portal and six translated languages.
+The informational website was previously authorized for publication. The new billing
+portal is implemented, but real Platega payments remain disabled pending merchant
+credentials and live acceptance. See [billing handoff](../../docs/platega-billing.md).
 
 ## Run and verify
 
@@ -27,9 +29,14 @@ website publication and do not activate payments.
 ## Structure
 
 - `src/locales/*.json`: complete ru/en/de/fr/es/zh UI and legal content.
-- `src/structure.mjs`, `src/pages.mjs`: 78 static pages; contextual language links.
+- `src/structure.mjs`, `src/pages.mjs`: 96 static pages; contextual language links.
 - `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
-  version/size/hash metadata. No cookies, local storage, tracking or payment forms.
+  version/size/hash metadata; no browsing analytics.
+- `src/portal.mjs`: OTP/cookie-authenticated billing portal; prices and payment
+  operations come only from the backend API. The browser holds no provider secrets
+  or card details. Its account-scoped local journal stores only operation/request
+  identifiers and the original command for safe retries; the session cookie is
+  Secure, HttpOnly and SameSite=Strict. Bank agreement happens on Platega's page.
 - `src/model.mjs`: internal commercial readiness; not shipped to browsers.
 - `assets/screenshots/`: unchanged native captures and exact CI provenance.
 - `scripts/build.mjs`: clean static output, local Rubik/brand assets and build ID.

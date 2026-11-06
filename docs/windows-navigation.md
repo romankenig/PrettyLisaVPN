@@ -762,3 +762,11 @@ upload, external account creation or inferred service URL. Device signing and
 Simulator limitations stay visible. These implemented download transitions do not
 change Windows navigation. Publication and exact-archive Keychain/launch acceptance
 are tracked in [the download handoff](dashboard-client-downloads.md).
+
+### Dashboard 0.6.2: proportional availability history
+
+The overall/group hour strip shows proportional server-state colors with exact
+counts on hover or keyboard focus. Clicking an hour still opens the existing
+measurement details, and filters keep their current routes. This is implemented
+dashboard presentation using the existing API; Windows navigation is unchanged.
+See [history handoff](dashboard-group-metrics.md#proportional-availability-history--2026-11-06).

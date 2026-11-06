@@ -1,5 +1,33 @@
 # Dashboard group metrics — 2026-10-29
 
+## Proportional availability history — 2026-11-06
+
+Dashboard 0.6.1 → 0.6.2: PATCH correcting the fleet/group history display.
+Backend, client versions, API and schema are unchanged. Based on develop
+`df97054f54274ad2a2773294632fa47848964d34`, after billing PR #61.
+
+Each hour uses a CSS linear gradient with proportional, clearly separated color
+stops. Every selected server has equal weight regardless of its check count.
+Two healthy servers and one failed server produce two-thirds turquoise and
+one-third red, not a fully red hour. Full red means all servers registered during
+that hour failed. Degraded, unknown and pending states keep their own colors;
+missing evidence is not treated as success or failure. Not-yet-registered servers
+are excluded from the proportion and listed separately in the tooltip. If none
+were registered, the hour remains light gray.
+
+Hours align by UTC timestamp rather than array position. A missing hour for a
+selected server is unknown. Group/server filters apply before aggregation.
+Hover and keyboard labels report exact counts; clicking retains the existing
+per-server measurement details. Individual server timelines retain their colors.
+
+Verification covers partial/full outage, all healthy, degraded/unknown/pending,
+registration boundaries, missing/misaligned hours, equal weighting and filters.
+Run `npm test` and `npm run build` in `sites/fleet-dashboard`; browser review uses
+synthetic mixed-state history at desktop/mobile sizes. Product/build SHA, all
+Actions results and artifact links are recorded in the task PR after the final
+push. This document does not claim deployment; the existing dashboard install
+procedure is a separate publication action.
+
 ## Scope and versions
 
 Dashboard 0.3.0 → 0.4.0 (new aggregate calculations and chart placement).
