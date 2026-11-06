@@ -918,7 +918,7 @@ async function main() {
             throw new Error("Native price differs from recorded backend");
         }
       }
-      if (scenario === "platinum") {
+      if (scenario === "platinum" && !offer) {
         await page
           .getByText(
             "тариф назначен вручную. продление через оплату недоступно.",
@@ -930,7 +930,7 @@ async function main() {
       } else {
         const action = page.getByRole("button", {
           name:
-            overview.plan === "FREE"
+            (overview.new_contract_required ?? overview.plan === "FREE")
               ? "оформить подписку"
               : "продлить подписку",
           exact: true,

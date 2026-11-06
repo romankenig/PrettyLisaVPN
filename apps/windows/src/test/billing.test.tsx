@@ -554,6 +554,38 @@ describe("billing contract and provider navigation", () => {
 });
 
 describe("read-only server billing", () => {
+  it("keeps an expired contract on renewal and offers a new contract to manual Platinum", async () => {
+    const view = setup("free", undefined, {
+      ...fixtures.active,
+      plan: "FREE",
+      status: "EXPIRED",
+      actions: [],
+      payment_operations_available: false,
+      provider_mode: "DISABLED",
+      new_contract_required: false,
+    });
+    expect(
+      await screen.findByRole("button", { name: "продлить подписку" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "оформить подписку" }),
+    ).not.toBeInTheDocument();
+    view.unmount();
+    setup("free", undefined, {
+      ...fixtures.free,
+      plan: "PLATINUM",
+      status: "ACTIVE",
+      paid_until: fixtures.active.paid_until,
+      actions: [],
+      payment_operations_available: false,
+      provider_mode: "DISABLED",
+      new_contract_required: true,
+    });
+    expect(
+      await screen.findByRole("button", { name: "оформить подписку" }),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("199");
+  });
   function overview(scenario: "free" | "active" | "canceled" = "free") {
     return {
       ...fixtures[scenario],
