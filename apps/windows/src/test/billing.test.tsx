@@ -108,6 +108,19 @@ async function openPaymentChoice(name = "оформить подписку") {
 }
 
 describe("subscription screen", () => {
+  it("shows the SBP schedule without unsupported manual renewal", async () => {
+    setup("active", undefined, fixtures.sbp);
+    expect(
+      await screen.findByText("СБП · привязанный банковский счёт"),
+    ).toBeVisible();
+    expect(screen.getByText(/следующее списание/)).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "продлить подписку" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "изменить способ оплаты" }),
+    ).not.toBeInTheDocument();
+  });
   it("opens the account portal without starting a charge in the client", async () => {
     const url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43);
     const portal = vi.fn().mockResolvedValue(url);

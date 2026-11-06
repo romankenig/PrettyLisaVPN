@@ -859,6 +859,29 @@ async function main() {
       throw new Error("Non-live provider must not enable Windows payments");
     await screenshot(`05fa-provider-${scenario}-disabled`);
   }
+  await billingScenario("sbp");
+  await page.getByRole("button", { name: "обновить", exact: true }).click();
+  await page.locator(".billing-next-charge").waitFor();
+  await page
+    .getByText("СБП · привязанный банковский счёт", { exact: true })
+    .waitFor();
+  if (
+    await page
+      .getByRole("button", { name: "продлить подписку", exact: true })
+      .count()
+  )
+    throw new Error(
+      "SBP recurring authority must not offer an unsupported manual renewal",
+    );
+  await screenshot("05fb-subscription-sbp");
+  await page
+    .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.documentElement.dataset.paymentReviewUrl === "opened",
+  );
+  if (await lastBillingCommand())
+    throw new Error("Opening the portal must not start a charge");
   if (billingEvidence) {
     for (const [scenario, overview] of Object.entries(
       billingEvidence.snapshots,

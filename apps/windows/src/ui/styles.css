@@ -1517,13 +1517,13 @@ input,
 }
 .billing-card {
   min-width: 0;
-  padding: 20px;
+  padding: 16px;
   border-radius: 18px;
   background: var(--color-mercury);
   color: var(--color-black);
 }
 .billing-card h2 {
-  margin: 8px 0;
+  margin: 6px 0;
   font-size: 24px;
   font-weight: 600;
 }
@@ -1532,7 +1532,7 @@ input,
   color: var(--color-scorpion);
 }
 .billing-term {
-  margin: 8px 0;
+  margin: 6px 0;
   font-size: 13px;
 }
 .billing-remaining {
@@ -1548,7 +1548,7 @@ input,
 }
 .billing-renewal {
   display: inline-block;
-  margin: 4px 0 12px;
+  margin: 4px 0 8px;
   padding: 5px 8px;
   border-radius: 7px;
   background: rgb(81 214 202 / 28%);
@@ -1607,7 +1607,7 @@ input,
 .billing-prices {
   display: grid;
   gap: 6px;
-  margin: 10px 0 12px;
+  margin: 6px 0 8px;
 }
 .billing-price-primary,
 .billing-price-secondary {
@@ -1653,13 +1653,22 @@ input,
   background: transparent;
   color: var(--color-christalle);
 }
+.billing-portal {
+  width: auto;
+  max-width: 55%;
+  margin: 0 12px 0 auto;
+  padding: 8px 12px;
+  border-color: var(--color-viking);
+  background: var(--color-viking);
+  color: var(--color-black);
+}
 .billing-danger {
   border: 1px solid rgb(200 43 40 / 30%);
   background: transparent;
   color: var(--color-persian-red);
 }
 .billing-footnote {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: var(--color-scorpion);
   font-size: 11px;
   line-height: 1.5;

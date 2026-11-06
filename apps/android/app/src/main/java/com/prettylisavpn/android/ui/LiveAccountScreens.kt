@@ -144,7 +144,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
             val billing = state.data.billing
             if (billing != null) BrandCard {
                 Text(planLabel(billing.plan), style = MaterialTheme.typography.titleLarge)
-                BrandActionButton(tr(R.string.billing_portal), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) } }, Modifier.testTag("billing-portal"), enabled = !state.busy && !model.fixture)
+                BrandActionButton(tr(R.string.billing_portal), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, Modifier.testTag("billing-portal"), enabled = !state.busy && !model.fixture)
                 Text(tr(R.string.ui_paid_until_0, readableDate(billing.paidUntil, java.util.Locale.forLanguageTag(language.code), java.time.ZoneId.systemDefault()) ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("live-paid-until"))
                 if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(billing.paidUntil, now)?.let { Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left")) }
                 Text(tr(R.string.ui_auto_renewal_0, if (billing.autoRenew) tr(R.string.ui_on) else tr(R.string.ui_off)))

@@ -256,6 +256,10 @@ function SubscriptionContent() {
     data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ??
     false;
   const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
+  const showOffer =
+    data?.payment_method?.kind !== "SBP" ||
+    newContract ||
+    data.actions.includes("RENEW");
 
   async function openProvider(url: string) {
     if (!paymentsEnabled(latestData.current)) return;
@@ -405,6 +409,16 @@ function SubscriptionContent() {
       </Link>
       <div className="subscription-heading">
         <h1 id="subscription-title">{t("подписка")}</h1>
+        {billing?.portal ? (
+          <button
+            className="billing-primary billing-portal"
+            type="button"
+            disabled={busy || loading}
+            onClick={() => void openPortal()}
+          >
+            {t("управлять подпиской и оплатой")}
+          </button>
+        ) : null}
         <button
           className="billing-refresh"
           type="button"
@@ -430,16 +444,6 @@ function SubscriptionContent() {
               aria-label={t("тариф и стоимость")}
             >
               <span className="billing-eyebrow">{t("ваш тариф")}</span>
-              {billing?.portal ? (
-                <button
-                  className="billing-primary"
-                  type="button"
-                  disabled={busy || loading}
-                  onClick={() => void openPortal()}
-                >
-                  {t("управлять подпиской и оплатой")}
-                </button>
-              ) : null}
               <h2>{t(planName(data.plan))}</h2>
               <p className="billing-term">
                 {paid ? (
@@ -532,7 +536,7 @@ function SubscriptionContent() {
                     "тариф назначен вручную. продление через оплату недоступно.",
                   )}
                 </p>
-              ) : (
+              ) : showOffer ? (
                 <>
                   {offers.length > 1 ? (
                     <label className="billing-offer-select">
@@ -625,7 +629,7 @@ function SubscriptionContent() {
                     )}
                   </p>
                 </>
-              )}
+              ) : null}
             </section>
             <section
               className="billing-card billing-method"
