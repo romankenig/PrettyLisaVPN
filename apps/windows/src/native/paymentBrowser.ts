@@ -26,7 +26,12 @@ export function createPaymentBrowser(
 ): PaymentBrowser {
   return {
     async open(raw) {
-      const url = validatePaymentUrl(raw, allowedHosts);
+      const url =
+        /^https:\/\/prettylisavpn\.com\/account\/#handoff=[A-Za-z0-9_-]{43}$/.test(
+          raw,
+        )
+          ? raw
+          : validatePaymentUrl(raw, allowedHosts);
       if (!isTauri()) throw new Error("NATIVE_PAYMENT_BROWSER_REQUIRED");
       await invoke("open_payment_url", { url });
     },

@@ -308,4 +308,11 @@
     <string name="faq_support_a">abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.</string>
     <string name="billing_days_left">días restantes: %1$d</string>
     <string name="billing_cancel_detail">cancelar la renovación desvincula el método de pago. el acceso continúa hasta el fin del periodo pagado.</string>
+    <string name="billing_next_charge">próximo cobro: %1$s · %2$s</string>
+    <string name="billing_fixed_price">el precio acordado se mantiene hasta cancelar y suscribirse de nuevo</string>
+    <string name="billing_resubscribe">no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual</string>
+    <string name="billing_replace_prompt">¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado</string>
+    <string name="billing_replace_card">cambiar tarjeta</string>
+    <string name="billing_portal">Gestionar suscripción y pagos</string>
+    <string name="billing_sbp_account">SBP · cuenta bancaria vinculada</string>
 </resources>

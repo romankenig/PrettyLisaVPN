@@ -320,7 +320,16 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем».\n\n«всё» — весь трафик идёт через VPN.\n\n«выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение.\n\n«кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX.\n\nнажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант.\n\nу двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки."
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.",
+    "улучшить": "улучшить",
+    "следующее списание": "следующее списание",
+    "цена закреплена за подпиской и сохраняется при смене карты": "цена закреплена до отмены подписки и нового оформления",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "списаний больше не будет. новую подписку можно оформить по текущей цене",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "хотите заменить карту? условия подписки и оплаченный срок сохранятся",
+    "заменить карту": "заменить карту",
+    "управлять подпиской и оплатой": "управлять подпиской и оплатой",
+    "не удалось открыть кабинет оплаты": "не удалось открыть кабинет оплаты",
+    "СБП · привязанный банковский счёт": "СБП · привязанный банковский счёт"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -643,7 +652,16 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "in [subscription], you can see your paid period, price, payment method and available actions.",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "if automatic renewal is enabled, turn it off in [subscription]. wait for cancellation confirmation: paid access lasts until the displayed date.",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "split tunneling lets you choose what uses the VPN and what uses your regular connection. change the mode in “what to protect” on [home].\n\n“all” — all traffic uses the VPN.\n\n“selected” — only the services in your list use the VPN. for example, YouTube and Telegram; other websites and apps use your regular connection.\n\n“except selected” — the reverse: listed services connect directly, while other traffic uses the VPN. for example, you can exclude Gosuslugi and MAX.\n\ntap “choose services” and enable the ones you need, or add your own pattern: youtube.com for that domain, *.youtube.com for its subdomains. a service may use several domains, so a preset is usually easier.\n\nthe two modes have separate lists. saving changes disconnects the VPN — reconnect to apply your selection.",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "open the [support form] in the app or email help@prettylisavpn.com. describe the problem and when it happened."
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "open the [support form] in the app or email help@prettylisavpn.com. describe the problem and when it happened.",
+    "улучшить": "upgrade",
+    "следующее списание": "next payment",
+    "цена закреплена за подпиской и сохраняется при смене карты": "your agreed price stays fixed until you cancel and subscribe again",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "there will be no more automatic payments. you can subscribe again at the current price",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "change your card instead? your subscription terms and paid access stay the same",
+    "заменить карту": "change card",
+    "управлять подпиской и оплатой": "manage subscription and payments",
+    "не удалось открыть кабинет оплаты": "could not open the billing portal",
+    "СБП · привязанный банковский счёт": "SBP · linked bank account"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -966,7 +984,16 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "在[订阅]中可以查看已付费期限、价格、付款方式和可用操作。",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "如果已开启自动续费，可在[订阅]中关闭。请等待取消确认；已付费的访问权限保留至显示的到期日期。",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "分流让你选择哪些服务通过 VPN，哪些使用普通网络。在[主页]的“保护哪些流量”中切换模式。\n\n“全部”：所有流量都通过 VPN。\n\n“所选”：只有列表中的服务通过 VPN，例如 YouTube 和 Telegram；其他网站和应用使用普通网络。\n\n“除所选外”：正好相反，列表中的服务直接联网，其余流量通过 VPN。例如，可以排除 Gosuslugi 和 MAX。\n\n点击“选择服务”并开启需要的服务，也可以添加自己的规则：youtube.com 表示该域名，*.youtube.com 表示它的子域名。一个服务可能使用多个域名，因此选择预设服务通常更方便。\n\n两种模式分别保存各自的列表。保存修改会断开 VPN，请重新连接以应用选择。",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "打开应用内的[支持表单]，或发送邮件至 help@prettylisavpn.com。请说明问题及发生时间。"
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "打开应用内的[支持表单]，或发送邮件至 help@prettylisavpn.com。请说明问题及发生时间。",
+    "улучшить": "升级",
+    "следующее списание": "下次扣款",
+    "цена закреплена за подпиской и сохраняется при смене карты": "约定价格保持不变，直至取消后重新订阅",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "不会再自动扣款。您可以按当前价格重新订阅",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "是否改为更换银行卡？订阅条件和已付费期限保持不变",
+    "заменить карту": "更换银行卡",
+    "управлять подпиской и оплатой": "管理订阅和付款",
+    "не удалось открыть кабинет оплаты": "无法打开付款页面",
+    "СБП · привязанный банковский счёт": "SBP · 已绑定银行账户"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1289,7 +1316,16 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "en [suscripción] puedes consultar el período pagado, el precio, el método de pago y las acciones disponibles.",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "si la renovación automática está activada, desactívala en [suscripción]. espera la confirmación: el acceso pagado se mantiene hasta la fecha indicada.",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "el túnel dividido permite elegir qué usa el VPN y qué usa tu conexión habitual. cambia el modo en « qué proteger » en [inicio].\n\n« todo » — todo el tráfico pasa por el VPN.\n\n« seleccionados » — solo los servicios de tu lista usan el VPN, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usan la conexión habitual.\n\n« excepto seleccionados » — al revés: los servicios de la lista se conectan directamente y el resto pasa por el VPN. por ejemplo, puedes excluir Gosuslugi y MAX.\n\npulsa « elegir servicios » y activa los que necesites, o añade un patrón: youtube.com para ese dominio, *.youtube.com para sus subdominios. un servicio puede usar varios dominios, por lo que elegir uno predefinido suele ser más fácil.\n\nlos dos modos guardan listas separadas. al guardar los cambios se desconecta el VPN; vuelve a conectarte para aplicarlos.",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió."
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.",
+    "улучшить": "mejorar",
+    "следующее списание": "próximo cobro",
+    "цена закреплена за подпиской и сохраняется при смене карты": "el precio acordado se mantiene hasta cancelar y suscribirse de nuevo",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado",
+    "заменить карту": "cambiar tarjeta",
+    "управлять подпиской и оплатой": "gestionar suscripción y pagos",
+    "не удалось открыть кабинет оплаты": "no se pudo abrir el portal de pago",
+    "СБП · привязанный банковский счёт": "SBP · cuenta bancaria vinculada"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1612,7 +1648,16 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "unter [Abonnement] findest du den bezahlten Zeitraum, Preis, die Zahlungsmethode und verfügbare Aktionen.",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "wenn die automatische Verlängerung aktiv ist, schalte sie unter [Abonnement] aus. warte auf die Bestätigung: der bezahlte Zugang bleibt bis zum angezeigten Datum bestehen.",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "mit Split-Tunneling wählst du, was über das VPN läuft und was deine normale Verbindung nutzt. ändere den Modus auf der [Startseite] unter „was schützen“.\n\n„alles“ — der gesamte Datenverkehr läuft über das VPN.\n\n„ausgewählte“ — nur Dienste aus deiner Liste nutzen das VPN, etwa YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n„außer ausgewählten“ — umgekehrt: Dienste aus der Liste verbinden sich direkt, alles andere läuft über das VPN. zum Beispiel kannst du Gosuslugi und MAX ausnehmen.\n\ntippe auf „Dienste wählen“ und aktiviere die gewünschten Dienste oder füge ein eigenes Muster hinzu: youtube.com für diese Domain, *.youtube.com für ihre Subdomains. ein Dienst kann mehrere Domains nutzen; ein fertiger Eintrag ist deshalb meist einfacher.\n\nbeide Modi speichern eigene Listen. beim Speichern wird das VPN getrennt — verbinde dich erneut, um die Auswahl anzuwenden.",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "öffne das [Supportformular] in der App oder schreibe an help@prettylisavpn.com. beschreibe das Problem und wann es auftrat."
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "öffne das [Supportformular] in der App oder schreibe an help@prettylisavpn.com. beschreibe das Problem und wann es auftrat.",
+    "улучшить": "verbessern",
+    "следующее списание": "nächste Abbuchung",
+    "цена закреплена за подпиской и сохраняется при смене карты": "der vereinbarte Preis bleibt bis zur Kündigung und einem neuen Abschluss gleich",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "es erfolgen keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "möchten Sie stattdessen die Karte wechseln? Abobedingungen und bezahlte Laufzeit bleiben erhalten",
+    "заменить карту": "Karte wechseln",
+    "управлять подпиской и оплатой": "Abonnement und Zahlungen verwalten",
+    "не удалось открыть кабинет оплаты": "Zahlungsportal konnte nicht geöffnet werden",
+    "СБП · привязанный банковский счёт": "SBP · verknüpftes Bankkonto"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -1935,6 +1980,15 @@
     "в [подписке] можно посмотреть оплаченный срок, цену, способ оплаты и доступные действия.": "dans [abonnement], consultez la période payée, le prix, le moyen de paiement et les actions disponibles.",
     "если автопродление включено, отключите его в [подписке]. дождитесь подтверждения отмены: оплаченный доступ сохранится до указанной даты.": "si le renouvellement automatique est activé, désactivez-le dans [abonnement]. attendez la confirmation : l’accès payé reste valable jusqu’à la date affichée.",
     "разделение трафика позволяет выбрать, что открывать через VPN, а что — через обычное подключение. режим меняется на [главной] в блоке «что защищаем». «всё» — весь трафик идёт через VPN. «выбранное» — через VPN идут только сервисы из списка. например, YouTube и Telegram; остальные сайты и приложения используют обычное подключение. «кроме выбранного» — наоборот: сервисы из списка идут напрямую, а остальной трафик — через VPN. например, можно исключить Госуслуги и MAX. нажмите «выбрать сервисы», включите нужные или добавьте свою маску: youtube.com для этого домена, *.youtube.com — для его поддоменов. у одного сервиса может быть несколько доменов, поэтому удобнее выбрать готовый вариант. у двух режимов отдельные списки. сохранение изменений отключает VPN — подключитесь заново, чтобы применить выбор.": "le routage sélectif permet de choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle. changez le mode dans « que protéger » sur [l’accueil].\n\n« tout » — tout le trafic passe par le VPN.\n\n« sélection » — seuls les services de votre liste utilisent le VPN, par exemple YouTube et Telegram. les autres sites et applications utilisent la connexion habituelle.\n\n« sauf sélection » — c’est l’inverse : les services de la liste passent en direct, et le reste par le VPN. vous pouvez par exemple exclure Gosuslugi et MAX.\n\nappuyez sur « choisir les services » et activez ceux souhaités, ou ajoutez un motif : youtube.com pour ce domaine, *.youtube.com pour ses sous-domaines. un service peut utiliser plusieurs domaines ; choisir un service prédéfini est généralement plus simple.\n\nles deux modes conservent des listes distinctes. enregistrer les modifications déconnecte le VPN : reconnectez-vous pour les appliquer.",
-    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu."
+    "откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.": "ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.",
+    "улучшить": "améliorer",
+    "следующее списание": "prochain prélèvement",
+    "цена закреплена за подпиской и сохраняется при смене карты": "le prix convenu reste fixe jusqu’à la résiliation et une nouvelle souscription",
+    "списаний больше не будет. новую подписку можно оформить по текущей цене": "aucun autre prélèvement automatique ne sera effectué. vous pouvez souscrire à nouveau au prix actuel",
+    "хотите заменить карту? условия подписки и оплаченный срок сохранятся": "changer plutôt de carte ? les conditions de votre abonnement et la période payée restent inchangées",
+    "заменить карту": "changer de carte",
+    "управлять подпиской и оплатой": "gérer l’abonnement et les paiements",
+    "не удалось открыть кабинет оплаты": "impossible d’ouvrir le portail de paiement",
+    "СБП · привязанный банковский счёт": "SBP · compte bancaire lié"
   }
 }

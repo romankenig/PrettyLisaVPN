@@ -308,4 +308,11 @@
     <string name="faq_support_a">ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.</string>
     <string name="billing_days_left">jours restants : %1$d</string>
     <string name="billing_cancel_detail">la résiliation supprime le moyen de paiement enregistré. l’accès reste actif jusqu’à la fin de la période payée.</string>
+    <string name="billing_next_charge">prochain prélèvement : %1$s · %2$s</string>
+    <string name="billing_fixed_price">le prix convenu reste fixe jusqu’à la résiliation et une nouvelle souscription</string>
+    <string name="billing_resubscribe">aucun autre prélèvement automatique. vous pouvez souscrire à nouveau au prix actuel</string>
+    <string name="billing_replace_prompt">changer plutôt de carte ? les conditions et la période payée restent inchangées</string>
+    <string name="billing_replace_card">changer de carte</string>
+    <string name="billing_portal">Gérer l’abonnement et les paiements</string>
+    <string name="billing_sbp_account">SBP · compte bancaire lié</string>
 </resources>

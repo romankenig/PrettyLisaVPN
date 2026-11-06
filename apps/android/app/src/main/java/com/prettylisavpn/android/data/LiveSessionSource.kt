@@ -19,6 +19,7 @@ class LiveSessionSource(
     private val uploads: suspend (List<String>) -> List<SupportUpload> = { emptyList() },
     override val vpn: com.prettylisavpn.android.vpn.AndroidVpnHost? = null,
 ) : ScreenSource {
+    override suspend fun billingPortal(): String = mutex.withLock { sessions.request { api().billingPortal(it) } }
     private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
     override val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> = transfer
     override val recoveryRequired get() = sessions.needsRecovery

@@ -2358,3 +2358,17 @@ input,
     animation: none;
   }
 }
+
+.account-upgrade {
+  color: var(--color-purple-heart);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.billing-next-charge {
+  background: #f4edff;
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--color-christalle);
+  line-height: 1.6;
+}

@@ -53,12 +53,12 @@ test("all six client languages have complete UI, download instructions and four 
   assert.throws(() => routeFor("unknown"));
   assert.equal(escape('<script>"&'), "&lt;script&gt;&quot;&amp;");
 });
-test("home has exactly four sections, one launch notice and seven distinct platform pages", () => {
+test("home has five sections including database-backed prices, one launch notice and seven distinct platform pages", () => {
   const all = pages();
-  assert.equal(all.size, 78);
+  assert.equal(all.size, 96);
   for (const language of languages) {
     const html = all.get(routeFor(language));
-    assert.equal((html.match(/<section /g) ?? []).length, 4);
+    assert.equal((html.match(/<section /g) ?? []).length, 5);
     assert.equal((html.match(/class="launch"/g) ?? []).length, 1);
     assert.ok(html.includes(locales[language].launch));
     assert.equal((html.match(/class="platform-card /g) ?? []).length, 7);
@@ -133,7 +133,6 @@ test("all links and anchors resolve; documents and language links preserve conte
   for (const route of [
     "/plans/",
     "/checkout/",
-    "/account/",
     "/readiness/",
     "/legal/seller/",
     "/legal/acceptable-use/",
@@ -188,9 +187,9 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
   }
 });
 test("commercial launch remains separate from authorized informational publication", () => {
-  assert.equal(website.renewal, "MANUAL");
+  assert.equal(website.renewal, "MONTHLY_SUBSCRIPTION");
   assert.equal(website.paymentAdapterImplemented, false);
-  assert.equal(website.providers.cardlink.approved, false);
+  assert.equal(website.providers.platega.approved, false);
   assert.ok(releaseBlockers().length >= 6);
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,
@@ -244,7 +243,7 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "screenshots/android-services.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
-  for (const route of ["/readiness/", "/plans/", "/account/", "/checkout/"])
+  for (const route of ["/readiness/", "/plans/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);
   assert.equal(

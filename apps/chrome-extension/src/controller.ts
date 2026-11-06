@@ -1,3 +1,4 @@
+import { parseBilling, portalURL } from "./billing";
 import {
   API,
   PROBE,
@@ -460,8 +461,11 @@ export class Controller {
     }
     return result;
   }
+  async billingPortal() {
+    return portalURL(await this.request("/billing/portal", { method: "POST" }));
+  }
   async billing() {
-    return this.request("/billing/overview");
+    return parseBilling(await this.request("/billing/overview"));
   }
   async support(input: {
     request_id: string;

@@ -308,4 +308,11 @@
     <string name="faq_support_a">откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.</string>
     <string name="billing_days_left">осталось дней: %1$d</string>
     <string name="billing_cancel_detail">отмена продления отвяжет способ оплаты. доступ сохранится до конца оплаченного срока.</string>
+    <string name="billing_next_charge">следующее списание: %1$s · %2$s</string>
+    <string name="billing_fixed_price">цена закреплена до отмены подписки и нового оформления</string>
+    <string name="billing_resubscribe">списаний больше не будет. новую подписку можно оформить по текущей цене</string>
+    <string name="billing_replace_prompt">хотите заменить карту? условия подписки и оплаченный срок сохранятся</string>
+    <string name="billing_replace_card">заменить карту</string>
+    <string name="billing_portal">Управлять подпиской и оплатой</string>
+    <string name="billing_sbp_account">СБП · привязанный банковский счёт</string>
 </resources>

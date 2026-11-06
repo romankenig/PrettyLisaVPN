@@ -9,11 +9,12 @@ import {
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import fixtures from "../../scripts/ci/billing-fixtures.json";
-import { createApiClient } from "../api/client";
+import { ApiError, createApiClient } from "../api/client";
 import { createBillingClient } from "../billing/client";
 import {
   parseOverview,
   paymentsEnabled,
+  paymentMethodLabel,
   type BillingClient,
   type BillingOperation,
 } from "../billing/model";
@@ -53,11 +54,13 @@ function setup(
   scenario: "free" | "active" | "canceled" = "free",
   country?: () => Promise<PublicLocation>,
   overview: unknown = fixtures[scenario],
+  portal?: BillingClient["portal"],
 ) {
   const billing: BillingClient = {
     overview: vi.fn().mockResolvedValue(parseOverview(overview)),
     start: vi.fn().mockResolvedValue(pending),
     operation: vi.fn().mockResolvedValue(pending),
+    ...(portal ? { portal } : {}),
   };
   const open = vi.fn().mockResolvedValue(undefined);
   const vpnConnection = createTestVpnConnection();
@@ -105,6 +108,100 @@ async function openPaymentChoice(name = "оформить подписку") {
 }
 
 describe("subscription screen", () => {
+  it("opens the account portal without starting a charge in the client", async () => {
+    const url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43);
+    const portal = vi.fn().mockResolvedValue(url);
+    const { open, billing } = setup("free", undefined, fixtures.free, portal);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "управлять подпиской и оплатой",
+      }),
+    );
+    await waitFor(() => expect(open).toHaveBeenCalledWith(url));
+    expect(portal).toHaveBeenCalledWith("token", expect.any(AbortSignal));
+    expect(billing.start).not.toHaveBeenCalled();
+  });
+  it("ends an invalid native session instead of opening a billing portal", async () => {
+    const { open, session } = setup(
+      "free",
+      undefined,
+      fixtures.free,
+      vi.fn().mockRejectedValue(new ApiError("AUTH_INVALID")),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "управлять подпиской и оплатой",
+      }),
+    );
+    await waitFor(() => expect(session.current()).toBeNull());
+    expect(open).not.toHaveBeenCalled();
+  });
+  it("shows verified card summary and the authoritative next payment", async () => {
+    const value = {
+      ...fixtures.active,
+      next_charge_at: "2026-12-06T10:00:00Z",
+      next_charge_price: fixtures.active.current_price,
+      new_contract_required: false,
+      payment_method: {
+        provider: "test",
+        label: "Visa •••• 4242",
+        kind: "CARD",
+        card_brand: "visa",
+        card_last4: "4242",
+      },
+    };
+    setup("active", undefined, value);
+    await screen.findByText("Visa •••• 4242");
+    expect(screen.getByText(/следующее списание/)).toHaveTextContent(
+      "6 декабря 2026",
+    );
+    expect(screen.getByText(/цена закреплена/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "отменить подписку" }));
+    expect(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "заменить карту",
+      }),
+    ).toBeInTheDocument();
+  });
+  it("offers a new purchase after cancellation while paid access remains", async () => {
+    rememberHomeCountry("RU");
+    setup("canceled", undefined, {
+      ...fixtures.canceled,
+      new_contract_required: true,
+      actions: ["SUBSCRIBE"],
+    });
+    expect(
+      await screen.findByRole("button", { name: "оформить подписку" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "продлить подписку" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/списаний больше не будет/)).toBeInTheDocument();
+  });
+  it("rejects raw card numbers and contradictory charge schedules", () => {
+    expect(() =>
+      parseOverview({
+        ...fixtures.active,
+        payment_method: { provider: "test", label: "4242 4242 4242 4242" },
+      }),
+    ).toThrow();
+    expect(() =>
+      parseOverview({
+        ...fixtures.active,
+        next_charge_at: "2026-12-06T10:00:00Z",
+        next_charge_price: { amount_minor: 1, currency: "RUB" },
+      }),
+    ).toThrow();
+    expect(
+      paymentMethodLabel({
+        provider: "test",
+        label: "ignored",
+        kind: "CARD",
+        card_brand: "mir",
+        card_last4: "1234",
+      }),
+    ).toBe("МИР •••• 1234");
+  });
   it("loads backend prices, promotes RUB for the saved home country and preserves a manual choice", async () => {
     rememberHomeCountry("RU");
     const { billing } = setup();
@@ -379,6 +476,32 @@ describe("billing contract and provider navigation", () => {
     saveCurrency("one", "USD");
     expect(preferredCurrency("one")).toBe("USD");
     expect(preferredCurrency("two")).toBe("RUB");
+  });
+  it("opens only the authenticated fixed portal and never accepts an arbitrary redirect", async () => {
+    const url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43);
+    const transport = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ url })));
+    const client = createBillingClient(
+      "https://api.example.test",
+      transport,
+      1000,
+    );
+    expect(await client.portal!("token", new AbortController().signal)).toBe(
+      url,
+    );
+    expect(transport).toHaveBeenCalledWith(
+      "https://api.example.test/billing/portal",
+      expect.objectContaining({ method: "POST", credentials: "omit" }),
+    );
+    transport.mockResolvedValue(
+      new Response(
+        JSON.stringify({ url: url.replace(".com", ".com.evil.test") }),
+      ),
+    );
+    await expect(
+      client.portal!("token", new AbortController().signal),
+    ).rejects.toThrow("PAYMENT_URL_NOT_ALLOWED");
   });
 });
 

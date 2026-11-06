@@ -2,6 +2,23 @@ import Foundation
 
 public struct Price: Codable, Sendable { public let amount_minor: Int64; public let original_amount_minor: Int64?; public let currency: String? }
 public struct Offer: Codable, Identifiable, Sendable { public let id: UUID; public let prices: [String: Price] }
+public struct BillingPaymentMethod: Codable, Sendable {
+    public let label: String
+    public let kind: String?
+    public let card_brand: String?
+    public let card_last4: String?
+    public var summary: String? {
+        guard label.count <= 128, label.filter({ $0.isNumber }).count <= 4 else { return nil }
+        if kind == "CARD" {
+            let brands = ["visa": "Visa", "mastercard": "Mastercard", "mir": "МИР", "unknown": ""]
+            guard let last4 = card_last4, last4.count == 4, last4.allSatisfy({ "0123456789".contains($0) }),
+                  let name = brands[card_brand ?? ""] else { return nil }
+            return "\(name) •••• \(last4)".trimmingCharacters(in: .whitespaces)
+        }
+        guard kind == nil || kind == "UNKNOWN" || kind == "SBP", card_brand == nil, card_last4 == nil else { return nil }
+        return label
+    }
+}
 public struct BillingOverview: Codable, Sendable {
     public let revision: String
     public let provider_mode: String?
@@ -11,9 +28,23 @@ public struct BillingOverview: Codable, Sendable {
     public let paid_until: String?
     public let auto_renew: Bool
     public let current_price: Price?
+    public let payment_method: BillingPaymentMethod?
+    public let next_charge_at: String?
+    public let next_charge_price: Price?
+    public let new_contract_required: Bool?
     public let offers: [Offer]
     public let actions: [String]
     public let pending_operation_id: UUID?
+    public func validate() throws {
+        if let method = payment_method, method.summary == nil { throw ClientError("INVALID_RESPONSE") }
+        if next_charge_at != nil || next_charge_price != nil {
+            guard let next = next_charge_at, WireJSON.date(next) != nil, auto_renew,
+                  payment_method != nil, let price = next_charge_price, let current = current_price,
+                  price.amount_minor > 0, price.amount_minor == current.amount_minor,
+                  price.currency == current.currency, ["RUB", "USD"].contains(price.currency ?? "")
+            else { throw ClientError("INVALID_RESPONSE") }
+        }
+    }
 }
 public struct AccountMessage: Codable, Identifiable, Sendable {
     public struct Action: Codable, Sendable { public let type: String; public let label: String }
@@ -75,4 +106,13 @@ public struct SupportImage: Codable, Sendable {
     public let data: Data
     public let type: String
     public init(data: Data, type: String) { self.data = data; self.type = type }
+}
+
+public struct BillingPortal: Decodable, Sendable {
+    public let url: String
+    public func validatedURL() throws -> URL {
+        guard url.range(of: "^https://prettylisavpn\\.com/account/#handoff=[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil,
+              let value = URL(string: url) else { throw ClientError("PAYMENT_URL_NOT_ALLOWED") }
+        return value
+    }
 }

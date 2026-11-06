@@ -2,9 +2,28 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { NavigationIcon } from "./NavigationIcon";
 import type { Device, Snapshot } from "./model";
+import type { Billing, Money } from "./billing";
 import "./style.css";
 
 const labels = {
+  upgrade: ["улучшить", "upgrade"],
+  sbpAccount: [
+    "СБП · привязанный банковский счёт",
+    "SBP · linked bank account",
+  ],
+  method: ["способ оплаты", "payment method"],
+  noMethod: ["не привязан", "not linked"],
+  nextCharge: ["следующее списание", "next payment"],
+  monthly: ["в месяц", "per month"],
+  contractPrice: ["ваша стоимость подписки", "your subscription price"],
+  fixedPrice: [
+    "цена закреплена до отмены подписки и нового оформления",
+    "your agreed price stays fixed until you cancel and subscribe again",
+  ],
+  resubscribe: [
+    "списаний больше не будет. новое оформление — по текущей цене",
+    "no more automatic payments. a new subscription uses the current price",
+  ],
   home: ["главная", "home"],
   settings: ["настройки", "settings"],
   about: ["о приложении", "about"],
@@ -104,9 +123,13 @@ const labels = {
     "The HTTPS proxy covers ordinary web traffic. Chrome internal services, other apps and incognito are outside its scope. Website DNS resolves on the server; IPv6 destinations are blocked. Local addresses and ports other than 80, 443, 8080 and 8443 are unavailable through the proxy.",
   ],
   paidUntil: ["оплачено до", "paid until"],
-  billingReadOnly: [
-    "Управление оплатой в расширении пока недоступно.",
-    "Payment management is not yet available in the extension.",
+  billingPortal: [
+    "управлять подпиской и оплатой",
+    "manage subscription and payments",
+  ],
+  billingPortalHint: [
+    "Откроется защищённый кабинет в новой вкладке.",
+    "The secure billing portal opens in a new tab.",
   ],
   cleanup: [
     "Настройки браузера восстановлены. Ожидаем подтверждения удаления доступа на сервере.",
@@ -120,7 +143,6 @@ const labels = {
 type Label = keyof typeof labels;
 type Page =
   "home" | "settings" | "about" | "devices" | "subscription" | "support";
-type Billing = { plan: string; paid_until: string | null; status: string };
 
 async function send<T>(
   type: string,
@@ -404,6 +426,14 @@ function App() {
                             ? "Premium"
                             : "Free"}
                       </strong>
+                      {state.account?.plan === "FREE" && (
+                        <button
+                          className="text"
+                          onClick={() => navigate("subscription")}
+                        >
+                          {t("upgrade")}
+                        </button>
+                      )}
                     </div>
                     <div>
                       <label>{t("activeDevices")}</label>
@@ -570,7 +600,57 @@ function App() {
                   <h2>{billing?.plan ?? "…"}</h2>
                   <label>{t("paidUntil")}</label>
                   <strong>{date(billing?.paid_until ?? null)}</strong>
-                  <p>{t("billingReadOnly")}</p>
+                  {billing?.current_price && (
+                    <>
+                      <label>{t("contractPrice")}</label>
+                      <strong>
+                        {priceLabel(billing.current_price, language)} /{" "}
+                        {t("monthly")}
+                      </strong>
+                    </>
+                  )}
+                  {billing?.current_price && !billing.new_contract_required && (
+                    <p>{t("fixedPrice")}</p>
+                  )}
+                  {billing?.plan === "PREMIUM" &&
+                    billing.new_contract_required && <p>{t("resubscribe")}</p>}
+                  <label>{t("method")}</label>
+                  <strong>
+                    {billing?.methodKind === "SBP"
+                      ? t("sbpAccount")
+                      : (billing?.method ?? t("noMethod"))}
+                  </strong>
+                  {billing?.next_charge_at && billing.next_charge_price && (
+                    <>
+                      <label>{t("nextCharge")}</label>
+                      <strong>
+                        {date(billing.next_charge_at)} ·{" "}
+                        {priceLabel(billing.next_charge_price, language)}
+                      </strong>
+                    </>
+                  )}
+                  {billing?.offers.map((offer) => (
+                    <div key={offer.id}>
+                      <h2>Premium</h2>
+                      <p>
+                        {priceLabel(offer.prices.RUB, language)} ·{" "}
+                        {priceLabel(offer.prices.USD, language)} /{" "}
+                        {t("monthly")}
+                      </p>
+                    </div>
+                  ))}
+                  <p>{t("billingPortalHint")}</p>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={() =>
+                      void action(async () => {
+                        await send("billingPortal");
+                      })
+                    }
+                  >
+                    {t("billingPortal")}
+                  </button>
                   <a
                     href="https://prettylisavpn.com/#pricing"
                     target="_blank"
@@ -689,3 +769,12 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </React.StrictMode>,
 );
+
+function priceLabel(price: Money, language: number): string {
+  return new Intl.NumberFormat(language === 0 ? "ru" : "en", {
+    style: "currency",
+    currency: price.currency,
+    minimumFractionDigits: price.amount_minor % 100 ? 2 : 0,
+    maximumFractionDigits: 2,
+  }).format(price.amount_minor / 100);
+}

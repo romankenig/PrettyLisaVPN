@@ -128,14 +128,20 @@ async def test_change_method_and_cancel_preserve_paid_dates_and_revoke_only_the_
     assert set((await authorities(state)).values()) == {"REVOKED"}
     me = await state[5].get("/me", headers={"Authorization": "Bearer " + state[2]})
     assert me.status_code == 200 and me.json()["plan"] == "PREMIUM"
-    # Explicit later replacement may enable recurring again; an old CANCEL cannot revoke it.
-    new_method = UUID((await post(state, await body(state, "CHANGE_METHOD"))).json()["id"])
-    await settle(state, new_method)
+    # Cancellation requires a new purchase; card replacement cannot resurrect old terms.
+    view = await overview(state)
+    assert view["new_contract_required"]
+    assert "SUBSCRIBE" in view["actions"] and "CHANGE_METHOD" not in view["actions"]
+    rejected = await post(state, await body(state, "CHANGE_METHOD"))
+    assert rejected.status_code == 409
+    new_purchase = UUID((await post(state, await body(state))).json()["id"])
+    await settle(state, new_purchase)
     latest = await projection(state)
     await settle(state, cancel)
     await settle(state, operation_id)
     assert await projection(state) == latest and latest["auto_renew"]
-    assert latest["end"] == before["end"]
+    assert latest["end"] > before["end"]
+    assert latest["contract"] != before["contract"]
     assert (await authorities(state))[latest["mandate"]] == "ACTIVE"
 
 

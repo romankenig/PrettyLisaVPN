@@ -164,6 +164,11 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
               return controller.devices();
             case "revokeDevice":
               return controller.revokeDevice(text(data.id, 36));
+            case "billingPortal":
+              await chrome.tabs.create({
+                url: await controller.billingPortal(),
+              });
+              return { opened: true };
             case "billing":
               return controller.billing();
             case "support":

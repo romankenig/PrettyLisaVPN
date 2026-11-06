@@ -406,7 +406,7 @@ internal fun OperationError(error: String?) {
 }
 
 @Composable
-internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, action: () -> Unit) {
+internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, extraContent: (@Composable () -> Unit)? = null, action: () -> Unit) {
     val modals = LocalModalPresence.current
     DisposableEffect(modals) {
         modals?.let { it.count++ }
@@ -416,7 +416,7 @@ internal fun ConfirmDialog(title: String, body: String, confirm: String, state: 
     AlertDialog(
         modifier = Modifier.testTag("confirmation-dialog"), containerColor = Brand.Mercury,
         onDismissRequest = dismiss, title = { Text(title) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(body); OperationError(state.error) } },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(body); extraContent?.invoke(); OperationError(state.error) } },
         confirmButton = { TextButton(onClick = action, enabled = !state.busy, modifier = Modifier.testTag("confirm-dialog")) { Text(if (state.busy) tr(R.string.processing) else confirm) } },
         dismissButton = { TextButton(onClick = dismiss, modifier = Modifier.testTag("dismiss-dialog")) { Text(tr(R.string.ui_cancel)) } },
     )

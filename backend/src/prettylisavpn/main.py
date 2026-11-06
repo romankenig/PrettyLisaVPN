@@ -33,11 +33,19 @@ from prettylisavpn.billing.cardlink import CallbackHandler, CardlinkAPI, Cardlin
 from prettylisavpn.billing.cardlink_routes import router as cardlink_router
 from prettylisavpn.billing.cardlink_store import PostgresCardlinkReceipts
 from prettylisavpn.billing.operations import BillingOperationsService
+from prettylisavpn.billing.platega import PlategaBillingProvider
+from prettylisavpn.billing.platega_api import PlategaAPI
+from prettylisavpn.billing.platega_callbacks import PlategaCallbacks
+from prettylisavpn.billing.platega_routes import router as platega_router
 from prettylisavpn.billing.provider import BillingProvider, validate_provider
+from prettylisavpn.billing.public_catalog import PublicCatalogService
 from prettylisavpn.billing.public_routes import router as payment_public_router
 from prettylisavpn.billing.router import router as billing_router
 from prettylisavpn.billing.sandbox import SandboxBillingProvider
 from prettylisavpn.billing.service import BillingOverviewPort, BillingOverviewService
+from prettylisavpn.billing.web_routes import native_router as billing_portal_router
+from prettylisavpn.billing.web_routes import router as billing_web_router
+from prettylisavpn.billing.web_sessions import BillingWebSessions, RedisWebTokens
 from prettylisavpn.billing.worker import BillingWorkerPort
 from prettylisavpn.client_vpn.router import common_router as client_sessions_router
 from prettylisavpn.client_vpn.router import router as client_vpn_router
@@ -136,7 +144,11 @@ def create_app(
 ) -> FastAPI:
     validate_provider(billing_provider)
     config = settings if settings is not None else Settings()
-    if billing_provider is not None and config.environment not in ("development", "test"):
+    if (
+        billing_provider is not None
+        and billing_provider.sandbox
+        and config.environment not in ("development", "test")
+    ):
         raise ValueError("Sandbox billing requires development or test environment")
     configure_logging(config.log_level)
 
@@ -147,9 +159,23 @@ def create_app(
             active_billing_provider = billing_provider
             if active_billing_provider is None and config.billing_provider == "sandbox":
                 active_billing_provider = SandboxBillingProvider(cast(Postgres, pg), config)
+            if active_billing_provider is None and config.billing_provider == "platega":
+                assert config.platega_secret is not None
+                active_billing_provider = PlategaBillingProvider(
+                    cast(Postgres, pg),
+                    PlategaAPI(config.platega_merchant_id, config.platega_secret),
+                )
             cache = valkey if valkey is not None else Valkey(config)
             try:
                 app.state.postgres = pg
+                app.state.platega_callbacks = (
+                    PlategaCallbacks(
+                        cast(Postgres, pg), config.platega_merchant_id, config.platega_secret
+                    )
+                    if isinstance(active_billing_provider, PlategaBillingProvider)
+                    and config.platega_secret is not None
+                    else None
+                )
                 if cardlink_callbacks is None and config.cardlink_api_token is not None:
                     app.state.cardlink_callbacks = CardlinkCallbacks(
                         config.cardlink_api_token,
@@ -217,10 +243,20 @@ def create_app(
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                     active_billing_provider,
                 )
+                app.state.billing_catalog = PublicCatalogService(cast(Postgres, pg))
                 app.state.billing_operations = BillingOperationsService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
                     active_billing_provider,
+                )
+                app.state.billing_web_sessions = (
+                    BillingWebSessions(
+                        cast(Postgres, pg),
+                        cast(OtpVerifier, app.state.otp_service),
+                        RedisWebTokens(cache.client),
+                    )
+                    if isinstance(cache, Valkey)
+                    else None
                 )
                 active_billing_worker = billing_worker or app.state.billing_operations.worker
                 app.state.support = SupportService(
@@ -253,6 +289,11 @@ def create_app(
                     if active_billing_provider is not None and isinstance(pg, Postgres)
                     else None
                 )
+                platega_task = (
+                    asyncio.create_task(active_billing_provider.run(monitor_stop))
+                    if isinstance(active_billing_provider, PlategaBillingProvider)
+                    else None
+                )
                 logger.info("application_started")
                 try:
                     yield
@@ -260,6 +301,8 @@ def create_app(
                     monitor_stop.set()
                     if billing_task is not None:
                         await billing_task
+                    if platega_task is not None:
+                        await platega_task
                     if support_task is not None:
                         await support_task
             finally:
@@ -283,8 +326,11 @@ def create_app(
     app.include_router(support_router)
     app.include_router(support_public_router)
     app.include_router(billing_router)
+    app.include_router(billing_web_router)
+    app.include_router(billing_portal_router)
     app.include_router(payment_public_router)
     app.include_router(cardlink_router)
+    app.include_router(platega_router)
     app.include_router(fleet_router)
     app.include_router(analytics_router)
     app.include_router(traffic_router)

@@ -330,3 +330,11 @@
 "vpn_switching_method" = "%1$@ hat nicht verbunden. versuche %2$@…";
 "vpn_trying_method" = "versuche %1$@…";
 "vpn_wireguard_relay" = "WireGuard+";
+"billing_fixed_price" = "der vereinbarte Preis bleibt bis zur Kündigung und einem neuen Abschluss gleich";
+"billing_resubscribe" = "keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich";
+"billing_next_payment" = "nächste Abbuchung";
+"billing_method_title" = "Zahlungsmethode";
+
+"billing_portal" = "Abonnement und Zahlungen verwalten";
+"billing_portal_hint" = "Das sichere Zahlungsportal öffnet sich im Browser.";
+"billing_sbp_account" = "SBP · verknüpftes Bankkonto";

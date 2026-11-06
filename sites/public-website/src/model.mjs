@@ -1,6 +1,6 @@
 export const website = Object.freeze({
-  version: "0.2.2",
-  reviewedOn: "2026-11-03",
+  version: "0.3.0",
+  reviewedOn: "2026-11-06",
   mode: "prelaunch",
   seller: Object.freeze({
     name: "Кениг Роман Сергеевич",
@@ -10,9 +10,8 @@ export const website = Object.freeze({
     address: null,
     email: "help@prettylisavpn.com",
   }),
-  prices: Object.freeze({ RUB: 19900, USD: 299 }),
   period: "CALENDAR_MONTH",
-  renewal: "MANUAL",
+  renewal: "MONTHLY_SUBSCRIPTION",
   priceConfirmed: true,
   legalApproved: false,
   refundPolicyApproved: false,
@@ -20,10 +19,10 @@ export const website = Object.freeze({
   publicDownloadsReady: true,
   paymentAdapterImplemented: false,
   providers: Object.freeze({
-    cardlink: Object.freeze({
+    platega: Object.freeze({
       approved: false,
       configured: false,
-      status: "Аккаунт создан. Заявка не подана.",
+      status: "Проверка СБ. Merchant ID и API-секрет ещё не выданы.",
     }),
   }),
 });
