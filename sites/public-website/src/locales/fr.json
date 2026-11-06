@@ -144,7 +144,7 @@
     "payments": "paiement, annulation et renouvellement"
   },
   "legal": {
-    "updated": "version du 3 novembre 2026",
+    "updated": "version du 6 novembre 2026",
     "terms": [
       "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. le service est fourni par Кениг Роман Сергеевич, contribuable au régime russe de l’impôt sur le revenu professionnel, identifiant fiscal 183475316809. contact : help@prettylisavpn.com.",
       "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
@@ -161,6 +161,7 @@
       "lors d’un contact avec l’assistance, le message et les pièces jointes sont traités. n’envoyez pas de mots de passe, de codes à usage unique ou de coordonnées complètes de carte bancaire.",
       "les données quotidiennes d’analyse et les rapports datant de plus de 180 jours sont supprimés. le contenu des demandes et les pièces jointes sont supprimés de la base de travail de l’assistance après 30 jours. ces délais ne signifient pas la suppression de toute la correspondance ou de toutes les données du compte.",
       "Le site n’utilise pas de traceurs publicitaires. Le portail de paiement utilise un cookie HttpOnly sécurisé pendant deux heures au maximum et un identifiant local d’opération en attente pour la reprise après fermeture. Le site ne conserve pas les identifiants de paiement. La langue suit l’adresse de la page ; les polices et images proviennent de l’infrastructure du service.",
+      "Lors de la souscription, votre adresse e-mail, le montant et un identifiant technique sont transmis à Platega pour traiter et rapprocher le paiement. PrettyLisaVPN conserve les statuts des paiements et les périodes d’accès ; les coordonnées bancaires et les données de carte sont traitées par le prestataire de paiement.",
       "pour demander des renseignements sur vos données, leur rectification ou leur suppression, écrivez à l’assistance depuis l’adresse de votre compte. une vérification de la propriété de l’adresse peut être nécessaire."
     ],
     "refunds": [

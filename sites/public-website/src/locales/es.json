@@ -144,7 +144,7 @@
     "payments": "pago, cancelación y renovación"
   },
   "legal": {
-    "updated": "versión del 3 de noviembre de 2026",
+    "updated": "versión del 6 de noviembre de 2026",
     "terms": [
       "PrettyLisaVPN proporciona acceso a una vpn mediante aplicaciones para android y windows. el servicio lo presta Кениг Роман Сергеевич, contribuyente del régimen ruso del impuesto sobre la renta profesional, identificación fiscal 183475316809. contacto: help@prettylisavpn.com.",
       "para iniciar sesión se utilizan una dirección de correo y un código de un solo uso. una cuenta puede tener hasta cinco dispositivos activos. no compartas los códigos de acceso con otras personas.",
@@ -161,6 +161,7 @@
       "al contactar con soporte, se tratan el mensaje y los archivos adjuntos. no envíes contraseñas, códigos de un solo uso ni datos completos de tarjetas bancarias.",
       "los registros diarios de analítica y los informes de más de 180 días se eliminan. el contenido de las solicitudes y los archivos adjuntos se eliminan de la base de trabajo de soporte después de 30 días. estos plazos no implican la eliminación de toda la correspondencia ni de todos los datos de la cuenta.",
       "El sitio no usa rastreadores publicitarios. El portal de pago utiliza una cookie HttpOnly segura durante un máximo de dos horas y un identificador local de operación pendiente para recuperarla tras cerrar la página. El sitio no guarda credenciales de pago. El idioma depende de la dirección de la página; las fuentes e imágenes se cargan desde la infraestructura del servicio.",
+      "Al suscribirte, tu correo electrónico, el importe y un identificador técnico se envían a Platega para procesar y conciliar el pago. PrettyLisaVPN guarda los estados de pago y los periodos de acceso; el proveedor de pagos trata los datos de la cuenta bancaria y de la tarjeta.",
       "para solicitar información sobre tus datos, su rectificación o su eliminación, escribe a soporte desde el correo de la cuenta. puede ser necesario confirmar que la dirección te pertenece."
     ],
     "refunds": [

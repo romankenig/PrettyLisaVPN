@@ -77,8 +77,19 @@ function SubscriptionContent() {
   const current = useRef(active);
   current.current = active;
   const requests = useRef(new Set<AbortController>());
+  const portalOpened = useRef(false);
   const token = active?.accessToken;
   const user = active?.userId;
+
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (!portalOpened.current || inFlight.current) return;
+      portalOpened.current = false;
+      setAttempt((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    return () => window.removeEventListener("focus", refreshOnReturn);
+  }, []);
 
   useEffect(() => {
     setCurrency(preferredCurrency(user ?? ""));
@@ -367,6 +378,7 @@ function SubscriptionContent() {
     requests.current.add(controller);
     try {
       const url = await billing.portal(active.accessToken, controller.signal);
+      portalOpened.current = true;
       if (
         !controller.signal.aborted &&
         current.current?.sessionId === active.sessionId

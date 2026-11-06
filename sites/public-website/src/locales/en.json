@@ -144,7 +144,7 @@
     "payments": "payment, cancellation and renewal"
   },
   "legal": {
-    "updated": "version dated november 3, 2026",
+    "updated": "version dated november 6, 2026",
     "terms": [
       "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com.",
       "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
@@ -161,6 +161,7 @@
       "when you contact support, your message and attachments are processed. do not send passwords, one-time codes or complete bank card details.",
       "daily analytics records and reports older than 180 days are removed. support request content and attachments are removed from the operational support database after 30 days. these periods do not mean that all correspondence or all account data is deleted.",
       "The website does not use advertising trackers. The billing portal uses a secure HttpOnly cookie for up to two hours and a local pending operation identifier to recover after closing the page. Payment credentials are not stored by the website. Language follows the page address; fonts and images load from the service infrastructure.",
+      "When you subscribe, your email address, amount and technical operation identifier are sent to Platega to process and match the payment. PrettyLisaVPN stores payment statuses and access periods; bank account and card credentials are handled by the payment provider.",
       "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
     ],
     "refunds": [

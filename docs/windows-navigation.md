@@ -11,7 +11,8 @@ The browser exchanges the fragment for a billing-only secure cookie, then displa
 the account email, current subscription and database offers. New subscription →
 explicit monthly SBP consent → provider tab + retained waiting page → server-verified
 success/failure → subscription management or return to the client. The native client
-refreshes account/billing on its existing entry/focus flow. No custom payment URI
+refreshes billing on Windows focus after opening the portal, Android subscription
+resume and Apple scene activation; Home entry refreshes the account. No custom payment URI
 scheme or automatic native app launch is claimed. Browser return URLs never settle money.
 
 Cancellation first explains paid access retention and the unsupported bank-account

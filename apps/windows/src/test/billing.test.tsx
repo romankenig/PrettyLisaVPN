@@ -136,6 +136,30 @@ describe("subscription screen", () => {
     await waitFor(() => expect(session.current()).toBeNull());
     expect(open).not.toHaveBeenCalled();
   });
+  it("reloads verified billing when returning from the external portal", async () => {
+    const { billing, open } = setup(
+      "free",
+      undefined,
+      fixtures.free,
+      vi
+        .fn()
+        .mockResolvedValue(
+          "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
+        ),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "управлять подпиской и оплатой",
+      }),
+    );
+    await waitFor(() => expect(open).toHaveBeenCalled());
+    vi.mocked(billing.overview).mockResolvedValue(
+      parseOverview(fixtures.active),
+    );
+    fireEvent.focus(window);
+    await waitFor(() => expect(billing.overview).toHaveBeenCalledTimes(2));
+    expect(billing.start).not.toHaveBeenCalled();
+  });
   it("shows verified card summary and the authoritative next payment", async () => {
     const value = {
       ...fixtures.active,

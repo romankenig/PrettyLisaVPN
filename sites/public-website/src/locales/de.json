@@ -144,7 +144,7 @@
     "payments": "zahlung, kündigung und verlängerung"
   },
   "legal": {
-    "updated": "fassung vom 3. november 2026",
+    "updated": "fassung vom 6. november 2026",
     "terms": [
       "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. anbieter ist Кениг Роман Сергеевич, steuerpflichtig nach der regelung für berufseinkommen in russland, steuernummer 183475316809. kontakt: help@prettylisavpn.com.",
       "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
@@ -161,6 +161,7 @@
       "bei einer supportanfrage werden ihre nachricht und beigefügte materialien verarbeitet. senden sie keine passwörter, einmalcodes oder vollständigen bankkartendaten.",
       "tägliche analytikdatensätze und berichte werden nach mehr als 180 tagen gelöscht. inhalte von supportanfragen und anhänge werden nach 30 tagen aus der operativen supportdatenbank gelöscht. diese fristen bedeuten nicht, dass die gesamte korrespondenz oder alle kontodaten gelöscht werden.",
       "Die Website verwendet keine Werbetracker. Das Zahlungsportal nutzt ein sicheres HttpOnly-Cookie für bis zu zwei Stunden und eine lokale Kennung für ausstehende Vorgänge zur Wiederherstellung nach dem Schließen. Zahlungszugangsdaten werden nicht von der Website gespeichert. Die Sprache folgt der Seitenadresse; Schriften und Bilder werden von der Infrastruktur des Dienstes geladen.",
+      "Beim Abschluss eines Abonnements werden Ihre E-Mail-Adresse, der Betrag und eine technische Vorgangskennung an Platega übermittelt, um die Zahlung abzuwickeln und zuzuordnen. PrettyLisaVPN speichert Zahlungsstatus und Zugangszeiträume; Bankkonto- und Kartendaten verarbeitet der Zahlungsanbieter.",
       "für auskunft über ihre daten, eine berichtigung oder löschung schreiben sie dem support von der e-mail-adresse ihres kontos. möglicherweise müssen sie bestätigen, dass die adresse ihnen gehört."
     ],
     "refunds": [

@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.*
 import com.prettylisavpn.android.data.*
 import java.util.UUID
@@ -114,6 +117,14 @@ private fun money(amount: Long, currency: String) = "${currency} ${java.math.Big
 @Composable
 private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     val tr = strings()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, model) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) model.load(Area.BILLING)
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     val state by model.state.collectAsState()
     var currency by rememberSaveable { mutableStateOf("RUB") }
     var route by rememberSaveable { mutableStateOf("MIR") }
