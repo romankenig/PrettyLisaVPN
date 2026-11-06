@@ -37,9 +37,18 @@ export interface BillingOverview {
     readonly amount_minor: number;
     readonly currency: Currency;
   } | null;
+  readonly next_charge_at?: string | null;
+  readonly next_charge_price?: {
+    readonly amount_minor: number;
+    readonly currency: Currency;
+  } | null;
+  readonly new_contract_required?: boolean;
   readonly payment_method: {
     readonly provider: string;
     readonly label: string;
+    readonly kind?: "CARD" | "SBP" | "UNKNOWN";
+    readonly card_brand?: "visa" | "mastercard" | "mir" | "unknown" | null;
+    readonly card_last4?: string | null;
   } | null;
   readonly offers: readonly Offer[];
   readonly actions: readonly BillingAction[];
@@ -58,6 +67,7 @@ export interface BillingOperation {
   readonly redirect_url: string | null;
 }
 export interface BillingClient {
+  portal?(token: string, signal: AbortSignal): Promise<string>;
   overview(token: string, signal: AbortSignal): Promise<BillingOverview>;
   start(
     token: string,
@@ -181,8 +191,56 @@ export function parseOverview(value: unknown): BillingOverview {
     const p = record(v.payment_method);
     if (!text(p.provider) || !text(p.label))
       throw new Error("INVALID_BILLING_RESPONSE");
-    method = { provider: p.provider, label: p.label };
+    if ((p.label.match(/\d/g) ?? []).length > 4)
+      throw new Error("INVALID_BILLING_RESPONSE");
+    const kind = p.kind ?? "UNKNOWN";
+    if (!["CARD", "SBP", "UNKNOWN"].includes(String(kind)))
+      throw new Error("INVALID_BILLING_RESPONSE");
+    if (kind === "CARD") {
+      if (
+        !/^[0-9]{4}$/.test(String(p.card_last4 ?? "")) ||
+        !["visa", "mastercard", "mir", "unknown"].includes(String(p.card_brand))
+      )
+        throw new Error("INVALID_BILLING_RESPONSE");
+    } else if (p.card_last4 != null || p.card_brand != null) {
+      throw new Error("INVALID_BILLING_RESPONSE");
+    }
+    method = {
+      provider: p.provider,
+      label: p.label,
+      kind: kind as NonNullable<BillingOverview["payment_method"]>["kind"],
+      card_brand: p.card_brand as NonNullable<
+        BillingOverview["payment_method"]
+      >["card_brand"],
+      card_last4: p.card_last4 as string | null | undefined,
+    };
   }
+  if (
+    !(v.next_charge_at == null || date(v.next_charge_at)) ||
+    !(
+      v.new_contract_required === undefined ||
+      typeof v.new_contract_required === "boolean"
+    )
+  )
+    throw new Error("INVALID_BILLING_RESPONSE");
+  let nextPrice: BillingOverview["next_charge_price"] = null;
+  if (v.next_charge_price != null) {
+    const p = record(v.next_charge_price);
+    if (
+      !money(p.amount_minor) ||
+      !currency(p.currency) ||
+      !v.next_charge_at ||
+      !v.auto_renew ||
+      !method ||
+      !current ||
+      p.amount_minor !== current.amount_minor ||
+      p.currency !== current.currency
+    )
+      throw new Error("INVALID_BILLING_RESPONSE");
+    nextPrice = { amount_minor: p.amount_minor, currency: p.currency };
+  }
+  if (v.next_charge_at && (!v.auto_renew || !method || !nextPrice))
+    throw new Error("INVALID_BILLING_RESPONSE");
   const offers = v.offers.map((raw) => {
     const p = record(raw),
       prices = record(p.prices);
@@ -209,10 +267,25 @@ export function parseOverview(value: unknown): BillingOverview {
     paid_until: v.paid_until as string | null,
     auto_renew: v.auto_renew,
     current_price: current,
+    next_charge_at: v.next_charge_at as string | null | undefined,
+    next_charge_price: nextPrice,
+    new_contract_required: v.new_contract_required as boolean | undefined,
     payment_method: method,
     offers,
     actions: v.actions as BillingAction[],
   };
+}
+export function paymentMethodLabel(
+  method: NonNullable<BillingOverview["payment_method"]>,
+): string {
+  if (method.kind !== "CARD" || !method.card_last4) return method.label;
+  const brand = {
+    visa: "Visa",
+    mastercard: "Mastercard",
+    mir: "МИР",
+    unknown: "карта",
+  };
+  return `${brand[method.card_brand ?? "unknown"]} •••• ${method.card_last4}`;
 }
 export function parseOperation(value: unknown): BillingOperation {
   const v = record(value);

@@ -144,7 +144,7 @@
     "payments": "paiement, annulation et renouvellement"
   },
   "legal": {
-    "updated": "version du 3 novembre 2026",
+    "updated": "version du 6 novembre 2026",
     "terms": [
       "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. le service est fourni par Кениг Роман Сергеевич, contribuable au régime russe de l’impôt sur le revenu professionnel, identifiant fiscal 183475316809. contact : help@prettylisavpn.com.",
       "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
@@ -160,7 +160,8 @@
       "l’analyse du produit porte sur les événements d’utilisation du compte et le fonctionnement technique du service. ses événements n’incluent ni historique de navigation, ni adresses de pages visitées, ni requêtes dns, ni contenu des paquets. cela décrit l’analyse du produit et ne signifie pas l’absence de tout journal technique.",
       "lors d’un contact avec l’assistance, le message et les pièces jointes sont traités. n’envoyez pas de mots de passe, de codes à usage unique ou de coordonnées complètes de carte bancaire.",
       "les données quotidiennes d’analyse et les rapports datant de plus de 180 jours sont supprimés. le contenu des demandes et les pièces jointes sont supprimés de la base de travail de l’assistance après 30 jours. ces délais ne signifient pas la suppression de toute la correspondance ou de toutes les données du compte.",
-      "le site n’utilise ni traceurs publicitaires, ni cookies, ni stockage local du navigateur. la langue est déterminée par l’adresse de la page. les polices et les images sont chargées depuis l’infrastructure du service.",
+      "Le site n’utilise pas de traceurs publicitaires. Le portail de paiement utilise un cookie HttpOnly sécurisé pendant deux heures au maximum et un identifiant local d’opération en attente pour la reprise après fermeture. Le site ne conserve pas les identifiants de paiement. La langue suit l’adresse de la page ; les polices et images proviennent de l’infrastructure du service.",
+      "Lors de la souscription, votre adresse e-mail, le montant et un identifiant technique sont transmis à Platega pour traiter et rapprocher le paiement. PrettyLisaVPN conserve les statuts des paiements et les périodes d’accès ; les coordonnées bancaires et les données de carte sont traitées par le prestataire de paiement.",
       "pour demander des renseignements sur vos données, leur rectification ou leur suppression, écrivez à l’assistance depuis l’adresse de votre compte. une vérification de la propriété de l’adresse peut être nécessaire."
     ],
     "refunds": [
@@ -174,8 +175,8 @@
     "payments": [
       "l’abonnement payant donne accès à premium pendant un mois calendaire. la période commence après confirmation du paiement. la date exacte de fin est affichée dans l’application.",
       "le mois calendaire se termine au même jour du mois suivant ; si ce jour n’existe pas, il se termine le dernier jour de ce mois. il ne s’agit pas d’une durée fixe de 30 jours.",
-      "le renouvellement est manuel. un nouveau paiement par lien constitue un paiement distinct. aucun prélèvement automatique ni enregistrement d’un moyen de paiement pour de futurs prélèvements n’est utilisé.",
-      "pour ne pas renouveler l’abonnement, n’effectuez pas le paiement suivant. la période d’accès déjà accordée reste valable jusqu’à la date de fin indiquée.",
+      "Les abonnements SBP se renouvellent automatiquement une fois par mois civil après votre accord. Le montant convenu reste fixe jusqu’à la résiliation et une nouvelle souscription. Un lien de paiement ponctuel n’active pas le renouvellement automatique.",
+      "Vous pouvez arrêter les prélèvements futurs et dissocier votre compte bancaire dans la gestion de l’abonnement. L’accès payé reste disponible jusqu’à la date affichée. Une nouvelle souscription utilise le tarif alors en vigueur.",
       "lors du paiement, vérifiez l’offre, la devise, le montant total et les informations sur les frais sur la page de paiement. les coordonnées de carte et le cvc doivent être saisis uniquement sur la page de paiement du prestataire, jamais sur le site de PrettyLisaVPN ni dans les messages à l’assistance.",
       "pour toute question sur un paiement, un reçu, la période d’accès ou un débit erroné, écrivez à help@prettylisavpn.com. indiquez l’adresse du compte et les informations permettant de retrouver le paiement."
     ]
@@ -183,5 +184,18 @@
   "notFound": {
     "title": "page introuvable",
     "text": "revenez à l’accueil pour télécharger l’application ou obtenir de l’aide."
+  },
+  "pricing": {
+    "title": "un abonnement adapté",
+    "text": "un compte pour tous vos appareils",
+    "free": "1 heure par jour, sans publicité",
+    "premium": "durée illimitée · choix du pays",
+    "unavailable": "prix indisponibles",
+    "period": "par mois",
+    "unavailableCheckout": "la souscription sera bientôt disponible",
+    "terms": "renouvellement mensuel. le prix convenu reste inchangé jusqu’à la résiliation.",
+    "manage": "Gérer l’abonnement",
+    "loading": "Chargement de l’abonnement…",
+    "upgrade": "passer à Premium"
   }
 }

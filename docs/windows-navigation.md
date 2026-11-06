@@ -1,3 +1,26 @@
+# Billing portal — Windows 0.26.0 / Android 0.22.0 / Apple and Chrome 0.2.0
+
+Free Home → «улучшить» → Settings/Subscription. Subscription keeps the account
+price, paid period, payment method and next-charge summary, and adds «управлять
+подпиской и оплатой» → authenticated POST `/billing/portal` → external browser
+`https://prettylisavpn.com/account/#handoff=…`. The fragment is a one-use 60-second
+capability, never a refresh/access token; exact URL validation precedes opening.
+Chrome opens a separate tab; closing the popup does not discard the payment.
+
+The browser exchanges the fragment for a billing-only secure cookie, then displays
+the account email, current subscription and database offers. New subscription →
+explicit monthly SBP consent → provider tab + retained waiting page → server-verified
+success/failure → subscription management or return to the client. The native client
+refreshes billing on Windows focus after opening the portal, Android subscription
+resume and Apple scene activation; Home entry refreshes the account. No custom payment URI
+scheme or automatic native app launch is claimed. Browser return URLs never settle money.
+
+Cancellation first explains paid access retention and the unsupported bank-account
+replacement API; the user may retain the subscription or cancel and later re-subscribe.
+This is a real backend integration behind disabled merchant configuration, not a local
+payment-success mock. Full contract, provider limitations, versions and acceptance:
+[Platega billing](platega-billing.md).
+
 # Chrome Extension navigation — 0.1.0
 
 Windows is the visual reference and remains unchanged. Chrome popup uses sidebar

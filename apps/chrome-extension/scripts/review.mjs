@@ -26,6 +26,12 @@ const id = "11111111-1111-4111-8111-111111111111";
 const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
 async function mockAPI() {
+  await context.route("https://prettylisavpn.com/account/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<title>Fixture billing portal</title>",
+    }),
+  );
   await context.route("https://api.prettylisavpn.com/**", async (route) => {
     const p = new URL(route.request().url()).pathname;
     let value;
@@ -71,7 +77,30 @@ async function mockAPI() {
         ],
       };
     else if (p === "/billing/overview")
-      value = { plan: "FREE", status: "FREE", paid_until: null };
+      value = {
+        plan: "FREE",
+        status: "FREE",
+        paid_until: null,
+        auto_renew: false,
+        current_price: null,
+        payment_method: null,
+        new_contract_required: true,
+        offers: [
+          {
+            id,
+            plan: "PREMIUM",
+            period: "MONTH",
+            prices: {
+              RUB: { amount_minor: 19900 },
+              USD: { amount_minor: 399 },
+            },
+          },
+        ],
+      };
+    else if (p === "/billing/portal")
+      value = {
+        url: "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
+      };
     else if (p === "/support/requests") value = { status: "ACCEPTED" };
     else if (p === "/vpn/sessions/current") value = null;
     else if (p === "/vpn/sessions") {
@@ -150,6 +179,27 @@ try {
     .click();
   await page.getByText("Chrome Preview", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "devices-fixture.png") });
+  await page.getByRole("button", { name: "главная", exact: true }).click();
+  await page.getByRole("button", { name: "улучшить", exact: true }).click();
+  await page.getByRole("heading", { name: "Premium", exact: true }).waitFor();
+  await page
+    .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
+    .waitFor();
+  await page.screenshot({
+    path: path.join(output, "subscription-fixture.png"),
+  });
+  const billingOpened = context.waitForEvent("page");
+  await page
+    .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
+    .click();
+  const portal = await billingOpened;
+  await portal.waitForURL("https://prettylisavpn.com/account/**");
+  assert.equal(
+    portal.url(),
+    "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
+  );
+  await portal.close();
+
   await page.getByRole("button", { name: "о приложении", exact: true }).click();
   await page.getByRole("button", { name: "написать в поддержку" }).click();
   await page.getByLabel("тема", { exact: true }).fill("Тестовая форма");

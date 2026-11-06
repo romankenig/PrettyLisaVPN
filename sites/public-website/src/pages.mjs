@@ -99,6 +99,7 @@ function home(lang) {
   <section class="hero wrap"><p class="launch"><span aria-hidden="true"></span>${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
   <section class="features section wrap" id="features"><div class="section-heading"><p class="eyebrow">${text(t.features.eyebrow)}</p><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div><figure class="desktop-shot">${screenshot("windows-home", t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></section>
   <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><p class="eyebrow">${text(t.platforms.eyebrow)}</p><h2>${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div><figure class="phone-shot">${screenshot("android-services", t.screens.android)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></div></section>
+  <section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><p class="eyebrow">${text(t.pricing.text)}</p><h2>${text(t.pricing.title)}</h2></div><div class="pricing-grid"><article class="plan-card"><h3>Free</h3><p>${text(t.pricing.free)}</p><a class="text-link" href="${routeFor(lang, "/account/")}">${text(t.pricing.upgrade)} ${arrow}</a></article><article class="plan-card plan-premium"><h3>Premium</h3><p>${text(t.pricing.premium)}</p><div class="price-switch"><button type="button" data-currency="RUB" disabled aria-pressed="false">₽</button><button type="button" data-currency="USD" disabled aria-pressed="false">$</button></div><div class="plan-price"><strong data-price>${text(t.pricing.unavailable)}</strong><span>${text(t.pricing.period)}</span></div><p>${text(t.pricing.terms)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(t.pricing.manage)}</a></article></div></section>
   <section class="help section wrap" id="help"><div class="section-heading"><p class="eyebrow">${text(t.help.eyebrow)}</p><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
   );
 }
@@ -156,6 +157,23 @@ export function pages() {
         `<section class="not-found wrap"><h1>${text(t.notFound.title)}</h1><p>${text(t.notFound.text)}</p><a class="button" href="${routeFor(lang)}">${text(t.nav.home)} ${arrow}</a></section>`,
       ),
     );
+  }
+  for (const lang of languages) {
+    for (const route of [
+      "/account/",
+      "/account/success/",
+      "/account/failure/",
+    ]) {
+      result.set(
+        routeFor(lang, route),
+        shell(
+          lang,
+          route,
+          locales[lang].pricing.manage,
+          `<section class="portal wrap" data-portal aria-live="polite"><h1>${text(locales[lang].pricing.manage)}</h1><p>${text(locales[lang].pricing.loading)}</p></section>`,
+        ),
+      );
+    }
   }
   return result;
 }

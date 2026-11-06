@@ -89,6 +89,28 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
             }
         }
     }
+    fun openBillingPortal(open: (String) -> Unit) {
+        if (fixture || mutable.value.busy) return
+        val owner = epoch
+        mutable.value = mutable.value.copy(busy = true, error = null)
+        scope.launch {
+            try {
+                val url = source.billingPortal()
+                require(validBillingPortal(url))
+                if (owner == epoch) open(url)
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                if (owner == epoch) {
+                    val data = source.initial
+                    val changed = data.signedIn != mutable.value.data.signedIn
+                    if (changed) { epoch++; messageVisit.reset() }
+                    mutable.value = mutable.value.copy(data = data, busy = false,
+                        loads = if (changed) mapOf(Area.SESSION to Load(LoadPhase.READY)) else mutable.value.loads,
+                        error = (failure as? AuthFailure)?.code ?: "BILLING_UNAVAILABLE")
+                }
+            } finally { if (owner == epoch) mutable.value = mutable.value.copy(busy = false) }
+        }
+    }
     fun clearError() { mutable.value = mutable.value.copy(error = null) }
     fun configure(scenario: Scenario) {
         if (mutable.value.busy) return

@@ -56,6 +56,7 @@ sealed interface Command {
 class SourceFailure(message: String) : Exception(message)
 data class SupportTransfer(val phase: String = "IDLE", val fraction: Float = 0f)
 interface ScreenSource {
+    suspend fun billingPortal(): String = error("BILLING_UNAVAILABLE")
     val vpn: com.prettylisavpn.android.vpn.VpnActions? get() = null
     val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> get() = kotlinx.coroutines.flow.flowOf(SupportTransfer())
     val recoveryRequired: Boolean get() = false

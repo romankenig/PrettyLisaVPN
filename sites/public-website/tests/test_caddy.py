@@ -150,6 +150,14 @@ class PublicWebsiteTests(unittest.TestCase):
         for route in ("/vpn/sessions/current", "/vpn/sessions", "/me", "/auth/verify-otp"):
             self.assertIn("404 Not Found", self.request(route).stderr)
 
+    def test_billing_portal_routes_and_public_catalog_are_explicit(self):
+        for route in ("/api/web/billing/overview", "/api/web/billing/exchange", "/api/billing/catalog", "/api/payments/platega/callback"):
+            response = self.request(route)
+            self.assertIn("200 OK", response.stderr)
+            self.assertIn("payment-return-stub", response.stdout)
+        self.assertIn("200 OK", self.request("/account/").stderr)
+        self.assertIn("404 Not Found", self.request("/account/", "--post-data=private-marker").stderr)
+
     def test_private_paths_and_removed_provider_stay_closed(self):
         for route in (
             "/api/me",
@@ -169,7 +177,6 @@ class PublicWebsiteTests(unittest.TestCase):
             "/en/deployment.env",
             "/plans/",
             "/readiness/",
-            "/account/",
         ):
             for options in ((), ("--post-data=private-marker",)):
                 with self.subTest(route=route, options=options):

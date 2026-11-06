@@ -18,6 +18,8 @@ services:
         required: false
       - path: ${CARDLINK_ENV_FILE:-/etc/prettylisavpn/cardlink.env}
         required: false
+      - path: ${PLATEGA_ENV_FILE:-/etc/prettylisavpn/platega.env}
+        required: false
     environment: &backend_environment
       APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}
       APPLICATION_VERSION: ${APPLICATION_VERSION:?Set APPLICATION_VERSION}

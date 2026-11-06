@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -111,8 +111,11 @@ async def read_context(
     group_id = membership.group_id if membership else DEFAULT_GROUP_ID
     subscription = SubscriptionRepository._to_domain(record)
     catalog = Catalog.model_validate(catalog_record.document) if catalog_record else Catalog()
-    effective = subscription.effective_plan(at)
-    purchase_action: Action = "RENEW" if effective is SubscriptionPlan.PREMIUM else "SUBSCRIBE"
+    new_contract_required = bool(
+        (price is None and subscription.plan in (SubscriptionPlan.FREE, SubscriptionPlan.PLATINUM))
+        or (account and account.renewal_canceled_at is not None)
+    )
+    purchase_action: Action = "SUBSCRIBE" if new_contract_required else "RENEW"
     locked_currency = (
         cast(Currency, price.currency) if purchase_action == "RENEW" and price else None
     )
@@ -125,12 +128,16 @@ async def read_context(
         and account.mandate_reference
     )
     method = (
-        PaymentMethod(provider=account.provider_name, label=account.method_label)
-        if account
-        and account.provider_name
-        and account.mandate_reference
-        and account.method_label
-        and effective is not SubscriptionPlan.FREE
+        PaymentMethod(
+            provider=account.provider_name,
+            label=account.method_label,
+            kind=cast("Literal['CARD', 'SBP', 'UNKNOWN']", account.method_kind or "UNKNOWN"),
+            card_brand=cast(
+                "Literal['visa', 'mastercard', 'mir', 'unknown'] | None", account.card_brand
+            ),
+            card_last4=account.card_last4,
+        )
+        if account and account.provider_name and account.mandate_reference and account.method_label
         else None
     )
     foreign_mandate = bool(
@@ -140,26 +147,26 @@ async def read_context(
         and account.provider_name != provider.name
     )
     actions: list[Action] = []
-    if (
-        provider
-        and not pending
-        and not foreign_mandate
-        and subscription.plan is not SubscriptionPlan.PLATINUM
-    ):
+    if provider and not pending and not foreign_mandate:
         if ours and subscription.auto_renew and provider.supports("CANCEL", None, method_currency):
             actions.append("CANCEL")
         if not subscription.auto_renew or ours:
             if (
-                effective is SubscriptionPlan.FREE
+                new_contract_required
+                and not (account and account.mandate_reference)
                 and catalog.offers_for(group_id, at)
                 and any(cap.currencies for cap in routes)
             ):
                 actions.append("SUBSCRIBE")
-            elif effective is SubscriptionPlan.PREMIUM and price and offer:
+            elif not new_contract_required and price and offer:
                 if any(cap.currencies for cap in routes):
                     actions.append("RENEW")
-                if provider.supports("CHANGE_METHOD", None, method_currency) and any(
-                    method_currency in cap.recurring_currencies for cap in provider.capabilities
+                if (
+                    ours
+                    and provider.supports("CHANGE_METHOD", None, method_currency)
+                    and any(
+                        method_currency in cap.recurring_currencies for cap in provider.capabilities
+                    )
                 ):
                     actions.append("CHANGE_METHOD")
     overview = overview_for(
@@ -182,6 +189,8 @@ async def read_context(
         if provider is not None
         else "DISABLED",
         payment_routes=routes,
+        next_charge_at=account.next_charge_at if account else None,
+        new_contract_required=new_contract_required,
     )
     return OverviewContext(
         overview,
@@ -207,10 +216,13 @@ class BillingOverviewService:
 
     async def overview(self, access_token: str) -> Overview:
         identity = await self.authenticated_sessions.authenticate(access_token)
+        return await self.overview_for_account(identity.user_id)
+
+    async def overview_for_account(self, user_id: UUID) -> Overview:
         try:
             async with self.postgres.session() as session:
                 return (
-                    await read_context(session, identity.user_id, self.provider, datetime.now(UTC))
+                    await read_context(session, user_id, self.provider, datetime.now(UTC))
                 ).overview
         except (SQLAlchemyError, ValidationError, ValueError):
             raise BillingUnavailableError from None

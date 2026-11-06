@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Billing — backend 0.35.0 / Windows 0.26.0 / Android 0.22.0 / Chrome, iOS, macOS 0.2.0 / website 0.3.0
+
+- Add monthly Platega SBP subscriptions, verified callbacks and ledger recovery,
+  immutable agreed prices, cancellation with paid access retained, and safe
+  method/next-payment summaries. Migrations 0044/0045; merchant credentials remain disabled.
+- Add database-owned website prices and an OTP billing portal with one-time native
+  handoff, secure cookies, explicit recurring consent, durable operation recovery,
+  verified success/failure pages and account-scoped subscription management.
+- Add Free upgrade links and payment management entry points to clients. Preserve
+  legacy billing route compatibility; do not invent card masks or unsupported account replacement.
+- Test the one-off Platega payment-link transport separately; it does not create a
+  recurring authority or grant access. See [scope, limitations and verification](docs/platega-billing.md).
+
 ### iOS — 0.1.1
 
 - Give the downloaded Simulator app an ad-hoc application identity and private

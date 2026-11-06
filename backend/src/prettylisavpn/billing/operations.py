@@ -54,20 +54,24 @@ class BillingOperationsService:
 
     async def start(self, token: str, command: BillingCommand) -> BillingOperation:
         identity = await self.auth.authenticate(token)
+        return await self.start_for_account(identity.user_id, command)
+
+    async def start_for_account(self, user_id: UUID, command: BillingCommand) -> BillingOperation:
+        """Internal entry point after native or billing-only web authentication."""
         try:
             async with self.postgres.session() as session, session.begin():
                 # Same lock order as catalogue publication/legacy price confirmation.
                 await session.execute(text("SELECT pg_advisory_xact_lock(903115991)"))
                 subscription = await session.scalar(
                     select(SubscriptionRecord)
-                    .where(SubscriptionRecord.user_id == identity.user_id)
+                    .where(SubscriptionRecord.user_id == user_id)
                     .with_for_update()
                 )
                 if subscription is None:
                     raise BillingUnavailableError
                 existing = await session.scalar(
                     select(BillingOperationRecord).where(
-                        BillingOperationRecord.user_id == identity.user_id,
+                        BillingOperationRecord.user_id == user_id,
                         BillingOperationRecord.request_id == command.request_id,
                     )
                 )
@@ -78,9 +82,7 @@ class BillingOperationsService:
                 else:
                     if self.provider is None:
                         raise BillingDisabledError
-                    context = await read_context(
-                        session, identity.user_id, self.provider, datetime.now(UTC)
-                    )
+                    context = await read_context(session, user_id, self.provider, datetime.now(UTC))
                     overview = context.overview
                     if overview.pending_operation_id is not None:
                         raise BillingConflictError("BILLING_OPERATION_IN_PROGRESS")
@@ -111,6 +113,17 @@ class BillingOperationsService:
                     ):
                         raise BillingConflictError("BILLING_ROUTE_UNAVAILABLE")
                     now = datetime.now(UTC)
+                    if (
+                        purchase
+                        and offer
+                        and command.payment_route
+                        and not self.provider.supports_amount(
+                            command.payment_route,
+                            command.currency,
+                            getattr(offer.prices, command.currency).amount_minor,
+                        )
+                    ):
+                        raise BillingConflictError("BILLING_PRICE_UNSUPPORTED")
                     quote = {
                         "recurring_supported": any(
                             cap.id == command.payment_route
@@ -143,7 +156,7 @@ class BillingOperationsService:
                     session.add(
                         BillingOperationRecord(
                             id=operation_id,
-                            user_id=identity.user_id,
+                            user_id=user_id,
                             request_id=command.request_id,
                             fingerprint=command.fingerprint(),
                             command=command.model_dump(mode="json"),
@@ -157,7 +170,7 @@ class BillingOperationsService:
                     )
             # Transaction is durably committed before the first external call.
             await self.worker.process(operation_id)
-            return await self._get_owned(identity.user_id, operation_id)
+            return await self._get_owned(user_id, operation_id)
         except SQLAlchemyError:
             raise BillingUnavailableError from None
 
@@ -175,9 +188,12 @@ class BillingOperationsService:
 
     async def get(self, token: str, operation_id: UUID) -> BillingOperation:
         identity = await self.auth.authenticate(token)
+        return await self.get_for_account(identity.user_id, operation_id)
+
+    async def get_for_account(self, user_id: UUID, operation_id: UUID) -> BillingOperation:
         try:
-            await self._get_owned(identity.user_id, operation_id)
+            await self._get_owned(user_id, operation_id)
             await self.worker.process(operation_id)
-            return await self._get_owned(identity.user_id, operation_id)
+            return await self._get_owned(user_id, operation_id)
         except SQLAlchemyError:
             raise BillingUnavailableError from None

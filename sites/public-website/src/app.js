@@ -1,4 +1,39 @@
 import { releaseMetadata } from "./downloads.mjs";
+import { acquisitionPrices, formatMonthlyPrice } from "./pricing.mjs";
+
+const pricing = document.querySelector("[data-pricing]");
+if (pricing) {
+  fetch("/api/billing/catalog", {
+    cache: "no-store",
+    credentials: "omit",
+    signal: AbortSignal.timeout(8000),
+  })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((value) => {
+      const prices = acquisitionPrices(value);
+      if (!prices) return;
+      const render = (currency) => {
+        pricing.querySelector("[data-price]").textContent = formatMonthlyPrice(
+          prices[currency],
+          currency,
+          document.documentElement.lang,
+        );
+        for (const button of pricing.querySelectorAll("[data-currency]")) {
+          button.disabled = false;
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.currency === currency),
+          );
+        }
+      };
+      for (const button of pricing.querySelectorAll("[data-currency]"))
+        button.addEventListener("click", () => render(button.dataset.currency));
+      render(document.documentElement.lang === "ru" ? "RUB" : "USD");
+    })
+    .catch(() => {
+      /* Missing prices stay unavailable; never substitute a hardcoded amount. */
+    });
+}
 
 const language = document.querySelector(".language");
 document.addEventListener("keydown", (event) => {
@@ -34,3 +69,6 @@ if (release) {
       /* The direct download stays usable without optional metadata. */
     });
 }
+
+const portal = document.querySelector("[data-portal]");
+if (portal) import("./portal.mjs").then(({ mountPortal }) => mountPortal(portal));

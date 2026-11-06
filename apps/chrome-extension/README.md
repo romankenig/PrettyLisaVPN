@@ -1,6 +1,6 @@
 # PrettyLisaVPN Chrome Extension
 
-Manifest V3 browser-only client, version **0.1.2**. The Windows client is the UI
+Manifest V3 browser-only client, version **0.2.0**. The Windows client is the UI
 reference: canonical logo, Rubik, purple surfaces, mint actions, sidebar Home /
 Settings / About, account, country, devices, billing overview and support screens.
 

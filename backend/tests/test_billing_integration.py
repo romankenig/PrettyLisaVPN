@@ -19,7 +19,7 @@ from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.billing.catalog import CatalogConflictError, publish_catalog
-from prettylisavpn.billing.domain import Catalog
+from prettylisavpn.billing.domain import DEFAULT_GROUP_ID, Catalog
 from prettylisavpn.billing.model import (
     BillingCatalogRecord,
     ClientGroupMembershipRecord,
@@ -249,6 +249,19 @@ async def test_confirmed_price_survives_catalog_group_changes_cancel_expiry_and_
     assert expired["current_price"] == before["current_price"]
 
 
+async def test_public_catalog_reads_current_database_prices_without_account_data(billing_state):
+    postgres, _, _, client, _ = billing_state
+    response = await client.get("/billing/catalog")
+    assert response.status_code == 200
+    async with postgres.session() as session:
+        row = await session.get(BillingCatalogRecord, 1)
+        expected = Catalog.model_validate(row.document).offers_for(
+            DEFAULT_GROUP_ID, datetime.now(UTC)
+        )
+    assert response.json() == {"offers": [offer.model_dump(mode="json") for offer in expected]}
+    assert response.headers["cache-control"] == "no-store"
+
+
 async def test_record_billing_api_evidence(billing_state):
     postgres, user_id, token, client, _ = billing_state
     path = os.getenv("BILLING_BACKEND_EVIDENCE_PATH")
@@ -294,7 +307,9 @@ async def test_record_billing_api_evidence(billing_state):
             .values(plan=SubscriptionPlan.PLATINUM)
         )
     snapshots["platinum"] = await overview(client, token)
-    assert snapshots["platinum"]["offers"] == []
+    assert snapshots["platinum"]["offers"]
+    assert not snapshots["platinum"]["new_contract_required"]
+    assert snapshots["platinum"]["current_price"] == snapshots["active"]["current_price"]
     for key, value in snapshots.items():
         assert value["plan"] == (
             "FREE" if key in ("free", "expired") else "PLATINUM" if key == "platinum" else "PREMIUM"

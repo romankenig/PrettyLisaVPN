@@ -2,9 +2,9 @@ name: Chrome extension
 on:
   workflow_dispatch:
   push:
-    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
+    paths: ["apps/chrome-extension/**", "sites/public-website/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
   pull_request:
-    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
+    paths: ["apps/chrome-extension/**", "sites/public-website/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
 permissions:
   contents: read
 concurrency:
@@ -34,6 +34,7 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/review.mjs
+      - run: node scripts/billing-portal-review.mjs
       - name: Package installable extension directory
         run: >-
           python ../../infra/deployment/prepare_client_download.py --platform chrome

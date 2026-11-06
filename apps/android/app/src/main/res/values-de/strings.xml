@@ -308,4 +308,11 @@
     <string name="faq_support_a">öffne das [Supportformular] in der App oder schreibe an help@prettylisavpn.com. beschreibe das Problem und wann es auftrat.</string>
     <string name="billing_days_left">verbleibende Tage: %1$d</string>
     <string name="billing_cancel_detail">die Kündigung entfernt die Zahlungsart. der Zugang bleibt bis zum Ende der bezahlten Laufzeit.</string>
+    <string name="billing_next_charge">nächste Abbuchung: %1$s · %2$s</string>
+    <string name="billing_fixed_price">der vereinbarte Preis bleibt bis zur Kündigung und einem neuen Abschluss gleich</string>
+    <string name="billing_resubscribe">keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich</string>
+    <string name="billing_replace_prompt">möchten Sie stattdessen die Karte wechseln? die Abobedingungen und die bezahlte Laufzeit bleiben erhalten</string>
+    <string name="billing_replace_card">karte wechseln</string>
+    <string name="billing_portal">abonnement und Zahlungen verwalten</string>
+    <string name="billing_sbp_account">verknüpftes SBP-Bankkonto</string>
 </resources>

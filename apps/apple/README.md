@@ -115,10 +115,11 @@ captures or browsing history. Free acceptance sessions consume real quota.
   newest Android/Windows clients is **not exposed** in this Apple build. Apple's
   per-app mode requires managed deployment; arbitrary direct forwarding needs a
   separate Apple-policy-compatible design.
-- Real subscription/pricing/paid period/Platinum data are displayed. Purchases,
-  payment management and payment deep links are **not exposed**. Existing live
-  provider configuration is disabled; StoreKit/distribution decisions remain
-  necessary. No invented checkout or simulated payment success.
+- Real subscription/pricing/paid period/Platinum data are displayed. Subscription
+  management opens the protected web portal via a one-use authenticated handoff.
+  Provider configuration remains disabled until merchant acceptance; App Store
+  distribution/StoreKit decisions remain separate. No invented payment success.
+  See [billing contract](../../docs/platega-billing.md).
 - Support uses the real multipart/status contract and an account-scoped AES-GCM
   journal with a Keychain key, deleted after acceptance; expired drafts are removed
   on their next access after 30 days. No Windows-only diagnostics. Account messages ACK account/revision only

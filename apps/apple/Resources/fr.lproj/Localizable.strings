@@ -330,3 +330,11 @@
 "vpn_switching_method" = "%1$@ n’a pas pu se connecter. essai de %2$@…";
 "vpn_trying_method" = "essai de %1$@…";
 "vpn_wireguard_relay" = "WireGuard+";
+"billing_fixed_price" = "le prix convenu reste fixe jusqu’à la résiliation et une nouvelle souscription";
+"billing_resubscribe" = "aucun autre prélèvement automatique. vous pouvez souscrire à nouveau au prix actuel";
+"billing_next_payment" = "prochain prélèvement";
+"billing_method_title" = "moyen de paiement";
+
+"billing_portal" = "Gérer l’abonnement et les paiements";
+"billing_portal_hint" = "Le portail de paiement sécurisé s’ouvre dans le navigateur.";
+"billing_sbp_account" = "SBP · compte bancaire lié";
