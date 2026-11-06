@@ -518,6 +518,15 @@ describe("billing contract and provider navigation", () => {
   });
   it("opens only the authenticated fixed portal and never accepts an arbitrary redirect", async () => {
     const url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43);
+    expect(validatePaymentUrl(url, [])).toBe(url);
+    for (const invalid of [
+      url.replace(".com", ".com.evil.test"),
+      url.replace("#", "?"),
+      url + "&redirect=evil",
+    ])
+      expect(() => validatePaymentUrl(invalid, [])).toThrow(
+        "PAYMENT_URL_NOT_ALLOWED",
+      );
     const transport = vi
       .fn()
       .mockResolvedValue(new Response(JSON.stringify({ url })));

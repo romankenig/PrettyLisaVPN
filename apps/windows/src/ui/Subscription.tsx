@@ -518,9 +518,7 @@ function SubscriptionContent() {
               ) : null}
               {data.current_price && !newContract ? (
                 <p className="billing-footnote">
-                  {t(
-                    "цена закреплена за подпиской и сохраняется при смене карты",
-                  )}
+                  {t("цена закреплена до отмены подписки и нового оформления")}
                 </p>
               ) : paid && newContract && data.plan !== "PLATINUM" ? (
                 <p className="billing-footnote">
