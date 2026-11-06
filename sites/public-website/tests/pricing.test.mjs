@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { acquisitionPrices, formatMonthlyPrice } from "../src/pricing.mjs";
+import {
+  acquisitionPrices,
+  acquisitionReferencePrices,
+  formatMonthlyPrice,
+} from "../src/pricing.mjs";
 
 const catalog = (rub = 12345) => ({
   offers: [
@@ -27,4 +31,15 @@ test("missing or malformed prices never fall back to a commercial amount", () =>
     catalog(1e13),
   ])
     assert.equal(acquisitionPrices(value), null);
+});
+
+test("a reference price is shown only when the database supplies a valid higher amount", () => {
+  const value = catalog();
+  assert.deepEqual(acquisitionReferencePrices(value), {});
+  value.offers[0].prices.RUB.original_amount_minor = 15000;
+  value.offers[0].prices.USD.original_amount_minor = 789;
+  assert.deepEqual(acquisitionReferencePrices(value), { RUB: 15000 });
+  value.offers[0].prices.RUB.original_amount_minor = "15000";
+  assert.deepEqual(acquisitionReferencePrices(value), {});
+  assert.deepEqual(acquisitionReferencePrices(null), {});
 });

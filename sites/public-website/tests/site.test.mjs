@@ -26,6 +26,29 @@ function shape(value) {
   assert.ok(value.trim());
   return "string";
 }
+
+test("billing preserves the published moderation layout and uses API-owned pricing", () => {
+  for (const language of languages) {
+    const all = pages();
+    const html = all.get(routeFor(language));
+    assert.match(html, /platega test/);
+    assert.equal((html.match(/class="document-button"/g) ?? []).length, 4);
+    assert.match(html, /id="documents"/);
+    assert.doesNotMatch(html, /183475316809|Кениг Роман|Roman Kenig/);
+    assert.match(html, /android-home\.png/);
+    assert.match(html, /data-price="RUB"/);
+    assert.match(html, /data-price="USD"/);
+    assert.match(html, /name="currency" value="RUB" checked/);
+    assert.match(html, /data-free-currency="RUB"/);
+    assert.match(html, /data-free-currency="USD"/);
+    assert.doesNotMatch(
+      html,
+      /data-amount-minor=|data-purchase=|id="payment-dialog"/,
+    );
+    assert.match(html, new RegExp(`href="${routeFor(language, "/account/")}"`));
+    assert.match(all.get(routeFor(language, "/account/")), /data-portal/);
+  }
+});
 test("all six client languages have complete UI, download instructions and four documents", async () => {
   assert.deepEqual(languages, ["ru", "en", "de", "fr", "es", "zh"]);
   const windows = await readFile(
@@ -43,7 +66,6 @@ test("all six client languages have complete UI, download instructions and four 
     assert.deepEqual(shape(locales[code]), shape(locales.ru), code);
     assert.ok(windows.includes(`"${code}"`), code);
     assert.ok(android.includes(`"${code}"`), code);
-    assert.ok(locales[code].footer.seller.includes("183475316809"));
     assert.equal(
       (JSON.stringify(locales[code]).match(/prettylisavpn(?!\.com)/g) ?? [])
         .length,
@@ -70,14 +92,11 @@ test("home has five sections including database-backed prices, one launch notice
     assert.doesNotMatch(questions, /\[[^\]]+\]/);
     assert.match(questions, /<p>[^<]*<a href="[^"]*\/download\/android\/">/);
     assert.match(questions, /<a href="mailto:help@prettylisavpn.com">/);
-    const splitAnswer = questions
+    const protectionAnswer = questions
       .split('<div class="faq-answer">')[3]
       .split("</details>")[0];
-    assert.equal((splitAnswer.match(/<p>/g) ?? []).length, 6);
-    assert.match(splitAnswer, /YouTube/);
-    assert.match(splitAnswer, /Telegram/);
-    assert.match(splitAnswer, /\*\.youtube.com/);
-    assert.doesNotMatch(splitAnswer, /<a /);
+    assert.match(protectionAnswer, /https/i);
+    assert.doesNotMatch(protectionAnswer, /<a /);
     for (const platform of platforms) {
       const page = all.get(routeFor(language, `/download/${platform.id}/`));
       assert.ok(page);
@@ -177,7 +196,7 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
     await readFile(path.join(root, "assets/screenshots/sources.json"), "utf8"),
   );
   const raw = JSON.stringify(provenance);
-  for (const file of ["windows-home", "android-services"]) {
+  for (const file of ["windows-home", "android-home"]) {
     const bytes = await readFile(
       path.join(root, `assets/screenshots/${file}.png`),
     );
@@ -190,7 +209,9 @@ test("commercial launch remains separate from authorized informational publicati
   assert.equal(website.renewal, "MONTHLY_SUBSCRIPTION");
   assert.equal(website.paymentAdapterImplemented, false);
   assert.equal(website.providers.platega.approved, false);
-  assert.ok(releaseBlockers().length >= 6);
+  assert.ok(
+    releaseBlockers().includes("Нет одобренного и настроенного способа оплаты"),
+  );
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,
     env: { ...process.env, SITE_RELEASE: "1" },
@@ -240,7 +261,7 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "downloads.mjs",
     "style.css",
     "screenshots/windows-home.png",
-    "screenshots/android-services.png",
+    "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
   for (const route of ["/readiness/", "/plans/", "/checkout/"])

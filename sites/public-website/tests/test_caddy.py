@@ -105,7 +105,7 @@ class PublicWebsiteTests(unittest.TestCase):
             "style.css",
             "lock.svg",
             "Rubik.ttf",
-            "screenshots/android-services.png",
+            "screenshots/android-home.png",
         ):
             # --spider checks headers without decoding binary fonts as text.
             result = self.request("/assets/" + asset, "--spider")

@@ -1,15 +1,9 @@
 export const website = Object.freeze({
-  version: "0.3.0",
+  version: "0.4.0",
   reviewedOn: "2026-11-06",
   mode: "prelaunch",
-  seller: Object.freeze({
-    name: "Кениг Роман Сергеевич",
-    status: "Самозанятый (НПД)",
-    country: "Россия",
-    inn: "183475316809",
-    address: null,
-    email: "help@prettylisavpn.com",
-  }),
+  moderationMarker: "platega test",
+  seller: Object.freeze({ email: "help@prettylisavpn.com" }),
   period: "CALENDAR_MONTH",
   renewal: "MONTHLY_SUBSCRIPTION",
   priceConfirmed: true,
@@ -29,10 +23,9 @@ export const website = Object.freeze({
 
 export function releaseBlockers(config = website) {
   return [
-    !config.seller.address && "Не указан адрес для письменных претензий",
     !config.legalApproved && "Документы не утверждены",
     !config.refundPolicyApproved && "Не утверждены правила возврата",
-    !config.receiptProcessApproved && "Не определена отправка чеков НПД",
+    !config.receiptProcessApproved && "Не определена отправка чеков",
     !config.publicDownloadsReady &&
       "Нет общедоступной доставки клиентских сборок",
     !config.paymentAdapterImplemented &&

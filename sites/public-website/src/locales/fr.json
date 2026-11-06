@@ -1,7 +1,7 @@
 {
   "name": "français",
   "title": "un vpn pour votre quotidien",
-  "description": "PrettyLisaVPN pour android et windows. choisissez le trafic à protéger et connectez-vous avec un seul compte.",
+  "description": "PrettyLisaVPN pour android et windows. une connexion chiffrée et un compte pour vos appareils.",
   "nav": {
     "features": "fonctionnalités",
     "download": "télécharger",
@@ -9,26 +9,27 @@
     "language": "langue",
     "menu": "menu",
     "home": "accueil",
-    "skip": "aller au contenu"
+    "skip": "aller au contenu",
+    "pricing": "tarifs"
   },
   "launch": "lancement prévu le 15 novembre",
   "hero": {
-    "title": "votre internet.\nvos règles.",
+    "title": "connexion protégée.\nsur vos appareils.",
     "text": "un vpn pour votre quotidien. sur téléphone et ordinateur, avec des réglages simples et un seul compte.",
     "button": "choisir un appareil",
     "link": "comment ça marche"
   },
   "features": {
     "eyebrow": "moins de manipulations",
-    "title": "une connexion\nqui s’adapte à vous",
+    "title": "une connexion chiffrée\npour le quotidien",
     "items": [
       {
-        "title": "protégez ce qui compte",
-        "text": "tout le trafic, certains services ou tout sauf les services choisis. les listes des deux modes sont enregistrées séparément."
+        "title": "protégez votre trafic réseau",
+        "text": "le vpn crée une connexion chiffrée entre votre appareil et le serveur du service."
       },
       {
-        "title": "une méthode de connexion adaptée",
-        "text": "l’application essaie les méthodes disponibles et mémorise celle qui fonctionne. vous pouvez aussi choisir une méthode manuellement."
+        "title": "des commandes simples",
+        "text": "connectez-vous et déconnectez-vous avec un bouton. l’application affiche l’état de la connexion."
       },
       {
         "title": "un compte, cinq appareils",
@@ -39,7 +40,7 @@
   "screens": {
     "caption": "véritables écrans des applications · données de démonstration",
     "windows": "écran d’accueil de l’application windows",
-    "android": "sélection des services dans l’application android",
+    "android": "écran d’accueil de l’application android",
     "settings": "réglages des méthodes de connexion pour windows"
   },
   "platforms": {
@@ -87,7 +88,7 @@
     "steps": [
       "téléchargez et installez l’application. accordez l’autorisation vpn du système si votre appareil la demande.",
       "saisissez votre e-mail et le code à usage unique reçu par message.",
-      "choisissez un pays, sélectionnez le trafic à protéger et appuyez sur « connecter »."
+      "choisissez un pays et appuyez sur connecter. l’écran d’accueil affiche l’état de la connexion."
     ],
     "upcoming": "cette option sera disponible plus tard. en attendant, vous pouvez utiliser les applications android et windows.",
     "alternatives": "autres appareils",
@@ -118,12 +119,12 @@
         "a": "aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’abonnement dure un mois calendaire et se renouvelle manuellement. l’offre et la date de fin d’accès sont visibles dans l’application."
       },
       {
-        "q": "puis-je connecter uniquement certains services ?",
-        "a": "le routage sélectif permet de choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle. changez le mode dans « que protéger » sur l’accueil de l’application.\n\n« tout » — tout le trafic passe par le VPN.\n\n« sélection » — seuls les services de votre liste utilisent le VPN, par exemple YouTube et Telegram. les autres sites et applications utilisent la connexion habituelle.\n\n« sauf sélection » — c’est l’inverse : les services de la liste passent en direct, et le reste par le VPN. vous pouvez par exemple exclure Gosuslugi et MAX.\n\nappuyez sur « choisir les services » et activez ceux souhaités, ou ajoutez un motif : youtube.com pour ce domaine, *.youtube.com pour ses sous-domaines. un service peut utiliser plusieurs domaines ; choisir un service prédéfini est généralement plus simple.\n\nles deux modes conservent des listes distinctes. enregistrer les modifications déconnecte le VPN : reconnectez-vous pour les appliquer."
+        "q": "que protège un vpn ?",
+        "a": "le vpn chiffre le trafic entre votre appareil et le serveur du service, y compris sur un réseau wi-fi public. utilisez aussi https, les mises à jour et des méthodes de connexion sécurisées pour protéger vos comptes. un vpn ne remplace pas la protection de l’appareil."
       },
       {
         "q": "le vpn ne se connecte pas. que faire ?",
-        "a": "vérifiez votre connexion internet sans vpn, mettez l’application à jour et essayez un autre pays ou une autre méthode de connexion dans les réglages. si l’erreur se reproduit, transmettez son texte et son heure à [l’assistance]."
+        "a": "vérifiez votre connexion internet sans vpn et mettez l’application à jour. si l’erreur persiste, envoyez son texte et son heure au [support]."
       },
       {
         "q": "le code de connexion n’arrive pas ?",
@@ -136,25 +137,26 @@
     ]
   },
   "footer": {
-    "seller": "Кениг Роман Сергеевич · indépendant, russie · identifiant fiscal 183475316809",
     "copyright": "PrettyLisaVPN",
     "terms": "conditions d’utilisation",
     "privacy": "politique de confidentialité",
     "refunds": "remboursements et réclamations",
-    "payments": "paiement, annulation et renouvellement"
+    "payments": "paiement, annulation et renouvellement",
+    "claims": "réclamations et paiements",
+    "documents": "documents"
   },
   "legal": {
     "updated": "version du 6 novembre 2026",
     "terms": [
-      "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. le service est fourni par Кениг Роман Сергеевич, contribuable au régime russe de l’impôt sur le revenu professionnel, identifiant fiscal 183475316809. contact : help@prettylisavpn.com.",
+      "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. questions sur le service, les paiements et les réclamations : help@prettylisavpn.com.",
       "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
       "l’offre free comprend une heure de connexion par jour, partagée sur tout le compte. le quota est réinitialisé à 00:00 utc. aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’offre, le temps restant et la période d’accès sont affichés dans l’application.",
-      "vous pouvez faire passer par le vpn tout le trafic, certains services ou tout sauf les services choisis. la vitesse et la disponibilité dépendent du réseau, de l’appareil, du serveur et des ressources externes. un vpn ne remplace pas la protection de l’appareil et ne garantit pas un anonymat absolu.",
+      "le vpn chiffre la connexion entre votre appareil et le serveur du service. la vitesse et la disponibilité dépendent du réseau, de l’appareil et du serveur. un vpn ne remplace pas la protection de l’appareil et ne garantit pas un anonymat absolu.",
       "utilisez le service dans le respect de la loi. les accès non autorisés aux systèmes d’autrui, les logiciels malveillants, le spam et les attaques contre l’infrastructure sont interdits.",
       "contactez l’assistance pour toute question sur le fonctionnement de l’application. les conditions de paiement et de traitement des demandes financières figurent sur des pages distinctes. ces conditions ne limitent pas les droits prévus par la législation applicable."
     ],
     "privacy": [
-      "Кениг Роман Сергеевич, identifiant fiscal 183475316809, est responsable du traitement des données de PrettyLisaVPN. pour les questions relatives aux données personnelles : help@prettylisavpn.com.",
+      "questions sur le traitement des données personnelles par PrettyLisaVPN : help@prettylisavpn.com.",
       "le fonctionnement du compte utilise l’e-mail, l’identifiant, le statut et les dates de création et de modification. la gestion des appareils utilise l’identifiant d’installation, le nom et la plateforme de l’appareil, ainsi que les dates de connexion et de révocation d’accès.",
       "le service traite les informations relatives à l’offre, à la période d’accès, aux événements de connexion au compte, aux sessions vpn et aux résultats techniques des connexions. ces informations servent à l’authentification, au décompte du temps, à la gestion des connexions, à l’assistance et à l’évaluation du fonctionnement du service.",
       "l’analyse du produit porte sur les événements d’utilisation du compte et le fonctionnement technique du service. ses événements n’incluent ni historique de navigation, ni adresses de pages visitées, ni requêtes dns, ni contenu des paquets. cela décrit l’analyse du produit et ne signifie pas l’absence de tout journal technique.",
@@ -178,7 +180,8 @@
       "Les abonnements SBP se renouvellent automatiquement une fois par mois civil après votre accord. Le montant convenu reste fixe jusqu’à la résiliation et une nouvelle souscription. Un lien de paiement ponctuel n’active pas le renouvellement automatique.",
       "Vous pouvez arrêter les prélèvements futurs et dissocier votre compte bancaire dans la gestion de l’abonnement. L’accès payé reste disponible jusqu’à la date affichée. Une nouvelle souscription utilise le tarif alors en vigueur.",
       "lors du paiement, vérifiez l’offre, la devise, le montant total et les informations sur les frais sur la page de paiement. les coordonnées de carte et le cvc doivent être saisis uniquement sur la page de paiement du prestataire, jamais sur le site de PrettyLisaVPN ni dans les messages à l’assistance.",
-      "pour toute question sur un paiement, un reçu, la période d’accès ou un débit erroné, écrivez à help@prettylisavpn.com. indiquez l’adresse du compte et les informations permettant de retrouver le paiement."
+      "pour toute question sur un paiement, un reçu, la période d’accès ou un débit erroné, écrivez à help@prettylisavpn.com. indiquez l’adresse du compte et les informations permettant de retrouver le paiement.",
+      "le montant maximal par transaction est de 10 000 RUB. les recharges de solde et les montants libres ne sont pas proposés. les paiements ne sont pas encore disponibles."
     ]
   },
   "notFound": {
@@ -186,12 +189,36 @@
     "text": "revenez à l’accueil pour télécharger l’application ou obtenir de l’aide."
   },
   "pricing": {
-    "title": "un abonnement adapté",
+    "eyebrow": "à votre rythme",
+    "title": "un compte. un prix clair.",
+    "intro": "commencez gratuitement ou choisissez premium pour un mois calendaire.",
+    "free": "une heure de vpn par jour et par compte.",
+    "freeButton": "commencer gratuitement",
+    "description": "vpn sans limite de temps.",
+    "features": [
+      "choix parmi les pays de serveur disponibles",
+      "jusqu’à cinq appareils actifs par compte",
+      "sans publicité"
+    ],
+    "currencies": {
+      "RUB": "en roubles",
+      "USD": "en dollars"
+    },
+    "basePrice": "prix de base",
+    "currentPrice": "prix actuel",
+    "period": "par mois",
+    "buy": "acheter",
+    "renewal": "un paiement pour un mois. renouvellement manuel, sans prélèvement automatique.",
+    "availability": "les paiements ne sont pas encore disponibles. vous pouvez déjà essayer le forfait gratuit dans l’application.",
+    "documents": "conditions d’achat",
+    "contact": "questions de paiement",
+    "unavailableTitle": "paiement temporairement indisponible",
+    "unavailableText": "le traitement des paiements n’est pas encore connecté. aucun montant n’a été débité et aucun abonnement n’a été créé. réessayez plus tard ou contactez-nous pour les questions de paiement.",
+    "close": "compris",
+    "currency": "devise",
     "text": "un compte pour tous vos appareils",
-    "free": "1 heure par jour, sans publicité",
     "premium": "durée illimitée · choix du pays",
     "unavailable": "prix indisponibles",
-    "period": "par mois",
     "unavailableCheckout": "la souscription sera bientôt disponible",
     "terms": "renouvellement mensuel. le prix convenu reste inchangé jusqu’à la résiliation.",
     "manage": "Gérer l’abonnement",

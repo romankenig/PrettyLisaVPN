@@ -1,4 +1,4 @@
-# PrettyLisaVPN monitoring dashboard — 0.6.0
+# PrettyLisaVPN monitoring dashboard — 0.6.2
 
 Managed client downloads include corresponding engine source/license archives.
 Their links appear only when the verified publisher reports matching sources.
@@ -23,6 +23,12 @@ Keep this directory across releases; do not place it in CI artifacts.
 The generic OTP login of VPN customers is unchanged. This password protects only
 the administrative monitoring dashboard. Unknown/missing history remains unknown;
 the dashboard shows coverage separately from successful known hours.
+
+The overall/group hour strip uses proportional server-state colors. A single
+failed server colors only its share red; unknown and pending evidence retain
+their own colors. Servers not yet registered are excluded from the share and
+listed separately. Hover/focus reports exact counts; clicking still opens the
+hour's measurements. Individual server strips keep their original status colors.
 
 All displayed timestamps use fixed GMT+3 (`Etc/GMT-3`), independent of browser
 timezone. API timestamps and monitoring slots stay UTC.

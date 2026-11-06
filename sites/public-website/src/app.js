@@ -1,5 +1,9 @@
 import { releaseMetadata } from "./downloads.mjs";
-import { acquisitionPrices, formatMonthlyPrice } from "./pricing.mjs";
+import {
+  acquisitionPrices,
+  acquisitionReferencePrices,
+  formatMonthlyPrice,
+} from "./pricing.mjs";
 
 const pricing = document.querySelector("[data-pricing]");
 if (pricing) {
@@ -12,23 +16,25 @@ if (pricing) {
     .then((value) => {
       const prices = acquisitionPrices(value);
       if (!prices) return;
-      const render = (currency) => {
-        pricing.querySelector("[data-price]").textContent = formatMonthlyPrice(
+      const original = acquisitionReferencePrices(value);
+      for (const node of pricing.querySelectorAll("[data-price]")) {
+        const currency = node.dataset.price;
+        node.textContent = formatMonthlyPrice(
           prices[currency],
           currency,
           document.documentElement.lang,
         );
-        for (const button of pricing.querySelectorAll("[data-currency]")) {
-          button.disabled = false;
-          button.setAttribute(
-            "aria-pressed",
-            String(button.dataset.currency === currency),
-          );
-        }
-      };
-      for (const button of pricing.querySelectorAll("[data-currency]"))
-        button.addEventListener("click", () => render(button.dataset.currency));
-      render(document.documentElement.lang === "ru" ? "RUB" : "USD");
+      }
+      for (const node of pricing.querySelectorAll("[data-reference-price]")) {
+        const currency = node.dataset.referencePrice;
+        if (original[currency] == null) continue;
+        node.textContent = formatMonthlyPrice(
+          original[currency],
+          currency,
+          document.documentElement.lang,
+        );
+        node.hidden = false;
+      }
     })
     .catch(() => {
       /* Missing prices stay unavailable; never substitute a hardcoded amount. */
@@ -71,4 +77,5 @@ if (release) {
 }
 
 const portal = document.querySelector("[data-portal]");
-if (portal) import("./portal.mjs").then(({ mountPortal }) => mountPortal(portal));
+if (portal)
+  import("./portal.mjs").then(({ mountPortal }) => mountPortal(portal));
