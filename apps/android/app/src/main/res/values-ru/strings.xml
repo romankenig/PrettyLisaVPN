@@ -315,6 +315,6 @@
     <string name="billing_replace_card">заменить карту</string>
     <string name="billing_portal">управлять подпиской и оплатой</string>
     <string name="billing_sbp_account">привязанный банковский счёт СБП</string>
-    <string name="billing_reference_prices">Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.</string>
+    <string name="billing_reference_prices">справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.</string>
     <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / месяц</string>
 </resources>

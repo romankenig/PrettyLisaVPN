@@ -35,7 +35,7 @@
 "billing_next_charge" = "próximo cobro: %1$@ · %2$@";
 "billing_portal" = "gestionar suscripción y pagos";
 "billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / mes";
-"billing_reference_prices" = "Precios orientativos para una nueva suscripción. Confirmaremos las condiciones antes del pago. El precio de tu contrato actual no cambia.";
+"billing_reference_prices" = "precios orientativos para una nueva suscripción. Confirmaremos las condiciones antes del pago. El precio de tu contrato actual no cambia.";
 "billing_replace_card" = "cambiar tarjeta";
 "billing_replace_prompt" = "¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado";
 "billing_resubscribe" = "no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual";

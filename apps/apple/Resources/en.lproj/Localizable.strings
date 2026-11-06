@@ -40,7 +40,7 @@
 "billing_next_charge" = "next payment: %1$@ · %2$@";
 "billing_portal" = "manage subscription and payments";
 "billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / month";
-"billing_reference_prices" = "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.";
+"billing_reference_prices" = "reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.";
 "billing_replace_card" = "change card";
 "billing_replace_prompt" = "change your card instead? your subscription terms and paid access stay the same";
 "billing_resubscribe" = "no more automatic payments. you can subscribe again at the current price";
