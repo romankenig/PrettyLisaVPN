@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.36.0", min_length=1)
+    application_version: str = Field(default="0.37.0", min_length=1)
     demo_enabled: bool = False
     demo_identity_secret: SecretStr | None = Field(default=None, min_length=32)
     environment: str = Field(default="development", min_length=1)
@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     fleet_admin_token: SecretStr | None = None
     fleet_monitor_token: SecretStr | None = None
     fleet_inventory_path: str = "/run/fleet/inventory.json"
+    fleet_activity_threshold_bps: float = Field(default=10000, ge=0, le=1e9, allow_inf_nan=False)
     fleet_speed_target_mbps: float = Field(default=30, gt=0, le=10000)
     fleet_connection_target_ms: float = Field(default=1000, gt=0, le=60000)
     fleet_quality_weights: tuple[float, float, float, float] = (0.50, 0.20, 0.15, 0.15)

@@ -1,7 +1,7 @@
 """Thin administrative API. Read-only monitoring credentials cannot configure nodes."""
 
 import hmac
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -98,3 +98,14 @@ async def monitoring(
     days: Annotated[int, Query(ge=1, le=7)] = 7,
 ) -> dict[str, Any]:
     return await service.monitoring(node_id, days)
+
+
+@router.get("/monitoring/active-user-speed")
+async def active_user_speed(
+    service: Annotated[FleetService, Depends(reader)],
+    period: Literal["1h", "24h", "7d"] = "1h",
+    node_ids: Annotated[list[UUID] | None, Query(max_length=100)] = None,
+) -> dict[str, Any]:
+    from prettylisavpn.fleet.traffic_service import TrafficService
+
+    return await TrafficService(service.postgres, service.settings).history(period, node_ids)
