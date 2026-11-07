@@ -14,7 +14,7 @@ This is Android guest access, not a new account plan UI on the other clients.
   document rows; authentication has smaller links below its primary controls.
   Fixed HTTPS URLs open localized terms, privacy, refunds and payments on
   prettylisavpn.com. No token, email, device identifier or redirect is appended.
-- DEMO 🧪 gets 900 seconds per device per UTC day, AUTO selection among free nodes
+- DEMO 🌱 gets 900 seconds per device per UTC day, AUTO selection among free nodes
   and full traffic protection. FREE 🆓 retains 3600 account-wide seconds/day;
   Premium ⭐ and manually assigned Platinum 💎 retain their existing capabilities.
 - The official Android adapters force AUTO/all regardless of previously saved
@@ -107,6 +107,8 @@ Android API 26/35/36 acceptance now actually uninstalls/reinstalls the same sign
 and compares the app-scoped hash privately (artifacts retain only PASS). Native UI
 tests capture documents, auth, DEMO home/locked controls, and guest → OTP → FREE.
 Website tests cover all six translations, legal pages and tariff hierarchy.
+The DEMO seedling emoji also renders on the minimum supported Android 8.0; native
+API 26 review caught the unsupported test-tube glyph before publication.
 
 Local isolated PostgreSQL migration/head consistency and focused tests passed during
 implementation; full final counts, product HEAD, build/merge SHA, run/attempt and

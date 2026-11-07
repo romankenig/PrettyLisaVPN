@@ -148,7 +148,7 @@ class AccountScreensTest {
         compose.onNodeWithTag("auth-documents").performScrollTo();screenshot("auth-documents-demo")
         for(key in listOf("terms","privacy","refunds","payments")) compose.onNodeWithTag("auth-document-$key").assertExists()
         click("auth-demo");waitFor("demo-traffic")
-        compose.onNodeWithText("DEMO 🧪").assertExists()
+        compose.onNodeWithText("DEMO 🌱").assertExists()
         compose.onNodeWithText("15:00").assertExists()
         screenshot("demo-home")
     }
