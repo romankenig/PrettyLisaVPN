@@ -108,6 +108,16 @@ class AccountScreensTest {
         compose.onNodeWithTag(tag).performClick()
     }
     private fun idle()=compose.waitUntil(10_000) { !model.state.value.busy }
+    private fun enterAuth(tag:String,value:String) {
+        val field=compose.onNodeWithTag(tag).performScrollTo()
+        field.performTextInput(value);field.assertTextEquals(value)
+        val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(500,5_000)
+        fun keyboardVisible()=androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+        if(keyboardVisible()) androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitUntil(10_000) { !keyboardVisible() }
+        automation.waitForIdle(500,5_000)
+    }
     private fun screenshot(name:String) {
         compose.runOnUiThread { compose.activity.window.decorView.invalidate() }
         compose.waitForIdle();val i=InstrumentationRegistry.getInstrumentation();i.uiAutomation.waitForIdle(500,5000)
@@ -197,9 +207,13 @@ class AccountScreensTest {
         compose.onNodeWithTag("plan-tier-DEMO").performScrollTo();screenshot("plan-polish-demo-current-ru")
         assertEquals(0,billingReads)
         click("plan-buy");waitFor("screen_LOGIN")
-        compose.onNodeWithTag("login-email").performTextInput("buyer@example.com");click("auth-submit");waitFor("screen_OTP")
-        compose.onNodeWithTag("otp").performTextInput("123456")
-        compose.runOnUiThread { plan="Free" };click("auth-submit");waitFor("plan-buy")
+        enterAuth("login-email","buyer@example.com");click("auth-submit");waitFor("screen_OTP")
+        enterAuth("otp","123456")
+        compose.runOnUiThread { plan="Free" };click("auth-submit")
+        try { waitFor("plan-buy") } catch(error:AssertionError) {
+            screenshot("guest-buy-transition-failed")
+            throw AssertionError("Guest purchase transition: signedIn=${model.state.value.data.signedIn}, plan=${model.state.value.data.plan}, pendingNavigation=${model.afterLoginSubscription}",error)
+        }
         compose.onNodeWithTag("current-plan-FREE").assertExists()
         compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-free-premium-ru")
         compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-free-current-ru")
