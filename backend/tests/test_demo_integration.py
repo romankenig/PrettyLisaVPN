@@ -26,6 +26,7 @@ from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.client_vpn.domain import ConnectRequest
 from prettylisavpn.client_vpn.model import ClientLeaseRecord, FreeQuotaResetRecord
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
+from prettylisavpn.demo import service as demo_service_module
 from prettylisavpn.demo.domain import DemoRateLimitedError, RegistrationRequiredError
 from prettylisavpn.demo.model import DemoDeviceRecord
 from prettylisavpn.demo.router import router
@@ -136,11 +137,14 @@ async def test_guest_cannot_request_paid_selection_or_split_or_browser_proxy(gue
         )
 
 
+@pytest.mark.parametrize("start_hour", [0, 12, 23])
 async def test_reinstall_preserves_spent_time_until_confirmed_removal_and_free_is_independent(
-    guest, monkeypatch
+    guest, monkeypatch, start_hour
 ):
     pg, vpn, worker, provider, registered, service, key, result, auth = guest
     clock = freeze(monkeypatch)
+    clock.value = clock.value.replace(hour=start_hour)
+    monkeypatch.setattr(demo_service_module, "datetime", clock)
     token = result.access_token.token
     lease = await vpn.connect(token, ConnectRequest(public_key=KEY), uuid4())
     assert lease["expires_at"] == clock.value + timedelta(seconds=900)
@@ -149,6 +153,9 @@ async def test_reinstall_preserves_spent_time_until_confirmed_removal_and_free_i
     await vpn.get(token, identifier, "probe", "1.1.1.1")
     clock.value += timedelta(seconds=100)
     fresh = await service.login(key, "192.0.2.1")
+    async with pg.session() as session:
+        row = await session.get(ClientLeaseRecord, identifier)
+        assert row.next_attempt_at == clock.value
     provider.revoke_access.return_value = False
     assert await worker.tick()
     async with pg.session() as session:
@@ -177,6 +184,7 @@ async def test_guest_quota_exhaustion_is_not_reset_by_free_admin_reset_or_relogi
 ):
     pg, vpn, _, _, _, service, key, result, _ = guest
     clock = freeze(monkeypatch)
+    monkeypatch.setattr(demo_service_module, "datetime", clock)
     lease = await vpn.connect(result.access_token.token, ConnectRequest(public_key=KEY), uuid4())
     async with pg.session() as session, session.begin():
         row = await session.get(ClientLeaseRecord, UUID(lease["id"]))
