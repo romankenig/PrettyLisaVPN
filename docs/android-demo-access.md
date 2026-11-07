@@ -62,6 +62,14 @@ distribution outside Google Play. Backend cannot prove routing of traffic a modi
 client never sends into the tunnel; official client routing and declared API mode
 are enforced here. See [Android's documented identity scope](https://developer.android.com/about/versions/oreo/android-8.0-changes).
 
+The single ANDROID_ID getter has a documented `HardwareIds` lint exception: a
+random installation ID would violate the requested reinstall-resistant daily
+budget. This exception is scoped to that function, with minSdk 26, no advertising
+use, no email-account linkage, and client hashing/server HMAC. The full lint task
+remains required; there is no project-wide suppression or baseline. Android's
+[identifier guidance](https://developer.android.com/identity/user-data-ids) explains
+the persistence/privacy tradeoff; hardware attestation is still not provided.
+
 ## Rollout and rollback
 
 Migration **0046_demo_devices** adds DEMO to the PostgreSQL enum and a durable

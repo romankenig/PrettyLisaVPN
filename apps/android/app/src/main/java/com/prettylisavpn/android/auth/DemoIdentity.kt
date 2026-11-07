@@ -1,12 +1,18 @@
 package com.prettylisavpn.android.auth
 
 import android.content.Context
+import android.annotation.SuppressLint
 import android.provider.Settings
 import java.security.MessageDigest
 
 /** App-signing-key + Android-user scoped; stable across ordinary reinstalls.
  * Never read IMEI, advertising ID, contacts, location or another app's identifier.
+ * Intentional narrow HardwareIds exception: a random installation ID would reset
+ * the explicitly required device/day budget on uninstall. minSdk 26 guarantees
+ * signer/user scoping; only a domain-separated hash leaves this function, only for
+ * guest quota admission. See docs/android-demo-access.md for privacy/abuse limits.
  */
+@SuppressLint("HardwareIds")
 internal fun demoDeviceKey(context: Context): String = demoDeviceHash(
     Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
 )
