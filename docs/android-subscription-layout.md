@@ -47,8 +47,9 @@ confirmation and 2x text. Final source/build SHAs, every CI run/attempt and scre
 belong in the task PR. New source is not yet merged or published; payments remain
 disabled until the separately authorized merchant setup.
 
-CI also exposed a pre-existing wall-clock race in ServerConnectionTest: its 1 ms
-poll could run twice before the collector's first value resumed on a busy runner.
-That test now uses the existing coroutine virtual clock and retains the exact
-no-probes-offline / one-probe-before-cancellation assertions. Runtime polling is
-unchanged; this test-only correction does not add a version bump.
+CI also exposed pre-existing wall-clock races in ServerConnectionTest: its 1 ms
+poll could run again before the collector resumed on a busy runner, producing
+two probes instead of one or three instead of two. All polling tests now use the
+existing coroutine virtual clock and retain their exact probe-count, recovery,
+offline and cancellation assertions. Runtime polling is unchanged; these test-only
+corrections do not add a version bump.
