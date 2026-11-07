@@ -42,11 +42,13 @@ class AccountScreensTest {
     private var receipt:SupportReceipt?=null
     private lateinit var model:ScreenModel
     private val api=object:AuthApi {
+        override suspend fun demo(deviceKey:String):Tokens { plan="Demo";return tokens() }
         override suspend fun requestOtp(email:String)=Unit
         override suspend fun verifyOtp(email:String,code:String,installationId:String,deviceName:String)=tokens()
         fun tokens()=Tokens("fake",900,Credentials(device,"fake","2030-01-01T00:00:00Z"))
         override suspend fun refresh(credentials:Credentials)=tokens()
-        override suspend fun me(access:String):Profile { profileReads++; return Profile("screens@example.com",plan,if(active)2 else 1,owner) }
+        override suspend fun me(access:String):Profile { profileReads++; return Profile(if(plan=="Demo")"" else "screens@example.com",plan,if(plan=="Demo")1 else if(active)2 else 1,owner,
+            if(plan in setOf("Free","Demo")) FreeTime(if(plan=="Demo")900 else 3600,0,"2030-01-01T00:00:00Z",System.currentTimeMillis(),if(plan=="Demo")900 else 3600) else null) }
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
@@ -88,7 +90,7 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         compose.waitForIdle();instrumentation.waitForIdleSync();instrumentation.uiAutomation.waitForIdle(500,5_000)
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
-        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test"),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
+        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test",demoIdentity={ "a".repeat(64) }),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
     }
@@ -136,6 +138,38 @@ class AccountScreensTest {
         compose.onNodeWithText("Platinum 💎").assertExists()
         compose.onNodeWithTag("home-upgrade").assertDoesNotExist()
         screenshot("home-platinum-plan")
+    }
+
+    @Test fun documentsAreReadableInAboutAndQuietBelowSignIn() {
+        click("tab_ABOUT");compose.onNodeWithTag("about-documents").performScrollTo();screenshot("about-documents")
+        for(key in listOf("terms","privacy","refunds","payments")) compose.onNodeWithTag("about-document-$key").assertExists()
+        compose.runOnUiThread { model.perform(Command.Logout) };waitFor("screen_LOGIN")
+        compose.onNodeWithTag("auth-submit").assertExists()
+        compose.onNodeWithTag("auth-documents").performScrollTo();screenshot("auth-documents-demo")
+        for(key in listOf("terms","privacy","refunds","payments")) compose.onNodeWithTag("auth-document-$key").assertExists()
+        click("auth-demo");waitFor("demo-traffic")
+        compose.onNodeWithText("DEMO 🧪").assertExists()
+        compose.onNodeWithText("15:00").assertExists()
+        screenshot("demo-home")
+    }
+
+    @Test fun demoLocksLeadToRegistrationAndFreeHasItsFullHour() {
+        compose.runOnUiThread { plan="Demo";model.load(Area.HOME) };waitFor("demo-traffic")
+        compose.onNodeWithTag("demo-traffic").performScrollTo();screenshot("demo-locked-traffic")
+        compose.onNodeWithTag("demo-locked-include").assertExists()
+        compose.onNodeWithTag("demo-locked-exclude").assertExists()
+        click("tab_SETTINGS");screenshot("demo-settings")
+        compose.onNodeWithTag("demo-locked-methods").assertExists()
+        click("tab_HOME");click("home-country");screenshot("demo-countries")
+        click("home-country-DE");waitFor("screen_LOGIN")
+        assertEquals(0,billingReads)
+        compose.onNodeWithTag("login-email").performTextInput("registered@example.com");click("auth-submit");waitFor("screen_OTP")
+        compose.onNodeWithTag("otp").performTextInput("123456")
+        compose.runOnUiThread { plan="Free" };click("auth-submit");waitFor("live-account")
+        compose.onNodeWithText("Free 🆓").assertExists()
+        compose.onNodeWithText("60:00").assertExists()
+        compose.onNodeWithTag("demo-traffic").assertDoesNotExist()
+        screenshot("demo-upgraded-free")
     }
 
     @Test fun devicesRevokeUpdatesHomeAndBack() {

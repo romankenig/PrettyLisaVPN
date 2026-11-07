@@ -40,6 +40,30 @@ adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1
 
+# Actual uninstall/reinstall must preserve the guest quota key with the same APK signer.
+# Keep the emulator-only digest out of retained evidence and remove both local copies.
+demo_keys=$(mktemp -d)
+for stage in before after; do
+  if [[ "$stage" == after ]]; then
+    adb uninstall "$package"
+    adb install apk/app-debug.apk
+    adb install -r test-apk/app-debug-androidTest.apk
+  fi
+  adb shell am instrument -w -r -e class com.prettylisavpn.android.DemoDeviceIdentityTest \
+    "$package.test/com.prettylisavpn.android.AcceptanceRunner" > "$demo_keys/$stage-test.txt"
+  grep -q 'OK (1 test)' "$demo_keys/$stage-test.txt"
+  adb shell run-as "$package" cat files/demo-reinstall-key | tr -d '\r\n' > "$demo_keys/$stage"
+done
+python3 - "$demo_keys" <<'DEMO_REINSTALL'
+import pathlib,re,sys
+p=pathlib.Path(sys.argv[1])
+before=(p/'before').read_text(); after=(p/'after').read_text()
+assert re.fullmatch('[0-9a-f]{64}',before) and before==after
+pathlib.Path('evidence/demo-reinstall.txt').write_text('Same app-scoped key after actual uninstall and reinstall: PASS\n')
+DEMO_REINSTALL
+adb shell run-as "$package" rm files/demo-reinstall-key
+rm -r -- "$demo_keys"
+
 # The UI fixture replaces WireGuard; exercise all 14 three-second adapters and cancellation.
 # Real shipping WireGuard requires the separate, opt-in live-wireguard acceptance job.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.PlaceholderConnectionTest \
@@ -114,7 +138,7 @@ RESTART_CHECK
 done
 
 # Live account screens and encrypted operation journal use isolated API ports only.
-for spec in AccountScreensTest:21 AccountJournalTest:2; do
+for spec in AccountScreensTest:23 AccountJournalTest:2; do
   test_class=${spec%:*}; test_count=${spec#*:}
   adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
     "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"

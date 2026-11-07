@@ -15,6 +15,7 @@ from prettylisavpn.auth_sessions.repository import AuthSessionRepository
 from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import is_demo_email
 from prettylisavpn.devices.domain import Device, DeviceLimitReachedError, DevicePlatform
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.devices.service import DeviceService
@@ -118,6 +119,8 @@ class RequestOtpService:
 
     async def request(self, email: str, client_ip: str) -> None:
         normalized_email = normalize_email(email)
+        if is_demo_email(normalized_email):
+            return
         await self._events.record(ProductEventName.OTP_REQUESTED)
         if self._email is None:
             raise OtpDeliveryUnavailableError("Email delivery is not configured")
@@ -178,6 +181,8 @@ class LoginService:
         device_name: str,
     ) -> LoginResult:
         normalized_email = normalize_email(email)
+        if is_demo_email(normalized_email):
+            raise InvalidOtpError
         try:
             verified = await self._otp.verify(normalized_email, code)
         except OtpServiceUnavailableError:

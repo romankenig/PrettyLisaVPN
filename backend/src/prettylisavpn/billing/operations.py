@@ -54,6 +54,7 @@ class BillingOperationsService:
 
     async def start(self, token: str, command: BillingCommand) -> BillingOperation:
         identity = await self.auth.authenticate(token)
+        identity.require_registered()
         return await self.start_for_account(identity.user_id, command)
 
     async def start_for_account(self, user_id: UUID, command: BillingCommand) -> BillingOperation:
@@ -188,6 +189,7 @@ class BillingOperationsService:
 
     async def get(self, token: str, operation_id: UUID) -> BillingOperation:
         identity = await self.auth.authenticate(token)
+        identity.require_registered()
         return await self.get_for_account(identity.user_id, operation_id)
 
     async def get_for_account(self, user_id: UUID, operation_id: UUID) -> BillingOperation:

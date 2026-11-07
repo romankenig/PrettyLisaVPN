@@ -53,6 +53,23 @@ test("billing preserves the published moderation layout and uses API-owned prici
     assert.match(all.get(routeFor(language, "/account/")), /data-portal/);
   }
 });
+test("DEMO is below Premium and Free with localized device limits and Android entry", () => {
+  const all = pages();
+  for (const language of languages) {
+    const html = all.get(routeFor(language));
+    const premium = html.indexOf('class="plan premium-plan"');
+    const free = html.indexOf('class="plan free-plan"');
+    const demo = html.indexOf('class="demo-plan"');
+    assert.ok(premium >= 0 && free > premium && demo > free);
+    const section = html.slice(demo, html.indexOf('</aside>', demo));
+    assert.ok(section.includes(escape(locales[language].pricing.demo.description)));
+    assert.ok(section.includes(routeFor(language, '/download/android/')));
+    assert.ok(!section.includes('class="button"'));
+    for (const document of ['terms', 'privacy']) {
+      assert.match(all.get(routeFor(language, `/legal/${document}/`)), /DEMO/);
+    }
+  }
+});
 test("all six client languages have complete UI, download instructions and four documents", async () => {
   assert.deepEqual(languages, ["ru", "en", "de", "fr", "es", "zh"]);
   const windows = await readFile(

@@ -13,6 +13,20 @@ class HttpAuthApiTest {
     @Before fun start() { server.start(); api = HttpAuthApi(server.url("/api/").toString(), true) }
     @After fun stop() { server.shutdown() }
     private val tokens = """{"token_type":"bearer","access_token":"bearer-private","access_token_expires_in":60,"session_id":"c21132ac-0d2e-4da7-96ac-8a6ceeb019ba","refresh_token":"refresh-private","refresh_token_expires_at":"2030-01-01T00:00:00Z","extra":"ignored"}"""
+    @Test fun guestAdmissionUsesOnlyDeviceHashAndReadsNullEmailWithSeparateQuota() = runBlocking {
+        server.enqueue(MockResponse().setBody(tokens))
+        server.enqueue(MockResponse().setBody("""{"id":"c21132ac-0d2e-4da7-96ac-8a6ceeb019ba","email":null,"plan":"DEMO","active_device_count":1,"entitlements":{"free_seconds_usable":123,"daily_vpn_limit_seconds":900,"free_running_sessions":0,"free_quota_resets_at":"2030-01-01T00:00:00Z"}}"""))
+        val admitted = api.demo("a".repeat(64))
+        val profile = api.me(admitted.access)
+        val request = server.takeRequest()
+        assertEquals("/api/auth/demo", request.path); assertEquals("POST", request.method)
+        assertNull(request.getHeader("Authorization"))
+        val body = JsonParser.parseString(request.body.readUtf8()).asJsonObject
+        assertEquals(setOf("device_key"), body.keySet()); assertEquals("a".repeat(64), body["device_key"].asString)
+        assertTrue(profile.isDemo); assertEquals("", profile.email)
+        assertEquals(123, profile.freeTime!!.seconds); assertEquals(900, profile.freeTime!!.dailyLimitSeconds)
+        assertEquals("Bearer bearer-private", server.takeRequest().getHeader("Authorization"))
+    }
     @Test fun otpContractHasAndroidPlatformAndStableInstallation() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(202).setBody("""{"status":"accepted"}"""))
         server.enqueue(MockResponse().setBody(tokens))

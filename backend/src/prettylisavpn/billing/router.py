@@ -27,6 +27,7 @@ from prettylisavpn.billing.operations import (
 from prettylisavpn.billing.operations_domain import BillingCommand, BillingOperation
 from prettylisavpn.billing.public_catalog import PublicCatalog, PublicCatalogPort
 from prettylisavpn.billing.service import BillingOverviewPort, BillingUnavailableError
+from prettylisavpn.demo.domain import RegistrationRequiredError
 from prettylisavpn.main_errors import error_response
 
 
@@ -51,6 +52,8 @@ class BillingRoute(APIRoute):
                 response = error_response("BILLING_OPERATION_NOT_FOUND", 404)
             except RequestValidationError:
                 response = error_response("validation_error", 422)
+            except RegistrationRequiredError:
+                response = error_response("REGISTRATION_REQUIRED", 403)
             except Exception:
                 response = error_response("BILLING_UNAVAILABLE", 503)
             response.headers["Cache-Control"] = "no-store"

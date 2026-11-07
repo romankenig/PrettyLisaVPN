@@ -79,7 +79,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     }
 
     private suspend fun connectTunnel(country: String): ConnectionResult {
-        val routing = DeviceTrafficSelection.get(context).current().policy()
+        val routing = routingForPlan(sessions.profile?.isDemo == true, DeviceTrafficSelection.get(context).current())
         routed = routing.mode != "all"
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
         stage = "RECOVERY"
@@ -88,7 +88,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         val keys = KeyPair()
         stage = "PROVISIONING"
         acquired = true // A timed-out POST can still have allocated a remote peer.
-        lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString(), method.id)
+        lease = api.connect(country, keys.publicKey.toBase64(), UUID.randomUUID().toString(), method.id, routing.mode)
         armDeadline(requireNotNull(lease))
         heartbeat = scope.launch {
             maintainLeaseHeartbeat(renew = {

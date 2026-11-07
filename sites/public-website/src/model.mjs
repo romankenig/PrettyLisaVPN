@@ -1,6 +1,6 @@
 export const website = Object.freeze({
-  version: "0.4.1",
-  reviewedOn: "2026-11-06",
+  version: "0.5.0",
+  reviewedOn: "2026-11-07",
   mode: "prelaunch",
   moderationMarker: "platega test",
   seller: Object.freeze({ email: "help@prettylisavpn.com" }),

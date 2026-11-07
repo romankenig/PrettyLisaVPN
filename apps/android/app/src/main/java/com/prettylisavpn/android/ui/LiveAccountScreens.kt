@@ -37,7 +37,12 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "HOME"
-    fun go(value: String) { model.clearError(); nav.navigate(value) { launchSingleTop = true } }
+    val demo = state.data.plan.equals("Demo", ignoreCase = true)
+    fun register() { model.perform(Command.Logout) { model.emailDraft = "" } }
+    fun go(value: String) {
+        if (demo && value in setOf("DEVICES", "ADVANCED", "SUPPORT")) { register(); return }
+        model.clearError(); nav.navigate(value) { launchSingleTop = true }
+    }
     Scaffold(containerColor = Brand.PurpleHeart, contentColor = Brand.Mercury,
         contentWindowInsets = WindowInsets(0,0,0,0),
         bottomBar = { if (route in setOf("HOME", "SETTINGS", "ABOUT")) PhoneNavigation(route) { dest ->
@@ -45,23 +50,28 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
         } },
     ) { padding ->
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
-            composable("HOME") { LiveHome(model) { go("SUBSCRIPTION") } }
+            composable("HOME") { LiveHome(model, register = ::register) { if (demo) register() else go("SUBSCRIPTION") } }
             composable("SETTINGS") { PhoneScreen("live-settings") {
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
-                SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
-                SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "settings-advanced") { go("ADVANCED") }
+                if (demo) BrandCard {
+                    DemoLockedFeature(tr(R.string.ui_devices), "demo-locked-devices", ::register)
+                    DemoLockedFeature(tr(R.string.advanced_settings), "demo-locked-methods", ::register)
+                } else {
+                    SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
+                    SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "settings-advanced") { go("ADVANCED") }
+                }
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
             composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }, navigate = { go(it) }) }
             composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
-            composable("SUBSCRIPTION") { LiveSubscription(model) { nav.popBackStack() } }
+            composable("SUBSCRIPTION") { if (demo) DemoUpgradeScreen({ nav.popBackStack() }, ::register) else LiveSubscription(model) { nav.popBackStack() } }
             composable("SUPPORT") { support -> LiveSupport(model, support.savedStateHandle) { nav.popBackStack() } }
         }
     }
-    AccountMessagePopup(model, messageBlocked) { go(it) }
+    if (!demo) AccountMessagePopup(model, messageBlocked) { go(it) }
     BackHandler(enabled = route in setOf("SETTINGS", "ABOUT")) { nav.popBackStack("HOME", false) }
 }
 

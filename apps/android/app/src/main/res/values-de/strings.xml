@@ -327,4 +327,23 @@
     <string name="vpn_reconnecting">verbindung wird wiederhergestellt…</string>
     <string name="vpn_reset_methods">gespeicherte methoden zurücksetzen und neu verbinden</string>
     <string name="vpn_unstable">die verbindung ist instabil. die automatische wiederherstellung wurde gestoppt; versuchen sie erneut, eine verbindung herzustellen</string>
+    <string name="legal_documents">dokumente</string>
+    <string name="legal_intro">aktuelle Bedingungen auf der Website von PrettyLisaVPN</string>
+    <string name="legal_terms">nutzungsvereinbarung</string>
+    <string name="legal_privacy">datenschutzerklärung</string>
+    <string name="legal_refunds">erstattungen und Beschwerden</string>
+    <string name="legal_payments">zahlung, Kündigung und Verlängerung</string>
+    <string name="legal_open_failed">der Browser konnte nicht geöffnet werden. bitte erneut versuchen.</string>
+    <string name="demo_try">ohne Registrierung ausprobieren</string>
+    <string name="demo_intro">15 Minuten täglich auf diesem Gerät. autopilot und Schutz des gesamten Datenverkehrs.</string>
+    <string name="demo_privacy">eine pseudonyme Gerätekennung bewahrt das Tageslimit nach einer Neuinstallation. details in der Datenschutzerklärung.</string>
+    <string name="demo_guest">gast auf diesem Gerät</string>
+    <string name="demo_upgrade">für FREE registrieren</string>
+    <string name="demo_upgrade_details">eine Stunde täglich, Länderwahl und selektiver Schutz. mit der Registrierung beginnt ein separates FREE-Kontingent; DEMO-Zeit wird nicht abgezogen.</string>
+    <string name="demo_locked_hint">registrieren und mit FREE freischalten</string>
+    <string name="demo_exhausted">das heutige DEMO-Kontingent ist aufgebraucht. für eine volle FREE-Stunde registrieren oder auf das Tageskontingent warten.</string>
+    <string name="demo_unavailable">DEMO ist vorübergehend nicht verfügbar. erneut versuchen oder per E-Mail anmelden.</string>
+    <string name="demo_rate_limited">zu viele Gastanmeldungen. bitte warten oder per E-Mail anmelden.</string>
+    <string name="demo_identity_failed">das Gerät kann für DEMO nicht erkannt werden. die Anmeldung per E-Mail ist möglich.</string>
+    <string name="demo_full_traffic">gesamter Datenverkehr</string>
 </resources>

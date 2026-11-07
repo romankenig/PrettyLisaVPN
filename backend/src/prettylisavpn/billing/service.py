@@ -216,6 +216,7 @@ class BillingOverviewService:
 
     async def overview(self, access_token: str) -> Overview:
         identity = await self.authenticated_sessions.authenticate(access_token)
+        identity.require_registered()
         return await self.overview_for_account(identity.user_id)
 
     async def overview_for_account(self, user_id: UUID) -> Overview:

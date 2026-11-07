@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from test_billing import NOW, catalog, paid
 
-from prettylisavpn.auth.session_service import InvalidSessionError
+from prettylisavpn.auth.session_service import AccessIdentity, InvalidSessionError
 from prettylisavpn.billing.domain import overview_for
 from prettylisavpn.billing.operations_domain import BillingOperation
 from prettylisavpn.billing.web_routes import native_router, router
@@ -70,7 +70,7 @@ def web():
         get_for_account=AsyncMock(return_value=operation),
     )
     app.state.authenticated_sessions = SimpleNamespace(
-        authenticate=AsyncMock(return_value=SimpleNamespace(user_id=account))
+        authenticate=AsyncMock(return_value=AccessIdentity(account, uuid4(), uuid4()))
     )
     with TestClient(app, base_url=WEB_ORIGIN) as client:
         yield client, app, sessions, account, operation

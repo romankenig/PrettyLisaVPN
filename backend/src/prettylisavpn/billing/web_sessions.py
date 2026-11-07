@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 from prettylisavpn.auth.service import BlockedUserError, InvalidOtpError, OtpVerifier
 from prettylisavpn.auth.session_service import InvalidSessionError
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import RegistrationRequiredError, is_demo_email
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import UserStatus, normalize_email
 from prettylisavpn.users.model import UserRecord
@@ -64,6 +65,8 @@ class BillingWebSessions:
             user = await session.get(UserRecord, user_id)
             if user is None:
                 raise InvalidSessionError
+            if is_demo_email(user.email):
+                raise RegistrationRequiredError
             if user.status == UserStatus.BLOCKED:
                 raise BlockedUserError
         return user_id
@@ -82,12 +85,16 @@ class BillingWebSessions:
 
     async def login(self, email: str, code: str) -> str:
         email = normalize_email(email)
+        if is_demo_email(email):
+            raise InvalidOtpError
         if not await self.otp.verify(email, code):
             raise InvalidOtpError
         async with self.postgres.session() as session, session.begin():
             user, _, _ = await UserService(
                 UserRepository(session), SubscriptionRepository(session)
             ).find_or_create_with_subscription(email)
+            if is_demo_email(user.email):
+                raise RegistrationRequiredError
             if user.status == UserStatus.BLOCKED:
                 raise BlockedUserError
         return await self.tokens.issue("session", user.id, SESSION_TTL)

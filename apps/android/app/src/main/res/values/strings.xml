@@ -334,4 +334,23 @@
     <string name="vpn_reconnecting">restoring connection…</string>
     <string name="vpn_reset_methods">reset remembered methods and reconnect</string>
     <string name="vpn_unstable">the connection is unstable. automatic recovery has stopped; try connecting again</string>
+    <string name="legal_documents">documents</string>
+    <string name="legal_intro">current terms on the PrettyLisaVPN website</string>
+    <string name="legal_terms">user agreement</string>
+    <string name="legal_privacy">privacy policy</string>
+    <string name="legal_refunds">refunds and claims</string>
+    <string name="legal_payments">payments, cancellation and renewal</string>
+    <string name="legal_open_failed">unable to open the browser. please try again.</string>
+    <string name="demo_try">try without registration</string>
+    <string name="demo_intro">15 minutes a day on this device. autopilot and protection of all traffic.</string>
+    <string name="demo_privacy">a private device identifier keeps the daily limit after reinstallation. details in the privacy policy.</string>
+    <string name="demo_guest">guest on this device</string>
+    <string name="demo_upgrade">register for FREE</string>
+    <string name="demo_upgrade_details">one hour a day, country selection and selective traffic protection. registration starts a separate FREE budget; DEMO time is not deducted.</string>
+    <string name="demo_locked_hint">register to unlock with FREE</string>
+    <string name="demo_exhausted">today’s DEMO time is used up. register for a full FREE hour or return after the daily reset.</string>
+    <string name="demo_unavailable">DEMO is temporarily unavailable. try again or sign in by email.</string>
+    <string name="demo_rate_limited">too many guest sign-in attempts. please wait or sign in by email.</string>
+    <string name="demo_identity_failed">this device cannot be identified for DEMO. you can sign in by email.</string>
+    <string name="demo_full_traffic">all traffic</string>
 </resources>
