@@ -322,4 +322,9 @@
     <string name="subscription_payments_unavailable">付款暂不可用。您仍可查看价格和当前访问权限。</string>
     <string name="subscription_change">更改订阅</string>
     <string name="subscription_delete">删除订阅</string>
+    <string name="vpn_checking">正在检查连接…</string>
+    <string name="vpn_waiting_network">等待网络…</string>
+    <string name="vpn_reconnecting">正在恢复连接…</string>
+    <string name="vpn_reset_methods">重置已记住的方式并重新连接</string>
+    <string name="vpn_unstable">连接不稳定。自动恢复已停止，请尝试重新连接</string>
 </resources>

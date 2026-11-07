@@ -19,6 +19,45 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class PlaceholderConnectionTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun resetControlAndHealthRecoveryUseTheConnectionExecutor() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        val events = mutableListOf<String>()
+        var observedHealth = TunnelHealth.HEALTHY
+        fun adapter(id: String) = object : ConnectionAdapter {
+            override val method = VpnMethod(id, if (id == "wireguard") "WireGuard" else "VLESS")
+            override suspend fun connect(country: String): ConnectionResult { events += "start:$id"; return ConnectionResult.Verified }
+            override suspend fun disconnect() { events += "stop:$id" }
+            override suspend fun health() = if (id == "wireguard") observedHealth else TunnelHealth.HEALTHY
+        }
+        val preference = MethodPreference(read = { "vless" })
+        val controller = VpnController({ "test-owner" }, scope, listOf(adapter("wireguard"), adapter("vless")), preference,
+            healthPolicy = ConnectionHealthPolicy(intervalMillis = 60_000, retryMillis = 2_000, recoveryBackoffMillis = 200))
+        val model = ScreenModel(object : ScreenSource by FixtureSource(0) { override val vpn: VpnActions = controller })
+        compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { LiveHome(model) {} } } } }
+        try {
+            compose.onNodeWithTag("home-connect").performScrollTo().performClick()
+            compose.waitUntil(5_000) { controller.status.value.method?.id == "vless" }
+            compose.onNodeWithTag("vpn-reset-methods").performScrollTo().assertIsEnabled().performClick()
+            compose.waitUntil(5_000) { controller.status.value.method?.id == "wireguard" }
+            assertEquals(listOf("start:vless", "stop:vless", "start:wireguard"), events)
+            screenshot("vpn-reset-methods")
+            compose.runOnUiThread { observedHealth = TunnelHealth.NO_NETWORK; controller.transportLost("wireguard") }
+            compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.WAITING_NETWORK }
+            compose.onNodeWithTag("vpn-status").assertTextEquals("waiting for network…")
+            screenshot("vpn-waiting-network")
+            compose.runOnUiThread { observedHealth = TunnelHealth.HEALTHY; controller.transportLost("wireguard") }
+            compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.CONNECTED }
+            compose.runOnUiThread { observedHealth = TunnelHealth.UNREACHABLE; controller.transportLost("wireguard") }
+            compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.CHECKING }
+            compose.onNodeWithTag("vpn-status").assertTextEquals("checking connection…")
+            screenshot("vpn-checking-connection")
+            compose.waitUntil(10_000) { controller.status.value.phase == VpnPhase.CONNECTED && controller.status.value.method?.id == "vless" }
+            assertEquals(listOf("start:vless", "stop:vless", "start:wireguard", "stop:wireguard", "start:vless"), events)
+            screenshot("vpn-recovered-alternative")
+            compose.onNodeWithTag("home-connect").performScrollTo().performClick()
+            compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.DISCONNECTED }
+        } finally { compose.runOnUiThread { controller.disconnect(); scope.cancel() } }
+    }
     @Test fun shippedExecutorTriesAllMethodsAndCanBeCancelled() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         val visited = mutableListOf<String>()

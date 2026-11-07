@@ -329,4 +329,9 @@
     <string name="subscription_payments_unavailable">payments are temporarily unavailable. you can still view prices and your current access.</string>
     <string name="subscription_change">change subscription</string>
     <string name="subscription_delete">delete subscription</string>
+    <string name="vpn_checking">checking connection…</string>
+    <string name="vpn_waiting_network">waiting for network…</string>
+    <string name="vpn_reconnecting">restoring connection…</string>
+    <string name="vpn_reset_methods">reset remembered methods and reconnect</string>
+    <string name="vpn_unstable">the connection is unstable. automatic recovery has stopped; try connecting again</string>
 </resources>

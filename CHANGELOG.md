@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.24.0
+
+- Periodically check the connected tunnel through its own network. Confirm repeated
+  transport failure before bounded recovery, retaining cleanup and paid/free access
+  fences. Show checking/waiting/reconnecting states in the app and notification.
+- Keep the foreground service across method fallback and recovery. A lost physical
+  network pauses recovery; manual disconnect, logout and lease expiry stop it.
+- Preserve the successful method, occasionally explore one alternative on a new
+  connection and temporarily deprioritize methods with delayed failures. Add a
+  compact reset/reconnect control without changing enabled methods or routing.
+- See [connection recovery handoff](docs/android-connection-recovery.md).
+
 ### Android — 0.23.1
 
 - Hide the optional split-mode location block and divider when no observation is

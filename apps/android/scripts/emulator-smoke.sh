@@ -47,7 +47,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.PlaceholderConn
 python3 - <<'PLACEHOLDER_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/placeholder-instrumentation.txt').read_text()
-assert re.search(r'OK \(1 test\)', result), result
+assert re.search(r'OK \(2 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PLACEHOLDER_CHECK
 

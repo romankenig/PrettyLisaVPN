@@ -7,15 +7,22 @@ import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 
 class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val saved = context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE)
     private val preference = MethodPreference(
-        read = { context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).getString("last-successful-method", null) },
-        write = { method -> context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE).edit { putString("last-successful-method", method) } })
-    private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http) { disconnect() }
-    private val relay: WireGuardAdapter = WireGuardAdapter(context, sessions, http, viaRelay = true) { disconnect() }
+        read = { saved.getString("last-successful-method", null) },
+        write = { method -> saved.edit { putString("last-successful-method", method) } },
+        readFailures = { saved.all.entries.filter { it.key.startsWith("failure:") && it.value is Long }.associate { it.key.removePrefix("failure:") to it.value as Long } },
+        writeFailures = { failures -> saved.edit { saved.all.keys.filter { it.startsWith("failure:") }.forEach(::remove); failures.forEach { (id, at) -> putLong("failure:$id", at) } } },
+        explore = { kotlin.random.Random.nextInt(10) == 0 })
+    private val wireguard: WireGuardAdapter = WireGuardAdapter(context, sessions, http, transportLost = { controller.transportLost("wireguard") }) { disconnect() }
+    private val relay: WireGuardAdapter = WireGuardAdapter(context, sessions, http, viaRelay = true, transportLost = { controller.transportLost("wireguard_relay") }) { disconnect() }
     private val engines = connectionMethods.filter { it.id.removeSuffix("_relay") in managedMethods }
-        .map { ManagedAdapter(context, sessions, http, it) { disconnect() } }
+        .map { method -> ManagedAdapter(context, sessions, http, method, transportLost = { controller.transportLost(method.id) }) { disconnect() } }
     private val recovery = object : ConnectionAdapter {
         override val method = wireguard.method
         override suspend fun connect(country: String) = ConnectionResult.Failed
@@ -27,12 +34,20 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
             wireguard.recover()
         }
     }
-    val controller: VpnController = VpnController({ sessions.profile?.id }, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    val controller: VpnController = VpnController({ sessions.profile?.id }, scope,
         listOf(wireguard, relay) + engines, preference, recovery = recovery,
-        enabledMethods = DeviceMethodSelection.get(context)::current)
+        enabledMethods = DeviceMethodSelection.get(context)::current, healthPolicy = ConnectionHealthPolicy(),
+        elapsedMillis = android.os.SystemClock::elapsedRealtime)
+    init {
+        scope.launch { controller.status.collect { state ->
+            if (state.phase == VpnPhase.DISCONNECTED || (state.phase == VpnPhase.FAILED && state.error != VpnError.CLEANUP))
+                context.stopService(android.content.Intent(context, TunnelForegroundService::class.java))
+        } }
+    }
     override val status get() = controller.status
     override fun connect(country: String) = controller.connect(country)
     override fun disconnect(): Unit = controller.disconnect()
+    override fun resetMethods(country: String) = controller.resetMethods(country)
     fun serviceLost() { if (wireguard.isRunning || relay.isRunning || engines.any { it.isRunning }) disconnect() }
     fun wireguardDiagnostic() = if (relay.isRunning) relay.diagnostic() else wireguard.diagnostic()
     internal fun managedDiagnostic(method: String) = engines.firstOrNull { it.method.id == method }?.diagnostic()

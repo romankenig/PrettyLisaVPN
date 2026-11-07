@@ -322,4 +322,9 @@
     <string name="subscription_payments_unavailable">оплата пока недоступна. цены и текущий доступ можно посмотреть здесь.</string>
     <string name="subscription_change">изменить подписку</string>
     <string name="subscription_delete">удалить подписку</string>
+    <string name="vpn_checking">проверяем соединение…</string>
+    <string name="vpn_waiting_network">ожидаем сеть…</string>
+    <string name="vpn_reconnecting">восстанавливаем соединение…</string>
+    <string name="vpn_reset_methods">сбросить запомненные способы и подключиться заново</string>
+    <string name="vpn_unstable">соединение нестабильно. автоматическое восстановление остановлено; попробуйте подключиться снова</string>
 </resources>

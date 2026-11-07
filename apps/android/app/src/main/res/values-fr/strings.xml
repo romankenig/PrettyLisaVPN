@@ -322,4 +322,9 @@
     <string name="subscription_payments_unavailable">les paiements sont indisponibles pour le moment. les tarifs et votre accès actuel restent consultables.</string>
     <string name="subscription_change">modifier l’abonnement</string>
     <string name="subscription_delete">supprimer l’abonnement</string>
+    <string name="vpn_checking">vérification de la connexion…</string>
+    <string name="vpn_waiting_network">en attente du réseau…</string>
+    <string name="vpn_reconnecting">rétablissement de la connexion…</string>
+    <string name="vpn_reset_methods">réinitialiser les méthodes mémorisées et se reconnecter</string>
+    <string name="vpn_unstable">la connexion est instable. la récupération automatique est arrêtée ; essayez de vous reconnecter</string>
 </resources>

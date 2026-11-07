@@ -4,6 +4,9 @@ Android **0.23.0/code 44 → 0.23.1/code 45**, an independent PATCH requested af
 the subscription redesign in the same PR. Backend, schema, engines and all other
 client versions remain unchanged.
 
+The subsequent independent [connection recovery feature](android-connection-recovery.md)
+advances the combined branch to Android 0.24.0/code 46.
+
 The owner's screenshot shows a connected tunnel with a lower “VPN location
 unavailable” label. The code can produce this whenever the optional IP probe
 returns no observation, including provider/network failures or route changes.

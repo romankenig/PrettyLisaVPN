@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 45
-        versionName = "0.23.1"
+        versionCode = 46
+        versionName = "0.24.0"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }

@@ -11,4 +11,16 @@ interface ConnectionAdapter {
     suspend fun connect(country: String): ConnectionResult
     suspend fun disconnect()
     suspend fun recover() {}
+    suspend fun health(): TunnelHealth = TunnelHealth.UNKNOWN
 }
+
+enum class TunnelHealth { HEALTHY, UNREACHABLE, NO_NETWORK, UNKNOWN }
+
+data class ConnectionHealthPolicy(
+    val intervalMillis: Long = 30_000,
+    val retryMillis: Long = 5_000,
+    val failureThreshold: Int = 3,
+    val maxRecoveries: Int = 3,
+    val recoveryWindowMillis: Long = 10 * 60_000,
+    val recoveryBackoffMillis: Long = 3_000,
+)

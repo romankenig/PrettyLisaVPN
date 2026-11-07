@@ -5,7 +5,9 @@ redesign and accessible pull-to-refresh. Other component versions are unchanged;
 backend API and schema remain unchanged. This task follows merged PR #63 and does
 not replace its price-resilience publication. The owner's subsequent, independent
 [optional-location correction](android-optional-location.md) advances the final
-branch to Android 0.23.1/code 45 without another subscription-task bump.
+branch to Android 0.23.1/code 45 without another subscription-task bump. The later
+[connection recovery feature](android-connection-recovery.md) advances the combined
+branch to 0.24.0/code 46; each independently requested task retains its own entry.
 
 The live subscription screen separates access, monthly price, payment details and
 management into cards. Prices use localized separators, preserve actual cents and
