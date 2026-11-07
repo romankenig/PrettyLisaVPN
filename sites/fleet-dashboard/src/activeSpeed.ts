@@ -6,7 +6,7 @@ export type SpeedDirection = {
   reference_percent: number | null; reference_servers: number;
 };
 export type SpeedPoint = {
-  at: string; download: SpeedDirection; upload: SpeedDirection;
+  at: string; duration_seconds?: number; download: SpeedDirection; upload: SpeedDirection;
   coverage: { expected_servers: number; complete_servers: number; reporting_servers: number; fraction: number | null; server_seconds: Record<string, number> };
 };
 export type SpeedHistory = {
@@ -30,7 +30,7 @@ export function speedSegments(points: SpeedPoint[], direction: "download" | "upl
 export function speedTooltip(point: SpeedPoint, seconds: number): string[] {
   const coverage = point.coverage;
   return [
-    `${date(point.at)} ${TIME_ZONE_LABEL} · интервал ${seconds / 60} мин`,
+    `${date(point.at)} ${TIME_ZONE_LABEL} · интервал ${(point.duration_seconds ?? seconds) / 60} мин`,
     ...(["download", "upload"] as const).map(direction => {
       const value = point[direction];
       return `${direction === "download" ? "↓ Скачивание" : "↑ Загрузка"}: средняя ${speedNumber(value.mean_mbps)}, медиана ${speedNumber(value.median_mbps)} Мбит/с · активных пользователей ${value.active_users}`;

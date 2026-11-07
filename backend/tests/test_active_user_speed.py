@@ -95,6 +95,15 @@ def test_long_period_recomputes_per_user_median_and_weighted_mean():
     assert point["active_users"] == 2
 
 
+def test_current_hour_uses_completed_minutes_and_correct_partial_coverage():
+    metric = TrafficRollup(BASE + 60, BASE + 3660, 3600, ["a"], 0)
+    metric.add("a", [row("alice", 3600, 3605, 625000)], BASE + 3600, BASE + 3660, True)
+    points = metric.points()
+    assert [point["duration_seconds"] for point in points] == [3540, 60]
+    assert points[1]["coverage"]["fraction"] == 1
+    assert points[1]["download"]["mean_mbps"] == 1
+
+
 def test_no_activity_or_missing_samples_are_null_with_independent_coverage():
     metric = rollup()
     metric.add("a", [], BASE, BASE + 60, True)

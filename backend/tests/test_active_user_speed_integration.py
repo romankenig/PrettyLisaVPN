@@ -30,7 +30,7 @@ async def test_idempotent_ingest_account_filtering_recovery_and_retention(fleet_
     postgres, _, ids = fleet_state
     service = TrafficService(postgres, settings())
     user, lease_a, lease_b = uuid4(), uuid4(), uuid4()
-    now = datetime.fromtimestamp(BASE + 68, UTC)
+    now = datetime.fromtimestamp(BASE + 76, UTC)
     for node, lease in ((ids[0], lease_a), (ids[1], lease_b)):
         before, after = sample(0, lease, 100000), sample(5, lease, 103750)
         await service.ingest(node, before, {lease: user}, datetime.fromtimestamp(before.at, UTC))
@@ -99,7 +99,7 @@ async def test_filters_reject_unknown_nodes_and_exclude_transit_without_zero(fle
     assert response["nodes"] == []
     assert response["excluded_transit_nodes"] == [str(ids[2])]
     assert all(point["download"]["mean_mbps"] is None for point in response["points"])
-    assert len(response["points"]) == 168
+    assert 168 <= len(response["points"]) <= 169
     with pytest.raises(FleetError, match="traffic_node_not_found"):
         await service.history("1h", [uuid4()])
 

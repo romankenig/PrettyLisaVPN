@@ -158,7 +158,8 @@ class TrafficRollup:
     def points(self) -> list[dict[str, Any]]:
         self.flush(float("inf"))
         points = []
-        for bucket in range(self.start, self.end, self.step):
+        for bucket in range(self.start // self.step * self.step, self.end, self.step):
+            duration = min(self.end, bucket + self.step) - max(self.start, bucket)
             directions: dict[str, Any] = {}
             for direction, offset in (("download", 0), ("upload", 2)):
                 values = [v for v in self.users.get(bucket, {}).values() if v[offset + 1] > 0]
@@ -178,15 +179,16 @@ class TrafficRollup:
             }
             points.append(
                 {
-                    "at": datetime.fromtimestamp(bucket, UTC).isoformat(),
+                    "at": datetime.fromtimestamp(max(self.start, bucket), UTC).isoformat(),
+                    "duration_seconds": duration,
                     **directions,
                     "coverage": {
                         "expected_servers": len(self.nodes),
                         "complete_servers": sum(
-                            seconds >= self.step - 0.01 for seconds in coverage.values()
+                            seconds >= duration - 0.01 for seconds in coverage.values()
                         ),
                         "reporting_servers": len(coverage),
-                        "fraction": sum(coverage.values()) / (self.step * len(self.nodes))
+                        "fraction": sum(coverage.values()) / (duration * len(self.nodes))
                         if self.nodes
                         else None,
                         "server_seconds": coverage,

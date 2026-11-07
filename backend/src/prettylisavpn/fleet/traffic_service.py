@@ -75,8 +75,9 @@ class TrafficService:
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         duration, step = PERIODS[period]
-        # Only closed output buckets; allow one maximum counter interval to arrive.
-        end = int((now.timestamp() - MAX_GAP) // step) * step
+        # Completed minutes only, including the current partial five-minute/hour
+        # block. Allow both counter age and collection interval before finalizing.
+        end = int((now.timestamp() - 2 * MAX_GAP) // 60) * 60
         start = end - duration
         async with self.postgres.session() as session, session.begin():
             await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -136,8 +137,9 @@ class TrafficService:
                 if observation.data.get("mode") == "SYNTHETIC":
                     bucket = int(observation.observed_at.timestamp() // step) * step
                     references.setdefault(bucket, {})[observation.node_id] = observation.data
-            for index, point in enumerate(points):
-                reference = references.get(start + index * step, {})
+            for point in points:
+                bucket = int(datetime.fromisoformat(point["at"]).timestamp() // step) * step
+                reference = references.get(bucket, {})
                 for direction in ("download", "upload"):
                     values = [
                         float(value)
