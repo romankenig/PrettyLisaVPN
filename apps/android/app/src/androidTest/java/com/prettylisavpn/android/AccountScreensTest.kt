@@ -173,7 +173,7 @@ class AccountScreensTest {
         screenshot("home-refreshed")
     }
 
-    @Test fun secondLocationAppearsOnlyInSplitModes() {
+    @Test fun splitSelectionWithoutConnectedMetadataHasNoSecondLocation() {
         compose.onNodeWithTag("vpn-location").assertDoesNotExist()
         val store = com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext)
         val list = com.prettylisavpn.android.vpn.TrafficList(
@@ -186,8 +186,9 @@ class AccountScreensTest {
             click("traffic-mode-menu"); click("traffic-mode-$mode")
             compose.onNodeWithTag("traffic-services").assertExists()
             compose.onNodeWithTag("traffic-mode-description").assertDoesNotExist()
-            waitFor("vpn-location")
-            compose.onNodeWithTag("vpn-location").performScrollTo()
+            compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+            compose.onNodeWithTag("vpn-location-divider").assertDoesNotExist()
+            compose.onNodeWithTag("traffic-services").performScrollTo()
             compose.onNodeWithTag("traffic-selected-more").assertIsDisplayed()
             val custom = compose.onNodeWithContentDescription("site0.example.com")
             custom.assertIsDisplayed()
@@ -198,7 +199,7 @@ class AccountScreensTest {
             assertTrue(strip.bottom <= picker.top)
             assertEquals(32, store.current().include.masks.size)
             assertEquals(32, store.current().exclude.masks.size)
-            screenshot("vpn-location-$mode")
+            screenshot("split-selection-$mode")
             compose.onNodeWithTag("home-network").assertExists()
         }
         click("traffic-mode-menu"); click("traffic-mode-all")
@@ -206,6 +207,46 @@ class AccountScreensTest {
         compose.onNodeWithTag("traffic-selected-strip").assertDoesNotExist()
         compose.onNodeWithTag("vpn-location").assertDoesNotExist()
         compose.onNodeWithTag("home-network").assertExists()
+    }
+
+    @Test fun secondaryLocationHidesMissingMetadataAndRecoversWithoutInventingRegion() {
+        val location=androidx.compose.runtime.mutableStateOf<com.prettylisavpn.android.ui.PublicLocation?>(null)
+        val connected=androidx.compose.runtime.mutableStateOf(true)
+        val mode=androidx.compose.runtime.mutableStateOf("include")
+        compose.runOnUiThread {
+            compose.activity.setContent {
+                com.prettylisavpn.android.ui.PrettyLisaTheme {
+                    com.prettylisavpn.android.ui.LocalizedApp {
+                        com.prettylisavpn.android.ui.PhoneScreen("secondary-location-test") {
+                            com.prettylisavpn.android.ui.BrandCard {
+                                androidx.compose.material3.Text("Protected traffic")
+                                com.prettylisavpn.android.ui.SecondaryLocation(mode.value,connected.value,location.value,false)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        waitFor("secondary-location-test")
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.onNodeWithTag("vpn-location-divider").assertDoesNotExist()
+        screenshot("vpn-location-hidden")
+        compose.runOnUiThread { location.value=com.prettylisavpn.android.ui.PublicLocation("198.51.100.42",null,null) }
+        compose.onNodeWithText("IP: 198.51.100.42").assertIsDisplayed()
+        compose.onNodeWithText("unavailable").assertDoesNotExist()
+        screenshot("vpn-location-ip-only")
+        compose.runOnUiThread { location.value=com.prettylisavpn.android.ui.PublicLocation("198.51.100.42","DE","Berlin") }
+        compose.onNodeWithText("Berlin, Germany",substring=true).assertIsDisplayed()
+        screenshot("vpn-location-observed")
+        compose.runOnUiThread { connected.value=false }
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.runOnUiThread { connected.value=true;mode.value="all" }
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.runOnUiThread { mode.value="exclude" }
+        compose.onNodeWithText("location without VPN:").assertIsDisplayed()
+        compose.runOnUiThread { location.value=null }
+        compose.onNodeWithTag("vpn-location").assertDoesNotExist()
+        compose.onNodeWithTag("vpn-location-divider").assertDoesNotExist()
     }
 
     @Test fun trafficListsAreIndependentAndPersistAfterRecreation() {

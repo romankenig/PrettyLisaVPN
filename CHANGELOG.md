@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Android — 0.23.1
+
+- Hide the optional split-mode location block and divider when no observation is
+  available; restore them after the existing refresh succeeds. An observed IP is
+  still visible when city/country metadata is unavailable.
+- Preserve VPN status, connection errors, tunnel-pinned lookup and routing rules.
+  See [location handoff](docs/android-optional-location.md).
+
 ### Android — 0.23.0
 
 - Separate subscription access, prominent monthly pricing, renewal details and

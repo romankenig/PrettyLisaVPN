@@ -806,3 +806,13 @@ assigned Platinum receives no invented cancellation capability. These are actual
 UI transitions on the existing backend integration; live merchant activation is
 still pending. Windows routes and its version are unchanged. See
 [Android subscription handoff](android-subscription-layout.md).
+
+### Android 0.23.1: optional split-mode location
+
+The lower Home traffic card renders its location section only for a connected
+split mode with observed metadata. Failed/not-yet-completed lookups leave no
+placeholder or divider; an IP-only observation remains useful without an unknown
+region label. Existing minute/manual refresh restores the section automatically.
+VPN state/errors, routes and external lookups are unchanged; this is implemented
+Android presentation, with no pending backend integration. See
+[location handoff](android-optional-location.md).

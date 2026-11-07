@@ -124,25 +124,26 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
                 colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black), shape = MaterialTheme.shapes.medium) { Text(tr(R.string.traffic_services)) }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
-        if (selected.mode != "all") {
-            HorizontalDivider(color = Brand.DustyGray)
-            Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(tr(if (selected.mode == "exclude") R.string.direct_location else R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
-                if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("vpn-location-loading"), strokeWidth = 2.dp)
-                val value = vpnLocation
-                if (vpn.phase != VpnPhase.CONNECTED) Text(tr(R.string.ui_not_connected), style = MaterialTheme.typography.bodySmall)
-                else if (value == null) Text(tr(if (locating) R.string.vpn_location_loading else R.string.unavailable), style = MaterialTheme.typography.bodySmall)
-                else {
-                    val language by presentation.preference.language.collectAsState()
-                    val locale = java.util.Locale.forLanguageTag(language.code)
-                    val region = listOfNotNull(value.city, value.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
-                    Text(countryFlag(value.country) + " " + region.ifBlank { tr(R.string.unavailable) }, style = MaterialTheme.typography.bodySmall)
-                    Text("IP: " + value.ip, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                }
-            }
-        }
+        SecondaryLocation(selected.mode, vpn.phase == VpnPhase.CONNECTED, vpnLocation, locating)
     }
     if (opened) TrafficDialog(model, selected, busy, failed, { opened = false }, ::save)
+}
+
+/** Optional metadata, not a tunnel-health signal. Never substitute the selected server. */
+@Composable
+internal fun SecondaryLocation(mode: String, connected: Boolean, value: PublicLocation?, refreshing: Boolean) {
+    if (mode == "all" || !connected || value == null) return
+    val tr = strings()
+    val language by LocalPresentation.current.preference.language.collectAsState()
+    val locale = java.util.Locale.forLanguageTag(language.code)
+    val region = listOfNotNull(value.city, value.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
+    HorizontalDivider(color = Brand.DustyGray, modifier = Modifier.testTag("vpn-location-divider"))
+    Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(tr(if (mode == "exclude") R.string.direct_location else R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+        if (refreshing) CircularProgressIndicator(Modifier.size(20.dp).testTag("vpn-location-loading"), strokeWidth = 2.dp)
+        if (region.isNotBlank()) Text((countryFlag(value.country) + " " + region).trim(), style = MaterialTheme.typography.bodySmall)
+        Text("IP: " + value.ip, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+    }
 }
 
 @Composable

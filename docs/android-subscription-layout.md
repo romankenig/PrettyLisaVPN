@@ -3,7 +3,9 @@
 Android **0.22.1/code 43 → 0.23.0/code 44**. MINOR: substantial subscription-screen
 redesign and accessible pull-to-refresh. Other component versions are unchanged;
 backend API and schema remain unchanged. This task follows merged PR #63 and does
-not replace its price-resilience publication.
+not replace its price-resilience publication. The owner's subsequent, independent
+[optional-location correction](android-optional-location.md) advances the final
+branch to Android 0.23.1/code 45 without another subscription-task bump.
 
 The live subscription screen separates access, monthly price, payment details and
 management into cards. Prices use localized separators, preserve actual cents and
@@ -43,7 +45,8 @@ with a synchronization assertion. Generated Apple UI resources and versions rema
 unchanged. Tests cover currency/cent formatting,
 contract-price preservation, allowed-route visibility, no payment authority from
 reference amounts, pull-to-refresh, Platinum, cancellation confirmation and large
-text. AccountScreensTest now has 20 methods; its exact CI gate is updated. Native
+text. Subscription work brings AccountScreensTest to 20 methods; the subsequent
+location correction adds one more (21 total), with the exact CI gate updated. Native
 screenshots include Russian RUB/USD/management cards, a contract price, cancellation
 confirmation and 2x text. Final source/build SHAs, every CI run/attempt and screenshots
 belong in the task PR. New source is not yet merged or published; payments remain
