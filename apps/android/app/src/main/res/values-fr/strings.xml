@@ -312,7 +312,6 @@
     <string name="subscription_per_month">par mois calendaire</string>
     <string name="subscription_platinum">ce niveau a été attribué manuellement. aucun prélèvement récurrent.</string>
     <string name="subscription_active_until">accès jusqu’au</string>
-    <string name="subscription_agreed_price">votre tarif convenu</string>
     <string name="subscription_price_unconfirmed">le tarif du contrat n’a pas pu être confirmé. faites glisser vers le bas pour réessayer.</string>
     <string name="subscription_premium_offer">abonnement Premium</string>
     <string name="subscription_payment_details">paiement et renouvellement</string>
@@ -335,11 +334,8 @@
     <string name="legal_payments">paiement, annulation et renouvellement</string>
     <string name="legal_open_failed">impossible d’ouvrir le navigateur. veuillez réessayer.</string>
     <string name="demo_try">essayer sans inscription</string>
-    <string name="demo_intro">15 minutes par jour sur cet appareil. pilote automatique et protection de tout le trafic.</string>
-    <string name="demo_privacy">un identifiant pseudonyme conserve la limite quotidienne après réinstallation. détails dans la politique de confidentialité.</string>
     <string name="demo_guest">invité sur cet appareil</string>
     <string name="demo_upgrade">s’inscrire à FREE</string>
-    <string name="demo_upgrade_details">une heure par jour, choix du pays et protection sélective. l’inscription ouvre un quota FREE distinct ; le temps DEMO n’en est pas déduit.</string>
     <string name="demo_locked_hint">inscrivez-vous pour débloquer avec FREE</string>
     <string name="demo_exhausted">le temps DEMO du jour est épuisé. inscrivez-vous pour une heure FREE complète ou attendez le renouvellement quotidien.</string>
     <string name="demo_unavailable">DEMO est temporairement indisponible. réessayez ou connectez-vous par courriel.</string>

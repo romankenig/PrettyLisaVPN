@@ -319,7 +319,6 @@
     <string name="subscription_per_month">per calendar month</string>
     <string name="subscription_platinum">this level was assigned manually. there are no recurring charges.</string>
     <string name="subscription_active_until">access until</string>
-    <string name="subscription_agreed_price">your agreed price</string>
     <string name="subscription_price_unconfirmed">we could not confirm your contract price. pull down to retry.</string>
     <string name="subscription_premium_offer">Premium subscription</string>
     <string name="subscription_payment_details">payment details</string>
@@ -342,11 +341,8 @@
     <string name="legal_payments">payments, cancellation and renewal</string>
     <string name="legal_open_failed">unable to open the browser. please try again.</string>
     <string name="demo_try">try without registration</string>
-    <string name="demo_intro">15 minutes a day on this device. autopilot and protection of all traffic.</string>
-    <string name="demo_privacy">a private device identifier keeps the daily limit after reinstallation. details in the privacy policy.</string>
     <string name="demo_guest">guest on this device</string>
     <string name="demo_upgrade">register for FREE</string>
-    <string name="demo_upgrade_details">one hour a day, country selection and selective traffic protection. registration starts a separate FREE budget; DEMO time is not deducted.</string>
     <string name="demo_locked_hint">register to unlock with FREE</string>
     <string name="demo_exhausted">today’s DEMO time is used up. register for a full FREE hour or return after the daily reset.</string>
     <string name="demo_unavailable">DEMO is temporarily unavailable. try again or sign in by email.</string>

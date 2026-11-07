@@ -312,7 +312,6 @@
     <string name="subscription_per_month">за календарный месяц</string>
     <string name="subscription_platinum">этот уровень назначен вручную. регулярных списаний нет.</string>
     <string name="subscription_active_until">доступ до</string>
-    <string name="subscription_agreed_price">ваша договорная цена</string>
     <string name="subscription_price_unconfirmed">не удалось подтвердить цену договора. потяните экран вниз, чтобы повторить.</string>
     <string name="subscription_premium_offer">подписка Premium</string>
     <string name="subscription_payment_details">оплата и продление</string>
@@ -335,11 +334,8 @@
     <string name="legal_payments">оплата, отмена и продление</string>
     <string name="legal_open_failed">не удалось открыть браузер. попробуйте ещё раз.</string>
     <string name="demo_try">попробовать без регистрации</string>
-    <string name="demo_intro">15 минут в день на этом устройстве. автопилот и защита всего трафика.</string>
-    <string name="demo_privacy">обезличенный идентификатор устройства сохраняет суточный лимит после переустановки. подробнее — в политике конфиденциальности.</string>
     <string name="demo_guest">гость на этом устройстве</string>
     <string name="demo_upgrade">зарегистрироваться — FREE</string>
-    <string name="demo_upgrade_details">час в день, выбор страны и выборочная защита трафика. после регистрации начинается отдельный лимит FREE; время DEMO из него не вычитается.</string>
     <string name="demo_locked_hint">зарегистрируйтесь, чтобы открыть в FREE</string>
     <string name="demo_exhausted">время DEMO на сегодня закончилось. зарегистрируйтесь и получите полный час FREE или дождитесь суточного обновления.</string>
     <string name="demo_unavailable">DEMO временно недоступен. попробуйте ещё раз или войдите по почте.</string>

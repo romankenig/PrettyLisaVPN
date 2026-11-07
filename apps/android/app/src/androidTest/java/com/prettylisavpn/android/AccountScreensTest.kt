@@ -463,6 +463,16 @@ class AccountScreensTest {
         assertEquals(1,starts);assertEquals("CANCEL",lastIntent?.action)
         assertEquals(paid,model.state.value.data.billing?.paidUntil)
     }
+    @Test fun freeBuyRequiresConfirmationAndUsesTheServerOffer() {
+        mode="LIVE";plan="Free"
+        click("tab_SETTINGS");click("settings-subscription");waitFor("plan-buy")
+        click("plan-buy");waitFor("confirmation-dialog")
+        assertEquals(0,starts)
+        click("confirm-dialog");idle()
+        assertEquals(1,starts);assertEquals("SUBSCRIBE",lastIntent?.action)
+        assertEquals("RUB",lastIntent?.currency)
+        assertEquals("30000000-0000-0000-0000-000000000005",lastIntent?.offer_id)
+    }
     @Test fun changedPriceClosesConfirmationWithoutPosting() {
         mode="LIVE";click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")
         click("live-pay-CANCEL");waitFor("confirmation-dialog");revision="r2"

@@ -312,7 +312,6 @@
     <string name="subscription_per_month">每个自然月</string>
     <string name="subscription_platinum">此等级由管理员手动授予，不会自动扣款。</string>
     <string name="subscription_active_until">有效期至</string>
-    <string name="subscription_agreed_price">您的约定价格</string>
     <string name="subscription_price_unconfirmed">无法确认合同价格。请下拉重试。</string>
     <string name="subscription_premium_offer">Premium 订阅</string>
     <string name="subscription_payment_details">付款与续订</string>
@@ -335,11 +334,8 @@
     <string name="legal_payments">付款、取消与续订</string>
     <string name="legal_open_failed">无法打开浏览器，请重试。</string>
     <string name="demo_try">免注册试用</string>
-    <string name="demo_intro">此设备每天可用 15 分钟。仅支持自动选择节点和保护所有流量。</string>
-    <string name="demo_privacy">使用匿名化设备标识在重新安装后保留每日限额。详情请参阅隐私政策。</string>
     <string name="demo_guest">此设备上的访客</string>
     <string name="demo_upgrade">注册使用 FREE</string>
-    <string name="demo_upgrade_details">每天一小时，可选择国家和按需保护流量。注册后单独计算 FREE 额度，不扣除已使用的 DEMO 时间。</string>
     <string name="demo_locked_hint">注册即可通过 FREE 解锁</string>
     <string name="demo_exhausted">今日 DEMO 时间已用完。注册可获得完整的一小时 FREE 额度，或等待每日重置。</string>
     <string name="demo_unavailable">DEMO 暂时不可用。请重试或通过邮箱登录。</string>

@@ -312,7 +312,6 @@
     <string name="subscription_per_month">pro Kalendermonat</string>
     <string name="subscription_platinum">diese Stufe wurde manuell zugewiesen. es gibt keine wiederkehrenden Abbuchungen.</string>
     <string name="subscription_active_until">zugang bis</string>
-    <string name="subscription_agreed_price">ihr vereinbarter Preis</string>
     <string name="subscription_price_unconfirmed">der Vertragspreis konnte nicht bestätigt werden. zum Wiederholen nach unten ziehen.</string>
     <string name="subscription_premium_offer">Premium-Abonnement</string>
     <string name="subscription_payment_details">zahlung und Verlängerung</string>
@@ -335,11 +334,8 @@
     <string name="legal_payments">zahlung, Kündigung und Verlängerung</string>
     <string name="legal_open_failed">der Browser konnte nicht geöffnet werden. bitte erneut versuchen.</string>
     <string name="demo_try">ohne Registrierung ausprobieren</string>
-    <string name="demo_intro">15 Minuten täglich auf diesem Gerät. autopilot und Schutz des gesamten Datenverkehrs.</string>
-    <string name="demo_privacy">eine pseudonyme Gerätekennung bewahrt das Tageslimit nach einer Neuinstallation. details in der Datenschutzerklärung.</string>
     <string name="demo_guest">gast auf diesem Gerät</string>
     <string name="demo_upgrade">für FREE registrieren</string>
-    <string name="demo_upgrade_details">eine Stunde täglich, Länderwahl und selektiver Schutz. mit der Registrierung beginnt ein separates FREE-Kontingent; DEMO-Zeit wird nicht abgezogen.</string>
     <string name="demo_locked_hint">registrieren und mit FREE freischalten</string>
     <string name="demo_exhausted">das heutige DEMO-Kontingent ist aufgebraucht. für eine volle FREE-Stunde registrieren oder auf das Tageskontingent warten.</string>
     <string name="demo_unavailable">DEMO ist vorübergehend nicht verfügbar. erneut versuchen oder per E-Mail anmelden.</string>
