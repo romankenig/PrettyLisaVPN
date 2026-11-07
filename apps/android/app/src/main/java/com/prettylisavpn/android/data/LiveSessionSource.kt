@@ -76,6 +76,11 @@ class LiveSessionSource(
         initial
     }
     private suspend fun refreshBilling() {
+        if (sessions.profile?.isDemo == true) {
+            snapshot = initial.copy(billing = BillingOverview("guest-catalog", "DISABLED", false, "DEMO", "FREE", null,
+                false, null, null, emptyList(), api().catalog(), emptySet(), null), stale = false, refreshWarning = null)
+            return
+        }
         var overview = sessions.request { api().overview(it) }
         val operation = journal.operation?.takeIf { it.status == "PENDING" }?.id ?: overview.pendingId
         if (operation != null) {

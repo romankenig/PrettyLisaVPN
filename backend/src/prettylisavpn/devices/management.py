@@ -54,7 +54,6 @@ class DeviceManagementService:
 
     async def list_devices(self, access_token: str) -> list[ManagedDevice]:
         identity = await self._authenticated_sessions.authenticate(access_token)
-        identity.require_registered()
         try:
             async with self._postgres.session() as session:
                 devices = await DeviceRepository(session).list_by_user(identity.user_id)
@@ -64,7 +63,6 @@ class DeviceManagementService:
 
     async def revoke_device(self, access_token: str, device_id: UUID) -> ManagedDevice:
         identity = await self._authenticated_sessions.authenticate(access_token)
-        identity.require_registered()
         transitioned = False
         try:
             async with self._postgres.session() as session:

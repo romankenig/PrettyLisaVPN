@@ -12,6 +12,18 @@ class AccountHttpTest {
     private lateinit var api: HttpAccountApi
     @Before fun start() { server.start();api=HttpAccountApi(HttpAuthApi(server.url("/").toString(),true),"0.5.0") }
     @After fun stop() { server.shutdown() }
+    @Test fun publicCatalogUsesServerPricesAndKeepsLastKnownPricesWithoutCredentials()=runBlocking {
+        server.enqueue(MockResponse().setResponseCode(503))
+        assertEquals(39900L,api.catalog().single().prices["RUB"]!!.amount)
+        val body="""{"offers":[{"id":"20000000-0000-0000-0000-000000000004","plan":"PREMIUM","period":"MONTH","prices":{"RUB":{"amount_minor":42900,"original_amount_minor":49900},"USD":{"amount_minor":600,"original_amount_minor":700}}}]}"""
+        server.enqueue(MockResponse().setBody(body))
+        assertEquals(42900L,api.catalog().single().prices["RUB"]!!.amount)
+        for(response in listOf(MockResponse().setResponseCode(503),MockResponse().setBody("{}"))) {
+            server.enqueue(response)
+            assertEquals(42900L,api.catalog().single().prices["RUB"]!!.amount)
+        }
+        repeat(4) { val request=server.takeRequest();assertEquals("/billing/catalog",request.path);assertNull(request.getHeader("Authorization")) }
+    }
     @Test fun invalidAutopilotScoresFailClosed()=runBlocking {
         for(auto in listOf("{\"quality\":101,\"available\":true}", "{\"quality\":80,\"available\":false}", "{\"quality\":0.5,\"available\":true}", "{}")) {
             server.enqueue(MockResponse().setBody("{\"autopilot\":$auto,\"countries\":[]}"))

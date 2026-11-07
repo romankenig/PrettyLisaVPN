@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Android — 0.26.0 / Backend — 0.38.0
+
+- Simplify sign-in, emphasize the secondary guest action and anchor document links
+  to the bottom of short screens, while retaining scrolling with the keyboard.
+- Route DEMO/FREE Upgrade to a shared plan comparison: featured PREMIUM purchase,
+  FREE registration, quieter DEMO limits, uppercase names and new FREE/DEMO badges.
+  Guest purchase returns to subscription after email registration; disabled or
+  unconfirmed payment operations remain fenced. Public prices use the API with
+  last-known/reference display fallback, never replacing an agreed contract.
+- Open device management and method selection to DEMO. Guest device revocation
+  retains identity/quota and removes active VPN access; AUTO/full traffic remain
+  mandatory. Show a smaller reset icon only beside an active protocol label.
+- No schema change beyond develop migration 0047; see [plan polish handoff](docs/android-plan-polish.md).
+
 ### Backend — 0.37.0 / Fleet dashboard — 0.7.0 / Managed engine — 0.6.1
 
 - Add real active-account download/upload speeds across selected VPN exits:

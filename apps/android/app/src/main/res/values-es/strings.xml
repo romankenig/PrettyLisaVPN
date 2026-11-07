@@ -312,7 +312,6 @@
     <string name="subscription_per_month">por mes natural</string>
     <string name="subscription_platinum">este nivel se asignó manualmente. no hay cobros recurrentes.</string>
     <string name="subscription_active_until">acceso hasta</string>
-    <string name="subscription_agreed_price">tu precio acordado</string>
     <string name="subscription_price_unconfirmed">no pudimos confirmar el precio del contrato. desliza hacia abajo para reintentar.</string>
     <string name="subscription_premium_offer">suscripción Premium</string>
     <string name="subscription_payment_details">pago y renovación</string>
@@ -335,15 +334,26 @@
     <string name="legal_payments">pagos, cancelación y renovación</string>
     <string name="legal_open_failed">no se pudo abrir el navegador. inténtalo de nuevo.</string>
     <string name="demo_try">probar sin registro</string>
-    <string name="demo_intro">15 minutos diarios en este dispositivo. piloto automático y protección de todo el tráfico.</string>
-    <string name="demo_privacy">un identificador seudónimo conserva el límite diario tras reinstalar. detalles en la política de privacidad.</string>
     <string name="demo_guest">invitado en este dispositivo</string>
     <string name="demo_upgrade">registrarse en FREE</string>
-    <string name="demo_upgrade_details">una hora al día, elección de país y protección selectiva. el registro inicia un cupo FREE independiente; el tiempo DEMO no se descuenta.</string>
     <string name="demo_locked_hint">regístrate para desbloquear con FREE</string>
     <string name="demo_exhausted">se agotó el tiempo DEMO de hoy. regístrate para obtener una hora FREE completa o espera al reinicio diario.</string>
     <string name="demo_unavailable">DEMO no está disponible temporalmente. vuelve a intentarlo o accede por correo.</string>
     <string name="demo_rate_limited">demasiados accesos de invitado. espera o accede por correo.</string>
     <string name="demo_identity_failed">no se pudo identificar este dispositivo para DEMO. puedes acceder por correo.</string>
     <string name="demo_full_traffic">todo el tráfico</string>
+    <string name="plan_current">plan actual</string>
+    <string name="plan_unlimited">VPN sin límite de tiempo</string>
+    <string name="plan_all_countries">todos los países disponibles</string>
+    <string name="plan_five_devices">hasta 5 dispositivos</string>
+    <string name="plan_split">todo el tráfico o solo el elegido</string>
+    <string name="plan_free_countries">países con servidores gratuitos</string>
+    <string name="plan_auto_only">solo piloto automático</string>
+    <string name="plan_device_only">solo este dispositivo</string>
+    <string name="plan_all_traffic_only">solo todo el tráfico</string>
+    <string name="plan_hour">1 hora cada día</string>
+    <string name="plan_quarter_hour">15 minutos cada día</string>
+    <string name="plan_fresh_hour">una hora independiente al registrarte</string>
+    <string name="plan_register">registrarse</string>
+    <string name="plan_buy">comprar</string>
 </resources>

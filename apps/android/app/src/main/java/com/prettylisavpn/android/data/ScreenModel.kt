@@ -27,6 +27,7 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
     val state = mutable.asStateFlow()
     private var epoch = 0
     var emailDraft = ""
+    var afterLoginSubscription = false
     val resendAtMillis: Long get() = mutable.value.resendAtMillis
     init { if (!fixture) load(Area.SESSION) }
     fun load(area: Area): kotlinx.coroutines.Job? {

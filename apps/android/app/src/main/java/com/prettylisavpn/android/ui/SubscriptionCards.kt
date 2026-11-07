@@ -62,26 +62,36 @@ internal fun SubscriptionPriceCard(
     enabled: Boolean,
     modifier: Modifier = Modifier,
     note: String? = null,
+    featured: Boolean = false,
+    current: Boolean = false,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val tr = strings()
-    BrandCard(modifier) {
+    val foreground = if (featured) Brand.Mercury else Brand.Christalle
+    val secondary = if (featured) Brand.Mercury.copy(alpha = .8f) else Brand.Scorpion
+    Surface(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large,
+        color = if (featured) Brand.Christalle else Brand.Mercury, contentColor = foreground,
+        border = BorderStroke(1.dp, if (featured) Brand.Heliotrope.copy(alpha = .55f) else Brand.Heliotrope.copy(alpha = .2f))) {
+      Column(Modifier.padding(if (featured) 24.dp else 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (current) PlanCurrentBadge("PREMIUM", featured)
         Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        if (featured) Text(tr(R.string.plan_unlimited), style = MaterialTheme.typography.titleMedium, color = Brand.Viking)
         val price = prices[currency]
         if (price != null) BoxWithConstraints(Modifier.fillMaxWidth()) {
             val stacked = maxWidth < 260.dp || LocalDensity.current.fontScale > 1.3f
             val amount: @Composable () -> Unit = {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     price.original?.takeIf { it > price.amount }?.let {
-                        Text(subscriptionMoney(it, currency, locale), color = Brand.Scorpion,
+                        Text(subscriptionMoney(it, currency, locale), color = secondary,
                             textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.testTag("billing-original-price"))
                     }
                     BasicText(subscriptionMoney(price.amount, currency, locale),
-                        style = MaterialTheme.typography.displayMedium.copy(color = Brand.Christalle,
+                        style = MaterialTheme.typography.displayMedium.copy(color = foreground,
                             fontSize = 48.sp, lineHeight = 1.125.em, fontWeight = FontWeight.Bold),
                         autoSize = TextAutoSize.StepBased(minFontSize = 32.sp, maxFontSize = 48.sp, stepSize = 1.sp),
                         maxLines = 1, modifier = Modifier.testTag("billing-price"))
-                    Text(tr(R.string.subscription_per_month), color = Brand.Scorpion, style = MaterialTheme.typography.bodyMedium)
+                    Text(tr(R.string.subscription_per_month), color = secondary, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             val currencies: @Composable () -> Unit = {
@@ -90,9 +100,9 @@ internal fun SubscriptionPriceCard(
                         Surface(onClick = { selectCurrency(code) }, enabled = enabled, selected = currency == code,
                             modifier = Modifier.widthIn(min = 68.dp).heightIn(min = 48.dp).testTag("billing-currency-$code"),
                             shape = MaterialTheme.shapes.small,
-                            color = if (currency == code) Brand.Christalle else Brand.Heliotrope.copy(alpha = 0.14f),
-                            contentColor = if (currency == code) Brand.Mercury else Brand.Christalle,
-                            border = BorderStroke(1.dp, Brand.Christalle.copy(alpha = 0.22f))) {
+                            color = if (currency == code) (if (featured) Brand.Viking else Brand.Christalle) else Brand.Heliotrope.copy(alpha = 0.14f),
+                            contentColor = if (featured) (if (currency == code) Brand.Christalle else Brand.Mercury) else (if (currency == code) Brand.Mercury else Brand.Christalle),
+                            border = BorderStroke(1.dp, (if (featured) Brand.Heliotrope else Brand.Christalle).copy(alpha = .4f))) {
                             Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
                                 Text(code, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             }
@@ -106,7 +116,10 @@ internal fun SubscriptionPriceCard(
                 currencies()
             }
         }
-        note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion) }
+        if (featured) PlanHighlights("PREMIUM", featured = true)
+        note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = secondary) }
+        footer?.invoke(this)
+      }
     }
 }
 

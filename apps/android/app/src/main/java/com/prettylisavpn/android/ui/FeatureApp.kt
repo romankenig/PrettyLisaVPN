@@ -238,7 +238,7 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(otp) { while (otp) { now = SystemClock.elapsedRealtime(); delay(250) } }
     val remaining = ((state.resendAtMillis - now + 999) / 1000).coerceIn(0L, 60L)
-    PhoneScreen(if (otp) "screen_OTP" else "screen_LOGIN") {
+    PhoneScreen(if (otp) "screen_OTP" else "screen_LOGIN", footer = { LegalDocuments(compact = true) }) {
         ScreenHeading(if (otp) tr(R.string.ui_enter_the_code) else tr(R.string.ui_sign_in_by_email), if (otp) back else null)
         BrandCard {
             Text(if (model.fixture) {
@@ -272,15 +272,14 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             }
 
         }
-        if (!otp) Column(Modifier.fillMaxWidth(), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton({ model.perform(Command.TryDemo) }, Modifier.heightIn(min = 48.dp).testTag("auth-demo"), enabled = !state.busy,
-                colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
-                Text("🌱 " + tr(R.string.demo_try), style = MaterialTheme.typography.bodyMedium)
+        if (!otp) Box(Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            OutlinedButton({ model.perform(Command.TryDemo) }, Modifier.widthIn(max = 360.dp).fillMaxWidth().heightIn(min = 52.dp).testTag("auth-demo"),
+                enabled = !state.busy, shape = MaterialTheme.shapes.medium,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Brand.Mercury.copy(alpha = .45f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Brand.Mercury, containerColor = Brand.Mercury.copy(alpha = .08f))) {
+                Text(tr(R.string.demo_try), style = MaterialTheme.typography.labelLarge)
             }
-            Text(tr(R.string.demo_intro), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .85f))
-            Text(tr(R.string.demo_privacy), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .75f))
         }
-        LegalDocuments(compact = true)
     }
 }
 

@@ -288,7 +288,7 @@
     <string name="traffic_selected_label">выбранные сервисы:</string>
     <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
-    <string name="upgrade_plan">улучшить план</string>
+    <string name="upgrade_plan">улучшить</string>
     <string name="faq_connect_q">как подключиться?</string>
     <string name="faq_connect_a">на [главной] выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.</string>
     <string name="faq_free_q">что входит в free?</string>
@@ -312,7 +312,6 @@
     <string name="subscription_per_month">за календарный месяц</string>
     <string name="subscription_platinum">этот уровень назначен вручную. регулярных списаний нет.</string>
     <string name="subscription_active_until">доступ до</string>
-    <string name="subscription_agreed_price">ваша договорная цена</string>
     <string name="subscription_price_unconfirmed">не удалось подтвердить цену договора. потяните экран вниз, чтобы повторить.</string>
     <string name="subscription_premium_offer">подписка Premium</string>
     <string name="subscription_payment_details">оплата и продление</string>
@@ -335,15 +334,26 @@
     <string name="legal_payments">оплата, отмена и продление</string>
     <string name="legal_open_failed">не удалось открыть браузер. попробуйте ещё раз.</string>
     <string name="demo_try">попробовать без регистрации</string>
-    <string name="demo_intro">15 минут в день на этом устройстве. автопилот и защита всего трафика.</string>
-    <string name="demo_privacy">обезличенный идентификатор устройства сохраняет суточный лимит после переустановки. подробнее — в политике конфиденциальности.</string>
     <string name="demo_guest">гость на этом устройстве</string>
     <string name="demo_upgrade">зарегистрироваться — FREE</string>
-    <string name="demo_upgrade_details">час в день, выбор страны и выборочная защита трафика. после регистрации начинается отдельный лимит FREE; время DEMO из него не вычитается.</string>
     <string name="demo_locked_hint">зарегистрируйтесь, чтобы открыть в FREE</string>
     <string name="demo_exhausted">время DEMO на сегодня закончилось. зарегистрируйтесь и получите полный час FREE или дождитесь суточного обновления.</string>
     <string name="demo_unavailable">DEMO временно недоступен. попробуйте ещё раз или войдите по почте.</string>
     <string name="demo_rate_limited">слишком много попыток гостевого входа. подождите или войдите по почте.</string>
     <string name="demo_identity_failed">не удалось определить устройство для DEMO. можно войти по почте.</string>
     <string name="demo_full_traffic">весь трафик</string>
+    <string name="plan_current">текущий тариф</string>
+    <string name="plan_unlimited">VPN без ограничения времени</string>
+    <string name="plan_all_countries">все доступные страны</string>
+    <string name="plan_five_devices">до 5 устройств</string>
+    <string name="plan_split">весь или выбранный трафик</string>
+    <string name="plan_free_countries">страны на бесплатных серверах</string>
+    <string name="plan_auto_only">только автопилот</string>
+    <string name="plan_device_only">только это устройство</string>
+    <string name="plan_all_traffic_only">только весь трафик</string>
+    <string name="plan_hour">1 час каждый день</string>
+    <string name="plan_quarter_hour">15 минут каждый день</string>
+    <string name="plan_fresh_hour">отдельный час после регистрации</string>
+    <string name="plan_register">зарегистрироваться</string>
+    <string name="plan_buy">купить</string>
 </resources>
