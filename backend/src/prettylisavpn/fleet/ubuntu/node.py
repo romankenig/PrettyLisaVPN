@@ -489,7 +489,18 @@ def grant_client(access: dict[str, Any]) -> dict[str, Any]:
             raise Failure("ACCESS_CONFLICT")
     if not existing and key in peers():
         raise Failure("ACCESS_CONFLICT")
-    write(path, json.dumps({"public_key": key, "address": str(address), "expires": expiry}))
+    generation = existing.get("generation") if existing and key in peers() else None
+    write(
+        path,
+        json.dumps(
+            {
+                "public_key": key,
+                "address": str(address),
+                "expires": expiry,
+                "generation": generation or secrets.token_hex(16),
+            }
+        ),
+    )
     client_firewall(identifier, str(address), expiry)
     cmd(["wg", "set", WG, "peer", key, "allowed-ips", str(address)])
     return {"granted": True}
@@ -970,6 +981,12 @@ def measure() -> None:
 
 
 def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload["action"] == "traffic":
+        if __package__:
+            from .traffic import snapshot
+        else:
+            from traffic import snapshot  # type: ignore[no-redef,import-not-found]
+        return snapshot()
     action = payload["action"]
     if action == "inspect":
         return inspect()

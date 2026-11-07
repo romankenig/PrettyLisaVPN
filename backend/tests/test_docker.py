@@ -65,7 +65,10 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         'respond @authorized "monitoring-authorized" 200\n'
         "@analytics {\npath /admin/monitoring/product-analytics\n"
         f'header Authorization "Bearer {token}"\n}}\n'
-        'respond @analytics "analytics-authorized" 200\nrespond 403\n}\n'
+        'respond @analytics "analytics-authorized" 200\n'
+        "@speed {\npath /admin/monitoring/active-user-speed\n"
+        f'header Authorization "Bearer {token}"\n}}\n'
+        'respond @speed "{http.request.uri}" 200\nrespond 403\n}\n'
     )
     name = "prettylisa-dashboard-test-" + uuid4().hex[:10]
     docker(
@@ -86,8 +89,10 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
     )
     try:
 
-        def request(path, credential=None):
+        def request(path, credential=None, post=False):
             args = ["exec", name, "wget", "-S", "-O", "-"]
+            if post:
+                args += ["--post-data", ""]
             if credential:
                 args += [
                     "--header",
@@ -102,6 +107,7 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         for path in (
             "/dashboard/",
             "/dashboard/api/availability",
+            "/dashboard/api/active-user-speed",
             "/dashboard/product-analytics",
             "/dashboard/api/product-analytics",
             "/dashboard/downloads/index.json",
@@ -116,6 +122,13 @@ def test_dashboard_assets_and_metrics_require_password(tmp_path):
         metrics = request("/dashboard/api/availability?days=1", "admin:" + password)
         assert metrics.returncode == 0 and metrics.stdout == "monitoring-authorized"
         assert "private, no-store" in metrics.stderr
+        speed_path = "/dashboard/api/active-user-speed?period=7d&node_ids=one&node_ids=two"
+        speed = request(speed_path, "admin:" + password)
+        assert speed.returncode == 0
+        assert speed.stdout == speed_path.replace("/dashboard/api/", "/admin/monitoring/")
+        assert "private, no-store" in speed.stderr
+        assert token not in speed.stdout + speed.stderr
+        assert request(speed_path, "admin:" + password, post=True).returncode != 0
         for path in ("/dashboard/product-analytics", "/dashboard/product-analytics/"):
             analytics = request(path, "admin:" + password)
             assert analytics.returncode == 0 and analytics.stdout == page.stdout

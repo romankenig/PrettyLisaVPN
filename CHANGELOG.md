@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Backend — 0.37.0 / Fleet dashboard — 0.7.0 / Managed engine — 0.6.1
+
+- Add real active-account download/upload speeds across selected VPN exits:
+  five-second connection counters, time-weighted means, per-account medians,
+  distinct active accounts and explicit server/time coverage. No browsing data.
+- Add hour/day/week charts with existing private dashboard authorization and
+  measured synthetic reference, without filling gaps or averaging server means.
+- Migration 0047 stores atomic counter baselines and eight-day interval history;
+  resets/restarts, retries, missing samples and relay double counting are handled.
+- See [calculation, limitations and rollout](docs/active-user-speed.md). Client
+  versions and customer API contracts remain unchanged. Deployment is separate.
+
 ### Android — 0.25.0 / Backend — 0.36.0 / Public website — 0.5.0
 
 - Add guest DEMO access on Android: 15 minutes per device per UTC day, automatic
