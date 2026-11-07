@@ -44,6 +44,12 @@
         dest: /usr/local/lib/prettylisavpn-fleet/managed.py
         owner: root
         mode: '0644'
+    - name: Install read-only customer counter adapter
+      ansible.builtin.copy:
+        src: traffic.py
+        dest: /usr/local/lib/prettylisavpn-fleet/traffic.py
+        owner: root
+        mode: '0644'
     - name: Install browser-only HTTPS proxy
       ansible.builtin.copy:
         src: browser_proxy.py
