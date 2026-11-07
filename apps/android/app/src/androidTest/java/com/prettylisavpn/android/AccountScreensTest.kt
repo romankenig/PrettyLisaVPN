@@ -79,6 +79,7 @@ class AccountScreensTest {
         override suspend fun supportSubmit(token:String,report:SupportSubmission):SupportReceipt { submitted=report;sends++;return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
     }
     @Before fun launch() {
+        compose.runOnUiThread { com.prettylisavpn.android.ui.PresentationStore.get(compose.activity).preference.choose(com.prettylisavpn.android.ui.AppLanguage.ENGLISH) }
         com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext).save(com.prettylisavpn.android.vpn.TrafficSelection())
         val vault=object:CredentialVault {
             var value:Credentials?=Credentials(device,"fake","2030-01-01T00:00:00Z")
@@ -97,7 +98,7 @@ class AccountScreensTest {
     @After fun reset() {
         SourceFactory.sourceForTests=null
         val context=InstrumentationRegistry.getInstrumentation().targetContext
-        context.getSharedPreferences("presentation",android.content.Context.MODE_PRIVATE).edit().putString("language","en").commit()
+        compose.runOnUiThread { com.prettylisavpn.android.ui.PresentationStore.get(context).preference.choose(com.prettylisavpn.android.ui.AppLanguage.ENGLISH) }
         com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(context).save(com.prettylisavpn.android.vpn.TrafficSelection())
     }
     private fun waitFor(tag:String)=compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
@@ -192,7 +193,8 @@ class AccountScreensTest {
         compose.onNodeWithTag("billing-price").assertTextEquals("399 ₽")
         compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-demo-premium-ru")
         compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-demo-free-ru")
-        compose.onNodeWithTag("current-plan-DEMO").performScrollTo();screenshot("plan-polish-demo-current-ru")
+        compose.onNodeWithTag("current-plan-DEMO").assertExists()
+        compose.onNodeWithTag("plan-tier-DEMO").performScrollTo();screenshot("plan-polish-demo-current-ru")
         assertEquals(0,billingReads)
         click("plan-buy");waitFor("screen_LOGIN")
         compose.onNodeWithTag("login-email").performTextInput("buyer@example.com");click("auth-submit");waitFor("screen_OTP")

@@ -288,7 +288,7 @@
     <string name="traffic_selected_label">выбранные сервисы:</string>
     <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
-    <string name="upgrade_plan">улучшить план</string>
+    <string name="upgrade_plan">улучшить</string>
     <string name="faq_connect_q">как подключиться?</string>
     <string name="faq_connect_a">на [главной] выберите страну и нажмите «подключить». первый поиск соединения может занять пару минут.</string>
     <string name="faq_free_q">что входит в free?</string>
