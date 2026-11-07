@@ -346,4 +346,18 @@
     <string name="demo_rate_limited">trop de connexions invité. patientez ou connectez-vous par courriel.</string>
     <string name="demo_identity_failed">cet appareil ne peut pas être identifié pour DEMO. vous pouvez vous connecter par courriel.</string>
     <string name="demo_full_traffic">tout le trafic</string>
+    <string name="plan_current">offre actuelle</string>
+    <string name="plan_unlimited">VPN sans limite de temps</string>
+    <string name="plan_all_countries">tous les pays disponibles</string>
+    <string name="plan_five_devices">jusqu’à 5 appareils</string>
+    <string name="plan_split">tout le trafic ou une sélection</string>
+    <string name="plan_free_countries">pays avec serveurs gratuits</string>
+    <string name="plan_auto_only">pilote automatique uniquement</string>
+    <string name="plan_device_only">cet appareil uniquement</string>
+    <string name="plan_all_traffic_only">tout le trafic uniquement</string>
+    <string name="plan_hour">1 heure chaque jour</string>
+    <string name="plan_quarter_hour">15 minutes chaque jour</string>
+    <string name="plan_fresh_hour">une heure distincte après inscription</string>
+    <string name="plan_register">s’inscrire</string>
+    <string name="plan_buy">acheter</string>
 </resources>

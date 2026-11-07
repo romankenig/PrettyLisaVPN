@@ -346,4 +346,18 @@
     <string name="demo_rate_limited">слишком много попыток гостевого входа. подождите или войдите по почте.</string>
     <string name="demo_identity_failed">не удалось определить устройство для DEMO. можно войти по почте.</string>
     <string name="demo_full_traffic">весь трафик</string>
+    <string name="plan_current">текущий тариф</string>
+    <string name="plan_unlimited">VPN без ограничения времени</string>
+    <string name="plan_all_countries">все доступные страны</string>
+    <string name="plan_five_devices">до 5 устройств</string>
+    <string name="plan_split">весь или выбранный трафик</string>
+    <string name="plan_free_countries">страны на бесплатных серверах</string>
+    <string name="plan_auto_only">только автопилот</string>
+    <string name="plan_device_only">только это устройство</string>
+    <string name="plan_all_traffic_only">только весь трафик</string>
+    <string name="plan_hour">1 час каждый день</string>
+    <string name="plan_quarter_hour">15 минут каждый день</string>
+    <string name="plan_fresh_hour">отдельный час после регистрации</string>
+    <string name="plan_register">зарегистрироваться</string>
+    <string name="plan_buy">купить</string>
 </resources>

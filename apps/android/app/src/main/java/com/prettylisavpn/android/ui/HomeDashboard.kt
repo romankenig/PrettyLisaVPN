@@ -51,7 +51,7 @@ internal fun AccountSummary(data: Snapshot, upgrade: () -> Unit) {
         }
         if (demo || data.plan == "Free") {
             FreeTimeBalance(data.freeTime)
-            BrandActionButton(tr(if (demo) R.string.demo_upgrade else R.string.upgrade_plan), upgrade, Modifier.testTag("home-upgrade"))
+            BrandActionButton(tr(R.string.upgrade_plan), upgrade, Modifier.testTag("home-upgrade"))
         }
     }
 }

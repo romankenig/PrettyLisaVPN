@@ -12,13 +12,14 @@ private const val MESSAGE = "20000000-0000-0000-0000-000000000003"
 private const val OFFER = "20000000-0000-0000-0000-000000000004"
 class AccountAuth : AuthApi {
     var id = USER
+    var plan = "Premium"
     var count = 2
     var revoked = false
     override suspend fun requestOtp(email: String) = Unit
     override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens()
     private fun tokens() = Tokens("synthetic", 900, Credentials(DEVICE,"synthetic-refresh","2030-01-01T00:00:00Z"))
     override suspend fun refresh(credentials: Credentials) = tokens()
-    override suspend fun me(access: String): Profile { if (revoked) throw AuthFailure("device_revoked"); return Profile("account@example.com","Premium",count,id) }
+    override suspend fun me(access: String): Profile { if (revoked) throw AuthFailure("device_revoked"); return Profile(if(plan=="Demo")"" else "account@example.com",plan,count,id) }
     override suspend fun logout(access: String) = Unit
 }
 class AccountPort(private val auth: AccountAuth) : AccountApi {
@@ -51,6 +52,24 @@ class AccountIntegrationTest {
     private val journal=MemoryJournal()
     private fun source()=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),port,journal)
     private suspend fun failure(action:suspend()->Unit) { try { action(); fail("Expected failure") } catch (_: Exception) { } }
+    @Test fun guestPricesUsePublicCatalogAndCannotCreatePayments()=runBlocking {
+        auth.plan="Demo"
+        var reads=0
+        val guestPort=object:AccountApi by port {
+            override suspend fun catalog():List<AccountOffer> { reads++;return listOf(AccountOffer(OFFER,mapOf("RUB" to OfferPrice(42900),"USD" to OfferPrice(600)))) }
+            override suspend fun overview(token:String):BillingOverview = error("Guest must not read private billing")
+        }
+        val s=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),guestPort,journal)
+        s.read(Area.SESSION)
+        val result=s.read(Area.BILLING)
+        val billing=requireNotNull(result.billing)
+        assertEquals(1,reads);assertEquals("DEMO",billing.plan)
+        assertEquals(42900L,billing.offers.single().prices["RUB"]!!.amount)
+        assertFalse(billing.permits("SUBSCRIBE"))
+        failure { s.execute(Command.Payment(UUID.randomUUID().toString(),"SUBSCRIBE","MIR","RUB")) }
+        assertTrue(port.starts.isEmpty())
+        assertEquals(DEVICE,s.read(Area.DEVICES).devices.single().id)
+    }
     @Test fun devicesRefreshProfileAndPreserveNullLogin()=runBlocking {
         val s=source();s.read(Area.SESSION);assertNull(s.read(Area.DEVICES).devices.single().lastLogin)
         val result=s.execute(Command.Revoke(DEVICE));assertEquals(1,result.activeDeviceCount);assertFalse(result.devices.single().active)

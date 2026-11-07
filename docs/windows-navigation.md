@@ -1,4 +1,16 @@
-# Android 0.25.0 — guest access and documents
+# Android 0.26.0 — plan comparison and guest settings
+
+DEMO/FREE Home → Upgrade → Subscription comparison. PREMIUM Buy from DEMO →
+confirmed tunnel cleanup/logout → email OTP → Subscription; FREE registration
+instead returns to Home. Disabled payment → availability dialog, without opening
+a provider or creating an operation. Active payment uses the existing revision,
+quote and confirmation guards. Current-plan badges distinguish the comparison.
+DEMO Settings → Devices and Advanced now opens the real screens; only country/
+split/support still require registration. Device API integration needs backend
+0.37.0. Login documents sit at the bottom of the scrollable area. These paths are
+implemented; new publication awaits approval. See [handoff](android-plan-polish.md).
+
+# Android 0.25.0 — guest access and documents (historical)
 
 Android login → Try DEMO → Home uses the new guest API. About and login document
 links open fixed localized HTTPS pages without credentials. Muted country/split/

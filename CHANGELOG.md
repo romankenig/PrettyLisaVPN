@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Android — 0.26.0 / Backend — 0.37.0
+
+- Simplify sign-in, emphasize the secondary guest action and anchor document links
+  to the bottom of short screens, while retaining scrolling with the keyboard.
+- Route DEMO/FREE Upgrade to a shared plan comparison: featured PREMIUM purchase,
+  FREE registration, quieter DEMO limits, uppercase names and new FREE/DEMO badges.
+  Guest purchase returns to subscription after email registration; disabled or
+  unconfirmed payment operations remain fenced. Public prices use the API with
+  last-known/reference display fallback, never replacing an agreed contract.
+- Open device management and method selection to DEMO. Guest device revocation
+  retains identity/quota and removes active VPN access; AUTO/full traffic remain
+  mandatory. Show a smaller reset icon only beside an active protocol label.
+- Schema remains 0046; see [plan polish handoff](docs/android-plan-polish.md).
+
 ### Android — 0.25.0 / Backend — 0.36.0 / Public website — 0.5.0
 
 - Add guest DEMO access on Android: 15 minutes per device per UTC day, automatic

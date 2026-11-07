@@ -36,7 +36,7 @@ class AndroidVpnHost private constructor(context: Context, private val sessions:
     }
     val controller: VpnController = VpnController({ sessions.profile?.id }, scope,
         listOf(wireguard, relay) + engines, preference, recovery = recovery,
-        enabledMethods = { if (sessions.profile?.isDemo == true) null else DeviceMethodSelection.get(context).current() }, healthPolicy = ConnectionHealthPolicy(),
+        enabledMethods = { DeviceMethodSelection.get(context).current() }, healthPolicy = ConnectionHealthPolicy(),
         elapsedMillis = android.os.SystemClock::elapsedRealtime)
     init {
         scope.launch { controller.status.collect { state ->

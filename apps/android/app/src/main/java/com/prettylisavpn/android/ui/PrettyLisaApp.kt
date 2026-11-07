@@ -5,6 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -160,7 +163,7 @@ internal fun PhoneNavigation(route: String, navigate: (Destination) -> Unit) {
 
 /** Edge pull in either direction: down at the start or up at the end of a list. */
 @Composable
-internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshing: Boolean = false, refreshAtEnd: Boolean = true, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshing: Boolean = false, refreshAtEnd: Boolean = true, footer: (@Composable () -> Unit)? = null, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     val scroll = androidx.compose.foundation.rememberScrollState()
     val refresh by androidx.compose.runtime.rememberUpdatedState(onRefresh)
     val busy by androidx.compose.runtime.rememberUpdatedState(refreshing)
@@ -184,15 +187,19 @@ internal fun PhoneScreen(tag: String, onRefresh: (() -> Unit)? = null, refreshin
         }
     }
     val refreshLabel = appString(R.string.ui_refresh)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val viewportHeight = maxHeight
         Column(
-            modifier = Modifier.widthIn(max = 600.dp).fillMaxSize().testTag(tag)
+            modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth().testTag(tag)
                 .then(if (onRefresh == null) Modifier else Modifier.nestedScroll(connection).semantics {
                     customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(refreshLabel) { if (!busy) refresh?.invoke(); true })
                 })
-                .verticalScroll(scroll).padding(horizontal = 20.dp, vertical = 20.dp),
+                .verticalScroll(scroll).heightIn(min = viewportHeight).padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) { content() }
+        ) {
+            content()
+            if (footer != null) { Spacer(Modifier.weight(1f)); footer() }
+        }
         if (refreshing || pull > threshold / 3) androidx.compose.material3.CircularProgressIndicator(
             Modifier.padding(8.dp).size(28.dp).testTag("pull-refresh-indicator"), color = Brand.Viking)
     }

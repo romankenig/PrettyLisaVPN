@@ -346,4 +346,18 @@
     <string name="demo_rate_limited">访客登录次数过多。请稍后重试或通过邮箱登录。</string>
     <string name="demo_identity_failed">无法为 DEMO 识别此设备。您可以通过邮箱登录。</string>
     <string name="demo_full_traffic">所有流量</string>
+    <string name="plan_current">当前套餐</string>
+    <string name="plan_unlimited">VPN 无时间限制</string>
+    <string name="plan_all_countries">所有可用国家</string>
+    <string name="plan_five_devices">最多 5 台设备</string>
+    <string name="plan_split">全部流量或所选流量</string>
+    <string name="plan_free_countries">免费服务器所在国家</string>
+    <string name="plan_auto_only">仅限自动选择</string>
+    <string name="plan_device_only">仅限此设备</string>
+    <string name="plan_all_traffic_only">仅限全部流量</string>
+    <string name="plan_hour">每天 1 小时</string>
+    <string name="plan_quarter_hour">每天 15 分钟</string>
+    <string name="plan_fresh_hour">注册后享有独立的 1 小时时限</string>
+    <string name="plan_register">注册</string>
+    <string name="plan_buy">购买</string>
 </resources>

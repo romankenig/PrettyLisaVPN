@@ -346,4 +346,18 @@
     <string name="demo_rate_limited">zu viele Gastanmeldungen. bitte warten oder per E-Mail anmelden.</string>
     <string name="demo_identity_failed">das Gerät kann für DEMO nicht erkannt werden. die Anmeldung per E-Mail ist möglich.</string>
     <string name="demo_full_traffic">gesamter Datenverkehr</string>
+    <string name="plan_current">aktueller Tarif</string>
+    <string name="plan_unlimited">VPN ohne Zeitlimit</string>
+    <string name="plan_all_countries">alle verfügbaren Länder</string>
+    <string name="plan_five_devices">bis zu 5 Geräte</string>
+    <string name="plan_split">gesamter oder ausgewählter Datenverkehr</string>
+    <string name="plan_free_countries">länder mit kostenlosen Servern</string>
+    <string name="plan_auto_only">nur Autopilot</string>
+    <string name="plan_device_only">nur dieses Gerät</string>
+    <string name="plan_all_traffic_only">nur gesamter Datenverkehr</string>
+    <string name="plan_hour">1 Stunde täglich</string>
+    <string name="plan_quarter_hour">15 Minuten täglich</string>
+    <string name="plan_fresh_hour">eigene Stunde nach der Registrierung</string>
+    <string name="plan_register">registrieren</string>
+    <string name="plan_buy">kaufen</string>
 </resources>

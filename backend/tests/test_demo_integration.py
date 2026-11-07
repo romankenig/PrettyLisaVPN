@@ -31,7 +31,9 @@ from prettylisavpn.demo.domain import DemoRateLimitedError, RegistrationRequired
 from prettylisavpn.demo.model import DemoDeviceRecord
 from prettylisavpn.demo.router import router
 from prettylisavpn.demo.service import DemoService, RedisAdmissionLimit
+from prettylisavpn.devices.management import DeviceManagementService
 from prettylisavpn.devices.model import DeviceRecord
+from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.users.model import UserRecord
 
@@ -213,6 +215,48 @@ async def test_guest_cannot_open_billing_operations(guest):
         identity.require_registered()
     with pytest.raises(RegistrationRequiredError):
         await BillingOperationsService(pg, auth, None).get(result.access_token.token, uuid4())
+
+
+async def test_guest_device_management_is_scoped_and_revocation_preserves_quota(guest, monkeypatch):
+    pg, vpn, worker, provider, registered, service, key, result, auth = guest
+    clock = freeze(monkeypatch)
+    monkeypatch.setattr(demo_service_module, "datetime", clock)
+    token = result.access_token.token
+    lease = await vpn.connect(token, ConnectRequest(public_key=KEY), uuid4())
+    assert await worker.tick()
+    await vpn.get(token, UUID(lease["id"]), "probe", "1.1.1.1")
+    clock.value += timedelta(seconds=100)
+    app = FastAPI()
+    app.include_router(devices_router)
+    app.state.device_management = DeviceManagementService(pg, auth, AsyncMock(), settings())
+    headers = {"Authorization": "Bearer " + token}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        listing = await client.get("/devices", headers=headers)
+        assert listing.status_code == 200
+        assert [item["id"] for item in listing.json()] == [str(result.device.id)]
+        assert listing.json()[0]["is_current"]
+        foreign = await client.delete(f"/devices/{registered.device_id}", headers=headers)
+        assert foreign.status_code == 404
+        revoked = await client.delete(f"/devices/{result.device.id}", headers=headers)
+        assert revoked.status_code == 200
+        assert revoked.json()["device"]["status"] == "REVOKED"
+        assert (await client.get("/devices", headers=headers)).status_code in (401, 403)
+    # Device revocation also removes the active VPN grant before a new guest login.
+    assert await worker.tick()
+    provider.revoke_access.assert_awaited()
+    async with pg.session() as session:
+        remaining = await ClientQuotaRepository(session).remaining_free_seconds(
+            result.user.id, clock.value
+        )
+        assert 0 < remaining < 900
+    fresh = await service.login(key, "192.0.2.1")
+    assert fresh.device.id == result.device.id and fresh.user.id == result.user.id
+    assert (await auth.authenticate(fresh.access_token.token)).is_demo
+    async with pg.session() as session:
+        assert (
+            await ClientQuotaRepository(session).remaining_free_seconds(result.user.id, clock.value)
+            == remaining
+        )
 
 
 async def test_populated_demo_migration_cannot_be_dropped_to_reset_daily_quota(guest):
