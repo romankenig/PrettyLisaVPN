@@ -2,6 +2,8 @@ package com.prettylisavpn.android.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -11,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.prettylisavpn.android.R
 import com.prettylisavpn.android.data.BillingOverview
@@ -73,9 +76,11 @@ internal fun SubscriptionPriceCard(
                             textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.testTag("billing-original-price"))
                     }
-                    Text(subscriptionMoney(price.amount, currency, locale),
-                        style = MaterialTheme.typography.displayMedium.copy(fontSize = 48.sp, lineHeight = 54.sp, fontWeight = FontWeight.Bold),
-                        color = Brand.Christalle, modifier = Modifier.testTag("billing-price"))
+                    BasicText(subscriptionMoney(price.amount, currency, locale),
+                        style = MaterialTheme.typography.displayMedium.copy(color = Brand.Christalle,
+                            fontSize = 48.sp, lineHeight = 1.125.em, fontWeight = FontWeight.Bold),
+                        autoSize = TextAutoSize.StepBased(minFontSize = 32.sp, maxFontSize = 48.sp, stepSize = 1.sp),
+                        maxLines = 1, modifier = Modifier.testTag("billing-price"))
                     Text(tr(R.string.subscription_per_month), color = Brand.Scorpion, style = MaterialTheme.typography.bodyMedium)
                 }
             }

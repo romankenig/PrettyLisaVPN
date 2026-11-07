@@ -9,7 +9,9 @@ The live subscription screen separates access, monthly price, payment details an
 management into cards. Prices use localized separators, preserve actual cents and
 omit unnecessary decimal zeros. The monthly amount is prominent; two compact dark
 purple currency controls sit immediately beside a new-offer/reference price with
-48dp touch targets. At large font scales the layout stacks to avoid clipping.
+48dp touch targets. At large font scales the layout stacks; the amount fits its
+available width using Compose text autosizing (32–48sp, still respecting the system
+font scale) instead of clipping or splitting the currency onto another line.
 
 An existing Premium contract displays its own immutable amount and locked currency,
 never the acquisition offer. Legacy unconfirmed contract prices remain unknown.

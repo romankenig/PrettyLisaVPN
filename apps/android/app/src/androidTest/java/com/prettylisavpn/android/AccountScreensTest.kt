@@ -126,7 +126,7 @@ class AccountScreensTest {
         screenshot("home-free-upgrade")
         click("home-upgrade"); waitFor("provider-mode")
         compose.onNodeWithTag("live-subscription-screen").assertExists()
-        compose.onNodeWithTag("live-pay-SUBSCRIBE").assertIsNotEnabled()
+        compose.onNodeWithTag("live-pay-SUBSCRIBE").assertDoesNotExist()
         assertEquals(0, starts)
         screenshot("home-upgrade-subscription")
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
@@ -330,12 +330,13 @@ class AccountScreensTest {
             }
         }
         waitFor("billing-price")
+        screenshot("subscription-large-text")
         val layouts=mutableListOf<TextLayoutResult>()
         compose.onNodeWithTag("billing-price").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        assertTrue(layouts.isNotEmpty());assertFalse(layouts.any { it.hasVisualOverflow })
+        assertTrue(layouts.isNotEmpty())
+        layouts.forEach { assertFalse("Price overflows: width=${it.didOverflowWidth}, height=${it.didOverflowHeight}, size=${it.size}",it.hasVisualOverflow) }
         compose.onNodeWithTag("billing-currency-RUB").assertIsSelected()
         compose.onNodeWithTag("billing-currency-USD").performScrollTo().assertIsDisplayed()
-        screenshot("subscription-large-text")
     }
     @Test fun agreedPriceAndCancellationKeepPaidAccessUntilConfirmation() {
         mode="LIVE";click("tab_SETTINGS");click("settings-subscription");waitFor("billing-contract-price")
