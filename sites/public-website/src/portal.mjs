@@ -1,4 +1,11 @@
 import { portalCopy } from "./portal-copy.mjs";
+import {
+  cachedPrices,
+  referencePrices,
+  referenceOriginalPrices,
+  referencePriceCopy,
+  formatMonthlyPrice,
+} from "./pricing.mjs";
 
 export function providerURL(raw) {
   const url = new URL(raw);
@@ -153,7 +160,67 @@ export async function mountPortal(root) {
   }
   const journalKey = () => "prettylisa.billing." + account;
   async function load() {
-    const value = await request("/overview");
+    let value;
+    try {
+      value = await request("/overview");
+    } catch (error) {
+      if (error.code === "AUTH_INVALID") throw error;
+      screen(t.title, t.error);
+      if (overview?.current_price)
+        root.append(
+          el("p", t.fixedPrice),
+          el("h2", money(overview.current_price)),
+        );
+      let storage;
+      try {
+        storage = localStorage;
+      } catch {
+        /* Optional public cache. */
+      }
+      const display = cachedPrices(storage) ?? {
+        prices: referencePrices,
+        original: referenceOriginalPrices,
+      };
+      const card = el("section", null, "portal-offer");
+      card.dataset.referencePrices = "";
+      card.append(el("h2", "Premium"));
+      for (const currency of ["RUB", "USD"]) {
+        const row = el("p");
+        if (display.original[currency])
+          row.append(
+            el(
+              "s",
+              formatMonthlyPrice(
+                display.original[currency],
+                currency,
+                document.documentElement.lang,
+              ) + " ",
+            ),
+          );
+        row.append(
+          el(
+            "strong",
+            formatMonthlyPrice(
+              display.prices[currency],
+              currency,
+              document.documentElement.lang,
+            ) +
+              " / " +
+              t.month,
+          ),
+        );
+        card.append(row);
+      }
+      card.append(
+        el(
+          "p",
+          referencePriceCopy[document.documentElement.lang] ??
+            referencePriceCopy.en,
+        ),
+      );
+      root.append(card, button(t.refresh, load));
+      return;
+    }
     account = value.account_id;
     accountEmail = value.email;
     overview = value.billing;

@@ -315,4 +315,6 @@
     <string name="billing_replace_card">karte wechseln</string>
     <string name="billing_portal">abonnement und Zahlungen verwalten</string>
     <string name="billing_sbp_account">verknüpftes SBP-Bankkonto</string>
+    <string name="billing_reference_prices">richtpreise für ein neues Abonnement. die aktuellen Konditionen werden vor der Zahlung bestätigt. ihr bestehender Vertragspreis bleibt unverändert.</string>
+    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / Monat</string>
 </resources>

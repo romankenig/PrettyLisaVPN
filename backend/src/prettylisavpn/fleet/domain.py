@@ -1,6 +1,7 @@
 """Protocol-neutral lifecycle contracts and deterministic monitoring rules."""
 
 import hashlib
+import random
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address, IPv4Interface
@@ -278,6 +279,15 @@ def source_order(target: UUID, at: datetime, roster: list[UUID]) -> list[UUID]:
     start = ordered.index(target)
     offsets = list(range(rotation, len(ordered))) + list(range(1, rotation))
     return [ordered[(start + offset) % len(ordered)] for offset in offsets]
+
+
+def retry_source_order(target: UUID, roster: list[UUID], previous: UUID | None) -> list[UUID]:
+    """Random independent retry; reuse only when the roster has no alternative."""
+    candidates = sorted(set(roster) - {target}, key=str)
+    alternatives = [identifier for identifier in candidates if identifier != previous]
+    ordered = alternatives or candidates
+    random.shuffle(ordered)
+    return ordered
 
 
 def server_quality(

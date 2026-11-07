@@ -41,6 +41,10 @@ test("billing preserves the published moderation layout and uses API-owned prici
     assert.match(html, /name="currency" value="RUB" checked/);
     assert.match(html, /data-free-currency="RUB"/);
     assert.match(html, /data-free-currency="USD"/);
+    const pricing = html.match(/<section class="pricing[\s\S]*?<\/section>/)[0];
+    const purchaseLabel = `>${escape(locales[language].pricing.buy)}</a>`;
+    assert.equal(pricing.split(purchaseLabel).length - 1, 2);
+    assert.ok(!pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`));
     assert.doesNotMatch(
       html,
       /data-amount-minor=|data-purchase=|id="payment-dialog"/,

@@ -122,6 +122,10 @@ const labels = {
     "Расширение использует HTTPS-прокси для обычного веб-трафика. Системные службы Chrome, другие приложения и инкогнито находятся вне его действия. DNS сайтов разрешает сервер; IPv6 к назначениям блокируется. Локальные адреса и нестандартные порты, кроме 80, 443, 8080 и 8443, недоступны через прокси.",
     "The HTTPS proxy covers ordinary web traffic. Chrome internal services, other apps and incognito are outside its scope. Website DNS resolves on the server; IPv6 destinations are blocked. Local addresses and ports other than 80, 443, 8080 and 8443 are unavailable through the proxy.",
   ],
+  referencePrices: [
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
+    "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.",
+  ],
   paidUntil: ["оплачено до", "paid until"],
   billingPortal: [
     "управлять подпиской и оплатой",
@@ -596,38 +600,55 @@ function App() {
               <>
                 <h1 className="white">{t("subscription")}</h1>
                 <section className="card">
-                  <label>{t("plan")}</label>
-                  <h2>{billing?.plan ?? "…"}</h2>
-                  <label>{t("paidUntil")}</label>
-                  <strong>{date(billing?.paid_until ?? null)}</strong>
-                  {billing?.current_price && (
+                  {billing && (
                     <>
-                      <label>{t("contractPrice")}</label>
+                      <label>{t("plan")}</label>
+                      <h2>{billing?.plan ?? "…"}</h2>
+                      <label>{t("paidUntil")}</label>
+                      <strong>{date(billing?.paid_until ?? null)}</strong>
+                      {billing?.current_price && (
+                        <>
+                          <label>{t("contractPrice")}</label>
+                          <strong>
+                            {priceLabel(billing.current_price, language)} /{" "}
+                            {t("monthly")}
+                          </strong>
+                        </>
+                      )}
+                      {billing?.current_price &&
+                        !billing.new_contract_required && (
+                          <p>{t("fixedPrice")}</p>
+                        )}
+                      {billing?.plan === "PREMIUM" &&
+                        billing.new_contract_required && (
+                          <p>{t("resubscribe")}</p>
+                        )}
+                      <label>{t("method")}</label>
                       <strong>
-                        {priceLabel(billing.current_price, language)} /{" "}
-                        {t("monthly")}
+                        {billing?.methodKind === "SBP"
+                          ? t("sbpAccount")
+                          : (billing?.method ?? t("noMethod"))}
                       </strong>
+                      {billing?.next_charge_at && billing.next_charge_price && (
+                        <>
+                          <label>{t("nextCharge")}</label>
+                          <strong>
+                            {date(billing.next_charge_at)} ·{" "}
+                            {priceLabel(billing.next_charge_price, language)}
+                          </strong>
+                        </>
+                      )}
                     </>
                   )}
-                  {billing?.current_price && !billing.new_contract_required && (
-                    <p>{t("fixedPrice")}</p>
-                  )}
-                  {billing?.plan === "PREMIUM" &&
-                    billing.new_contract_required && <p>{t("resubscribe")}</p>}
-                  <label>{t("method")}</label>
-                  <strong>
-                    {billing?.methodKind === "SBP"
-                      ? t("sbpAccount")
-                      : (billing?.method ?? t("noMethod"))}
-                  </strong>
-                  {billing?.next_charge_at && billing.next_charge_price && (
-                    <>
-                      <label>{t("nextCharge")}</label>
-                      <strong>
-                        {date(billing.next_charge_at)} ·{" "}
-                        {priceLabel(billing.next_charge_price, language)}
-                      </strong>
-                    </>
+                  {!billing && (
+                    <div data-testid="billing-reference-prices">
+                      <h2>Premium</h2>
+                      <p className="reference-price">
+                        <s>499 ₽</s> <strong>399 ₽</strong> · <s>$7</s>{" "}
+                        <strong>$5</strong> / {t("monthly")}
+                      </p>
+                      <p>{t("referencePrices")}</p>
+                    </div>
                   )}
                   {billing?.offers.map((offer) => (
                     <div key={offer.id}>

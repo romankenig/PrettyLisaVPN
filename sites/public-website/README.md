@@ -1,4 +1,4 @@
-# PrettyLisaVPN website · 0.4.0
+# PrettyLisaVPN website · 0.4.1
 
 Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents, a billing portal and six translated languages.

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.35.0", min_length=1)
+    application_version: str = Field(default="0.35.1", min_length=1)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox", "platega"] = "disabled"
     platega_merchant_id: UUID = UUID(int=0)

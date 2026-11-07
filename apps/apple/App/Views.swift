@@ -241,7 +241,12 @@ struct SubscriptionView: View {
                     Button(L("billing_portal")) { model.openBillingPortal { url in openURL(url) } }.disabled(model.busy || model.fixtures)
                     Text(L("billing_portal_hint")).font(.footnote).foregroundStyle(.secondary)
                 }
-            } else { Text(L("unavailable")) }
+            } else {
+                Section("Premium") {
+                    Text(L("billing_reference_month"))
+                    Text(L("billing_reference_prices")).font(.footnote).foregroundStyle(.secondary)
+                }.accessibilityIdentifier("billing-reference-prices")
+            }
         }.formStyle(.grouped)
     }
 }

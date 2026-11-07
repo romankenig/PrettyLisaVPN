@@ -421,13 +421,19 @@ describe("subscription screen", () => {
       requestId("user", "revision", "SUBSCRIBE", "offer", "RUB", "CRYPTO"),
     ).not.toBe(a);
   });
-  it("shows unavailable data rather than invented prices after a backend failure", async () => {
+  it("shows reference prices without checkout authority after a backend failure", async () => {
     const { billing } = setup();
     await screen.findByRole("button", { name: "оформить подписку" });
     vi.mocked(billing.overview).mockRejectedValue(new Error("offline"));
     fireEvent.click(screen.getByRole("button", { name: "обновить" }));
     await screen.findByRole("alert");
     expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
+    expect(screen.getByText("399 ₽")).toBeInTheDocument();
+    expect(screen.getByText("$5")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Справочные цены для новой подписки/),
+    ).toBeInTheDocument();
+    expect(billing.start).not.toHaveBeenCalled();
     expect(
       screen.queryByRole("button", { name: "оформить подписку" }),
     ).not.toBeInTheDocument();
@@ -640,6 +646,7 @@ describe("read-only server billing", () => {
     setup("free", undefined, { ...overview(), offers: [] });
     await screen.findByText("цены пока недоступны");
     expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
+
     expect(
       screen.getByRole("button", { name: "оформить подписку" }),
     ).toBeDisabled();

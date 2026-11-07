@@ -20,6 +20,7 @@ let authenticated = false,
   status = "PENDING",
   operation = null;
 let loseResponse = false;
+let overviewAvailable = true;
 const commands = [];
 const errors = [];
 const overview = () => ({
@@ -139,13 +140,32 @@ try {
     page.waitForResponse("**/api/billing/catalog"),
     page.goto(origin + "/"),
   ]);
-  assert.equal(
-    await page.locator('[data-reference-price="RUB"]').isVisible(),
-    false,
+  assert.match(
+    await page.locator('[data-price="RUB"]').textContent(),
+    /123[.,]45/,
   );
   assert.equal(
-    await page.locator('[data-price="RUB"]').textContent(),
-    "цены пока недоступны",
+    await page.locator("[data-price-reference-note]").isVisible(),
+    true,
+  );
+  await page.evaluate(() => globalThis.localStorage.clear());
+  await Promise.all([
+    page.waitForResponse("**/api/billing/catalog"),
+    page.reload(),
+  ]);
+  assert.match(await page.locator('[data-price="RUB"]').textContent(), /399/);
+  assert.match(
+    await page.locator('[data-reference-price="RUB"]').textContent(),
+    /499/,
+  );
+  await page
+    .locator("#pricing")
+    .screenshot({ path: `${output}/00-pricing-offline.png` });
+  await page.getByText("$ USD", { exact: true }).click();
+  assert.match(await page.locator('[data-price="USD"]').textContent(), /5/);
+  assert.match(
+    await page.locator('[data-reference-price="USD"]').textContent(),
+    /7/,
   );
   catalogAvailable = true;
   await page.setViewportSize({ width: 1280, height: 1000 });
@@ -166,7 +186,10 @@ try {
       return reply({ status: "authenticated" });
     }
     if (!authenticated) return reply({ error: { code: "AUTH_INVALID" } }, 401);
-    if (path === "/overview") return reply(overview());
+    if (path === "/overview")
+      return overviewAvailable
+        ? reply(overview())
+        : reply({ error: { code: "BILLING_UNAVAILABLE" } }, 503);
     if (path === "/operations") {
       const command = route.request().postDataJSON();
       commands.push(command);
@@ -268,6 +291,26 @@ try {
     fullPage: true,
   });
   await page.getByRole("button", { name: "Попробовать снова" }).click();
+  await page.getByRole("button", { name: "Оформить через СБП" }).waitFor();
+  const commandCount = commands.length;
+  overviewAvailable = false;
+  await page.reload();
+  await page.locator("[data-reference-prices]").waitFor();
+  assert.match(
+    await page.locator("[data-reference-prices]").textContent(),
+    /399/,
+  );
+  assert.equal(
+    await page.getByRole("button", { name: "Оформить через СБП" }).count(),
+    0,
+  );
+  assert.equal(commands.length, commandCount);
+  await page.screenshot({
+    path: `${output}/10-overview-offline.png`,
+    fullPage: true,
+  });
+  overviewAvailable = true;
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
   await page.getByRole("button", { name: "Оформить через СБП" }).waitFor();
   assert.deepEqual(errors, []);
   console.log(

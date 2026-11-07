@@ -25,6 +25,7 @@ let context = await launch();
 const id = "11111111-1111-4111-8111-111111111111";
 const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
+let billingAvailable = true;
 async function mockAPI() {
   await context.route("https://prettylisavpn.com/account/**", (route) =>
     route.fulfill({
@@ -34,6 +35,11 @@ async function mockAPI() {
   );
   await context.route("https://api.prettylisavpn.com/**", async (route) => {
     const p = new URL(route.request().url()).pathname;
+    if (p === "/billing/overview" && !billingAvailable)
+      return route.fulfill({
+        status: 503,
+        json: { error: { code: "BILLING_UNAVAILABLE" } },
+      });
     let value;
     let status = 200;
     if (p === "/version")
@@ -222,6 +228,22 @@ try {
   assert.equal(portal.url(), destination);
   assert.equal(await portal.title(), "Fixture billing portal");
   await portal.close();
+  billingAvailable = false;
+  await page.reload();
+  await page.getByRole("button", { name: "улучшить", exact: true }).click();
+  await page.getByTestId("billing-reference-prices").waitFor();
+  assert.match(
+    await page.getByTestId("billing-reference-prices").textContent(),
+    /399/,
+  );
+  assert.match(
+    await page.getByTestId("billing-reference-prices").textContent(),
+    /\$5/,
+  );
+  await page.screenshot({
+    path: path.join(output, "subscription-offline.png"),
+  });
+  billingAvailable = true;
 
   await page.getByRole("button", { name: "о приложении", exact: true }).click();
   await page.getByRole("button", { name: "написать в поддержку" }).click();

@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { languages, platforms, legalKeys, routeFor } from "./structure.mjs";
 import { website } from "./model.mjs";
+import {
+  referencePrices,
+  referenceOriginalPrices,
+  referencePriceCopy,
+  formatMonthlyPrice,
+} from "./pricing.mjs";
 
 export const locales = Object.fromEntries(
   languages.map((code) => [
@@ -98,11 +104,11 @@ function platformCard(lang, platform) {
 }
 function prices(lang) {
   const p = locales[lang].pricing;
-  return `<div class="price-options">${["RUB", "USD"].map((currency) => `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><s data-reference-price="${currency}" hidden></s><strong data-price="${currency}">${text(p.unavailable)}</strong></p><p class="price-period">${text(p.period)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(p.manage)}</a></div>`).join("")}</div>`;
+  return `<div class="price-options">${["RUB", "USD"].map((currency) => `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><s data-reference-price="${currency}">${text(formatMonthlyPrice(referenceOriginalPrices[currency], currency, lang))}</s><strong data-price="${currency}">${text(formatMonthlyPrice(referencePrices[currency], currency, lang))}</strong></p><p class="price-period">${text(p.period)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(p.buy)}</a></div>`).join("")}</div>`;
 }
 function pricing(lang) {
   const p = locales[lang].pricing;
-  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><p class="eyebrow">${text(p.eyebrow)}</p><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan free-plan"><h3>free</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article><article class="plan premium-plan"><h3>premium</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article></div><div class="purchase-details"><p>${text(p.terms)}</p></div></section>`;
+  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><p class="eyebrow">${text(p.eyebrow)}</p><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan free-plan"><h3>free</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article><article class="plan premium-plan"><h3>premium</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article></div><div class="purchase-details"><p data-price-reference-note>${text(referencePriceCopy[lang])}</p><p>${text(p.terms)}</p></div></section>`;
 }
 function paymentNotice(lang) {
   const p = locales[lang].pricing;

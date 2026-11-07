@@ -31,6 +31,15 @@
 "back" = "zurück";
 "billing_cancel_detail" = "die Kündigung entfernt die Zahlungsart. der Zugang bleibt bis zum Ende der bezahlten Laufzeit.";
 "billing_days_left" = "verbleibende Tage: %1$d";
+"billing_fixed_price" = "der vereinbarte Preis bleibt bis zur Kündigung und einem neuen Abschluss gleich";
+"billing_next_charge" = "nächste Abbuchung: %1$@ · %2$@";
+"billing_portal" = "abonnement und Zahlungen verwalten";
+"billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / Monat";
+"billing_reference_prices" = "richtpreise für ein neues Abonnement. die aktuellen Konditionen werden vor der Zahlung bestätigt. ihr bestehender Vertragspreis bleibt unverändert.";
+"billing_replace_card" = "karte wechseln";
+"billing_replace_prompt" = "möchten Sie stattdessen die Karte wechseln? die Abobedingungen und die bezahlte Laufzeit bleiben erhalten";
+"billing_resubscribe" = "keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich";
+"billing_sbp_account" = "verknüpftes SBP-Bankkonto";
 "component_versions" = "frontend %1$@ · backend %2$@";
 "connection_methods" = "verbindungsmethoden";
 "connection_methods_hint" = "änderungen gelten für die nächste Verbindung. wählen Sie mindestens eine Methode.";
@@ -330,11 +339,3 @@
 "vpn_switching_method" = "%1$@ hat nicht verbunden. versuche %2$@…";
 "vpn_trying_method" = "versuche %1$@…";
 "vpn_wireguard_relay" = "WireGuard+";
-"billing_fixed_price" = "der vereinbarte Preis bleibt bis zur Kündigung und einem neuen Abschluss gleich";
-"billing_resubscribe" = "keine weiteren automatischen Abbuchungen. ein neues Abo ist zum aktuellen Preis möglich";
-"billing_next_payment" = "nächste Abbuchung";
-"billing_method_title" = "Zahlungsmethode";
-
-"billing_portal" = "Abonnement und Zahlungen verwalten";
-"billing_portal_hint" = "Das sichere Zahlungsportal öffnet sich im Browser.";
-"billing_sbp_account" = "SBP · verknüpftes Bankkonto";

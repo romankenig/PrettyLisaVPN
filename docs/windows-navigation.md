@@ -1,3 +1,26 @@
+# Price resilience — Windows 0.26.1 / Android 0.22.1 / Apple and Chrome 0.2.1
+
+Subscription load failure → localized read-only monthly reference price card
+(499 → 399 RUB / 7 → 5 USD). It is explicitly for a new subscription, never the
+existing account contract. Existing retry/authentication behavior is retained.
+No payment command, entitlement or active offer is synthesized. Android/Apple
+keep already-loaded account data on refresh failure; server mutation guards remain.
+Website 0.4.1 displays approved prices before JavaScript/API loading, prefers its
+validated seven-day public price cache, then replaces it with fresh API values.
+Account overview failure removes actionable offers and presents reference prices
+plus refresh. Cached prices are not passed to payment commands. See
+[price resilience](price-resilience.md).
+
+# Website acquisition — 0.4.1
+
+Dashboard 0.6.3 labels the existing aggregate speed summary and graph «Медиана
+скорости». Group/server filters and point-to-hour-detail navigation are unchanged.
+
+Homepage Premium «купить» (localized) → `/account/` → email OTP or existing web
+session → subscription overview and explicit recurring consent when enabled.
+The label does not bypass authentication, charge money or enable the provider.
+Existing subscription-management entry points retain their management wording.
+
 # Billing portal — Windows 0.26.0 / Android 0.22.0 / Apple and Chrome 0.2.0
 
 Free Home → «улучшить» → Settings/Subscription. Subscription keeps the account

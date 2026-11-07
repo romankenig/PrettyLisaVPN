@@ -1,4 +1,4 @@
-# PrettyLisaVPN monitoring dashboard — 0.6.2
+# PrettyLisaVPN monitoring dashboard — 0.6.3
 
 Managed client downloads include corresponding engine source/license archives.
 Their links appear only when the verified publisher reports matching sources.

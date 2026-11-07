@@ -31,6 +31,15 @@
 "back" = "返回";
 "billing_cancel_detail" = "取消续订将解绑付款方式。访问权限保留至已付款期限结束。";
 "billing_days_left" = "剩余天数：%1$d";
+"billing_fixed_price" = "约定价格保持不变，直至取消后重新订阅";
+"billing_next_charge" = "下次扣款：%1$@ · %2$@";
+"billing_portal" = "管理订阅和付款";
+"billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / 月";
+"billing_reference_prices" = "新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。";
+"billing_replace_card" = "更换银行卡";
+"billing_replace_prompt" = "是否改为更换银行卡？订阅条件和已付费期限保持不变";
+"billing_resubscribe" = "不会再自动扣款。您可以按当前价格重新订阅";
+"billing_sbp_account" = "已绑定 SBP 银行账户";
 "component_versions" = "前端 %1$@ · 后端 %2$@";
 "connection_methods" = "连接方式";
 "connection_methods_hint" = "更改将在下次连接时生效。请至少选择一种方式。";
@@ -330,11 +339,3 @@
 "vpn_switching_method" = "%1$@ 未能连接，正在尝试 %2$@…";
 "vpn_trying_method" = "正在尝试 %1$@…";
 "vpn_wireguard_relay" = "WireGuard+";
-"billing_fixed_price" = "约定价格保持不变，直至取消后重新订阅";
-"billing_resubscribe" = "不会再自动扣款。您可以按当前价格重新订阅";
-"billing_next_payment" = "下次扣款";
-"billing_method_title" = "支付方式";
-
-"billing_portal" = "管理订阅和付款";
-"billing_portal_hint" = "将在浏览器中打开安全付款页面。";
-"billing_sbp_account" = "SBP · 已绑定银行账户";

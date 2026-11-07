@@ -6,6 +6,39 @@
 
 ## Unreleased
 
+### Fleet retries — backend 0.35.1 / dashboard 0.6.3
+
+- Randomize the actual probe source for rapid/failed retries and expired worker
+  claims. Remember the previous attempt across worker restarts; wait for busy
+  alternatives and preserve self-probe exclusion, locks and request idempotency.
+- Store unknown monitoring results as gaps instead of zero-rating samples.
+  Confirmed synthetic failures remain zero and keep their actual source.
+- Use median download/upload speed for selected-server summaries and hourly
+  charts, retaining last-per-server sampling, coverage and genuine zero values.
+  Individual observations and the database schema are unchanged.
+
+### Price display resilience — Windows 0.26.1 / Android 0.22.1 / Apple and Chrome 0.2.1
+
+- Display owner-approved monthly reference prices (RUB 499 → 399, USD 7 → 5)
+  when subscription data cannot be loaded. Clearly distinguish new-contract
+  reference prices from the user's immutable existing contract amount.
+- Never create offer IDs, payment commands, contract prices or entitlements from
+  fallback values. Native payment guards and server confirmation remain mandatory.
+- Public website 0.4.1 remembers validated public prices for seven days and uses
+  approved reference prices on a cold/offline load. An unavailable account overview
+  shows reference prices and retry, without actionable cached checkout controls.
+- See [price resilience handoff](docs/price-resilience.md) for compatibility,
+  operations and exact CI/build/publication evidence recorded in the task PR.
+
+### Public website — 0.4.1
+
+- Label the Premium acquisition action «купить» (localized in all six languages),
+  opening the existing authenticated billing portal.
+- Publish the owner-requested default-group acquisition offer in PostgreSQL:
+  RUB 499 → 399 and USD 7 → 5 per month. Retain the previous offer interval and
+  immutable contract prices; no backend schema change for pricing.
+  Operational revision, source/build SHA and publication evidence are recorded in the PR.
+
 ### Fleet dashboard — 0.6.2
 
 - Show each hour as a proportional gradient of selected servers' states, so one
