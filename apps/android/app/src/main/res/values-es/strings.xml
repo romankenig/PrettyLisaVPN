@@ -11,7 +11,6 @@
     <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">no disponible</string>
     <string name="test_data_notice">datos de prueba · sin túnel VPN</string>
-    <string name="ui_was_0"> (antes %1$s)</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456: correcto · 000000: caducado · otros: inválidos</string>
     <string name="ui_6_digit_code">código de 6 dígitos</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">el envío no se confirma hasta que el servidor indique SENT.</string>
@@ -24,7 +23,6 @@
     <string name="ui_auto_renewal_0">renovación automática: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">el piloto automático usa nodos disponibles. elegir país requiere Premium o Platinum.</string>
     <string name="ui_choose_at_most_3_images">elige un máximo de 3 imágenes.</string>
-    <string name="ui_current_price_0">precio actual: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">solo modo de prueba. reinicia datos en memoria sin contactar el servidor, correo, tarjetas ni túneles. al reiniciar vuelve la cuenta de prueba.</string>
     <string name="ui_description">descripción</string>
     <string name="ui_email">correo electrónico</string>
@@ -55,10 +53,8 @@
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">solo finaliza la sesión de prueba y se detiene la simulación.</string>
     <string name="ui_operation_0_1">operación %1$s: %2$s</string>
     <string name="ui_paid_until_0">pagado hasta: %1$s</string>
-    <string name="ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene">los pagos no están disponibles. no se abrirá ningún proveedor.</string>
     <string name="ui_payment_method_0">método de pago: %1$s</string>
     <string name="ui_plan_0">plan: %1$s</string>
-    <string name="ui_premium_month_0_1">Premium / mes: %1$s%2$s</string>
     <string name="ui_queued_in_the_test_source">en cola en la fuente de prueba.</string>
     <string name="ui_reference_0">referencia: %1$s</string>
     <string name="ui_reply_email">correo electrónico de respuesta</string>
@@ -179,7 +175,6 @@
     <string name="ui_yes_cancel">sí, cancelar</string>
     <string name="ui_yes_revoke">sí, revocar</string>
     <string name="ui_your_plan">tu plan</string>
-    <string name="ui_0_1_2_auto_renew_3">%1$s%2$s · %3$s · renovación: %4$s</string>
     <string name="ui_all_traffic_preview_only">✓ Todo el tráfico — solo vista previa</string>
     <string name="error_0">sin red. comprueba la conexión y reintenta.</string>
     <string name="error_1">el código es inválido o ha caducado. solicita otro.</string>
@@ -308,15 +303,12 @@
     <string name="faq_support_a">abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.</string>
     <string name="billing_days_left">días restantes: %1$d</string>
     <string name="billing_cancel_detail">cancelar la renovación desvincula el método de pago. el acceso continúa hasta el fin del periodo pagado.</string>
-    <string name="billing_next_charge">próximo cobro: %1$s · %2$s</string>
     <string name="billing_fixed_price">el precio acordado se mantiene hasta cancelar y suscribirse de nuevo</string>
     <string name="billing_resubscribe">no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual</string>
     <string name="billing_replace_prompt">¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado</string>
     <string name="billing_replace_card">cambiar tarjeta</string>
-    <string name="billing_portal">gestionar suscripción y pagos</string>
     <string name="billing_sbp_account">cuenta bancaria SBP vinculada</string>
     <string name="billing_reference_prices">precios orientativos para una nueva suscripción. confirmaremos las condiciones antes del pago. el precio de tu contrato actual no cambia.</string>
-    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / mes</string>
     <string name="subscription_per_month">por mes natural</string>
     <string name="subscription_platinum">este nivel se asignó manualmente. no hay cobros recurrentes.</string>
     <string name="subscription_active_until">acceso hasta</string>

@@ -59,7 +59,6 @@ internal fun SubscriptionPriceCard(
     enabled: Boolean,
     modifier: Modifier = Modifier,
     note: String? = null,
-    content: @Composable ColumnScope.() -> Unit = {},
 ) {
     val tr = strings()
     BrandCard(modifier) {
@@ -103,7 +102,6 @@ internal fun SubscriptionPriceCard(
             }
         }
         note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion) }
-        content()
     }
 }
 
@@ -114,6 +112,6 @@ internal fun SubscriptionManageButton(label: String, onClick: () -> Unit, tag: S
         shape = MaterialTheme.shapes.medium, contentPadding = PaddingValues(14.dp),
         border = BorderStroke(1.dp, if (enabled) color else Brand.DustyGray),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = color, disabledContentColor = Brand.Scorpion)) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(label, style = if (danger) MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelLarge)
     }
 }

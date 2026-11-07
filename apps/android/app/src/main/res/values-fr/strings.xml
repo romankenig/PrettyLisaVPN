@@ -11,7 +11,6 @@
     <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">indisponible</string>
     <string name="test_data_notice">données de test · aucun tunnel VPN</string>
-    <string name="ui_was_0"> (auparavant %1$s)</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456 : succès · 000000 : expiré · autres : invalides</string>
     <string name="ui_6_digit_code">code à 6 chiffres</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">l’envoi n’est confirmé que lorsque le serveur indique SENT.</string>
@@ -24,7 +23,6 @@
     <string name="ui_auto_renewal_0">renouvellement automatique : %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">le pilote automatique utilise les nœuds disponibles. le choix du pays nécessite Premium ou Platinum.</string>
     <string name="ui_choose_at_most_3_images">choisissez au maximum 3 images.</string>
-    <string name="ui_current_price_0">prix actuel : %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">mode de test uniquement. réinitialise les données sans contacter le serveur, e-mail, carte ni tunnel. au redémarrage, le compte de test est rétabli.</string>
     <string name="ui_description">description</string>
     <string name="ui_email">e-mail</string>
@@ -55,10 +53,8 @@
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">seule la session de test se termine et la simulation s’arrête.</string>
     <string name="ui_operation_0_1">opération %1$s : %2$s</string>
     <string name="ui_paid_until_0">payé jusqu’au : %1$s</string>
-    <string name="ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene">les paiements sont indisponibles. aucun prestataire ne sera ouvert.</string>
     <string name="ui_payment_method_0">moyen de paiement : %1$s</string>
     <string name="ui_plan_0">forfait : %1$s</string>
-    <string name="ui_premium_month_0_1">Premium / mois : %1$s%2$s</string>
     <string name="ui_queued_in_the_test_source">en attente dans la source de test.</string>
     <string name="ui_reference_0">référence : %1$s</string>
     <string name="ui_reply_email">e-mail de réponse</string>
@@ -179,7 +175,6 @@
     <string name="ui_yes_cancel">oui, résilier</string>
     <string name="ui_yes_revoke">oui, révoquer</string>
     <string name="ui_your_plan">votre offre</string>
-    <string name="ui_0_1_2_auto_renew_3">%1$s%2$s · %3$s · renouvellement : %4$s</string>
     <string name="ui_all_traffic_preview_only">✓ Tout le trafic — aperçu uniquement</string>
     <string name="error_0">pas de réseau. vérifiez la connexion et réessayez.</string>
     <string name="error_1">le code est invalide ou expiré. demandez-en un autre.</string>
@@ -308,15 +303,12 @@
     <string name="faq_support_a">ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.</string>
     <string name="billing_days_left">jours restants : %1$d</string>
     <string name="billing_cancel_detail">la résiliation supprime le moyen de paiement enregistré. l’accès reste actif jusqu’à la fin de la période payée.</string>
-    <string name="billing_next_charge">prochain prélèvement : %1$s · %2$s</string>
     <string name="billing_fixed_price">le prix convenu reste fixe jusqu’à la résiliation et une nouvelle souscription</string>
     <string name="billing_resubscribe">aucun autre prélèvement automatique. vous pouvez souscrire à nouveau au prix actuel</string>
     <string name="billing_replace_prompt">changer plutôt de carte ? les conditions et la période payée restent inchangées</string>
     <string name="billing_replace_card">changer de carte</string>
-    <string name="billing_portal">gérer l’abonnement et les paiements</string>
     <string name="billing_sbp_account">compte bancaire SBP lié</string>
     <string name="billing_reference_prices">prix indicatifs pour un nouvel abonnement. les conditions seront confirmées avant le paiement. le prix de votre contrat actuel reste inchangé.</string>
-    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / mois</string>
     <string name="subscription_per_month">par mois calendaire</string>
     <string name="subscription_platinum">ce niveau a été attribué manuellement. aucun prélèvement récurrent.</string>
     <string name="subscription_active_until">accès jusqu’au</string>

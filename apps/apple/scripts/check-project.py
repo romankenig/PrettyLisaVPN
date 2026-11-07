@@ -40,9 +40,13 @@ assert 'passwordReference' in provider
 assert not re.search(r'value\(forKeyPath:|NSAllowsArbitraryLoads|allowInsecure.*true', '\n'.join(p.read_text() for p in ROOT.rglob('*.swift') if '.build' not in p.parts))
 for path in (ROOT / "Resources").rglob("*.json"):
     json.loads(path.read_text(encoding="utf-8"))
-for locale in ('en', 'ru', 'de', 'es', 'fr', 'zh-Hans'):
+apple_copy = json.loads((ROOT / 'Config/AppleStrings.json').read_text(encoding='utf-8'))
+for index, locale in enumerate(('en', 'ru', 'de', 'es', 'fr', 'zh-Hans')):
     text = (ROOT / f'Resources/{locale}.lproj/Localizable.strings').read_text(encoding='utf-8')
     assert '"apple_simulation"' in text and 'PrettyLisaVPN' in text
+    for key in ('billing_portal', 'billing_reference_month'):
+        # These labels are now Apple-owned; Android's redesigned screen no longer uses them.
+        assert f'"{key}" = {json.dumps(apple_copy[key][index], ensure_ascii=False)};' in text
 for path in ROOT.rglob('*'):
     if path.suffix in ('.swift', '.py', '.sh', '.yml', '.xcconfig') and not any(p in path.parts for p in ('.build', 'Vendor', 'DerivedData', 'artifacts')):
         assert not any(line.rstrip() != line for line in path.read_text(encoding='utf-8').splitlines()), path

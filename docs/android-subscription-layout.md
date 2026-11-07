@@ -35,7 +35,10 @@ and preserves paid access until the existing deadline; it does not delete the
 account or revoke manually assigned Platinum. No cancellation is invented when
 the backend does not authorize it. Resume from the browser reloads billing.
 
-All six Android catalogs are updated. Tests cover currency/cent formatting,
+All six Android catalogs are updated. Eight retired Android labels are removed;
+two still used by Apple are copied verbatim to its AppleStrings source catalog,
+with a synchronization assertion. Generated Apple UI resources and versions remain
+unchanged. Tests cover currency/cent formatting,
 contract-price preservation, allowed-route visibility, no payment authority from
 reference amounts, pull-to-refresh, Platinum, cancellation confirmation and large
 text. AccountScreensTest now has 20 methods; its exact CI gate is updated. Native

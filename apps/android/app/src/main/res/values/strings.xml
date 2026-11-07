@@ -12,7 +12,6 @@
     <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">unavailable</string>
     <string name="test_data_notice">test data · no VPN tunnel</string>
-    <string name="ui_was_0"> (was %1$s)</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456: success · 000000: expired · other codes: invalid</string>
     <string name="ui_6_digit_code">6-digit code</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">a delivery is not confirmed until the server reports SENT.</string>
@@ -25,7 +24,6 @@
     <string name="ui_auto_renewal_0">auto-renewal: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">autopilot uses available nodes. country selection requires Premium or Platinum.</string>
     <string name="ui_choose_at_most_3_images">choose at most 3 images.</string>
-    <string name="ui_current_price_0">current price: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">debug only. resets in-memory data; no backend, email, card or tunnel is contacted. after process death the standard test account returns.</string>
     <string name="ui_description">description</string>
     <string name="ui_email">email</string>
@@ -56,10 +54,8 @@
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">only the test session will end. an active simulation is stopped.</string>
     <string name="ui_operation_0_1">operation %1$s: %2$s</string>
     <string name="ui_paid_until_0">paid until: %1$s</string>
-    <string name="ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene">payment actions are unavailable. no payment provider will be opened.</string>
     <string name="ui_payment_method_0">payment method: %1$s</string>
     <string name="ui_plan_0">plan: %1$s</string>
-    <string name="ui_premium_month_0_1">Premium / month: %1$s%2$s</string>
     <string name="ui_queued_in_the_test_source">queued in the test source.</string>
     <string name="ui_reference_0">reference: %1$s</string>
     <string name="ui_reply_email">reply email</string>
@@ -181,7 +177,6 @@
     <string name="ui_yes_cancel">yes, cancel</string>
     <string name="ui_yes_revoke">yes, revoke</string>
     <string name="ui_your_plan">your plan</string>
-    <string name="ui_0_1_2_auto_renew_3">%1$s%2$s · %3$s · auto-renew: %4$s</string>
     <string name="ui_all_traffic_preview_only">✓ all traffic — preview only</string>
     <string name="error_0">no network connection. check your connection and retry.</string>
     <string name="error_1">the code is invalid or expired. request a new code.</string>
@@ -315,15 +310,12 @@
     <string name="faq_support_a">open the [support form] in the app or email help@prettylisavpn.com. describe the problem and when it happened.</string>
     <string name="billing_days_left">days remaining: %1$d</string>
     <string name="billing_cancel_detail">canceling renewal unlinks the payment method. access remains until the paid period ends.</string>
-    <string name="billing_next_charge">next payment: %1$s · %2$s</string>
     <string name="billing_fixed_price">your agreed price stays fixed until you cancel and subscribe again</string>
     <string name="billing_resubscribe">no more automatic payments. you can subscribe again at the current price</string>
     <string name="billing_replace_prompt">change your card instead? your subscription terms and paid access stay the same</string>
     <string name="billing_replace_card">change card</string>
-    <string name="billing_portal">manage subscription and payments</string>
     <string name="billing_sbp_account">linked SBP bank account</string>
     <string name="billing_reference_prices">reference prices for a new subscription. we will confirm current terms before payment. your existing contract price stays unchanged.</string>
-    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / month</string>
     <string name="subscription_per_month">per calendar month</string>
     <string name="subscription_platinum">this level was assigned manually. there are no recurring charges.</string>
     <string name="subscription_active_until">access until</string>

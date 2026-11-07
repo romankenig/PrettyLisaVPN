@@ -11,7 +11,6 @@
     <string name="component_versions">frontend %1$s · backend %2$s</string>
     <string name="unavailable">недоступна</string>
     <string name="test_data_notice">тестовые данные · VPN-туннеля нет</string>
-    <string name="ui_was_0"> (ранее %1$s)</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456: успех · 000000: истёк · остальные: неверный код</string>
     <string name="ui_6_digit_code">6-значный код</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">доставка не подтверждена, пока сервер не сообщит статус SENT.</string>
@@ -24,7 +23,6 @@
     <string name="ui_auto_renewal_0">автопродление: %1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">автопилот использует доступные узлы. выбор страны требует Premium или Platinum.</string>
     <string name="ui_choose_at_most_3_images">выберите не более 3 изображений.</string>
-    <string name="ui_current_price_0">текущая цена: %1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">только отладочный режим. сбрасывает данные в памяти; без сервера, писем, карт и туннеля. после перезапуска вернётся стандартный тестовый аккаунт.</string>
     <string name="ui_description">описание</string>
     <string name="ui_email">email</string>
@@ -55,10 +53,8 @@
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">завершится только тестовая сессия. симуляция будет остановлена.</string>
     <string name="ui_operation_0_1">операция %1$s: %2$s</string>
     <string name="ui_paid_until_0">оплачено до: %1$s</string>
-    <string name="ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene">платёжные действия недоступны. платёжный сервис не откроется.</string>
     <string name="ui_payment_method_0">способ оплаты: %1$s</string>
     <string name="ui_plan_0">тариф: %1$s</string>
-    <string name="ui_premium_month_0_1">Premium / месяц: %1$s%2$s</string>
     <string name="ui_queued_in_the_test_source">в очереди тестового источника.</string>
     <string name="ui_reference_0">номер обращения: %1$s</string>
     <string name="ui_reply_email">email для ответа</string>
@@ -179,7 +175,6 @@
     <string name="ui_yes_cancel">да, отменить</string>
     <string name="ui_yes_revoke">да, отозвать</string>
     <string name="ui_your_plan">ваш тариф</string>
-    <string name="ui_0_1_2_auto_renew_3">%1$s%2$s · %3$s · автопродление: %4$s</string>
     <string name="ui_all_traffic_preview_only">✓ весь трафик — только предпросмотр</string>
     <string name="error_0">нет сети. проверьте подключение и повторите попытку.</string>
     <string name="error_1">код неверен или истёк. запросите новый.</string>
@@ -308,15 +303,12 @@
     <string name="faq_support_a">откройте [форму поддержки] в приложении или напишите на help@prettylisavpn.com. укажите проблему и время ошибки.</string>
     <string name="billing_days_left">осталось дней: %1$d</string>
     <string name="billing_cancel_detail">отмена продления отвяжет способ оплаты. доступ сохранится до конца оплаченного срока.</string>
-    <string name="billing_next_charge">следующее списание: %1$s · %2$s</string>
     <string name="billing_fixed_price">цена закреплена до отмены подписки и нового оформления</string>
     <string name="billing_resubscribe">списаний больше не будет. новую подписку можно оформить по текущей цене</string>
     <string name="billing_replace_prompt">хотите заменить карту? условия подписки и оплаченный срок сохранятся</string>
     <string name="billing_replace_card">заменить карту</string>
-    <string name="billing_portal">управлять подпиской и оплатой</string>
     <string name="billing_sbp_account">привязанный банковский счёт СБП</string>
     <string name="billing_reference_prices">справочные цены для новой подписки. перед оплатой подтвердим актуальные условия. цена действующей подписки не меняется.</string>
-    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / месяц</string>
     <string name="subscription_per_month">за календарный месяц</string>
     <string name="subscription_platinum">этот уровень назначен вручную. регулярных списаний нет.</string>
     <string name="subscription_active_until">доступ до</string>
