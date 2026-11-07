@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from PIL import Image, PngImagePlugin
 from pydantic import ValidationError
 
+from prettylisavpn.auth.session_service import AccessIdentity
 from prettylisavpn.config import Settings
 from prettylisavpn.main import create_app
 from prettylisavpn.support.delivery import SupportSmtpMailer
@@ -155,6 +156,7 @@ def test_support_http_auth_parse_limits_errors_and_receipt(caplog):
     app = client_service()
     with TestClient(app) as client:
         service = AsyncMock()
+        service.auth.authenticate.return_value = AccessIdentity(uuid4(), uuid4(), uuid4())
         service.upload_slots = asyncio.Semaphore(2)
         app.state.support = service
         request = report()

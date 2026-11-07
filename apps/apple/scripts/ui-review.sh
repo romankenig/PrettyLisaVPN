@@ -24,7 +24,8 @@ while IFS= read -r device; do
   xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug \
     -destination "platform=iOS Simulator,id=$device" -derivedDataPath DerivedData \
     -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
-    -resultBundlePath "artifacts/iphone-$index.xcresult" CODE_SIGNING_ALLOWED=NO test </dev/null
+    -resultBundlePath "artifacts/iphone-$index.xcresult" CODE_SIGNING_ALLOWED=YES \
+    CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=Config/Simulator.entitlements DEVELOPMENT_TEAM= test </dev/null
   bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app/Info.plist)
   for theme in light dark; do
     xcrun simctl ui "$device" appearance "$theme"

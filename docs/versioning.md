@@ -62,6 +62,15 @@ Lock-файлы обновляются штатным инструментом, 
 результат в PR. Если будет добавлен автоматический bump/check, его команды
 сначала нужно документировать и проверить.
 
+### Chrome Extension
+
+Chrome Extension source: `apps/chrome-extension/package.json:version`, synchronized
+with `public/manifest.json`. First release is 0.1.0. Vite checks equality and records
+source SHA/run/attempt in `dist/build-identity.json`; the popup shows that product
+version, and backend version comes only from the real `GET /version` response.
+Unpacked CI artifacts, actual backend/node rollout and Web Store publication are
+separate stages. See [Chrome handoff](chrome-extension.md).
+
 ### Apple clients
 
 iOS source: `apps/apple/Config/iOS.xcconfig:MARKETING_VERSION`; macOS source:

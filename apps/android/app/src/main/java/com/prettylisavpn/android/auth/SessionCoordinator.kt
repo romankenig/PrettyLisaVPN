@@ -23,6 +23,7 @@ class SessionCoordinator(
     private val deviceName: String,
     private val now: () -> Instant = { Instant.now() },
     private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val demoIdentity: () -> String = { throw AuthFailure("demo_identity_unavailable") },
 ) {
     private val mutex = Mutex()
     private var access: String? = null
@@ -36,6 +37,12 @@ class SessionCoordinator(
     private suspend fun credentials(): Credentials? = try { withContext(Dispatchers.IO) { vault.read() } } catch (failure: CancellationException) { throw failure } catch (_: Exception) { throw AuthFailure("storage_unavailable") }
     private suspend fun clear() { access = null; profile = null; storage { vault.clear() }; needsRecovery = false }
     suspend fun requestOtp(email: String) = mutex.withLock { api.requestOtp(email) }
+    suspend fun demo(): Profile = mutex.withLock {
+        check(profile == null)
+        val key = withContext(Dispatchers.IO) { demoIdentity() }
+        accept(api.demo(key))
+        fetchProfile().also { check(it.isDemo) }
+    }
     suspend fun login(email: String, code: String): Profile = mutex.withLock {
         val installation = try { withContext(Dispatchers.IO) { vault.installationId() } } catch (failure: CancellationException) { throw failure } catch (_: Exception) { throw AuthFailure("storage_unavailable") }
         val tokens = api.verifyOtp(email, code, installation, deviceName)

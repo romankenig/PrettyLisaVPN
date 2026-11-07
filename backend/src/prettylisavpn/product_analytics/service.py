@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import is_demo_email
 from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.legacy_vpn.sessions import VpnSessionRecord
 from prettylisavpn.product_analytics.activity import is_test_account
@@ -83,7 +84,11 @@ class ProductAnalyticsService:
             raise FleetError("product_analytics_not_initialized", 503)
         # Emails stay inside the database service, used only to exclude reserved test domains.
         users = (await session.scalars(select(UserRecord))).all()
-        ids = {user.id for user in users if not is_test_account(user.email)}
+        ids = {
+            user.id
+            for user in users
+            if not is_test_account(user.email) and not is_demo_email(user.email)
+        }
         registrations = [user.created_at for user in users if user.id in ids]
         events = (
             await session.scalars(
@@ -122,7 +127,8 @@ class ProductAnalyticsService:
         # A session request is authenticated activity; its old ACTIVE status is
         # not evidence of Internet verification. Only its creation-time plan is known.
         activity.extend(
-            Activity(row.user_id, row.created_at, row.plan_snapshot.value) for row in legacy
+            Activity(row.user_id, row.created_at, cast(Plan, row.plan_snapshot.value))
+            for row in legacy
         )
         leases = (
             await session.scalars(

@@ -71,7 +71,9 @@ completed its quality and development-deployment jobs successfully. Public
 `0.33.0-dev.41822292784+g05d945dbd5da35f1c85523d00b4ab57415882a3c`.
 The admission deployment prerequisite in the original matrix is satisfied;
 authenticated owner login and every real-tunnel acceptance row remain pending.
-The separate iOS reference UI task raises iOS to 0.2.0; macOS stays 0.1.0.
+After reconciliation with current billing/Simulator work, the separate reference
+UI task raises iOS 0.2.1 → 0.3.0 and restores shared subscription labels in
+macOS 0.2.1 → 0.2.2; the Mac navigation/design remains unchanged.
 See [iOS UI handoff](ios-reference-ui.md) and PR #53 for its final source,
 build/run/attempt and screenshots. Final post-merge CI results are recorded in
 PR #51 without creating further source commits just to update run statuses.

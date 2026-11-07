@@ -6,10 +6,43 @@
 # Public website and client files are separate from private monitoring.
 prettylisavpn.com {
 	encode zstd gzip
+	# Only authenticated browser egress probes use this second hostname.
+	# The extension keeps the API control plane reachable outside its proxy.
+	@browser_probe {
+		method GET
+		path_regexp browser_probe ^/vpn/sessions/[0-9a-fA-F-]{36}/probe$
+	}
+	handle @browser_probe {
+		header Cache-Control "no-store"
+		reverse_proxy backend:8000
+	}
+	@billing_web path /api/web/billing/*
+	handle @billing_web {
+		request_body {
+			max_size 8KB
+		}
+		header Cache-Control "no-store"
+		reverse_proxy backend:8000
+	}
+	@public_billing_catalog {
+		method GET
+		path /api/billing/catalog
+	}
+	handle @public_billing_catalog {
+		uri strip_prefix /api
+		reverse_proxy backend:8000
+	}
 	handle /api/payments/cardlink/callback {
 		request_body {
 			max_size 16KB
 		}
+		reverse_proxy backend:8000
+	}
+	handle /api/payments/platega/callback {
+		request_body {
+			max_size 16KB
+		}
+		header Cache-Control "no-store"
 		reverse_proxy backend:8000
 	}
 	@payment path /payment/success /payment/failure /payment/assets/style.css /payment/assets/logo.svg
@@ -50,7 +83,7 @@ prettylisavpn.com {
 	redir @old_setup /#download 308
 	@website {
 		method GET HEAD
-		path / /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json /shop-verification-xO2ZZeK02A.txt
+		path / /account /account/* /en /en/* /de /de/* /fr /fr/* /es /es/* /zh /zh/* /download /download/* /legal /legal/* /404 /404/* /assets/* /robots.txt /build-identity.json /shop-verification-xO2ZZeK02A.txt
 	}
 	handle @website {
 		root * /srv/public-website/current

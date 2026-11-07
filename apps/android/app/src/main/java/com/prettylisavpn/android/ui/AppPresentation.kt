@@ -226,6 +226,11 @@ internal class Strings(private val context: Context) {
     operator fun invoke(id: Int, vararg arguments: Any?): String = context.getString(id, *arguments)
     fun error(message: String): String {
         val id = when (message) {
+            "DEMO_UNAVAILABLE" -> R.string.demo_unavailable
+            "DEMO_RATE_LIMITED" -> R.string.demo_rate_limited
+            "DEMO_QUOTA_EXHAUSTED" -> R.string.demo_exhausted
+            "REGISTRATION_REQUIRED" -> R.string.demo_locked_hint
+            "demo_identity_unavailable" -> R.string.demo_identity_failed
             "CLEANUP" -> R.string.vpn_cleanup
             "No network connection. Check your connection and retry." -> R.string.error_0
             "The code is invalid or expired. Request a new code." -> R.string.error_1

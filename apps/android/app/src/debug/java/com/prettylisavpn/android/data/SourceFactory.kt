@@ -39,10 +39,11 @@ class FixtureSource(private val latencyMs: Long = 450) : ScreenSource {
     override suspend fun read(area: Area): Snapshot { respond(); return snapshot }
     override suspend fun execute(command: Command): Snapshot {
         respond()
-        if (command !is Command.RequestOtp && command !is Command.VerifyOtp && !snapshot.signedIn) {
+        if (command != Command.TryDemo && command !is Command.RequestOtp && command !is Command.VerifyOtp && !snapshot.signedIn) {
             throw SourceFailure("Sign in to the test account first.")
         }
         when (command) {
+            Command.TryDemo -> snapshot = snapshot.copy(signedIn = true, email = "", plan = "Demo", activeDeviceCount = 1, messages = emptyList())
             is Command.RequestOtp -> {
                 if (!EMAIL.matches(command.email)) throw SourceFailure("Enter a valid email.")
                 requestedEmail = command.email.trim().lowercase()

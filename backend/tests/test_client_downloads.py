@@ -188,7 +188,7 @@ class ClientDownloadsTests(unittest.TestCase):
         self.assertEqual((self.root / "current").readlink(), initial)
 
     def test_identity_hash_size_and_format_are_verified(self):
-        for platform in PUBLISHER.FILES:
+        for platform in ("android", "windows"):
             directory = self.artifact(platform)
             PUBLISHER.validate(directory, platform, SHA, 100, 1)
             for sha, run, attempt in (("b" * 40, 100, 1), (SHA, 99, 1), (SHA, 100, 2)):

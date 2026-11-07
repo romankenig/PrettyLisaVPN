@@ -1,4 +1,4 @@
-"""Replaceable idempotent provider boundary. No live adapter or credential loader.
+"""Replaceable idempotent provider boundary. Explicitly configured, server-only adapters.
 
 Adapters MUST durably deduplicate by operation_id, reconcile an uncertain create
 using that same key, authenticate receipts, and return authoritative mandate state.
@@ -6,12 +6,12 @@ RENEW may retain the active mandate; CHANGE_METHOD must confirm a distinct new
 mandate and revocation of the previous one. CANCEL confirms both recurring stop
 and mandate revocation. Terminal failures mean no successful payment/mandate
 mutation: a partial or uncertain external outcome must remain PENDING.
-Only explicitly injected sandbox adapters are accepted in this release.
+Sandbox and the monthly Platega SBP adapter are supported.
 """
 
 from typing import Protocol
 
-from prettylisavpn.billing.domain import PAYMENT_ROUTES, RouteCapability
+from prettylisavpn.billing.domain import ALL_PAYMENT_ROUTES, PAYMENT_ROUTES, RouteCapability
 from prettylisavpn.billing.operations_domain import (
     Action,
     Currency,
@@ -30,17 +30,23 @@ class BillingProvider(Protocol):
 
     def supports(self, action: Action, route: PaymentRoute | None, currency: Currency) -> bool: ...
 
+    def supports_amount(
+        self, route: PaymentRoute, currency: Currency, amount_minor: int
+    ) -> bool: ...
+
     async def reconcile(self, request: ProviderRequest) -> ProviderResult: ...
 
 
 def validate_provider(provider: BillingProvider | None) -> None:
     if provider is not None and (
-        provider.sandbox is not True or not provider.name or len(provider.name) > 64
+        (provider.sandbox is not True and provider.name != "platega")
+        or not provider.name
+        or len(provider.name) > 64
     ):
-        raise ValueError("Only explicitly injected sandbox billing providers are supported")
+        raise ValueError("Unsupported billing provider")
     if provider is not None:
         ids = [cap.id for cap in provider.capabilities]
-        if len(ids) != len(set(ids)) or not set(provider.routes) <= set(PAYMENT_ROUTES):
+        if len(ids) != len(set(ids)) or not set(provider.routes) <= set(ALL_PAYMENT_ROUTES):
             raise ValueError("Invalid provider route capabilities")
 
 
@@ -49,7 +55,7 @@ def route_capabilities(
 ) -> list[RouteCapability]:
     declared = {cap.id: cap for cap in provider.capabilities} if provider else {}
     result = []
-    for route in PAYMENT_ROUTES:
+    for route in (*PAYMENT_ROUTES, *(("SBP",) if "SBP" in declared else ())):
         cap = declared.get(route, RouteCapability(id=route))
         currencies = tuple(
             code

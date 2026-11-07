@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.dialects.postgresql import insert
 
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import is_demo_email
 from prettylisavpn.product_analytics.domain import day
 from prettylisavpn.product_analytics.model import ActivityRecord
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
@@ -46,7 +47,7 @@ class DatabaseActivitySink:
     async def record(self, user_id: UUID) -> None:
         async with self.postgres.session() as session, session.begin():
             user = await session.get(UserRecord, user_id)
-            if user is None or is_test_account(user.email):
+            if user is None or is_test_account(user.email) or is_demo_email(user.email):
                 return
             subscription = await SubscriptionRepository(session).get_by_user_id(user_id)
             now = datetime.now(UTC)

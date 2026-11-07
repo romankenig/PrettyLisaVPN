@@ -42,6 +42,15 @@ final class AppleUITests: XCTestCase {
             app.buttons["nav-settings"].tap()
             XCTAssertTrue(app.buttons["settings-devices"].waitForExistence(timeout: 5))
             capture(app, "reference-settings-\(theme)")
+            app.buttons["settings-subscription"].tap()
+            let portal = app.buttons["управлять подпиской и оплатой"]
+            XCTAssertTrue(portal.waitForExistence(timeout: 5))
+            XCTAssertFalse(portal.isEnabled) // Fixtures never open a real payment page.
+            XCTAssertFalse(app.staticTexts["billing_method_title"].exists)
+            XCTAssertFalse(app.staticTexts["billing_portal_hint"].exists)
+            XCTAssertTrue(app.staticTexts["страница подписки откроется в браузере"].exists)
+            capture(app, "reference-subscription-\(theme)")
+            app.buttons["nav-back"].tap()
             app.buttons["settings-devices"].tap()
             XCTAssertTrue(app.staticTexts["iPhone Preview"].waitForExistence(timeout: 5))
             capture(app, "reference-devices-\(theme)")

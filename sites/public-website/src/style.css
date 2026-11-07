@@ -66,6 +66,8 @@ h3 {
   line-height: 1.13;
   letter-spacing: -0.035em;
   text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 h1 {
   font-size: clamp(48px, 7vw, 88px);
@@ -313,6 +315,280 @@ figcaption {
   background: #f1edf7;
   border-block: 1px solid var(--line);
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.plans {
+  display: grid;
+  grid-template-columns: 1.6fr 0.75fr;
+  gap: 24px;
+  align-items: stretch;
+}
+.plan {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 34px;
+  min-width: 0;
+}
+.plan h3 {
+  font-size: 30px;
+}
+.free-plan {
+  background: #f1edf7;
+}
+.free-plan .free-price {
+  color: var(--deep);
+  font-size: 72px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 25px 0 14px;
+}
+.free-price [data-free-currency="USD"] {
+  display: none;
+}
+.plans:has(input[value="USD"]:checked) [data-free-currency="RUB"] {
+  display: none;
+}
+.plans:has(input[value="USD"]:checked) [data-free-currency="USD"] {
+  display: inline;
+}
+.free-plan .text-link {
+  display: inline-flex;
+  margin-top: 26px;
+}
+.premium-plan {
+  color: #fff;
+  background: var(--deep);
+  border-color: var(--deep);
+}
+.premium-plan p {
+  color: #e4def0;
+}
+.plan-description {
+  margin-top: 14px;
+  max-width: 45ch;
+}
+.premium-plan ul {
+  padding-left: 19px;
+  margin: 20px 0 28px;
+  font-size: 14px;
+}
+.premium-plan li + li {
+  margin-top: 6px;
+}
+.premium-plan li::marker {
+  color: var(--mint);
+}
+.price-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+.price-option {
+  min-width: 0;
+}
+.currency-switch {
+  display: none;
+  border: 1px solid #ffffff60;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  margin: 0 0 18px;
+}
+.currency-switch label {
+  position: relative;
+  cursor: pointer;
+}
+.currency-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.currency-switch span {
+  display: grid;
+  place-items: center;
+  min-width: 88px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+.currency-switch input:checked + span {
+  background: var(--mint);
+  color: var(--deep);
+  font-weight: 500;
+}
+.currency-switch input:focus-visible + span {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+/* Native radios also switch prices without JavaScript. Older browsers retain
+   both ordinary purchase links instead of displaying a non-working switch. */
+@supports selector(:has(*)) {
+  .currency-switch {
+    display: inline-flex;
+  }
+  .currency-picker .price-options {
+    grid-template-columns: 1fr;
+  }
+  .currency-picker:has(input[value="RUB"]:checked) [data-currency="USD"],
+  .currency-picker:has(input[value="USD"]:checked) [data-currency="RUB"] {
+    display: none;
+  }
+  .currency-picker .currency-label {
+    display: none;
+  }
+  .currency-picker .price-option + .price-option {
+    border: 0;
+    padding-top: 0;
+  }
+}
+.currency-label,
+.price-period {
+  font-size: 12px;
+}
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 6px;
+}
+.price s {
+  font-size: 19px;
+  text-decoration-thickness: 1.5px;
+}
+.price strong {
+  color: #fff;
+  font-size: clamp(34px, 3.4vw, 46px);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  letter-spacing: -0.045em;
+}
+.price-option .button {
+  background: var(--mint);
+  color: var(--deep);
+  width: 100%;
+  padding: 14px 16px;
+  margin-top: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+.price-option .button:hover {
+  background: #85e8de;
+  color: var(--deep);
+}
+.purchase-details {
+  margin-top: 26px;
+  font-size: 13px;
+}
+.payment-dialog > a,
+.payment-notice > a {
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.payment-dialog {
+  border: 0;
+  border-radius: 22px;
+  padding: 36px;
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  color: var(--deep);
+  background: #fcfbfe;
+  box-shadow: 0 20px 100px #01010140;
+}
+.payment-dialog::backdrop {
+  background: #16092e99;
+}
+.payment-dialog h2 {
+  font-size: clamp(25px, 4vw, 34px);
+  margin-top: 12px;
+}
+.payment-dialog .dialog-price {
+  margin-top: 20px;
+  color: var(--deep);
+}
+.payment-dialog #payment-message {
+  margin-block: 14px 18px;
+}
+.payment-dialog > a {
+  overflow-wrap: anywhere;
+}
+.payment-dialog .button {
+  display: flex;
+  width: 100%;
+  margin-top: 26px;
+  cursor: pointer;
+}
+.payment-notice {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 26px;
+  margin: 24px 0;
+  background: #f1edf7;
+}
+.payment-notice h2 {
+  font-size: 26px;
+  margin-bottom: 14px;
+}
+.payment-notice h3 {
+  margin-top: 24px;
+}
+.payment-notice .price-options {
+  margin-block: 18px;
+}
+.payment-notice .price strong {
+  color: var(--deep);
+}
+.footer-contacts {
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 850px) {
+  .plans {
+    grid-template-columns: 1fr;
+  }
+  .plan {
+    padding: 28px;
+  }
+  .free-plan .free-price {
+    font-size: 52px;
+    margin-block: 16px;
+  }
+  .header nav {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 480px) {
+  .price-options {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .price-option + .price-option {
+    border-top: 1px solid #ffffff40;
+    padding-top: 20px;
+  }
+  .payment-notice .price-option + .price-option {
+    border-color: var(--line);
+  }
+  .price strong {
+    font-size: 40px;
+  }
+  .payment-dialog {
+    padding: 26px;
+  }
+}
 .platform-layout {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
@@ -488,9 +764,25 @@ figcaption {
 .legal-links {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 28px;
+  gap: 12px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--deep);
+}
+.document-button {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f0ebf7;
+}
+.document-button:hover {
+  border-color: var(--purple);
+}
+.moderation-marker {
+  color: var(--deep);
+  white-space: nowrap;
 }
 .footer-bottom {
   grid-column: 1/-1;
@@ -863,6 +1155,7 @@ figcaption {
     gap: 12px;
   }
   .legal-links {
+    grid-template-columns: 1fr;
     font-size: 12px;
     gap: 15px;
   }
@@ -947,3 +1240,160 @@ figcaption {
     transition: none !important;
   }
 }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 24px;
+}
+.plan-card {
+  border: 1px solid #e4e4e4;
+  border-radius: 28px;
+  padding: clamp(24px, 4vw, 48px);
+}
+.plan-card h3 {
+  font-size: 32px;
+  margin-top: 0;
+}
+.plan-premium {
+  background: #2c016d;
+  color: white;
+}
+.plan-premium p {
+  color: #e4e4e4;
+}
+.plan-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin: 24px 0;
+}
+.plan-price strong {
+  font-size: clamp(24px, 4vw, 46px);
+}
+.price-switch {
+  display: flex;
+  gap: 8px;
+}
+.price-switch button {
+  border: 1px solid #ac73ff;
+  color: white;
+  background: transparent;
+  border-radius: 12px;
+  padding: 10px 22px;
+  cursor: pointer;
+}
+.price-switch button[aria-pressed="true"] {
+  background: #5f22d9;
+}
+@media (max-width: 680px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portal {
+  max-width: 760px;
+  padding-block: 64px 96px;
+  min-height: 65vh;
+}
+.portal h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  margin-block: 16px 24px;
+}
+.portal h2 {
+  font-size: 1.5rem;
+}
+.portal p {
+  line-height: 1.6;
+}
+.portal .portal-lead {
+  max-width: 58ch;
+}
+.portal-plan,
+.portal-offer {
+  padding: 28px;
+  margin-block: 24px;
+  border: 1px solid #9c9c9c;
+  border-radius: 24px;
+}
+.portal-plan {
+  background: #2c016d;
+  color: #e4e4e4;
+}
+.portal-plan p {
+  color: #e4e4e4;
+}
+.portal-badge {
+  color: #51d6ca;
+  font-weight: 600;
+}
+.portal .button,
+.portal-secondary {
+  margin: 8px 12px 8px 0;
+}
+.portal-secondary {
+  background: transparent;
+  color: inherit;
+  border: 1px solid #9c9c9c;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font: inherit;
+  cursor: pointer;
+  display: inline-block;
+}
+.portal form {
+  display: grid;
+  gap: 24px;
+  max-width: 440px;
+  margin-block: 32px;
+}
+.portal label {
+  display: grid;
+  gap: 10px;
+}
+.portal label[hidden] {
+  display: none;
+}
+.portal input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #5b5b5b;
+  border-radius: 10px;
+  font: inherit;
+  background: #e4e4e4;
+  color: #010101;
+}
+.portal .portal-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-block: 24px;
+}
+.portal input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: #5f22d9;
+}
+.portal-error {
+  color: #c82b28;
+  font-weight: 500;
+}
+.portal button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.portal :focus-visible {
+  outline: 3px solid #ac73ff;
+  outline-offset: 4px;
+}
+
+/* DEMO is a quiet third option after the primary Premium and secondary Free cards. */
+.demo-plan { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-top:20px; padding:22px 26px; border:1px solid var(--line); border-radius:18px; background:transparent; }
+.demo-plan h3 { font-size:18px; line-height:1.4; }
+.demo-plan p { margin-top:8px; font-size:14px; line-height:1.6; }
+.demo-plan .demo-upgrade { max-width:76ch; font-size:13px; }
+.demo-plan > .text-link { flex-shrink:0; font-size:14px; padding-block:12px; }
+@media(max-width:700px) { .demo-plan { flex-direction:column; align-items:flex-start; gap:8px; } }

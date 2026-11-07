@@ -80,6 +80,8 @@ def fixture(method, path, body):
     if method == "GET" and urlsplit(path).path == "/ui-review/billing-readonly-evidence":
         return 200, {"operation_attempts": BILLING_READONLY_OPERATION_ATTEMPTS}
     path = urlsplit(path).path
+    if SIMULATE_BILLING and method == "POST" and path == "/billing/portal":
+        return 200, {"url": "https://prettylisavpn.com/account/#handoff=" + "a" * 43}
     # Replay allowlisted, non-secret responses recorded by the real backend in CI.
     if DEVICE_EVIDENCE:
         if method == "GET" and path == "/version":

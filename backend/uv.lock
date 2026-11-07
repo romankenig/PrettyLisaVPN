@@ -448,7 +448,7 @@ wheels = [
 
 [[package]]
 name = "prettylisavpn-backend"
-version = "0.33.0"
+version = "0.36.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosmtplib" },

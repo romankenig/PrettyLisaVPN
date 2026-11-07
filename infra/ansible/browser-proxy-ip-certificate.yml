@@ -1,0 +1,91 @@
+---
+# For enrolled exits without DNS: -e proxy_ip=<enrolled public IPv4>.
+# Certificate/key remain on the node. Existing domain certificates are untouched.
+- name: Prepare public IP TLS for a browser-only proxy
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Require the enrolled Ubuntu address
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - proxy_ip == ansible_host
+    - name: Validate canonical public IPv4 before using it in paths or commands
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - "import ipaddress,sys; p=ipaddress.IPv4Address(sys.argv[1]); assert p.is_global and str(p)==sys.argv[1]"
+          - '{{ proxy_ip }}'
+      changed_when: false
+    - name: Install isolated certificate runtime prerequisites
+      ansible.builtin.apt:
+        name: [python3-venv, ca-certificates, openssl]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Create dedicated Certbot environment
+      ansible.builtin.command:
+        argv: [python3, -m, venv, /opt/prettylisavpn-proxy-certbot]
+        creates: /opt/prettylisavpn-proxy-certbot/bin/python
+    - name: Install the pinned Certbot version with IP certificate support
+      ansible.builtin.command:
+        argv: [/opt/prettylisavpn-proxy-certbot/bin/pip, install, 'certbot==5.4.0']
+      register: certbot_install
+      changed_when: "'Successfully installed' in certbot_install.stdout"
+    - name: Obtain or retain a trusted short-lived IP certificate
+      ansible.builtin.command:
+        argv:
+          - /opt/prettylisavpn-proxy-certbot/bin/certbot
+          - certonly
+          - --standalone
+          - --non-interactive
+          - --agree-tos
+          - --register-unsafely-without-email
+          - --keep-until-expiring
+          - --preferred-profile
+          - shortlived
+          - --cert-name
+          - '{{ proxy_ip }}'
+          - --ip-address
+          - '{{ proxy_ip }}'
+      register: ip_certificate
+      changed_when: "'successfully' in ip_certificate.stdout | lower"
+    - name: Install certificate renewal service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/prettylisa-proxy-certificate.service
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Renew PrettyLisaVPN public IP certificate
+          After=network-online.target
+          Wants=network-online.target
+          [Service]
+          Type=oneshot
+          UMask=0077
+          TimeoutStartSec=1h
+          ExecStart=/opt/prettylisavpn-proxy-certbot/bin/certbot renew --quiet --cert-name {{ proxy_ip }}
+    - name: Install regular renewal timer for six-day certificates
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/prettylisa-proxy-certificate.timer
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Check PrettyLisaVPN certificate renewal every four hours
+          [Timer]
+          OnCalendar=*-*-* 00,04,08,12,16,20:00:00
+          RandomizedDelaySec=30m
+          Persistent=true
+          [Install]
+          WantedBy=timers.target
+    - name: Enable automatic renewal
+      ansible.builtin.systemd_service:
+        name: prettylisa-proxy-certificate.timer
+        enabled: true
+        state: started
+        daemon_reload: true

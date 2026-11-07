@@ -16,8 +16,9 @@ class StrictModel(BaseModel):
 
 
 Currency = Literal["RUB", "USD"]
-PaymentRoute = Literal["MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO"]
+PaymentRoute = Literal["MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO", "SBP"]
 PAYMENT_ROUTES: tuple[PaymentRoute, ...] = ("MIR", "BANK_CARD", "ALIPAY_WECHAT", "CRYPTO")
+ALL_PAYMENT_ROUTES: tuple[PaymentRoute, ...] = (*PAYMENT_ROUTES, "SBP")
 
 
 class RouteCapability(StrictModel):
@@ -119,6 +120,20 @@ class CurrentPrice(StrictModel):
 class PaymentMethod(StrictModel):
     provider: str
     label: str
+    kind: Literal["CARD", "SBP", "UNKNOWN"] = "UNKNOWN"
+    card_brand: Literal["visa", "mastercard", "mir", "unknown"] | None = None
+    card_last4: str | None = Field(default=None, pattern=r"^[0-9]{4}$")
+
+    @model_validator(mode="after")
+    def masked_card_only(self) -> Self:
+        if sum(character.isdecimal() for character in self.label) > 4:
+            raise ValueError("Only a masked payment summary may be exposed")
+        if self.kind == "CARD":
+            if self.card_brand is None or self.card_last4 is None:
+                raise ValueError("Card summary requires verified brand and last four digits")
+        elif self.card_brand is not None or self.card_last4 is not None:
+            raise ValueError("Non-card methods cannot claim card details")
+        return self
 
 
 class Overview(StrictModel):
@@ -133,6 +148,9 @@ class Overview(StrictModel):
     paid_until: datetime | None
     auto_renew: bool
     current_price: CurrentPrice | None = None
+    next_charge_at: AwareDatetime | None = None
+    next_charge_price: CurrentPrice | None = None
+    new_contract_required: bool = False
     payment_method: PaymentMethod | None = None
     offers: list[Offer]
     actions: list[Literal["SUBSCRIBE", "RENEW", "CHANGE_METHOD", "CANCEL"]] = Field(
@@ -156,6 +174,8 @@ def overview_for(
     operations_available: bool = False,
     provider_mode: Literal["DISABLED", "SANDBOX", "LIVE"] = "DISABLED",
     payment_routes: list[RouteCapability] | None = None,
+    next_charge_at: datetime | None = None,
+    new_contract_required: bool = False,
 ) -> Overview:
     effective_plan = subscription.effective_plan(at)
     paid = effective_plan is not SubscriptionPlan.FREE
@@ -165,12 +185,12 @@ def overview_for(
         )
     else:
         status = "FREE" if subscription.plan is SubscriptionPlan.FREE else "EXPIRED"
-    if paid:
-        offers = (
-            [contract_offer]
-            if effective_plan is SubscriptionPlan.PREMIUM and contract_offer
-            else []
-        )
+    if new_contract_required:
+        offers = catalog.offers_for(group_id, at)
+    elif contract_offer is not None or subscription.plan is SubscriptionPlan.PREMIUM:
+        offers = [contract_offer] if contract_offer else []
+    elif paid:
+        offers = []
     else:
         offers = catalog.offers_for(group_id, at)
     snapshot = Overview(
@@ -189,7 +209,12 @@ def overview_for(
         if subscription.plan is not SubscriptionPlan.FREE
         else None,
         auto_renew=subscription.auto_renew,
-        current_price=current_price if subscription.plan is SubscriptionPlan.PREMIUM else None,
+        current_price=current_price,
+        next_charge_at=next_charge_at if subscription.auto_renew and payment_method else None,
+        next_charge_price=current_price
+        if subscription.auto_renew and payment_method and next_charge_at
+        else None,
+        new_contract_required=new_contract_required,
         offers=offers,
     )
     identity = {

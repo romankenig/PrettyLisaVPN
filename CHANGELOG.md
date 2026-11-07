@@ -6,14 +6,182 @@
 
 ## Unreleased
 
-### iOS — 0.2.0
+### iOS — 0.3.0 / macOS — 0.2.2
 
-- Match the supplied mobile reference: purple shell, Rubik, light account and VPN
-  cards, mint actions, bottom Home/Settings/About navigation, device cards and FAQ.
-- Preserve real account/VPN state, confirmed egress and cleanup; keep unavailable
-  split modes honest. macOS and backend behavior/versions are unchanged.
-- Add native phone navigation checks and screenshots; see
-  [iOS UI handoff](docs/ios-reference-ui.md). Real VPN acceptance remains pending.
+- Reconcile the reference phone UI with current iOS 0.2.1: Home / Settings / About,
+  shared lock artwork and Rubik, account/device details and native navigation.
+- Preserve current billing portal, Simulator packaging, signing boundaries and
+  current localized labels. Restore three shared subscription labels in all six
+  languages (macOS 0.2.1 → 0.2.2 PATCH); all other versions are unchanged.
+- See [iOS reference handoff](docs/ios-reference-ui.md); signed physical VPN
+  acceptance remains separate from SDK builds and native Simulator screenshots.
+
+
+### Android — 0.25.0 / Backend — 0.36.0 / Public website — 0.5.0
+
+- Add guest DEMO access on Android: 15 minutes per device per UTC day, automatic
+  server selection and full traffic protection. Ordinary reinstalls with the same
+  signer reuse the server quota; registration receives the separate FREE budget.
+- Preview locked country/split/manual settings with registration actions. Add
+  localized site documents to About and unobtrusive links below authentication.
+- Add a quieter DEMO section below Premium and Free on the website, with updated
+  terms/privacy explanations in all six languages. Prices are unchanged.
+- Backend migration 0046 retains anonymous device principals and durable quota.
+  BREAKING rollback constraint: binaries before 0.36.0 cannot read DEMO enum rows;
+  use a compatible forward fix and retain identities/usage. Do not downgrade or
+  rotate the identity key to roll back the UI. Existing registered-client API
+  contracts remain compatible. DEMO admission defaults off until configured.
+- See [DEMO implementation and rollout](docs/android-demo-access.md).
+
+### Android — 0.24.0
+
+- Periodically check the connected tunnel through its own network. Confirm repeated
+  transport failure before bounded recovery, retaining cleanup and paid/free access
+  fences. Show checking/waiting/reconnecting states in the app and notification.
+- Keep the foreground service across method fallback and recovery. A lost physical
+  network pauses recovery; manual disconnect, logout and lease expiry stop it.
+- Preserve the successful method, occasionally explore one alternative on a new
+  connection and temporarily deprioritize methods with delayed failures. Add a
+  compact reset/reconnect control without changing enabled methods or routing.
+- See [connection recovery handoff](docs/android-connection-recovery.md).
+
+### Android — 0.23.1
+
+- Hide the optional split-mode location block and divider when no observation is
+  available; restore them after the existing refresh succeeds. An observed IP is
+  still visible when city/country metadata is unavailable.
+- Preserve VPN status, connection errors, tunnel-pinned lookup and routing rules.
+  See [location handoff](docs/android-optional-location.md).
+
+### Android — 0.23.0
+
+- Separate subscription access, prominent monthly pricing, renewal details and
+  bottom management controls. Keep compact RUB/USD selection beside new prices;
+  retain the agreed amount/currency for an existing contract.
+- Hide unavailable payment methods/actions and replace the bottom refresh button
+  with accessible pull-down refresh. Preserve stale-data, consent and payment guards.
+- Add a red confirmed cancellation action when authorized, retaining paid access.
+  Explain manually assigned Platinum without a fictional payment contract.
+- See [Android subscription handoff](docs/android-subscription-layout.md) for
+  compatibility, native screenshots and final CI/publication evidence.
+
+### Fleet retries — backend 0.35.1 / dashboard 0.6.3
+
+- Randomize the actual probe source for rapid/failed retries and expired worker
+  claims. Remember the previous attempt across worker restarts; wait for busy
+  alternatives and preserve self-probe exclusion, locks and request idempotency.
+- Store unknown monitoring results as gaps instead of zero-rating samples.
+  Confirmed synthetic failures remain zero and keep their actual source.
+- Use median download/upload speed for selected-server summaries and hourly
+  charts, retaining last-per-server sampling, coverage and genuine zero values.
+  Individual observations and the database schema are unchanged.
+
+### Price display resilience — Windows 0.26.1 / Android 0.22.1 / Apple and Chrome 0.2.1
+
+- Display owner-approved monthly reference prices (RUB 499 → 399, USD 7 → 5)
+  when subscription data cannot be loaded. Clearly distinguish new-contract
+  reference prices from the user's immutable existing contract amount.
+- Never create offer IDs, payment commands, contract prices or entitlements from
+  fallback values. Native payment guards and server confirmation remain mandatory.
+- Public website 0.4.1 remembers validated public prices for seven days and uses
+  approved reference prices on a cold/offline load. An unavailable account overview
+  shows reference prices and retry, without actionable cached checkout controls.
+- See [price resilience handoff](docs/price-resilience.md) for compatibility,
+  operations and exact CI/build/publication evidence recorded in the task PR.
+
+### Public website — 0.4.1
+
+- Label the Premium acquisition action «купить» (localized in all six languages),
+  opening the existing authenticated billing portal.
+- Publish the owner-requested default-group acquisition offer in PostgreSQL:
+  RUB 499 → 399 and USD 7 → 5 per month. Retain the previous offer interval and
+  immutable contract prices; no backend schema change for pricing.
+  Operational revision, source/build SHA and publication evidence are recorded in the PR.
+
+### Fleet dashboard — 0.6.2
+
+- Show each hour as a proportional gradient of selected servers' states, so one
+  failed node no longer paints the entire fleet as failed. Tooltips and accessible
+  labels report exact counts; unknown/pending states remain distinct.
+- Align history by UTC timestamp and keep missing observations unknown. Servers
+  not yet registered do not dilute outages. See [history handoff](docs/dashboard-group-metrics.md#proportional-availability-history--2026-11-06).
+
+### Billing — backend 0.35.0 / Windows 0.26.0 / Android 0.22.0 / Chrome, iOS, macOS 0.2.0 / website 0.4.0
+
+- Add monthly Platega SBP subscriptions, verified callbacks and ledger recovery,
+  immutable agreed prices, cancellation with paid access retained, and safe
+  method/next-payment summaries. Migrations 0044/0045; merchant credentials remain disabled.
+- Add database-owned website prices and an OTP billing portal with one-time native
+  handoff, secure cookies, explicit recurring consent, durable operation recovery,
+  verified success/failure pages and account-scoped subscription management.
+- Add Free upgrade links and payment management entry points to clients. Preserve
+  legacy billing route compatibility; do not invent card masks or unsupported account replacement.
+- Test the one-off Platega payment-link transport separately; it does not create a
+  recurring authority or grant access. See [scope, limitations and verification](docs/platega-billing.md).
+- Preserve the already-published website 0.3.1 moderation layout/copy and native
+  Android capture. Correct the website baseline to 0.3.1 → 0.4.0 before publication;
+  the initial 0.3.0 billing artifact was not published. Isolate the Chrome portal
+  navigation test from the real website's initial worker-created tab request.
+
+### iOS — 0.1.1
+
+- Give the downloaded Simulator app an ad-hoc application identity and private
+  Keychain group, fixing secure-storage failure after installation. Verify real
+  Keychain read/write/update/delete inside the exact archive before publication.
+- Keep physical-device signing requirements and macOS 0.1.0 unchanged.
+
+### Fleet dashboard — 0.6.1
+
+- Separate iOS Simulator and iPhone ZIP downloads so browser simulators receive
+  an actual iphonesimulator app. Publish both variants atomically from the same
+  successful Apple build and retain the existing device URL.
+- Install and launch the packaged Simulator ZIP in Apple CI; the companion iOS
+  0.1.1 fix above adds Keychain acceptance. Real VPN remains a physical-device task.
+  See [Simulator download handoff](docs/dashboard-client-downloads.md#ios-simulator-download--2026-11-05).
+
+### Chrome Extension — 0.1.2 / backend — 0.34.1
+
+- Allow the existing HTTPS proxy to use the enrolled exit's public IPv4 address
+  with a publicly trusted IP certificate when DNS cannot be configured.
+- Advertise IP support explicitly; older extensions continue receiving DNS-only
+  endpoints. Keep TLS verification, expected egress checks and browser-only scope.
+- Automate short-lived certificate issuance and renewal on exit nodes. No native
+  transport, quota or schema change. See [Chrome handoff](docs/chrome-extension.md).
+
+### Chrome Extension — 0.1.1
+
+- Retain sign-in across browser restarts in trusted local extension storage;
+  clear stale proxy settings without persisting short-lived proxy credentials.
+- Restore the requested email/code-entry screen after closing the popup to read
+  email; also allow opening sign-in in a normal extension tab. Never store OTPs.
+- Verify actual popup reopening and full browser/profile restart in installed MV3
+  tests. Backend/client protocols unchanged. See [Chrome handoff](docs/chrome-extension.md).
+
+### Fleet dashboard — 0.6.0
+
+- Add Chrome Extension, iOS and macOS downloads at the private API dashboard,
+  with fixed links, build versions, dates and platform installation instructions.
+- Publish successful develop Chrome/Apple builds through the existing atomic
+  catalog. Validate archive contents, SHA/run/attempt, checksums and matching
+  Apple engine sources/licenses; preserve Android/Windows downloads.
+- Apple downloads are explicitly unsigned device/app ZIPs, not App Store,
+  TestFlight or verified live VPN releases. Client/backend versions unchanged.
+  See [download publication handoff](docs/dashboard-client-downloads.md).
+
+### Chrome Extension — 0.1.0 / backend — 0.34.0
+
+- Add a browser-only Manifest V3 client with Windows-inspired UI, email OTP,
+  countries, five-device management, read-only subscription and real support API.
+- Add authenticated HTTPS forward-proxy leases on existing exit nodes, migration
+  0043, shared Free quota, short grants, browser heartbeat expiry and cleanup.
+  Native transport admission and device sleep behavior remain compatible.
+- Keep control-plane API requests reachable directly; route the authenticated
+  egress probe through the proxy using the public site's narrowly scoped alias.
+  Connected requires actual Chrome ownership and verified expected egress.
+- Use publicly trusted node-local certificates, credential-scoped proxy auth and
+  session-only secret storage. Never log browsing destinations or page contents.
+- See [Chrome handoff](docs/chrome-extension.md) for DNS, build identity, live
+  verification and rollout requirements. This entry does not imply deployment.
 
 ### iOS — 0.1.0 / macOS — 0.1.0 / backend — 0.33.0 / managed engine — 0.6.0
 

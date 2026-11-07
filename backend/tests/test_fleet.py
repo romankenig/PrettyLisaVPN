@@ -21,6 +21,7 @@ from prettylisavpn.fleet.domain import (
     WireGuardConfig,
     hourly_slot,
     monitoring_slot,
+    retry_source_order,
     server_quality,
     source_order,
 )
@@ -152,6 +153,23 @@ def test_every_new_node_becomes_source_and_target_with_spread_slots():
         assert selected == set(roster) - {target}
     assert source_order(roster[0], NOW, roster[:1]) == []
     assert hourly_slot(roster[0], NOW + timedelta(days=3), roster) > NOW + timedelta(days=3)
+
+
+def test_retry_sources_are_randomized_without_self_or_previous_source(monkeypatch):
+    roster = [UUID(int=index) for index in range(1, 6)]
+    calls = []
+
+    def shuffle(values):
+        calls.append(list(values))
+        values.reverse()
+
+    monkeypatch.setattr("prettylisavpn.fleet.domain.random.shuffle", shuffle)
+    result = retry_source_order(roster[0], roster + roster, roster[1])
+    assert calls == [roster[2:]]
+    assert result == roster[:1:-1]
+    assert retry_source_order(roster[0], roster[:1], None) == []
+    assert retry_source_order(roster[0], roster[:2], roster[1]) == [roster[1]]
+    assert set(retry_source_order(roster[0], roster, None)) == set(roster[1:])
 
 
 def test_zero_rating_slots_repeat_every_three_minutes_without_synchronizing_nodes():
@@ -301,7 +319,9 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
         (SubscriptionPlan.PLATINUM, False),
     ],
 )
-async def test_country_ratings_respect_effective_plan(plan, free_only):
+@pytest.mark.parametrize("method", [None, "https_proxy"])
+@pytest.mark.parametrize("proxy_ip", [None, "1", "unknown"])
+async def test_country_ratings_respect_effective_plan(plan, free_only, method, proxy_ip):
     fleet, auth = AsyncMock(), AsyncMock()
     auth.me.return_value = SimpleNamespace(plan=plan)
     fleet.countries.return_value = {
@@ -320,9 +340,19 @@ async def test_country_ratings_respect_effective_plan(plan, free_only):
         AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
     ):
         assert (
-            await client.get("/vpn/countries", headers={"Authorization": "Bearer user"})
+            await client.get(
+                "/vpn/countries",
+                params={"method": method} if method else {},
+                headers={
+                    "Authorization": "Bearer user",
+                    **({"X-PrettyLisaVPN-Proxy-IP": proxy_ip} if proxy_ip else {}),
+                },
+            )
         ).json()["autopilot"]["quality"] == 90
-    fleet.countries.assert_awaited_once_with(free_only=free_only)
+    fleet.countries.assert_awaited_once_with(
+        free_only=free_only,
+        **({"browser_proxy": True, "allow_proxy_ip": proxy_ip == "1"} if method else {}),
+    )
 
 
 async def test_active_users_still_receive_full_synthetic_probe():

@@ -1,10 +1,11 @@
-# iOS reference UI — 0.2.0
+# iOS reference UI — 0.3.0
 
 The owner requested the supplied Android screenshots on iOS: purple content,
 Christalle top/bottom chrome, Mercury rounded cards, Viking actions, Rubik type,
-and Home / Settings / About tabs. iOS changes **0.1.0 → 0.2.0** for this substantial
-UI/navigation task. macOS stays 0.1.0; backend, engine, Android and Windows versions
-are unchanged. The website task is independent.
+and Home / Settings / About tabs. iOS changes **0.2.1 → 0.3.0** for this substantial
+UI/navigation task. macOS changes 0.2.1 → 0.2.2 (PATCH) for three restored shared
+subscription labels; its navigation/design is unchanged. Backend, engine, Android
+and Windows versions are unchanged. The website task is independent.
 
 `IOSViews.swift` provides an iOS-only shell over the existing AppModel and VPN
 coordinator. The canonical lock asset and licensed Rubik font are copied from the
@@ -30,24 +31,38 @@ macOS retains its sidebar, theme selector and original screens.
   action, support form entry, attribution, service link and license/policy details.
 - Nested pages show Back and the version footer; the three tabs remain on the
   top-level pages. Messages are still reachable from Home when present.
-- OTP/auth guard, Keychain, billing read-only contract, support delivery,
+- OTP/auth guard, Keychain, current subscription and external billing portal contract, support delivery,
   confirmation dialogs and real tunnel acceptance gate are preserved.
 
 ## Verification and handoff
 
 Local: resource synchronization, structural/localization/entitlement checks,
-whitespace/diff review. Apple CI compiles all four SDK targets, runs the 18 core
+whitespace/diff review. Apple CI compiles all four SDK targets, runs the current core
 tests plus native macOS regression tests and iOS navigation/connection/UI tests on
-two iPhones in both appearances. The new tests capture Home, Settings, Devices and
-About, verify fixture connection cannot become a real VPN, and exercise back,
+two iPhones in both appearances. The new tests capture Home, Settings, Subscription,
+Devices and About, verify fixture connection cannot become a real VPN or payment,
+and exercise back,
 advanced-method and support navigation. Debug banners stay visible in captures.
 
 The task PR records the exact product HEAD, build SHA/run/attempt, final CI audit
 and native screenshot artifacts after completion; earlier 0.1.0 screenshots are
-not evidence for 0.2.0. No backend follow-up is needed for this visual change.
+not evidence for 0.3.0. No backend follow-up is needed for this visual change.
 
 Real iPhone and signed macOS tunnel acceptance remains separate and unconfirmed:
 see [Apple VPN handoff](apple-vpn-handoff.md) and [signing/setup](../apps/apple/README.md).
 No Apple Team, provisioning profile or physical iPhone is available in this
 Windows workspace or the unsigned CI environment. Simulator UI success does not
 verify tunneling, egress IP, DNS, disconnection or network-change recovery.
+
+## Reconciliation on 2026-11-07
+
+PR #53 originally targeted iOS 0.1.0. Current develop already contains iOS/macOS
+0.2.1 billing and Simulator/signing changes. This merge keeps those newer APIs,
+portal navigation, protected URL validation, foreground refresh and packaging.
+The new phone shell reuses the current SubscriptionView and AppModel; no older
+payment behavior is restored. Shared translations retain current Apple-owned
+billing keys, adds the new iOS labels and restores three missing shared subscription
+labels. A structural check requires every static `L("key")` in the app to exist
+in all six generated locales. The website and other clients are preserved.
+Final product HEAD, native build SHA/run/attempt, screenshots and
+complete CI audit belong in PR #53; old draft artifacts do not validate this merge.

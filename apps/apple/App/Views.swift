@@ -171,6 +171,9 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(model.profile?.email ?? "").textSelection(.enabled)
                         LabeledContent(L("dash_plan"), value: model.profile?.plan ?? L("unavailable"))
+                        if model.profile?.plan == "FREE" {
+                            Button(L("upgrade_plan")) { model.page = .subscription }.accessibilityIdentifier("home-upgrade")
+                        }
                         LabeledContent(L("dash_devices"), value: "\(model.profile?.active_device_count ?? 0) / 5")
                         if let quota = model.profile?.entitlements, let seconds = quota.remaining {
                             LabeledContent(L("free_time_remaining"), value: "\(max(0, seconds) / 60):" + String(format: "%02d", max(0, seconds) % 60))
@@ -211,6 +214,7 @@ struct DevicesView: View {
 }
 
 struct SubscriptionView: View {
+    @Environment(\.openURL) private var openURL
     @ObservedObject var model: AppModel
     var body: some View {
         Form {
@@ -221,7 +225,16 @@ struct SubscriptionView: View {
                     LabeledContent(L("apple_paid_until"), value: billing.paid_until.map(formatDate) ?? L("ui_no_paid_period"))
                     LabeledContent(L("apple_auto_renew"), value: L(billing.auto_renew ? "ui_on" : "ui_off"))
                     if let price = billing.current_price { LabeledContent(L("apple_contract_price"), value: money(price.amount_minor, price.currency ?? "")) }
+                    if let next = billing.next_charge_at, let price = billing.next_charge_price {
+                        LabeledContent(L("billing_next_payment"), value: formatDate(next) + " · " + money(price.amount_minor, price.currency ?? ""))
+                    }
+                    if billing.current_price != nil && billing.new_contract_required != true { Text(L("billing_fixed_price")).font(.footnote).foregroundStyle(.secondary) }
+                    if billing.plan == "PREMIUM" && billing.new_contract_required == true { Text(L("billing_resubscribe")).font(.footnote).foregroundStyle(.secondary) }
                     if billing.plan == "PLATINUM" { Text(L("ui_manually_assigned_premium_capabilities_no_purchase_needed")) }
+                }
+                Section(L("billing_method_title")) {
+                    if let summary = billing.payment_method?.summary { Label(billing.payment_method?.kind == "SBP" ? L("billing_sbp_account") : summary, systemImage: "creditcard") }
+                    else { Text(L("ui_none")).foregroundStyle(.secondary) }
                 }
                 Section("Premium") {
                     ForEach(billing.offers) { offer in
@@ -229,9 +242,15 @@ struct SubscriptionView: View {
                             if let price = offer.prices[currency] { LabeledContent(currency, value: money(price.amount_minor, currency)) }
                         }
                     }
-                    Text(L("apple_billing_readonly")).foregroundStyle(.secondary)
+                    Button(L("billing_portal")) { model.openBillingPortal { url in openURL(url) } }.disabled(model.busy || model.fixtures)
+                    Text(L("billing_portal_hint")).font(.footnote).foregroundStyle(.secondary)
                 }
-            } else { Text(L("unavailable")) }
+            } else {
+                Section("Premium") {
+                    Text(L("billing_reference_month"))
+                    Text(L("billing_reference_prices")).font(.footnote).foregroundStyle(.secondary)
+                }.accessibilityIdentifier("billing-reference-prices")
+            }
         }.formStyle(.grouped)
     }
 }

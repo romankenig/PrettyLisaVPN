@@ -102,11 +102,22 @@ class BillingWorker:
                 if current is None or current.status != "PENDING" or current.claim_token != claim:
                     return False
                 if result.status == "SUCCEEDED":
+                    account = await session.get(BillingAccountRecord, row.user_id)
+                    cancel_same_authority = bool(
+                        command.action == "CANCEL"
+                        and account
+                        and account.provider_name == row.provider_name
+                        and account.mandate_reference
+                        and account.mandate_reference == current.quote["previous_mandate_reference"]
+                    )
                     if (
                         subscription is None
                         or str(subscription.id) != current.quote["subscription_id"]
-                        or subscription.updated_at.isoformat()
-                        != current.quote["subscription_updated_at"]
+                        or (
+                            subscription.updated_at.isoformat()
+                            != current.quote["subscription_updated_at"]
+                            and not cancel_same_authority
+                        )
                     ):
                         current.last_error = "SUBSCRIPTION_CHANGED"
                         current.claim_token = current.lease_until = None
@@ -140,6 +151,7 @@ class BillingWorker:
             result.mandate is not None
             or result.recurring_stopped
             or result.previous_mandate_revoked
+            or result.renewal_canceled
         ):
             # A partial external mutation is not a clean failure. Reconcile it before
             # releasing the account for another operation or changing local rights.
@@ -147,6 +159,8 @@ class BillingWorker:
 
     @staticmethod
     def _validate_confirmation(request: ProviderRequest, result: ProviderResult) -> None:
+        if result.renewal_canceled and result.mandate is not None:
+            raise ValueError("Canceled authority cannot remain attached")
         if request.amount_minor != result.amount_minor:
             raise ValueError("Receipt amount mismatch")
         if request.amount_minor is not None and request.currency != result.currency:
@@ -212,8 +226,19 @@ class BillingWorker:
                 await session.flush()
                 account.contract_id = contract.id
             if command.action == "SUBSCRIBE":
-                subscription.current_period_start = now
-                subscription.current_period_end = next_month(now)
+                # Re-subscribing after cancellation must not discard paid time.
+                active = (
+                    subscription.plan is not SubscriptionPlan.FREE
+                    and subscription.current_period_start <= now
+                    and subscription.current_period_end is not None
+                    and subscription.current_period_end > now
+                )
+                subscription.current_period_start = (
+                    subscription.current_period_start if active else now
+                )
+                subscription.current_period_end = next_month(
+                    (subscription.current_period_end or now) if active else now
+                )
             else:
                 subscription.current_period_end = next_month(
                     max(now, subscription.current_period_end or now)
@@ -222,6 +247,14 @@ class BillingWorker:
         account.provider_name = row.provider_name if result.mandate else None
         account.mandate_reference = result.mandate.reference if result.mandate else None
         account.method_label = result.mandate.label if result.mandate else None
+        account.method_kind = result.mandate.kind if result.mandate else None
+        account.card_brand = result.mandate.card_brand if result.mandate else None
+        account.card_last4 = result.mandate.card_last4 if result.mandate else None
+        account.next_charge_at = result.mandate.next_charge_at if result.mandate else None
+        if command.action == "CANCEL" or result.renewal_canceled:
+            account.renewal_canceled_at = now
+        elif command.action == "SUBSCRIBE":
+            account.renewal_canceled_at = None
         subscription.auto_renew = result.mandate is not None
         subscription.status = (
             SubscriptionStatus.ACTIVE if subscription.auto_renew else SubscriptionStatus.CANCELED

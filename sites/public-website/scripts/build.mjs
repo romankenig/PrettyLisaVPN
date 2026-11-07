@@ -59,6 +59,9 @@ export async function build() {
     "OFL.txt": "../../apps/windows/public/fonts/rubik/OFL.txt",
     "app.js": "./src/app.js",
     "downloads.mjs": "./src/downloads.mjs",
+    "pricing.mjs": "./src/pricing.mjs",
+    "portal.mjs": "./src/portal.mjs",
+    "portal-copy.mjs": "./src/portal-copy.mjs",
     "style.css": "./src/style.css",
   };
   for (const [name, source] of Object.entries(sources))

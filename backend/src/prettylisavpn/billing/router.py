@@ -25,7 +25,9 @@ from prettylisavpn.billing.operations import (
     BillingOperationsPort,
 )
 from prettylisavpn.billing.operations_domain import BillingCommand, BillingOperation
+from prettylisavpn.billing.public_catalog import PublicCatalog, PublicCatalogPort
 from prettylisavpn.billing.service import BillingOverviewPort, BillingUnavailableError
+from prettylisavpn.demo.domain import RegistrationRequiredError
 from prettylisavpn.main_errors import error_response
 
 
@@ -50,6 +52,8 @@ class BillingRoute(APIRoute):
                 response = error_response("BILLING_OPERATION_NOT_FOUND", 404)
             except RequestValidationError:
                 response = error_response("validation_error", 422)
+            except RegistrationRequiredError:
+                response = error_response("REGISTRATION_REQUIRED", 403)
             except Exception:
                 response = error_response("BILLING_UNAVAILABLE", 503)
             response.headers["Cache-Control"] = "no-store"
@@ -62,13 +66,28 @@ class BillingRoute(APIRoute):
 router = APIRouter(prefix="/billing", tags=["billing"], route_class=BillingRoute)
 
 
+@router.get("/catalog", response_model=PublicCatalog)
+async def catalog(request: Request) -> PublicCatalog:
+    return await cast(PublicCatalogPort, request.app.state.billing_catalog).read()
+
+
 @router.get("/overview", response_model=Overview)
 async def overview(
     request: Request, token: Annotated[str | None, Depends(bearer_token)]
 ) -> Overview | Response:
     if token is None:
         return error_response("AUTH_INVALID", 401)
-    return await cast(BillingOverviewPort, request.app.state.billing).overview(token)
+    value = await cast(BillingOverviewPort, request.app.state.billing).overview(token)
+    if request.headers.get("X-PrettyLisa-Billing-Version") == "2":
+        return value
+    # Old clients validate exactly four route IDs. They must not mistake SBP for a card.
+    legacy = [cap for cap in value.payment_routes if cap.id != "SBP"]
+    actions = [
+        action
+        for action in value.actions
+        if action not in ("SUBSCRIBE", "RENEW") or any(cap.currencies for cap in legacy)
+    ]
+    return value.model_copy(update={"payment_routes": legacy, "actions": actions})
 
 
 @router.post("/operations", response_model=BillingOperation)

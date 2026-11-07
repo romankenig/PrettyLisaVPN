@@ -453,7 +453,10 @@ async def test_renewal_and_cancellation_race_admits_only_one_without_early_state
     assert len(state[4].ledger) == 2
 
 
-async def test_new_purchase_after_expiry_keeps_previous_contract_history(state):
+@pytest.mark.parametrize("explicit_cancel", [False, True])
+async def test_expiry_alone_keeps_price_but_cancel_and_new_purchase_uses_catalog(
+    state, explicit_cancel
+):
     import copy
 
     pg, user, _, _, provider, _, _ = state
@@ -479,14 +482,24 @@ async def test_new_purchase_after_expiry_keeps_previous_contract_history(state):
             )
         await publish_catalog(pg, Catalog.model_validate(changed), revision)
         assert (await overview(state))["plan"] == "FREE"
-        second = await post(state, await body(state))
+        if explicit_cancel:
+            canceled = await post(state, await body(state, "CANCEL"))
+            assert canceled.json()["status"] == "SUCCEEDED"
+        view = await overview(state)
+        assert view["new_contract_required"] == explicit_cancel
+        second = await post(state, await body(state, "SUBSCRIBE" if explicit_cancel else "RENEW"))
         assert second.json()["status"] == "SUCCEEDED"
-        assert (await overview(state))["current_price"]["amount_minor"] == 20000
+        assert (await overview(state))["current_price"]["amount_minor"] == (
+            20000 if explicit_cancel else 19900
+        )
         async with pg.session() as session:
             old = await session.get(BillingContractRecord, old_id)
             new = await session.get(BillingContractRecord, UUID(second.json()["id"]))
-            assert old.amount_minor == 19900 and new.amount_minor == 20000
-            assert old.id != new.id
+            assert old.amount_minor == 19900
+            if explicit_cancel:
+                assert new.amount_minor == 20000 and old.id != new.id
+            else:
+                assert new is None
     finally:
         async with pg.session() as session, session.begin():
             await session.execute(

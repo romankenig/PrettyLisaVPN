@@ -19,6 +19,7 @@ class LiveSessionSource(
     private val uploads: suspend (List<String>) -> List<SupportUpload> = { emptyList() },
     override val vpn: com.prettylisavpn.android.vpn.AndroidVpnHost? = null,
 ) : ScreenSource {
+    override suspend fun billingPortal(): String = mutex.withLock { sessions.request { api().billingPortal(it) } }
     private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
     override val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> = transfer
     override val recoveryRequired get() = sessions.needsRecovery
@@ -57,6 +58,7 @@ class LiveSessionSource(
             billingRetryAvailable = journal.billing != null && journal.operation == null, billingOperation = journal.operation, paymentPending = journal.billing != null || journal.operation?.status == "PENDING")
     }
     override suspend fun read(area: Area): Snapshot = mutex.withLock {
+        if (sessions.profile?.isDemo == true && area in setOf(Area.TRAFFIC, Area.MESSAGES)) return@withLock initial
         if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
@@ -96,6 +98,7 @@ class LiveSessionSource(
             if (!journalReady) throw SourceFailure("Saved operations are unavailable. Restore secure storage before starting a new request.")
         }
         when (command) {
+            Command.TryDemo -> { sessions.demo(); requestedEmail = null; snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
             is Command.RequestOtp -> { sessions.requestOtp(command.email); requestedEmail = command.email }
             is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
             Command.Logout, Command.ForgetLocalSession -> {
@@ -197,7 +200,7 @@ object LiveSessionFactory {
     @Synchronized fun create(context: Context): ScreenSource = source ?: run {
         val app = context.applicationContext
         val http = HttpAuthApi("https://api.prettylisavpn.com/")
-        val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255))
+        val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255), demoIdentity = { demoDeviceKey(app) })
         val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(app, sessions, http)
         LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn)
     }.also { source = it }
