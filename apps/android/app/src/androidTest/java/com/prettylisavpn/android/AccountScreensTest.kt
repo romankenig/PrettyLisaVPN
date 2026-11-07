@@ -109,11 +109,16 @@ class AccountScreensTest {
     }
     private fun idle()=compose.waitUntil(10_000) { !model.state.value.busy }
     private fun enterAuth(tag:String,value:String) {
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
         val field=compose.onNodeWithTag(tag).performScrollTo()
-        field.performTextInput(value);field.assertTextEquals(value)
         val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
         automation.waitForIdle(500,5_000)
         fun keyboardVisible()=androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+        field.performTouchInput { click() }
+        compose.waitUntil(5_000) { field.fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Focused) == true }
+        compose.waitUntil(10_000) { keyboardVisible() }
+        automation.waitForIdle(500,5_000);field.performTextInput(value);field.assertTextEquals(value)
+        automation.waitForIdle(500,5_000)
         if(keyboardVisible()) androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.waitUntil(10_000) { !keyboardVisible() }
         automation.waitForIdle(500,5_000)
@@ -210,7 +215,7 @@ class AccountScreensTest {
         enterAuth("login-email","buyer@example.com");click("auth-submit");waitFor("screen_OTP")
         enterAuth("otp","123456")
         compose.runOnUiThread { plan="Free" };click("auth-submit")
-        try { waitFor("plan-buy") } catch(error:AssertionError) {
+        try { waitFor("plan-buy") } catch(error:ComposeTimeoutException) {
             screenshot("guest-buy-transition-failed")
             throw AssertionError("Guest purchase transition: signedIn=${model.state.value.data.signedIn}, plan=${model.state.value.data.plan}, pendingNavigation=${model.afterLoginSubscription}",error)
         }
