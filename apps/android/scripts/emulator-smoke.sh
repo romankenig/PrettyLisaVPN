@@ -47,7 +47,7 @@ adb shell am instrument -w -r -e class com.prettylisavpn.android.PlaceholderConn
 python3 - <<'PLACEHOLDER_CHECK'
 import pathlib, re
 result = pathlib.Path('evidence/placeholder-instrumentation.txt').read_text()
-assert re.search(r'OK \(1 test\)', result), result
+assert re.search(r'OK \(2 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 PLACEHOLDER_CHECK
 
@@ -114,7 +114,7 @@ RESTART_CHECK
 done
 
 # Live account screens and encrypted operation journal use isolated API ports only.
-for spec in AccountScreensTest:17 AccountJournalTest:2; do
+for spec in AccountScreensTest:21 AccountJournalTest:2; do
   test_class=${spec%:*}; test_count=${spec#*:}
   adb shell am instrument -w -r -e class "com.prettylisavpn.android.$test_class" \
     "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee "evidence/$test_class-instrumentation.txt"

@@ -24,12 +24,12 @@ import java.util.concurrent.TimeUnit
 
 /** Keys stay in this process; success requires fresh handshake and HTTPS through our VPN Network. */
 class WireGuardAdapter(private val context: Context, private val sessions: SessionCoordinator,
-    http: HttpAuthApi, private val viaRelay: Boolean = false, private val lost: () -> Unit) : ConnectionAdapter {
+    http: HttpAuthApi, private val viaRelay: Boolean = false, private val transportLost: (() -> Unit)? = null, private val lost: () -> Unit) : ConnectionAdapter {
     override val method = if (viaRelay) VpnMethod("wireguard_relay", "WireGuard+") else VpnMethod("wireguard", "WireGuard")
     private val api = WireGuardApi(http, sessions)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var backend: GoBackend? = null
-    private val routedRuntime = ManagedRuntime(context, lost)
+    private val routedRuntime = ManagedRuntime(context) { (transportLost ?: lost)() }
     private var routed = false
     private var heartbeat: Job? = null
     private var deadline: Job? = null
@@ -53,7 +53,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private val tunnel = object : Tunnel {
         override fun getName() = "PrettyLisaVPN"
         override fun onStateChange(state: Tunnel.State) {
-            if (state == Tunnel.State.DOWN && expectingUp) scope.launch { lost() }
+            if (state == Tunnel.State.DOWN && expectingUp) scope.launch { (transportLost ?: lost)() }
         }
     }
 
@@ -228,6 +228,14 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         }
     }
 
+    override suspend fun health(): TunnelHealth {
+        val row = lease ?: return TunnelHealth.UNKNOWN
+        val config = row.configuration ?: return TunnelHealth.UNKNOWN
+        val result = checkTunnelNetwork(context, vpnNetwork(if (routed) "172.30.255.1" else config.address.substringBefore('/')),
+            config.expected_egress_ips) { expectingUp && (if (routed) routedRuntime.isUp() else withContext(Dispatchers.IO) { backend?.getState(tunnel) == Tunnel.State.UP }) }
+        return if (lease?.id == row.id && expectingUp) result else TunnelHealth.UNKNOWN
+    }
+
     private suspend fun closeRemote() {
         val current = lease ?: api.current() ?: run { acquired = false; return }
         lease = current
@@ -256,7 +264,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                 }
                 finally { HttpRoutes.default() }
             }, revokeRemote = { if (acquired || lease != null) closeRemote() })
-            context.stopService(Intent(context, TunnelForegroundService::class.java))
+            // AndroidVpnHost retains the foreground service across recovery/fallback.
         }
     }
 }

@@ -11,7 +11,6 @@
     <string name="component_versions">前端 %1$s · 后端 %2$s</string>
     <string name="unavailable">不可用</string>
     <string name="test_data_notice">测试数据 · 无VPN隧道</string>
-    <string name="ui_was_0">（原价 %1$s）</string>
     <string name="ui_123456_success_000000_expired_other_codes_invalid">123456：成功 · 000000：过期 · 其他：无效</string>
     <string name="ui_6_digit_code">6位验证码</string>
     <string name="ui_a_delivery_is_not_confirmed_until_the_server_reports_sent">服务器报告SENT前，不能确认已发送。</string>
@@ -24,7 +23,6 @@
     <string name="ui_auto_renewal_0">自动续订：%1$s</string>
     <string name="ui_autopilot_uses_available_nodes_country_selection_requires_premium">自动模式使用可用节点。选择国家需要Premium或Platinum。</string>
     <string name="ui_choose_at_most_3_images">最多选择3张图片。</string>
-    <string name="ui_current_price_0">当前价格：%1$s</string>
     <string name="ui_debug_only_resets_in_memory_data_no_backend_email_card_or_tunnel_">仅限调试。重置内存数据；不连接后端、邮件、银行卡或隧道。进程重启后恢复默认测试账户。</string>
     <string name="ui_description">问题描述</string>
     <string name="ui_email">电子邮箱</string>
@@ -55,10 +53,8 @@
     <string name="ui_only_the_test_session_will_end_an_active_simulation_is_stopped">仅结束测试会话，并停止当前模拟。</string>
     <string name="ui_operation_0_1">操作 %1$s：%2$s</string>
     <string name="ui_paid_until_0">付费有效期至：%1$s</string>
-    <string name="ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene">付款操作不可用，不会打开支付服务。</string>
     <string name="ui_payment_method_0">付款方式：%1$s</string>
     <string name="ui_plan_0">套餐：%1$s</string>
-    <string name="ui_premium_month_0_1">Premium / 月：%1$s%2$s</string>
     <string name="ui_queued_in_the_test_source">已加入测试队列。</string>
     <string name="ui_reference_0">请求编号：%1$s</string>
     <string name="ui_reply_email">回复电子邮箱</string>
@@ -179,7 +175,6 @@
     <string name="ui_yes_cancel">确认取消</string>
     <string name="ui_yes_revoke">确认撤销</string>
     <string name="ui_your_plan">您的套餐</string>
-    <string name="ui_0_1_2_auto_renew_3">%1$s%2$s · %3$s · 自动续订：%4$s</string>
     <string name="ui_all_traffic_preview_only">✓ 全部流量 — 仅预览</string>
     <string name="error_0">无网络连接。请检查网络后重试。</string>
     <string name="error_1">验证码无效或已过期，请获取新验证码。</string>
@@ -308,13 +303,28 @@
     <string name="faq_support_a">打开应用内的[支持表单]，或发送邮件至 help@prettylisavpn.com。请说明问题及发生时间。</string>
     <string name="billing_days_left">剩余天数：%1$d</string>
     <string name="billing_cancel_detail">取消续订将解绑付款方式。访问权限保留至已付款期限结束。</string>
-    <string name="billing_next_charge">下次扣款：%1$s · %2$s</string>
     <string name="billing_fixed_price">约定价格保持不变，直至取消后重新订阅</string>
     <string name="billing_resubscribe">不会再自动扣款。您可以按当前价格重新订阅</string>
     <string name="billing_replace_prompt">是否改为更换银行卡？订阅条件和已付费期限保持不变</string>
     <string name="billing_replace_card">更换银行卡</string>
-    <string name="billing_portal">管理订阅和付款</string>
     <string name="billing_sbp_account">已绑定 SBP 银行账户</string>
     <string name="billing_reference_prices">新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。</string>
-    <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / 月</string>
+    <string name="subscription_per_month">每个自然月</string>
+    <string name="subscription_platinum">此等级由管理员手动授予，不会自动扣款。</string>
+    <string name="subscription_active_until">有效期至</string>
+    <string name="subscription_agreed_price">您的约定价格</string>
+    <string name="subscription_price_unconfirmed">无法确认合同价格。请下拉重试。</string>
+    <string name="subscription_premium_offer">Premium 订阅</string>
+    <string name="subscription_payment_details">付款与续订</string>
+    <string name="subscription_auto_renew">自动续订</string>
+    <string name="subscription_payment_method">付款方式</string>
+    <string name="subscription_next_charge">下次扣款</string>
+    <string name="subscription_payments_unavailable">付款暂不可用。您仍可查看价格和当前访问权限。</string>
+    <string name="subscription_change">更改订阅</string>
+    <string name="subscription_delete">删除订阅</string>
+    <string name="vpn_checking">正在检查连接…</string>
+    <string name="vpn_waiting_network">等待网络…</string>
+    <string name="vpn_reconnecting">正在恢复连接…</string>
+    <string name="vpn_reset_methods">重置已记住的方式并重新连接</string>
+    <string name="vpn_unstable">连接不稳定。自动恢复已停止，请尝试重新连接</string>
 </resources>

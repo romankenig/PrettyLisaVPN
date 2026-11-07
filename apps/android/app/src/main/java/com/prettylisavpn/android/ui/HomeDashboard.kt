@@ -106,7 +106,8 @@ internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
     }
     // Public egress does not depend on an authenticated backend refresh succeeding.
     LaunchedEffect(presentation, vpn.phase, vpn.method, refreshKey) {
-        val changing = vpn.phase == com.prettylisavpn.android.vpn.VpnPhase.CONNECTING || vpn.phase == com.prettylisavpn.android.vpn.VpnPhase.DISCONNECTING
+        val changing = vpn.phase in setOf(com.prettylisavpn.android.vpn.VpnPhase.CONNECTING, com.prettylisavpn.android.vpn.VpnPhase.DISCONNECTING,
+            com.prettylisavpn.android.vpn.VpnPhase.CHECKING, com.prettylisavpn.android.vpn.VpnPhase.WAITING_NETWORK, com.prettylisavpn.android.vpn.VpnPhase.RECONNECTING)
         presentation.invalidateLocation(changing)
         if (!changing) while (true) {
             presentation.refreshLocation()

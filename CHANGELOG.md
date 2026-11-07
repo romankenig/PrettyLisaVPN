@@ -6,6 +6,38 @@
 
 ## Unreleased
 
+### Android — 0.24.0
+
+- Periodically check the connected tunnel through its own network. Confirm repeated
+  transport failure before bounded recovery, retaining cleanup and paid/free access
+  fences. Show checking/waiting/reconnecting states in the app and notification.
+- Keep the foreground service across method fallback and recovery. A lost physical
+  network pauses recovery; manual disconnect, logout and lease expiry stop it.
+- Preserve the successful method, occasionally explore one alternative on a new
+  connection and temporarily deprioritize methods with delayed failures. Add a
+  compact reset/reconnect control without changing enabled methods or routing.
+- See [connection recovery handoff](docs/android-connection-recovery.md).
+
+### Android — 0.23.1
+
+- Hide the optional split-mode location block and divider when no observation is
+  available; restore them after the existing refresh succeeds. An observed IP is
+  still visible when city/country metadata is unavailable.
+- Preserve VPN status, connection errors, tunnel-pinned lookup and routing rules.
+  See [location handoff](docs/android-optional-location.md).
+
+### Android — 0.23.0
+
+- Separate subscription access, prominent monthly pricing, renewal details and
+  bottom management controls. Keep compact RUB/USD selection beside new prices;
+  retain the agreed amount/currency for an existing contract.
+- Hide unavailable payment methods/actions and replace the bottom refresh button
+  with accessible pull-down refresh. Preserve stale-data, consent and payment guards.
+- Add a red confirmed cancellation action when authorized, retaining paid access.
+  Explain manually assigned Platinum without a fictional payment contract.
+- See [Android subscription handoff](docs/android-subscription-layout.md) for
+  compatibility, native screenshots and final CI/publication evidence.
+
 ### Fleet retries — backend 0.35.1 / dashboard 0.6.3
 
 - Randomize the actual probe source for rapid/failed retries and expired worker

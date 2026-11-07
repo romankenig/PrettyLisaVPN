@@ -71,12 +71,12 @@ private fun LiveLoad(model: ScreenModel, area: Area, content: @Composable () -> 
     val state by model.state.collectAsState()
     LaunchedEffect(area) { model.load(area) }
     val load = state.loads[area] ?: Load()
-    if (area != Area.DEVICES && load.phase in setOf(LoadPhase.IDLE, LoadPhase.LOADING)) CircularProgressIndicator(color = Brand.Viking, modifier = Modifier.testTag("live-loading-${area.name}"))
+    if (area !in setOf(Area.DEVICES, Area.BILLING) && load.phase in setOf(LoadPhase.IDLE, LoadPhase.LOADING)) CircularProgressIndicator(color = Brand.Viking, modifier = Modifier.testTag("live-loading-${area.name}"))
     if (load.phase == LoadPhase.ERROR) BrandCard { OperationError(load.error) }
     if (state.data.refreshWarning != null) BrandCard { Text(tr.error(state.data.refreshWarning!!)) }
     // Existing data stays visible on failed refresh; mutations are guarded independently.
-    if (load.phase !in setOf(LoadPhase.IDLE, LoadPhase.LOADING) || (area == Area.DEVICES && state.data.devices.isNotEmpty())) content()
-    if (area != Area.DEVICES) BrandActionButton(tr(R.string.ui_refresh), { model.load(area) }, Modifier.testTag("live-refresh-${area.name}"), enabled = load.phase != LoadPhase.LOADING && !state.busy)
+    if (load.phase !in setOf(LoadPhase.IDLE, LoadPhase.LOADING) || (area == Area.DEVICES && state.data.devices.isNotEmpty()) || (area == Area.BILLING && state.data.billing != null)) content()
+    if (area !in setOf(Area.DEVICES, Area.BILLING)) BrandActionButton(tr(R.string.ui_refresh), { model.load(area) }, Modifier.testTag("live-refresh-${area.name}"), enabled = load.phase != LoadPhase.LOADING && !state.busy)
 }
 
 @Composable
@@ -113,7 +113,6 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
     } }
 }
 
-private fun money(amount: Long, currency: String) = "${currency} ${java.math.BigDecimal.valueOf(amount, 2).toPlainString()}"
 @Composable
 private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     val tr = strings()
@@ -133,61 +132,97 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     var requestId by rememberSaveable { mutableStateOf(UUID.randomUUID().toString()) }
     val context = LocalContext.current
     val language by LocalPresentation.current.preference.language.collectAsState()
+    val locale = java.util.Locale.forLanguageTag(language.code)
+    val billing = state.data.billing
+    val contract = subscriptionContractPrice(billing?.currentPrice)?.takeIf { billing?.plan == "PREMIUM" && !billing.newContractRequired }
+    val purchaseRoutes = billing?.let { subscriptionPurchaseRoutes(it, currency) }.orEmpty()
+    LaunchedEffect(billing?.revision, currency) {
+        val currencies = billing?.offers?.flatMap { it.prices.keys }.orEmpty()
+        if (contract != null && currency != contract.first) currency = contract.first
+        else if (contract == null && currencies.isNotEmpty() && currency !in currencies) currency = currencies.first()
+        if (purchaseRoutes.none { it.id == route }) route = purchaseRoutes.firstOrNull()?.id.orEmpty()
+    }
     var now by remember { mutableStateOf(java.time.Instant.now()) }
     LaunchedEffect(Unit) { while (true) { now = java.time.Instant.now(); kotlinx.coroutines.delay(60_000) } }
     LaunchedEffect(state.data.billing?.revision, action) {
         if (action != null && confirmedRevision != state.data.billing?.revision) action = null
     }
-    PhoneScreen("live-subscription-screen") {
+    PhoneScreen("live-subscription-screen", onRefresh = { if (!state.busy) model.load(Area.BILLING) },
+        refreshing = state.loads[Area.BILLING]?.phase == LoadPhase.LOADING, refreshAtEnd = false) {
         ScreenHeading(tr(R.string.ui_subscription), back)
         LiveLoad(model, Area.BILLING) {
-            val billing = state.data.billing
-            if (billing == null) BrandCard(Modifier.testTag("billing-reference-prices")) {
-                Text("Premium", style = MaterialTheme.typography.titleLarge)
-                Text(tr(R.string.billing_reference_month))
-                Text(tr(R.string.billing_reference_prices), style = MaterialTheme.typography.bodySmall)
-            }
-            if (billing != null) BrandCard {
-                Text(planLabel(billing.plan), style = MaterialTheme.typography.titleLarge)
-                BrandActionButton(tr(R.string.billing_portal), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, Modifier.testTag("billing-portal"), enabled = !state.busy && !model.fixture)
-                Text(tr(R.string.ui_paid_until_0, readableDate(billing.paidUntil, java.util.Locale.forLanguageTag(language.code), java.time.ZoneId.systemDefault()) ?: tr(R.string.ui_no_paid_period)), Modifier.testTag("live-paid-until"))
-                if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(billing.paidUntil, now)?.let { Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left")) }
-                Text(tr(R.string.ui_auto_renewal_0, if (billing.autoRenew) tr(R.string.ui_on) else tr(R.string.ui_off)))
-                Text(tr(R.string.ui_payment_method_0, if (billing.methodKind == "SBP") tr(R.string.billing_sbp_account) else billing.method ?: tr(R.string.ui_none)))
-                Text(tr(R.string.ui_current_price_0, billing.currentPrice ?: tr(R.string.ui_unavailable)))
-                billing.nextChargeAt?.let { next ->
-                    Text(tr(R.string.billing_next_charge, readableDate(next, java.util.Locale.forLanguageTag(language.code), java.time.ZoneId.systemDefault()) ?: next, billing.nextChargePrice ?: ""), Modifier.testTag("billing-next-charge"), style = MaterialTheme.typography.titleMedium)
+            if (billing == null) SubscriptionPriceCard("Premium", mapOf("RUB" to OfferPrice(39900, 49900), "USD" to OfferPrice(500, 700)),
+                currency, locale, { currency = it }, !state.busy, Modifier.testTag("billing-reference-prices"), tr(R.string.billing_reference_prices))
+            if (billing != null) {
+                BrandCard(Modifier.testTag("billing-access")) {
+                    Text(tr(R.string.ui_your_plan), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                    Text(planLabel(billing.plan), style = MaterialTheme.typography.headlineMedium)
+                    if (billing.plan == "PLATINUM") Text(tr(R.string.subscription_platinum), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
+                    billing.paidUntil?.let { paid ->
+                        HorizontalDivider(color = Brand.Christalle.copy(alpha = 0.12f))
+                        SubscriptionDetail(tr(R.string.subscription_active_until), readableDate(paid, locale, java.time.ZoneId.systemDefault()) ?: paid, "live-paid-until")
+                        if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(paid, now)?.let {
+                            Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left"), color = Brand.Christalle, style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
                 }
-                if (billing.currentPrice != null && !billing.newContractRequired) Text(tr(R.string.billing_fixed_price), style = MaterialTheme.typography.bodySmall)
-                if (billing.newContractRequired && billing.plan == "PREMIUM") Text(tr(R.string.billing_resubscribe), style = MaterialTheme.typography.bodySmall)
-                if (billing.mode != "LIVE" || !billing.available) Text(tr(R.string.ui_payment_actions_are_unavailable_no_payment_provider_will_be_opene), Modifier.testTag("provider-mode"), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                else Spacer(Modifier.testTag("provider-mode"))
-                listOf("RUB", "USD").forEach { code -> BrandActionButton("${code}${if (code == currency) " ✓" else ""}", { currency = code; route = if (code == "RUB") "MIR" else "BANK_CARD" }, enabled = !state.busy && !state.data.paymentPending) }
-                billing.offers.forEach { offer ->
-                    offer.prices[currency]?.let { p -> Text(tr(R.string.ui_premium_month_0_1, money(p.amount, currency), p.original?.let { tr(R.string.ui_was_0, money(it, currency)) } ?: "")) }
+                if (contract != null) SubscriptionPriceCard(tr(R.string.subscription_agreed_price), mapOf(contract), contract.first,
+                    locale, null, false, Modifier.testTag("billing-contract-price"), tr(R.string.billing_fixed_price))
+                else if (billing.plan == "PREMIUM" && !billing.newContractRequired) BrandCard {
+                    SubscriptionDetail(tr(R.string.subscription_agreed_price), billing.currentPrice ?: tr(R.string.subscription_price_unconfirmed))
                 }
-                billing.routes.forEach { cap ->
-                    BrandActionButton(tr(R.string.ui_0_1_2_auto_renew_3, cap.label, if (route == cap.id) " ✓" else "", cap.currencies.joinToString(), cap.recurring.joinToString().ifEmpty { tr(R.string.ui_unavailable) }), { route = cap.id }, Modifier.testTag("live-route-${cap.id}"), enabled = currency in cap.currencies && !state.busy && !state.data.paymentPending)
+                if (billing.plan != "PREMIUM" || billing.newContractRequired) billing.offers.forEach { offer ->
+                    SubscriptionPriceCard(tr(R.string.subscription_premium_offer), offer.prices, currency, locale, { currency = it },
+                        !state.busy && !state.data.paymentPending, Modifier.testTag("billing-offer"),
+                        if (billing.plan == "PREMIUM") tr(R.string.billing_resubscribe) else null)
                 }
-                billingActions.filter { it in billing.actions }.forEach { kind ->
-                    val purchase = kind in setOf("SUBSCRIBE", "RENEW")
-                    val allowedRoute = !purchase || (billing.offers.size == 1 && billing.routes.any { it.id == route && currency in it.currencies })
-                    BrandActionButton(tr.action(kind), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-${kind}"), enabled = state.data.operationsReady && billing.permits(kind) && allowedRoute && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
+                if (billing.plan == "PREMIUM" || billing.method != null || billing.autoRenew) BrandCard(Modifier.testTag("billing-payment-details")) {
+                    Text(tr(R.string.subscription_payment_details), style = MaterialTheme.typography.titleLarge)
+                    SubscriptionDetail(tr(R.string.subscription_auto_renew), tr(if (billing.autoRenew) R.string.ui_on else R.string.ui_off))
+                    SubscriptionDetail(tr(R.string.subscription_payment_method), if (billing.methodKind == "SBP") tr(R.string.billing_sbp_account) else billing.method ?: tr(R.string.ui_none))
+                    billing.nextChargeAt?.let { next ->
+                        HorizontalDivider(color = Brand.Christalle.copy(alpha = 0.12f))
+                        SubscriptionDetail(tr(R.string.subscription_next_charge), readableDate(next, locale, java.time.ZoneId.systemDefault()) ?: next, "billing-next-charge")
+                        Text(billing.nextChargePrice?.let { subscriptionContractPrice(it) }?.let { subscriptionMoney(it.second.amount, it.first, locale) } ?: billing.nextChargePrice.orEmpty(), style = MaterialTheme.typography.headlineSmall, color = Brand.Christalle)
+                    }
                 }
-                if (billing.permits("CANCEL")) Text(tr(R.string.billing_cancel_detail), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                if (state.data.paymentPending) {
+                if (billing.mode != "LIVE" || !billing.available) BrandCard(Modifier.testTag("provider-mode")) {
+                    Text(tr(R.string.subscription_payments_unavailable), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
+                } else Spacer(Modifier.testTag("provider-mode"))
+                if (purchaseRoutes.isNotEmpty()) BrandCard {
+                    Text(tr(R.string.subscription_payment_method), style = MaterialTheme.typography.titleMedium)
+                    purchaseRoutes.forEach { cap ->
+                        FilterChip(selected = route == cap.id, onClick = { route = cap.id }, label = { Text(cap.label) },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("live-route-${cap.id}"), enabled = !state.busy && !state.data.paymentPending)
+                    }
+                    listOf("SUBSCRIBE", "RENEW").filter { billing.permits(it) }.forEach { kind ->
+                        BrandActionButton(tr.action(kind), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-$kind"),
+                            enabled = state.data.operationsReady && billing.offers.size == 1 && purchaseRoutes.any { it.id == route } && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
+                    }
+                }
+                if (state.data.paymentPending) BrandCard {
                     Text(tr(R.string.ui_an_operation_needs_confirmation_refresh_its_status_before_startin))
                     BrandActionButton(tr(R.string.ui_check_operation), { model.perform(Command.ConfirmPayment) }, Modifier.testTag("live-check-payment"), loading = state.busy)
                     if (state.data.billingRetryAvailable) BrandActionButton(tr(R.string.ui_retry_original_operation), { model.perform(Command.Payment(requestId, "RENEW", route, currency)) }, Modifier.testTag("live-retry-payment"), enabled = billing.mode == "LIVE" && billing.available && !state.busy)
                 }
-                state.data.billingOperation?.let { operation ->
+                state.data.billingOperation?.let { operation -> BrandCard {
                     Text(tr(R.string.ui_operation_0_1, operation.id, operation.status))
                     val url = operation.redirect?.let { value -> runCatching { value.toUri().takeIf { it.scheme == "https" && it.host != null && it.userInfo == null && it.fragment == null && it.port in setOf(-1,443) } }.getOrNull() }
                     if (url != null && operation.status == "PENDING") BrandActionButton(tr(R.string.ui_continue_with_payment_provider), {
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
                     }, enabled = billing.mode == "LIVE" && billing.available)
+                } }
+                BrandCard(Modifier.testTag("billing-management")) {
+                    if (action == null) OperationError(state.error)
+                    SubscriptionManageButton(tr(R.string.subscription_change), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, "billing-portal", !state.busy && !model.fixture && !state.data.paymentPending)
+                    listOf("CHANGE_METHOD", "CANCEL").filter { billing.permits(it) }.forEach { kind ->
+                        if (kind == "CANCEL") Text(tr(R.string.billing_cancel_detail), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+                        SubscriptionManageButton(tr(if (kind == "CANCEL") R.string.subscription_delete else R.string.billing_replace_card),
+                            { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, "live-pay-$kind",
+                            state.data.operationsReady && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY,
+                            danger = kind == "CANCEL")
+                    }
                 }
-                if (action == null) OperationError(state.error)
             }
         }
     }

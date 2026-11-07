@@ -26,9 +26,9 @@ internal val managedMethods = linkedMapOf("amneziawg" to "AMNEZIA", "vless_reali
     "hysteria2" to "HYSTERIA2_TLS", "hysteria2_salamander" to "HYSTERIA2_SALAMANDER")
 
 internal class ManagedAdapter(private val context: Context, private val sessions: SessionCoordinator,
-    http: HttpAuthApi, override val method: VpnMethod, private val lost: () -> Unit) : ConnectionAdapter {
+    http: HttpAuthApi, override val method: VpnMethod, private val transportLost: (() -> Unit)? = null, private val lost: () -> Unit) : ConnectionAdapter {
     private val api = ManagedApi(http, sessions)
-    private val runtime = ManagedRuntime(context, lost)
+    private val runtime = ManagedRuntime(context) { (transportLost ?: lost)() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var heartbeat: Job? = null
     private var deadline: Job? = null
@@ -140,6 +140,12 @@ internal class ManagedAdapter(private val context: Context, private val sessions
             delay((Instant.parse(row.expires_at).toEpochMilli() - System.currentTimeMillis()).coerceAtLeast(0)); lost()
         }
     }
+    override suspend fun health(): TunnelHealth {
+        val row = lease ?: return TunnelHealth.UNKNOWN
+        val config = row.configuration ?: return TunnelHealth.UNKNOWN
+        val result = checkTunnelNetwork(context, vpnNetwork(), config.expected_egress_ips, runtime::isUp)
+        return if (lease?.id == row.id) result else TunnelHealth.UNKNOWN
+    }
     private suspend fun closeRemote() {
         val current = lease ?: api.current() ?: run { acquired = false; return }
         lease = current
@@ -154,7 +160,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         withContext(NonCancellable) {
             disconnectCleanup(stopLocal = { try { runtime.stop() } finally { HttpRoutes.default() } },
                 revokeRemote = { if (acquired || lease != null) closeRemote() })
-            context.stopService(Intent(context, TunnelForegroundService::class.java))
+            // AndroidVpnHost retains the foreground service across recovery/fallback.
         }
     }
 }

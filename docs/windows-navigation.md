@@ -793,3 +793,38 @@ counts on hover or keyboard focus. Clicking an hour still opens the existing
 measurement details, and filters keep their current routes. This is implemented
 dashboard presentation using the existing API; Windows navigation is unchanged.
 See [history handoff](dashboard-group-metrics.md#proportional-availability-history--2026-11-06).
+
+### Android 0.23.0: subscription presentation and refresh
+
+The live Android subscription screen uses access/price/payment cards and top-only
+pull-to-refresh with an accessibility action. The old bottom refresh button and
+unavailable provider controls are removed. Bottom “change subscription” retains
+the existing single-use authenticated portal transition; browser resume refreshes
+billing. Authorized native method replacement and red cancellation still require
+confirmation and an authoritative server result, preserving paid access. Manually
+assigned Platinum receives no invented cancellation capability. These are actual
+UI transitions on the existing backend integration; live merchant activation is
+still pending. Windows routes and its version are unchanged. See
+[Android subscription handoff](android-subscription-layout.md).
+
+### Android 0.23.1: optional split-mode location
+
+The lower Home traffic card renders its location section only for a connected
+split mode with observed metadata. Failed/not-yet-completed lookups leave no
+placeholder or divider; an IP-only observation remains useful without an unknown
+region label. Existing minute/manual refresh restores the section automatically.
+VPN state/errors, routes and external lookups are unchanged; this is implemented
+Android presentation, with no pending backend integration. See
+[location handoff](android-optional-location.md).
+
+### Android 0.24.0: connection recovery and method reset
+
+Home adds a 48dp reset icon next to Connect/Disconnect. It clears learned method
+preference/recent failures, closes the old local/remote session, then starts a new
+selection for the displayed country; configured allowed methods are retained.
+Manual cancellation wins over a pending reset. Checking, waiting-for-network and
+reconnecting replace a misleading connected label in both Home and its ongoing
+notification. Existing cancel/disconnect remains available. Background recovery
+uses the same verified adapters and cleanup barriers; it never reopens a session
+after explicit disconnect, account change or access expiry. No new backend API or
+Windows transition is pending. See [recovery handoff](android-connection-recovery.md).
