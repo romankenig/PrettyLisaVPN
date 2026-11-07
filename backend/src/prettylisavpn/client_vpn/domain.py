@@ -20,6 +20,7 @@ class ConnectRequest(Value):
     public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
     country: str = Field(default="AUTO", pattern=r"^(AUTO|[A-Z]{2})$")
     method: str = "wireguard"
+    traffic_mode: str = Field(default="all", pattern=r"^(all|include|exclude)$")
 
     @field_validator("method")
     @classmethod
@@ -38,11 +39,16 @@ class ConnectRequest(Value):
 
 
 def deadline(subscription: Subscription, now: datetime, remaining: int) -> tuple[bool, datetime]:
-    if subscription.effective_plan(now) != SubscriptionPlan.FREE:
+    if subscription.effective_plan(now) not in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO):
         assert subscription.current_period_end is not None
         return False, subscription.current_period_end
     if remaining <= 0:
-        raise FleetError("FREE_QUOTA_EXHAUSTED", 403)
+        raise FleetError(
+            "DEMO_QUOTA_EXHAUSTED"
+            if subscription.plan is SubscriptionPlan.DEMO
+            else "FREE_QUOTA_EXHAUSTED",
+            403,
+        )
     midnight = now.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
         days=1
     )

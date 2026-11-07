@@ -158,6 +158,10 @@ class ClientVpnService:
         if not self.settings.client_vpn_enabled:
             raise FleetError("VPN_UNAVAILABLE", 503)
         identity = await self.identity(token)
+        if identity.is_demo and (
+            data.country != "AUTO" or data.traffic_mode != "all" or data.method == "https_proxy"
+        ):
+            raise FleetError("REGISTRATION_REQUIRED", 403)
         managed = base_method(data.method) != "wireguard"
         if managed and not self.settings.managed_vpn_enabled:
             raise FleetError("VPN_METHOD_UNAVAILABLE", 503)
@@ -205,9 +209,14 @@ class ClientVpnService:
             subscription = await SubscriptionRepository(session).get_by_user_id(identity.user_id)
             if subscription is None:
                 raise FleetError("ACCOUNT_UNAVAILABLE", 403)
+            if subscription.plan is SubscriptionPlan.DEMO and (
+                data.country != "AUTO" or data.traffic_mode != "all" or data.method == "https_proxy"
+            ):
+                raise FleetError("REGISTRATION_REQUIRED", 403)
             quota = (
                 await ClientQuotaRepository(session).display(identity.user_id, now)
-                if subscription.effective_plan(now) == SubscriptionPlan.FREE
+                if subscription.effective_plan(now)
+                in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO)
                 else None
             )
             is_free, expires = deadline(subscription, now, quota.usable_seconds if quota else 0)

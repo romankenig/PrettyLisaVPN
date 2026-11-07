@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from prettylisavpn.client_vpn.domain import reserved_seconds
 from prettylisavpn.client_vpn.model import ClientLeaseRecord, FreeQuotaResetRecord
+from prettylisavpn.demo.domain import DEMO_SECONDS
+from prettylisavpn.demo.model import DemoDeviceRecord
 from prettylisavpn.legacy_vpn.quota import LegacyQuotaRepository
 
 
@@ -24,6 +26,14 @@ class ClientQuotaRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    async def _is_demo(self, user_id: UUID) -> bool:
+        return (
+            await self.session.scalar(
+                select(DemoDeviceRecord.user_id).where(DemoDeviceRecord.user_id == user_id)
+            )
+            is not None
+        )
+
     async def _reset(self, user_id: UUID, at: datetime) -> FreeQuotaResetRecord | None:
         record: FreeQuotaResetRecord | None = await self.session.scalar(
             select(FreeQuotaResetRecord).where(
@@ -36,9 +46,12 @@ class ClientQuotaRepository:
 
     async def remaining_free_seconds(self, user_id: UUID, at: datetime) -> int:
         start = at.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-        reset = await self._reset(user_id, at)
+        demo = await self._is_demo(user_id)
+        reset = None if demo else await self._reset(user_id, at)
         remaining = (
-            reset.allowance_seconds
+            DEMO_SECONDS
+            if demo
+            else reset.allowance_seconds
             if reset
             else await LegacyQuotaRepository(self.session).remaining_free_seconds(user_id, at)
         )
@@ -81,6 +94,7 @@ class ClientQuotaRepository:
             max(0, int(((row.quota_reserved_until or row.expires_at) - at).total_seconds()))
             for row in live
         )
-        reset = await self._reset(user_id, at)
-        limit = reset.allowance_seconds if reset else 3600
+        demo = await self._is_demo(user_id)
+        reset = None if demo else await self._reset(user_id, at)
+        limit = DEMO_SECONDS if demo else reset.allowance_seconds if reset else 3600
         return FreeQuotaSnapshot(remaining, min(limit, usable), len(live), limit)

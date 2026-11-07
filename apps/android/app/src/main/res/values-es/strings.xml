@@ -327,4 +327,23 @@
     <string name="vpn_reconnecting">restableciendo la conexión…</string>
     <string name="vpn_reset_methods">restablecer métodos guardados y reconectar</string>
     <string name="vpn_unstable">la conexión es inestable. se detuvo la recuperación automática; intenta conectarte de nuevo</string>
+    <string name="legal_documents">documentos</string>
+    <string name="legal_intro">condiciones vigentes en el sitio de PrettyLisaVPN</string>
+    <string name="legal_terms">acuerdo de usuario</string>
+    <string name="legal_privacy">política de privacidad</string>
+    <string name="legal_refunds">reembolsos y reclamaciones</string>
+    <string name="legal_payments">pagos, cancelación y renovación</string>
+    <string name="legal_open_failed">no se pudo abrir el navegador. inténtalo de nuevo.</string>
+    <string name="demo_try">probar sin registro</string>
+    <string name="demo_intro">15 minutos diarios en este dispositivo. piloto automático y protección de todo el tráfico.</string>
+    <string name="demo_privacy">un identificador seudónimo conserva el límite diario tras reinstalar. detalles en la política de privacidad.</string>
+    <string name="demo_guest">invitado en este dispositivo</string>
+    <string name="demo_upgrade">registrarse en FREE</string>
+    <string name="demo_upgrade_details">una hora al día, elección de país y protección selectiva. el registro inicia un cupo FREE independiente; el tiempo DEMO no se descuenta.</string>
+    <string name="demo_locked_hint">regístrate para desbloquear con FREE</string>
+    <string name="demo_exhausted">se agotó el tiempo DEMO de hoy. regístrate para obtener una hora FREE completa o espera al reinicio diario.</string>
+    <string name="demo_unavailable">DEMO no está disponible temporalmente. vuelve a intentarlo o accede por correo.</string>
+    <string name="demo_rate_limited">demasiados accesos de invitado. espera o accede por correo.</string>
+    <string name="demo_identity_failed">no se pudo identificar este dispositivo para DEMO. puedes acceder por correo.</string>
+    <string name="demo_full_traffic">todo el tráfico</string>
 </resources>

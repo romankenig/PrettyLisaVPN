@@ -113,6 +113,7 @@ async def portal(
     account = await cast(
         AuthenticatedSessionHandler, request.app.state.authenticated_sessions
     ).authenticate(token)
+    account.require_registered()
     return PortalResponse(url=await service(request).handoff(account.user_id))
 
 

@@ -68,6 +68,9 @@ fun validateTrafficServices(values: List<TrafficService>): List<TrafficService> 
         value.copy(domains = value.domains.map(::normalizeTrafficMask).distinct(), ipv4_cidrs = value.ipv4_cidrs?.map(::normalizeServiceNetwork)?.distinct())
     }
 }
+fun routingForPlan(demo: Boolean, selection: TrafficSelection): RoutingPolicy =
+    if (demo) RoutingPolicy("all", emptyList()) else selection.policy()
+
 fun TrafficSelection.policy(): RoutingPolicy {
     require(mode in setOf("all", "include", "exclude"))
     if (mode == "all") return RoutingPolicy(mode, emptyList())

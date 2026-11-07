@@ -272,6 +272,15 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             }
 
         }
+        if (!otp) Column(Modifier.fillMaxWidth(), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton({ model.perform(Command.TryDemo) }, Modifier.heightIn(min = 48.dp).testTag("auth-demo"), enabled = !state.busy,
+                colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
+                Text("🌱 " + tr(R.string.demo_try), style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(tr(R.string.demo_intro), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .85f))
+            Text(tr(R.string.demo_privacy), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .75f))
+        }
+        LegalDocuments(compact = true)
     }
 }
 

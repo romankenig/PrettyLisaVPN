@@ -6,6 +6,22 @@
 
 ## Unreleased
 
+### Android — 0.25.0 / Backend — 0.36.0 / Public website — 0.5.0
+
+- Add guest DEMO access on Android: 15 minutes per device per UTC day, automatic
+  server selection and full traffic protection. Ordinary reinstalls with the same
+  signer reuse the server quota; registration receives the separate FREE budget.
+- Preview locked country/split/manual settings with registration actions. Add
+  localized site documents to About and unobtrusive links below authentication.
+- Add a quieter DEMO section below Premium and Free on the website, with updated
+  terms/privacy explanations in all six languages. Prices are unchanged.
+- Backend migration 0046 retains anonymous device principals and durable quota.
+  BREAKING rollback constraint: binaries before 0.36.0 cannot read DEMO enum rows;
+  use a compatible forward fix and retain identities/usage. Do not downgrade or
+  rotate the identity key to roll back the UI. Existing registered-client API
+  contracts remain compatible. DEMO admission defaults off until configured.
+- See [DEMO implementation and rollout](docs/android-demo-access.md).
+
 ### Android — 0.24.0
 
 - Periodically check the connected tunnel through its own network. Confirm repeated

@@ -1,12 +1,14 @@
 package com.prettylisavpn.android.vpn
 
+import com.prettylisavpn.android.auth.AuthFailure
+
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.channels.Channel
 
 enum class VpnPhase { DISCONNECTED, CONNECTING, CONNECTED, CHECKING, WAITING_NETWORK, RECONNECTING, DISCONNECTING, FAILED }
-enum class VpnError { METHODS_EXHAUSTED, CLEANUP, ACCESS, UNSTABLE }
+enum class VpnError { METHODS_EXHAUSTED, CLEANUP, ACCESS, UNSTABLE, DEMO_LIMIT }
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
 data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null,
     val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
@@ -61,6 +63,7 @@ class VpnController(
                         if (owner() != id) { mutable.value = VpnStatus(); return@launch }
                         mutable.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(adapter.method, previous))
                         var connected = false
+                        var terminalError: VpnError? = null
                         try {
                             val result = adapter.connect(country)
                             ensureActive()
@@ -70,10 +73,21 @@ class VpnController(
                                 mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method)
                             }
                         } catch (e: CancellationException) { throw e }
+                        catch (error: AuthFailure) {
+                            terminalError = when (error.code) {
+                                "DEMO_QUOTA_EXHAUSTED" -> VpnError.DEMO_LIMIT
+                                "REGISTRATION_REQUIRED" -> VpnError.ACCESS
+                                else -> null
+                            }
+                        }
                         catch (_: Exception) { /* Continue only after completed cleanup. */ }
                         finally { if (!connected) withContext(NonCancellable) {
                             try { adapter.disconnect() } catch (error: Exception) { active = adapter; throw error }
                         } }
+                        if (terminalError != null) {
+                            mutable.value = VpnStatus(VpnPhase.FAILED, terminalError)
+                            return@launch
+                        }
                         if (connected) break
                         previous = adapter.method
                     }

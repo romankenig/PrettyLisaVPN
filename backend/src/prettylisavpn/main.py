@@ -52,6 +52,9 @@ from prettylisavpn.client_vpn.router import router as client_vpn_router
 from prettylisavpn.client_vpn.service import ClientVpnService
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres, Valkey
+from prettylisavpn.demo.domain import RegistrationRequiredError
+from prettylisavpn.demo.router import router as demo_router
+from prettylisavpn.demo.service import DemoService, RedisAdmissionLimit
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
 from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
@@ -187,6 +190,11 @@ def create_app(
                 app.state.fleet_settings = config
                 app.state.fleet = fleet or FleetService(cast(Postgres, pg), config)
                 app.state.valkey = cache
+                app.state.demo = (
+                    DemoService(cast(Postgres, pg), config, RedisAdmissionLimit(cache.client))
+                    if isinstance(cache, Valkey)
+                    else None
+                )
                 app.state.otp_service = (
                     otp_service if otp_service is not None else cast(Valkey, cache).otp
                 )
@@ -317,6 +325,7 @@ def create_app(
     app.add_middleware(SafeExceptionMiddleware)
     app.state.cardlink_callbacks = cardlink_callbacks
     app.include_router(auth_router)
+    app.include_router(demo_router)
     app.include_router(client_vpn_router)
     app.include_router(client_sessions_router)
     app.include_router(account_router)
@@ -334,6 +343,14 @@ def create_app(
     app.include_router(fleet_router)
     app.include_router(analytics_router)
     app.include_router(traffic_router)
+
+    @app.exception_handler(RegistrationRequiredError)
+    async def registration_required(
+        request: Request, exc: RegistrationRequiredError
+    ) -> JSONResponse:
+        response = error_response("REGISTRATION_REQUIRED", 403)
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.exception_handler(FleetError)
     async def fleet_error(request: Request, exc: FleetError) -> JSONResponse:

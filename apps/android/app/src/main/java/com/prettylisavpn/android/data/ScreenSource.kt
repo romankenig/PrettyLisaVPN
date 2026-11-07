@@ -39,6 +39,7 @@ data class Snapshot(
     val supportDelivered: Boolean = false,
 )
 sealed interface Command {
+    data object TryDemo : Command
     data class RequestOtp(val email: String) : Command
     data class VerifyOtp(val code: String) : Command
     data object Logout : Command

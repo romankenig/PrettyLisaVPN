@@ -1,3 +1,14 @@
+# Android 0.25.0 — guest access and documents
+
+Android login → Try DEMO → Home uses the new guest API. About and login document
+links open fixed localized HTTPS pages without credentials. Muted country/split/
+device/manual-method controls → confirmed tunnel cleanup and guest logout → email
+OTP → registered FREE with its independent budget. Guest Settings → Subscription
+shows the FREE registration offer without requesting billing. These UI/API paths
+are implemented; actual deployment and guest admission activation remain pending.
+Website shows Premium > Free > DEMO and links DEMO to Android download. Windows
+navigation is unchanged. See [DEMO handoff](android-demo-access.md).
+
 # Price resilience — Windows 0.26.1 / Android 0.22.1 / Apple and Chrome 0.2.1
 
 Subscription load failure → localized read-only monthly reference price card

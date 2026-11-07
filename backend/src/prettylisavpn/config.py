@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.35.1", min_length=1)
+    application_version: str = Field(default="0.36.0", min_length=1)
+    demo_enabled: bool = False
+    demo_identity_secret: SecretStr | None = Field(default=None, min_length=32)
     environment: str = Field(default="development", min_length=1)
     billing_provider: Literal["disabled", "sandbox", "platega"] = "disabled"
     platega_merchant_id: UUID = UUID(int=0)
@@ -79,6 +81,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.demo_enabled and self.demo_identity_secret is None:
+            raise ValueError("DEMO requires a stable, independent device identity key")
+        if self.demo_identity_secret is not None and self.demo_identity_secret in (
+            self.otp_hmac_secret,
+            self.managed_vpn_secret,
+            self.fleet_admin_token,
+            self.fleet_monitor_token,
+        ):
+            raise ValueError("DEMO device identity key must be independent")
         if self.billing_provider == "platega" and (
             self.platega_merchant_id.int == 0 or self.platega_secret is None
         ):

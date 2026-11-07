@@ -146,11 +146,12 @@
     "documents": "documents"
   },
   "legal": {
-    "updated": "version du 6 novembre 2026",
+    "updated": "version du 7 novembre 2026",
     "terms": [
       "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. questions sur le service, les paiements et les réclamations : help@prettylisavpn.com.",
       "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
       "l’offre free comprend une heure de connexion par jour, partagée sur tout le compte. le quota est réinitialisé à 00:00 utc. aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’offre, le temps restant et la période d’accès sont affichés dans l’application.",
+      "DEMO sur Android ne nécessite ni courriel ni inscription : 15 minutes par appareil et par jour, sélection automatique du serveur et protection de tout le trafic. le quota est renouvelé à 00:00 UTC. une réinstallation ordinaire ne réinitialise pas la consommation. l’inscription donne une heure FREE distincte ; la consommation d’un compte FREE existant est conservée.",
       "le vpn chiffre la connexion entre votre appareil et le serveur du service. la vitesse et la disponibilité dépendent du réseau, de l’appareil et du serveur. un vpn ne remplace pas la protection de l’appareil et ne garantit pas un anonymat absolu.",
       "utilisez le service dans le respect de la loi. les accès non autorisés aux systèmes d’autrui, les logiciels malveillants, le spam et les attaques contre l’infrastructure sont interdits.",
       "contactez l’assistance pour toute question sur le fonctionnement de l’application. les conditions de paiement et de traitement des demandes financières figurent sur des pages distinctes. ces conditions ne limitent pas les droits prévus par la législation applicable."
@@ -159,6 +160,7 @@
       "questions sur le traitement des données personnelles par PrettyLisaVPN : help@prettylisavpn.com.",
       "le fonctionnement du compte utilise l’e-mail, l’identifiant, le statut et les dates de création et de modification. la gestion des appareils utilise l’identifiant d’installation, le nom et la plateforme de l’appareil, ainsi que les dates de connexion et de révocation d’accès.",
       "le service traite les informations relatives à l’offre, à la période d’accès, aux événements de connexion au compte, aux sessions vpn et aux résultats techniques des connexions. ces informations servent à l’authentification, au décompte du temps, à la gestion des connexions, à l’assistance et à l’évaluation du fonctionnement du service.",
+      "pour DEMO, l’application transmet le hachage d’un identifiant propre à sa clé de signature, au profil Android et à l’appareil. le serveur conserve uniquement un hachage avec clé secrète et une fiche technique de visiteur pour le décompte du temps. l’Android ID d’origine n’est pas envoyé ; ni IMEI ni identifiant publicitaire ne sont utilisés. les limites temporaires de connexion utilisent un hachage de l’adresse IP pendant une heure maximum. une réinstallation avec la même clé conserve le quota ; une réinitialisation d’usine, un autre profil Android ou une autre clé peuvent modifier l’identifiant.",
       "l’analyse du produit porte sur les événements d’utilisation du compte et le fonctionnement technique du service. ses événements n’incluent ni historique de navigation, ni adresses de pages visitées, ni requêtes dns, ni contenu des paquets. cela décrit l’analyse du produit et ne signifie pas l’absence de tout journal technique.",
       "lors d’un contact avec l’assistance, le message et les pièces jointes sont traités. n’envoyez pas de mots de passe, de codes à usage unique ou de coordonnées complètes de carte bancaire.",
       "les données quotidiennes d’analyse et les rapports datant de plus de 180 jours sont supprimés. le contenu des demandes et les pièces jointes sont supprimés de la base de travail de l’assistance après 30 jours. ces délais ne signifient pas la suppression de toute la correspondance ou de toutes les données du compte.",
@@ -223,6 +225,12 @@
     "terms": "renouvellement mensuel. le prix convenu reste inchangé jusqu’à la résiliation.",
     "manage": "Gérer l’abonnement",
     "loading": "Chargement de l’abonnement…",
-    "upgrade": "passer à Premium"
+    "upgrade": "passer à Premium",
+    "demo": {
+      "title": "essayer sans inscription",
+      "description": "15 minutes par appareil et par jour. pilote automatique et protection de tout le trafic uniquement.",
+      "button": "essayer sur Android",
+      "upgrade": "inscrivez-vous à FREE : une heure complète par jour, choix du pays et protection sélective. le temps DEMO n’est pas déduit de FREE."
+    }
   }
 }

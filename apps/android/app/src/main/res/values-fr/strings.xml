@@ -327,4 +327,23 @@
     <string name="vpn_reconnecting">rétablissement de la connexion…</string>
     <string name="vpn_reset_methods">réinitialiser les méthodes mémorisées et se reconnecter</string>
     <string name="vpn_unstable">la connexion est instable. la récupération automatique est arrêtée ; essayez de vous reconnecter</string>
+    <string name="legal_documents">documents</string>
+    <string name="legal_intro">conditions en vigueur sur le site PrettyLisaVPN</string>
+    <string name="legal_terms">conditions d’utilisation</string>
+    <string name="legal_privacy">politique de confidentialité</string>
+    <string name="legal_refunds">remboursements et réclamations</string>
+    <string name="legal_payments">paiement, annulation et renouvellement</string>
+    <string name="legal_open_failed">impossible d’ouvrir le navigateur. veuillez réessayer.</string>
+    <string name="demo_try">essayer sans inscription</string>
+    <string name="demo_intro">15 minutes par jour sur cet appareil. pilote automatique et protection de tout le trafic.</string>
+    <string name="demo_privacy">un identifiant pseudonyme conserve la limite quotidienne après réinstallation. détails dans la politique de confidentialité.</string>
+    <string name="demo_guest">invité sur cet appareil</string>
+    <string name="demo_upgrade">s’inscrire à FREE</string>
+    <string name="demo_upgrade_details">une heure par jour, choix du pays et protection sélective. l’inscription ouvre un quota FREE distinct ; le temps DEMO n’en est pas déduit.</string>
+    <string name="demo_locked_hint">inscrivez-vous pour débloquer avec FREE</string>
+    <string name="demo_exhausted">le temps DEMO du jour est épuisé. inscrivez-vous pour une heure FREE complète ou attendez le renouvellement quotidien.</string>
+    <string name="demo_unavailable">DEMO est temporairement indisponible. réessayez ou connectez-vous par courriel.</string>
+    <string name="demo_rate_limited">trop de connexions invité. patientez ou connectez-vous par courriel.</string>
+    <string name="demo_identity_failed">cet appareil ne peut pas être identifié pour DEMO. vous pouvez vous connecter par courriel.</string>
+    <string name="demo_full_traffic">tout le trafic</string>
 </resources>

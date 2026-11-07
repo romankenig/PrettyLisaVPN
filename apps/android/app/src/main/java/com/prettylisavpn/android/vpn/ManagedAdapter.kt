@@ -51,7 +51,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         throw error
     }
     private suspend fun connectChecked(country: String): ConnectionResult {
-        val routing = DeviceTrafficSelection.get(context).current().policy()
+        val routing = routingForPlan(sessions.profile?.isDemo == true, DeviceTrafficSelection.get(context).current())
         stage = "PERMISSION"
         if (!VpnPermission.request(context)) return ConnectionResult.Failed
         stage = "RECOVERY"
@@ -61,7 +61,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         val publicKey = KeyPair().publicKey.toBase64()
         acquired = true
         stage = "ADMISSION"
-        lease = api.connect(country, publicKey, UUID.randomUUID().toString(), method.id)
+        lease = api.connect(country, publicKey, UUID.randomUUID().toString(), method.id, routing.mode)
         armDeadline(requireNotNull(lease))
         heartbeat = scope.launch {
             maintainLeaseHeartbeat(renew = {

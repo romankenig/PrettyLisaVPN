@@ -19,7 +19,7 @@ import com.prettylisavpn.android.R
 import com.prettylisavpn.android.vpn.*
 
 @Composable
-internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolean) {
+internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolean, canConnect: Boolean = true) {
     val tr = strings()
     fun methodName(method: VpnMethod) = if (method.id == "wireguard_relay") tr(R.string.vpn_wireguard_relay) else method.shortLabel
     val status by (actions?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
@@ -27,9 +27,9 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         BrandActionButton(tr(if (status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.RECONNECTING)) R.string.vpn_cancel else if (active) R.string.vpn_disconnect else R.string.dash_connect), {
             if (active) actions?.disconnect() else actions?.connect(country)
-        }, Modifier.weight(1f).testTag("home-connect"), enabled = actions != null && signedIn && status.phase != VpnPhase.DISCONNECTING)
+        }, Modifier.weight(1f).testTag("home-connect"), enabled = actions != null && signedIn && (active || canConnect) && status.phase != VpnPhase.DISCONNECTING)
         OutlinedIconButton({ actions?.resetMethods(country) }, Modifier.size(48.dp).testTag("vpn-reset-methods"),
-            enabled = actions != null && signedIn && status.phase != VpnPhase.DISCONNECTING && status.error != VpnError.CLEANUP) {
+            enabled = actions != null && signedIn && canConnect && status.phase != VpnPhase.DISCONNECTING && status.error != VpnError.CLEANUP) {
             Icon(Icons.Outlined.Refresh, tr(R.string.vpn_reset_methods), tint = Brand.Christalle)
         }
     }
@@ -54,6 +54,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
     if (status.error != null) Text(
-        if (status.error == VpnError.METHODS_EXHAUSTED) tr(R.string.vpn_placeholder_exhausted, status.method?.label ?: "")
+        if (status.error == VpnError.DEMO_LIMIT) tr(R.string.demo_exhausted)
+        else if (status.error == VpnError.METHODS_EXHAUSTED) tr(R.string.vpn_placeholder_exhausted, status.method?.label ?: "")
         else tr(if (status.error == VpnError.UNSTABLE) R.string.vpn_unstable else R.string.vpn_failed), Modifier.testTag("vpn-error"), style = MaterialTheme.typography.bodySmall, color = Brand.PersianRed)
 }

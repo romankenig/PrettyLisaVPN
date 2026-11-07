@@ -146,11 +146,12 @@
     "documents": "dokumente"
   },
   "legal": {
-    "updated": "fassung vom 6. november 2026",
+    "updated": "fassung vom 7. november 2026",
     "terms": [
       "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. fragen zum dienst, zu zahlungen und reklamationen: help@prettylisavpn.com.",
       "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
       "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
+      "Android DEMO benötigt keine E-Mail-Adresse oder Registrierung: 15 Minuten pro Gerät und Tag, automatische Serverwahl und Schutz des gesamten Datenverkehrs. zurückgesetzt wird um 00:00 UTC. eine normale Neuinstallation setzt den Verbrauch nicht zurück. die Registrierung bietet eine separate FREE-Stunde; der Verbrauch eines bestehenden FREE-Kontos bleibt bestehen.",
       "vpn verschlüsselt die verbindung zwischen ihrem gerät und dem server des dienstes. geschwindigkeit und verfügbarkeit hängen vom netzwerk, gerät und server ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
       "nutzen sie den dienst rechtmäßig. unbefugter zugriff auf fremde systeme, schadsoftware, spam und angriffe auf die infrastruktur sind unzulässig.",
       "wenden sie sich bei fragen zur app an den support. zahlungsbedingungen und die bearbeitung finanzieller ansprüche werden auf gesonderten seiten beschrieben. diese bedingungen schränken keine rechte nach anwendbarem recht ein."
@@ -159,6 +160,7 @@
       "fragen zur verarbeitung personenbezogener daten bei PrettyLisaVPN: help@prettylisavpn.com.",
       "für den kontobetrieb werden e-mail-adresse, kennung, status sowie erstellungs- und änderungsdatum verwendet. die geräteverwaltung verwendet die installationskennung, gerätename und plattform sowie zeitpunkte der anmeldung und des zugangsentzugs.",
       "der dienst verarbeitet informationen zum tarif, zugangszeitraum, zu anmeldeereignissen, vpn-sitzungen und technischen verbindungsergebnissen. sie werden für die autorisierung, zeiterfassung, verbindungsverwaltung, unterstützung und bewertung der dienstleistung benötigt.",
+      "für DEMO sendet die App einen Hash einer Kennung, die auf Signaturschlüssel, Android-Nutzer und Gerät begrenzt ist. der Server speichert nur einen schlüsselbasierten Hash und einen technischen Gasteintrag zur Zeiterfassung. die ursprüngliche Android ID wird nicht übertragen; IMEI und Werbe-ID werden nicht verwendet. temporäre Anmeldelimits verwenden einen IP-Hash für höchstens eine Stunde. eine Neuinstallation mit demselben Signaturschlüssel erhält das Limit; Werksreset, anderes Android-Profil oder anderer Signaturschlüssel können die Kennung ändern.",
       "die produktanalyse erfasst ereignisse der kontonutzung und den technischen betrieb des dienstes. ihre ereignisse enthalten keinen browserverlauf, keine adressen besuchter seiten, dns-anfragen oder paketinhalte. dies beschreibt die analyse und behauptet nicht, dass keinerlei technische protokolle existieren.",
       "bei einer supportanfrage werden ihre nachricht und beigefügte materialien verarbeitet. senden sie keine passwörter, einmalcodes oder vollständigen bankkartendaten.",
       "tägliche analytikdatensätze und berichte werden nach mehr als 180 tagen gelöscht. inhalte von supportanfragen und anhänge werden nach 30 tagen aus der operativen supportdatenbank gelöscht. diese fristen bedeuten nicht, dass die gesamte korrespondenz oder alle kontodaten gelöscht werden.",
@@ -223,6 +225,12 @@
     "terms": "monatliche Verlängerung. der vereinbarte Preis bleibt bis zur Kündigung erhalten.",
     "manage": "Abonnement verwalten",
     "loading": "Abonnement wird geladen…",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "demo": {
+      "title": "ohne Registrierung testen",
+      "description": "15 Minuten pro Gerät und Tag. nur Autopilot und Schutz des gesamten Datenverkehrs.",
+      "button": "auf Android testen",
+      "upgrade": "mit FREE registrieren: eine volle Stunde täglich, Länderwahl und selektiver Schutz. DEMO-Zeit wird nicht von FREE abgezogen."
+    }
   }
 }

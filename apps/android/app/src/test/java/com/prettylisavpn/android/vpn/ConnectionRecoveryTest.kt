@@ -7,6 +7,22 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionRecoveryTest {
+    @Test fun demoQuotaStopsMethodExplorationAfterCleanup() = runTest {
+        val events = mutableListOf<String>()
+        val exhausted = object : ConnectionAdapter {
+            override val method = VpnMethod("wireguard", "WireGuard")
+            override suspend fun connect(country: String): ConnectionResult {
+                events += "start"
+                throw com.prettylisavpn.android.auth.AuthFailure("DEMO_QUOTA_EXHAUSTED")
+            }
+            override suspend fun disconnect() { events += "cleanup" }
+        }
+        val next = Adapter("vless", events)
+        val controller = VpnController({ "guest" }, backgroundScope, listOf(exhausted, next))
+        controller.connect("AUTO"); runCurrent()
+        assertEquals(listOf("start", "cleanup"), events)
+        assertEquals(VpnError.DEMO_LIMIT, controller.status.value.error)
+    }
     private val policy = ConnectionHealthPolicy(intervalMillis = 30, retryMillis = 5, recoveryBackoffMillis = 3, recoveryWindowMillis = 10_000)
     private class Adapter(id: String, private val events: MutableList<String>) : ConnectionAdapter {
         override val method = VpnMethod(id, id)

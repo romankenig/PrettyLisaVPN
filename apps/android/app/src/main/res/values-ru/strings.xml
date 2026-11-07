@@ -327,4 +327,23 @@
     <string name="vpn_reconnecting">восстанавливаем соединение…</string>
     <string name="vpn_reset_methods">сбросить запомненные способы и подключиться заново</string>
     <string name="vpn_unstable">соединение нестабильно. автоматическое восстановление остановлено; попробуйте подключиться снова</string>
+    <string name="legal_documents">документы</string>
+    <string name="legal_intro">актуальные условия на сайте PrettyLisaVPN</string>
+    <string name="legal_terms">пользовательское соглашение</string>
+    <string name="legal_privacy">политика конфиденциальности</string>
+    <string name="legal_refunds">возвраты и претензии</string>
+    <string name="legal_payments">оплата, отмена и продление</string>
+    <string name="legal_open_failed">не удалось открыть браузер. попробуйте ещё раз.</string>
+    <string name="demo_try">попробовать без регистрации</string>
+    <string name="demo_intro">15 минут в день на этом устройстве. автопилот и защита всего трафика.</string>
+    <string name="demo_privacy">обезличенный идентификатор устройства сохраняет суточный лимит после переустановки. подробнее — в политике конфиденциальности.</string>
+    <string name="demo_guest">гость на этом устройстве</string>
+    <string name="demo_upgrade">зарегистрироваться — FREE</string>
+    <string name="demo_upgrade_details">час в день, выбор страны и выборочная защита трафика. после регистрации начинается отдельный лимит FREE; время DEMO из него не вычитается.</string>
+    <string name="demo_locked_hint">зарегистрируйтесь, чтобы открыть в FREE</string>
+    <string name="demo_exhausted">время DEMO на сегодня закончилось. зарегистрируйтесь и получите полный час FREE или дождитесь суточного обновления.</string>
+    <string name="demo_unavailable">DEMO временно недоступен. попробуйте ещё раз или войдите по почте.</string>
+    <string name="demo_rate_limited">слишком много попыток гостевого входа. подождите или войдите по почте.</string>
+    <string name="demo_identity_failed">не удалось определить устройство для DEMO. можно войти по почте.</string>
+    <string name="demo_full_traffic">весь трафик</string>
 </resources>

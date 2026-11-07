@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -38,18 +39,19 @@ internal fun DetailValue(label: String, value: String, modifier: Modifier = Modi
 @Composable
 internal fun AccountSummary(data: Snapshot, upgrade: () -> Unit) {
     val tr = strings()
+    val demo = data.plan.equals("Demo", ignoreCase = true)
     BrandCard(Modifier.testTag("account-summary")) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(tr(R.string.dash_account), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-            Text(data.email, Modifier.testTag("account-email"), style = MaterialTheme.typography.titleSmall)
+            Text(if (demo) tr(R.string.demo_guest) else data.email, Modifier.testTag("account-email"), style = MaterialTheme.typography.titleSmall)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(36.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             DetailValue(tr(R.string.dash_plan), planLabel(data.plan))
-            DetailValue(tr(R.string.dash_devices), "${data.activeDeviceCount} / 5", Modifier.testTag("account-device-count"))
+            DetailValue(tr(R.string.dash_devices), "${data.activeDeviceCount} / ${if (demo) 1 else 5}", Modifier.testTag("account-device-count"))
         }
-        if (data.plan == "Free") {
+        if (demo || data.plan == "Free") {
             FreeTimeBalance(data.freeTime)
-            BrandActionButton(tr(R.string.upgrade_plan), upgrade, Modifier.testTag("home-upgrade"))
+            BrandActionButton(tr(if (demo) R.string.demo_upgrade else R.string.upgrade_plan), upgrade, Modifier.testTag("home-upgrade"))
         }
     }
 }
@@ -84,9 +86,10 @@ internal fun SettingsOption(title: String, detail: String, icon: Int, tag: Strin
 }
 
 @Composable
-internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
+internal fun LiveHome(model: ScreenModel, register: () -> Unit = {}, upgrade: () -> Unit) {
     val tr = strings()
     val state by model.state.collectAsState()
+    val demo = state.data.plan.equals("Demo", ignoreCase = true)
     val presentation = LocalPresentation.current
     val location by presentation.location.collectAsState()
     val locating by presentation.locating.collectAsState()
@@ -116,7 +119,8 @@ internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
     }
     val collator = remember(locale) { java.text.Collator.getInstance(locale) }
     val countries = state.data.countries.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
-    LaunchedEffect(countries, state.loads[Area.COUNTRIES]?.phase) {
+    LaunchedEffect(demo, countries, state.loads[Area.COUNTRIES]?.phase) {
+        if (demo) selected = "AUTO"
         if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected }) selected = "AUTO"
     }
     PhoneScreen("live-account", onRefresh = {
@@ -147,19 +151,24 @@ internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
                     HorizontalDivider()
                     countries.sortedByDescending { it.quality.toIntOrNull() ?: 0 }.take(3).takeIf { it.isNotEmpty() }?.let { top ->
                         Text(tr(R.string.dash_top), Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                        top.forEach { c -> DropdownMenuItem({ LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull()) },
-                            { selected = c.code; expanded = false }, Modifier.testTag("home-top-${c.code}")) }
+                        top.forEach { c -> DropdownMenuItem({ Column { LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull(), Modifier.alpha(if (demo) .45f else 1f)); if (demo) Text("🔒 " + tr(R.string.demo_locked_hint), style = MaterialTheme.typography.bodySmall) } },
+                            { expanded = false; if (demo) register() else selected = c.code }, Modifier.testTag("home-top-${c.code}")) }
                         HorizontalDivider()
                     }
                     Text(tr(R.string.dash_all_countries), Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                    countries.forEach { c -> DropdownMenuItem({ LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull()) },
-                        { selected = c.code; expanded = false }, Modifier.testTag("home-country-${c.code}")) }
+                    countries.forEach { c -> DropdownMenuItem({ Column { LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull(), Modifier.alpha(if (demo) .45f else 1f)); if (demo) Text("🔒 " + tr(R.string.demo_locked_hint), style = MaterialTheme.typography.bodySmall) } },
+                        { expanded = false; if (demo) register() else selected = c.code }, Modifier.testTag("home-country-${c.code}")) }
                     if (countries.isEmpty()) DropdownMenuItem({ Text(tr(R.string.dash_no_countries)) }, {}, enabled = false)
                 }
             }
             if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.LOADING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Brand.PurpleHeart)
             OperationError(state.loads[Area.COUNTRIES]?.error)
-            VpnControls(model.vpn, selected, state.data.signedIn)
+            val exhausted = demo && state.data.freeTime?.remaining(System.currentTimeMillis()) == 0
+            if (exhausted) {
+                Text(tr(R.string.demo_exhausted), color = Brand.Christalle, style = MaterialTheme.typography.bodyMedium)
+                TextButton(register, Modifier.testTag("demo-limit-register")) { Text(tr(R.string.demo_upgrade)) }
+            }
+            VpnControls(model.vpn, if (demo) "AUTO" else selected, state.data.signedIn, canConnect = !exhausted)
             HorizontalDivider(color = Brand.DustyGray)
             Row(Modifier.fillMaxWidth().testTag("home-network"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("home-location-loading"), strokeWidth = 2.dp)
@@ -171,7 +180,7 @@ internal fun LiveHome(model: ScreenModel, upgrade: () -> Unit) {
                 }
             }
         }
-        TrafficRouting(model, refreshKey)
+        if (demo) DemoTraffic(register) else TrafficRouting(model, refreshKey)
     }
 }
 

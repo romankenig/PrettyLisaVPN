@@ -10,7 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 
-class AndroidVpnHost private constructor(context: Context, sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
+class AndroidVpnHost private constructor(context: Context, private val sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val saved = context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE)
     private val preference = MethodPreference(
@@ -36,7 +36,7 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
     }
     val controller: VpnController = VpnController({ sessions.profile?.id }, scope,
         listOf(wireguard, relay) + engines, preference, recovery = recovery,
-        enabledMethods = DeviceMethodSelection.get(context)::current, healthPolicy = ConnectionHealthPolicy(),
+        enabledMethods = { if (sessions.profile?.isDemo == true) null else DeviceMethodSelection.get(context).current() }, healthPolicy = ConnectionHealthPolicy(),
         elapsedMillis = android.os.SystemClock::elapsedRealtime)
     init {
         scope.launch { controller.status.collect { state ->
@@ -45,9 +45,9 @@ class AndroidVpnHost private constructor(context: Context, sessions: SessionCoor
         } }
     }
     override val status get() = controller.status
-    override fun connect(country: String) = controller.connect(country)
+    override fun connect(country: String) = controller.connect(if (sessions.profile?.isDemo == true) "AUTO" else country)
     override fun disconnect(): Unit = controller.disconnect()
-    override fun resetMethods(country: String) = controller.resetMethods(country)
+    override fun resetMethods(country: String) = controller.resetMethods(if (sessions.profile?.isDemo == true) "AUTO" else country)
     fun serviceLost() { if (wireguard.isRunning || relay.isRunning || engines.any { it.isRunning }) disconnect() }
     fun wireguardDiagnostic() = if (relay.isRunning) relay.diagnostic() else wireguard.diagnostic()
     internal fun managedDiagnostic(method: String) = engines.firstOrNull { it.method.id == method }?.diagnostic()
