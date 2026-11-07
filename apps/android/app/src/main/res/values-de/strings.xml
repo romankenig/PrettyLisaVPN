@@ -317,4 +317,17 @@
     <string name="billing_sbp_account">verknüpftes SBP-Bankkonto</string>
     <string name="billing_reference_prices">richtpreise für ein neues Abonnement. die aktuellen Konditionen werden vor der Zahlung bestätigt. ihr bestehender Vertragspreis bleibt unverändert.</string>
     <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / Monat</string>
+    <string name="subscription_per_month">pro Kalendermonat</string>
+    <string name="subscription_platinum">diese Stufe wurde manuell zugewiesen. es gibt keine wiederkehrenden Abbuchungen.</string>
+    <string name="subscription_active_until">zugang bis</string>
+    <string name="subscription_agreed_price">ihr vereinbarter Preis</string>
+    <string name="subscription_price_unconfirmed">der Vertragspreis konnte nicht bestätigt werden. zum Wiederholen nach unten ziehen.</string>
+    <string name="subscription_premium_offer">Premium-Abonnement</string>
+    <string name="subscription_payment_details">zahlung und Verlängerung</string>
+    <string name="subscription_auto_renew">automatische Verlängerung</string>
+    <string name="subscription_payment_method">zahlungsmethode</string>
+    <string name="subscription_next_charge">nächste Abbuchung</string>
+    <string name="subscription_payments_unavailable">zahlungen sind derzeit nicht verfügbar. die Preise und Ihren aktuellen Zugang können Sie weiterhin ansehen.</string>
+    <string name="subscription_change">abonnement ändern</string>
+    <string name="subscription_delete">abonnement löschen</string>
 </resources>

@@ -317,4 +317,17 @@
     <string name="billing_sbp_account">已绑定 SBP 银行账户</string>
     <string name="billing_reference_prices">新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。</string>
     <string name="billing_reference_month">499 ₽ → 399 ₽ · $7 → $5 / 月</string>
+    <string name="subscription_per_month">每个自然月</string>
+    <string name="subscription_platinum">此等级由管理员手动授予，不会自动扣款。</string>
+    <string name="subscription_active_until">有效期至</string>
+    <string name="subscription_agreed_price">您的约定价格</string>
+    <string name="subscription_price_unconfirmed">无法确认合同价格。请下拉重试。</string>
+    <string name="subscription_premium_offer">Premium 订阅</string>
+    <string name="subscription_payment_details">付款与续订</string>
+    <string name="subscription_auto_renew">自动续订</string>
+    <string name="subscription_payment_method">付款方式</string>
+    <string name="subscription_next_charge">下次扣款</string>
+    <string name="subscription_payments_unavailable">付款暂不可用。您仍可查看价格和当前访问权限。</string>
+    <string name="subscription_change">更改订阅</string>
+    <string name="subscription_delete">删除订阅</string>
 </resources>

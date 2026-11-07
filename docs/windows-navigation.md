@@ -793,3 +793,16 @@ counts on hover or keyboard focus. Clicking an hour still opens the existing
 measurement details, and filters keep their current routes. This is implemented
 dashboard presentation using the existing API; Windows navigation is unchanged.
 See [history handoff](dashboard-group-metrics.md#proportional-availability-history--2026-11-06).
+
+### Android 0.23.0: subscription presentation and refresh
+
+The live Android subscription screen uses access/price/payment cards and top-only
+pull-to-refresh with an accessibility action. The old bottom refresh button and
+unavailable provider controls are removed. Bottom “change subscription” retains
+the existing single-use authenticated portal transition; browser resume refreshes
+billing. Authorized native method replacement and red cancellation still require
+confirmation and an authoritative server result, preserving paid access. Manually
+assigned Platinum receives no invented cancellation capability. These are actual
+UI transitions on the existing backend integration; live merchant activation is
+still pending. Windows routes and its version are unchanged. See
+[Android subscription handoff](android-subscription-layout.md).

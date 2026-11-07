@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Android — 0.23.0
+
+- Separate subscription access, prominent monthly pricing, renewal details and
+  bottom management controls. Keep compact RUB/USD selection beside new prices;
+  retain the agreed amount/currency for an existing contract.
+- Hide unavailable payment methods/actions and replace the bottom refresh button
+  with accessible pull-down refresh. Preserve stale-data, consent and payment guards.
+- Add a red confirmed cancellation action when authorized, retaining paid access.
+  Explain manually assigned Platinum without a fictional payment contract.
+- See [Android subscription handoff](docs/android-subscription-layout.md) for
+  compatibility, native screenshots and final CI/publication evidence.
+
 ### Fleet retries — backend 0.35.1 / dashboard 0.6.3
 
 - Randomize the actual probe source for rapid/failed retries and expired worker
