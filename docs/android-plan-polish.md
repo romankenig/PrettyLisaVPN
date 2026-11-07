@@ -3,10 +3,12 @@
 ## Versions and compatibility
 
 Android 0.25.0 → **0.26.0**, versionCode 47 → 48: substantial subscription UI and
-navigation changes. Backend 0.36.0 → **0.37.0**: authenticated guest device list
-and revocation are now available. Schema remains **0046_demo_devices**; no schema
+navigation changes. Backend 0.37.0 → **0.38.0**: authenticated guest device list
+and revocation are now available. Schema remains **0047_active_user_speed** from develop; no additional schema
 change. Windows, Apple, Chrome, dashboard and website versions are unchanged.
-Base: `990e4de46f5faa7e9e7627e3699f055df039b0bf`. These changes are not published.
+Initial base: `990e4de46f5faa7e9e7627e3699f055df039b0bf`; synchronized with
+`13dc5039d72146a15e52daa75a9f4702d0d61b5d` after PR #67. Its backend 0.37.0
+requires this independent task to use 0.38.0. These changes are not published.
 
 ## Behavior and boundaries
 
@@ -49,5 +51,5 @@ double font scale and existing IME/navigation scenarios.
 Final product HEAD, build SHA/run/attempt, all workflow/job conclusions and native
 artifact evidence are recorded in the PR after verification. Native Android builds
 use CI because this workstation has no configured Android SDK/JDK. Backend follow-up:
-deploy 0.37.0 before distributing 0.26.0 for guest device management; retain the
+deploy 0.38.0 before distributing 0.26.0 for guest device management; retain the
 existing DEMO identity key and 0046 data. Merge/publication require owner approval.

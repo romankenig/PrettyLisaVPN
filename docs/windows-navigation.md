@@ -7,7 +7,7 @@ a provider or creating an operation. Active payment uses the existing revision,
 quote and confirmation guards. Current-plan badges distinguish the comparison.
 DEMO Settings → Devices and Advanced now opens the real screens; only country/
 split/support still require registration. Device API integration needs backend
-0.37.0. Login documents sit at the bottom of the scrollable area. These paths are
+0.38.0. Login documents sit at the bottom of the scrollable area. These paths are
 implemented; new publication awaits approval. See [handoff](android-plan-polish.md).
 
 # Android 0.25.0 — guest access and documents (historical)

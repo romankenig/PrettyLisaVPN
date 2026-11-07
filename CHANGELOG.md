@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Android — 0.26.0 / Backend — 0.37.0
+### Android — 0.26.0 / Backend — 0.38.0
 
 - Simplify sign-in, emphasize the secondary guest action and anchor document links
   to the bottom of short screens, while retaining scrolling with the keyboard.
@@ -18,7 +18,19 @@
 - Open device management and method selection to DEMO. Guest device revocation
   retains identity/quota and removes active VPN access; AUTO/full traffic remain
   mandatory. Show a smaller reset icon only beside an active protocol label.
-- Schema remains 0046; see [plan polish handoff](docs/android-plan-polish.md).
+- No schema change beyond develop migration 0047; see [plan polish handoff](docs/android-plan-polish.md).
+
+### Backend — 0.37.0 / Fleet dashboard — 0.7.0 / Managed engine — 0.6.1
+
+- Add real active-account download/upload speeds across selected VPN exits:
+  five-second connection counters, time-weighted means, per-account medians,
+  distinct active accounts and explicit server/time coverage. No browsing data.
+- Add hour/day/week charts with existing private dashboard authorization and
+  measured synthetic reference, without filling gaps or averaging server means.
+- Migration 0047 stores atomic counter baselines and eight-day interval history;
+  resets/restarts, retries, missing samples and relay double counting are handled.
+- See [calculation, limitations and rollout](docs/active-user-speed.md). Client
+  versions and customer API contracts remain unchanged. Deployment is separate.
 
 ### Android — 0.25.0 / Backend — 0.36.0 / Public website — 0.5.0
 

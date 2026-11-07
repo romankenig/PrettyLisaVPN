@@ -1,6 +1,6 @@
 # Android guest DEMO and public documents
 
-Android 0.26.0 / backend 0.37.0 follow-up opens devices and manual method selection
+Android 0.26.0 / backend 0.38.0 follow-up opens devices and manual method selection
 to guests and revises plan comparison; see [current behavior](android-plan-polish.md).
 The restrictions below describe the original 0.25.0 release.
 
