@@ -146,11 +146,12 @@
     "documents": "documents"
   },
   "legal": {
-    "updated": "updated november 5, 2026",
+    "updated": "version dated november 7, 2026",
     "terms": [
       "PrettyLisaVPN provides vpn access through apps for android and windows. for service, payment and complaint inquiries: help@prettylisavpn.com.",
       "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
       "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
+      "Android DEMO needs no email or registration: 15 minutes per device each day, automatic server selection and protection of all traffic. the allowance resets at 00:00 UTC. ordinary reinstallation does not reset usage. registration provides a separate FREE hour; an existing FREE account’s usage is not reset.",
       "vpn encrypts the connection between your device and the service server. speed and availability depend on the network, device and server. vpn does not replace device security or provide absolute anonymity.",
       "use the service lawfully. unauthorized access to other people's systems, malware, spam and attacks on infrastructure are prohibited.",
       "contact support for questions about the app. payment terms and the handling of monetary claims are described on separate pages. these terms do not limit rights granted by applicable law."
@@ -159,10 +160,12 @@
       "for questions about personal data processing by PrettyLisaVPN: help@prettylisavpn.com.",
       "account operation uses an email address, identifier, status, and creation and modification dates. device management uses the installation identifier, device name and platform, and dates of sign-in and access revocation.",
       "the service processes information about the plan, access period, sign-in events, vpn sessions and technical connection results. this information is needed for authorization, time accounting, connection management, support and evaluation of service performance.",
+      "for DEMO, the app sends a hash of an identifier scoped to its signing key, Android user and device. the server retains only a keyed digest and a technical guest record for time accounting. the original Android ID is not sent; IMEI and advertising ID are not used. temporary guest sign-in limits use a hashed IP address for up to one hour. reinstalling with the same signing key preserves the allowance; a factory reset, another Android user or a different signing key can change the identifier.",
       "product analytics records account usage events and the technical operation of the service. its events do not include browsing history, visited page addresses, dns queries or packet contents. this describes analytics and is not a claim that no technical logs exist.",
       "when you contact support, your message and attachments are processed. do not send passwords, one-time codes or complete bank card details.",
       "daily analytics records and reports older than 180 days are removed. support request content and attachments are removed from the operational support database after 30 days. these periods do not mean that all correspondence or all account data is deleted.",
-      "the website does not use advertising trackers, cookies or browser local storage. the language is determined by the page address. fonts and images are loaded from the service's infrastructure.",
+      "The website does not use advertising trackers. The billing portal uses a secure HttpOnly cookie for up to two hours and a local pending operation identifier to recover after closing the page. Payment credentials are not stored by the website. Language follows the page address; fonts and images load from the service infrastructure.",
+      "When you subscribe, your email address, amount and technical operation identifier are sent to Platega to process and match the payment. PrettyLisaVPN stores payment statuses and access periods; bank account and card credentials are handled by the payment provider.",
       "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
     ],
     "refunds": [
@@ -176,8 +179,8 @@
     "payments": [
       "a paid subscription provides premium access for one calendar month. the period starts after payment confirmation. the exact expiry date is shown in the app.",
       "a calendar month ends on the corresponding day of the following month; if that day does not exist, it ends on the last day of the month. this is not a fixed 30-day period.",
-      "renewal is manual. a repeat payment via a link is a separate payment. automatic charges and saving a payment method for future charges are not used.",
-      "to stop renewing your subscription, do not make the next payment. the access period already granted remains valid until the specified expiry date.",
+      "SBP subscriptions renew automatically once per calendar month after your consent. The agreed amount stays fixed until cancellation and a new subscription. A one-off payment link does not enable automatic renewal.",
+      "You can stop future charges and unlink your bank account in subscription management. Paid access remains until the displayed date. A new subscription uses the price available at that time.",
       "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
       "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment.",
       "the maximum amount per transaction is 10,000 RUB. balance top-ups and custom amounts are not offered. payments are not available yet."
@@ -214,6 +217,20 @@
     "unavailableTitle": "payments are temporarily unavailable",
     "unavailableText": "payment processing is not connected yet. no money was charged and no subscription was created. please try again later or contact us about payments.",
     "close": "got it",
-    "currency": "currency"
+    "currency": "currency",
+    "text": "one account for all your devices",
+    "premium": "unlimited time · choose a country",
+    "unavailable": "prices are unavailable",
+    "unavailableCheckout": "subscription checkout is coming soon",
+    "terms": "monthly renewal. your agreed price stays the same until you cancel.",
+    "manage": "Manage subscription",
+    "loading": "Loading subscription…",
+    "upgrade": "upgrade",
+    "demo": {
+      "title": "try without registration",
+      "description": "15 minutes per device each day. autopilot and protection of all traffic only.",
+      "button": "try on Android",
+      "upgrade": "register for FREE: a full hour daily, country selection and selective protection. DEMO time is not deducted from FREE."
+    }
   }
 }

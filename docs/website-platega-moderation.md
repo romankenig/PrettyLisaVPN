@@ -1,5 +1,19 @@
 # Website 0.3.1 — moderation feedback
 
+## Historical record retained on 2026-11-07
+
+This document records the original 0.3.x task, not the current payment behavior.
+The current website is 0.5.0: later develop work already retained the moderation
+marker, public document links, neutral copy, shared help address and account
+screenshot, then added the real billing portal and DEMO information. The current
+website source and navigation are preserved byte-for-byte when reconciling PR #52.
+Only this missing historical handoff is added; **version unchanged** for all
+components, with no application rebuild or deployment required for this record.
+Current checkout, limits and provider status are defined by
+[Platega billing](platega-billing.md) and [DEMO access](android-demo-access.md).
+Statements below about disabled payments and prices describe their original date.
+Final reconciliation HEAD, checks and merge are recorded in PR #52.
+
 ## Follow-up dated 2026-11-05
 
 Website **0.3.0 → 0.3.1** (PATCH: public copy, document visibility and catalog

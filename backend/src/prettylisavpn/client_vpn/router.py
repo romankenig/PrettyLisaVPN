@@ -72,7 +72,10 @@ async def connect(
     backend: Service,
     credential: Token,
     idempotency_key: Annotated[UUID, Header()],
+    proxy_ip: Annotated[str | None, Header(alias="X-PrettyLisaVPN-Proxy-IP")] = None,
 ) -> dict[str, Any]:
+    if proxy_ip == "1":
+        return await backend.connect(credential, data, idempotency_key, allow_proxy_ip=True)
     return await backend.connect(credential, data, idempotency_key)
 
 

@@ -23,6 +23,7 @@ from prettylisavpn.auth.session_service import (
     RevokedDeviceError,
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
+from prettylisavpn.demo.domain import RegistrationRequiredError
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.support.domain import Receipt, Report, SupportError
 from prettylisavpn.support.images import FILE_BYTES, TOTAL_BYTES, clean_image
@@ -57,6 +58,8 @@ class SupportRoute(APIRoute):
                 response = error_response("AUTH_INVALID", 401)
             except AuthServiceUnavailableError:
                 response = error_response("SUPPORT_UNAVAILABLE", 503)
+            except RegistrationRequiredError:
+                response = error_response("REGISTRATION_REQUIRED", 403)
             except Exception:
                 logger.warning("support_request_unavailable")
                 response = error_response("SUPPORT_UNAVAILABLE", 503)
@@ -107,6 +110,7 @@ async def submit(request: Request, token: Annotated[str | None, Depends(bearer_t
         raise SupportError("AUTH_INVALID", 401)
     service = cast(SupportService, request.app.state.support)
     identity = await service.auth.authenticate(token)
+    identity.require_registered()
     if not request.headers.get("content-type", "").startswith("multipart/form-data;"):
         raise SupportError("INVALID_REQUEST", 422)
     async with asyncio.timeout(30), service.upload_slots:
@@ -146,5 +150,6 @@ async def status(
         raise SupportError("AUTH_INVALID", 401)
     service = cast(SupportService, request.app.state.support)
     identity = await service.auth.authenticate(token)
+    identity.require_registered()
     result = await service.get(identity, request_id)
     return JSONResponse(result.model_dump(mode="json"))

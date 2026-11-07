@@ -1,19 +1,60 @@
 import { releaseMetadata } from "./downloads.mjs";
+import {
+  cachedPrices,
+  savePublicPrices,
+  acquisitionPrices,
+  acquisitionReferencePrices,
+  formatMonthlyPrice,
+} from "./pricing.mjs";
 
-const paymentDialog = document.querySelector("#payment-dialog");
-document.querySelectorAll("[data-purchase]").forEach((link) => {
-  link.addEventListener("click", (event) => {
-    // The ordinary link remains a working no-JS/no-dialog fallback.
-    if (typeof paymentDialog?.showModal !== "function") return;
-    event.preventDefault();
-    paymentDialog.querySelector("[data-payment-price]").textContent =
-      link.dataset.price;
-    paymentDialog.showModal();
-  });
-});
-document
-  .querySelector("[data-payment-close]")
-  ?.addEventListener("click", () => paymentDialog.close());
+const pricing = document.querySelector("[data-pricing]");
+if (pricing) {
+  let storage;
+  try {
+    storage = localStorage;
+  } catch {
+    /* Private mode may block storage. */
+  }
+  const render = ({ prices, original }, reference) => {
+    for (const node of pricing.querySelectorAll("[data-price]")) {
+      const currency = node.dataset.price;
+      node.textContent = formatMonthlyPrice(
+        prices[currency],
+        currency,
+        document.documentElement.lang,
+      );
+    }
+    for (const node of pricing.querySelectorAll("[data-reference-price]")) {
+      const currency = node.dataset.referencePrice;
+      node.hidden = original[currency] == null;
+      node.textContent = node.hidden
+        ? ""
+        : formatMonthlyPrice(
+            original[currency],
+            currency,
+            document.documentElement.lang,
+          );
+    }
+    pricing.querySelector("[data-price-reference-note]").hidden = !reference;
+  };
+  const saved = cachedPrices(storage);
+  if (saved) render(saved, true);
+  fetch("/api/billing/catalog", {
+    cache: "no-store",
+    credentials: "omit",
+    signal: AbortSignal.timeout(8000),
+  })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((value) => {
+      const prices = acquisitionPrices(value);
+      if (!prices) return;
+      render({ prices, original: acquisitionReferencePrices(value) }, false);
+      savePublicPrices(storage, value);
+    })
+    .catch(() => {
+      /* Keep last known public prices or the approved reference prices. */
+    });
+}
 
 const language = document.querySelector(".language");
 document.addEventListener("keydown", (event) => {
@@ -49,3 +90,7 @@ if (release) {
       /* The direct download stays usable without optional metadata. */
     });
 }
+
+const portal = document.querySelector("[data-portal]");
+if (portal)
+  import("./portal.mjs").then(({ mountPortal }) => mountPortal(portal));

@@ -248,6 +248,7 @@ async def test_me_returns_identity_plan_and_active_device_count():
                 "vpn_session_limit_seconds": 3600,
                 "rewarded_ad_required": False,
                 "country_selection_allowed": True,
+                "split_tunneling_allowed": True,
                 "free_nodes_only": True,
                 "active_device_limit": 5,
                 "daily_vpn_limit_seconds": 3600,

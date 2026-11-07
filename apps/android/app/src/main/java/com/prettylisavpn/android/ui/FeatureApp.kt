@@ -272,6 +272,15 @@ internal fun AuthScreen(model: ScreenModel, otp: Boolean, next: () -> Unit, back
             }
 
         }
+        if (!otp) Column(Modifier.fillMaxWidth(), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton({ model.perform(Command.TryDemo) }, Modifier.heightIn(min = 48.dp).testTag("auth-demo"), enabled = !state.busy,
+                colors = ButtonDefaults.textButtonColors(contentColor = Brand.Mercury)) {
+                Text("🌱 " + tr(R.string.demo_try), style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(tr(R.string.demo_intro), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .85f))
+            Text(tr(R.string.demo_privacy), style = MaterialTheme.typography.bodySmall, color = Brand.Mercury.copy(alpha = .75f))
+        }
+        LegalDocuments(compact = true)
     }
 }
 
@@ -406,7 +415,7 @@ internal fun OperationError(error: String?) {
 }
 
 @Composable
-internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, action: () -> Unit) {
+internal fun ConfirmDialog(title: String, body: String, confirm: String, state: ScreenState, dismiss: () -> Unit, extraContent: (@Composable () -> Unit)? = null, action: () -> Unit) {
     val modals = LocalModalPresence.current
     DisposableEffect(modals) {
         modals?.let { it.count++ }
@@ -416,7 +425,7 @@ internal fun ConfirmDialog(title: String, body: String, confirm: String, state: 
     AlertDialog(
         modifier = Modifier.testTag("confirmation-dialog"), containerColor = Brand.Mercury,
         onDismissRequest = dismiss, title = { Text(title) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(body); OperationError(state.error) } },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(body); extraContent?.invoke(); OperationError(state.error) } },
         confirmButton = { TextButton(onClick = action, enabled = !state.busy, modifier = Modifier.testTag("confirm-dialog")) { Text(if (state.busy) tr(R.string.processing) else confirm) } },
         dismissButton = { TextButton(onClick = dismiss, modifier = Modifier.testTag("dismiss-dialog")) { Text(tr(R.string.ui_cancel)) } },
     )

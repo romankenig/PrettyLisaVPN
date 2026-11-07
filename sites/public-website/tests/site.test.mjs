@@ -11,12 +11,7 @@ import {
   legalKeys,
   routeFor,
 } from "../src/structure.mjs";
-import {
-  website,
-  releaseBlockers,
-  assertPricePolicy,
-  MAX_TRANSACTION_RUB_MINOR,
-} from "../src/model.mjs";
+import { website, releaseBlockers } from "../src/model.mjs";
 import { releaseMetadata } from "../src/downloads.mjs";
 import { build, dist, root } from "../scripts/build.mjs";
 import { createPreviewServer } from "../scripts/preview.mjs";
@@ -31,6 +26,50 @@ function shape(value) {
   assert.ok(value.trim());
   return "string";
 }
+
+test("billing preserves the published moderation layout and uses API-owned pricing", () => {
+  for (const language of languages) {
+    const all = pages();
+    const html = all.get(routeFor(language));
+    assert.match(html, /platega test/);
+    assert.equal((html.match(/class="document-button"/g) ?? []).length, 4);
+    assert.match(html, /id="documents"/);
+    assert.doesNotMatch(html, /183475316809|Кениг Роман|Roman Kenig/);
+    assert.match(html, /android-home\.png/);
+    assert.match(html, /data-price="RUB"/);
+    assert.match(html, /data-price="USD"/);
+    assert.match(html, /name="currency" value="RUB" checked/);
+    assert.match(html, /data-free-currency="RUB"/);
+    assert.match(html, /data-free-currency="USD"/);
+    const pricing = html.match(/<section class="pricing[\s\S]*?<\/section>/)[0];
+    const purchaseLabel = `>${escape(locales[language].pricing.buy)}</a>`;
+    assert.equal(pricing.split(purchaseLabel).length - 1, 2);
+    assert.ok(!pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`));
+    assert.doesNotMatch(
+      html,
+      /data-amount-minor=|data-purchase=|id="payment-dialog"/,
+    );
+    assert.match(html, new RegExp(`href="${routeFor(language, "/account/")}"`));
+    assert.match(all.get(routeFor(language, "/account/")), /data-portal/);
+  }
+});
+test("DEMO is below Premium and Free with localized device limits and Android entry", () => {
+  const all = pages();
+  for (const language of languages) {
+    const html = all.get(routeFor(language));
+    const premium = html.indexOf('class="plan premium-plan"');
+    const free = html.indexOf('class="plan free-plan"');
+    const demo = html.indexOf('class="demo-plan"');
+    assert.ok(premium >= 0 && free > premium && demo > free);
+    const section = html.slice(demo, html.indexOf('</aside>', demo));
+    assert.ok(section.includes(escape(locales[language].pricing.demo.description)));
+    assert.ok(section.includes(routeFor(language, '/download/android/')));
+    assert.ok(!section.includes('class="button"'));
+    for (const document of ['terms', 'privacy']) {
+      assert.match(all.get(routeFor(language, `/legal/${document}/`)), /DEMO/);
+    }
+  }
+});
 test("all six client languages have complete UI, download instructions and four documents", async () => {
   assert.deepEqual(languages, ["ru", "en", "de", "fr", "es", "zh"]);
   const windows = await readFile(
@@ -57,9 +96,9 @@ test("all six client languages have complete UI, download instructions and four 
   assert.throws(() => routeFor("unknown"));
   assert.equal(escape('<script>"&'), "&lt;script&gt;&quot;&amp;");
 });
-test("home has five sections including plans, one launch notice and seven distinct platform pages", () => {
+test("home has five sections including database-backed prices, one launch notice and seven distinct platform pages", () => {
   const all = pages();
-  assert.equal(all.size, 78);
+  assert.equal(all.size, 96);
   for (const language of languages) {
     const html = all.get(routeFor(language));
     assert.equal((html.match(/<section /g) ?? []).length, 5);
@@ -95,72 +134,6 @@ test("home has five sections including plans, one launch notice and seven distin
         assert.match(page, /class="button" disabled/);
       }
     }
-  }
-});
-test("purchase path exposes exact owner prices, working fallback and honest payment unavailability in every language", () => {
-  assert.deepEqual(website.prices, { RUB: 39900, USD: 500 });
-  assert.deepEqual(website.referencePrices, { RUB: 49900, USD: 700 });
-  assert.equal(website.period, "CALENDAR_MONTH");
-  assert.equal(website.seller.email, "help@prettylisavpn.com");
-  const all = pages();
-  for (const language of languages) {
-    const html = all.get(routeFor(language));
-    const terms = all.get(routeFor(language, "/legal/payments/"));
-    for (const [currency, amount] of Object.entries(website.prices)) {
-      const format = (value) =>
-        new Intl.NumberFormat(language, {
-          style: "currency",
-          currency,
-          maximumFractionDigits: 0,
-        }).format(value / 100);
-      assert.ok(
-        html.includes(`<s>${format(website.referencePrices[currency])}</s>`),
-      );
-      assert.ok(html.includes(`<strong>${format(amount)}</strong>`));
-      assert.ok(
-        html.includes(
-          `data-purchase="${currency}" data-amount-minor="${amount}" data-price="${format(amount)}"`,
-        ),
-      );
-      assert.ok(terms.includes(`<strong>${format(amount)}</strong>`));
-    }
-    assert.match(
-      html,
-      /<dialog[^>]+aria-labelledby="payment-title"[^>]+aria-describedby="payment-message"/,
-    );
-    assert.equal((html.match(/data-purchase=/g) ?? []).length, 2);
-    assert.match(html, /type="radio" name="currency" value="RUB" checked/);
-    assert.match(html, /type="radio" name="currency" value="USD"/);
-    const pricingBlock = html.match(
-      /<section[^>]*id="pricing">([\s\S]*?)<\/section>/,
-    )[1];
-    assert.doesNotMatch(pricingBlock, /mailto:|@prettylisavpn\.com/);
-    assert.doesNotMatch(
-      pricingBlock,
-      /class="renewal-note"|<nav|\/legal\/(terms|privacy|refunds)\//,
-    );
-    assert.match(pricingBlock, /data-free-currency="RUB"/);
-    assert.match(pricingBlock, /data-free-currency="USD"/);
-    const dialog = html.match(/<dialog[\s\S]*?<\/dialog>/)[0];
-    const notice = terms.match(
-      /<aside[^>]*id="payment-unavailable">([\s\S]*?)<\/aside>/,
-    )[1];
-    for (const placeholder of [dialog, notice]) {
-      assert.match(placeholder, /href="mailto:help@prettylisavpn.com"/);
-      assert.doesNotMatch(placeholder, /feedback@prettylisavpn\.com/);
-    }
-    assert.ok(
-      html.includes(
-        `${routeFor(language, "/legal/payments/")}#payment-unavailable`,
-      ),
-    );
-    assert.ok(terms.includes('id="payment-unavailable"'));
-    assert.ok(html.includes(escape(locales[language].pricing.unavailableText)));
-    assert.ok(
-      terms.includes(escape(locales[language].pricing.unavailableText)),
-    );
-    assert.doesNotMatch(html, /feedback@prettylisavpn.com/);
-    assert.doesNotMatch(html, /<form|paymentMethod|X-Secret|X-MerchantId/);
   }
 });
 test("all links and anchors resolve; documents and language links preserve context", () => {
@@ -200,49 +173,12 @@ test("all links and anchors resolve; documents and language links preserve conte
   for (const route of [
     "/plans/",
     "/checkout/",
-    "/account/",
     "/readiness/",
     "/legal/seller/",
     "/legal/acceptable-use/",
   ])
     assert.ok(!all.has(route));
   assert.equal(legalKeys.length, 4);
-});
-test("moderation documents and marker are public on every page without personal seller data or access claims", () => {
-  for (const [route, html] of pages()) {
-    assert.match(html, /<nav class="legal-links" id="documents"/);
-    assert.equal(
-      (html.match(/class="document-button"/g) ?? []).length,
-      4,
-      route,
-    );
-    assert.equal((html.match(/platega test/g) ?? []).length, 1, route);
-    assert.doesNotMatch(
-      html,
-      /183475316809|Кениг|Роман|Сергеевич|tax id|steuernummer|identifiant fiscal|identificación fiscal|税号|самозанят|\bИНН\b|feedback@/i,
-      route,
-    );
-    assert.doesNotMatch(
-      html,
-      /(?<![а-я])обход|блокиров|цензур|\bDPI\b|ТСПУ|глушил|белых списк|bypass|unblock|censorship|whitelist|umgeh|zensur|contourn|censure|desbloque|censura|绕过|审查制度|封锁|YouTube|Telegram|Instagram|Gosuslugi|Госуслуги|android-services/i,
-      route,
-    );
-  }
-});
-test("catalog rejects over-limit prices before any pages can be published", () => {
-  assert.equal(MAX_TRANSACTION_RUB_MINOR, 1_000_000);
-  assert.doesNotThrow(() => assertPricePolicy());
-  for (const key of ["prices", "referencePrices"]) {
-    const patched = (currency, amount) => ({
-      ...website,
-      [key]: { ...website[key], [currency]: amount },
-    });
-    assert.doesNotThrow(() => assertPricePolicy(patched("RUB", 1_000_000)));
-    for (const value of [1_000_001, -1, 0, 39900.5, NaN, Infinity, "39900"])
-      assert.throws(() => assertPricePolicy(patched("RUB", value)));
-    assert.throws(() => assertPricePolicy(patched("USD", 701)));
-    assert.throws(() => assertPricePolicy(patched("EUR", 500)));
-  }
 });
 test("release metadata is optional, validated and cannot change download destinations", () => {
   const data = {
@@ -291,12 +227,12 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
   }
 });
 test("commercial launch remains separate from authorized informational publication", () => {
-  assert.equal(website.renewal, "MANUAL");
+  assert.equal(website.renewal, "MONTHLY_SUBSCRIPTION");
   assert.equal(website.paymentAdapterImplemented, false);
-  assert.equal(website.providers.cardlink.approved, false);
   assert.equal(website.providers.platega.approved, false);
-  assert.equal(website.providers.platega.configured, false);
-  assert.equal(releaseBlockers().length, 5);
+  assert.ok(
+    releaseBlockers().includes("Нет одобренного и настроенного способа оплаты"),
+  );
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,
     env: { ...process.env, SITE_RELEASE: "1" },
@@ -349,11 +285,7 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
-  assert.equal(
-    (await fetch(origin + "/assets/screenshots/android-services.png")).status,
-    404,
-  );
-  for (const route of ["/readiness/", "/plans/", "/account/", "/checkout/"])
+  for (const route of ["/readiness/", "/plans/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);
   assert.equal(

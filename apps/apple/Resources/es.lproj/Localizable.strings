@@ -31,6 +31,15 @@
 "back" = "atrás";
 "billing_cancel_detail" = "cancelar la renovación desvincula el método de pago. el acceso continúa hasta el fin del periodo pagado.";
 "billing_days_left" = "días restantes: %1$d";
+"billing_fixed_price" = "el precio acordado se mantiene hasta cancelar y suscribirse de nuevo";
+"billing_next_charge" = "próximo cobro: %1$@ · %2$@";
+"billing_portal" = "gestionar suscripción y pagos";
+"billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / mes";
+"billing_reference_prices" = "precios orientativos para una nueva suscripción. confirmaremos las condiciones antes del pago. el precio de tu contrato actual no cambia.";
+"billing_replace_card" = "cambiar tarjeta";
+"billing_replace_prompt" = "¿prefieres cambiar de tarjeta? se mantienen las condiciones y el período pagado";
+"billing_resubscribe" = "no habrá más cobros automáticos. puedes suscribirte de nuevo al precio actual";
+"billing_sbp_account" = "cuenta bancaria SBP vinculada";
 "component_versions" = "frontend %1$@ · backend %2$@";
 "connection_methods" = "métodos de conexión";
 "connection_methods_hint" = "los cambios se aplican a la próxima conexión. selecciona al menos un método.";

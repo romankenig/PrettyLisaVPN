@@ -1,4 +1,4 @@
-# PrettyLisaVPN monitoring dashboard — 0.4.3
+# PrettyLisaVPN monitoring dashboard — 0.6.3
 
 Managed client downloads include corresponding engine source/license archives.
 Their links appear only when the verified publisher reports matching sources.
@@ -24,6 +24,12 @@ The generic OTP login of VPN customers is unchanged. This password protects only
 the administrative monitoring dashboard. Unknown/missing history remains unknown;
 the dashboard shows coverage separately from successful known hours.
 
+The overall/group hour strip uses proportional server-state colors. A single
+failed server colors only its share red; unknown and pending evidence retain
+their own colors. Servers not yet registered are excluded from the share and
+listed separately. Hover/focus reports exact counts; clicking still opens the
+hour's measurements. Individual server strips keep their original status colors.
+
 All displayed timestamps use fixed GMT+3 (`Etc/GMT-3`), independent of browser
 timezone. API timestamps and monitoring slots stay UTC.
 Click an hour to inspect every stored speed measurement and rating at check time.
@@ -46,7 +52,11 @@ a point/bar to see its date/time in GMT+3 and metric value immediately.
 See [implementation and verification](../../docs/dashboard-group-metrics.md).
 
 Client downloads use `/dashboard/downloads/android.apk` and
-`/dashboard/downloads/windows.exe`, protected by the same password. The catalog
+`/dashboard/downloads/windows.exe`, plus `chrome-extension.zip`,
+`ios-unsigned.zip` and `macos-unsigned.zip` in the same directory, protected by
+the same password. Apple ZIPs require signing/provisioning for real VPN use;
+iOS is a device build, not a Simulator package or an App Store/TestFlight link.
+The catalog
 at `/dashboard/downloads/index.json` identifies the latest successfully published
 development build of each platform. These files are stored on the main server;
 GitHub login and artifact retention do not affect downloads. See

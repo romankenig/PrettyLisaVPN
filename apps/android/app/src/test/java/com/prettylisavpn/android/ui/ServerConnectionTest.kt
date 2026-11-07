@@ -38,7 +38,7 @@ class ServerConnectionTest {
         advanceTimeBy(3_000); runCurrent()
         assertEquals(listOf(false, true), states)
     }
-    @Test fun serverFailureRetriesWithoutNetworkChangeAndRecovers() = runBlocking {
+    @Test fun serverFailureRetriesWithoutNetworkChangeAndRecovers() = runTest {
         var probes=0
         val states=withTimeout(2_000) { serverConnections(flowOf(true),1,0) {
             if (++probes == 1) throw java.io.IOException("timeout") else true
@@ -46,7 +46,7 @@ class ServerConnectionTest {
         assertEquals(listOf(false,true),states)
         assertEquals(2,probes)
     }
-    @Test fun networkLossCancelsProbeAndNetworkReturnChecksAgain() = runBlocking {
+    @Test fun networkLossCancelsProbeAndNetworkReturnChecksAgain() = runTest {
         val network=MutableStateFlow(true)
         val entered=CompletableDeferred<Unit>()
         val cancelled=CompletableDeferred<Unit>()
@@ -67,12 +67,14 @@ class ServerConnectionTest {
         assertEquals(listOf(false,true),states)
         assertEquals(2,probes)
     }
-    @Test fun offlineDoesNotProbeAndCollectorCancellationStopsPolling() = runBlocking {
+    @Test fun offlineDoesNotProbeAndCollectorCancellationStopsPolling() = runTest {
         var probes=0
         assertEquals(false,serverConnections(flowOf(false),1,0) { probes++;true }.first())
         assertEquals(0,probes)
         assertTrue(serverConnections(flowOf(true),1) { probes++;true }.first())
-        delay(10)
+        // Real 1 ms timers can enqueue another probe before first() resumes on a busy runner.
+        // Virtual time keeps the same cancellation assertion independent of CPU scheduling.
+        advanceTimeBy(10);runCurrent()
         assertEquals(1,probes)
     }
     @Test fun countryFlagsAcceptOnlyIsoCodes() {

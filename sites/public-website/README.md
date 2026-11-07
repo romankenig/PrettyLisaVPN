@@ -1,12 +1,13 @@
-# PrettyLisaVPN website · 0.3.1
+# PrettyLisaVPN website · 0.4.1
 
 Minimal static website on https://prettylisavpn.com. Five homepage sections,
-seven platform pages, four documents and six fully translated languages.
-The owner authorized public publication. The purchase UI displays the confirmed
-switchable monthly prices (399 RUB / 5 USD, reference 499 RUB / 7 USD) and a clickable
-unavailability notice. Commercial checkout remains separate.
-Every page includes four document buttons and the temporary `platega test`
-moderation marker. Catalog generation rejects RUB prices over 10,000 RUB.
+seven platform pages, four documents, a billing portal and six translated languages.
+The informational website was previously authorized for publication. The new billing
+portal is implemented, but real Platega payments remain disabled pending merchant
+credentials and live acceptance. See [billing handoff](../../docs/platega-billing.md).
+This revision preserves the deployed 0.3.1 moderation copy, document buttons,
+currency layout and native Android capture from PR #52. Its prices now come from
+the database API, and purchase/manage links open the authenticated billing portal.
 
 ## Run and verify
 
@@ -31,13 +32,15 @@ website publication and do not activate payments.
 ## Structure
 
 - `src/locales/*.json`: complete ru/en/de/fr/es/zh UI and legal content.
-- `src/structure.mjs`, `src/pages.mjs`: 78 static pages; contextual language links.
+- `src/structure.mjs`, `src/pages.mjs`: 96 static pages; contextual language links.
 - `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
-  version/size/hash metadata and the accessible payment-unavailability dialog.
-  Ordinary purchase links work without JavaScript through the payment document.
-  No cookies, local storage, tracking or payment forms.
-- `src/model.mjs`: public price source and internal commercial readiness; the
-  module itself is not shipped to browsers. HTML contains only the public values.
+  version/size/hash metadata; no browsing analytics.
+- `src/portal.mjs`: OTP/cookie-authenticated billing portal; prices and payment
+  operations come only from the backend API. The browser holds no provider secrets
+  or card details. Its account-scoped local journal stores only operation/request
+  identifiers and the original command for safe retries; the session cookie is
+  Secure, HttpOnly and SameSite=Strict. Bank agreement happens on Platega's page.
+- `src/model.mjs`: internal commercial readiness; not shipped to browsers.
 - `assets/screenshots/`: unchanged native captures and exact CI provenance.
 - `scripts/build.mjs`: clean static output, local Rubik/brand assets and build ID.
 - `tests/`: Node and real Caddy checks, including public-file/private-path boundary.
@@ -51,5 +54,3 @@ Only those exact files become public; dashboard authentication is preserved.
 See [handoff](../../docs/public-website-redesign.md) for versions, validation,
 commercial follow-up, publication evidence and rollback. Build identity records
 source SHA/run/attempt; live deployment evidence is separate and recorded in PR50.
-The current [Platega moderation handoff](../../docs/website-platega-moderation.md)
-records the purchase UI, contact update and remaining commercial requirements.

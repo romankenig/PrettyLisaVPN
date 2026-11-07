@@ -45,6 +45,12 @@ class VpnNotificationTest {
             val folder = java.io.File(context.getExternalFilesDir(null), "acceptance")
             check(folder.mkdirs() || folder.isDirectory)
             assertTrue(device.takeScreenshot(java.io.File(folder, "vpn-notification.png")))
+            for ((phase, label) in listOf(VpnPhase.CHECKING to R.string.vpn_checking, VpnPhase.WAITING_NETWORK to R.string.vpn_waiting_network, VpnPhase.RECONNECTING to R.string.vpn_reconnecting)) {
+                val recovering = vpnNotification(context, VpnStatus(phase))
+                assertEquals(2, recovering.actions.size)
+                manager.notify(VPN_NOTIFICATION_ID, recovering)
+                assertTrue(device.wait(Until.hasObject(By.text(context.getString(label))), 5_000))
+            }
             val stopping = vpnNotification(context, VpnStatus(VpnPhase.DISCONNECTING))
             assertEquals(1, stopping.actions.size)
             manager.notify(VPN_NOTIFICATION_ID, stopping)

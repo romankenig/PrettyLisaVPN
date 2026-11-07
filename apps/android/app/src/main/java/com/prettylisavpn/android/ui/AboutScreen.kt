@@ -74,6 +74,7 @@ internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = 
                         if (entry.third == "SUPPORT") support() else navigate(entry.third)
                     }
                 }
+                LegalDocuments()
                 BrandCard(Modifier.testTag("about-help")) {
                     Text(tr(R.string.about_support_title), style = MaterialTheme.typography.titleMedium)
                     Text(tr(R.string.about_support_prompt), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)

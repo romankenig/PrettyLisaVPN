@@ -77,15 +77,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Check formatting
-        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py
+        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py
 
       - name: Lint
-        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py
+        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py
 
       - name: Type check
         run: |
           uv run mypy
-          uv run mypy --strict ../infra/deployment/publish_client.py
+          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py
 
       - name: Run unit tests
         run: uv run pytest -m "not integration and not docker"

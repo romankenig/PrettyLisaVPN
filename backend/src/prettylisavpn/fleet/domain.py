@@ -1,6 +1,7 @@
 """Protocol-neutral lifecycle contracts and deterministic monitoring rules."""
 
 import hashlib
+import random
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Address, IPv4Interface
@@ -21,6 +22,19 @@ class FleetError(Exception):
 
 
 NodeGroup = Literal["INTERMEDIATE", "FREE", "PREMIUM"]
+
+
+def proxy_address_supported(host: object, *, allow_ip: bool = False) -> bool:
+    """Keep literal addresses away from clients with the original DNS-only contract."""
+    if not isinstance(host, str) or not host:
+        return False
+    if all(char in "0123456789." for char in host):
+        try:
+            address = IPv4Address(host)
+        except ValueError:
+            return False
+        return allow_ip and address.is_global and str(address) == host
+    return True
 
 
 class NodeInput(Value):
@@ -179,6 +193,19 @@ class ManagedAccess(Access):
 class ManagedConfig(Value):
     server_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]{1,251}[A-Za-z0-9]$")
     reality_target: IPv4Address
+    proxy_host: str | None = Field(
+        default=None,
+        pattern=r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$",
+        max_length=253,
+    )
+
+    @field_validator("proxy_host")
+    @classmethod
+    def public_proxy_address(cls, value: str | None) -> str | None:
+        if value and all(char in "0123456789." for char in value):
+            if not IPv4Address(value).is_global:
+                raise ValueError("A public proxy address is required")
+        return value
 
     @field_validator("reality_target")
     @classmethod
@@ -252,6 +279,15 @@ def source_order(target: UUID, at: datetime, roster: list[UUID]) -> list[UUID]:
     start = ordered.index(target)
     offsets = list(range(rotation, len(ordered))) + list(range(1, rotation))
     return [ordered[(start + offset) % len(ordered)] for offset in offsets]
+
+
+def retry_source_order(target: UUID, roster: list[UUID], previous: UUID | None) -> list[UUID]:
+    """Random independent retry; reuse only when the roster has no alternative."""
+    candidates = sorted(set(roster) - {target}, key=str)
+    alternatives = [identifier for identifier in candidates if identifier != previous]
+    ordered = alternatives or candidates
+    random.shuffle(ordered)
+    return ordered
 
 
 def server_quality(

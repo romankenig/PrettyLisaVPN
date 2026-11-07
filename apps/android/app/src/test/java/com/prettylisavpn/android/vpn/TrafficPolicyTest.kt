@@ -60,7 +60,7 @@ class TrafficPolicyTest {
         assertTrue(runCatching { validateTrafficServices(listOf(saved.include.services.single().copy(category = "unknown"))) }.isFailure)
     }
     @Test fun applyingRulesWaitsForCleanupAndNeverReconnects() = runBlocking {
-        for (phase in listOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED)) {
+        for (phase in listOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING)) {
             val state = MutableStateFlow(VpnStatus(phase))
             var stops = 0
             val vpn = object : VpnActions {

@@ -37,6 +37,9 @@ class TestBillingProvider:
     def supports(self, action, route, currency):
         return (route, currency) not in self.unsupported
 
+    def supports_amount(self, route, currency, amount_minor):
+        return amount_minor > 0
+
     async def reconcile(self, request):
         self.calls.append(request.operation_id)
         self.started.set()

@@ -32,7 +32,7 @@ MANAGED_METHODS = {
 }
 METHODS = frozenset(
     variant for base in ("wireguard", *MANAGED_METHODS) for variant in (base, base + "_relay")
-)
+) | {"https_proxy"}
 
 
 def base_method(method: str) -> str:

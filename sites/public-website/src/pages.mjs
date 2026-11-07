@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { languages, platforms, legalKeys, routeFor } from "./structure.mjs";
-import { website, assertPricePolicy } from "./model.mjs";
+import { website } from "./model.mjs";
+import {
+  referencePrices,
+  referenceOriginalPrices,
+  referencePriceCopy,
+  formatMonthlyPrice,
+} from "./pricing.mjs";
 
 export const locales = Object.fromEntries(
   languages.map((code) => [
@@ -96,23 +102,17 @@ function platformCard(lang, platform) {
   const t = locales[lang];
   return `<a class="platform-card ${platform.file ? "" : "soon"}" href="${routeFor(lang, `/download/${platform.id}/`)}">${icon(platform.id)}<span><strong>${text(t.platforms.names[platform.id])}</strong><small>${text(t.platforms.descriptions[platform.id])}</small></span><span class="platform-status">${platform.file ? arrow : text(t.platforms.soon)}</span></a>`;
 }
-function prices(lang, purchase = false) {
+function prices(lang) {
   const p = locales[lang].pricing;
-  return `<div class="price-options">${Object.entries(website.prices)
-    .map(([currency, minor]) => {
-      const current = money(minor, currency, lang);
-      return `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><span class="sr-only">${text(p.basePrice)} </span><s>${text(money(website.referencePrices[currency], currency, lang))}</s><span class="sr-only"> ${text(p.currentPrice)} </span><strong>${text(current)}</strong></p><p class="price-period">${text(p.period)}</p>${purchase ? `<a class="button" href="${routeFor(lang, "/legal/payments/")}#payment-unavailable" data-purchase="${currency}" data-amount-minor="${minor}" data-price="${escape(current)}">${text(p.buy)} · ${text(current)}</a>` : ""}</div>`;
-    })
-    .join("")}</div>`;
+  return `<div class="price-options">${["RUB", "USD"].map((currency) => `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><s data-reference-price="${currency}">${text(formatMonthlyPrice(referenceOriginalPrices[currency], currency, lang))}</s><strong data-price="${currency}">${text(formatMonthlyPrice(referencePrices[currency], currency, lang))}</strong></p><p class="price-period">${text(p.period)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(p.buy)}</a></div>`).join("")}</div>`;
 }
 function pricing(lang) {
-  const t = locales[lang],
-    p = t.pricing;
-  return `<section class="pricing section wrap" id="pricing"><div class="section-heading"><p class="eyebrow">${text(p.eyebrow)}</p><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan free-plan"><h3>free</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><a class="text-link" href="#download">${text(p.freeButton)} ${arrow}</a></article><article class="plan premium-plan"><h3>premium</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang, true)}</div></article></div><div class="purchase-details"><p>${text(p.availability)}</p></div></section><dialog class="payment-dialog" id="payment-dialog" aria-labelledby="payment-title" aria-describedby="payment-message"><p class="eyebrow">PrettyLisaVPN · premium</p><h2 id="payment-title">${text(p.unavailableTitle)}</h2><p class="dialog-price"><strong data-payment-price></strong> · ${text(p.period)}</p><p id="payment-message">${text(p.unavailableText)}</p><a href="${mail}">${text(website.seller.email)}</a><button type="button" class="button" data-payment-close>${text(p.close)}</button></dialog>`;
+  const p = locales[lang].pricing;
+  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><p class="eyebrow">${text(p.eyebrow)}</p><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan premium-plan"><h3>premium ⭐</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article><article class="plan free-plan"><h3>free 🆓</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article></div><aside class="demo-plan" data-demo-plan><div><h3>demo 🌱 · ${text(p.demo.title)}</h3><p>${text(p.demo.description)}</p><p class="demo-upgrade">${text(p.demo.upgrade)}</p></div><a class="text-link" href="${routeFor(lang, "/download/android/")}">${text(p.demo.button)} ${arrow}</a></aside><div class="purchase-details"><p data-price-reference-note>${text(referencePriceCopy[lang])}</p><p>${text(p.terms)}</p></div></section>`;
 }
 function paymentNotice(lang) {
   const p = locales[lang].pricing;
-  return `<aside class="payment-notice" id="payment-unavailable"><h2>${text(p.unavailableTitle)}</h2><p>${text(p.unavailableText)}</p><h3>PrettyLisaVPN · premium</h3>${prices(lang)}<p>${text(p.renewal)}</p><a href="${mail}">${text(website.seller.email)}</a></aside>`;
+  return `<aside class="payment-notice" id="payment-unavailable"><h2>${text(p.manage)}</h2><p>${text(p.terms)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(p.manage)}</a></aside>`;
 }
 function home(lang) {
   const t = locales[lang];
@@ -152,7 +152,6 @@ function download(lang, platform) {
   );
 }
 export function pages() {
-  assertPricePolicy();
   const result = new Map();
   for (const lang of languages) {
     const t = locales[lang];
@@ -183,6 +182,23 @@ export function pages() {
         `<section class="not-found wrap"><h1>${text(t.notFound.title)}</h1><p>${text(t.notFound.text)}</p><a class="button" href="${routeFor(lang)}">${text(t.nav.home)} ${arrow}</a></section>`,
       ),
     );
+  }
+  for (const lang of languages) {
+    for (const route of [
+      "/account/",
+      "/account/success/",
+      "/account/failure/",
+    ]) {
+      result.set(
+        routeFor(lang, route),
+        shell(
+          lang,
+          route,
+          locales[lang].pricing.manage,
+          `<section class="portal wrap" data-portal aria-live="polite"><h1>${text(locales[lang].pricing.manage)}</h1><p>${text(locales[lang].pricing.loading)}</p></section>`,
+        ),
+      );
+    }
   }
   return result;
 }

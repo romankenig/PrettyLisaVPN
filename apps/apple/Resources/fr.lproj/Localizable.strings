@@ -31,6 +31,15 @@
 "back" = "retour";
 "billing_cancel_detail" = "la résiliation supprime le moyen de paiement enregistré. l’accès reste actif jusqu’à la fin de la période payée.";
 "billing_days_left" = "jours restants : %1$d";
+"billing_fixed_price" = "le prix convenu reste fixe jusqu’à la résiliation et une nouvelle souscription";
+"billing_next_charge" = "prochain prélèvement : %1$@ · %2$@";
+"billing_portal" = "gérer l’abonnement et les paiements";
+"billing_reference_month" = "499 ₽ → 399 ₽ · $7 → $5 / mois";
+"billing_reference_prices" = "prix indicatifs pour un nouvel abonnement. les conditions seront confirmées avant le paiement. le prix de votre contrat actuel reste inchangé.";
+"billing_replace_card" = "changer de carte";
+"billing_replace_prompt" = "changer plutôt de carte ? les conditions et la période payée restent inchangées";
+"billing_resubscribe" = "aucun autre prélèvement automatique. vous pouvez souscrire à nouveau au prix actuel";
+"billing_sbp_account" = "compte bancaire SBP lié";
 "component_versions" = "frontend %1$@ · backend %2$@";
 "connection_methods" = "méthodes de connexion";
 "connection_methods_hint" = "les modifications prennent effet à la prochaine connexion. sélectionnez au moins une méthode.";

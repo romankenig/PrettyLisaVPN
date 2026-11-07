@@ -12,12 +12,11 @@ function valueOf(sample: Measurement, direction: Series["direction"]): number | 
 
 export function aggregateValues(values: number[], metric: ChartMetric): number | null {
   if (!values.length) return null;
-  if (metric === "rating") {
+  if (metric !== "active") {
     const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
     return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
   }
-  const sum = values.reduce((total, value) => total + value, 0);
-  return metric === "active" ? sum : sum / values.length;
+  return values.reduce((total, value) => total + value, 0);
 }
 
 /** Equal weight per server, not per check. No carry-forward across missing hours. */
