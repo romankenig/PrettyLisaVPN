@@ -10,6 +10,13 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 class TunnelHealthProbeTest {
+    @Test fun workingTunnelDoesNotDependOnAndroidValidationButUnconfirmedUplinkFailureIsNotPenalized() {
+        assertEquals(TunnelHealth.HEALTHY, healthWithUplink(TunnelHealth.HEALTHY, true, false))
+        assertEquals(TunnelHealth.NO_NETWORK, healthWithUplink(TunnelHealth.UNREACHABLE, true, false))
+        assertEquals(TunnelHealth.UNREACHABLE, healthWithUplink(TunnelHealth.UNREACHABLE, true, true))
+        assertEquals(TunnelHealth.NO_NETWORK, healthWithUplink(TunnelHealth.HEALTHY, false, false))
+        assertEquals(TunnelHealth.UNKNOWN, healthWithUplink(TunnelHealth.UNKNOWN, true, true))
+    }
     private val ips = listOf("198.51.100.42")
     private fun probe(first: MockWebServer, second: MockWebServer) = TunnelHealthProbe(
         OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).callTimeout(1, TimeUnit.SECONDS).build(),

@@ -56,21 +56,24 @@ internal class TunnelHealthProbe(
 
 /** A missing physical network suspends recovery; it is not evidence against a method. */
 @Suppress("DEPRECATION")
-internal fun underlyingNetworkAvailable(context: Context): Boolean {
+internal fun underlyingNetworkAvailable(context: Context, validated: Boolean = false): Boolean {
     val manager = context.getSystemService(ConnectivityManager::class.java)
     return manager.allNetworks.any { network -> manager.getNetworkCapabilities(network)?.let {
         it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
             it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            (!validated || it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
     } == true }
 }
+
+internal fun healthWithUplink(result: TunnelHealth, present: Boolean, validated: Boolean): TunnelHealth =
+    if (!present || (result == TunnelHealth.UNREACHABLE && !validated)) TunnelHealth.NO_NETWORK else result
 
 internal suspend fun checkTunnelNetwork(context: Context, network: Network?, expectedIps: List<String>, isUp: suspend () -> Boolean): TunnelHealth {
     fun sleeping() = context.getSystemService(PowerManager::class.java).isDeviceIdleMode
     if (sleeping()) return TunnelHealth.SUSPENDED
     if (!underlyingNetworkAvailable(context)) return TunnelHealth.NO_NETWORK
     val up = try { isUp() } catch (cancel: CancellationException) { throw cancel } catch (_: Exception) { false }
-    if (network == null || !up) return TunnelHealth.UNREACHABLE
+    if (network == null || !up) return healthWithUplink(TunnelHealth.UNREACHABLE, underlyingNetworkAvailable(context), underlyingNetworkAvailable(context, true))
     return withContext(Dispatchers.IO) {
         val client = OkHttpClient.Builder().socketFactory(network.socketFactory).proxy(Proxy.NO_PROXY)
             .dns(object : Dns { override fun lookup(hostname: String) = network.getAllByName(hostname).toList() })
@@ -78,7 +81,7 @@ internal suspend fun checkTunnelNetwork(context: Context, network: Network?, exp
             .connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS).callTimeout(6, TimeUnit.SECONDS).build()
         try {
             val result = TunnelHealthProbe(client).check(expectedIps)
-            if (sleeping()) TunnelHealth.SUSPENDED else if (!underlyingNetworkAvailable(context)) TunnelHealth.NO_NETWORK else result
+            if (sleeping()) TunnelHealth.SUSPENDED else healthWithUplink(result, underlyingNetworkAvailable(context), underlyingNetworkAvailable(context, true))
         } finally {
             client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
         }

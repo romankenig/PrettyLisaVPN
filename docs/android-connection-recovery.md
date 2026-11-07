@@ -13,7 +13,10 @@ While connected, a process-owned coroutine checks every 30 seconds. Failed check
 repeat at 5-second intervals; three consecutive transport failures or wrong observed
 egress results trigger recovery. A native tunnel-loss signal requests an early
 check. The status becomes checking on suspicion, waiting for network when Android
-has no validated non-VPN network, and reconnecting during cleanup/reselection.
+has no physical network or a failure cannot be separated from unvalidated physical
+Internet, and reconnecting during cleanup/reselection. A healthy tunnel probe is
+accepted even when Android's own Internet-validation origin is blocked; validation
+does not prevent probing an available network.
 Single failures, provider errors and offline periods do not penalize a method.
 
 Anonymous, size-bounded HTTPS requests bind DNS and sockets to the adapter's exact
