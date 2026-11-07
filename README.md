@@ -117,6 +117,7 @@ docs/                Инструкции настройки и эксплуат
 | Запуск через Docker или Python, настройки, тесты | [Разработка Backend](backend/README.md) |
 | Подготовка VPS, домена, HTTPS и первый production-запуск | [Развёртывание Backend](docs/backend-deployment.md) |
 | Обновление кода на VPS, пересборка/загрузка образа, перезапуск и откат | [Обновление и перезапуск VPS](docs/vps-maintenance.md) |
+| Добавление VPN-сервера на любом хостинге, DNS и сертификат для Chrome | [Подключение нового сервера](docs/server-enrollment.md) |
 | Базовая защита выделенного VPN-узла DigitalOcean без WireGuard | [Базовая защита VPN-узла](docs/digitalocean-vpn-node-baseline.md) |
 | Создание тестового окружения в Timeweb Cloud | [Настройка Timeweb](docs/timeweb-development-setup.md) |
 | Версии клиента и backend, порядок изменений и выпуска | [Версионирование](docs/versioning.md), [история изменений](CHANGELOG.md) |
