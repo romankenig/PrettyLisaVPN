@@ -82,6 +82,10 @@ targets:
   PrettyLisaVPN-iOS:
     templates: [Application]
     platform: iOS
+    sources: [Resources-iOS]
+    info:
+      properties:
+        UIAppFonts: [Rubik.ttf]
     configFiles:
       Debug: Config/iOS.xcconfig
       Release: Config/iOS.xcconfig

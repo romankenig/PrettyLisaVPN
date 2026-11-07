@@ -62,6 +62,22 @@ and signed Mac, approve VPN, deploy the reviewed backend gate through the normal
 separate workflow, then record **every** live checklist row on both platforms.
 No source-only feature is presented as a successfully tested real VPN.
 
+## Post-merge status — 2026-11-04
+
+PR #51 merged into develop as `05d945dbd5da35f1c85523d00b4ab57415882a3c`.
+Backend run [41822292784](https://github.com/romankenig/PrettyLisaVPN/actions/runs/41822292784)
+completed its quality and development-deployment jobs successfully. Public
+`GET /version` then returned
+`0.33.0-dev.41822292784+g05d945dbd5da35f1c85523d00b4ab57415882a3c`.
+The admission deployment prerequisite in the original matrix is satisfied;
+authenticated owner login and every real-tunnel acceptance row remain pending.
+After reconciliation with current billing/Simulator work, the separate reference
+UI task raises iOS 0.2.1 → 0.3.0 and restores shared subscription labels in
+macOS 0.2.1 → 0.2.2; the Mac navigation/design remains unchanged.
+See [iOS UI handoff](ios-reference-ui.md) and PR #53 for its final source,
+build/run/attempt and screenshots. Final post-merge CI results are recorded in
+PR #51 without creating further source commits just to update run statuses.
+
 Signing configuration separates iOS from macOS App Sandbox entitlements. The Mac
 provider grants both outgoing and incoming networking for encrypted UDP transport;
 unsigned/ad-hoc UI checks do not validate these entitlements against owner profiles.

@@ -1,3 +1,16 @@
+# iOS reference navigation — iOS 0.3.0
+
+iOS uses Home / Settings / About bottom tabs. Settings opens Subscription,
+Devices and Advanced; About opens Support; Home opens unread Messages. Nested
+screens return to their parent using Back. Country selection and connect/disconnect
+use existing APIs and the VPN coordinator. The All protection card explains
+the existing routing policy; include/exclude modes remain unavailable on iOS.
+Language is available in the header. Current OTP guards, logout/revoke confirmations,
+subscription overview, external billing portal and foreground refresh are retained.
+macOS and Windows navigation are unchanged. These UI routes are implemented;
+physical signed tunnel acceptance is still separate. See
+[screens, verification and compatibility](ios-reference-ui.md).
+
 # Android 0.25.0 — guest access and documents
 
 Android login → Try DEMO → Home uses the new guest API. About and login document

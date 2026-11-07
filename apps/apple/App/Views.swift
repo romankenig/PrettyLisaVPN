@@ -10,6 +10,9 @@ struct RootView: View {
     @State private var logout = false
     var body: some View {
         VStack(spacing: 0) {
+            #if os(iOS)
+            IOSRootView(model: model, onLogout: { logout = true }) { banners }
+            #else
             banners
             if model.profile == nil || model.needsSignIn { LoginView(model: model) }
             else {
@@ -29,6 +32,7 @@ struct RootView: View {
                         .toolbar { Button { Task { await model.loadPage() } } label: { Label(L("ui_refresh"), systemImage: "arrow.clockwise") }.disabled(model.busy) }
                 }
             }
+            #endif
         }
         .tint(colors == .dark ? Color(red: 0.675, green: 0.451, blue: 1) : Color(red: 0.373, green: 0.133, blue: 0.851))
         .environment(\.locale, language == "system" ? .current : Locale(identifier: language))
@@ -330,9 +334,11 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(L("apple_appearance")) {
+                #if os(macOS)
                 Picker(L("apple_theme"), selection: $theme) {
                     Text(L("apple_system")).tag("system"); Text(L("apple_light")).tag("light"); Text(L("apple_dark")).tag("dark")
                 }
+                #endif
                 Picker(L("apple_language"), selection: $language) {
                     Text(L("apple_system")).tag("system")
                     Text("English").tag("en"); Text("Русский").tag("ru"); Text("Deutsch").tag("de")

@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### iOS — 0.3.0 / macOS — 0.2.2
+
+- Reconcile the reference phone UI with current iOS 0.2.1: Home / Settings / About,
+  shared lock artwork and Rubik, account/device details and native navigation.
+- Preserve current billing portal, Simulator packaging, signing boundaries and
+  current localized labels. Restore three shared subscription labels in all six
+  languages (macOS 0.2.1 → 0.2.2 PATCH); all other versions are unchanged.
+- See [iOS reference handoff](docs/ios-reference-ui.md); signed physical VPN
+  acceptance remains separate from SDK builds and native Simulator screenshots.
+
+
+
 ### Backend — 0.37.0 / Fleet dashboard — 0.7.0 / Managed engine — 0.6.1
 
 - Add real active-account download/upload speeds across selected VPN exits:
