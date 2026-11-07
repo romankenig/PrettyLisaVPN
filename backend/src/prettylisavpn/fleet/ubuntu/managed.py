@@ -8,6 +8,7 @@ import contextlib
 import json
 import os
 import re
+import secrets
 import select
 import ssl
 import subprocess
@@ -426,6 +427,7 @@ def supervise(identifier: str) -> None:
         write(path.with_suffix(".ready"), "ready\n")
         expires = row["expires"]
         sample = {"rx_bytes": 0, "tx_bytes": 0, "flowed_at": 0.0}
+        generation = secrets.token_hex(16)
         while child.poll() is None:
             time.sleep(0.5)
             # ACME rotation needs a fresh SSLContext. The next normal worker
@@ -453,7 +455,15 @@ def supervise(identifier: str) -> None:
                     sample["flowed_at"] = time.time()
                 sample.update(counters)
                 write(
-                    path.with_suffix(".stats"), json.dumps({**sample, "observed_at": time.time()})
+                    path.with_suffix(".stats"),
+                    json.dumps(
+                        {
+                            **sample,
+                            "observed_at": time.time(),
+                            "monotonic": time.monotonic(),
+                            "generation": generation,
+                        }
+                    ),
                 )
             if renewed["expires"] != expires:
                 expires = renewed["expires"]

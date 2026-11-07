@@ -24,6 +24,16 @@ handle /dashboard/* {
             path /dashboard/api/product-analytics
             method GET
         }
+        @active_speed {
+            path /dashboard/api/active-user-speed
+            method GET
+        }
+        handle @active_speed {
+            rewrite * /admin/monitoring/active-user-speed
+            reverse_proxy backend:8000 {
+                header_up Authorization "Bearer @@MONITOR_TOKEN@@"
+            }
+        }
         handle @analytics {
             rewrite * /admin/monitoring/product-analytics
             reverse_proxy backend:8000 {
