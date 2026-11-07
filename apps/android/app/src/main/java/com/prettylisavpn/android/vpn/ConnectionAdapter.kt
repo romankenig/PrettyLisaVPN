@@ -14,7 +14,7 @@ interface ConnectionAdapter {
     suspend fun health(): TunnelHealth = TunnelHealth.UNKNOWN
 }
 
-enum class TunnelHealth { HEALTHY, UNREACHABLE, NO_NETWORK, UNKNOWN }
+enum class TunnelHealth { HEALTHY, UNREACHABLE, NO_NETWORK, UNKNOWN, SUSPENDED }
 
 data class ConnectionHealthPolicy(
     val intervalMillis: Long = 30_000,

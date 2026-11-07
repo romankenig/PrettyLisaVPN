@@ -52,6 +52,16 @@ class ConnectionRecoveryTest {
         assertEquals(1, events.count { it.startsWith("start:") }); assertEquals(0, failureWrites)
         controller.beforeLogout()
     }
+    @Test fun deepSleepDoesNotBecomeATransportFailureOrChangeVerifiedStatus() = runTest {
+        val events = mutableListOf<String>(); val adapter = Adapter("wireguard", events)
+        val controller = VpnController({ "owner" }, backgroundScope, listOf(adapter), healthPolicy = policy.copy(intervalMillis = 30_000))
+        controller.connect("DE"); runCurrent(); adapter.result = TunnelHealth.SUSPENDED
+        advanceTimeBy(300_000); runCurrent()
+        assertEquals(VpnPhase.CONNECTED, controller.status.value.phase)
+        assertEquals(1, events.count { it.startsWith("start:") })
+        adapter.result = TunnelHealth.HEALTHY; advanceTimeBy(30_000); runCurrent()
+        assertEquals(VpnPhase.CONNECTED, controller.status.value.phase); controller.beforeLogout()
+    }
     @Test fun manualDisconnectCancelsInFlightHealthAndDoesNotResurrect() = runTest {
         val events = mutableListOf<String>(); val adapter = Adapter("wireguard", events)
         adapter.probeGate = CompletableDeferred()

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.PowerManager
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.*
@@ -65,6 +66,8 @@ internal fun underlyingNetworkAvailable(context: Context): Boolean {
 }
 
 internal suspend fun checkTunnelNetwork(context: Context, network: Network?, expectedIps: List<String>, isUp: suspend () -> Boolean): TunnelHealth {
+    fun sleeping() = context.getSystemService(PowerManager::class.java).isDeviceIdleMode
+    if (sleeping()) return TunnelHealth.SUSPENDED
     if (!underlyingNetworkAvailable(context)) return TunnelHealth.NO_NETWORK
     val up = try { isUp() } catch (cancel: CancellationException) { throw cancel } catch (_: Exception) { false }
     if (network == null || !up) return TunnelHealth.UNREACHABLE
@@ -75,7 +78,7 @@ internal suspend fun checkTunnelNetwork(context: Context, network: Network?, exp
             .connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS).callTimeout(6, TimeUnit.SECONDS).build()
         try {
             val result = TunnelHealthProbe(client).check(expectedIps)
-            if (!underlyingNetworkAvailable(context)) TunnelHealth.NO_NETWORK else result
+            if (sleeping()) TunnelHealth.SUSPENDED else if (!underlyingNetworkAvailable(context)) TunnelHealth.NO_NETWORK else result
         } finally {
             client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
         }

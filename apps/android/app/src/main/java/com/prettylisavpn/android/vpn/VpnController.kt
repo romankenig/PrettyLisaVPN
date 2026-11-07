@@ -52,8 +52,9 @@ class VpnController(
                     if (owner() != id) { mutable.value = VpnStatus(); return@launch }
                     var previous: VpnMethod? = null
                     val selected = enabledMethods()
-                    val allowed = adapters.filter { selected == null || it.method.id in selected }.associateBy { it.method.id }
-                    val ordered = preference.order(allowed.keys.toList()).map { allowed.getValue(it) }
+                    val allowed = adapters.filter { selected == null || it.method.id in selected }
+                    val priority = preference.order(allowed.map { it.method.id }.distinct())
+                    val ordered = allowed.sortedBy { priority.indexOf(it.method.id) }
                     var connectedAdapter: ConnectionAdapter? = null
                     for (adapter in ordered) {
                         ensureActive()
@@ -156,6 +157,7 @@ class VpnController(
             currentCoroutineContext().ensureActive()
             if (owner() != id) return false
             when (health) {
+                TunnelHealth.SUSPENDED -> { failures = 0 } // Doze forbids probes; retain the last real state.
                 TunnelHealth.HEALTHY -> { failures = 0; mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method) }
                 TunnelHealth.NO_NETWORK -> { failures = 0; mutable.value = VpnStatus(VpnPhase.WAITING_NETWORK, method = adapter.method) }
                 TunnelHealth.UNKNOWN -> { failures = 0; mutable.value = VpnStatus(VpnPhase.CHECKING, method = adapter.method) }
@@ -165,7 +167,7 @@ class VpnController(
                     if (failures >= policy.failureThreshold) return true
                 }
             }
-            wait = if (health == TunnelHealth.HEALTHY || health == TunnelHealth.UNKNOWN) policy.intervalMillis else policy.retryMillis
+            wait = if (health in setOf(TunnelHealth.HEALTHY, TunnelHealth.UNKNOWN, TunnelHealth.SUSPENDED)) policy.intervalMillis else policy.retryMillis
         }
     }
     suspend fun beforeLogout() { disconnect(); stopping?.join() }

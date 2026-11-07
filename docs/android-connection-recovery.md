@@ -30,7 +30,9 @@ backend-owned. Every old local tunnel and remote lease must close before another
 adapter starts. Failed cleanup fences recovery. There are at most three automatic
 recoveries in ten minutes; exhausting methods or the budget stops with an error.
 There is no reboot/force-stop resurrection. Android may defer timers in deep sleep;
-elapsed sleep alone is never counted as a failed probe.
+PowerManager deep-idle suspends probes, retains the last real status and resets
+failure confirmation. A request finishing during deep idle is also disregarded.
+Elapsed sleep alone is never counted as a failed probe.
 
 AndroidVpnHost now owns foreground-service shutdown after an idle or terminal
 non-cleanup state. Adapters no longer stop it between fallback/recovery attempts.
