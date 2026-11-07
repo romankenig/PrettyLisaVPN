@@ -69,7 +69,8 @@ func run() int {
 	expires := time.Unix(lease.Expires, 0)
 	timer := time.NewTimer(time.Until(expires))
 	defer timer.Stop()
-	ticks := time.NewTicker(10 * time.Second)
+	// Refresh counters ahead of the five-second fleet poll, avoiding stale repeats.
+	ticks := time.NewTicker(time.Second)
 	defer ticks.Stop()
 	for {
 		select {

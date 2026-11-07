@@ -1,4 +1,10 @@
-# PrettyLisaVPN monitoring dashboard — 0.6.3
+# PrettyLisaVPN monitoring dashboard — 0.7.0
+
+Active-account throughput is available at `/dashboard/#active-user-speed`:
+directional means/medians, account deduplication across selected exits, hour/day/week
+windows and explicit sample completeness. This is actual traffic while active;
+synthetic checks remain a separate measured reference. See
+[calculation and rollout](../../docs/active-user-speed.md).
 
 Managed client downloads include corresponding engine source/license archives.
 Their links appear only when the verified publisher reports matching sources.
