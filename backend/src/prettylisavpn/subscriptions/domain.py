@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 
 class SubscriptionPlan(StrEnum):
+    DEMO = "DEMO"
     FREE = "FREE"
     PREMIUM = "PREMIUM"
     PLATINUM = "PLATINUM"
@@ -48,8 +49,8 @@ class Subscription:
             and self.current_period_end <= self.current_period_start
         ):
             raise ValueError("current_period_end must be after current_period_start")
-        if self.plan is SubscriptionPlan.FREE and self.auto_renew:
-            raise ValueError("FREE subscriptions cannot auto-renew")
+        if self.plan in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO) and self.auto_renew:
+            raise ValueError(f"{self.plan.value} subscriptions cannot auto-renew")
         if self.status is SubscriptionStatus.CANCELED and self.auto_renew:
             raise ValueError("CANCELED subscriptions cannot auto-renew")
 
@@ -73,7 +74,7 @@ class Subscription:
         normalized_at = at.astimezone(UTC)
         if self.current_period_start > normalized_at:
             return False
-        if self.plan is SubscriptionPlan.FREE:
+        if self.plan in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO):
             return True
         # CANCELED describes renewal, not revocation of an already paid period.
         # A paid plan without a confirmed end must never grant unlimited access.
@@ -84,6 +85,8 @@ class Subscription:
         )
 
     def effective_plan(self, at: datetime) -> SubscriptionPlan:
+        if self.plan is SubscriptionPlan.DEMO:
+            return SubscriptionPlan.DEMO
         return self.plan if self.is_active(at) else SubscriptionPlan.FREE
 
     def cancel_auto_renew(self, at: datetime) -> "Subscription":

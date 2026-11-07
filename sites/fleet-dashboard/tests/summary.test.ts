@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { selectionSummary } from "../src/summary.ts";
 
-test("current selection has mean speeds, median ratings and summed active devices with coverage", () => {
+test("current selection has median speeds and ratings and summed active devices with coverage", () => {
   const nodes = [
     { quality: 10, latest: { download_mbps: 10, upload_mbps: 0, active_connections: 3 } },
     { quality: 90, latest: { download_mbps: 20, upload_mbps: 10, active_connections: 4 } },
@@ -10,7 +10,7 @@ test("current selection has mean speeds, median ratings and summed active device
     { quality: 0, latest: null },
   ];
   const summary = selectionSummary(nodes);
-  assert.deepEqual(summary.download, { value: 30, covered: 3, total: 4 });
+  assert.deepEqual(summary.download, { value: 20, covered: 3, total: 4 });
   assert.deepEqual(summary.upload, { value: 5, covered: 2, total: 4 });
   assert.deepEqual(summary.rating, { value: 90, covered: 3, total: 4 });
   assert.deepEqual(summary.active, { value: 7, covered: 3, total: 4 });

@@ -7,6 +7,12 @@ export function validatePaymentUrl(
   raw: string,
   allowedHosts: readonly string[],
 ): string {
+  if (
+    /^https:\/\/prettylisavpn\.com\/account\/#handoff=[A-Za-z0-9_-]{43}$/.test(
+      raw,
+    )
+  )
+    return raw;
   const url = new URL(raw);
   if (
     raw.length > 2048 ||

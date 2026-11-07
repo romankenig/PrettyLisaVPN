@@ -75,6 +75,9 @@ import PrettyLisaCore
         vpn.onAuthorizationLost = { [weak self] in self?.error = "REAUTH_REQUIRED"; self?.needsSignIn = true }
         #if DEBUG && targetEnvironment(simulator)
         simulator.onChange = { [weak self] in self?.objectWillChange.send() }
+        if ProcessInfo.processInfo.arguments.contains("-verify-keychain") {
+            try verifySimulatorKeychain(vault)
+        }
         #endif
     }
     var controller: any VPNControlling {
@@ -148,11 +151,20 @@ import PrettyLisaCore
         do {
             switch page {
             case .devices: devices = try WireJSON.decode([Device].self, from: await session.request("devices"))
-            case .subscription: billing = try WireJSON.decode(BillingOverview.self, from: await session.request("billing/overview"))
+            case .subscription:
+                let value = try WireJSON.decode(BillingOverview.self, from: await session.request("billing/overview"))
+                try value.validate(); billing = value
             case .home: try await refresh(); await vpn.reconcile()
             default: break
             }
         } catch { handle(error) }
+    }
+    func openBillingPortal(_ open: @escaping (URL) -> Void) {
+        guard !fixtures else { error = "FIXTURE_NO_PAYMENT"; return }
+        perform {
+            let portal = try WireJSON.decode(BillingPortal.self, from: await self.session.request("billing/portal", method: "POST", body: Data("{}".utf8)))
+            open(try portal.validatedURL())
+        }
     }
     func connect() {
         if simulation {

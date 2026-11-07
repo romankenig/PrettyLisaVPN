@@ -1,13 +1,14 @@
-import { Controller, type PrivateState } from "./controller";
+import { Controller } from "./controller";
 import { applyProxy, clearProxy, verifyProxy } from "./browser";
 import { UUID, errorCode, proxyAuth } from "./model";
+import { stateStorage } from "./storage";
+
+const storage = stateStorage(chrome.storage.local, chrome.storage.session);
 
 const controller = new Controller({
-  load: async () =>
-    (await chrome.storage.session.get("private")).private as
-      PrivateState | undefined,
+  load: storage.load,
   save: async (value) => {
-    await chrome.storage.session.set({ private: value });
+    await storage.save(value);
     await chrome.action.setBadgeText({
       text:
         value.phase === "CONNECTED"
@@ -141,6 +142,9 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
             case "requestOtp":
               await controller.requestOtp(text(data.email, 254));
               break;
+            case "resetOtp":
+              await controller.resetOtp();
+              break;
             case "login":
               await controller.login(text(data.email, 254), text(data.code, 6));
               break;
@@ -160,6 +164,11 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
               return controller.devices();
             case "revokeDevice":
               return controller.revokeDevice(text(data.id, 36));
+            case "billingPortal":
+              await chrome.tabs.create({
+                url: await controller.billingPortal(),
+              });
+              return { opened: true };
             case "billing":
               return controller.billing();
             case "support":

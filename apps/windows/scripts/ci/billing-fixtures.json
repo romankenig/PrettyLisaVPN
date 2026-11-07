@@ -267,5 +267,72 @@
         "recurring_currencies": []
       }
     ]
+  },
+  "sbp": {
+    "revision": "fixture-sbp-1",
+    "plan": "PREMIUM",
+    "status": "ACTIVE",
+    "paid_until": "2099-11-17T20:59:59Z",
+    "auto_renew": true,
+    "current_price": {
+      "amount_minor": 29900,
+      "currency": "RUB"
+    },
+    "payment_method": {
+      "provider": "platega",
+      "label": "СБП — привязанный счёт",
+      "kind": "SBP",
+      "card_brand": null,
+      "card_last4": null
+    },
+    "offers": [
+      {
+        "id": "premium-month-fixture",
+        "plan": "PREMIUM",
+        "period": "MONTH",
+        "prices": {
+          "RUB": {
+            "amount_minor": 29900,
+            "original_amount_minor": null
+          },
+          "USD": {
+            "amount_minor": 399,
+            "original_amount_minor": null
+          }
+        }
+      }
+    ],
+    "actions": ["CANCEL"],
+    "pending_operation_id": null,
+    "provider_mode": "LIVE",
+    "payment_operations_available": true,
+    "payment_routes": [
+      {
+        "id": "MIR",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "BANK_CARD",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "ALIPAY_WECHAT",
+        "currencies": [],
+        "recurring_currencies": []
+      },
+      {
+        "id": "CRYPTO",
+        "currencies": [],
+        "recurring_currencies": []
+      }
+    ],
+    "new_contract_required": false,
+    "next_charge_at": "2099-11-17T20:59:59Z",
+    "next_charge_price": {
+      "amount_minor": 29900,
+      "currency": "RUB"
+    }
   }
 }

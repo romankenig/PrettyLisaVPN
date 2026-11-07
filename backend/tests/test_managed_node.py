@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 
+from prettylisavpn.fleet.domain import ManagedConfig
 from prettylisavpn.fleet.ubuntu import managed
 
 
@@ -73,9 +74,15 @@ def test_proxy_requires_public_certificate_on_initial_grant_and_renewal(host, mo
     assert certificate.call_count == 2
 
 
-def test_proxy_certificate_uses_public_trust_exact_hostname_and_matching_key(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "name,flag",
+    [("proxy-nl.prettylisavpn.com", "-verify_hostname"), ("5.181.49.183", "-verify_ip")],
+)
+def test_proxy_certificate_uses_public_trust_exact_hostname_and_matching_key(
+    tmp_path, monkeypatch, name, flag
+):
     monkeypatch.setattr(managed, "CERTIFICATES", tmp_path)
-    folder = tmp_path / "proxy-nl.prettylisavpn.com"
+    folder = tmp_path / name
     folder.mkdir()
     (folder / "fullchain.pem").write_text("certificate fixture")
     (folder / "privkey.pem").write_text("key fixture")
@@ -85,7 +92,7 @@ def test_proxy_certificate_uses_public_trust_exact_hostname_and_matching_key(tmp
     managed.proxy_certificate(folder.name)
     argv = command.call_args.args[0]
     assert argv[:2] == ["openssl", "verify"]
-    assert argv[argv.index("-verify_hostname") + 1] == folder.name
+    assert argv[argv.index(flag) + 1] == folder.name
     assert argv[argv.index("-CApath") + 1] == "/etc/ssl/certs"
     context.load_cert_chain.assert_called_once_with(
         folder / "fullchain.pem", folder / "privkey.pem"
@@ -93,6 +100,40 @@ def test_proxy_certificate_uses_public_trust_exact_hostname_and_matching_key(tmp
     for name in ("../../private", "proxy-nl.prettylisavpn.com/other", "127.0.0.1;echo"):
         with pytest.raises(managed.Failure, match="PROXY_HOST_INVALID"):
             managed.proxy_certificate(name)
+
+
+@pytest.mark.parametrize("name", ["127.0.0.1", "10.0.0.1", "169.254.169.254", "999.1.1.1"])
+def test_proxy_certificate_rejects_nonpublic_or_invalid_ips(name):
+    with pytest.raises(managed.Failure):
+        managed.proxy_certificate(name)
+
+
+def test_proxy_ip_configuration_must_match_the_enrolled_node(host, monkeypatch):
+    root, _ = host
+    engine = root / "engine"
+    engine.touch()
+    monkeypatch.setattr(managed, "ENGINE", engine)
+    with pytest.raises(managed.Failure, match="PROXY_HOST_INVALID"):
+        managed.configuration(
+            {
+                "host": "5.181.49.183",
+                "configuration": {
+                    "server_name": "api.prettylisavpn.com",
+                    "reality_target": "95.140.152.42",
+                    "proxy_host": "204.48.17.50",
+                },
+            }
+        )
+
+
+def test_proxy_config_accepts_public_ips_but_rejects_nonpublic_and_malformed_literals():
+    from pydantic import ValidationError
+
+    base = {"server_name": "api.prettylisavpn.com", "reality_target": "95.140.152.42"}
+    assert ManagedConfig(**base, proxy_host="5.181.49.183").proxy_host == "5.181.49.183"
+    for address in ("127.0.0.1", "10.0.0.1", "999.1.1.1", "192.168.1.1", "100.64.0.1"):
+        with pytest.raises(ValidationError):
+            ManagedConfig(**base, proxy_host=address)
 
 
 def test_revoke_tombstone_is_durable_even_when_process_cannot_be_stopped(host):

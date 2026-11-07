@@ -11,6 +11,11 @@ DNS-записей: это отдельный авторизованный вы�
 независимо от хостинга VPS. Перед включением proxy_host обязательны проверки
 DNS, сертификата, firewall и реального трафика из инструкции.
 
+Без DNS текущий Chrome также поддерживает доверенный сертификат на публичный IP:
+[browser-proxy-ip-certificate.yml](browser-proxy-ip-certificate.yml). Этот путь
+использует short-lived сертификат и собственный таймер продления; DNS-записи
+не нужны, но проверка точного IP SAN, TLS, firewall и прямого трафика обязательна.
+
 ## Исторический VPN reset
 
 The previous node-agent, WireGuard, OpenVPN, profile and obfuscator roles/playbooks

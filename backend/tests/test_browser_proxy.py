@@ -8,9 +8,18 @@ from unittest.mock import AsyncMock
 import pytest
 
 from prettylisavpn.client_vpn.domain import ConnectRequest
+from prettylisavpn.fleet.domain import proxy_address_supported
 from prettylisavpn.fleet.ubuntu import browser_proxy as proxy
 
 AUTH = b"Basic " + base64.b64encode(b"lease:test-secret")
+
+
+@pytest.mark.parametrize("capable", [False, True])
+def test_proxy_address_contract_preserves_legacy_clients(capable):
+    assert proxy_address_supported("proxy-de.prettylisavpn.com", allow_ip=capable)
+    assert proxy_address_supported("5.181.49.183", allow_ip=capable) is capable
+    for host in (None, "", "127.0.0.1", "192.168.1.1", "999.1.1.1", "005.181.49.183"):
+        assert not proxy_address_supported(host, allow_ip=capable)
 
 
 def raw(uri="example.com:443", method="CONNECT", extra=b""):

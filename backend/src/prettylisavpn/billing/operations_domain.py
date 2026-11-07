@@ -8,7 +8,7 @@ from typing import Literal, Self
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import Field, StrictBool, StrictInt, model_validator
+from pydantic import AwareDatetime, Field, StrictBool, StrictInt, model_validator
 
 from prettylisavpn.billing.domain import Currency as Currency
 from prettylisavpn.billing.domain import PaymentRoute as PaymentRoute
@@ -48,11 +48,22 @@ class BillingOperation(StrictModel):
 class ProviderMandate(StrictModel):
     reference: str = Field(min_length=1, max_length=200, repr=False)
     label: str = Field(min_length=1, max_length=100)
+    kind: Literal["CARD", "SBP", "UNKNOWN"] = "UNKNOWN"
+    card_brand: Literal["visa", "mastercard", "mir", "unknown"] | None = None
+    card_last4: str | None = Field(default=None, pattern=r"^[0-9]{4}$")
+    next_charge_at: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def safe_summary(self) -> Self:
         if any(ord(c) < 32 or ord(c) == 127 for c in self.reference + self.label):
             raise ValueError("Invalid mandate summary")
+        if sum(character.isdecimal() for character in self.label) > 4:
+            raise ValueError("Only a masked payment summary may be retained")
+        if self.kind == "CARD":
+            if self.card_brand is None or self.card_last4 is None:
+                raise ValueError("Incomplete card summary")
+        elif self.card_brand is not None or self.card_last4 is not None:
+            raise ValueError("Non-card mandate cannot claim card details")
         return self
 
 
@@ -75,6 +86,7 @@ class ProviderResult(StrictModel):
     mandate: ProviderMandate | None = Field(default=None, repr=False)
     previous_mandate_revoked: bool = False
     recurring_stopped: bool = False
+    renewal_canceled: bool = False
     redirect_url: str | None = Field(default=None, max_length=2048, repr=False)
 
 

@@ -19,6 +19,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 ## Product Requirements
 
 - Authentication is passwordless and uses email OTPs.
+- Android DEMO is registration-free: 15 minutes/device/UTC day, AUTO and full traffic only. Preserve the server-side reinstall identity and independent FREE budget; see `docs/android-demo-access.md`.
 - Free users receive one account-wide hour per UTC day, without ads; AUTO/country selection uses free-only nodes.
 - Free sessions may use the remaining daily hour and end at UTC midnight; unused time returns after confirmed peer removal.
 - Premium users have no ads or daily/session time cap within their paid period. Manually assigned Platinum has exactly the same capabilities.
@@ -77,6 +78,7 @@ The Chrome Extension is browser-only. It must use a proxy-based implementation r
 - External providers must be mockable in tests.
 - Run the relevant formatting, linting, type-checking, and test commands before finishing.
 - After completing and verifying changes, commit them and push the current branch to `origin` so the remote repository stays synchronized, unless the user explicitly says not to push.
+- Keep the download links at `https://api.prettylisavpn.com/dashboard/` current after client changes. Android, Windows, Chrome Extension, iOS and macOS publish through the shared verified client publisher after successful `develop` push checks. Preserve stable URLs, original SHA/run/attempt, matching Apple/managed sources and honest unsigned Apple labels. Never substitute a Simulator/PR/failed build or an expiring GitHub artifact link. See `docs/dashboard-client-downloads.md`; verify publication after the relevant approved merge/deploy.
 
 ## Версии и дальнейшие изменения
 

@@ -39,6 +39,7 @@ data class Snapshot(
     val supportDelivered: Boolean = false,
 )
 sealed interface Command {
+    data object TryDemo : Command
     data class RequestOtp(val email: String) : Command
     data class VerifyOtp(val code: String) : Command
     data object Logout : Command
@@ -56,6 +57,7 @@ sealed interface Command {
 class SourceFailure(message: String) : Exception(message)
 data class SupportTransfer(val phase: String = "IDLE", val fraction: Float = 0f)
 interface ScreenSource {
+    suspend fun billingPortal(): String = error("BILLING_UNAVAILABLE")
     val vpn: com.prettylisavpn.android.vpn.VpnActions? get() = null
     val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> get() = kotlinx.coroutines.flow.flowOf(SupportTransfer())
     val recoveryRequired: Boolean get() = false

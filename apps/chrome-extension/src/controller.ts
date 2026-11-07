@@ -1,3 +1,4 @@
+import { parseBilling, portalURL } from "./billing";
 import {
   API,
   PROBE,
@@ -15,6 +16,7 @@ import {
 
 export interface PrivateState {
   session?: Session;
+  otpEmail?: string;
   lease?: Lease;
   pending?: { id: string; key: string; country: string };
   wanted: boolean;
@@ -26,7 +28,7 @@ export interface PrivateState {
   ip: string | null;
 }
 export interface Ports {
-  load(): Promise<PrivateState | undefined>;
+  load(): Promise<Partial<PrivateState> | undefined>;
   save(value: PrivateState): Promise<void>;
   installation(): Promise<string>;
   apply(proxy: ProxyConfig): Promise<void>;
@@ -49,11 +51,13 @@ export class Controller {
   private cancelled = false;
   constructor(private readonly io: Ports) {}
   async init() {
-    this.state = (await this.io.load()) ?? this.state;
+    this.state = { ...this.state, ...(await this.io.load()) };
     if (!this.state.session) {
       this.state.wanted = false;
-      await this.io.clear();
     }
+    // Browser exit drops lease credentials, while Chrome proxy settings persist.
+    // Keep auth but remove stale overrides; reconnect requires a fresh lease.
+    if (!this.state.wanted) await this.io.clear();
     // A stored badge is not evidence after worker suspension or network changes.
     this.state.phase = this.state.wanted ? "VERIFYING" : "DISCONNECTED";
     await this.persist();
@@ -66,6 +70,7 @@ export class Controller {
       phase: this.state.phase,
       error: this.state.error,
       signedIn: Boolean(this.state.session),
+      otpEmail: this.state.session ? null : (this.state.otpEmail ?? null),
       account: this.state.account,
       countries: this.state.countries,
       backend: this.state.backend,
@@ -97,6 +102,8 @@ export class Controller {
     if (authenticated) {
       if (!this.state.session) throw new Error("SIGN_IN_REQUIRED");
       headers.set("Authorization", "Bearer " + this.state.session.access_token);
+      if (path.startsWith("/vpn/"))
+        headers.set("X-PrettyLisaVPN-Proxy-IP", "1");
     }
     let response: Response;
     try {
@@ -201,6 +208,12 @@ export class Controller {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
       throw new Error("INVALID_EMAIL");
     await this.request("/auth/request-otp", this.json({ email }), false);
+    this.state.otpEmail = email;
+    await this.persist();
+  }
+  async resetOtp() {
+    delete this.state.otpEmail;
+    await this.persist();
   }
   async login(email: string, code: string) {
     if (!/^\d{6}$/.test(code)) throw new Error("INVALID_OTP");
@@ -219,6 +232,7 @@ export class Controller {
       ),
     );
     this.state.error = null;
+    delete this.state.otpEmail;
     await this.persist();
     await this.refreshAccount();
   }
@@ -447,8 +461,11 @@ export class Controller {
     }
     return result;
   }
+  async billingPortal() {
+    return portalURL(await this.request("/billing/portal", { method: "POST" }));
+  }
   async billing() {
-    return this.request("/billing/overview");
+    return parseBilling(await this.request("/billing/overview"));
   }
   async support(input: {
     request_id: string;

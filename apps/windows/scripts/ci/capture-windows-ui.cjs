@@ -837,9 +837,16 @@ async function main() {
   await page.getByRole("button", { name: "обновить", exact: true }).click();
   await page.getByRole("alert").waitFor();
   if (await page.getByLabel("цена в рублях").count())
-    throw new Error(
-      "Unavailable backend must not show stale or invented prices",
-    );
+    throw new Error("Unavailable backend must not expose a checkout quote");
+  await page.getByText("399 ₽", { exact: true }).waitFor();
+  await page.getByText("$5", { exact: true }).waitFor();
+  await page.getByText(/Справочные цены для новой подписки/).waitFor();
+  if (
+    await page
+      .getByRole("button", { name: "оформить подписку", exact: true })
+      .count()
+  )
+    throw new Error("Reference prices must not enable checkout");
   await screenshot("05f-subscription-unavailable");
   for (const scenario of ["sandbox", "disabled"]) {
     await billingScenario(scenario);
@@ -859,6 +866,32 @@ async function main() {
       throw new Error("Non-live provider must not enable Windows payments");
     await screenshot(`05fa-provider-${scenario}-disabled`);
   }
+  await billingScenario("sbp");
+  await page.getByRole("button", { name: "обновить", exact: true }).click();
+  await page.locator(".billing-next-charge").waitFor();
+  await page
+    .getByText("СБП · привязанный банковский счёт", { exact: true })
+    .waitFor();
+  if (
+    await page
+      .getByRole("button", { name: "продлить подписку", exact: true })
+      .count()
+  )
+    throw new Error(
+      "SBP recurring authority must not offer an unsupported manual renewal",
+    );
+  await screenshot("05fb-subscription-sbp");
+  await page.evaluate(
+    () => delete document.documentElement.dataset.paymentReviewUrl,
+  );
+  await page
+    .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.documentElement.dataset.paymentReviewUrl === "opened",
+  );
+  if (await lastBillingCommand())
+    throw new Error("Opening the portal must not start a charge");
   if (billingEvidence) {
     for (const [scenario, overview] of Object.entries(
       billingEvidence.snapshots,
@@ -892,7 +925,7 @@ async function main() {
             throw new Error("Native price differs from recorded backend");
         }
       }
-      if (scenario === "platinum") {
+      if (scenario === "platinum" && !offer) {
         await page
           .getByText(
             "тариф назначен вручную. продление через оплату недоступно.",
@@ -904,7 +937,7 @@ async function main() {
       } else {
         const action = page.getByRole("button", {
           name:
-            overview.plan === "FREE"
+            (overview.new_contract_required ?? overview.plan === "FREE")
               ? "оформить подписку"
               : "продлить подписку",
           exact: true,

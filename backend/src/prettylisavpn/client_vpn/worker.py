@@ -133,7 +133,10 @@ class ClientVpnWorker:
                     valid = False
                 subscription = await SubscriptionRepository(session).get_by_user_id(row.user_id)
                 if not row.is_free and subscription:
-                    if subscription.effective_plan(now) != SubscriptionPlan.FREE:
+                    if subscription.effective_plan(now) in (
+                        SubscriptionPlan.PREMIUM,
+                        SubscriptionPlan.PLATINUM,
+                    ):
                         assert subscription.current_period_end
                         row.expires_at = subscription.current_period_end
                     else:

@@ -65,6 +65,7 @@ export interface Snapshot {
   phase: Phase;
   error: string | null;
   signedIn: boolean;
+  otpEmail: string | null;
   account: Account | null;
   countries: Country[];
   backend: string | null;
@@ -72,6 +73,32 @@ export interface Snapshot {
   country: string | null;
   expires: string | null;
   cleanupPending: boolean;
+}
+function proxyHost(host: string, expected: string[] | undefined): boolean {
+  if (/^proxy-[a-z0-9-]+\.prettylisavpn\.com$/.test(host)) return true;
+  const parts = host.split(".");
+  if (
+    parts.length !== 4 ||
+    parts.some((p) => !/^(0|[1-9][0-9]{0,2})$/.test(p) || Number(p) > 255)
+  )
+    return false;
+  const [a, b, c] = parts.map(Number);
+  if (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    a >= 224 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && (b === 168 || (b === 0 && (c === 0 || c === 2)))) ||
+    (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+    (a === 203 && b === 0 && c === 113)
+  )
+    return false;
+  // A literal must be the API's own advertised public exit, never an arbitrary
+  // local proxy. Chrome still verifies public CA trust and the exact IP SAN.
+  return Array.isArray(expected) && expected.includes(host);
 }
 export function validateLease(value: unknown): Lease {
   const row = value as Lease;
@@ -89,7 +116,8 @@ export function validateLease(value: unknown): Lease {
     if (
       !proxy ||
       proxy.scheme !== "https" ||
-      !/^proxy-[a-z0-9-]+\.prettylisavpn\.com$/.test(proxy.host) ||
+      typeof proxy.host !== "string" ||
+      !proxyHost(proxy.host, config?.expected_egress_ips) ||
       !Number.isInteger(proxy.port) ||
       proxy.port < 40000 ||
       proxy.port > 49899 ||

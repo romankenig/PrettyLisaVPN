@@ -2,9 +2,28 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { NavigationIcon } from "./NavigationIcon";
 import type { Device, Snapshot } from "./model";
+import type { Billing, Money } from "./billing";
 import "./style.css";
 
 const labels = {
+  upgrade: ["улучшить", "upgrade"],
+  sbpAccount: [
+    "СБП · привязанный банковский счёт",
+    "SBP · linked bank account",
+  ],
+  method: ["способ оплаты", "payment method"],
+  noMethod: ["не привязан", "not linked"],
+  nextCharge: ["следующее списание", "next payment"],
+  monthly: ["в месяц", "per month"],
+  contractPrice: ["ваша стоимость подписки", "your subscription price"],
+  fixedPrice: [
+    "цена закреплена до отмены подписки и нового оформления",
+    "your agreed price stays fixed until you cancel and subscribe again",
+  ],
+  resubscribe: [
+    "списаний больше не будет. новое оформление — по текущей цене",
+    "no more automatic payments. a new subscription uses the current price",
+  ],
   home: ["главная", "home"],
   settings: ["настройки", "settings"],
   about: ["о приложении", "about"],
@@ -54,9 +73,10 @@ const labels = {
     "No password. We will email you a six-digit code.",
   ],
   sessionDetail: [
-    "Вход действует до закрытия браузера. Секреты сессии не сохраняются на диск расширением.",
-    "Sign-in lasts until the browser closes. The extension does not persist session secrets to disk.",
+    "Вход сохраняется после закрытия браузера. Можно открыть почту и вернуться сюда: экран ввода кода сохранится.",
+    "You stay signed in after closing the browser. Open your email and return here: the code entry screen is preserved.",
   ],
+  openTab: ["открыть вход во вкладке", "open sign-in in a tab"],
   current: ["это устройство", "this device"],
   added: ["добавлено", "added"],
   lastLogin: ["последний вход", "last sign-in"],
@@ -102,10 +122,18 @@ const labels = {
     "Расширение использует HTTPS-прокси для обычного веб-трафика. Системные службы Chrome, другие приложения и инкогнито находятся вне его действия. DNS сайтов разрешает сервер; IPv6 к назначениям блокируется. Локальные адреса и нестандартные порты, кроме 80, 443, 8080 и 8443, недоступны через прокси.",
     "The HTTPS proxy covers ordinary web traffic. Chrome internal services, other apps and incognito are outside its scope. Website DNS resolves on the server; IPv6 destinations are blocked. Local addresses and ports other than 80, 443, 8080 and 8443 are unavailable through the proxy.",
   ],
+  referencePrices: [
+    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
+    "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.",
+  ],
   paidUntil: ["оплачено до", "paid until"],
-  billingReadOnly: [
-    "Управление оплатой в расширении пока недоступно.",
-    "Payment management is not yet available in the extension.",
+  billingPortal: [
+    "управлять подпиской и оплатой",
+    "manage subscription and payments",
+  ],
+  billingPortalHint: [
+    "Откроется защищённый кабинет в новой вкладке.",
+    "The secure billing portal opens in a new tab.",
   ],
   cleanup: [
     "Настройки браузера восстановлены. Ожидаем подтверждения удаления доступа на сервере.",
@@ -119,7 +147,6 @@ const labels = {
 type Label = keyof typeof labels;
 type Page =
   "home" | "settings" | "about" | "devices" | "subscription" | "support";
-type Billing = { plan: string; paid_until: string | null; status: string };
 
 async function send<T>(
   type: string,
@@ -135,10 +162,11 @@ function App() {
   const [state, setState] = useState<Snapshot | null>(null),
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
-  const [email, setEmail] = useState(""),
+  const [draftEmail, setEmail] = useState(""),
     [code, setCode] = useState(""),
-    [otp, setOtp] = useState(false),
     [country, setCountry] = useState("AUTO");
+  const otp = Boolean(state?.otpEmail);
+  const email = state?.otpEmail ?? draftEmail;
   const [devices, setDevices] = useState<Device[]>([]),
     [billing, setBilling] = useState<Billing | null>(null);
   const [subject, setSubject] = useState(""),
@@ -311,7 +339,6 @@ function App() {
                     setCode("");
                   } else {
                     await send("requestOtp", { email });
-                    setOtp(true);
                   }
                 });
               }}
@@ -351,14 +378,28 @@ function App() {
                   className="text"
                   disabled={busy}
                   onClick={() => {
-                    setOtp(false);
-                    setCode("");
+                    void action(async () => {
+                      await send("resetOtp");
+                      setEmail("");
+                      setCode("");
+                    });
                   }}
                 >
                   {t("otherEmail")}
                 </button>
               )}
             </form>
+            <button
+              type="button"
+              className="text"
+              onClick={() => {
+                void chrome.tabs.create({
+                  url: chrome.runtime.getURL("popup.html"),
+                });
+              }}
+            >
+              {t("openTab")}
+            </button>
             <p className="muted">{t("sessionDetail")}</p>
           </section>
         ) : (
@@ -389,6 +430,14 @@ function App() {
                             ? "Premium"
                             : "Free"}
                       </strong>
+                      {state.account?.plan === "FREE" && (
+                        <button
+                          className="text"
+                          onClick={() => navigate("subscription")}
+                        >
+                          {t("upgrade")}
+                        </button>
+                      )}
                     </div>
                     <div>
                       <label>{t("activeDevices")}</label>
@@ -551,11 +600,78 @@ function App() {
               <>
                 <h1 className="white">{t("subscription")}</h1>
                 <section className="card">
-                  <label>{t("plan")}</label>
-                  <h2>{billing?.plan ?? "…"}</h2>
-                  <label>{t("paidUntil")}</label>
-                  <strong>{date(billing?.paid_until ?? null)}</strong>
-                  <p>{t("billingReadOnly")}</p>
+                  {billing && (
+                    <>
+                      <label>{t("plan")}</label>
+                      <h2>{billing?.plan ?? "…"}</h2>
+                      <label>{t("paidUntil")}</label>
+                      <strong>{date(billing?.paid_until ?? null)}</strong>
+                      {billing?.current_price && (
+                        <>
+                          <label>{t("contractPrice")}</label>
+                          <strong>
+                            {priceLabel(billing.current_price, language)} /{" "}
+                            {t("monthly")}
+                          </strong>
+                        </>
+                      )}
+                      {billing?.current_price &&
+                        !billing.new_contract_required && (
+                          <p>{t("fixedPrice")}</p>
+                        )}
+                      {billing?.plan === "PREMIUM" &&
+                        billing.new_contract_required && (
+                          <p>{t("resubscribe")}</p>
+                        )}
+                      <label>{t("method")}</label>
+                      <strong>
+                        {billing?.methodKind === "SBP"
+                          ? t("sbpAccount")
+                          : (billing?.method ?? t("noMethod"))}
+                      </strong>
+                      {billing?.next_charge_at && billing.next_charge_price && (
+                        <>
+                          <label>{t("nextCharge")}</label>
+                          <strong>
+                            {date(billing.next_charge_at)} ·{" "}
+                            {priceLabel(billing.next_charge_price, language)}
+                          </strong>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {!billing && (
+                    <div data-testid="billing-reference-prices">
+                      <h2>Premium</h2>
+                      <p className="reference-price">
+                        <s>499 ₽</s> <strong>399 ₽</strong> · <s>$7</s>{" "}
+                        <strong>$5</strong> / {t("monthly")}
+                      </p>
+                      <p>{t("referencePrices")}</p>
+                    </div>
+                  )}
+                  {billing?.offers.map((offer) => (
+                    <div key={offer.id}>
+                      <h2>Premium</h2>
+                      <p>
+                        {priceLabel(offer.prices.RUB, language)} ·{" "}
+                        {priceLabel(offer.prices.USD, language)} /{" "}
+                        {t("monthly")}
+                      </p>
+                    </div>
+                  ))}
+                  <p>{t("billingPortalHint")}</p>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={() =>
+                      void action(async () => {
+                        await send("billingPortal");
+                      })
+                    }
+                  >
+                    {t("billingPortal")}
+                  </button>
                   <a
                     href="https://prettylisavpn.com/#pricing"
                     target="_blank"
@@ -674,3 +790,12 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </React.StrictMode>,
 );
+
+function priceLabel(price: Money, language: number): string {
+  return new Intl.NumberFormat(language === 0 ? "ru" : "en", {
+    style: "currency",
+    currency: price.currency,
+    minimumFractionDigits: price.amount_minor % 100 ? 2 : 0,
+    maximumFractionDigits: 2,
+  }).format(price.amount_minor / 100);
+}

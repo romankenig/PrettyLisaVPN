@@ -99,5 +99,5 @@ class TrafficCatalogService:
         self.repository, self.auth = repository, auth
 
     async def catalog(self, token: str) -> TrafficCatalog:
-        await self.auth.authenticate(token)
+        (await self.auth.authenticate(token)).require_registered()
         return TrafficCatalog(services=await self.repository.list_enabled())

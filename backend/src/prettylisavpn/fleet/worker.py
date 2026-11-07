@@ -20,6 +20,7 @@ from prettylisavpn.fleet.domain import (
     Observation,
     VpnMethod,
     monitoring_slot,
+    retry_source_order,
     server_quality,
     source_order,
 )
@@ -150,7 +151,8 @@ class FleetWorker:
                         (FleetOperationRecord.status == "QUEUED")
                         & (FleetOperationRecord.next_attempt_at <= now),
                         (FleetOperationRecord.status == "RUNNING")
-                        & (FleetOperationRecord.lease_until < now),
+                        & (FleetOperationRecord.lease_until < now)
+                        & (FleetOperationRecord.next_attempt_at <= now),
                     )
                 )
                 .order_by(FleetOperationRecord.next_attempt_at)
@@ -194,21 +196,62 @@ class FleetWorker:
             roster = list(
                 (
                     await session.scalars(
-                        select(FleetMethodRecord.node_id).where(
+                        select(FleetMethodRecord.node_id)
+                        .join(FleetNodeRecord)
+                        .where(
                             FleetMethodRecord.method == job.method,
                             FleetMethodRecord.configured_at.is_not(None),
+                            FleetNodeRecord.enabled.is_(True),
                         )
                     )
                 ).all()
             )
-            source = (
-                next(
-                    (by_id[item] for item in source_order(target.id, now, roster) if item in by_id),
-                    None,
+            source = None
+            if job.kind == "CHECK":
+                previous = (
+                    job
+                    if job.attempts
+                    else await session.scalar(
+                        select(FleetOperationRecord)
+                        .where(
+                            FleetOperationRecord.node_id == target.id,
+                            FleetOperationRecord.method == job.method,
+                            FleetOperationRecord.kind == "CHECK",
+                            FleetOperationRecord.id != job.id,
+                            FleetOperationRecord.started_at.is_not(None),
+                        )
+                        .order_by(FleetOperationRecord.started_at.desc(), FleetOperationRecord.id)
+                        .limit(1)
+                    )
                 )
-                if job.kind == "CHECK"
-                else None
-            )
+                previous_source = None
+                if previous is not None:
+                    raw = previous.result.get("probe_source_id")
+                    previous_source = UUID(str(raw)) if raw else previous.source_id
+                previous_observation = previous.result.get("observation") if previous else None
+                retry = (
+                    bool(job.attempts)
+                    or job.request_key.startswith("retry:")
+                    or (
+                        previous is not None
+                        and (
+                            previous.status == "FAILED"
+                            or isinstance(previous_observation, dict)
+                            and previous_observation.get("status") == "UNKNOWN"
+                        )
+                    )
+                )
+                order = (
+                    retry_source_order(target.id, roster, previous_source)
+                    if retry
+                    else source_order(target.id, now, roster)
+                )
+                source = next((by_id[item] for item in order if item in by_id), None)
+                if source is None and order:
+                    # A different eligible source exists but is currently busy.
+                    # Wait for its lock instead of repeatedly using the old observer.
+                    job.next_attempt_at = now + timedelta(seconds=15)
+                    return None
             token = uuid4()
             for node in (target, source):
                 if node is not None:
@@ -217,6 +260,10 @@ class FleetWorker:
             job.lease_until = now + timedelta(seconds=LEASE_SECONDS)
             job.started_at, job.attempts = now, job.attempts + 1
             job.source_id = source.id if source else None
+            if job.kind == "CHECK":
+                # Result metadata is server-owned; request parameters remain immutable
+                # so an idempotent enqueue keeps matching the original request.
+                job.result = {"probe_source_id": str(source.id) if source else None}
             return Claim(
                 job.id,
                 token,
@@ -275,6 +322,11 @@ class FleetWorker:
                 "FAILED" if error or observation and observation.status == "FAILED" else "SUCCEEDED"
             )
             job.result = {"code": error} if error else result
+            if claim.kind == "CHECK":
+                job.result = {
+                    **job.result,
+                    "probe_source_id": str(claim.source.id) if claim.source else None,
+                }
             job.finished_at, job.lease_until = now, None
             method = await session.get(
                 FleetMethodRecord, (claim.target.id, claim.method), with_for_update=True
@@ -320,7 +372,9 @@ class FleetWorker:
                 ):
                     method.state = "READY"
                 quality = (
-                    cast(int, rating["quality"])
+                    None
+                    if observation.status == "UNKNOWN"
+                    else cast(int, rating["quality"])
                     if method is not None and method.state == "READY"
                     else 0
                 )

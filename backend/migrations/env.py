@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from prettylisavpn.account_messages import model as account_messages_model  # noqa: F401
 from prettylisavpn.auth_sessions import model as auth_sessions_model  # noqa: F401
 from prettylisavpn.billing import model as billing_model  # noqa: F401
+from prettylisavpn.billing import platega_model  # noqa: F401
 from prettylisavpn.client_vpn import model as client_vpn_model  # noqa: F401
 from prettylisavpn.config import Settings
 from prettylisavpn.database import Base
+from prettylisavpn.demo import model as demo_model  # noqa: F401
 from prettylisavpn.devices import model as devices_model  # noqa: F401
 from prettylisavpn.fleet import model as fleet_model  # noqa: F401
 from prettylisavpn.legacy_vpn import nodes as vpn_nodes_model  # noqa: F401

@@ -20,13 +20,13 @@
         "build-identity.json",
         "apps/android/app/src/androidTest/java/com/prettylisavpn/android/AccountScreensTest.kt"
       ],
-      "file": "android-services.png",
-      "original_path": "account-api/traffic-include.png",
-      "scenario": "Service selection for split tunneling",
+      "file": "android-home.png",
+      "original_path": "account-api/home-account-summary.png",
+      "scenario": "Home account summary; disconnected; synthetic account",
       "width": 1080,
       "height": 1920,
-      "bytes": 142024,
-      "sha256": "27fb78881e539966abf1d8c028769e28cb7e2091752790f5bd0861d8745982c6",
+      "bytes": 127171,
+      "sha256": "3001fccca2f4093533f86121c31adbba8ac90ee5d25a4a56b3117436e99f86cd",
       "run_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719117",
       "artifact_url": "https://github.com/romankenig/PrettyLisaVPN/actions/runs/41589719117/artifacts/13210167115"
     },

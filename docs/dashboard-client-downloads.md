@@ -66,7 +66,7 @@ effective at their check time, even after later changes.
 All routes require the existing dashboard login/password over HTTPS. Downloads
 are development builds: one Android debug APK installed over the existing app,
 and the Windows development EXE. They do not require GitHub login. Other platforms
-have no current binaries and are not shown. No release tags or public releases
+were added in 0.6.0 as documented below. No release tags or public releases
 are created. A failed catalog refresh is shown separately from fleet availability.
 
 ## Automatic publication
@@ -164,3 +164,108 @@ and a publisher launched directly as the non-root SSH user. Correct the env
 ownership and use the restricted container helper. Retain those failed runs
 as evidence; final successful source/build/run/attempt identities belong in
 the follow-up PR after deployment and publication have actually completed.
+
+## Chrome and Apple downloads — 2026-11-05
+
+Dashboard **0.5.0 → 0.6.0** adds three platforms. Client versions remain
+Chrome 0.1.0, iOS 0.1.0, macOS 0.1.0 on the develop baseline; backend 0.34.0,
+Windows 0.25.2 and Android 0.21.2 are unchanged. The separate iOS 0.2.0 PR
+is not a published develop build and must not be silently substituted.
+No API/database/authentication change and no public website change.
+
+| Platform | Permanent authenticated download | Installation |
+| --- | --- | --- |
+| Chrome Extension | `/dashboard/downloads/chrome-extension.zip` | Extract, enable developer mode at `chrome://extensions`, load the extracted directory. Browser-only HTTPS proxy. |
+| iOS | `/dashboard/downloads/ios-unsigned.zip` | Unsigned device app; requires an Apple signature and provisioning profile. Not directly installable from Safari, App Store or TestFlight. |
+| macOS | `/dashboard/downloads/macos-unsigned.zip` | Unsigned Release app; real VPN requires appropriate Apple signing and Network Extension provisioning. |
+
+Both Apple downloads have corresponding engine source/license archives at
+`/dashboard/downloads/{ios,macos}-sources.tar.gz`. Neither Apple download claims
+real-device VPN acceptance. The initial 0.6.0 links excluded Simulator and ad-hoc
+UI fixture builds; 0.6.1 adds a distinct Simulator companion as documented below.
+The UI reads version/date/size from the shared catalog every minute. Buttons
+only appear for validated entries with the expected package kind, and all URLs
+remain fixed in code. Existing Android/Windows schema-1 entries stay compatible.
+
+`prepare_client_download.py` normalizes artifacts from their own CI run into the
+existing publisher contract. Chrome carries its original build identity inside
+the ZIP; Apple preserves exact Release ZIP bytes and original run provenance,
+adds a source SHA marker to the matching corresponding-source archive, and reads
+the version from the actual app plist rather than hardcoded packaging metadata.
+Packaging is deterministic so repeating the same original artifact is idempotent.
+The publisher checks MV3/app structure, device SDK (rejecting Simulator), version,
+size, SHA256, original SHA/run/attempt and Apple source/license presence.
+
+Successful Chrome build/lint/test/browser checks and both Apple jobs gate the
+shared publisher. Only a `push` to `develop` publishes; PR/manual/failed builds
+do not. Packaging/publisher/reusable-workflow changes trigger both platform CIs.
+The existing lock and atomic snapshot preserve all five platforms. No release
+tag, Apple signing identity, store publication or extra server token is introduced.
+
+Initial bootstrap candidates are the latest successful develop push artifacts:
+Chrome `0c70d8185664d8ca80c4513205acb3b3c0e8e1a6`, run `41984959319/1`;
+Apple `05d945dbd5da35f1c85523d00b4ab57415882a3c`, run `41822292829/1`.
+Check every job and the artifact's original identity before using them. These
+are existing clients, not builds of the new dashboard/publisher source.
+The task PR records the verified dashboard HEAD/build run, actual HTTP checks,
+artifact hashes, deployment and final CI results; this text alone is not evidence
+of a deployment. Automatic future publication starts when the workflow change
+reaches develop through an approved merge. Keep these links and this rule current
+for subsequent client tasks, as required by the owner and AGENTS.md.
+
+Validation covers five-platform snapshot preservation, immutable/idempotent
+replays, wrong SHA/run/attempt/hash/size/version/kind, missing sources, Simulator
+rejection and unsafe ZIP paths. Caddy tests cover authentication, attachment and
+no-store headers for all new binaries/sources. Dashboard unit tests, TypeScript
+and production build cover catalog parsing and fixed destinations.
+No backend follow-up is needed for downloads; Apple signing/distribution and
+real-device VPN acceptance remain separate work. Restore the retained dashboard
+site and download snapshot symlinks for a deliberate rollback under the existing
+publication lock; do not overwrite immutable files or catalog coordinates.
+
+## iOS Simulator download — 2026-11-05
+
+Dashboard **0.6.0 → 0.6.1** fixes selection of the wrong SDK package for browser
+simulators. iOS **0.1.0 → 0.1.1** also fixes missing Simulator Keychain entitlements
+found during exact-archive launch review. macOS remains 0.1.0; backend is 0.34.1
+and Chrome 0.1.2 after PR #60; Windows stays 0.25.2 and Android 0.21.2.
+
+Use `/dashboard/downloads/ios-simulator.zip` for Appetize or Apple Simulator
+(ARM64, iOS 17+). It contains the original `PrettyLisaVPN.app` built with the
+`iphonesimulator` SDK. Upload the ZIP to the browser service's Simulator/ARM
+environment. `/dashboard/downloads/ios-unsigned.zip` remains the unsigned physical
+iPhone build and cannot be uploaded as a Simulator app. Both links use existing
+dashboard authentication; download locally before uploading to an external service.
+No external service account or app has been created or changed by this task.
+
+Apple CI packages both archives from its own run, installs and launches the exact
+Simulator ZIP, verifies read/write/update/delete through the real Keychain adapter
+with a disposable noncredential value, then relaunches without fixture arguments,
+records its SHA256 and captures
+`simulator-download.png`. This proves native Simulator launch, not an Appetize
+upload or a real VPN tunnel. Simulator-only ad-hoc signing supplies the app's own
+application identifier/access group through Xcode's Simulator build settings;
+packaging preserves that signature. No Apple team, shared native-device group or
+plaintext credential fallback is introduced. The diagnostic exists only in Debug
+Simulator builds and runs solely with `-verify-keychain`. The earlier 0.1.0 archive
+from PR build `75051b7dcf270f0c066ee7d8d7688ea2d3d0475e`, run 42032440782/1,
+launched but showed SECURE_STORAGE_UNAVAILABLE; it is not storage acceptance of
+0.1.1. Final source/build and native evidence belong in PR #58.
+Appetize format requirements:
+https://docs.appetize.io/platform/app-management/uploading-apps/ios.
+
+The existing iOS entry has optional `simulator_url`, `simulator_sha256` and
+`simulator_bytes`; legacy catalogs remain compatible and show only the device
+button. The publisher checks the separate Simulator SDK, version, hash and size,
+retains the companion across all platform updates, and rejects conflicting
+immutable companions. Device, Simulator and sources share original SHA/run/attempt
+and one atomic publication. New Apple packaging requires the Simulator archive;
+missing/invalid archives fail the build. Preserve this companion in future changes.
+
+Tests cover swapped SDKs, corrupt/missing companions, legacy catalogs, fixed URLs,
+five-platform preservation, immutable replay conflicts and Caddy authentication/
+attachment headers. Record exact product HEAD, PR merge/build SHA, run/attempt,
+artifact hashes, all CI jobs and deployment evidence in the task PR after checks.
+No new endpoint, migration, credential or backend follow-up is required. Install
+the new publisher before the next publication; old publishers omit this companion
+when recreating snapshots. Follow the existing retained-snapshot rollback process.

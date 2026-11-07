@@ -21,6 +21,7 @@ import { attemptMessage } from "../vpn/attempt";
 import { FreeTimeBalance } from "./FreeTimeBalance";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
 import { ProductText } from "./ProductText";
+import { Link } from "react-router-dom";
 
 type ProfileState =
   | { phase: "loading" }
@@ -302,6 +303,11 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
                 : "",
           )}
         </strong>
+        {profile.plan === "FREE" ? (
+          <Link className="account-upgrade" to="/settings/subscription">
+            {t("улучшить")}
+          </Link>
+        ) : null}
       </div>
       <div>
         <span>{t("активные устройства")}</span>

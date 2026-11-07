@@ -323,3 +323,7 @@ code {
 .card > strong + label {
   margin-top: 14px;
 }
+
+.reference-price strong {
+  display: inline;
+}

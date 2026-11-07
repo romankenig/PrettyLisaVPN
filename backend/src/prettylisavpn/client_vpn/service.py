@@ -23,7 +23,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform, DeviceStatus
 from prettylisavpn.devices.model import DeviceRecord
-from prettylisavpn.fleet.domain import FleetError
+from prettylisavpn.fleet.domain import FleetError, proxy_address_supported
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord
 from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
@@ -152,10 +152,16 @@ class ClientVpnService:
             raise FleetError("VPN_UNAVAILABLE", 503)
         return await self.auth.authenticate(token)
 
-    async def connect(self, token: str, data: ConnectRequest, request_id: UUID) -> dict[str, Any]:
+    async def connect(
+        self, token: str, data: ConnectRequest, request_id: UUID, *, allow_proxy_ip: bool = False
+    ) -> dict[str, Any]:
         if not self.settings.client_vpn_enabled:
             raise FleetError("VPN_UNAVAILABLE", 503)
         identity = await self.identity(token)
+        if identity.is_demo and (
+            data.country != "AUTO" or data.traffic_mode != "all" or data.method == "https_proxy"
+        ):
+            raise FleetError("REGISTRATION_REQUIRED", 403)
         managed = base_method(data.method) != "wireguard"
         if managed and not self.settings.managed_vpn_enabled:
             raise FleetError("VPN_METHOD_UNAVAILABLE", 503)
@@ -203,9 +209,14 @@ class ClientVpnService:
             subscription = await SubscriptionRepository(session).get_by_user_id(identity.user_id)
             if subscription is None:
                 raise FleetError("ACCOUNT_UNAVAILABLE", 403)
+            if subscription.plan is SubscriptionPlan.DEMO and (
+                data.country != "AUTO" or data.traffic_mode != "all" or data.method == "https_proxy"
+            ):
+                raise FleetError("REGISTRATION_REQUIRED", 403)
             quota = (
                 await ClientQuotaRepository(session).display(identity.user_id, now)
-                if subscription.effective_plan(now) == SubscriptionPlan.FREE
+                if subscription.effective_plan(now)
+                in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO)
                 else None
             )
             is_free, expires = deadline(subscription, now, quota.usable_seconds if quota else 0)
@@ -268,7 +279,9 @@ class ClientVpnService:
                 )
                 if not method or method.state != "READY" or not method.public_key:
                     continue
-                if data.method == "https_proxy" and not method.configuration.get("proxy_host"):
+                if data.method == "https_proxy" and not proxy_address_supported(
+                    method.configuration.get("proxy_host"), allow_ip=allow_proxy_ip
+                ):
                     continue
                 leases = list(
                     (

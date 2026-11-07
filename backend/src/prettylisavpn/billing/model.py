@@ -102,6 +102,25 @@ class BillingAccountRecord(Base):
     provider_name: Mapped[str | None] = mapped_column(String(64))
     mandate_reference: Mapped[str | None] = mapped_column(String(200))
     method_label: Mapped[str | None] = mapped_column(String(100))
+    method_kind: Mapped[str | None] = mapped_column(String(16))
+    card_brand: Mapped[str | None] = mapped_column(String(16))
+    card_last4: Mapped[str | None] = mapped_column(String(4))
+    next_charge_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    renewal_canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        CheckConstraint(
+            "method_kind IS NULL OR method_kind IN ('CARD', 'SBP', 'UNKNOWN')",
+            name="ck_billing_account_method_kind",
+        ),
+        CheckConstraint(
+            "((method_kind IS NULL OR method_kind <> 'CARD') "
+            "AND card_brand IS NULL AND card_last4 IS NULL) OR "
+            "(method_kind = 'CARD' AND card_brand IS NOT NULL AND card_last4 IS NOT NULL "
+            "AND card_brand IN ('visa','mastercard','mir','unknown') "
+            "AND card_last4 ~ '^[0-9]{4}$')",
+            name="ck_billing_account_card_summary",
+        ),
+    )
 
 
 class BillingOperationRecord(Base):

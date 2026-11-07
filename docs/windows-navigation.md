@@ -1,3 +1,60 @@
+# Android 0.25.0 — guest access and documents
+
+Android login → Try DEMO → Home uses the new guest API. About and login document
+links open fixed localized HTTPS pages without credentials. Muted country/split/
+device/manual-method controls → confirmed tunnel cleanup and guest logout → email
+OTP → registered FREE with its independent budget. Guest Settings → Subscription
+shows the FREE registration offer without requesting billing. These UI/API paths
+are implemented; actual deployment and guest admission activation remain pending.
+Website shows Premium > Free > DEMO and links DEMO to Android download. Windows
+navigation is unchanged. See [DEMO handoff](android-demo-access.md).
+
+# Price resilience — Windows 0.26.1 / Android 0.22.1 / Apple and Chrome 0.2.1
+
+Subscription load failure → localized read-only monthly reference price card
+(499 → 399 RUB / 7 → 5 USD). It is explicitly for a new subscription, never the
+existing account contract. Existing retry/authentication behavior is retained.
+No payment command, entitlement or active offer is synthesized. Android/Apple
+keep already-loaded account data on refresh failure; server mutation guards remain.
+Website 0.4.1 displays approved prices before JavaScript/API loading, prefers its
+validated seven-day public price cache, then replaces it with fresh API values.
+Account overview failure removes actionable offers and presents reference prices
+plus refresh. Cached prices are not passed to payment commands. See
+[price resilience](price-resilience.md).
+
+# Website acquisition — 0.4.1
+
+Dashboard 0.6.3 labels the existing aggregate speed summary and graph «Медиана
+скорости». Group/server filters and point-to-hour-detail navigation are unchanged.
+
+Homepage Premium «купить» (localized) → `/account/` → email OTP or existing web
+session → subscription overview and explicit recurring consent when enabled.
+The label does not bypass authentication, charge money or enable the provider.
+Existing subscription-management entry points retain their management wording.
+
+# Billing portal — Windows 0.26.0 / Android 0.22.0 / Apple and Chrome 0.2.0
+
+Free Home → «улучшить» → Settings/Subscription. Subscription keeps the account
+price, paid period, payment method and next-charge summary, and adds «управлять
+подпиской и оплатой» → authenticated POST `/billing/portal` → external browser
+`https://prettylisavpn.com/account/#handoff=…`. The fragment is a one-use 60-second
+capability, never a refresh/access token; exact URL validation precedes opening.
+Chrome opens a separate tab; closing the popup does not discard the payment.
+
+The browser exchanges the fragment for a billing-only secure cookie, then displays
+the account email, current subscription and database offers. New subscription →
+explicit monthly SBP consent → provider tab + retained waiting page → server-verified
+success/failure → subscription management or return to the client. The native client
+refreshes billing on Windows focus after opening the portal, Android subscription
+resume and Apple scene activation; Home entry refreshes the account. No custom payment URI
+scheme or automatic native app launch is claimed. Browser return URLs never settle money.
+
+Cancellation first explains paid access retention and the unsupported bank-account
+replacement API; the user may retain the subscription or cancel and later re-subscribe.
+This is a real backend integration behind disabled merchant configuration, not a local
+payment-success mock. Full contract, provider limitations, versions and acceptance:
+[Platega billing](platega-billing.md).
+
 # Chrome Extension navigation — 0.1.0
 
 Windows is the visual reference and remains unchanged. Chrome popup uses sidebar
@@ -716,3 +773,69 @@ the user to rerun setup. Administrator consent belongs to setup/update/uninstall
 the client remains unelevated. These are implemented native integrations, with
 remote validation tracked in [handoff](windows-installer-service.md). App routes,
 auth guards, browser transitions and account storage are unchanged.
+
+
+### Chrome 0.1.1: persistent login and webmail round trip
+
+The Chrome popup restores its code-entry screen and requested email after it closes.
+The user can open webmail in another tab and return, or use the new button to open
+the same sign-in page in a normal extension tab. The implemented worker owns OTP
+request state; no external mailbox URL is inferred and no OTP is stored. Existing
+real backend OTP verification is unchanged. Authentication survives browser restart;
+old proxy overrides are cleared and a new connection requires explicit Connect.
+Windows navigation is unchanged. See [Chrome handoff](chrome-extension.md) for
+verification and the separate proxy node/DNS rollout dependency.
+
+### Dashboard 0.6.1: separate iOS download destinations
+
+The authenticated API dashboard now offers separate iOS buttons for Simulator
+(`/dashboard/downloads/ios-simulator.zip`) and physical iPhone
+(`/dashboard/downloads/ios-unsigned.zip`). Simulator instructions describe uploading
+the downloaded ARM64 ZIP to a compatible browser service; there is no automatic
+upload, external account creation or inferred service URL. Device signing and
+Simulator limitations stay visible. These implemented download transitions do not
+change Windows navigation. Publication and exact-archive Keychain/launch acceptance
+are tracked in [the download handoff](dashboard-client-downloads.md).
+
+### Dashboard 0.6.2: proportional availability history
+
+The overall/group hour strip shows proportional server-state colors with exact
+counts on hover or keyboard focus. Clicking an hour still opens the existing
+measurement details, and filters keep their current routes. This is implemented
+dashboard presentation using the existing API; Windows navigation is unchanged.
+See [history handoff](dashboard-group-metrics.md#proportional-availability-history--2026-11-06).
+
+### Android 0.23.0: subscription presentation and refresh
+
+The live Android subscription screen uses access/price/payment cards and top-only
+pull-to-refresh with an accessibility action. The old bottom refresh button and
+unavailable provider controls are removed. Bottom “change subscription” retains
+the existing single-use authenticated portal transition; browser resume refreshes
+billing. Authorized native method replacement and red cancellation still require
+confirmation and an authoritative server result, preserving paid access. Manually
+assigned Platinum receives no invented cancellation capability. These are actual
+UI transitions on the existing backend integration; live merchant activation is
+still pending. Windows routes and its version are unchanged. See
+[Android subscription handoff](android-subscription-layout.md).
+
+### Android 0.23.1: optional split-mode location
+
+The lower Home traffic card renders its location section only for a connected
+split mode with observed metadata. Failed/not-yet-completed lookups leave no
+placeholder or divider; an IP-only observation remains useful without an unknown
+region label. Existing minute/manual refresh restores the section automatically.
+VPN state/errors, routes and external lookups are unchanged; this is implemented
+Android presentation, with no pending backend integration. See
+[location handoff](android-optional-location.md).
+
+### Android 0.24.0: connection recovery and method reset
+
+Home adds a 48dp reset icon next to Connect/Disconnect. It clears learned method
+preference/recent failures, closes the old local/remote session, then starts a new
+selection for the displayed country; configured allowed methods are retained.
+Manual cancellation wins over a pending reset. Checking, waiting-for-network and
+reconnecting replace a misleading connected label in both Home and its ongoing
+notification. Existing cancel/disconnect remains available. Background recovery
+uses the same verified adapters and cleanup barriers; it never reopens a session
+after explicit disconnect, account change or access expiry. No new backend API or
+Windows transition is pending. See [recovery handoff](android-connection-recovery.md).

@@ -6,6 +6,29 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MethodPreferenceTest {
+    @Test fun explorationTriesOneAlternativeThenTheRememberedMethod() {
+        val methods = listOf("wireguard", "wireguard_relay", "vless")
+        val ordinary = MethodPreference(read = { "wireguard_relay" }, explore = { false })
+        val exploring = MethodPreference(read = { "wireguard_relay" }, explore = { true }, choose = { it - 1 })
+        assertEquals(listOf("wireguard_relay", "wireguard", "vless"), ordinary.order(methods))
+        assertEquals(listOf("vless", "wireguard_relay", "wireguard"), exploring.order(methods))
+        assertEquals("wireguard_relay", exploring.current())
+    }
+    @Test fun delayedFailuresSurviveRestartExpireAndResetWithoutLosingAllowedMethods() {
+        var instant = 1_000L
+        var saved = "wireguard_relay"
+        var failures = emptyMap<String,Long>()
+        fun preference() = MethodPreference({ saved }, { saved = it }, { failures }, { failures = it }, now = { instant })
+        val methods = listOf("wireguard", "wireguard_relay", "vless")
+        preference().failedAfterConnection("wireguard_relay")
+        assertEquals(listOf("wireguard", "vless", "wireguard_relay"), preference().order(methods))
+        assertEquals("wireguard_relay", saved)
+        instant += 30 * 60_000L
+        assertEquals("wireguard_relay", preference().order(methods).first())
+        val reset = preference(); reset.failedAfterConnection("wireguard"); reset.clear()
+        assertNull(reset.current()); assertTrue(failures.isEmpty()); assertEquals("", saved)
+        assertEquals(methods, preference().order(methods))
+    }
     private fun adapters(calls: MutableList<String>, works: Map<String, Boolean>) =
         listOf("wireguard", "wireguard_relay", "other").map { id -> object : ConnectionAdapter {
             override val method = VpnMethod(id, id)

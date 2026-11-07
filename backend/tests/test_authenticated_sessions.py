@@ -150,6 +150,7 @@ def test_me_returns_identity_plan_and_active_device_count():
         "active_device_count": 3,
         "subscription": None,
         "entitlements": {
+            "split_tunneling_allowed": True,
             "vpn_session_limit_seconds": None,
             "rewarded_ad_required": False,
             "country_selection_allowed": True,

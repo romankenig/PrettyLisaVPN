@@ -1,18 +1,11 @@
 export const website = Object.freeze({
-  version: "0.2.2",
-  reviewedOn: "2026-11-03",
+  version: "0.5.0",
+  reviewedOn: "2026-11-07",
   mode: "prelaunch",
-  seller: Object.freeze({
-    name: "Кениг Роман Сергеевич",
-    status: "Самозанятый (НПД)",
-    country: "Россия",
-    inn: "183475316809",
-    address: null,
-    email: "help@prettylisavpn.com",
-  }),
-  prices: Object.freeze({ RUB: 19900, USD: 299 }),
+  moderationMarker: "platega test",
+  seller: Object.freeze({ email: "help@prettylisavpn.com" }),
   period: "CALENDAR_MONTH",
-  renewal: "MANUAL",
+  renewal: "MONTHLY_SUBSCRIPTION",
   priceConfirmed: true,
   legalApproved: false,
   refundPolicyApproved: false,
@@ -20,20 +13,19 @@ export const website = Object.freeze({
   publicDownloadsReady: true,
   paymentAdapterImplemented: false,
   providers: Object.freeze({
-    cardlink: Object.freeze({
+    platega: Object.freeze({
       approved: false,
       configured: false,
-      status: "Аккаунт создан. Заявка не подана.",
+      status: "Проверка СБ. Merchant ID и API-секрет ещё не выданы.",
     }),
   }),
 });
 
 export function releaseBlockers(config = website) {
   return [
-    !config.seller.address && "Не указан адрес для письменных претензий",
     !config.legalApproved && "Документы не утверждены",
     !config.refundPolicyApproved && "Не утверждены правила возврата",
-    !config.receiptProcessApproved && "Не определена отправка чеков НПД",
+    !config.receiptProcessApproved && "Не определена отправка чеков",
     !config.publicDownloadsReady &&
       "Нет общедоступной доставки клиентских сборок",
     !config.paymentAdapterImplemented &&

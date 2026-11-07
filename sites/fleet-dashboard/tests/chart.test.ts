@@ -11,6 +11,22 @@ test("historical active totals exclude intermediate nodes while their individual
 });
 import { activeBars, aggregateSeries, aggregateValues, chartSeries } from "../src/chart.ts";
 
+test("speed uses separate medians per direction, preserving zeros and last-per-server weighting", () => {
+  const at = "2026-11-06T10:00:00Z";
+  const sample = { observed_at: at, status: "HEALTHY", mode: "SYNTHETIC", quality: 90, download_mbps: 10, upload_mbps: 0, connection_ms: 100, active_connections: 1 };
+  const nodes = [
+    { id: "a", name: "A", history: [{ at, measurements: [sample, { ...sample, observed_at: "2026-11-06T10:50:00Z", download_mbps: 20 }] }] },
+    { id: "b", name: "B", history: [{ at, measurements: [{ ...sample, download_mbps: 30, upload_mbps: 10 }] }] },
+    { id: "c", name: "C", history: [{ at, measurements: [{ ...sample, download_mbps: 900, upload_mbps: null }] }] },
+  ];
+  const [download, upload] = aggregateSeries(nodes, "speed");
+  assert.deepEqual(download.segments[0][0], { time: Date.parse(at), value: 30, covered: 3, total: 3 });
+  assert.deepEqual(upload.segments[0][0], { time: Date.parse(at), value: 5, covered: 2, total: 3 });
+  assert.equal(aggregateValues([0, 10, 20, 900], "speed"), 15);
+  assert.equal(aggregateValues([0], "speed"), 0);
+  assert.equal(chartSeries(nodes.slice(2), "speed")[0].segments[0][0].value, 900);
+});
+
 test("group aggregation weights servers equally, uses median and sum, and reports incomplete coverage", () => {
   const sample = { observed_at: "2026-10-29T10:05:00Z", status: "HEALTHY", mode: "SYNTHETIC", quality: 5, download_mbps: 10, upload_mbps: 20, connection_ms: 100, active_connections: 2 };
   const nodes = [
