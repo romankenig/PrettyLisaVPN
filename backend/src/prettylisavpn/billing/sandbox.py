@@ -104,6 +104,9 @@ class SandboxBillingProvider:
             )
         return route is None
 
+    def supports_amount(self, route: PaymentRoute, currency: Currency, amount_minor: int) -> bool:
+        return amount_minor > 0
+
     async def reconcile(self, request: ProviderRequest) -> ProviderResult:
         document = request.model_dump(mode="json")
         if request.recurring_supported is None:

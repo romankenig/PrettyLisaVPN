@@ -26,6 +26,50 @@ function shape(value) {
   assert.ok(value.trim());
   return "string";
 }
+
+test("billing preserves the published moderation layout and uses API-owned pricing", () => {
+  for (const language of languages) {
+    const all = pages();
+    const html = all.get(routeFor(language));
+    assert.match(html, /platega test/);
+    assert.equal((html.match(/class="document-button"/g) ?? []).length, 4);
+    assert.match(html, /id="documents"/);
+    assert.doesNotMatch(html, /183475316809|Кениг Роман|Roman Kenig/);
+    assert.match(html, /android-home\.png/);
+    assert.match(html, /data-price="RUB"/);
+    assert.match(html, /data-price="USD"/);
+    assert.match(html, /name="currency" value="RUB" checked/);
+    assert.match(html, /data-free-currency="RUB"/);
+    assert.match(html, /data-free-currency="USD"/);
+    const pricing = html.match(/<section class="pricing[\s\S]*?<\/section>/)[0];
+    const purchaseLabel = `>${escape(locales[language].pricing.buy)}</a>`;
+    assert.equal(pricing.split(purchaseLabel).length - 1, 2);
+    assert.ok(!pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`));
+    assert.doesNotMatch(
+      html,
+      /data-amount-minor=|data-purchase=|id="payment-dialog"/,
+    );
+    assert.match(html, new RegExp(`href="${routeFor(language, "/account/")}"`));
+    assert.match(all.get(routeFor(language, "/account/")), /data-portal/);
+  }
+});
+test("DEMO is below Premium and Free with localized device limits and Android entry", () => {
+  const all = pages();
+  for (const language of languages) {
+    const html = all.get(routeFor(language));
+    const premium = html.indexOf('class="plan premium-plan"');
+    const free = html.indexOf('class="plan free-plan"');
+    const demo = html.indexOf('class="demo-plan"');
+    assert.ok(premium >= 0 && free > premium && demo > free);
+    const section = html.slice(demo, html.indexOf('</aside>', demo));
+    assert.ok(section.includes(escape(locales[language].pricing.demo.description)));
+    assert.ok(section.includes(routeFor(language, '/download/android/')));
+    assert.ok(!section.includes('class="button"'));
+    for (const document of ['terms', 'privacy']) {
+      assert.match(all.get(routeFor(language, `/legal/${document}/`)), /DEMO/);
+    }
+  }
+});
 test("all six client languages have complete UI, download instructions and four documents", async () => {
   assert.deepEqual(languages, ["ru", "en", "de", "fr", "es", "zh"]);
   const windows = await readFile(
@@ -43,7 +87,6 @@ test("all six client languages have complete UI, download instructions and four 
     assert.deepEqual(shape(locales[code]), shape(locales.ru), code);
     assert.ok(windows.includes(`"${code}"`), code);
     assert.ok(android.includes(`"${code}"`), code);
-    assert.ok(locales[code].footer.seller.includes("183475316809"));
     assert.equal(
       (JSON.stringify(locales[code]).match(/prettylisavpn(?!\.com)/g) ?? [])
         .length,
@@ -53,12 +96,12 @@ test("all six client languages have complete UI, download instructions and four 
   assert.throws(() => routeFor("unknown"));
   assert.equal(escape('<script>"&'), "&lt;script&gt;&quot;&amp;");
 });
-test("home has exactly four sections, one launch notice and seven distinct platform pages", () => {
+test("home has five sections including database-backed prices, one launch notice and seven distinct platform pages", () => {
   const all = pages();
-  assert.equal(all.size, 78);
+  assert.equal(all.size, 96);
   for (const language of languages) {
     const html = all.get(routeFor(language));
-    assert.equal((html.match(/<section /g) ?? []).length, 4);
+    assert.equal((html.match(/<section /g) ?? []).length, 5);
     assert.equal((html.match(/class="launch"/g) ?? []).length, 1);
     assert.ok(html.includes(locales[language].launch));
     assert.equal((html.match(/class="platform-card /g) ?? []).length, 7);
@@ -70,14 +113,11 @@ test("home has exactly four sections, one launch notice and seven distinct platf
     assert.doesNotMatch(questions, /\[[^\]]+\]/);
     assert.match(questions, /<p>[^<]*<a href="[^"]*\/download\/android\/">/);
     assert.match(questions, /<a href="mailto:help@prettylisavpn.com">/);
-    const splitAnswer = questions
+    const protectionAnswer = questions
       .split('<div class="faq-answer">')[3]
       .split("</details>")[0];
-    assert.equal((splitAnswer.match(/<p>/g) ?? []).length, 6);
-    assert.match(splitAnswer, /YouTube/);
-    assert.match(splitAnswer, /Telegram/);
-    assert.match(splitAnswer, /\*\.youtube.com/);
-    assert.doesNotMatch(splitAnswer, /<a /);
+    assert.match(protectionAnswer, /https/i);
+    assert.doesNotMatch(protectionAnswer, /<a /);
     for (const platform of platforms) {
       const page = all.get(routeFor(language, `/download/${platform.id}/`));
       assert.ok(page);
@@ -133,7 +173,6 @@ test("all links and anchors resolve; documents and language links preserve conte
   for (const route of [
     "/plans/",
     "/checkout/",
-    "/account/",
     "/readiness/",
     "/legal/seller/",
     "/legal/acceptable-use/",
@@ -178,7 +217,7 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
     await readFile(path.join(root, "assets/screenshots/sources.json"), "utf8"),
   );
   const raw = JSON.stringify(provenance);
-  for (const file of ["windows-home", "android-services"]) {
+  for (const file of ["windows-home", "android-home"]) {
     const bytes = await readFile(
       path.join(root, `assets/screenshots/${file}.png`),
     );
@@ -188,10 +227,12 @@ test("screenshots retain exact native artifact bytes and recorded provenance", a
   }
 });
 test("commercial launch remains separate from authorized informational publication", () => {
-  assert.equal(website.renewal, "MANUAL");
+  assert.equal(website.renewal, "MONTHLY_SUBSCRIPTION");
   assert.equal(website.paymentAdapterImplemented, false);
-  assert.equal(website.providers.cardlink.approved, false);
-  assert.ok(releaseBlockers().length >= 6);
+  assert.equal(website.providers.platega.approved, false);
+  assert.ok(
+    releaseBlockers().includes("Нет одобренного и настроенного способа оплаты"),
+  );
   const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
     cwd: root,
     env: { ...process.env, SITE_RELEASE: "1" },
@@ -241,10 +282,10 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "downloads.mjs",
     "style.css",
     "screenshots/windows-home.png",
-    "screenshots/android-services.png",
+    "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
-  for (const route of ["/readiness/", "/plans/", "/account/", "/checkout/"])
+  for (const route of ["/readiness/", "/plans/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);
   assert.equal(

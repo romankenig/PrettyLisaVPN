@@ -29,8 +29,8 @@ internal class ManagedApi(private val http: HttpAuthApi, private val sessions: S
                 require(it.heartbeat_seconds == 30)
             }
         }
-    suspend fun connect(country: String, publicKey: String, request: String, method: String) =
-        requireNotNull(call(verb = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method), request = request))
+    suspend fun connect(country: String, publicKey: String, request: String, method: String, trafficMode: String = "all") =
+        requireNotNull(call(verb = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method, "traffic_mode" to trafficMode), request = request))
     suspend fun current() = call("/current")
     suspend fun get(id: String) = requireNotNull(call("/${UUID.fromString(id)}"))
     suspend fun heartbeat(id: String) = requireNotNull(call("/${UUID.fromString(id)}/heartbeat", "POST"))

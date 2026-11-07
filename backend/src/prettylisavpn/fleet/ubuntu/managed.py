@@ -9,6 +9,7 @@ import json
 import os
 import re
 import select
+import ssl
 import subprocess
 import sys
 import time
@@ -33,7 +34,10 @@ else:
 ROOT = Path("/etc/prettylisavpn-fleet/managed")
 ENGINE = Path("/usr/local/lib/prettylisavpn-fleet/pl-node-engine")
 HELPER = Path("/usr/local/lib/prettylisavpn-fleet/managed.py")
+PROXY_HELPER = Path("/usr/local/lib/prettylisavpn-fleet/browser_proxy.py")
+CERTIFICATES = Path("/etc/letsencrypt/live")
 METHODS = {
+    "HTTPS_PROXY": ("tcp",),
     "AMNEZIA": ("udp",),
     "SSTP": ("tcp",),
     "SOFTETHER": ("tcp",),
@@ -45,6 +49,46 @@ METHODS = {
     "HYSTERIA1_TLS": ("udp",),
     "HYSTERIA2_SALAMANDER": ("udp",),
 }
+
+
+def proxy_certificate(name: str) -> dict[str, str]:
+    if (
+        not re.fullmatch(
+            r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+", name
+        )
+        or len(name) > 253
+    ):
+        raise Failure("PROXY_HOST_INVALID")
+    literal = bool(re.fullmatch(r"[0-9.]+", name))
+    if literal:
+        try:
+            public_ip(name)
+        except (ValueError, Failure) as error:
+            raise Failure("PROXY_HOST_INVALID") from error
+    chain, key = CERTIFICATES / name / "fullchain.pem", CERTIFICATES / name / "privkey.pem"
+    # System public trust and exact DNS-name/IP SAN verification are mandatory. Chrome
+    # cannot use the pinned, self-signed certificates of the native VPN core.
+    cmd(
+        [
+            "openssl",
+            "verify",
+            "-purpose",
+            "sslserver",
+            "-verify_ip" if literal else "-verify_hostname",
+            name,
+            "-CApath",
+            "/etc/ssl/certs",
+            "-untrusted",
+            str(chain),
+            str(chain),
+        ]
+    )
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(chain, key)
+    return {
+        "tls_certificate": chain.read_text(encoding="ascii"),
+        "tls_key": key.read_text(encoding="ascii"),
+    }
 
 
 def unit(identifier: str) -> str:
@@ -77,9 +121,21 @@ def configuration(payload: dict[str, Any]) -> dict[str, Any]:
     for folder in ("leases", "closed"):
         (ROOT / folder).mkdir(mode=0o700, exist_ok=True)
     desired = {"host": host, "server_name": name, "reality_target": target}
+    proxy_host = value.get("proxy_host")
+    if proxy_host:
+        if re.fullmatch(r"[0-9.]+", str(proxy_host)) and str(proxy_host) != host:
+            raise Failure("PROXY_HOST_INVALID")
+        proxy_certificate(str(proxy_host))
+        desired["proxy_host"] = str(proxy_host)
     state = read(ROOT / "state.json")
     identity = read(ROOT / "identity.json")
-    if state and state != desired:
+    if state.get("proxy_host") != desired.get("proxy_host") and any(
+        read(path).get("method") == "HTTPS_PROXY" for path in (ROOT / "leases").glob("*.json")
+    ):
+        raise Failure("NODE_BUSY")
+    if state and any(
+        state.get(key) != desired[key] for key in ("host", "server_name", "reality_target")
+    ):
         if any((ROOT / "leases").glob("*.json")):
             raise Failure("NODE_BUSY")
         identity = {}
@@ -201,6 +257,8 @@ def grant(access: dict[str, Any]) -> dict[str, Any]:
         raise Failure("MANAGED_ACCESS_CLOSED")
     path = lease_path(identifier)
     previous = read(path)
+    if row["method"] == "HTTPS_PROXY":
+        proxy_certificate(str(read(ROOT / "state.json").get("proxy_host", "")))
     if previous:
         if any(previous[key] != row[key] for key in ("id", "secret", "method", "port", "purpose")):
             raise Failure("MANAGED_ACCESS_CONFLICT")
@@ -335,13 +393,21 @@ def supervise(identifier: str) -> None:
     payload = {
         **{key: row[key] for key in ("id", "secret", "method", "port", "expires")},
         "listen": state["host"],
-        "target": state["reality_target"],
-        **{key: identity[key] for key in ("private_key", "server_name", "short_id")},
     }
-    if row["method"] not in ("VLESS_REALITY", "AMNEZIA", "SHADOWSOCKS_2022"):
-        payload.update({key: identity[key] for key in ("tls_certificate", "tls_key")})
+    certificate_path = CERTIFICATES / str(state.get("proxy_host", "")) / "fullchain.pem"
+    certificate_mtime = None
+    if row["method"] == "HTTPS_PROXY":
+        payload.update(proxy_certificate(str(state.get("proxy_host", ""))))
+        certificate_mtime = certificate_path.stat().st_mtime_ns
+    else:
+        payload.update(target=state["reality_target"])
+        payload.update({key: identity[key] for key in ("private_key", "server_name", "short_id")})
+        if row["method"] not in ("VLESS_REALITY", "AMNEZIA", "SHADOWSOCKS_2022"):
+            payload.update({key: identity[key] for key in ("tls_certificate", "tls_key")})
     child = subprocess.Popen(
-        [str(ENGINE), "--lease", identifier],
+        ["/usr/bin/python3", str(PROXY_HELPER)]
+        if row["method"] == "HTTPS_PROXY"
+        else [str(ENGINE), "--lease", identifier],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
@@ -362,6 +428,13 @@ def supervise(identifier: str) -> None:
         sample = {"rx_bytes": 0, "tx_bytes": 0, "flowed_at": 0.0}
         while child.poll() is None:
             time.sleep(0.5)
+            # ACME rotation needs a fresh SSLContext. The next normal worker
+            # grant restarts this lease with the renewed node-local certificate.
+            if (
+                certificate_mtime is not None
+                and certificate_path.stat().st_mtime_ns != certificate_mtime
+            ):
+                return
             renewed = read(path)
             if not renewed or tombstone(identifier).exists() or renewed["expires"] <= time.time():
                 return

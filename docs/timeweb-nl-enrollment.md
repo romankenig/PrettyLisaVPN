@@ -1,5 +1,12 @@
 # FREE node timeweb-nl-001 — 2026-11-04
 
+Historical enrollment record, reconciled on 2026-11-07. Versions and running
+identities below describe the original 2026-11-04 acceptance, not today's backend.
+The node is already enrolled; merging this document does not register, reconfigure
+or restart it. **Version unchanged** for all current components. Documentation
+links, identity consistency and diff are checked; final reconciliation HEAD and
+merge status belong to PR #54. No new deployment or reliability claim is made.
+
 Owner-requested operational enrollment. **Version unchanged**: no application,
 API, database-schema or protocol changes. Backend remains 0.33.0; the existing
 fleet API, Ansible bootstrap, SSH inventory and PostgreSQL scheduler are reused.

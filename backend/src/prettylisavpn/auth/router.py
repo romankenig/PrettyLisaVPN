@@ -122,6 +122,7 @@ class SubscriptionAccessResponse(BaseModel):
 
 
 class EntitlementsResponse(BaseModel):
+    split_tunneling_allowed: bool = True
     vpn_session_limit_seconds: int | None
     rewarded_ad_required: bool
     country_selection_allowed: bool
@@ -137,7 +138,7 @@ class EntitlementsResponse(BaseModel):
 
 class MeResponse(BaseModel):
     id: UUID
-    email: EmailStr
+    email: EmailStr | None
     plan: SubscriptionPlan
     active_device_count: int
     subscription: SubscriptionAccessResponse | None = None
@@ -326,7 +327,7 @@ async def me(
     rights = entitlements_for_plan(result.plan)
     return MeResponse(
         id=result.user_id,
-        email=result.email,
+        email=None if result.plan is SubscriptionPlan.DEMO else result.email,
         plan=result.plan,
         active_device_count=result.active_device_count,
         subscription=None
@@ -342,6 +343,7 @@ async def me(
             ),
         ),
         entitlements=EntitlementsResponse(
+            split_tunneling_allowed=rights.split_tunneling_allowed,
             vpn_session_limit_seconds=(
                 int(rights.vpn_session_limit.total_seconds()) if rights.vpn_session_limit else None
             ),

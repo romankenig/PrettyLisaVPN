@@ -20,6 +20,7 @@ from prettylisavpn.auth_sessions.service import AuthSessionService
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import RegistrationRequiredError, is_demo_email
 from prettylisavpn.devices.domain import Device, DeviceStatus
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.product_analytics.activity import ActivitySink, record_activity
@@ -52,6 +53,11 @@ class AccessIdentity:
     user_id: UUID
     device_id: UUID
     session_id: UUID
+    is_demo: bool = False
+
+    def require_registered(self) -> None:
+        if self.is_demo:
+            raise RegistrationRequiredError
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,13 +112,15 @@ class AuthenticatedSessionService:
             async with self._postgres.session() as session:
                 auth_session = await AuthSessionRepository(session).get(identity.session_id)
                 auth_session = self._require_session(auth_session, identity)
-                await self._load_principals(session, auth_session)
+                user, _ = await self._load_principals(session, auth_session)
         except (InvalidSessionError, BlockedUserError, RevokedDeviceError):
             raise
         except SQLAlchemyError:
             raise AuthServiceUnavailableError("Authentication storage is unavailable") from None
         await record_activity(self._activity, identity.user_id)
-        return identity
+        return AccessIdentity(
+            identity.user_id, identity.device_id, identity.session_id, is_demo_email(user.email)
+        )
 
     async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens:
         try:
@@ -198,7 +206,7 @@ class AuthenticatedSessionService:
                 remaining = None
                 resets_at = None
                 quota = None
-                if plan is SubscriptionPlan.FREE:
+                if plan in (SubscriptionPlan.FREE, SubscriptionPlan.DEMO):
                     quota = await ClientQuotaRepository(session).display(user.id, now)
                     remaining = quota.available_seconds
                     resets_at = free_quota_resets_at(now)
@@ -224,7 +232,7 @@ class AuthenticatedSessionService:
             free_quota_resets_at=resets_at,
             free_seconds_usable=quota.usable_seconds if quota else None,
             free_running_sessions=quota.running_sessions if quota else None,
-            quota_observed_at=now if plan is SubscriptionPlan.FREE else None,
+            quota_observed_at=now if quota else None,
             daily_vpn_limit_seconds=quota.daily_limit_seconds if quota else None,
         )
 

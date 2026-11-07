@@ -14,9 +14,13 @@ services:
     security_opt:
       - no-new-privileges:true
     env_file:
+      - path: ${DEMO_ENV_FILE:-/etc/prettylisavpn/demo.env}
+        required: false
       - path: ${FLEET_ENV_FILE:-/etc/prettylisavpn/fleet.env}
         required: false
       - path: ${CARDLINK_ENV_FILE:-/etc/prettylisavpn/cardlink.env}
+        required: false
+      - path: ${PLATEGA_ENV_FILE:-/etc/prettylisavpn/platega.env}
         required: false
     environment: &backend_environment
       APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}

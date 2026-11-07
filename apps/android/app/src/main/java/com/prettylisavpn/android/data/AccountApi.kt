@@ -19,6 +19,9 @@ data class BillingOverview(
     val status: String, val paidUntil: String?, val autoRenew: Boolean,
     val method: String?, val currentPrice: String?, val routes: List<PaymentRoute>,
     val offers: List<AccountOffer>, val actions: Set<String>, val pendingId: String?,
+    val nextChargeAt: String? = null, val nextChargePrice: String? = null,
+    val newContractRequired: Boolean = false,
+    val methodKind: String? = null,
 ) {
     fun permits(action: String) = mode == "LIVE" && available && routes.map { it.id }.toSet() == routeIds && action in actions && pendingId == null
 }
@@ -41,6 +44,7 @@ interface AccountApi {
     suspend fun revoke(token: String, id: String): Device
     suspend fun messages(token: String): List<AccountMessage>
     suspend fun acknowledge(token: String, id: String, revision: Int)
+    suspend fun billingPortal(token: String): String = throw AuthFailure("BILLING_UNAVAILABLE")
     suspend fun overview(token: String): BillingOverview
     suspend fun start(token: String, intent: BillingIntent): OperationReceipt
     suspend fun operation(token: String, id: String): OperationReceipt
@@ -118,6 +122,10 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
         uuid(id); val raw = json("messages/$id/acknowledgements", token, mapOf("revision" to revision))
         parse { val v = raw.asJsonObject; require(v.text("id") == id && v.get("revision").asBigDecimal.intValueExact() == revision && v.flag("acknowledged")) }
     }
+    override suspend fun billingPortal(token: String): String {
+        val raw = json("billing/portal", token, emptyMap<String, String>())
+        return parse { raw.asJsonObject.text("url").also { require(validBillingPortal(it)) } }
+    }
     override suspend fun overview(token: String): BillingOverview {
         val raw = json("billing/overview", token)
         return parse {
@@ -147,12 +155,31 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
             val paid = date(v.optional("paid_until")); val renew = v.flag("auto_renew")
             require(status !in setOf("ACTIVE", "CANCELED") || paid != null)
             require(!renew || status !in setOf("FREE", "CANCELED"))
-            val method = v.get("payment_method")?.takeUnless { it.isJsonNull }?.asJsonObject?.text("label")
+            val method = v.get("payment_method")?.takeUnless { it.isJsonNull }?.asJsonObject?.let { m ->
+                val label = m.text("label").also { require(it.count(Char::isDigit) <= 4) }
+                val kind = m.optional("kind") ?: "UNKNOWN"
+                require(kind in setOf("CARD", "SBP", "UNKNOWN"))
+                if (kind == "CARD") {
+                    val last4 = m.text("card_last4").also { require(it.matches(Regex("[0-9]{4}"))) }
+                    val brand = mapOf("visa" to "Visa", "mastercard" to "Mastercard", "mir" to "МИР", "unknown" to "")
+                    val name = brand[m.text("card_brand")] ?: throw AuthFailure("invalid_response")
+                    "$name •••• $last4".trim()
+                } else {
+                    require(m.optional("card_last4") == null && m.optional("card_brand") == null)
+                    label
+                }
+            }
             require(status != "CANCELED" || (!renew && method == null))
             val current = v.get("current_price")?.takeUnless { it.isJsonNull }?.asJsonObject?.let { p ->
                 val currency = p.text("currency"); require(currency in setOf("RUB", "USD")); "$currency ${java.math.BigDecimal.valueOf(price(p).amount, 2).toPlainString()}"
             }
-            BillingOverview(v.text("revision").also { require(it.isNotBlank() && it.length <= 128) }, mode, v.flag("payment_operations_available", false), plan, status, paid, renew, method, current, routes, offers, actions, v.optional("pending_operation_id")?.let(::uuid))
+            val nextAt = date(v.optional("next_charge_at"))
+            val nextPrice = v.get("next_charge_price")?.takeUnless { it.isJsonNull }?.asJsonObject?.let { p ->
+                val currency = p.text("currency"); require(currency in setOf("RUB", "USD"))
+                "$currency ${java.math.BigDecimal.valueOf(price(p).amount, 2).toPlainString()}"
+            }
+            require((nextAt == null && nextPrice == null) || (nextAt != null && nextPrice != null && renew && method != null && nextPrice == current))
+            BillingOverview(v.text("revision").also { require(it.isNotBlank() && it.length <= 128) }, mode, v.flag("payment_operations_available", false), plan, status, paid, renew, method, current, routes, offers, actions, v.optional("pending_operation_id")?.let(::uuid), nextAt, nextPrice, v.flag("new_contract_required", plan != "PREMIUM"), v.get("payment_method")?.takeUnless { it.isJsonNull }?.asJsonObject?.optional("kind"))
         }
     }
     private fun operation(raw: JsonElement) = parse { val o = raw.asJsonObject
@@ -195,3 +222,5 @@ private class ProgressBody(private val body: okhttp3.RequestBody, private val pr
         counting.flush()
     }
 }
+
+fun validBillingPortal(value: String): Boolean = Regex("https://prettylisavpn\\.com/account/#handoff=[A-Za-z0-9_-]{43}").matches(value)

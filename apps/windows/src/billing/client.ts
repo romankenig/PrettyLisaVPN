@@ -45,6 +45,19 @@ export function createBillingClient(
     }
   }
   return {
+    portal: async (token, signal) => {
+      const value = await request("/billing/portal", token, signal, {});
+      const raw =
+        value && typeof value === "object" && "url" in value ? value.url : null;
+      if (
+        typeof raw !== "string" ||
+        !/^https:\/\/prettylisavpn\.com\/account\/#handoff=[A-Za-z0-9_-]{43}$/.test(
+          raw,
+        )
+      )
+        throw new Error("PAYMENT_URL_NOT_ALLOWED");
+      return raw;
+    },
     overview: async (token, signal) =>
       parseOverview(await request("/billing/overview", token, signal)),
     start: async (token, command, signal) =>

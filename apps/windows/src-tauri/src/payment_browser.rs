@@ -12,13 +12,25 @@ pub fn open_payment_url(url: String) -> Result<(), &'static str> {
     let permitted = allowed
         .split(',')
         .any(|host| !host.trim().is_empty() && Some(host.trim()) == parsed.host_str());
+    let portal = parsed.host_str() == Some("prettylisavpn.com")
+        && parsed.path() == "/account/"
+        && parsed.query().is_none()
+        && parsed
+            .fragment()
+            .and_then(|value| value.strip_prefix("handoff="))
+            .is_some_and(|value| {
+                value.len() == 43
+                    && value
+                        .bytes()
+                        .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
+            });
     if url.len() > 2048
         || parsed.scheme() != "https"
         || !parsed.username().is_empty()
         || parsed.password().is_some()
-        || parsed.fragment().is_some()
+        || (parsed.fragment().is_some() && !portal)
         || parsed.port_or_known_default() != Some(443)
-        || !permitted
+        || (!permitted && !portal)
     {
         return Err("PAYMENT_URL_NOT_ALLOWED");
     }

@@ -1,7 +1,7 @@
 {
   "name": "english",
   "title": "vpn for your everyday needs",
-  "description": "PrettyLisaVPN for android and windows. choose which traffic to protect and connect with one account.",
+  "description": "PrettyLisaVPN for android and windows. an encrypted connection and one account for your devices.",
   "nav": {
     "features": "features",
     "download": "download",
@@ -9,26 +9,27 @@
     "language": "language",
     "menu": "menu",
     "home": "home",
-    "skip": "skip to content"
+    "skip": "skip to content",
+    "pricing": "plans"
   },
   "launch": "launch planned for november 15",
   "hero": {
-    "title": "your internet.\nyour rules.",
+    "title": "connection protection.\non your devices.",
     "text": "vpn for everyday needs. on your phone and computer — with clear settings and one account.",
     "button": "choose your device",
     "link": "how it works"
   },
   "features": {
     "eyebrow": "fewer steps",
-    "title": "a connection\nthat adapts to you",
+    "title": "an encrypted connection\nfor everyday needs",
     "items": [
       {
-        "title": "protect what you need",
-        "text": "all traffic, selected services or everything except your selection. lists for the two modes are saved separately."
+        "title": "protect your network traffic",
+        "text": "vpn creates an encrypted connection between your device and the service server."
       },
       {
-        "title": "a connection method that fits",
-        "text": "the app tries available methods and remembers the successful one. you can also choose a method manually."
+        "title": "clear controls",
+        "text": "connect and disconnect with one button. the app displays your connection status."
       },
       {
         "title": "one account, five devices",
@@ -39,7 +40,7 @@
   "screens": {
     "caption": "actual app screens · demo data",
     "windows": "windows app home screen",
-    "android": "service selection in the android app",
+    "android": "android app home screen",
     "settings": "connection method settings for windows"
   },
   "platforms": {
@@ -87,7 +88,7 @@
     "steps": [
       "download and install the app. approve the system vpn permission if your device requests it.",
       "enter your email and the one-time code from the message.",
-      "choose a country, set which traffic to protect and tap ‘connect’."
+      "choose a country and press connect. the home screen will show your connection status."
     ],
     "upcoming": "this option will be available later. for now, you can use the android and windows apps.",
     "alternatives": "other devices",
@@ -118,12 +119,12 @@
         "a": "premium has no daily time limit during the paid period. a subscription lasts one calendar month and is renewed manually. your plan and access period are shown in the app."
       },
       {
-        "q": "can i connect only selected services?",
-        "a": "split tunneling lets you choose what uses the VPN and what uses your regular connection. change the mode in “what to protect” on the app’s home screen.\n\n“all” — all traffic uses the VPN.\n\n“selected” — only the services in your list use the VPN. for example, YouTube and Telegram; other websites and apps use your regular connection.\n\n“except selected” — the reverse: listed services connect directly, while other traffic uses the VPN. for example, you can exclude Gosuslugi and MAX.\n\ntap “choose services” and enable the ones you need, or add your own pattern: youtube.com for that domain, *.youtube.com for its subdomains. a service may use several domains, so a preset is usually easier.\n\nthe two modes have separate lists. saving changes disconnects the VPN — reconnect to apply your selection."
+        "q": "what does a vpn protect?",
+        "a": "vpn encrypts traffic between your device and the service server, including on public wi-fi. also use https, app updates and secure sign-in methods to protect your accounts. vpn does not replace device security."
       },
       {
         "q": "vpn will not connect. what should i do?",
-        "a": "check your internet without vpn, update the app and try another country or connection method in settings. if the error persists, send its text and the time it occurred to [support]."
+        "a": "check your internet connection without vpn and update the app. if the error persists, send its text and time to [support]."
       },
       {
         "q": "the sign-in code has not arrived?",
@@ -136,31 +137,35 @@
     ]
   },
   "footer": {
-    "seller": "Кениг Роман Сергеевич · self-employed, russia · tax id 183475316809",
     "copyright": "PrettyLisaVPN",
     "terms": "terms of service",
     "privacy": "privacy policy",
     "refunds": "refunds and complaints",
-    "payments": "payment, cancellation and renewal"
+    "payments": "payment, cancellation and renewal",
+    "claims": "claims & payments",
+    "documents": "documents"
   },
   "legal": {
-    "updated": "version dated november 3, 2026",
+    "updated": "version dated november 7, 2026",
     "terms": [
-      "PrettyLisaVPN provides vpn access through apps for android and windows. the service is provided by Кениг Роман Сергеевич, a payer of professional income tax in russia, tax id 183475316809. contact: help@prettylisavpn.com.",
+      "PrettyLisaVPN provides vpn access through apps for android and windows. for service, payment and complaint inquiries: help@prettylisavpn.com.",
       "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
       "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
-      "you can route all traffic, selected services or everything except selected services through vpn. speed and availability depend on the network, device, server and external resources. vpn does not replace device security or provide absolute anonymity.",
+      "Android DEMO needs no email or registration: 15 minutes per device each day, automatic server selection and protection of all traffic. the allowance resets at 00:00 UTC. ordinary reinstallation does not reset usage. registration provides a separate FREE hour; an existing FREE account’s usage is not reset.",
+      "vpn encrypts the connection between your device and the service server. speed and availability depend on the network, device and server. vpn does not replace device security or provide absolute anonymity.",
       "use the service lawfully. unauthorized access to other people's systems, malware, spam and attacks on infrastructure are prohibited.",
       "contact support for questions about the app. payment terms and the handling of monetary claims are described on separate pages. these terms do not limit rights granted by applicable law."
     ],
     "privacy": [
-      "Кениг Роман Сергеевич, tax id 183475316809, is responsible for data processing by PrettyLisaVPN. personal data inquiries: help@prettylisavpn.com.",
+      "for questions about personal data processing by PrettyLisaVPN: help@prettylisavpn.com.",
       "account operation uses an email address, identifier, status, and creation and modification dates. device management uses the installation identifier, device name and platform, and dates of sign-in and access revocation.",
       "the service processes information about the plan, access period, sign-in events, vpn sessions and technical connection results. this information is needed for authorization, time accounting, connection management, support and evaluation of service performance.",
+      "for DEMO, the app sends a hash of an identifier scoped to its signing key, Android user and device. the server retains only a keyed digest and a technical guest record for time accounting. the original Android ID is not sent; IMEI and advertising ID are not used. temporary guest sign-in limits use a hashed IP address for up to one hour. reinstalling with the same signing key preserves the allowance; a factory reset, another Android user or a different signing key can change the identifier.",
       "product analytics records account usage events and the technical operation of the service. its events do not include browsing history, visited page addresses, dns queries or packet contents. this describes analytics and is not a claim that no technical logs exist.",
       "when you contact support, your message and attachments are processed. do not send passwords, one-time codes or complete bank card details.",
       "daily analytics records and reports older than 180 days are removed. support request content and attachments are removed from the operational support database after 30 days. these periods do not mean that all correspondence or all account data is deleted.",
-      "the website does not use advertising trackers, cookies or browser local storage. the language is determined by the page address. fonts and images are loaded from the service's infrastructure.",
+      "The website does not use advertising trackers. The billing portal uses a secure HttpOnly cookie for up to two hours and a local pending operation identifier to recover after closing the page. Payment credentials are not stored by the website. Language follows the page address; fonts and images load from the service infrastructure.",
+      "When you subscribe, your email address, amount and technical operation identifier are sent to Platega to process and match the payment. PrettyLisaVPN stores payment statuses and access periods; bank account and card credentials are handled by the payment provider.",
       "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
     ],
     "refunds": [
@@ -174,14 +179,58 @@
     "payments": [
       "a paid subscription provides premium access for one calendar month. the period starts after payment confirmation. the exact expiry date is shown in the app.",
       "a calendar month ends on the corresponding day of the following month; if that day does not exist, it ends on the last day of the month. this is not a fixed 30-day period.",
-      "renewal is manual. a repeat payment via a link is a separate payment. automatic charges and saving a payment method for future charges are not used.",
-      "to stop renewing your subscription, do not make the next payment. the access period already granted remains valid until the specified expiry date.",
+      "SBP subscriptions renew automatically once per calendar month after your consent. The agreed amount stays fixed until cancellation and a new subscription. A one-off payment link does not enable automatic renewal.",
+      "You can stop future charges and unlink your bank account in subscription management. Paid access remains until the displayed date. A new subscription uses the price available at that time.",
       "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
-      "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment."
+      "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment.",
+      "the maximum amount per transaction is 10,000 RUB. balance top-ups and custom amounts are not offered. payments are not available yet."
     ]
   },
   "notFound": {
     "title": "page not found",
     "text": "go to the home page to download the app or find help."
+  },
+  "pricing": {
+    "eyebrow": "at your own pace",
+    "title": "one account. a clear price.",
+    "intro": "start free or choose premium for one calendar month.",
+    "free": "one hour of vpn per day per account.",
+    "freeButton": "start free",
+    "description": "vpn with unlimited connection time.",
+    "features": [
+      "choose an available server country",
+      "up to five active devices per account",
+      "no ads"
+    ],
+    "currencies": {
+      "RUB": "in rubles",
+      "USD": "in dollars"
+    },
+    "basePrice": "base price",
+    "currentPrice": "current price",
+    "period": "per month",
+    "buy": "buy",
+    "renewal": "one payment for one month. renew manually, with no automatic charges.",
+    "availability": "payments are not available yet. you can already try the free plan in the app.",
+    "documents": "purchase terms",
+    "contact": "payment questions",
+    "unavailableTitle": "payments are temporarily unavailable",
+    "unavailableText": "payment processing is not connected yet. no money was charged and no subscription was created. please try again later or contact us about payments.",
+    "close": "got it",
+    "currency": "currency",
+    "text": "one account for all your devices",
+    "premium": "unlimited time · choose a country",
+    "unavailable": "prices are unavailable",
+    "unavailableCheckout": "subscription checkout is coming soon",
+    "terms": "monthly renewal. your agreed price stays the same until you cancel.",
+    "manage": "Manage subscription",
+    "loading": "Loading subscription…",
+    "upgrade": "upgrade",
+    "demo": {
+      "title": "try without registration",
+      "description": "15 minutes per device each day. autopilot and protection of all traffic only.",
+      "button": "try on Android",
+      "upgrade": "register for FREE: a full hour daily, country selection and selective protection. DEMO time is not deducted from FREE."
+    }
   }
 }

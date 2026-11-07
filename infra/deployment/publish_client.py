@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import plistlib
 import re
 import tarfile
 import tempfile
@@ -13,29 +14,50 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-FILES = {"android": "app-debug.apk", "windows": "PrettyLisaVPN.exe"}
-DOWNLOADS = {"android": "android.apk", "windows": "windows.exe"}
+FILES = {
+    "android": "app-debug.apk",
+    "windows": "PrettyLisaVPN.exe",
+    "chrome": "PrettyLisaVPN-Chrome.zip",
+    "ios": "PrettyLisaVPN-iOS-device-unsigned.zip",
+    "macos": "PrettyLisaVPN-macOS-release-unsigned.zip",
+}
+DOWNLOADS = {
+    "android": "android.apk",
+    "windows": "windows.exe",
+    "chrome": "chrome-extension.zip",
+    "ios": "ios-unsigned.zip",
+    "macos": "macos-unsigned.zip",
+}
+PACKAGE_KINDS = {
+    "chrome": "unpacked-extension",
+    "ios": "unsigned-app",
+    "macos": "unsigned-app",
+}
 VERSION = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 SOURCES = "managed-source.tar.gz"
+SIMULATOR_FILE = "PrettyLisaVPN-iOS-Simulator.zip"
+SIMULATOR_DOWNLOAD = "ios-simulator.zip"
 
 
 def sources(directory: Path, platform: str, version: str, sha: str) -> dict[str, bytes]:
+    if platform == "chrome":
+        return {}
     minimum = (0, 15, 0) if platform == "android" else (0, 18, 0)
-    if tuple(map(int, version.split("."))) < minimum:
+    if platform in ("android", "windows") and tuple(map(int, version.split("."))) < minimum:
         return {}
     path = directory / SOURCES
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 512 * 1024 * 1024:
         raise ValueError("Corresponding managed sources are required")
     with tarfile.open(path, "r:gz") as archive:
         names = {member.name.removeprefix("./"): member for member in archive}
-        marker = names.get("source-sha.txt" if platform == "android" else "identity.json")
+        marker = names.get("identity.json" if platform == "windows" else "source-sha.txt")
         if marker is None or not marker.isfile() or marker.size > 4096:
             raise ValueError("Source identity missing")
         stream = archive.extractfile(marker)
         assert stream is not None
         identity = stream.read().decode("utf-8-sig")
         source_sha = (
-            identity.strip() if platform == "android" else json.loads(identity)["source_sha"]
+            json.loads(identity)["source_sha"] if platform == "windows" else identity.strip()
         )
         if (
             source_sha != sha
@@ -73,6 +95,56 @@ def order(entry: dict[str, Any]) -> tuple[int, ...]:
     )
 
 
+def archive_version(payload: bytes, platform: str, *, simulator: bool = False) -> str:
+    """Check the actual extension/app, never infer installability from a ZIP suffix."""
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        names = archive.namelist()
+        if len(names) != len(set(names)) or any(
+            name.startswith(("/", "\\")) or "\\" in name or ".." in name.split("/")
+            for name in names
+        ):
+            raise ValueError("Unsafe or duplicate archive paths")
+
+        def read_metadata(name: str) -> bytes:
+            if archive.getinfo(name).file_size > 65536:
+                raise ValueError("Archive metadata too large")
+            return archive.read(name)
+
+        if platform == "chrome":
+            manifest = json.loads(read_metadata("manifest.json"))
+            if (
+                manifest.get("manifest_version") != 3
+                or manifest.get("name") != "PrettyLisaVPN"
+                or manifest.get("background", {}).get("service_worker") != "background.js"
+                or not {"background.js", "popup.html", "icon.png"}.issubset(names)
+            ):
+                raise ValueError("Expected the complete PrettyLisaVPN MV3 extension")
+            version = manifest.get("version")
+        else:
+            prefix = "PrettyLisaVPN.app/" + ("Contents/" if platform == "macos" else "")
+            info = plistlib.loads(read_metadata(prefix + "Info.plist"))
+            executable = prefix + ("MacOS/" if platform == "macos" else "") + "PrettyLisaVPN"
+            sdk = (
+                "iphonesimulator" if simulator else "macosx" if platform == "macos" else "iphoneos"
+            )
+            if (
+                info.get("CFBundleExecutable") != "PrettyLisaVPN"
+                or info.get("CFBundlePackageType") != "APPL"
+                or info.get("DTPlatformName") != sdk
+                or executable not in names
+                or not any(
+                    name.startswith(prefix + "PlugIns/") and name.endswith("Info.plist")
+                    for name in names
+                )
+            ):
+                kind = "Simulator" if simulator else "device release"
+                raise ValueError(f"Expected a {kind} app with its tunnel extension")
+            version = info.get("CFBundleShortVersionString")
+        if not isinstance(version, str) or not VERSION.fullmatch(version):
+            raise ValueError("Invalid archive version")
+        return version
+
+
 def validate(
     directory: Path, platform: str, sha: str, run: int, attempt: int
 ) -> tuple[dict[str, Any], bytes, dict[str, bytes]]:
@@ -96,7 +168,7 @@ def validate(
         or identity.get("event") != "push"
     ):
         raise ValueError("Unexpected Android build")
-    installed_windows = not android and tuple(map(int, version.split("."))) >= (
+    installed_windows = platform == "windows" and tuple(map(int, version.split("."))) >= (
         0,
         23,
         0,
@@ -113,8 +185,24 @@ def validate(
     digest = hashlib.sha256(payload).hexdigest()
     if digest != identity["apk_sha256" if android else "sha256"]:
         raise ValueError("Binary checksum mismatch")
-    if not payload.startswith(b"PK\x03\x04" if android else b"MZ"):
+    if not payload.startswith(b"MZ" if platform == "windows" else b"PK\x03\x04"):
         raise ValueError("Unexpected binary format")
+    if platform in PACKAGE_KINDS:
+        if (
+            identity.get("event") != "push"
+            or identity.get("package_kind") != PACKAGE_KINDS[platform]
+            or archive_version(payload, platform) != version
+        ):
+            raise ValueError("Unexpected development archive identity")
+        if platform == "chrome":
+            with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+                build = json.loads(archive.read("build-identity.json"))
+            if (
+                build.get("source_sha"),
+                str(build.get("run")),
+                str(build.get("attempt")),
+            ) != (sha, str(run), str(attempt)):
+                raise ValueError("Extension source identity mismatch")
     compact_android = android and tuple(map(int, version.split("."))) >= (0, 15, 1)
     if compact_android:
         if len(payload) > 40_000_000:
@@ -143,6 +231,8 @@ def validate(
     }
     if installed_windows:
         entry["package_kind"] = "nsis"
+    if platform in PACKAGE_KINDS:
+        entry["package_kind"] = PACKAGE_KINDS[platform]
     if compact_android:
         entry["abi"] = "arm64-v8a"
     if companions:
@@ -155,6 +245,30 @@ def validate(
             entry["licenses_sha256"] = hashlib.sha256(
                 companions["windows-licenses.txt"]
             ).hexdigest()
+    # Optional for legacy catalogs; new Apple CI packages always include it.
+    # Both variants share the parent build coordinates and corresponding sources.
+    if platform == "ios" and "simulator" in identity:
+        metadata = identity["simulator"]
+        path = directory / SIMULATOR_FILE
+        if (
+            not isinstance(metadata, dict)
+            or path.is_symlink()
+            or not path.is_file()
+            or not 0 < path.stat().st_size <= 512 * 1024 * 1024
+        ):
+            raise ValueError("Invalid Simulator package")
+        simulator_payload = path.read_bytes()
+        simulator_digest = hashlib.sha256(simulator_payload).hexdigest()
+        if (
+            metadata.get("sha256") != simulator_digest
+            or metadata.get("bytes") != len(simulator_payload)
+            or archive_version(simulator_payload, "ios", simulator=True) != version
+        ):
+            raise ValueError("Simulator identity mismatch")
+        companions[SIMULATOR_DOWNLOAD] = simulator_payload
+        entry["simulator_url"] = "/dashboard/downloads/" + SIMULATOR_DOWNLOAD
+        entry["simulator_sha256"] = simulator_digest
+        entry["simulator_bytes"] = len(simulator_payload)
     return entry, payload, companions
 
 
@@ -181,6 +295,7 @@ def publish(root: Path, directory: Path, platform: str, sha: str, run: int, atte
                         "source_sha",
                         "sources_sha256",
                         "licenses_sha256",
+                        "simulator_sha256",
                     )
                 ):
                     raise ValueError("Conflicting immutable build")
@@ -219,6 +334,7 @@ def publish(root: Path, directory: Path, platform: str, sha: str, run: int, atte
             for key, name in (
                 ("sources_sha256", f"{client}-sources.tar.gz"),
                 ("licenses_sha256", "windows-licenses.txt"),
+                ("simulator_sha256", SIMULATOR_DOWNLOAD),
             ):
                 if key in item:
                     (snapshot / name).symlink_to(

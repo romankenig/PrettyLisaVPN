@@ -1,12 +1,13 @@
 """Catalog authentication, bounded masks and database projection."""
 
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError
 
-from prettylisavpn.auth.session_service import InvalidSessionError
+from prettylisavpn.auth.session_service import AccessIdentity, InvalidSessionError
 from prettylisavpn.config import Settings
 from prettylisavpn.main import create_app
 from prettylisavpn.traffic.service import TrafficCatalogService, TrafficService
@@ -46,6 +47,7 @@ def test_catalog_rejects_ambiguous_masks(mask):
 
 async def test_catalog_authenticates_before_loading_presets():
     auth, repository = AsyncMock(), AsyncMock()
+    auth.authenticate.return_value = AccessIdentity(uuid4(), uuid4(), uuid4())
     repository.list_enabled.return_value = [preset()]
     app = create_app(
         Settings(_env_file=None),

@@ -28,6 +28,9 @@ class SubscriptionRecord(Base):
     __tablename__ = "subscriptions"
     __table_args__ = (
         CheckConstraint(
+            "plan <> 'DEMO' OR NOT auto_renew", name="ck_subscriptions_demo_no_auto_renew"
+        ),
+        CheckConstraint(
             "current_period_end IS NULL OR current_period_end > current_period_start",
             name="ck_subscriptions_period",
         ),

@@ -8,18 +8,17 @@ import ClientDownloads from "./ClientDownloads";
 import { readClients, type Clients } from "./downloads";
 import { clock, date, TIME_ZONE_LABEL } from "./time";
 import { selectionSummary } from "./summary";
+import { availabilityDescription, availabilityFill, availabilityNames as names, availabilityStates, combineAvailability, type AvailabilityStatus as Status, type CombinedHour } from "./availability";
 
-type Status = "HEALTHY" | "DEGRADED" | "FAILED" | "UNKNOWN" | "PENDING" | "NOT_REGISTERED";
 type Hour = { at: string; status: Status; modes: string[]; checks: number; measurements?: Measurement[] };
 type Observation = { status: Status; mode: string; code: string; observed_at: string; active_connections: number; authorized_connections: number; handshake_ok: boolean | null; dns_ok: boolean | null; https_ok: boolean | null; egress_ok: boolean | null; connection_ms: number | null; download_mbps: number | null; upload_mbps: number | null; cleanup_confirmed: boolean };
 type Node = { group?: Group; is_available_for_free?: boolean; id: string; name: string; country_code: string; configuration_state: string; quality: number; available: boolean; confidence: string; capacity: number; latest: Observation | null; latest_source_id: string | null; last_full_check_at: string | null; next_check_at: string | null; history: Hour[]; expected_hours: number; known_hours: number; successful_hours: number };
 type Snapshot = { generated_at: string; nodes: Node[]; overall: object };
-const names: Record<Status, string> = { HEALTHY: "Доступен", DEGRADED: "С ограничениями", FAILED: "Сбой", UNKNOWN: "Нет подтверждения", PENDING: "Ожидается проверка", NOT_REGISTERED: "Узел ещё не добавлен" };
 const modes: Record<string, string> = { SYNTHETIC: "Межсерверная проверка", PASSIVE: "Действующие подключения", CONTROL: "Проверка управления" };
 const number = (value: number | null | undefined, digits = 0) => value == null ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
 const percent = (part: number, total: number) => total ? `${number(100 * part / total, 1)}%` : "—";
-function Timeline({ history, onSelect }: { history: Hour[]; onSelect: (hour: Hour) => void }) {
-  return <div className="timeline" aria-label="Почасовая история за неделю">{history.map((hour) => <button key={hour.at} className={`hour ${hour.status}`} title={`${date(hour.at)} ${TIME_ZONE_LABEL} · ${names[hour.status]} · проверок: ${hour.checks}`} aria-label={`${date(hour.at)} ${TIME_ZONE_LABEL}: ${names[hour.status]}`} onClick={() => onSelect(hour)} />)}</div>;
+function Timeline({ history, onSelect }: { history: (Hour | CombinedHour)[]; onSelect: (hour: Hour) => void }) {
+  return <div className="timeline" aria-label="Почасовая история за неделю">{history.map((hour) => <button key={hour.at} className={`hour ${hour.status}`} style={{ background: availabilityFill(hour) }} title={`${date(hour.at)} ${TIME_ZONE_LABEL} · ${availabilityDescription(hour)} · проверок: ${hour.checks}`} aria-label={`${date(hour.at)} ${TIME_ZONE_LABEL}: ${availabilityDescription(hour)}`} onClick={() => onSelect(hour)} />)}</div>;
 }
 function Proof({ label, value }: { label: string; value: boolean | null | undefined }) {
   return <span className={`proof ${value === true ? "yes" : value === false ? "no" : "unknown"}`}>{value === true ? <Check size={14} /> : value === false ? <X size={14} /> : <span>—</span>}{label}</span>;
@@ -55,11 +54,7 @@ export default function Dashboard() {
   const nodes = groupNodes.filter(node => selected === "all" || selected === node.id);
   const summary = selectionSummary(nodes);
   const known = nodes.reduce((sum, node) => sum + node.known_hours, 0), expected = nodes.reduce((sum, node) => sum + node.expected_hours, 0), successful = nodes.reduce((sum, node) => sum + node.successful_hours, 0);
-  const combined = (nodes[0]?.history ?? []).map((hour, index) => {
-    const values = nodes.map((node) => node.history[index]).filter((item) => item.status !== "NOT_REGISTERED");
-    const status = (["FAILED", "DEGRADED", "UNKNOWN", "PENDING", "HEALTHY"] as Status[]).find((value) => values.some((item) => item.status === value)) ?? "NOT_REGISTERED";
-    return { ...hour, status, checks: values.reduce((sum, value) => sum + value.checks, 0), modes: [...new Set(values.flatMap((value) => value.modes))] };
-  });
+  const combined = combineAvailability(nodes);
   const newest = nodes.flatMap((node) => node.latest ? [node.latest] : []).sort((a, b) => b.observed_at.localeCompare(a.observed_at))[0];
   return <>
     <header className="topbar"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /><div className="dashboard-navigation"><a href="/dashboard/product-analytics">Продуктовая аналитика</a><div className="private"><LockKeyhole size={14} />Приватный мониторинг</div></div></header>
@@ -77,12 +72,12 @@ export default function Dashboard() {
         <article className="metric"><span>Последняя проверка</span><strong className="time">{newest ? clock(newest.observed_at) : "—"}</strong><p>{newest ? modes[newest.mode] : "Ожидаем первое наблюдение"}</p></article>
       </section>
       <section className="panel selection-summary" aria-label="Общие показатели выбранных серверов">
-        <div><span>Средняя скорость ↓ / ↑</span><strong>{number(summary.download.value, 1)} / {number(summary.upload.value, 1)} <small>Мбит/с</small></strong><p>Данные: ↓ {summary.download.covered}/{nodes.length}, ↑ {summary.upload.covered}/{nodes.length} серверов</p></div>
+        <div><span>Медиана скорости ↓ / ↑</span><strong>{number(summary.download.value, 1)} / {number(summary.upload.value, 1)} <small>Мбит/с</small></strong><p>Данные: ↓ {summary.download.covered}/{nodes.length}, ↑ {summary.upload.covered}/{nodes.length} серверов</p></div>
         <div><span>Медиана рейтинга</span><strong>{number(summary.rating.value, 1)} <small>/ 100</small></strong><p>Данные: {summary.rating.covered}/{nodes.length} серверов</p></div>
         <div><span>Активные устройства — сумма</span><strong>{number(summary.active.value)}</strong><p>Данные: {summary.active.covered}/{summary.active.total} серверов FREE / PREMIUM{summary.active.covered < summary.active.total ? " · неполная выборка" : ""}</p></div>
       </section>
-      <section className="panel history-panel"><div className="section-title"><div><h2>{selected !== "all" ? "История сервера" : group === "all" ? "Общая история" : `История группы ${groupNames[group]}`}</h2><p>Каждая отметка — час. Сбой любого выбранного узла виден в общей строке.</p></div><span className="period">7 дней</span></div>
-        {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{(["HEALTHY", "FAILED", "UNKNOWN", "NOT_REGISTERED"] as Status[]).map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
+      <section className="panel history-panel"><div className="section-title"><div><h2>{selected !== "all" ? "История сервера" : group === "all" ? "Общая история" : `История группы ${groupNames[group]}`}</h2><p>{selected === "all" ? "Каждая отметка — час. Цветные доли показывают состояния выбранных серверов. Наведите, чтобы увидеть количество." : "Каждая отметка — час. Нажмите, чтобы посмотреть проверки сервера."}</p></div><span className="period">7 дней</span></div>
+        {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{availabilityStates.map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
       </section>
       <HistoryChart key={`${group}-${selected}`} aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
       {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}

@@ -29,6 +29,9 @@ internal fun vpnNotification(context: android.content.Context, status: VpnStatus
     val text = context.getString(when (status.phase) {
         VpnPhase.CONNECTED -> R.string.notification_vpn_connected
         VpnPhase.DISCONNECTING -> R.string.notification_vpn_disconnecting
+        VpnPhase.CHECKING -> R.string.vpn_checking
+        VpnPhase.WAITING_NETWORK -> R.string.vpn_waiting_network
+        VpnPhase.RECONNECTING -> R.string.vpn_reconnecting
         VpnPhase.FAILED -> R.string.vpn_cleanup
         else -> R.string.notification_vpn_connecting
     })

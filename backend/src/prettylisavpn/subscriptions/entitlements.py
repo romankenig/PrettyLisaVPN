@@ -14,8 +14,18 @@ class PlanEntitlements:
     free_nodes_only: bool
     active_device_limit: int = 5
     daily_vpn_limit_seconds: int | None = None
+    split_tunneling_allowed: bool = True
 
 
+DEMO_ENTITLEMENTS = PlanEntitlements(
+    vpn_session_limit=timedelta(minutes=15),
+    rewarded_ad_required=False,
+    country_selection_allowed=False,
+    free_nodes_only=True,
+    active_device_limit=1,
+    daily_vpn_limit_seconds=900,
+    split_tunneling_allowed=False,
+)
 FREE_ENTITLEMENTS = PlanEntitlements(
     vpn_session_limit=timedelta(hours=1),
     rewarded_ad_required=False,
@@ -37,6 +47,7 @@ def entitlements_for(subscription: Subscription, at: datetime) -> PlanEntitlemen
 
 def entitlements_for_plan(plan: SubscriptionPlan) -> PlanEntitlements:
     return {
+        SubscriptionPlan.DEMO: DEMO_ENTITLEMENTS,
         SubscriptionPlan.FREE: FREE_ENTITLEMENTS,
         SubscriptionPlan.PREMIUM: PREMIUM_ENTITLEMENTS,
         SubscriptionPlan.PLATINUM: PREMIUM_ENTITLEMENTS,

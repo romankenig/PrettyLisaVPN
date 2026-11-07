@@ -44,6 +44,7 @@ class AccountMessagesService:
 
     async def list_messages(self, token: str, context: MessageContext) -> MessagesResponse:
         identity = await self.auth.authenticate(token)
+        identity.require_registered()
         result = MessagesResponse(messages=[])
         if context.platform is DevicePlatform.WINDOWS:
             if Version.parse(context.app_version) < Version.parse("0.8.0"):
@@ -84,6 +85,7 @@ class AccountMessagesService:
 
     async def acknowledge(self, token: str, message_id: UUID, revision: int) -> Receipt:
         identity = await self.auth.authenticate(token)
+        identity.require_registered()
         now = datetime.now(UTC)
         try:
             async with self.postgres.session() as session, session.begin():

@@ -105,7 +105,7 @@ class PublicWebsiteTests(unittest.TestCase):
             "style.css",
             "lock.svg",
             "Rubik.ttf",
-            "screenshots/android-services.png",
+            "screenshots/android-home.png",
         ):
             # --spider checks headers without decoding binary fonts as text.
             result = self.request("/assets/" + asset, "--spider")
@@ -140,6 +140,24 @@ class PublicWebsiteTests(unittest.TestCase):
         for route in ("/shop-verification-wrong.txt", "/public/shop-verification-xO2ZZeK02A.txt"):
             self.assertIn("404 Not Found", self.request(route).stderr)
 
+    def test_browser_probe_is_the_only_extra_api_path_on_the_public_site(self):
+        probe = "/vpn/sessions/11111111-1111-4111-8111-111111111111/probe"
+        response = self.request(probe)
+        self.assertIn("200 OK", response.stderr)
+        self.assertIn("payment-return-stub", response.stdout)
+        self.assertIn("no-store", response.stderr)
+        self.assertIn("404 Not Found", self.request(probe, "--post-data=private-marker").stderr)
+        for route in ("/vpn/sessions/current", "/vpn/sessions", "/me", "/auth/verify-otp"):
+            self.assertIn("404 Not Found", self.request(route).stderr)
+
+    def test_billing_portal_routes_and_public_catalog_are_explicit(self):
+        for route in ("/api/web/billing/overview", "/api/web/billing/exchange", "/api/billing/catalog", "/api/payments/platega/callback"):
+            response = self.request(route)
+            self.assertIn("200 OK", response.stderr)
+            self.assertIn("payment-return-stub", response.stdout)
+        self.assertIn("200 OK", self.request("/account/").stderr)
+        self.assertIn("404 Not Found", self.request("/account/", "--post-data=private-marker").stderr)
+
     def test_private_paths_and_removed_provider_stay_closed(self):
         for route in (
             "/api/me",
@@ -159,7 +177,6 @@ class PublicWebsiteTests(unittest.TestCase):
             "/en/deployment.env",
             "/plans/",
             "/readiness/",
-            "/account/",
         ):
             for options in ((), ("--post-data=private-marker",)):
                 with self.subTest(route=route, options=options):

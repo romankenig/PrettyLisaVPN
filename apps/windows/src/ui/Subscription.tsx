@@ -7,6 +7,7 @@ import {
   formatPrice,
   remainingPaidDays,
   paymentsEnabled,
+  paymentMethodLabel,
   type BillingAction,
   type BillingOperation,
   type BillingOverview,
@@ -76,8 +77,18 @@ function SubscriptionContent() {
   const current = useRef(active);
   current.current = active;
   const requests = useRef(new Set<AbortController>());
+  const portalOpened = useRef(false);
   const token = active?.accessToken;
   const user = active?.userId;
+
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (!portalOpened.current || inFlight.current) return;
+      setAttempt((value) => value + 1);
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    return () => window.removeEventListener("focus", refreshOnReturn);
+  }, []);
 
   useEffect(() => {
     setCurrency(preferredCurrency(user ?? ""));
@@ -219,9 +230,10 @@ function SubscriptionContent() {
   if (!active) return null;
   const paid =
     data !== null && (data.status === "ACTIVE" || data.status === "CANCELED");
-  const offers = (data?.offers ?? []).filter(
-    (o) => !paid || o.plan === data?.plan,
-  );
+  const newContract =
+    data?.new_contract_required ?? (!paid || data?.plan === "PLATINUM");
+  const purchaseAction = newContract ? "SUBSCRIBE" : "RENEW";
+  const offers = data?.offers ?? [];
   const offer =
     offers.find((o) => o.id === offerId) ??
     offers.find((o) => o.plan === data?.plan) ??
@@ -243,6 +255,10 @@ function SubscriptionContent() {
     data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ??
     false;
   const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
+  const showOffer =
+    data?.payment_method?.kind !== "SBP" ||
+    newContract ||
+    data.actions.includes("RENEW");
 
   async function openProvider(url: string) {
     if (!paymentsEnabled(latestData.current)) return;
@@ -357,6 +373,34 @@ function SubscriptionContent() {
     }
   }
 
+  async function openPortal() {
+    if (!active || !billing?.portal || !paymentBrowser || busy) return;
+    setBusy(true);
+    setError(null);
+    const controller = new AbortController();
+    requests.current.add(controller);
+    try {
+      const url = await billing.portal(active.accessToken, controller.signal);
+      portalOpened.current = true;
+      if (
+        !controller.signal.aborted &&
+        current.current?.sessionId === active.sessionId
+      )
+        await paymentBrowser.open(url);
+    } catch (failure) {
+      if (!controller.signal.aborted) {
+        if (failure instanceof ApiError && failure.code === "AUTH_INVALID") {
+          await session
+            .clear()
+            .catch(() => setError("не удалось завершить сессию"));
+        } else setError("не удалось открыть кабинет оплаты");
+      }
+    } finally {
+      requests.current.delete(controller);
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+
   return (
     <section className="subscription-page" aria-labelledby="subscription-title">
       <Link className="settings-back" to="/settings">
@@ -364,6 +408,16 @@ function SubscriptionContent() {
       </Link>
       <div className="subscription-heading">
         <h1 id="subscription-title">{t("подписка")}</h1>
+        {billing?.portal ? (
+          <button
+            className="billing-primary billing-portal"
+            type="button"
+            disabled={busy || loading}
+            onClick={() => void openPortal()}
+          >
+            {t("управлять подпиской и оплатой")}
+          </button>
+        ) : null}
         <button
           className="billing-refresh"
           type="button"
@@ -379,7 +433,16 @@ function SubscriptionContent() {
           <div className="billing-card">
             <h2>{t(planName(active.plan))}</h2>
             <p>{t("данные подписки пока недоступны")}</p>
-            <p>{t("цены и способы оплаты появятся после загрузки")}</p>
+            <h3>Premium</h3>
+            <p>
+              <s>499 ₽</s> <strong>399 ₽</strong> · <s>$7</s>{" "}
+              <strong>$5</strong> {t("/ месяц")}
+            </p>
+            <p>
+              {t(
+                "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
+              )}
+            </p>
           </div>
         ) : null}
         {data ? (
@@ -449,13 +512,37 @@ function SubscriptionContent() {
                   )}
                 </p>
               ) : null}
+              {data.next_charge_at && data.next_charge_price ? (
+                <p className="billing-next-charge">
+                  {t("следующее списание")}:{" "}
+                  <time dateTime={data.next_charge_at}>
+                    {dateLabel(data.next_charge_at)}
+                  </time>
+                  {" · "}
+                  {formatPrice(
+                    data.next_charge_price.amount_minor,
+                    data.next_charge_price.currency,
+                  )}
+                </p>
+              ) : null}
+              {data.current_price && !newContract ? (
+                <p className="billing-footnote">
+                  {t("цена закреплена до отмены подписки и нового оформления")}
+                </p>
+              ) : paid && newContract && data.plan !== "PLATINUM" ? (
+                <p className="billing-footnote">
+                  {t(
+                    "списаний больше не будет. новую подписку можно оформить по текущей цене",
+                  )}
+                </p>
+              ) : null}
               {manualPlan ? (
                 <p>
                   {t(
                     "тариф назначен вручную. продление через оплату недоступно.",
                   )}
                 </p>
-              ) : (
+              ) : showOffer ? (
                 <>
                   {offers.length > 1 ? (
                     <label className="billing-offer-select">
@@ -517,14 +604,14 @@ function SubscriptionContent() {
                       disabled ||
                       !offer ||
                       !currencyAvailable ||
-                      !can(paid ? "RENEW" : "SUBSCRIBE")
+                      !can(purchaseAction)
                     }
-                    onClick={() => choosePayment(paid ? "RENEW" : "SUBSCRIBE")}
+                    onClick={() => choosePayment(purchaseAction)}
                   >
                     {t(
                       busy
                         ? "подождите…"
-                        : paid
+                        : !newContract
                           ? "продлить подписку"
                           : "оформить подписку",
                     )}
@@ -548,7 +635,7 @@ function SubscriptionContent() {
                     )}
                   </p>
                 </>
-              )}
+              ) : null}
             </section>
             <section
               className="billing-card billing-method"
@@ -560,8 +647,11 @@ function SubscriptionContent() {
               </div>
               {data.payment_method ? (
                 <div className="billing-method-value">
-                  <strong>{t(data.payment_method.provider)}</strong>
-                  <span>{t(data.payment_method.label)}</span>
+                  <strong>
+                    {data.payment_method.kind === "SBP"
+                      ? t("СБП · привязанный банковский счёт")
+                      : paymentMethodLabel(data.payment_method)}
+                  </strong>
                 </div>
               ) : (
                 <p className="billing-method-value">
@@ -656,6 +746,9 @@ function SubscriptionContent() {
           until={dateLabel(data.paid_until)}
           onClose={() => setConfirm(false)}
           onConfirm={() => void start("CANCEL")}
+          onReplace={
+            can("CHANGE_METHOD") ? () => void start("CHANGE_METHOD") : undefined
+          }
         />
       ) : null}
     </section>
@@ -714,10 +807,12 @@ function CancelConfirmation({
   until,
   onClose,
   onConfirm,
+  onReplace,
 }: {
   readonly until: string;
   readonly onClose: () => void;
   readonly onConfirm: () => void;
+  readonly onReplace?: () => void;
 }) {
   useLanguage();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -745,7 +840,19 @@ function CancelConfirmation({
           ". автопродление отключится, способ оплаты отвяжется. новых списаний не будет.",
         )}
       </p>
+      {onReplace ? (
+        <p>
+          {t(
+            "хотите заменить карту? условия подписки и оплаченный срок сохранятся",
+          )}
+        </p>
+      ) : null}
       <div>
+        {onReplace ? (
+          <button className="billing-primary" type="button" onClick={onReplace}>
+            {t("заменить карту")}
+          </button>
+        ) : null}
         <button
           className="billing-secondary"
           type="button"

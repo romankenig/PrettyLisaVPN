@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 
 /** Deliberately no server body, URL, credential or IOException message in user-facing errors. */
 class AuthFailure(val code: String) : Exception(when (code) {
+    "DEMO_UNAVAILABLE", "DEMO_RATE_LIMITED", "DEMO_QUOTA_EXHAUSTED", "REGISTRATION_REQUIRED", "demo_identity_unavailable" -> code
     "BILLING_REVISION_CHANGED" -> "The price changed. Refresh and review the subscription before confirming again."
     "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_DISABLED" -> "This payment action is unavailable. Refresh subscription details."
     "BILLING_IDEMPOTENCY_CONFLICT", "IDEMPOTENCY_CONFLICT" -> "The saved request conflicts with the server record. Check its status before continuing."
@@ -47,8 +48,11 @@ data class Credentials(val sessionId: String, val refreshToken: String, val expi
 data class Tokens(val access: String, val ttlSeconds: Long, val credentials: Credentials) {
     override fun toString() = "Tokens([redacted])"
 }
-data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "", val freeTime: FreeTime? = null)
+data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "", val freeTime: FreeTime? = null) {
+    val isDemo get() = plan.equals("DEMO", ignoreCase = true)
+}
 interface AuthApi {
+    suspend fun demo(deviceKey: String): Tokens = throw AuthFailure("DEMO_UNAVAILABLE")
     suspend fun requestOtp(email: String)
     suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String): Tokens
     suspend fun refresh(credentials: Credentials): Tokens
@@ -91,7 +95,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
                         code == "AUTH_INVALID" || code == "account_unavailable" -> "invalid_session"
                         code in setOf("VPN_SESSION_NOT_FOUND", "VPN_SESSION_ALREADY_ACTIVE", "VPN_UNAVAILABLE", "COUNTRY_UNAVAILABLE", "FREE_DAILY_LIMIT_REACHED", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "VPN_TERMINATION_UNAVAILABLE", "VPN_SESSION_STATUS_UNAVAILABLE") -> code!!
                         code in setOf("SUPPORT_NOT_FOUND", "IDEMPOTENCY_CONFLICT", "RATE_LIMITED", "ATTACHMENT_REJECTED", "INVALID_REQUEST", "MESSAGE_NOT_FOUND", "BILLING_DISABLED", "BILLING_REVISION_CHANGED", "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_IDEMPOTENCY_CONFLICT", "BILLING_OPERATION_IN_PROGRESS", "BILLING_OPERATION_NOT_FOUND", "device_not_found") -> code!!
-                        code in setOf("otp_invalid_or_expired", "otp_rate_limited", "device_limit_reached", "device_revoked", "user_blocked", "invalid_refresh_token", "invalid_access_token", "invalid_session", "authentication_required") -> code!!
+                        code in setOf("DEMO_UNAVAILABLE", "DEMO_RATE_LIMITED", "DEMO_QUOTA_EXHAUSTED", "REGISTRATION_REQUIRED", "otp_invalid_or_expired", "otp_rate_limited", "device_limit_reached", "device_revoked", "user_blocked", "invalid_refresh_token", "invalid_access_token", "invalid_session", "authentication_required") -> code!!
                         response.code == 503 -> "service_unavailable"
                         else -> "http_error"
                     })
@@ -116,13 +120,14 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
     }
     override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens(call("auth/verify-otp", mapOf("email" to email, "code" to code, "installation_id" to installationId, "platform" to "ANDROID", "device_name" to deviceName)))
     override suspend fun refresh(credentials: Credentials) = tokens(call("auth/refresh", mapOf("session_id" to credentials.sessionId, "refresh_token" to credentials.refreshToken)))
+    override suspend fun demo(deviceKey: String) = tokens(call("auth/demo", mapOf("device_key" to deviceKey)))
     override suspend fun me(access: String): Profile {
         val json = call("me", access = access)
         return try {
             val count = json.get("active_device_count").asInt; require(count in 0..5)
-            val plan = json.text("plan"); require(plan in setOf("FREE", "PREMIUM", "PLATINUM"))
-            Profile(json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) },
-                if (plan == "FREE") readFreeTime(json) else null)
+            val plan = json.text("plan"); require(plan in setOf("DEMO", "FREE", "PREMIUM", "PLATINUM"))
+            Profile(if (plan == "DEMO") "" else json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) },
+                if (plan in setOf("DEMO", "FREE")) readFreeTime(json) else null)
         } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
     override suspend fun logout(access: String) {
