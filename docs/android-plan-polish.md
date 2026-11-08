@@ -58,7 +58,10 @@ existing DEMO identity key and 0046 data. Merge/publication require owner approv
 
 Android **0.26.0 → 0.26.1**, versionCode **48 → 49**: small presentation/copy fix.
 Backend 0.38.0, schema 0047, website and other clients are unchanged. Base develop:
-`0214867dae715db946f66acde73f6ca7b861c5c3`. No new API or migration is needed.
+`0214867dae715db946f66acde73f6ca7b861c5c3`; synchronized with
+`ffc21818b1afcd9b09b8d5f45613e597617cc930` after iOS PR #53. Both platforms'
+changelog/navigation entries are preserved. Android product code is unchanged
+from `1d7907428264dc8feaa18f673ef9028713737edf`. No new API or migration is needed.
 
 The shared lock hint reads “недоступно в DEMO” everywhere, with equivalents in all
 six locales. PREMIUM emphasizes no time/data quotas, premium servers and all

@@ -27,7 +27,7 @@ for target, entitlement in (('PrettyLisaVPN-iOS', 'App-iOS'), ('PacketTunnel-iOS
         rf'^  {target}:\n(.*?)(?=^  \S|\Z)', project, re.MULTILINE | re.DOTALL
     ).group(1)
     assert f'CODE_SIGN_ENTITLEMENTS: Config/{entitlement}.entitlements' in settings
-for platform, version in {"iOS": "0.2.1", "macOS": "0.2.1"}.items():
+for platform, version in {"iOS": "0.3.0", "macOS": "0.2.2"}.items():
     assert f"MARKETING_VERSION = {version}" in (ROOT / f"Config/{platform}.xcconfig").read_text()
 model = (ROOT / "App/AppModel.swift").read_text()
 assert '#if DEBUG' in model
@@ -41,9 +41,14 @@ assert not re.search(r'value\(forKeyPath:|NSAllowsArbitraryLoads|allowInsecure.*
 for path in (ROOT / "Resources").rglob("*.json"):
     json.loads(path.read_text(encoding="utf-8"))
 apple_copy = json.loads((ROOT / 'Config/AppleStrings.json').read_text(encoding='utf-8'))
+used_keys = set(re.findall(r'\bL\("([^"\\]+)"', '\n'.join(
+    path.read_text(encoding='utf-8') for path in (ROOT / 'App').glob('*.swift')
+)))
 for index, locale in enumerate(('en', 'ru', 'de', 'es', 'fr', 'zh-Hans')):
     text = (ROOT / f'Resources/{locale}.lproj/Localizable.strings').read_text(encoding='utf-8')
     assert '"apple_simulation"' in text and 'PrettyLisaVPN' in text
+    translated_keys = set(re.findall(r'^"([^"\\]+)" = ', text, re.MULTILINE))
+    assert used_keys <= translated_keys, (locale, sorted(used_keys - translated_keys))
     for key in ('billing_portal', 'billing_reference_month'):
         # These labels are now Apple-owned; Android's redesigned screen no longer uses them.
         assert f'"{key}" = {json.dumps(apple_copy[key][index], ensure_ascii=False)};' in text
