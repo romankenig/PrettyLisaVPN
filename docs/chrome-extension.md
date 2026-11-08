@@ -1,5 +1,9 @@
 # Chrome Extension 0.1.0 / backend 0.34.0
 
+Provider-independent node enrollment, including the choice between DNS and a
+public IP certificate: [server enrollment](server-enrollment.md). The original
+DNS-only steps below are historical; the current IP path remains supported.
+
 Source baseline: develop `05d945dbd5da35f1c85523d00b4ab57415882a3c`.
 New Chrome client 0.1.0; backend 0.33.0 → 0.34.0 for browser-only HTTPS leases.
 Windows 0.25.2, Android, Apple and the managed engine versions remain unchanged.
