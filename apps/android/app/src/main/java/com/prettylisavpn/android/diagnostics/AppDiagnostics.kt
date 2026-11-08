@@ -58,6 +58,8 @@ class AppDiagnostics private constructor(private val context: Context) {
     }
 
     /** Account switching cannot attach another account's local diagnostic history. */
+    // KTX edit(commit=true) discards the result; do not export until ownership is durable.
+    @android.annotation.SuppressLint("UseKtx")
     @Synchronized fun account(id: String?) {
         if (currentOwner == id && ownerReady) return
         currentOwner = id

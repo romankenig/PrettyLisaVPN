@@ -61,7 +61,7 @@
     <string name="ui_review_the_displayed_price_and_currency_cancel_change_method_pres">prüfe Preis und Währung. kündigung und Methodenwechsel erhalten den bezahlten Zeitraum. ein verfügbarer LIVE-Anbieter ist erforderlich.</string>
     <string name="ui_simulation_active_not_a_vpn">simulation aktiv — kein VPN</string>
     <string name="ui_selected_images_0_3_png_jpeg_webp_5_mb_each_10_mb_total">bilder: %1$s / 3 · PNG/JPEG/WebP · je 5 MB / insgesamt 10 MB</string>
-    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">schreibe dem PrettyLisaVPN-Support. nur Text, Antwortadresse und ausgewählte Bilder werden gesendet.</string>
+    <string name="ui_send_a_message_to_prettylisavpn_support_only_your_text_reply_addr">schreibe dem PrettyLisaVPN-Support. die Nachricht enthält deine Konto-E-Mail, Antwortadresse und ausgewählten Bilder. du kannst Diagnosedaten unten an- oder abwählen.</string>
     <string name="ui_signing_in_again_removes_credentials_on_this_device_only_it_does_">erneutes Anmelden entfernt nur die Zugangsdaten auf diesem Gerät. die Serverabmeldung ist nicht bestätigt.</string>
     <string name="ui_simulate_replacing_the_test_method_with_bank_card_the_paid_period">simuliert den Wechsel zu BANK_CARD. der bezahlte Zeitraum bleibt erhalten, keine Karte wird verknüpft.</string>
     <string name="ui_simulated_delivery_complete_no_email_was_sent">simulierter Versand abgeschlossen, keine E-Mail gesendet.</string>

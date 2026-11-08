@@ -61,7 +61,7 @@ interface AuthApi {
     suspend fun logout(access: String)
 }
 
-class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, private val diagnostics: (DiagnosticEvent) -> Unit = {}, private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 }) : AuthApi {
+class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 }, private val diagnostics: (DiagnosticEvent) -> Unit = {}) : AuthApi {
     private val base = baseUrl.toHttpUrl().also {
         require(it.username.isEmpty() && it.password.isEmpty() && it.query == null && it.fragment == null)
         require(it.isHttps || (allowLoopbackForTests && it.host in setOf("localhost", "127.0.0.1", "::1")))
