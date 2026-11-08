@@ -76,3 +76,15 @@ unit tests and API 26/35/36 acceptance run against the current source. Final pro
 HEAD, actual build SHA/run/attempt, artifacts and complete CI audit belong in the
 task PR after verification. No backend follow-up is required. Publication remains
 the existing approved-merge/develop pipeline; a PR artifact is not a published APK.
+
+Publication acceptance follow-up (tests only, version unchanged at 0.26.1/49):
+develop run `42472590080` attempt 1 hit a NexusLauncher ANR on API 35, while
+API 26/36 passed. Attempt 2 passed all five auth cases and 24/25 account cases;
+the older DEMO-to-FREE scenario timed out after injecting OTP text without
+waiting for the real IME. It now reuses the existing `enterAuth` helper, which
+waits for window/field focus and keyboard visibility, asserts the entered text,
+then closes the keyboard before submitting. The login/independent FREE hour
+assertions remain intact, and a failed transition retains a screenshot and
+synthetic account state. No product source, timeout or test count changes.
+The failed attempts remain in Actions; final source/build/publication evidence
+is recorded in the follow-up PR and PR #69.

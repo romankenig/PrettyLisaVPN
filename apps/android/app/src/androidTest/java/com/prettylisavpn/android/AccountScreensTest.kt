@@ -187,9 +187,13 @@ class AccountScreensTest {
         click("tab_HOME");click("home-country");screenshot("demo-countries")
         click("home-country-DE");waitFor("screen_LOGIN")
         assertEquals(0,billingReads)
-        compose.onNodeWithTag("login-email").performTextInput("registered@example.com");click("auth-submit");waitFor("screen_OTP")
-        compose.onNodeWithTag("otp").performTextInput("123456")
-        compose.runOnUiThread { plan="Free" };click("auth-submit");waitFor("live-account")
+        enterAuth("login-email","registered@example.com");click("auth-submit");waitFor("screen_OTP")
+        enterAuth("otp","123456")
+        compose.runOnUiThread { plan="Free" };click("auth-submit")
+        try { waitFor("live-account") } catch(error:ComposeTimeoutException) {
+            screenshot("demo-registration-transition-failed")
+            throw AssertionError("DEMO registration transition: signedIn=${model.state.value.data.signedIn}, plan=${model.state.value.data.plan}, pendingNavigation=${model.afterLoginSubscription}",error)
+        }
         compose.onNodeWithText("FREE 🕊️").assertExists()
         compose.onNodeWithText("60:00").assertExists()
         compose.onNodeWithTag("demo-traffic").assertDoesNotExist()
