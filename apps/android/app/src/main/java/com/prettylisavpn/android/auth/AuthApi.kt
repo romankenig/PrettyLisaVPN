@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonElement
 import com.prettylisavpn.android.network.RoutedHttpClient
+import com.prettylisavpn.android.diagnostics.*
 import okhttp3.RequestBody
 import java.io.IOException
 import java.net.ConnectException
@@ -60,7 +61,7 @@ interface AuthApi {
     suspend fun logout(access: String)
 }
 
-class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : AuthApi {
+class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 }, private val diagnostics: (DiagnosticEvent) -> Unit = {}) : AuthApi {
     private val base = baseUrl.toHttpUrl().also {
         require(it.username.isEmpty() && it.password.isEmpty() && it.query == null && it.fragment == null)
         require(it.isHttps || (allowLoopbackForTests && it.host in setOf("localhost", "127.0.0.1", "::1")))
@@ -74,6 +75,10 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
         return try { value.asJsonObject } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
     internal suspend fun request(path: String, method: String = "GET", body: RequestBody? = null, access: String? = null, query: Map<String,String> = emptyMap(), headers: Map<String,String> = emptyMap()): JsonElement = withContext(Dispatchers.IO) {
+        val started = elapsedMillis()
+        var httpStatus: Int? = null
+        var failure: DiagnosticFailure? = null
+        var apiCode: DiagnosticApiCode? = null
         val url = base.newBuilder().addPathSegments(path).apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).method(method, body).apply {
             header("Accept", "application/json"); header("Cache-Control", "no-store")
@@ -84,6 +89,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
             val routed = client.current()
             val requestClient = if (path.startsWith("support/")) routed.newBuilder().readTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS).build() else routed
             requestClient.newCall(request).execute().use { response ->
+                httpStatus = response.code
                 val responseBody = response.body ?: throw AuthFailure("invalid_response")
                 val bytes = responseBody.source().apply { request(65_537) }.buffer
                 if (bytes.size > 65_536) throw AuthFailure("invalid_response")
@@ -102,9 +108,17 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false) : Aut
                 }
                 json ?: throw AuthFailure("invalid_response")
             }
-        } catch (_: UnknownHostException) { throw AuthFailure("offline")
-        } catch (_: ConnectException) { throw AuthFailure("offline")
-        } catch (_: IOException) { throw AuthFailure("network_uncertain") }
+        } catch (error: UnknownHostException) { failure = diagnosticFailure(error); apiCode = DiagnosticApiCode.OFFLINE; throw AuthFailure("offline")
+        } catch (error: ConnectException) { failure = diagnosticFailure(error); apiCode = DiagnosticApiCode.OFFLINE; throw AuthFailure("offline")
+        } catch (error: IOException) { failure = diagnosticFailure(error); apiCode = DiagnosticApiCode.NETWORK_UNCERTAIN; throw AuthFailure("network_uncertain")
+        } catch (error: Exception) { failure = diagnosticFailure(error); apiCode = (error as? AuthFailure)?.code?.let(::diagnosticApiCode); throw error
+        } finally {
+            val elapsed = elapsedMillis()
+            runCatching { diagnostics(DiagnosticEvent(Instant.now().toString(), elapsed, DiagnosticKind.API_RESULT,
+                operation = diagnosticOperation(path), http_status = httpStatus, failure = failure, api_code = apiCode,
+                duration_ms = (elapsed - started).coerceAtLeast(0),
+                outcome = if (failure == DiagnosticFailure.CANCELLED) DiagnosticOutcome.CANCELLED else if (failure == null) DiagnosticOutcome.SUCCESS else DiagnosticOutcome.FAILED)) }
+        }
     }
     private fun JsonObject.text(key: String): String = runCatching { get(key).asString }.getOrNull()?.takeIf { it.isNotBlank() } ?: throw AuthFailure("invalid_response")
     private fun tokens(json: JsonObject): Tokens = try {

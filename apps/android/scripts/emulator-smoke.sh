@@ -94,6 +94,16 @@ assert re.search(r'OK \(4 tests\)', result), result
 assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
 KEYSTORE_CHECK
 
+# Private local diagnostic storage and account isolation on the installed APK.
+adb shell am instrument -w -r -e class com.prettylisavpn.android.DiagnosticStorageTest \
+  "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/diagnostics-instrumentation.txt
+python3 - <<'DIAGNOSTICS_CHECK'
+import pathlib, re
+result = pathlib.Path('evidence/diagnostics-instrumentation.txt').read_text()
+assert re.search(r'OK \(2 tests\)', result), result
+assert not any(marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'shortMsg=')), result
+DIAGNOSTICS_CHECK
+
 # The real auth shell uses a synthetic AuthApi port here, never a real email/account.
 adb shell am instrument -w -r -e class com.prettylisavpn.android.AuthSessionUiTest \
   "$package.test/com.prettylisavpn.android.AcceptanceRunner" | tee evidence/auth-ui-instrumentation.txt

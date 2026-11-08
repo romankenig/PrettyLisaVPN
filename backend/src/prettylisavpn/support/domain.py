@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from prettylisavpn.support.android_diagnostics import AndroidDiagnostics
+
 Version = Annotated[
     str, Field(max_length=160, pattern=r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$")
 ]
@@ -78,7 +80,7 @@ class Report(StrictModel):
     subject: str = Field(min_length=1, max_length=120)
     description: str = Field(min_length=1, max_length=4000)
     reply_email: EmailStr = Field(max_length=254)
-    diagnostics: Diagnostics | None
+    diagnostics: Annotated[Diagnostics | AndroidDiagnostics, Field(discriminator="platform")] | None
 
     @model_validator(mode="after")
     def valid_text(self) -> Self:

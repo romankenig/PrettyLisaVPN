@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "platform": "ANDROID",
+  "collected_at": "2026-11-08T12:00:00Z",
+  "frontend_version": "0.27.0",
+  "backend_version": "0.39.0",
+  "language": "ru",
+  "timezone": "Europe/Moscow",
+  "plan": "FREE",
+  "device": {
+    "manufacturer": "Synthetic", "model": "Test phone", "android_release": "15",
+    "android_api": 35, "security_patch": "2026-10-01", "build_id": "TEST.1",
+    "abis": ["arm64-v8a"], "app_version_code": 50, "app_debuggable": true,
+    "app_source_sha": "local", "memory_available_mb": 2048, "memory_total_mb": 8192,
+    "storage_available_mb": 4096, "battery_percent": 42, "charging": false,
+    "power_save": true, "device_idle": false, "battery_optimization_exempt": false
+  },
+  "network": {"transports": ["WIFI"], "internet": true, "validated": true, "captive_portal": false, "metered": false},
+  "vpn": {"phase": "RECONNECTING", "method": "wireguard_relay", "failure_code": null, "routing_mode": "ALL", "enabled_methods": ["wireguard", "wireguard_relay"]},
+  "logs": {
+    "retention_days": 7, "storage_limit_bytes": 2097152, "omitted_events": 0,
+    "events": [
+      {"at": "2026-11-08T11:59:00Z", "elapsed_ms": 1000, "event": "VPN_HEALTH", "method": "wireguard", "outcome": "UNREACHABLE", "duration_ms": 5000},
+      {"at": "2026-11-08T11:59:06Z", "elapsed_ms": 7000, "event": "VPN_ATTEMPT", "method": "wireguard_relay", "outcome": "STARTED"}
+    ]
+  }
+}

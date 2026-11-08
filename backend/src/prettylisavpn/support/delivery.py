@@ -63,10 +63,19 @@ class SupportSmtpMailer:
         message_id = uuid5(NAMESPACE_URL, f"{request.user_id}:{request.request_id}")
         message["Message-ID"] = f"<support.{message_id}@prettylisavpn.com>"
         message["Date"] = request.created_at
+        diagnostics = payload["diagnostics"]
+        android = diagnostics is not None and diagnostics.get("platform") == "ANDROID"
+        technical = (
+            "Android technical data and local event history: see diagnostics.json.\n"
+            if android
+            else "Technical data (user supplied, session IDs ownership checked):\n"
+            + json.dumps(diagnostics, ensure_ascii=False, indent=2)
+        )
         message.set_content(
-            f"Request: {request.request_id}\n\n{payload['description']}\n\n"
-            + "Technical data (user supplied, session IDs ownership checked):\n"
-            + json.dumps(payload["diagnostics"], ensure_ascii=False, indent=2)
+            f"Request: {request.request_id}\n"
+            f"Account email: {payload.get('account_email') or 'not recorded (older request)'}\n"
+            f"Reply email: {payload['reply_email']}\n"
+            f"Account ID: {request.user_id}\n\n{payload['description']}\n\n" + technical
         )
         for file in files:
             message.add_attachment(
@@ -74,6 +83,13 @@ class SupportSmtpMailer:
                 maintype="image",
                 subtype="png",
                 filename=f"screenshot-{file.position + 1}.png",
+            )
+        if android:
+            message.add_attachment(
+                json.dumps(diagnostics, ensure_ascii=False, indent=2).encode(),
+                maintype="application",
+                subtype="json",
+                filename="diagnostics.json",
             )
         await self.transport.send(
             message, sender="app-helper@prettylisavpn.com", recipient="help@prettylisavpn.com"

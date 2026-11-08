@@ -117,10 +117,10 @@ async def submit(request: Request, token: Annotated[str | None, Depends(bearer_t
         raw = bytearray()
         async for chunk in request.stream():
             raw.extend(chunk)
-            if len(raw) > TOTAL_BYTES + 65536:
+            if len(raw) > TOTAL_BYTES + 327680:
                 raise SupportError("ATTACHMENT_REJECTED", 413)
         request._body = bytes(raw)
-        async with request.form(max_files=3, max_fields=1, max_part_size=32768) as form:
+        async with request.form(max_files=3, max_fields=1, max_part_size=262144) as form:
             if set(form.keys()) - {"report", "screenshots"} or len(form.getlist("report")) != 1:
                 raise SupportError("INVALID_REQUEST", 422)
             report_json = form["report"]
