@@ -71,3 +71,8 @@ Reconciliation after the connection interruption also preserves merged Android
 PR #68 (Android 0.26.0 / backend 0.38.0), including its navigation and changelog.
 Apple generated translations are synchronized from those current Android strings;
 this remains the same iOS 0.3.0 / macOS 0.2.2 task.
+
+Native screenshot review also corrected the background of the existing system
+forms (subscription, messages, support and advanced settings): their dark section
+labels now sit on the light card surface instead of the purple shell. The same
+task versions apply; billing and form behavior remain unchanged.

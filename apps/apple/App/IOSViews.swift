@@ -131,16 +131,16 @@ struct IOSRootView<Banners: View>: View {
     }
     @ViewBuilder private var content: some View {
         if advanced {
-            SettingsView(model: model).scrollContentBackground(.hidden)
+            SettingsView(model: model).scrollContentBackground(.hidden).background(PhoneStyle.card)
         } else {
             switch model.page {
             case .home: IOSHomeView(model: model)
             case .settings: settings
             case .about: IOSAboutView(model: model)
             case .devices: IOSDevicesView(model: model)
-            case .subscription: SubscriptionView(model: model).scrollContentBackground(.hidden)
-            case .messages: MessagesView(model: model).scrollContentBackground(.hidden)
-            case .support: SupportView(model: model).scrollContentBackground(.hidden)
+            case .subscription: SubscriptionView(model: model).scrollContentBackground(.hidden).background(PhoneStyle.card)
+            case .messages: MessagesView(model: model).scrollContentBackground(.hidden).background(PhoneStyle.card)
+            case .support: SupportView(model: model).scrollContentBackground(.hidden).background(PhoneStyle.card)
             }
         }
     }
