@@ -146,45 +146,169 @@
     "documents": "documents"
   },
   "legal": {
-    "updated": "version dated november 7, 2026",
+    "updated": "Revision dated November 8, 2026",
     "terms": [
-      "PrettyLisaVPN provides vpn access through apps for android and windows. for service, payment and complaint inquiries: help@prettylisavpn.com.",
-      "an email address and a one-time code are used to sign in. an account can have up to five active devices. do not share sign-in codes with other people.",
-      "the free plan provides one shared hour of connection time per day per account. the allowance resets at 00:00 utc. premium has no daily time limit during the paid period. the plan, remaining time and access period are shown in the app.",
-      "Android DEMO needs no email or registration: 15 minutes per device each day, automatic server selection and protection of all traffic. the allowance resets at 00:00 UTC. ordinary reinstallation does not reset usage. registration provides a separate FREE hour; an existing FREE account’s usage is not reset.",
-      "vpn encrypts the connection between your device and the service server. speed and availability depend on the network, device and server. vpn does not replace device security or provide absolute anonymity.",
-      "use the service lawfully. unauthorized access to other people's systems, malware, spam and attacks on infrastructure are prohibited.",
-      "contact support for questions about the app. payment terms and the handling of monetary claims are described on separate pages. these terms do not limit rights granted by applicable law."
+      {
+        "title": "General provisions",
+        "paragraphs": [
+          "1.1. These Terms of Service (the “Agreement”) govern the use of PrettyLisaVPN, available at prettylisavpn.com and in client applications (the “Service”), provided by the Service administration (the “Administration”).",
+          "1.2. By using the Service, including registering, starting a VPN connection or paying for services, the User confirms that they have read this Agreement in full and accept its terms.",
+          "1.3. If the User disagrees with this Agreement, they must stop using the Service."
+        ]
+      },
+      {
+        "title": "Nature of the services",
+        "paragraphs": [
+          "2.1. The Service provides intangible services: VPN access through client applications and a proxy connection through the browser extension. Available platforms and features are listed on the website and in the relevant application; the extension protects only supported browser traffic.",
+          "2.2. Services may include:\na secure connection to a Service server;\nselection of an available server or country within the plan;\nassistance, support and application updates.",
+          "2.3. The User acknowledges that the selected plan determines the service provided. The access period, usage limits, available features and number of devices are stated in the Service. Account sign-in uses email and a one-time code, which the User must keep confidential.",
+          "2.4. The Service may provide free, trial or paid access under the relevant plan. Expiry or exhaustion of an allowance may restrict further use. Changing devices or reinstalling the app does not itself grant a new allowance."
+        ]
+      },
+      {
+        "title": "Disclaimer of warranties and liability",
+        "paragraphs": [
+          "3.1. The Service is provided “AS IS”, subject to mandatory requirements of applicable law.",
+          "3.2. The Administration does not guarantee:\nthat the Service will meet the User’s subjective expectations;\nany financial, commercial, professional or other results;\nuninterrupted or error-free operation, constant speed or access to particular external resources.",
+          "3.3. To the extent permitted by applicable law, the Administration is not liable for:\ndirect or indirect losses, including lost profits, arising from circumstances for which it is not responsible;\nthe consequences of the User’s unlawful use of the Service;\nacts or omissions of third parties;\ntemporary technical failures and access restrictions outside its control.",
+          "3.4. The User makes decisions about using the services independently and at their own risk. A VPN does not replace device security or ensure absolute anonymity. This section does not exclude liability that cannot lawfully be excluded or the User’s rights concerning defective services."
+        ]
+      },
+      {
+        "title": "Lawful use",
+        "paragraphs": [
+          "4.1. The Service is not intended to encourage, organise or facilitate unlawful activity.",
+          "4.2. The User must use the Service only in accordance with applicable law and third-party rules. Unauthorised access, malware distribution, spam and attacks on infrastructure are prohibited.",
+          "4.3. The User is responsible for the lawfulness of their actions when using the Service."
+        ]
+      },
+      {
+        "title": "Intellectual property",
+        "paragraphs": [
+          "5.1. Materials and software made available through the Service are protected by intellectual property law.",
+          "5.2. The User may not copy, distribute, resell, transfer or otherwise use Service materials without the rights holder’s permission, except for their intended use, uses permitted by law and rights granted by the relevant component licences. Open-source licence terms remain effective.",
+          "5.3. Intellectual property infringement may result in restricted access to the Service. Payment and refund matters are governed by section 7 and applicable law."
+        ]
+      },
+      {
+        "title": "Access restrictions",
+        "paragraphs": [
+          "6.1. The Administration may suspend or restrict the User’s access in the event of:\na breach of this Agreement;\nidentified abuse;\nrequirements imposed by law or payment providers.",
+          "6.2. Restricted access does not release the User from existing obligations or remove their legal rights.",
+          "6.3. The Administration reserves the right to refuse service where a User’s actions create a substantiated security threat to the Service, payment providers or third parties. Access restriction enquiries may be sent to help@prettylisavpn.com."
+        ]
+      },
+      {
+        "title": "Payments and refunds",
+        "paragraphs": [
+          "7.1. Services are paid for on the terms shown before payment. The plan, access period, price, currency and available payment methods are shown before confirmation. Automatic renewal requires separate consent to the amount and frequency of charges. The agreed amount remains fixed until cancellation and a new subscription. A one-off payment does not enable automatic renewal. When payment is unavailable, paid access is not purchased.",
+          "7.2. The User may terminate further provision of services and request a refund under applicable law. The intangible nature of the service or provision of access does not itself remove this right. Deductions require a lawful basis, including documented expenses actually incurred where the law permits this.",
+          "7.3. Refund grounds include, in particular:\nfailure to provide the service due to a technical fault attributable to the Service;\nfailure to provide paid access;\nother grounds under applicable law.",
+          "7.4. The User is advised to contact help@prettylisavpn.com promptly about a refund, providing the account email, payment date, amount and transaction reference if available. Contacting support after 24 hours is not itself a reason for refusal; statutory time limits apply.",
+          "7.5. Requests are considered individually in light of the circumstances and applicable law. The response, refund calculation and next steps are emailed within statutory time limits. Future charges and the linked payment method can be cancelled in subscription management; paid access continues until the displayed date. Cancelling automatic renewal does not itself request a refund.",
+          "7.6. The User is advised to contact support before disputing a payment through a payment system. This does not restrict recourse to a bank, payment system, competent authority or court. The website’s payment and refund rules apply alongside this section and do not limit the User’s mandatory rights."
+        ]
+      },
+      {
+        "title": "Confidentiality",
+        "paragraphs": [
+          "8.1. The Administration may collect the minimum data necessary to operate the Service. The data, purposes and processing procedures are described in the Privacy Policy published on the website.",
+          "8.2. The Administration takes reasonable measures to protect data but does not guarantee absolute security of transmitted information. This does not release it from statutory data protection duties."
+        ]
+      },
+      {
+        "title": "Changes to the Agreement",
+        "paragraphs": [
+          "9.1. The Administration may amend this Agreement.",
+          "9.2. The current Agreement and revision date are published in the Service. Material changes are communicated through the Service or by email before they apply.",
+          "9.3. Continued use after changes take effect constitutes acceptance to the extent permitted by law. Changes do not worsen an already paid period or replace separate consent where required. The agreed automatic renewal amount remains fixed until cancellation and a new subscription."
+        ]
+      },
+      {
+        "title": "Contact information",
+        "paragraphs": [
+          "10.1. For all enquiries, including payments, complaints and personal data, the User may contact support at help@prettylisavpn.com.",
+          "By using the Service, including registering an account or starting a VPN connection, the User confirms that they have read this Agreement and accept its terms in full."
+        ]
+      }
     ],
     "privacy": [
-      "for questions about personal data processing by PrettyLisaVPN: help@prettylisavpn.com.",
-      "account operation uses an email address, identifier, status, and creation and modification dates. device management uses the installation identifier, device name and platform, and dates of sign-in and access revocation.",
-      "the service processes information about the plan, access period, sign-in events, vpn sessions and technical connection results. this information is needed for authorization, time accounting, connection management, support and evaluation of service performance.",
-      "for DEMO, the app sends a hash of an identifier scoped to its signing key, Android user and device. the server retains only a keyed digest and a technical guest record for time accounting. the original Android ID is not sent; IMEI and advertising ID are not used. temporary guest sign-in limits use a hashed IP address for up to one hour. reinstalling with the same signing key preserves the allowance; a factory reset, another Android user or a different signing key can change the identifier.",
-      "product analytics records account usage events and the technical operation of the service. its events do not include browsing history, visited page addresses, dns queries or packet contents. this describes analytics and is not a claim that no technical logs exist.",
-      "when you contact support, your message and attachments are processed. do not send passwords, one-time codes or complete bank card details.",
-      "daily analytics records and reports older than 180 days are removed. support request content and attachments are removed from the operational support database after 30 days. these periods do not mean that all correspondence or all account data is deleted.",
-      "The website does not use advertising trackers. The billing portal uses a secure HttpOnly cookie for up to two hours and a local pending operation identifier to recover after closing the page. Payment credentials are not stored by the website. Language follows the page address; fonts and images load from the service infrastructure.",
-      "When you subscribe, your email address, amount and technical operation identifier are sent to Platega to process and match the payment. PrettyLisaVPN stores payment statuses and access periods; bank account and card credentials are handled by the payment provider.",
-      "to request information about your data, correction or deletion, contact support from your account email address. you may need to confirm that the address belongs to you."
+      {
+        "title": "General provisions",
+        "paragraphs": [
+          "1.1. This Privacy Policy (the “Policy”) governs processing and protection of information supplied by the User when using PrettyLisaVPN at prettylisavpn.com and in client applications (the “Service”). Processing is organised by the Service administration; personal data enquiries: help@prettylisavpn.com.",
+          "1.2. The User is informed of this Policy when using the Service. A User who disagrees with processing necessary to provide the service may stop using it. This Policy is informational and does not replace separate consent where required by law."
+        ]
+      },
+      {
+        "title": "Collection of information",
+        "paragraphs": [
+          "2.1. The Service may collect:\naccount identifiers, email, status, registration and sign-in dates;\ntechnical information needed for connections and Service security: IP address, browser details, device identifier, name, platform and operating system;\ninteractions with the Service: plan, access period, VPN sessions, time usage, transfer volume and speed, connection results, payment statuses, support messages and attachments.",
+          "2.2. The Service does not require passports, documents, photographs or other personal information beyond what is necessary for operation. Do not send passwords, one-time codes or full payment credentials to support.",
+          "2.3. Service interactions do not mean browsing history. The Service does not collect or log visited resources, page addresses, user traffic destinations, DNS queries or packet contents. Technical connection and account usage data is not a browsing log.",
+          "2.4. Guest access without registration does not require email. A hashed technical device identifier and a guest record are used to account for the allowance. A hashed IP address is temporarily processed for up to one hour to prevent abuse. This information is not used to track visited resources.",
+          "2.5. The website does not use advertising trackers. The billing portal uses a secure HttpOnly cookie for up to two hours and a local pending-operation record to restore its state. Bank credentials are not stored in this record. Language follows the page address; fonts and images load from the Service infrastructure."
+        ]
+      },
+      {
+        "title": "Use of information",
+        "paragraphs": [
+          "3.1. The Service may use information solely for:\noperating its features, sign-in, devices, connections, plans and payments;\ncommunicating with the User, including notifications and support;\nanalysing and improving the Service and preventing abuse, without analysing browsing history.",
+          "3.2. Data necessary for the requested service is processed to enter into and perform the contract with the User; data needed to meet statutory duties is processed on the corresponding lawful basis. Consent is obtained separately where necessary. Data is not used for incompatible purposes; using the Service does not imply consent to marketing messages."
+        ]
+      },
+      {
+        "title": "Disclosure to third parties",
+        "paragraphs": [
+          "4.1. The Administration does not disclose information to third parties except:\nwhere required by law;\nwhere necessary to fulfil obligations to the User, for example payments, hosting and service email delivery, with a lawful basis;\nwhere the User has consented.",
+          "4.2. When checkout is available, email, amount and a technical operation identifier are sent to the payment provider to process and match the payment. PrettyLisaVPN receives payment status and access-period information; full card details, CVC and banking passwords are processed by the payment provider and are not stored in the Service.",
+          "4.3. Only information necessary for the purpose is disclosed. Recipient access is limited by their tasks and confidentiality requirements. Foreign servers and cross-border transfers are subject to applicable law; choosing a VPN country does not select where account data is stored. Information about recipients and processing of the User’s data may be requested at help@prettylisavpn.com."
+        ]
+      },
+      {
+        "title": "Retention and protection",
+        "paragraphs": [
+          "5.1. Data is retained as necessary for processing purposes, contract performance and statutory obligations. Processing includes collection, recording, storage, correction, use, disclosure under section 4, restriction and deletion, using automated processing and authorised handling of requests.",
+          "5.2. The Administration takes reasonable organisational and technical measures, including access restrictions and connection security, but cannot guarantee absolute security of information transmitted over the internet.",
+          "5.3. Daily analytics records and reports older than 180 days are removed; connection-speed interval data older than eight days is removed. Support content and attachments are cleared from the operational support database after 30 days. These periods concern the stated categories and do not mean simultaneous deletion of accounts, all email correspondence or backups.",
+          "5.4. Data must be deleted or anonymised when its purposes are fulfilled or its lawful basis ends, unless retention is required by law. The User may request processing information, correction, restriction or deletion, withdraw consent and complain about infringements. Send requests to help@prettylisavpn.com; proportionate account ownership verification may be required. Requests are handled within statutory time limits. Withdrawal of consent does not stop processing on another lawful basis disclosed to the User."
+        ]
+      },
+      {
+        "title": "Disclaimer of liability",
+        "paragraphs": [
+          "6.1. The User understands and accepts that transmitting information over the internet always involves risks.",
+          "6.2. The Administration is not liable for loss, theft or disclosure caused by third parties or the User to the extent such exclusion is lawful. This does not exclude the Administration’s data protection duties or liability for breaching them."
+        ]
+      },
+      {
+        "title": "Changes to the Policy",
+        "paragraphs": [
+          "7.1. The Administration may amend this Policy. The current revision and date are published in the Service; material changes are communicated through the Service or by email before the relevant processing begins.",
+          "7.2. Continued use does not replace separate consent where legally required. Where changed purposes require new consent, it is obtained before that processing begins. Policy enquiries may be sent to help@prettylisavpn.com."
+        ]
+      }
     ],
     "refunds": [
       "for questions about service quality, ending paid access or refunds, write to help@prettylisavpn.com.",
       "include your account email address, payment date and amount, currency, transaction number if available, and a description of your request. for a technical issue, it helps to include the platform, app version, server, approximate time and error text.",
       "do not send a full card number, cvc, banking passwords or one-time codes. hide unnecessary personal data in attached documents.",
       "claims are reviewed in light of the circumstances of the request, the service provided and applicable law. after reviewing the request, support will communicate the decision and next steps.",
+      "The User may terminate further services and request a refund on lawful grounds. Access being provided or 24 hours elapsing does not itself exclude a refund. Deductions require a lawful basis; the calculation and response are emailed within statutory time limits. Contacting support does not restrict recourse to a bank, payment system, competent authority or court.",
       "disconnecting vpn or uninstalling the app does not itself submit a refund request. you must contact support for a monetary claim to be considered.",
       "these rules do not limit rights granted by applicable law."
     ],
     "payments": [
-      "a paid subscription provides premium access for one calendar month. the period starts after payment confirmation. the exact expiry date is shown in the app.",
-      "a calendar month ends on the corresponding day of the following month; if that day does not exist, it ends on the last day of the month. this is not a fixed 30-day period.",
-      "SBP subscriptions renew automatically once per calendar month after your consent. The agreed amount stays fixed until cancellation and a new subscription. A one-off payment link does not enable automatic renewal.",
-      "You can stop future charges and unlink your bank account in subscription management. Paid access remains until the displayed date. A new subscription uses the price available at that time.",
+      "Paid access is provided for the selected plan’s period after payment confirmation. Price, currency and period are shown before purchase; the exact expiry date is available in the Service.",
+      "If a plan uses a calendar month, it ends on the corresponding day of the following month or, if that day does not exist, on its last day. This is not a fixed 30-day period.",
+      "Automatic renewal through an available payment method requires separate consent to the amount and frequency of charges. The agreed amount remains fixed until cancellation and a new subscription. A one-off payment does not enable automatic renewal.",
+      "Future charges and the linked payment method can be cancelled in subscription management. Paid access continues until the displayed date. A new subscription uses the price available at that time.",
       "when making a payment, check the plan, currency, total amount and fee information on the payment page. card details and cvc are entered only on the provider's payment page, not on the PrettyLisaVPN website or in emails to support.",
       "send questions about a payment, receipt, access period or incorrect charge to help@prettylisavpn.com. include your account email address and information that can identify the payment.",
       "the maximum amount per transaction is 10,000 RUB. balance top-ups and custom amounts are not offered. payments are not available yet."
-    ]
+    ],
+    "contents": "Contents",
+    "privacyIntro": "This Privacy Policy governs the collection, use and protection of PrettyLisaVPN users’ information. Account identifiers, technical information and interactions with the Service are collected, but browsing history is not. Data is used to operate the Service, communicate with the User and analyse performance. Information may be shared on the grounds set out in section 4. Data is retained for the necessary period and the Administration takes measures to protect it. Transmission risks and changes to this Policy are addressed in sections 6 and 7."
   },
   "notFound": {
     "title": "page not found",

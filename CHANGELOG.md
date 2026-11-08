@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Public website — 0.5.1
+
+- Replace the brief terms/privacy summaries with the owner's supplied legal
+  templates: retain 10/7 sections, numbering and core wording, adapting the
+  service description to PrettyLisaVPN and preserving actual plan/payment/data
+  disclosures in all six languages. Contact is help@prettylisavpn.com; seller
+  identifiers are omitted at the owner's explicit request.
+- Add accessible contents links and readable legal sections; align the refund
+  page with statutory rights, without a blanket 24-hour or chargeback exclusion.
+- Client/backend versions, APIs, schema and payment activation are unchanged.
+  Legal review, provider acceptance and production publication are separate;
+  see [legal revision handoff](docs/public-website-legal.md).
+
 ### Android — 0.26.0 / Backend — 0.38.0
 
 - Simplify sign-in, emphasize the secondary guest action and anchor document links
