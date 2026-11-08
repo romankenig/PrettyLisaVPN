@@ -17,6 +17,14 @@
   attachment instead of mixing technical data into the user's description.
 - See [Android support diagnostics](docs/android-support-diagnostics.md).
 
+### Fleet dashboard — 0.8.0
+
+- Keep active-user speed windows focused on 24-hour monitoring (default) and
+  seven-day analytics. Connect measured points across gaps without inventing data.
+- Add independent download/upload Y scales: automatic, fit actual speeds, or
+  manual upper limit. Clip the drawing while retaining full tooltip values.
+- See [chart controls and verification](docs/active-user-speed.md#dashboard-080--управление-графиком).
+
 ### Android — 0.26.1
 
 - Replace DEMO lock hints with a short availability label in all six languages.
