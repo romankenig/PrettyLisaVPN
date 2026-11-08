@@ -204,6 +204,8 @@ class AccountScreensTest {
         click("auth-demo");waitFor("demo-traffic")
         compose.onNodeWithTag("vpn-reset-methods").assertDoesNotExist()
         screenshot("plan-polish-demo-home-ru")
+        click("home-country");waitFor("home-top-DE");screenshot("plan-polish-demo-countries-ru")
+        click("home-country-AUTO")
         click("home-upgrade");waitFor("plan-buy")
         compose.onNodeWithTag("live-subscription-screen").assertExists()
         compose.onNodeWithTag("billing-price").assertTextEquals("399 ₽")

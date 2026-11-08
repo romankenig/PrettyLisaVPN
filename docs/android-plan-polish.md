@@ -53,3 +53,23 @@ artifact evidence are recorded in the PR after verification. Native Android buil
 use CI because this workstation has no configured Android SDK/JDK. Backend follow-up:
 deploy 0.38.0 before distributing 0.26.0 for guest device management; retain the
 existing DEMO identity key and 0046 data. Merge/publication require owner approval.
+
+## Android 0.26.1 — plan copy follow-up
+
+Android **0.26.0 → 0.26.1**, versionCode **48 → 49**: small presentation/copy fix.
+Backend 0.38.0, schema 0047, website and other clients are unchanged. Base develop:
+`0214867dae715db946f66acde73f6ca7b861c5c3`. No new API or migration is needed.
+
+The shared lock hint reads “недоступно в DEMO” everywhere, with equivalents in all
+six locales. PREMIUM emphasizes no time/data quotas, premium servers and all
+available VPN locations. FREE shows its daily hour and free-only servers; the
+five-device comparison row is omitted without changing that entitlement. Paid
+access still ends at the paid deadline; no speed, uptime or priority guarantee is
+added. Existing registration/checkout guards, prices and actions are preserved.
+
+Existing native acceptance now also captures the Russian DEMO country menu beside
+the plan comparison, including larger font scenarios. Localization, build, lint,
+unit tests and API 26/35/36 acceptance run against the current source. Final product
+HEAD, actual build SHA/run/attempt, artifacts and complete CI audit belong in the
+task PR after verification. No backend follow-up is required. Publication remains
+the existing approved-merge/develop pipeline; a PR artifact is not a published APK.

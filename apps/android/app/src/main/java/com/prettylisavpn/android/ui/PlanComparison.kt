@@ -26,7 +26,7 @@ internal fun PlanHighlights(plan: String, featured: Boolean = false) {
     val tr = strings()
     val rows = when (plan) {
         "PREMIUM" -> listOf(R.string.plan_all_countries, R.string.plan_five_devices, R.string.plan_split)
-        "FREE" -> listOf(R.string.plan_free_countries, R.string.plan_five_devices, R.string.plan_split)
+        "FREE" -> listOf(R.string.plan_free_countries, R.string.plan_split)
         else -> listOf(R.string.plan_auto_only, R.string.plan_device_only, R.string.plan_all_traffic_only)
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

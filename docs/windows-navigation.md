@@ -1,3 +1,12 @@
+# Android 0.26.1 — plan wording
+
+All shared DEMO lock hints now say “недоступно в DEMO” (localized in six languages),
+including country menus, muted feature cards and registration-required API errors.
+PREMIUM highlights unlimited time/data and premium servers; FREE has a shorter
+comparison. Existing registration, purchase and navigation actions are unchanged;
+no backend integration is pending for this copy update. See
+[copy follow-up](android-plan-polish.md#android-0261--plan-copy-follow-up).
+
 # Android 0.26.0 — plan comparison and guest settings
 
 DEMO/FREE Home → Upgrade → Subscription comparison. PREMIUM Buy from DEMO →

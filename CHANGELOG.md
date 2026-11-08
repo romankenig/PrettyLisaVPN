@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Android — 0.26.1
+
+- Replace DEMO lock hints with a short availability label in all six languages.
+- Emphasize PREMIUM's unlimited time/data and premium servers across all available
+  locations. Keep FREE comparison concise; its five-device entitlement is unchanged.
+- See [copy follow-up](docs/android-plan-polish.md#android-0261--plan-copy-follow-up).
+
 ### Android — 0.26.0 / Backend — 0.38.0
 
 - Simplify sign-in, emphasize the secondary guest action and anchor document links
