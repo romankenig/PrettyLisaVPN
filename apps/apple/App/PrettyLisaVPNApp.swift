@@ -30,7 +30,11 @@ import SwiftUI
     @ViewBuilder private var content: some View {
         if let model = holder.model {
             RootView(model: model)
+                #if os(iOS)
+                .preferredColorScheme(.dark)
+                #else
                 .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
+                #endif
         } else {
             ContentUnavailableView("PrettyLisaVPN", systemImage: "exclamationmark.triangle", description: Text(L("apple_configuration_error")))
         }

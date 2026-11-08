@@ -71,10 +71,13 @@ ship this `.appex` build as such. No SIP/security disabling is required. See
 [Apple TN3134](https://developer.apple.com/documentation/technotes/tn3134-network-extension-provider-deployment).
 A VM must actually support signed Network Extensions and network access.
 
-Backend **0.33.0** must be deployed before live Apple VPN tests: previous backend
+Backend **0.33.0** is required before live Apple VPN tests: previous backend
 source only admits ANDROID/WINDOWS VPN principals. OTP and account pages working
 on an older backend do not prove Apple VPN admission. The additive gate change
-requires no database migration. Deployment/merge remains a separate action.
+requires no database migration. PR #51 was merged into develop on 2026-11-04;
+run `41822292784` deployed `05d945dbd5da35f1c85523d00b4ab57415882a3c`, and the
+public `/version` returned `0.33.0-dev.41822292784+g05d945dbd5da35f1c85523d00b4ab57415882a3c`.
+This clears the backend admission prerequisite, not physical VPN acceptance.
 
 ## Required live acceptance on BOTH platforms
 
@@ -99,7 +102,7 @@ captures or browsing history. Free acceptance sessions consume real quota.
 
 ## Boundaries and security
 
-- iOS **0.1.1**: `Config/iOS.xcconfig`; macOS **0.1.0**:
+- iOS **0.3.0**: `Config/iOS.xcconfig`; macOS **0.2.2**:
   `Config/macOS.xcconfig`. UI reads `CFBundleShortVersionString`; build number is
   `CURRENT_PROJECT_VERSION`, distinct from SemVer/SHA/run/attempt.
 - Backend owns access, quota and country availability. CryptoKit generates keys
