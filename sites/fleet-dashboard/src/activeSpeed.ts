@@ -13,18 +13,24 @@ export type SpeedHistory = {
   generated_at: string; activity_threshold_bps: number; bucket_seconds: number;
   period: string; nodes: { id: string; name: string }[]; points: SpeedPoint[];
 };
-export const speedNumber = (value: number | null | undefined) => value == null || !Number.isFinite(value) ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 3 }).format(value);
+export const speedNumber = (value: number | null | undefined, maximumFractionDigits = 3) => value == null || !Number.isFinite(value) ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits }).format(value);
 
-export function speedSegments(points: SpeedPoint[], direction: "download" | "upload", metric: "mean_mbps" | "reference_mbps") {
-  const segments: { index: number; value: number }[][] = [];
-  let segment: { index: number; value: number }[] = [];
-  points.forEach((point, index) => {
+export function speedSamples(points: SpeedPoint[], direction: "download" | "upload", metric: "mean_mbps" | "reference_mbps") {
+  return points.flatMap((point, index) => {
     const value = point[direction][metric];
-    if (value == null || !Number.isFinite(value)) { segment = []; return; }
-    if (!segment.length) { segment = []; segments.push(segment); }
-    segment.push({ index, value });
+    return value == null || !Number.isFinite(value) ? [] : [{ index, value }];
   });
-  return segments;
+}
+
+export function speedScaleMaximum(points: SpeedPoint[], direction: "download" | "upload", actualOnly = false) {
+  const metrics = actualOnly ? ["mean_mbps"] as const : ["mean_mbps", "reference_mbps"] as const;
+  return metrics.reduce((maximum, metric) => speedSamples(points, direction, metric)
+    .reduce((current, sample) => Math.max(current, sample.value), maximum), 0.1) * 1.1;
+}
+
+export function parseSpeedMaximum(input: string): number | null {
+  const value = Number(input.trim().replace(",", "."));
+  return Number.isFinite(value) && value >= 0.001 ? value : null;
 }
 
 export function speedTooltip(point: SpeedPoint, seconds: number): string[] {
