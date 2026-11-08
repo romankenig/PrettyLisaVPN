@@ -32,20 +32,3 @@ internal fun DemoTraffic(register: () -> Unit) {
         DemoLockedFeature(tr(R.string.traffic_exclude_short), "demo-locked-exclude", register)
     }
 }
-
-@Composable
-internal fun DemoUpgradeScreen(back: () -> Unit, register: () -> Unit) {
-    val tr = strings()
-    PhoneScreen("demo-upgrade-screen") {
-        ScreenHeading(tr(R.string.ui_subscription), back)
-        BrandCard {
-            Text(planLabel("Demo"), style = MaterialTheme.typography.headlineMedium)
-            Text(tr(R.string.demo_intro))
-        }
-        BrandCard {
-            Text(planLabel("Free"), style = MaterialTheme.typography.headlineMedium)
-            Text(tr(R.string.demo_upgrade_details))
-            BrandActionButton(tr(R.string.demo_upgrade), register, Modifier.testTag("demo-register"))
-        }
-    }
-}

@@ -3,7 +3,7 @@ package com.prettylisavpn.android.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.foundation.layout.*
@@ -28,10 +28,6 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
         BrandActionButton(tr(if (status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.RECONNECTING)) R.string.vpn_cancel else if (active) R.string.vpn_disconnect else R.string.dash_connect), {
             if (active) actions?.disconnect() else actions?.connect(country)
         }, Modifier.weight(1f).testTag("home-connect"), enabled = actions != null && signedIn && (active || canConnect) && status.phase != VpnPhase.DISCONNECTING)
-        OutlinedIconButton({ actions?.resetMethods(country) }, Modifier.size(48.dp).testTag("vpn-reset-methods"),
-            enabled = actions != null && signedIn && canConnect && status.phase != VpnPhase.DISCONNECTING && status.error != VpnError.CLEANUP) {
-            Icon(Icons.Outlined.Refresh, tr(R.string.vpn_reset_methods), tint = Brand.Christalle)
-        }
     }
     Text(tr(when(status.phase) {
         VpnPhase.CONNECTED -> R.string.vpn_connected
@@ -48,7 +44,13 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
             Modifier.testTag("vpn-attempt").semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodySmall)
     }
     if (status.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING)) status.method?.let {
-        Text(methodName(it), Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(methodName(it), Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
+            IconButton({ actions?.resetMethods(country) }, Modifier.size(40.dp).testTag("vpn-reset-methods"),
+                enabled = actions != null && signedIn && canConnect && status.error != VpnError.CLEANUP) {
+                Icon(Icons.Outlined.Refresh, tr(R.string.vpn_reset_methods), Modifier.size(20.dp), tint = Brand.Christalle.copy(alpha = .55f))
+            }
+        }
     }
     if (status.phase == VpnPhase.CONNECTING) Text(tr(R.string.vpn_first_connection_hint),
         Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall,

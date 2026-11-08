@@ -35,6 +35,7 @@ class PlaceholderConnectionTest {
         val model = ScreenModel(object : ScreenSource by FixtureSource(0) { override val vpn: VpnActions = controller })
         compose.runOnUiThread { compose.activity.setContent { PrettyLisaTheme { LocalizedApp { LiveHome(model) {} } } } }
         try {
+            compose.onNodeWithTag("vpn-reset-methods").assertDoesNotExist()
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()
             compose.waitUntil(5_000) { controller.status.value.method?.id == "vless" }
             compose.onNodeWithTag("vpn-reset-methods").performScrollTo().assertIsEnabled().performClick()
@@ -56,6 +57,7 @@ class PlaceholderConnectionTest {
             screenshot("vpn-recovered-alternative")
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()
             compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.DISCONNECTED }
+            compose.onNodeWithTag("vpn-reset-methods").assertDoesNotExist()
         } finally { compose.runOnUiThread { controller.disconnect(); scope.cancel() } }
     }
     @Test fun shippedExecutorTriesAllMethodsAndCanBeCancelled() {

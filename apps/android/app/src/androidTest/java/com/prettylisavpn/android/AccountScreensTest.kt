@@ -2,6 +2,7 @@ package com.prettylisavpn.android
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -55,7 +56,7 @@ class AccountScreensTest {
         override suspend fun trafficServices(token:String) = listOf(
             com.prettylisavpn.android.vpn.TrafficService("0bd811da-f080-4f25-887a-67bf534ac2c6", "youtube", "YouTube", "youtube", listOf("youtube.com", "*.youtube.com")),
             com.prettylisavpn.android.vpn.TrafficService("4e2b8d7c-289f-4c57-8f26-aeb680408cda", "instagram", "Instagram", "instagram", listOf("instagram.com", "*.instagram.com")))
-        override suspend fun devices(token:String): List<Device> { deviceReads++; return listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active), Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
+        override suspend fun devices(token:String): List<Device> { deviceReads++; return (if(plan=="Demo")emptyList() else listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active))) + listOf(Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
         override suspend fun locations(token:String):LocationOptions { countryReads++; return LocationOptions(countries(token),80) }
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
@@ -79,6 +80,7 @@ class AccountScreensTest {
         override suspend fun supportSubmit(token:String,report:SupportSubmission):SupportReceipt { submitted=report;sends++;return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
     }
     @Before fun launch() {
+        compose.runOnUiThread { com.prettylisavpn.android.ui.PresentationStore.get(compose.activity).preference.choose(com.prettylisavpn.android.ui.AppLanguage.ENGLISH) }
         com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(InstrumentationRegistry.getInstrumentation().targetContext).save(com.prettylisavpn.android.vpn.TrafficSelection())
         val vault=object:CredentialVault {
             var value:Credentials?=Credentials(device,"fake","2030-01-01T00:00:00Z")
@@ -97,7 +99,7 @@ class AccountScreensTest {
     @After fun reset() {
         SourceFactory.sourceForTests=null
         val context=InstrumentationRegistry.getInstrumentation().targetContext
-        context.getSharedPreferences("presentation",android.content.Context.MODE_PRIVATE).edit().putString("language","en").commit()
+        compose.runOnUiThread { com.prettylisavpn.android.ui.PresentationStore.get(context).preference.choose(com.prettylisavpn.android.ui.AppLanguage.ENGLISH) }
         com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(context).save(com.prettylisavpn.android.vpn.TrafficSelection())
     }
     private fun waitFor(tag:String)=compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
@@ -107,6 +109,21 @@ class AccountScreensTest {
         compose.onNodeWithTag(tag).performClick()
     }
     private fun idle()=compose.waitUntil(10_000) { !model.state.value.busy }
+    private fun enterAuth(tag:String,value:String) {
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
+        val field=compose.onNodeWithTag(tag).performScrollTo()
+        val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(500,5_000)
+        fun keyboardVisible()=androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+        field.performTouchInput { click() }
+        compose.waitUntil(5_000) { field.fetchSemanticsNode().config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Focused) == true }
+        compose.waitUntil(10_000) { keyboardVisible() }
+        automation.waitForIdle(500,5_000);field.performTextInput(value);field.assertTextEquals(value)
+        automation.waitForIdle(500,5_000)
+        if(keyboardVisible()) androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitUntil(10_000) { !keyboardVisible() }
+        automation.waitForIdle(500,5_000)
+    }
     private fun screenshot(name:String) {
         compose.runOnUiThread { compose.activity.window.decorView.invalidate() }
         compose.waitForIdle();val i=InstrumentationRegistry.getInstrumentation();i.uiAutomation.waitForIdle(500,5000)
@@ -119,12 +136,12 @@ class AccountScreensTest {
     }
     @Test fun planBadgesAndFreeUpgradeFollowTheCurrentAccount() {
         compose.waitUntil(10_000) { model.state.value.loads[Area.HOME]?.phase == LoadPhase.READY }
-        compose.onNodeWithText("Premium ⭐").assertExists()
+        compose.onNodeWithText("PREMIUM ⭐").assertExists()
         compose.onNodeWithTag("home-upgrade").assertDoesNotExist()
         screenshot("home-premium-plan")
         compose.runOnUiThread { plan="Free"; model.load(Area.HOME) }
         waitFor("home-upgrade")
-        compose.onNodeWithText("Free 🆓").assertExists()
+        compose.onNodeWithText("FREE 🕊️").assertExists()
         screenshot("home-free-upgrade")
         click("home-upgrade"); waitFor("provider-mode")
         compose.onNodeWithTag("live-subscription-screen").assertExists()
@@ -135,7 +152,7 @@ class AccountScreensTest {
         waitFor("live-account")
         compose.runOnUiThread { plan="Platinum"; model.load(Area.HOME) }
         compose.waitUntil(10_000) { model.state.value.data.plan == "Platinum" }
-        compose.onNodeWithText("Platinum 💎").assertExists()
+        compose.onNodeWithText("PLATINUM 💎").assertExists()
         compose.onNodeWithTag("home-upgrade").assertDoesNotExist()
         screenshot("home-platinum-plan")
     }
@@ -148,7 +165,7 @@ class AccountScreensTest {
         compose.onNodeWithTag("auth-documents").performScrollTo();screenshot("auth-documents-demo")
         for(key in listOf("terms","privacy","refunds","payments")) compose.onNodeWithTag("auth-document-$key").assertExists()
         click("auth-demo");waitFor("demo-traffic")
-        compose.onNodeWithText("DEMO 🌱").assertExists()
+        compose.onNodeWithText("DEMO ⏳").assertExists()
         compose.onNodeWithText("15:00").assertExists()
         screenshot("demo-home")
     }
@@ -159,17 +176,55 @@ class AccountScreensTest {
         compose.onNodeWithTag("demo-locked-include").assertExists()
         compose.onNodeWithTag("demo-locked-exclude").assertExists()
         click("tab_SETTINGS");screenshot("demo-settings")
-        compose.onNodeWithTag("demo-locked-methods").assertExists()
+        compose.onNodeWithTag("demo-locked-methods").assertDoesNotExist()
+        click("settings-devices");waitFor("current-device-badge");screenshot("demo-devices")
+        compose.onNodeWithTag("device-$device").assertDoesNotExist()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
+        click("settings-advanced");waitFor("advanced-settings");screenshot("demo-advanced")
+        click("method-wireguard");compose.onNodeWithTag("method-wireguard").assertIsOff()
+        click("all-methods");compose.onNodeWithTag("method-wireguard").assertIsOn()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("live-settings")
         click("tab_HOME");click("home-country");screenshot("demo-countries")
         click("home-country-DE");waitFor("screen_LOGIN")
         assertEquals(0,billingReads)
         compose.onNodeWithTag("login-email").performTextInput("registered@example.com");click("auth-submit");waitFor("screen_OTP")
         compose.onNodeWithTag("otp").performTextInput("123456")
         compose.runOnUiThread { plan="Free" };click("auth-submit");waitFor("live-account")
-        compose.onNodeWithText("Free 🆓").assertExists()
+        compose.onNodeWithText("FREE 🕊️").assertExists()
         compose.onNodeWithText("60:00").assertExists()
         compose.onNodeWithTag("demo-traffic").assertDoesNotExist()
         screenshot("demo-upgraded-free")
+    }
+
+    @Test fun guestComparisonAndBuyReturnToSubscriptionAfterRegistration() {
+        click("language-picker");click("language-ru")
+        compose.runOnUiThread { model.perform(Command.Logout) };waitFor("screen_LOGIN")
+        compose.onNodeWithText("15 минут в день на этом устройстве.",substring=true).assertDoesNotExist()
+        compose.onNodeWithTag("auth-documents").performScrollTo();screenshot("plan-polish-login-ru")
+        click("auth-demo");waitFor("demo-traffic")
+        compose.onNodeWithTag("vpn-reset-methods").assertDoesNotExist()
+        screenshot("plan-polish-demo-home-ru")
+        click("home-upgrade");waitFor("plan-buy")
+        compose.onNodeWithTag("live-subscription-screen").assertExists()
+        compose.onNodeWithTag("billing-price").assertTextEquals("399 ₽")
+        compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-demo-premium-ru")
+        compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-demo-free-ru")
+        compose.onNodeWithTag("current-plan-DEMO").assertExists()
+        compose.onNodeWithTag("plan-tier-DEMO").performScrollTo();screenshot("plan-polish-demo-current-ru")
+        assertEquals(0,billingReads)
+        click("plan-buy");waitFor("screen_LOGIN")
+        enterAuth("login-email","buyer@example.com");click("auth-submit");waitFor("screen_OTP")
+        enterAuth("otp","123456")
+        compose.runOnUiThread { plan="Free" };click("auth-submit")
+        try { waitFor("plan-buy") } catch(error:ComposeTimeoutException) {
+            screenshot("guest-buy-transition-failed")
+            throw AssertionError("Guest purchase transition: signedIn=${model.state.value.data.signedIn}, plan=${model.state.value.data.plan}, pendingNavigation=${model.afterLoginSubscription}",error)
+        }
+        compose.onNodeWithTag("current-plan-FREE").assertExists()
+        compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-free-premium-ru")
+        compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-free-current-ru")
+        click("plan-buy");waitFor("purchase-unavailable")
+        assertEquals(0,starts)
     }
 
     @Test fun devicesRevokeUpdatesHomeAndBack() {
@@ -348,6 +403,7 @@ class AccountScreensTest {
         assertTrue("expiry must not send ACK",messages)
     }
     @Test fun unavailableBillingShowsReferencePricesWithoutPaymentActions() {
+        compose.runOnUiThread { plan="Free";model.load(Area.HOME) };waitFor("home-upgrade")
         billingFail=true
         click("tab_SETTINGS");click("settings-subscription");waitFor("billing-reference-prices")
         compose.onNodeWithTag("billing-price").assertTextEquals("399 ₽")
@@ -382,7 +438,9 @@ class AccountScreensTest {
         compose.onNodeWithTag("billing-price").assertTextEquals("${'$'}5")
         compose.onNodeWithTag("billing-original-price").assertTextEquals("${'$'}7")
         screenshot("subscription-platinum-usd")
-        compose.onNodeWithTag("billing-management").performScrollTo();screenshot("subscription-management")
+        compose.onNodeWithTag("billing-management").assertDoesNotExist()
+        click("plan-buy");waitFor("purchase-unavailable");screenshot("subscription-payment-unavailable")
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         assertEquals(0,starts)
         click("language-picker");click("language-en")
     }
@@ -395,8 +453,8 @@ class AccountScreensTest {
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density,2f)) {
                             androidx.compose.material3.Surface(color=com.prettylisavpn.android.ui.Brand.PurpleHeart) {
                                 com.prettylisavpn.android.ui.PhoneScreen("subscription-large-text") {
-                                    com.prettylisavpn.android.ui.SubscriptionPriceCard("Premium",mapOf("RUB" to OfferPrice(39900,49900),"USD" to OfferPrice(500,700)),
-                                        "RUB",java.util.Locale.forLanguageTag("ru"),{},true)
+                                    com.prettylisavpn.android.ui.SubscriptionPriceCard("PREMIUM ⭐",mapOf("RUB" to OfferPrice(39900,49900),"USD" to OfferPrice(500,700)),
+                                        "RUB",java.util.Locale.forLanguageTag("ru"),{},true,featured=true)
                                 }
                             }
                         }
@@ -426,6 +484,16 @@ class AccountScreensTest {
         click("confirm-dialog");idle()
         assertEquals(1,starts);assertEquals("CANCEL",lastIntent?.action)
         assertEquals(paid,model.state.value.data.billing?.paidUntil)
+    }
+    @Test fun freeBuyRequiresConfirmationAndUsesTheServerOffer() {
+        mode="LIVE";plan="Free"
+        click("tab_SETTINGS");click("settings-subscription");waitFor("plan-buy")
+        click("plan-buy");waitFor("confirmation-dialog")
+        assertEquals(0,starts)
+        click("confirm-dialog");idle()
+        assertEquals(1,starts);assertEquals("SUBSCRIBE",lastIntent?.action)
+        assertEquals("RUB",lastIntent?.currency)
+        assertEquals("30000000-0000-0000-0000-000000000005",lastIntent?.offer_id)
     }
     @Test fun changedPriceClosesConfirmationWithoutPosting() {
         mode="LIVE";click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")

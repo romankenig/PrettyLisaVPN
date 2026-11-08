@@ -39,8 +39,10 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
     val route = entry?.destination?.route ?: "HOME"
     val demo = state.data.plan.equals("Demo", ignoreCase = true)
     fun register() { model.perform(Command.Logout) { model.emailDraft = "" } }
+    fun registerToBuy() { model.perform(Command.Logout) { model.emailDraft = ""; model.afterLoginSubscription = true } }
+    LaunchedEffect(Unit) { if (model.afterLoginSubscription) { model.afterLoginSubscription = false; nav.navigate("SUBSCRIPTION") } }
     fun go(value: String) {
-        if (demo && value in setOf("DEVICES", "ADVANCED", "SUPPORT")) { register(); return }
+        if (demo && value == "SUPPORT") { register(); return }
         model.clearError(); nav.navigate(value) { launchSingleTop = true }
     }
     Scaffold(containerColor = Brand.PurpleHeart, contentColor = Brand.Mercury,
@@ -50,24 +52,19 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
         } },
     ) { padding ->
         NavHost(nav, "HOME", Modifier.padding(padding).consumeWindowInsets(padding)) {
-            composable("HOME") { LiveHome(model, register = ::register) { if (demo) register() else go("SUBSCRIPTION") } }
+            composable("HOME") { LiveHome(model, register = ::register) { go("SUBSCRIPTION") } }
             composable("SETTINGS") { PhoneScreen("live-settings") {
                 ScreenHeading(tr(R.string.ui_settings))
                 SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "settings-subscription") { go("SUBSCRIPTION") }
-                if (demo) BrandCard {
-                    DemoLockedFeature(tr(R.string.ui_devices), "demo-locked-devices", ::register)
-                    DemoLockedFeature(tr(R.string.advanced_settings), "demo-locked-methods", ::register)
-                } else {
-                    SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
-                    SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "settings-advanced") { go("ADVANCED") }
-                }
+                SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "settings-devices") { go("DEVICES") }
+                SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "settings-advanced") { go("ADVANCED") }
                 SettingsOption(tr(R.string.ui_sign_out), tr(R.string.dash_end_session), R.drawable.nav_logout, "settings-logout", danger = true, enabled = !state.busy) { logout() }
                 OperationError(state.error)
             } }
             composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }, navigate = { go(it) }) }
             composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
-            composable("SUBSCRIPTION") { if (demo) DemoUpgradeScreen({ nav.popBackStack() }, ::register) else LiveSubscription(model) { nav.popBackStack() } }
+            composable("SUBSCRIPTION") { LiveSubscription(model, ::register, ::registerToBuy) { nav.popBackStack() } }
             composable("SUPPORT") { support -> LiveSupport(model, support.savedStateHandle) { nav.popBackStack() } }
         }
     }
@@ -124,7 +121,7 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
 }
 
 @Composable
-private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
+private fun LiveSubscription(model: ScreenModel, register: () -> Unit, registerToBuy: () -> Unit, back: () -> Unit) {
     val tr = strings()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, model) {
@@ -144,6 +141,9 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     val language by LocalPresentation.current.preference.language.collectAsState()
     val locale = java.util.Locale.forLanguageTag(language.code)
     val billing = state.data.billing
+    val currentPlan = billing?.plan ?: state.data.plan.uppercase(java.util.Locale.ROOT)
+    val demo = currentPlan == "DEMO"
+    var purchaseUnavailable by rememberSaveable { mutableStateOf(false) }
     val contract = subscriptionContractPrice(billing?.currentPrice)?.takeIf { billing?.plan == "PREMIUM" && !billing.newContractRequired }
     val purchaseRoutes = billing?.let { subscriptionPurchaseRoutes(it, currency) }.orEmpty()
     LaunchedEffect(billing?.revision, currency) {
@@ -157,34 +157,53 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
     LaunchedEffect(state.data.billing?.revision, action) {
         if (action != null && confirmedRevision != state.data.billing?.revision) action = null
     }
+    fun buy() {
+        if (demo) { registerToBuy(); return }
+        val kind = listOf("SUBSCRIBE", "RENEW").firstOrNull { billing?.permits(it) == true }
+        if (kind != null && state.data.operationsReady && billing?.offers?.size == 1 &&
+            purchaseRoutes.any { it.id == route } && !state.data.stale && state.loads[Area.BILLING]?.phase == LoadPhase.READY) {
+            model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing!!.revision; action = kind
+        } else purchaseUnavailable = true
+    }
     PhoneScreen("live-subscription-screen", onRefresh = { if (!state.busy) model.load(Area.BILLING) },
         refreshing = state.loads[Area.BILLING]?.phase == LoadPhase.LOADING, refreshAtEnd = false) {
         ScreenHeading(tr(R.string.ui_subscription), back)
         LiveLoad(model, Area.BILLING) {
-            if (billing == null) SubscriptionPriceCard("Premium", mapOf("RUB" to OfferPrice(39900, 49900), "USD" to OfferPrice(500, 700)),
-                currency, locale, { currency = it }, !state.busy, Modifier.testTag("billing-reference-prices"), tr(R.string.billing_reference_prices))
-            if (billing != null) {
-                BrandCard(Modifier.testTag("billing-access")) {
-                    Text(tr(R.string.ui_your_plan), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                    Text(planLabel(billing.plan), style = MaterialTheme.typography.headlineMedium)
-                    if (billing.plan == "PLATINUM") Text(tr(R.string.subscription_platinum), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
-                    billing.paidUntil?.let { paid ->
-                        HorizontalDivider(color = Brand.Christalle.copy(alpha = 0.12f))
-                        SubscriptionDetail(tr(R.string.subscription_active_until), readableDate(paid, locale, java.time.ZoneId.systemDefault()) ?: paid, "live-paid-until")
-                        if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(paid, now)?.let {
-                            Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left"), color = Brand.Christalle, style = MaterialTheme.typography.labelLarge)
+            Text(tr(R.string.ui_your_plan) + " · " + planLabel(currentPlan),
+                Modifier.testTag("billing-current-plan"), style = MaterialTheme.typography.labelLarge)
+            val offer = billing?.offers?.firstOrNull()
+            val showOffer = currentPlan != "PREMIUM" || billing?.newContractRequired == true
+            val prices = if (showOffer) offer?.prices ?: referenceOffers().first().prices else contract?.let { mapOf(it) }.orEmpty()
+            SubscriptionPriceCard(planLabel("PREMIUM"), prices, contract?.first ?: currency, locale,
+                if (showOffer) { value -> currency = value } else null, !state.busy && !state.data.paymentPending,
+                Modifier.testTag(if (billing == null && showOffer) "billing-reference-prices" else if (showOffer) "billing-offer" else "billing-contract-price"),
+                note = if (!showOffer) (if (contract != null) tr(R.string.billing_fixed_price) else tr(R.string.subscription_price_unconfirmed))
+                    else if (billing == null) tr(R.string.billing_reference_prices) else if (currentPlan == "PREMIUM") tr(R.string.billing_resubscribe) else null,
+                featured = true, current = currentPlan == "PREMIUM") {
+                    if (showOffer) {
+                        if (purchaseRoutes.isNotEmpty()) Column {
+                            purchaseRoutes.forEach { cap ->
+                                FilterChip(selected = route == cap.id, onClick = { route = cap.id }, label = { Text(cap.label) },
+                                    colors = FilterChipDefaults.filterChipColors(labelColor = Brand.Mercury, selectedLabelColor = Brand.Christalle, selectedContainerColor = Brand.Viking),
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag("live-route-${cap.id}"), enabled = !state.busy && !state.data.paymentPending)
+                            }
                         }
+                        BrandActionButton(tr(R.string.plan_buy), ::buy, Modifier.testTag("plan-buy"), enabled = !state.busy && !state.data.paymentPending)
                     }
                 }
-                if (contract != null) SubscriptionPriceCard(tr(R.string.subscription_agreed_price), mapOf(contract), contract.first,
-                    locale, null, false, Modifier.testTag("billing-contract-price"), tr(R.string.billing_fixed_price))
-                else if (billing.plan == "PREMIUM" && !billing.newContractRequired) BrandCard {
-                    SubscriptionDetail(tr(R.string.subscription_agreed_price), billing.currentPrice ?: tr(R.string.subscription_price_unconfirmed))
-                }
-                if (billing.plan != "PREMIUM" || billing.newContractRequired) billing.offers.forEach { offer ->
-                    SubscriptionPriceCard(tr(R.string.subscription_premium_offer), offer.prices, currency, locale, { currency = it },
-                        !state.busy && !state.data.paymentPending, Modifier.testTag("billing-offer"),
-                        if (billing.plan == "PREMIUM") tr(R.string.billing_resubscribe) else null)
+            if (currentPlan != "PREMIUM") {
+                PlanTierCard("FREE", currentPlan == "FREE", if (demo) register else null, !state.busy)
+                PlanTierCard("DEMO", demo)
+            }
+            if (billing != null) {
+                if (billing.paidUntil != null) BrandCard(Modifier.testTag("billing-access")) {
+                    Text(planLabel(billing.plan), style = MaterialTheme.typography.titleLarge)
+                    if (billing.plan == "PLATINUM") Text(tr(R.string.subscription_platinum), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
+                    val paid = billing.paidUntil
+                    SubscriptionDetail(tr(R.string.subscription_active_until), readableDate(paid, locale, java.time.ZoneId.systemDefault()) ?: paid, "live-paid-until")
+                    if (billing.status in setOf("ACTIVE", "CANCELED")) remainingPaidDays(paid, now)?.let {
+                        Text(tr(R.string.billing_days_left, it), Modifier.testTag("billing-days-left"), color = Brand.Christalle, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
                 if (billing.plan == "PREMIUM" || billing.method != null || billing.autoRenew) BrandCard(Modifier.testTag("billing-payment-details")) {
                     Text(tr(R.string.subscription_payment_details), style = MaterialTheme.typography.titleLarge)
@@ -196,20 +215,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                         Text(billing.nextChargePrice?.let { subscriptionContractPrice(it) }?.let { subscriptionMoney(it.second.amount, it.first, locale) } ?: billing.nextChargePrice.orEmpty(), style = MaterialTheme.typography.headlineSmall, color = Brand.Christalle)
                     }
                 }
-                if (billing.mode != "LIVE" || !billing.available) BrandCard(Modifier.testTag("provider-mode")) {
-                    Text(tr(R.string.subscription_payments_unavailable), style = MaterialTheme.typography.bodyMedium, color = Brand.Scorpion)
-                } else Spacer(Modifier.testTag("provider-mode"))
-                if (purchaseRoutes.isNotEmpty()) BrandCard {
-                    Text(tr(R.string.subscription_payment_method), style = MaterialTheme.typography.titleMedium)
-                    purchaseRoutes.forEach { cap ->
-                        FilterChip(selected = route == cap.id, onClick = { route = cap.id }, label = { Text(cap.label) },
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("live-route-${cap.id}"), enabled = !state.busy && !state.data.paymentPending)
-                    }
-                    listOf("SUBSCRIBE", "RENEW").filter { billing.permits(it) }.forEach { kind ->
-                        BrandActionButton(tr.action(kind), { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, Modifier.testTag("live-pay-$kind"),
-                            enabled = state.data.operationsReady && billing.offers.size == 1 && purchaseRoutes.any { it.id == route } && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY)
-                    }
-                }
+                Spacer(Modifier.testTag("provider-mode"))
                 if (state.data.paymentPending) BrandCard {
                     Text(tr(R.string.ui_an_operation_needs_confirmation_refresh_its_status_before_startin))
                     BrandActionButton(tr(R.string.ui_check_operation), { model.perform(Command.ConfirmPayment) }, Modifier.testTag("live-check-payment"), loading = state.busy)
@@ -222,7 +228,7 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
                     }, enabled = billing.mode == "LIVE" && billing.available)
                 } }
-                BrandCard(Modifier.testTag("billing-management")) {
+                if (billing.plan == "PREMIUM" || billing.method != null || billing.autoRenew) BrandCard(Modifier.testTag("billing-management")) {
                     if (action == null) OperationError(state.error)
                     SubscriptionManageButton(tr(R.string.subscription_change), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, "billing-portal", !state.busy && !model.fixture && !state.data.paymentPending)
                     listOf("CHANGE_METHOD", "CANCEL").filter { billing.permits(it) }.forEach { kind ->
@@ -236,6 +242,11 @@ private fun LiveSubscription(model: ScreenModel, back: () -> Unit) {
             }
         }
     }
+    if (purchaseUnavailable) AlertDialog(onDismissRequest = { purchaseUnavailable = false },
+        modifier = Modifier.testTag("purchase-unavailable"), containerColor = Brand.Mercury,
+        title = { Text(tr(R.string.subscription_premium_offer)) },
+        text = { Text(tr(R.string.subscription_payments_unavailable)) },
+        confirmButton = { TextButton({ purchaseUnavailable = false }) { Text(tr(R.string.ui_understood)) } })
     action?.let { kind ->
         if (kind == "CANCEL") ConfirmDialog(
             tr.action(kind) + "?", tr(R.string.billing_cancel_detail), tr(R.string.ui_confirm), state,

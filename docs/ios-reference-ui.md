@@ -66,3 +66,8 @@ labels. A structural check requires every static `L("key")` in the app to exist
 in all six generated locales. The website and other clients are preserved.
 Final product HEAD, native build SHA/run/attempt, screenshots and
 complete CI audit belong in PR #53; old draft artifacts do not validate this merge.
+
+Reconciliation after the connection interruption also preserves merged Android
+PR #68 (Android 0.26.0 / backend 0.38.0), including its navigation and changelog.
+Apple generated translations are synchronized from those current Android strings;
+this remains the same iOS 0.3.0 / macOS 0.2.2 task.

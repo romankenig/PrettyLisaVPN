@@ -35,7 +35,11 @@ data class SupportSubmission(val requestId: String, val subject: String, val des
     override fun toString() = "SupportSubmission([redacted])"
 }
 data class SupportReceipt(val id: String, val status: String)
+/** Display fallback only. A real purchase always obtains a fresh server quote. */
+fun referenceOffers() = listOf(AccountOffer("reference", mapOf("RUB" to OfferPrice(39900,49900), "USD" to OfferPrice(500,700))))
+
 interface AccountApi {
+    suspend fun catalog(): List<AccountOffer> = referenceOffers()
     suspend fun trafficServices(token: String): List<com.prettylisavpn.android.vpn.TrafficService> = emptyList()
     suspend fun countries(token: String): List<Country> = emptyList()
     suspend fun locations(token: String): LocationOptions = LocationOptions(countries(token))
@@ -54,6 +58,23 @@ interface AccountApi {
 
 /** Strict transport projection: unknown account fields are tolerated, invalid capabilities fail closed. */
 class HttpAccountApi(private val http: HttpAuthApi, private val version: String) : AccountApi {
+    private var lastCatalog: List<AccountOffer> = referenceOffers()
+    private fun price(p: JsonObject): OfferPrice {
+        val amount = p.get("amount_minor").asBigDecimal.longValueExact(); require(amount in 1..1_000_000_000_000)
+        val original = p.get("original_amount_minor")?.takeUnless { it.isJsonNull }?.asBigDecimal?.longValueExact()
+        require(original == null || original > amount); return OfferPrice(amount, original)
+    }
+    private fun offers(v: JsonObject): List<AccountOffer> = v.getAsJsonArray("offers").map { item ->
+        val offer = item.asJsonObject
+        require(offer.text("plan") == "PREMIUM" && offer.text("period") == "MONTH")
+        AccountOffer(uuid(offer.text("id")), setOf("RUB", "USD").associateWith { price(offer.getAsJsonObject("prices").getAsJsonObject(it)) })
+    }.also { require(it.map { offer -> offer.id }.distinct().size == it.size) }
+    override suspend fun catalog(): List<AccountOffer> = try {
+        val raw = http.request("billing/catalog") // Public prices; never send guest credentials.
+        parse { offers(raw.asJsonObject).also { require(it.isNotEmpty()) } }.also { lastCatalog = it }
+    } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+    catch (_: Exception) { lastCatalog }
+
     override suspend fun trafficServices(token: String): List<com.prettylisavpn.android.vpn.TrafficService> {
         val raw = json("vpn/traffic/services", token)
         return parse {
@@ -139,16 +160,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
                 PaymentRoute(id, id, allowed, recurring)
             } ?: emptyList()
             require(routes.isEmpty() || (routes.size == 4 && routes.map { it.id }.toSet() == routeIds))
-            fun price(p: JsonObject): OfferPrice {
-                val amount = p.get("amount_minor").asBigDecimal.longValueExact(); require(amount in 1..1_000_000_000_000)
-                val original = p.get("original_amount_minor")?.takeUnless { it.isJsonNull }?.asBigDecimal?.longValueExact()
-                require(original == null || original > amount); return OfferPrice(amount, original)
-            }
-            val offers = v.getAsJsonArray("offers").map { item -> val offer = item.asJsonObject
-                require(offer.text("plan") == "PREMIUM" && offer.text("period") == "MONTH")
-                AccountOffer(uuid(offer.text("id")), setOf("RUB", "USD").associateWith { price(offer.getAsJsonObject("prices").getAsJsonObject(it)) })
-            }
-            require(offers.map { it.id }.distinct().size == offers.size)
+            val offers = offers(v)
             val actions = v.getAsJsonArray("actions").map { it.asString }.toSet(); require(billingActions.containsAll(actions))
             val plan = v.text("plan").also { require(it in setOf("FREE", "PREMIUM", "PLATINUM")) }
             val status = v.text("status").also { require(it in setOf("FREE", "ACTIVE", "CANCELED", "EXPIRED")) }
