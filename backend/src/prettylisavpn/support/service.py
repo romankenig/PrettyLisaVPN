@@ -59,7 +59,7 @@ class SupportService:
             async with self.postgres.session() as session, session.begin():
                 # Serializes quotas and concurrent submissions for one account, including retries.
                 user = await session.scalar(
-                    select(UserRecord.id).where(UserRecord.id == identity.user_id).with_for_update()
+                    select(UserRecord).where(UserRecord.id == identity.user_id).with_for_update()
                 )
                 if user is None:
                     raise SupportError("AUTH_INVALID", 401)
@@ -101,11 +101,14 @@ class SupportService:
                         )
                         if owned is None:
                             diagnostics.vpn.session_id = None
+                payload = sanitized.model_dump(mode="json")
+                # The authenticated account is server-owned; the editable reply address is separate.
+                payload["account_email"] = user.email
                 row = SupportRequestRecord(
                     user_id=identity.user_id,
                     request_id=report.request_id,
                     fingerprint=digest,
-                    payload=sanitized.model_dump(mode="json"),
+                    payload=payload,
                     status="ACCEPTED",
                     attempts=0,
                     created_at=now,

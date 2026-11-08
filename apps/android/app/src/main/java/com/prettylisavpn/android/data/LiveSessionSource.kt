@@ -18,6 +18,7 @@ class LiveSessionSource(
     private val journalStore: JournalStore = MemoryJournal(),
     private val uploads: suspend (List<String>) -> List<SupportUpload> = { emptyList() },
     override val vpn: com.prettylisavpn.android.vpn.AndroidVpnHost? = null,
+    private val diagnostics: com.prettylisavpn.android.diagnostics.AppDiagnostics? = null,
 ) : ScreenSource {
     override suspend fun billingPortal(): String = mutex.withLock { sessions.request { api().billingPortal(it) } }
     private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
@@ -45,6 +46,7 @@ class LiveSessionSource(
         if (accounts == null) return
         journalReady = false
         val id = sessions.profile?.id ?: return
+        diagnostics?.account(id)
         var stored: AccountJournal? = null; disk { stored = journalStore.read() }
         if (stored != null && stored!!.owner != id) disk { journalStore.clear() }
         journal = stored?.takeIf { it.owner == id } ?: AccountJournal(id)
@@ -111,6 +113,7 @@ class LiveSessionSource(
                 if (command == Command.Logout) sessions.logout() else sessions.forgetLocalSession()
                 requestedEmail = null; snapshot = Snapshot(); owner = ""; journal = AccountJournal("")
                 disk { journalStore.clear() }
+                diagnostics?.account(null)
             }
             is Command.Revoke -> {
                 UUID.fromString(command.id)
@@ -119,6 +122,7 @@ class LiveSessionSource(
                 if (result.current) {
                     vpn?.controller?.confirmedDeviceRevocation()
                     sessions.forgetLocalSession(); snapshot = Snapshot(); disk { journalStore.clear() }
+                    diagnostics?.account(null)
                 } else {
                     snapshot = initial.copy(devices = snapshot.devices.map { if (it.id == result.id) result else it })
                     refreshAfterAction { sessions.refreshProfile(); snapshot = initial.copy(devices = sessions.request { api().devices(it) }) }
@@ -140,7 +144,7 @@ class LiveSessionSource(
                     transfer.value = SupportTransfer("PREPARING")
                     val files = try { uploads(command.uris) } finally { transfer.value = SupportTransfer() }
                     require(files.size <= 3 && files.sumOf { it.bytes().size } <= 10*1024*1024 && files.all { it.bytes().size <= 5*1024*1024 })
-                    save(journal.copy(support = SupportSubmission(command.id, command.subject, command.description, command.email, files), supportReceipt = null))
+                    save(journal.copy(support = SupportSubmission(command.id, command.subject, command.description, command.email, files, command.diagnostics?.deepCopy()), supportReceipt = null))
                     projectJournal()
                 }
                 recoverSupport(true)
@@ -204,9 +208,10 @@ object LiveSessionFactory {
     private var source: LiveSessionSource? = null
     @Synchronized fun create(context: Context): ScreenSource = source ?: run {
         val app = context.applicationContext
-        val http = HttpAuthApi("https://api.prettylisavpn.com/")
+        val diagnostics = com.prettylisavpn.android.diagnostics.AppDiagnostics.get(app)
+        val http = HttpAuthApi("https://api.prettylisavpn.com/", diagnostics = diagnostics::append, elapsedMillis = android.os.SystemClock::elapsedRealtime)
         val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255), demoIdentity = { demoDeviceKey(app) })
         val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(app, sessions, http)
-        LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn)
+        LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn, diagnostics)
     }.also { source = it }
 }

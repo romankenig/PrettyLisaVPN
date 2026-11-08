@@ -50,7 +50,7 @@ sealed interface Command {
     data class Acknowledge(val id: String, val revision: Int) : Command
     data class Payment(val id: String, val kind: String, val route: String, val currency: String, val expectedRevision: String? = null) : Command
     data object ConfirmPayment : Command
-    data class Support(val id: String, val subject: String, val description: String, val email: String, val attachments: Int, val uris: List<String> = emptyList()) : Command
+    data class Support(val id: String, val subject: String, val description: String, val email: String, val attachments: Int, val uris: List<String> = emptyList(), val diagnostics: com.google.gson.JsonObject? = null) : Command
     data object SupportStatus : Command
     data object NewSupport : Command
 }

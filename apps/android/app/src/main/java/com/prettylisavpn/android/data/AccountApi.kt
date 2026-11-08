@@ -31,7 +31,7 @@ data class SupportUpload(val media: String, val base64: String) {
     fun bytes(): ByteArray = java.util.Base64.getDecoder().decode(base64)
     override fun toString() = "SupportUpload([redacted])"
 }
-data class SupportSubmission(val requestId: String, val subject: String, val description: String, val email: String, val uploads: List<SupportUpload>) {
+data class SupportSubmission(val requestId: String, val subject: String, val description: String, val email: String, val uploads: List<SupportUpload>, val diagnostics: JsonObject? = null) {
     override fun toString() = "SupportSubmission([redacted])"
 }
 data class SupportReceipt(val id: String, val status: String)
@@ -207,7 +207,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     }
     override suspend fun supportSubmit(token: String, report: SupportSubmission): SupportReceipt = supportSubmit(token, report) { _, _ -> }
     override suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt {
-        val value = mapOf("request_id" to report.requestId, "subject" to report.subject, "description" to report.description, "reply_email" to report.email, "diagnostics" to null)
+        val value = mapOf("request_id" to report.requestId, "subject" to report.subject, "description" to report.description, "reply_email" to report.email, "diagnostics" to report.diagnostics)
         val form = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("report", gson.toJson(value)).apply {
             report.uploads.forEachIndexed { i, upload -> addFormDataPart("screenshots", "screenshot-${i+1}", upload.bytes().toRequestBody(upload.media.toMediaType())) }
         }.build()

@@ -238,7 +238,8 @@
     <string name="dash_upload_progress">wird gesendet: %1$d%%</string>
     <string name="dash_image_ready">bereit zum senden · %1$d KB</string>
     <string name="dash_remove_image">bild entfernen</string>
-    <string name="dash_diagnostics">technische daten beifügen</string>
+    <string name="dash_diagnostics">gerätedaten und app-ereignisse beifügen</string>
+    <string name="support_local_logs">protokolle bleiben auf diesem gerät: bis zu 7 tage und 2 MB. aktuelle ereignisse werden nur mit dieser anfrage gesendet. keine passwörter, schlüssel oder besuchten seiten.</string>
     <string name="dash_diagnostics_preview">was wird beigefügt</string>
     <string name="dash_description_limit">beschreibung kürzen: mit technischen daten sind höchstens 4000 zeichen erlaubt</string>
     <string name="server_connection_lost">keine verbindung zum server, bitte internetverbindung prüfen</string>

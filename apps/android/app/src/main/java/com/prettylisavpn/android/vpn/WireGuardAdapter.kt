@@ -41,6 +41,14 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     data class Diagnostic(val stage: String, val failure: String?, val socketCode: String?, val httpStatus: Int?,
         val handshake: Boolean, val rxBytes: Long, val txBytes: Long, val heartbeats: Int)
     @Volatile private var stage = "IDLE"
+        set(value) {
+            field = value
+            com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context).record(
+                com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_STAGE, method = method.id,
+                country = lease?.country?.takeIf { Regex("[A-Z]{2}").matches(it) },
+                stage = com.prettylisavpn.android.diagnostics.DiagnosticStage.entries.find { it.name == value }
+                    ?: com.prettylisavpn.android.diagnostics.DiagnosticStage.OTHER)
+        }
     private var failure: String? = null
     private var socketCode: String? = null
     private var httpStatus: Int? = null

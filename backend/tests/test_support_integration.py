@@ -57,6 +57,29 @@ async def submit(client, token, payload, screenshots=True):
     return await client.post("/support/requests", headers=headers(token), files=files)
 
 
+async def test_android_report_keeps_server_email_and_checks_session_ownership(support_state):
+    from test_android_support import android_diagnostics
+
+    postgres, own, other, _, client = support_state
+    data = report(diagnostics=android_diagnostics())
+    data["diagnostics"]["auth_session_id"] = str(other.sessions[0].session.id)
+    data["diagnostics"]["vpn"]["session_id"] = str(uuid4())
+    first = await submit(client, own.access_token, data, screenshots=False)
+    assert first.status_code == 202
+    assert (await submit(client, own.access_token, data, screenshots=False)).json() == first.json()
+    async with postgres.session() as session:
+        row = await session.get(SupportRequestRecord, (own.user.id, UUID(data["request_id"])))
+        assert row.payload["account_email"] == own.user.email
+        assert row.payload["reply_email"] == data["reply_email"]
+        diagnostic = row.payload["diagnostics"]
+        assert diagnostic["auth_session_id"] is None
+        assert diagnostic["vpn"]["session_id"] is None
+        assert diagnostic["device"]["android_api"] == 35
+        assert len(diagnostic["logs"]["events"]) == 2
+    data["diagnostics"]["logs"]["events"] = []
+    assert (await submit(client, own.access_token, data, screenshots=False)).status_code == 409
+
+
 async def test_concurrent_retries_cross_device_status_and_foreign_account(support_state):
     postgres, own, other, second, client = support_state
     data = report(diagnostics=diagnostics())
@@ -82,6 +105,7 @@ async def test_concurrent_retries_cross_device_status_and_foreign_account(suppor
             == 1
         )
         row = await session.get(SupportRequestRecord, (own.user.id, UUID(data["request_id"])))
+        assert row.payload["account_email"] == own.user.email
         assert row.payload["diagnostics"]["auth_session_id"] is None
         assert row.payload["diagnostics"]["vpn"]["session_id"] is None
         assert (

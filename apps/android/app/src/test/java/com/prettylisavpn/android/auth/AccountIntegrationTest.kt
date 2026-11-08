@@ -119,11 +119,14 @@ class AccountIntegrationTest {
     }
     @Test fun supportLostResponseAndRestartReuseFrozenPayload()=runBlocking {
         val s=source();s.read(Area.SESSION);port.supportError=true
-        failure { s.execute(Command.Support(UUID.randomUUID().toString(),"Subject","Original body","reply@example.com",0)) }
+        val diagnostics=com.google.gson.JsonParser.parseString("""{"platform":"ANDROID","schema_version":2,"collected_at":"original"}""").asJsonObject
+        failure { s.execute(Command.Support(UUID.randomUUID().toString(),"Subject","Original body","reply@example.com",0,diagnostics=diagnostics)) }
         val original=port.submissions.single();port.supportError=false
+        diagnostics.addProperty("collected_at","changed after timeout")
         val next=source();next.read(Area.SESSION)
         val result=next.execute(Command.Support(UUID.randomUUID().toString(),"Changed","Changed body","other@example.com",0))
         assertEquals(original,port.submissions.last());assertEquals("ACCEPTED",result.supportStatus)
+        assertEquals("original",port.submissions.last().diagnostics!!.get("collected_at").asString)
     }
     @Test fun unreadableJournalBlocksNewPostsUntilRecoverySucceeds()=runBlocking {
         var broken=true

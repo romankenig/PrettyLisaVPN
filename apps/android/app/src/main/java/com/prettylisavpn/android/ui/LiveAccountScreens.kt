@@ -9,6 +9,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -282,14 +285,19 @@ internal fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () -
     var infos by remember { mutableStateOf<Map<String, SupportImageInfo>>(emptyMap()) }
     var failed by remember { mutableStateOf<Set<String>>(emptySet()) }
     var validating by remember { mutableStateOf(false) }
-    val includeDiagnostics by draft.getStateFlow("diagnostics", false).collectAsState()
+    val includeDiagnostics by draft.getStateFlow("diagnostics", true).collectAsState()
     var showDiagnostics by rememberSaveable { mutableStateOf(false) }
     val presentation = LocalPresentation.current
     val language by presentation.preference.language.collectAsState()
     val version by presentation.version.collectAsState()
     val vpnStatus = model.vpn?.status?.collectAsState()?.value
-    val diagnostics = remember(version, language, state.data.plan, vpnStatus) { androidDiagnostics(context, version, language.code, state.data.plan, vpnStatus) }
-    val reportDescription = supportDescription(description, if (includeDiagnostics) diagnostics else null)
+    var diagnostics by remember { mutableStateOf<com.google.gson.JsonObject?>(null) }
+    LaunchedEffect(version, language, state.data.plan, vpnStatus, includeDiagnostics) {
+        diagnostics = null
+        if (includeDiagnostics) diagnostics = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            androidDiagnostics(context, version, language.code, state.data.plan, vpnStatus)
+        }
+    }
     LaunchedEffect(selected) {
         validating = true
         failed = emptySet()
@@ -367,17 +375,21 @@ internal fun LiveSupport(model: ScreenModel, draft: SavedStateHandle, back: () -
                     Checkbox(includeDiagnostics, { draft["diagnostics"] = it }, Modifier.testTag("support-diagnostics"), enabled = !state.busy)
                     Text(tr(R.string.dash_diagnostics), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                 }
+                Text(tr(R.string.support_local_logs), style = MaterialTheme.typography.bodySmall)
                 if (includeDiagnostics) {
-                    TextButton({ showDiagnostics = !showDiagnostics }) { Text(tr(R.string.dash_diagnostics_preview)) }
-                    if (showDiagnostics) Text(diagnostics, style = MaterialTheme.typography.bodySmall)
+                    TextButton({ showDiagnostics = !showDiagnostics }, Modifier.testTag("support-diagnostics-toggle")) { Text(tr(R.string.dash_diagnostics_preview)) }
+                    if (showDiagnostics) Box(Modifier.fillMaxWidth().heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+                        SelectionContainer {
+                            Text(diagnostics?.let { com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(it) } ?: tr(R.string.processing), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("support-diagnostics-preview"))
+                        }
+                    }
                 }
-                if (reportDescription.length > 4000) Text(tr(R.string.dash_description_limit), color = Brand.PersianRed)
                 if (state.busy) {
                     Text(if (transfer.phase == "UPLOADING") tr(R.string.dash_upload_progress, (transfer.fraction * 100).toInt()) else tr(R.string.processing), style = MaterialTheme.typography.bodySmall)
                     if (transfer.phase == "UPLOADING") LinearProgressIndicator(progress = { transfer.fraction }, modifier = Modifier.fillMaxWidth(), color = Brand.PurpleHeart)
                 }
                 OperationError(pickerError?.let { tr(it) })
-                BrandActionButton(tr(R.string.ui_send_to_support), { model.perform(Command.Support(id, subject.trim(), reportDescription, email.trim(), selected.size, selected.toList())) }, Modifier.testTag("live-support-send"), enabled = state.data.operationsReady && !validating && failed.isEmpty() && infos.size == selected.size && infos.values.sumOf { it.size } <= 10 * 1024 * 1024 && reportDescription.length <= 4000 && subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
+                BrandActionButton(tr(R.string.ui_send_to_support), { model.perform(Command.Support(id, subject.trim(), description.trim(), email.trim(), selected.size, selected.toList(), if (includeDiagnostics) diagnostics?.deepCopy() else null)) }, Modifier.testTag("live-support-send"), enabled = state.data.operationsReady && (!includeDiagnostics || diagnostics != null) && !validating && failed.isEmpty() && infos.size == selected.size && infos.values.sumOf { it.size } <= 10 * 1024 * 1024 && subject.isNotBlank() && description.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches(), loading = state.busy)
             }
             OperationError(state.error)
             OperationError(state.loads[Area.SUPPORT]?.error)

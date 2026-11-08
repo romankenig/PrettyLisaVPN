@@ -35,6 +35,14 @@ internal class ManagedAdapter(private val context: Context, private val sessions
     private var lease: ManagedLease? = null
     private var acquired = false
     @Volatile private var stage = "IDLE"
+        set(value) {
+            field = value
+            com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context).record(
+                com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_STAGE, method = method.id,
+                country = lease?.country?.takeIf { Regex("[A-Z]{2}").matches(it) },
+                stage = com.prettylisavpn.android.diagnostics.DiagnosticStage.entries.find { it.name == value }
+                    ?: com.prettylisavpn.android.diagnostics.DiagnosticStage.OTHER)
+        }
     @Volatile private var failure: String? = null
     @Volatile private var httpStatus: Int? = null
     @Volatile private var verificationAttempts = 0

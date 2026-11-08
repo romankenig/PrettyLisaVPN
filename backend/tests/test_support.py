@@ -207,6 +207,10 @@ async def test_mail_fixed_envelope_reply_to_and_safe_attachments():
         "recipient": "help@prettylisavpn.com",
     }
     assert message["Reply-To"] == "reply@example.com"
+    assert (
+        "Reply email: reply@example.com"
+        in message.get_body(preferencelist=("plain",)).get_content()
+    )
     assert str(row.user_id) not in message["Message-ID"]
     first_message_id = message["Message-ID"]
     await SupportSmtpMailer(transport).send(row, [file])

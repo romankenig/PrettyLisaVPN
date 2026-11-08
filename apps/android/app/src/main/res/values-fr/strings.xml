@@ -238,7 +238,8 @@
     <string name="dash_upload_progress">envoi : %1$d%%</string>
     <string name="dash_image_ready">prêt à envoyer · %1$d Ko</string>
     <string name="dash_remove_image">retirer l’image</string>
-    <string name="dash_diagnostics">joindre les données techniques</string>
+    <string name="dash_diagnostics">joindre les données de l’appareil et les événements</string>
+    <string name="support_local_logs">les journaux restent sur cet appareil : jusqu’à 7 jours et 2 Mo. les événements récents sont envoyés uniquement avec cette demande. sans mots de passe, clés ni historique de navigation.</string>
     <string name="dash_diagnostics_preview">voir les données jointes</string>
     <string name="dash_description_limit">raccourcissez la description : la limite avec les données techniques est de 4000 caractères</string>
     <string name="server_connection_lost">connexion au serveur impossible, vérifiez votre connexion internet</string>

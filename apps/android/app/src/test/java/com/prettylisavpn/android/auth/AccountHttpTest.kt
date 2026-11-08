@@ -12,6 +12,18 @@ class AccountHttpTest {
     private lateinit var api: HttpAccountApi
     @Before fun start() { server.start();api=HttpAccountApi(HttpAuthApi(server.url("/").toString(),true),"0.5.0") }
     @After fun stop() { server.shutdown() }
+    @Test fun diagnosticObserverReceivesOnlySafeApiMetadata()=runBlocking {
+        val events=mutableListOf<com.prettylisavpn.android.diagnostics.DiagnosticEvent>()
+        val http=HttpAuthApi(server.url("/").toString(),true) { events.add(it); throw IllegalStateException("diagnostic disk error") }
+        server.enqueue(MockResponse().setResponseCode(429).setBody("""{"error":{"code":"otp_rate_limited","detail":"OTP=123456 refresh=private-secret"}}"""))
+        try { http.requestOtp("private@example.com");fail() } catch (e:AuthFailure) { assertEquals("otp_rate_limited",e.code) }
+        val event=events.single()
+        assertEquals(429,event.http_status)
+        assertEquals(com.prettylisavpn.android.diagnostics.DiagnosticApiCode.OTP_RATE_LIMITED,event.api_code)
+        val json=com.google.gson.Gson().toJson(event)
+        for(secret in listOf("private@example.com","123456","private-secret",server.hostName)) assertFalse(json.contains(secret))
+        assertEquals(com.prettylisavpn.android.diagnostics.DiagnosticApiCode.OTHER,com.prettylisavpn.android.diagnostics.diagnosticApiCode("private-secret"))
+    }
     @Test fun publicCatalogUsesServerPricesAndKeepsLastKnownPricesWithoutCredentials()=runBlocking {
         server.enqueue(MockResponse().setResponseCode(503))
         assertEquals(39900L,api.catalog().single().prices["RUB"]!!.amount)
@@ -68,10 +80,11 @@ class AccountHttpTest {
         val id="20000000-0000-0000-0000-000000000005"
         server.enqueue(MockResponse().setBody("""{"request_id":"$id","status":"ACCEPTED"}"""))
         val events=mutableListOf<Pair<Long,Long>>()
-        val report=SupportSubmission(id,"Synthetic",supportDescription("Body","{\"platform\":\"ANDROID\"}"),"reply@example.com",listOf(SupportUpload("image/png",java.util.Base64.getEncoder().encodeToString(ByteArray(8192)))))
+        val diagnostics=javaClass.getResourceAsStream("/support-android-v2.json")!!.bufferedReader().use { com.google.gson.JsonParser.parseString(it.readText()).asJsonObject }
+        val report=SupportSubmission(id,"Synthetic","Body","reply@example.com",listOf(SupportUpload("image/png",java.util.Base64.getEncoder().encodeToString(ByteArray(8192)))),diagnostics)
         api.supportSubmit("synthetic",report) { sent,total -> events.add(sent to total) }
         assertEquals(0L,events.first().first);assertTrue(events.last().first>8192);assertEquals(events.last().second,events.last().first)
-        val body=server.takeRequest().body.readUtf8();assertTrue(body.contains("Android diagnostics"));assertTrue(body.contains("\"diagnostics\":null"));assertFalse(body.contains("WINDOWS"))
+        val body=server.takeRequest().body.readUtf8();assertTrue(body.contains("\"description\":\"Body\""));assertTrue(body.contains("\"diagnostics\":{\"schema_version\":2"));assertTrue(body.contains("\"platform\":\"ANDROID\""));assertFalse(body.contains("WINDOWS"))
     }
 
 }

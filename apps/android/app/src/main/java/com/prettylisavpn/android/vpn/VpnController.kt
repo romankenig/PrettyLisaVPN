@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.vpn
 
 import com.prettylisavpn.android.auth.AuthFailure
+import com.prettylisavpn.android.diagnostics.*
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,13 @@ class VpnController(
     private val enabledMethods: () -> Set<String>? = { null },
     private val healthPolicy: ConnectionHealthPolicy? = null,
     private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 },
+    private val diagnostics: (DiagnosticEvent) -> Unit = {},
 ) : VpnActions {
+    private fun record(kind: DiagnosticKind, method: VpnMethod? = null, outcome: DiagnosticOutcome? = null,
+        failure: DiagnosticFailure? = null, duration: Long? = null, country: String? = null) {
+        runCatching { diagnostics(DiagnosticEvent(java.time.Instant.now().toString(), elapsedMillis(), kind,
+            method = method?.id, outcome = outcome, failure = failure, duration_ms = duration?.coerceAtLeast(0), country = country)) }
+    }
     private val mutable = MutableStateFlow(VpnStatus())
     override val status = mutable.asStateFlow()
     private var operation: Job? = null
@@ -45,6 +52,7 @@ class VpnController(
         if (operation?.isActive == true || stopping?.isActive == true || active != null) return
         if (country != "AUTO" && !country.matches(Regex("[A-Z]{2}"))) return
         val id = owner() ?: return
+        record(DiagnosticKind.VPN_CONNECT, country = country)
         intentRevision++
         operation = scope.launch {
             val recoveries = ArrayDeque<Long>()
@@ -64,24 +72,32 @@ class VpnController(
                         mutable.value = VpnStatus(VpnPhase.CONNECTING, attempt = VpnAttempt(adapter.method, previous))
                         var connected = false
                         var terminalError: VpnError? = null
+                        val started = elapsedMillis()
+                        var outcome = DiagnosticOutcome.FAILED
+                        var failure: DiagnosticFailure? = null
+                        record(DiagnosticKind.VPN_ATTEMPT, adapter.method, DiagnosticOutcome.STARTED)
                         try {
                             val result = adapter.connect(country)
                             ensureActive()
                             if (owner() == id && result == ConnectionResult.Verified) {
                                 active = adapter; connected = true; connectedAdapter = adapter
                                 preference.remember(adapter.method.id)
+                                outcome = DiagnosticOutcome.SUCCESS
                                 mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method)
                             }
-                        } catch (e: CancellationException) { throw e }
+                        } catch (e: CancellationException) { outcome = DiagnosticOutcome.CANCELLED; failure = diagnosticFailure(e); throw e }
                         catch (error: AuthFailure) {
+                            failure = diagnosticFailure(error)
                             terminalError = when (error.code) {
                                 "DEMO_QUOTA_EXHAUSTED" -> VpnError.DEMO_LIMIT
                                 "REGISTRATION_REQUIRED" -> VpnError.ACCESS
                                 else -> null
                             }
                         }
-                        catch (_: Exception) { /* Continue only after completed cleanup. */ }
-                        finally { if (!connected) withContext(NonCancellable) {
+                        catch (error: Exception) { failure = diagnosticFailure(error) /* Continue only after completed cleanup. */ }
+                        finally {
+                            record(DiagnosticKind.VPN_RESULT, adapter.method, outcome, failure, elapsedMillis() - started)
+                            if (!connected) withContext(NonCancellable) {
                             try { adapter.disconnect() } catch (error: Exception) { active = adapter; throw error }
                         } }
                         if (terminalError != null) {
@@ -116,6 +132,7 @@ class VpnController(
         }
     }
     override fun disconnect() {
+        record(DiagnosticKind.VPN_DISCONNECT, active?.method)
         intentRevision++
         resetRequested = false
         restart?.cancel(); restart = null
@@ -136,6 +153,7 @@ class VpnController(
     override fun resetMethods(country: String) {
         if (country != "AUTO" && !country.matches(Regex("[A-Z]{2}"))) return
         val id = owner() ?: return
+        record(DiagnosticKind.VPN_RESET, country = country)
         val revision = ++intentRevision
         restart?.cancel()
         resetRequested = true
@@ -152,6 +170,7 @@ class VpnController(
         }
     }
     fun transportLost(method: String) {
+        record(DiagnosticKind.VPN_TRANSPORT_LOST, adapters.firstOrNull { it.method.id == method }?.method)
         if (healthPolicy != null && active?.method?.id == method && stopping?.isActive != true &&
             mutable.value.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK)) {
             mutable.value = VpnStatus(VpnPhase.CHECKING, method = active?.method)
@@ -165,9 +184,12 @@ class VpnController(
             withTimeoutOrNull(wait) { healthWake.receive() }
             currentCoroutineContext().ensureActive()
             if (owner() != id) return false
+            val started = elapsedMillis()
+            var failure: DiagnosticFailure? = null
             val health = try { adapter.health() }
                 catch (cancel: CancellationException) { throw cancel }
-                catch (_: Exception) { TunnelHealth.UNKNOWN }
+                catch (error: Exception) { failure = diagnosticFailure(error); TunnelHealth.UNKNOWN }
+            record(DiagnosticKind.VPN_HEALTH, adapter.method, DiagnosticOutcome.valueOf(health.name), failure, elapsedMillis() - started)
             currentCoroutineContext().ensureActive()
             if (owner() != id) return false
             when (health) {
@@ -190,6 +212,7 @@ class VpnController(
     suspend fun recover() {
         val id = owner() ?: return
         if (recovery == null || recoveredOwner == id || active != null || operation?.isActive == true || stopping?.isActive == true) return
+        record(DiagnosticKind.VPN_RECOVER, outcome = DiagnosticOutcome.STARTED)
         active = recovery
         mutable.value = VpnStatus(VpnPhase.DISCONNECTING)
         try {

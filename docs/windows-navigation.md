@@ -1,3 +1,13 @@
+# Android 0.27.0 — support diagnostics
+
+About → Support keeps the existing registered-account guard and form. The
+diagnostic checkbox is enabled by default and can be disabled. Its disclosure
+explains local retention and explicit sending; the preview is a bounded scrollable
+JSON view. Send freezes the exact diagnostic snapshot with the existing encrypted
+request journal. Retry/status actions reuse it without collecting new history.
+Backend 0.39.0 must be deployed before Android 0.27.0 distribution. No route or
+Windows navigation changes. See [support diagnostics](android-support-diagnostics.md).
+
 # Android 0.26.1 — plan wording
 
 All shared DEMO lock hints now say “недоступно в DEMO” (localized in six languages),

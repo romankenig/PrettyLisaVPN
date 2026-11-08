@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Android — 0.27.0 / Backend — 0.39.0
+
+- Show authenticated account email and reply email in support messages.
+- Add structured Android device/network/VPN diagnostics and a private, bounded
+  local event journal. Attach a frozen snapshot only when sending support with
+  diagnostics enabled; show a readable disclosure and exact preview.
+- Preserve Windows support v1 and existing idempotent retries. Android logs omit
+  credentials, keys, destinations and packet contents; email contains a JSON
+  attachment instead of mixing technical data into the user's description.
+- See [Android support diagnostics](docs/android-support-diagnostics.md).
+
 ### Android — 0.26.1
 
 - Replace DEMO lock hints with a short availability label in all six languages.

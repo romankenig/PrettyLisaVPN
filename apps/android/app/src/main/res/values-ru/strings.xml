@@ -238,7 +238,8 @@
     <string name="dash_upload_progress">отправка: %1$d%%</string>
     <string name="dash_image_ready">готово к отправке · %1$d КБ</string>
     <string name="dash_remove_image">убрать изображение</string>
-    <string name="dash_diagnostics">приложить технические данные</string>
+    <string name="dash_diagnostics">приложить данные устройства и события приложения</string>
+    <string name="support_local_logs">журнал хранится на устройстве: до 7 дней и 2 МБ. последние события отправятся только с этим обращением. без паролей, ключей и истории посещений.</string>
     <string name="dash_diagnostics_preview">что будет приложено</string>
     <string name="dash_description_limit">сократите описание: вместе с техническими данными допускается 4000 символов</string>
     <string name="server_connection_lost">нет связи с сервером, проверьте подключение к интернету</string>
