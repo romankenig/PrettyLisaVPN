@@ -241,7 +241,6 @@
     <string name="dash_diagnostics">joindre les données de l’appareil et les événements</string>
     <string name="support_local_logs">les journaux restent sur cet appareil : jusqu’à 7 jours et 2 Mo. les événements récents sont envoyés uniquement avec cette demande. sans mots de passe, clés ni historique de navigation.</string>
     <string name="dash_diagnostics_preview">voir les données jointes</string>
-    <string name="dash_description_limit">raccourcissez la description : la limite avec les données techniques est de 4000 caractères</string>
     <string name="server_connection_lost">connexion au serveur impossible, vérifiez votre connexion internet</string>
     <string name="location_quality">disponibilité %1$s sur 100</string>
     <string name="vpn_connected">connecté</string>

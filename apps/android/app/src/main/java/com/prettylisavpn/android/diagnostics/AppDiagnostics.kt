@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.diagnostics
 
 import android.content.Context
+import android.app.Application
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -12,9 +13,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /** Collection is local only. No upload path exists here; support explicitly takes a snapshot. */
-class AppDiagnostics private constructor(private val context: Context) {
-    private val journal = DiagnosticJournal(File(context.noBackupFilesDir, "support-diagnostics"))
-    private val owner = context.getSharedPreferences("diagnostic-owner", Context.MODE_PRIVATE)
+class AppDiagnostics private constructor(private val application: Application) {
+    private val journal = DiagnosticJournal(File(application.noBackupFilesDir, "support-diagnostics"))
+    private val owner = application.getSharedPreferences("diagnostic-owner", Context.MODE_PRIVATE)
     @Volatile private var currentOwner = owner.getString("account", null)
     @Volatile private var ownerReady = true
     private val dropped = java.util.concurrent.atomic.AtomicInteger()
@@ -24,7 +25,7 @@ class AppDiagnostics private constructor(private val context: Context) {
 
     init {
         record(DiagnosticKind.APP_START)
-        val manager = context.getSystemService(ConnectivityManager::class.java)
+        val manager = application.getSystemService(ConnectivityManager::class.java)
         runCatching { manager.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) = networkChanged()
             override fun onLost(network: Network) = networkChanged()
@@ -39,7 +40,7 @@ class AppDiagnostics private constructor(private val context: Context) {
     }
 
     @Synchronized private fun networkChanged() {
-        val network = networkDiagnostic(context)
+        val network = networkDiagnostic(application)
         if (network != previousNetwork) { previousNetwork = network; record(DiagnosticKind.NETWORK_CHANGE, network = network) }
     }
 
@@ -88,7 +89,7 @@ class AppDiagnostics private constructor(private val context: Context) {
 
     companion object {
         @Volatile private var instance: AppDiagnostics? = null
-        @Synchronized fun get(context: Context): AppDiagnostics = instance ?: AppDiagnostics(context.applicationContext).also { instance = it }
+        @Synchronized fun get(context: Context): AppDiagnostics = instance ?: AppDiagnostics(context.applicationContext as Application).also { instance = it }
     }
 }
 

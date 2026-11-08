@@ -241,7 +241,6 @@
     <string name="dash_diagnostics">附加设备信息和应用事件</string>
     <string name="support_local_logs">日志仅保存在此设备上，最多7天、2 MB。近期事件仅随本次请求发送。不包含密码、密钥或浏览记录。</string>
     <string name="dash_diagnostics_preview">查看附加内容</string>
-    <string name="dash_description_limit">请缩短描述：包含技术信息后最多为 4000 个字符</string>
     <string name="server_connection_lost">无法连接服务器，请检查网络连接</string>
     <string name="location_quality">可用性 %1$s / 100</string>
     <string name="vpn_connected">已连接</string>

@@ -10,8 +10,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 
-class AndroidVpnHost private constructor(private val context: Context, private val sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
+class AndroidVpnHost private constructor(context: Context, private val sessions: SessionCoordinator, http: HttpAuthApi) : VpnActions {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val diagnostics = com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context)
     private val saved = context.getSharedPreferences("vpn-method", Context.MODE_PRIVATE)
     private val preference = MethodPreference(
         read = { saved.getString("last-successful-method", null) },
@@ -38,10 +39,10 @@ class AndroidVpnHost private constructor(private val context: Context, private v
         listOf(wireguard, relay) + engines, preference, recovery = recovery,
         enabledMethods = { DeviceMethodSelection.get(context).current() }, healthPolicy = ConnectionHealthPolicy(),
         elapsedMillis = android.os.SystemClock::elapsedRealtime,
-        diagnostics = com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context)::append)
+        diagnostics = diagnostics::append)
     init {
         scope.launch { controller.status.collect { state ->
-            com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context).record(
+            diagnostics.record(
                 com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_STATE,
                 method = (state.method ?: state.attempt?.method)?.id, phase = state.phase.name,
                 failure = state.error?.let { com.prettylisavpn.android.diagnostics.DiagnosticFailure.valueOf(it.name) })
@@ -54,7 +55,7 @@ class AndroidVpnHost private constructor(private val context: Context, private v
     override fun disconnect(): Unit = controller.disconnect()
     override fun resetMethods(country: String) = controller.resetMethods(if (sessions.profile?.isDemo == true) "AUTO" else country)
     fun serviceLost() { if (wireguard.isRunning || relay.isRunning || engines.any { it.isRunning }) {
-        com.prettylisavpn.android.diagnostics.AppDiagnostics.get(context).record(com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_SERVICE_LOST)
+        diagnostics.record(com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_SERVICE_LOST)
         disconnect()
     } }
     fun wireguardDiagnostic() = if (relay.isRunning) relay.diagnostic() else wireguard.diagnostic()

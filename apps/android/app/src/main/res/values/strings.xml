@@ -247,7 +247,6 @@
     <string name="dash_diagnostics">include device data and app events</string>
     <string name="support_local_logs">logs stay on this device: up to 7 days and 2 MB. recent events are sent only with this request. no passwords, keys or browsing history.</string>
     <string name="dash_diagnostics_preview">what will be included</string>
-    <string name="dash_description_limit">shorten the description to include technical data within 4000 characters</string>
     <string name="server_connection_lost">no connection to the server, check your internet connection</string>
     <string name="location_quality">availability %1$s out of 100</string>
     <string name="vpn_connected">connected</string>

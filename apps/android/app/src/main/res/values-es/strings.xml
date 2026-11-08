@@ -241,7 +241,6 @@
     <string name="dash_diagnostics">adjuntar datos del dispositivo y eventos de la app</string>
     <string name="support_local_logs">los registros permanecen en este dispositivo: hasta 7 días y 2 MB. los eventos recientes solo se envían con esta consulta. sin contraseñas, claves ni historial de navegación.</string>
     <string name="dash_diagnostics_preview">qué se adjuntará</string>
-    <string name="dash_description_limit">acorta la descripción: el límite con los datos técnicos es de 4000 caracteres</string>
     <string name="server_connection_lost">sin conexión con el servidor, comprueba tu conexión a internet</string>
     <string name="location_quality">disponibilidad %1$s de 100</string>
     <string name="vpn_connected">conectado</string>
