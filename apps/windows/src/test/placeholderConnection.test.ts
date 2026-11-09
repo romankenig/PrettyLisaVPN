@@ -175,3 +175,29 @@ describe("shipped placeholder connection executor", () => {
     ).toBe("WireGuard не подключился, пробую AmneziaWG…");
   });
 });
+
+it("waits for VPN handoff before reserving access and cancellation prevents a late connect", async () => {
+  const adapter = placeholderAdapters()[0];
+  const start = vi.spyOn(adapter, "connect");
+  let finish!: () => void;
+  const handoff = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const manager = createVpnConnectionManager(
+    [adapter],
+    undefined,
+    undefined,
+    handoff,
+  );
+  const connecting = manager.connect("", selection);
+  expect(handoff).toHaveBeenCalledOnce();
+  expect(start).not.toHaveBeenCalled();
+  const stopping = manager.disconnect("");
+  finish();
+  await Promise.all([connecting, stopping]);
+  expect(start).not.toHaveBeenCalled();
+  expect(manager.current().phase).toBe("DISCONNECTED");
+});

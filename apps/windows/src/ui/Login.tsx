@@ -1,6 +1,9 @@
 import { t, useLanguage } from "../i18n";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { LegalDocuments } from "./LegalDocuments";
+import { getDemoDeviceKey } from "../native/demoIdentity";
+import { toCredentials } from "./OtpVerification";
 import { ApiError } from "../api/client";
 import { useApplication } from "../state/application";
 
@@ -13,10 +16,15 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function Login() {
   useLanguage();
-  const { api } = useApplication();
+  const { api, session, demoDeviceKey } = useApplication();
+  const location = useLocation();
+  const routeState = location.state as {
+    email?: string;
+    returnTo?: string;
+  } | null;
   const navigate = useNavigate();
   const request = useRef<AbortController | null>(null);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(routeState?.email ?? "");
   const [state, setState] = useState<FormState>({ phase: "idle" });
 
   useEffect(
@@ -39,7 +47,9 @@ export function Login() {
     setState({ phase: "submitting" });
     try {
       await api.requestOtp(normalizedEmail, controller.signal);
-      navigate("/auth/verify-otp", { state: { email: normalizedEmail } });
+      navigate("/auth/verify-otp", {
+        state: { email: normalizedEmail, returnTo: routeState?.returnTo },
+      });
     } catch (error) {
       if (controller.signal.aborted) return;
       setState({ phase: "error", message: messageFor(error) });
@@ -48,6 +58,28 @@ export function Login() {
     }
   }
 
+  async function enterDemo() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setState({ phase: "submitting" });
+    try {
+      const key = await (demoDeviceKey ?? getDemoDeviceKey)();
+      if (controller.signal.aborted) return;
+      const value = await api.demo(key, controller.signal);
+      if (controller.signal.aborted) return;
+      await session.establish(toCredentials(value));
+    } catch {
+      if (!controller.signal.aborted)
+        setState({
+          phase: "error",
+          message:
+            "DEMO временно недоступен. Попробуйте позже или войдите по email.",
+        });
+    } finally {
+      if (request.current === controller) request.current = null;
+    }
+  }
   const submitting = state.phase === "submitting";
   return (
     <section className="auth-page" aria-labelledby="login-title">
@@ -90,6 +122,15 @@ export function Login() {
           {t(submitting ? "отправляем…" : "продолжить")}
         </button>
       </form>
+      <button
+        type="button"
+        className="demo-login"
+        disabled={submitting}
+        onClick={() => void enterDemo()}
+      >
+        {t("попробовать без регистрации")} <span aria-hidden="true">→</span>
+      </button>
+      <LegalDocuments compact />
     </section>
   );
 }

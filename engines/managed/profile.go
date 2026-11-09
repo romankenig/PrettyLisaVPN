@@ -21,7 +21,7 @@ import (
 	"github.com/xtls/xray-core/core"
 )
 
-const Version = "0.6.1"
+const Version = "0.6.2"
 const CoreVersion = "26.10.21"
 const MaxProfileBytes = 64 * 1024
 
@@ -259,6 +259,18 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 		"inbounds":  []any{obj{"tag": "tun", "protocol": "tun", "settings": tun}},
 		"outbounds": []any{out, obj{"tag": "blocked", "protocol": "blackhole"}},
 		"routing":   obj{"domainStrategy": "AsIs", "rules": []any{obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"}, obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": "vpn"}}},
+	}
+	if !mobile && (p.Routing == nil || p.Routing.Mode == "all") {
+		// Desktop transports intentionally block IPv6. Do not advertise unusable
+		// AAAA answers; DNS resolution and all traffic still go through the VPN.
+		config["dns"] = obj{"tag": "resolver", "queryStrategy": "UseIPv4", "servers": []any{"1.1.1.1"}}
+		config["outbounds"] = append(config["outbounds"].([]any), obj{"tag": "dns", "protocol": "dns", "settings": obj{"nonIPQuery": "drop"}})
+		config["routing"] = obj{"domainStrategy": "AsIs", "rules": []any{
+			obj{"type": "field", "inboundTag": []string{"resolver"}, "outboundTag": "vpn"},
+			obj{"type": "field", "inboundTag": []string{"tun"}, "port": "53", "outboundTag": "dns"},
+			obj{"type": "field", "ip": []string{"::/0", "198.18.0.0/15"}, "outboundTag": "blocked"},
+			obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": "vpn"},
+		}}
 	}
 	p.Routing.apply(config)
 	return json.Marshal(config)

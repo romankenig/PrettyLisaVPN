@@ -41,6 +41,7 @@ function mockApi(): ApiClient {
     getHealth: vi.fn(),
     getVersion: vi.fn(),
     requestOtp: vi.fn(),
+    demo: vi.fn(),
     verifyOtp: vi.fn(),
     refresh: vi.fn(),
     me: vi.fn(),

@@ -17,7 +17,7 @@ interface Configuration {
   allowed_ips: string[];
 }
 export interface WireGuardNative {
-  prepare(): Promise<string>;
+  prepare(fullTrafficOnly?: boolean): Promise<string>;
   start(
     configuration: Configuration,
     context: { id: string; country: string },
@@ -28,8 +28,10 @@ export interface WireGuardNative {
 }
 let routing: RoutingPolicy = { mode: "all", domains: [] };
 export const wireGuardNative: WireGuardNative = {
-  prepare: () => {
-    routing = routingPolicy(getDeviceTrafficSelection().current());
+  prepare: (fullTrafficOnly = false) => {
+    routing = fullTrafficOnly
+      ? { mode: "all", domains: [] }
+      : routingPolicy(getDeviceTrafficSelection().current());
     return invoke("wg_prepare");
   },
   start: ({ address, server_public_key, endpoint, mtu }, context) =>
@@ -48,7 +50,8 @@ export function createWireGuardAdapter(options: {
   baseUrl: string;
   transport: HttpTransport;
   bearer: () => Promise<string>;
-  lost: () => void;
+  lost: (code?: string) => void;
+  fullTrafficOnly?: () => boolean;
   native?: WireGuardNative;
   viaRelay?: boolean;
 }): ConnectionAdapter {

@@ -883,3 +883,21 @@ notification. Existing cancel/disconnect remains available. Background recovery
 uses the same verified adapters and cleanup barriers; it never reopens a session
 after explicit disconnect, account change or access expiry. No new backend API or
 Windows transition is pending. See [recovery handoff](android-connection-recovery.md).
+
+## Windows 0.27.0 — DEMO, documents and plan comparison
+
+Implemented UI: Login → DEMO → Home; OTP → change email → Login (email retained,
+code cleared); Home Upgrade → Settings / Subscription; guest Buy → confirmed VPN
+cleanup/logout → Login → OTP → Subscription. Guest Register/locked country or split
+choice → Login → Home. Return routes are allowlisted, never external URLs. Devices
+and Advanced Settings are available in DEMO; only ACTIVE devices are listed.
+
+Legal buttons on Login/OTP/About open fixed localized terms/privacy/refunds/payments
+pages through native allowlisting. Subscription shows PREMIUM/FREE/DEMO, API-backed
+prices with a display-only fallback, icon refresh, current plan and bottom management.
+Actual renewal confirmation preserves contract price/currency. Existing provider
+capability and idempotency gates remain; a portal return reloads authoritative data.
+
+Backend integration is implemented in 0.40.0 (`POST /auth/demo`, platform WINDOWS),
+awaiting deployment. See [full handoff](windows-android-parity.md) for identity limits,
+Kaspersky handoff, fallback/DNS verification and release evidence.

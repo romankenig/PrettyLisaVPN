@@ -47,9 +47,21 @@ pub struct RefreshCredentialState {
 
 impl RefreshCredentialState {
     pub fn new() -> Self {
-        Self {
-            target: CREDENTIAL_TARGET.to_owned(),
-        }
+        // A synthetic debug build must never read or replace the installed
+        // client's Windows credential, even when both run under the same user.
+        let review = cfg!(debug_assertions)
+            && option_env!("VITE_APP_ENVIRONMENT") == Some("test")
+            && option_env!("VITE_UI_REVIEW_VPN") == Some("1");
+        let target = if review {
+            let scope = std::env::var("PRETTYLISA_UI_REVIEW_SCOPE")
+                .ok()
+                .and_then(|value| Uuid::parse_str(&value).ok())
+                .unwrap_or_else(Uuid::nil);
+            format!("{CREDENTIAL_TARGET}/ui-review/{scope}")
+        } else {
+            CREDENTIAL_TARGET.to_owned()
+        };
+        Self { target }
     }
 
     fn write(&self, mut input: RefreshCredentialInput) -> io::Result<()> {

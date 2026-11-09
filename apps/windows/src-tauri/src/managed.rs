@@ -246,6 +246,7 @@ fn stop(state: &ManagedState) -> Result<(), &'static str> {
         if matches!(exchange(&mut session, json!({"action":"stop"})), Ok(value) if value["status"] == "DOWN")
         {
             guard.session = Some(session);
+            super::vpn_handoff::flush_dns()?;
             return Ok(());
         }
         guard.cleanup_pending = true;
@@ -283,6 +284,7 @@ pub async fn engine_start(app: AppHandle, profile: Value) -> Result<(), &'static
         } else {
             guard.session = Some(launch()?);
         }
+        super::vpn_handoff::flush_dns()?;
         let result = exchange(
             guard.session.as_mut().ok_or(ERROR)?,
             json!({"action":"start","profile":profile}),

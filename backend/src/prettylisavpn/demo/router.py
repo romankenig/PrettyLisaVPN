@@ -1,6 +1,6 @@
-"""Bounded guest admission; Android sends an app-scoped hash, never a hardware ID."""
+"""Bounded guest admission; clients send app-scoped hashes, never raw hardware IDs."""
 
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field
@@ -15,6 +15,7 @@ from prettylisavpn.auth.router import (
 from prettylisavpn.auth.service import BlockedUserError
 from prettylisavpn.demo.domain import DemoRateLimitedError, DemoUnavailableError
 from prettylisavpn.demo.service import DemoService
+from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.main_errors import error_response
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,6 +28,7 @@ def private_error(code: str, status: int) -> JSONResponse:
 
 
 class DemoLoginBody(BaseModel):
+    platform: Literal["ANDROID", "WINDOWS"] = "ANDROID"
     device_key: Annotated[
         str, Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$", repr=False)
     ]
@@ -42,7 +44,9 @@ async def demo_login(
         return private_error("DEMO_UNAVAILABLE", 503)
     try:
         result = await service.login(
-            body.device_key, request.client.host if request.client else "unknown"
+            body.device_key,
+            request.client.host if request.client else "unknown",
+            DevicePlatform(body.platform),
         )
     except DemoRateLimitedError:
         return private_error("DEMO_RATE_LIMITED", 429)

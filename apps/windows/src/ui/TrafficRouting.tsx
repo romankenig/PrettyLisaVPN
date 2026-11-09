@@ -1,3 +1,4 @@
+import { useRegistration } from "../auth/useRegistration";
 import { serviceColors, serviceIcons } from "./serviceIcons";
 import { CurrentLocation } from "./CurrentLocation";
 import {
@@ -28,7 +29,45 @@ const shortLabels: Record<Mode, string> = {
   include: "Выбранное",
   exclude: "Кроме выбранного",
 };
-export function TrafficRouting({
+export function TrafficRouting({ refreshKey = 0 }: { refreshKey?: number }) {
+  const { session } = useApplication();
+  const active = useSyncExternalStore(
+    session.subscribe,
+    session.current,
+    session.current,
+  );
+  return active?.plan === "DEMO" ? (
+    <DemoTraffic />
+  ) : (
+    <RegisteredTrafficRouting refreshKey={refreshKey} />
+  );
+}
+function DemoTraffic() {
+  useLanguage();
+  const registration = useRegistration();
+  return (
+    <section className="traffic-mode" aria-labelledby="traffic-mode-title">
+      <h2 id="traffic-mode-title">{t("что защищаем")}</h2>
+      <strong>{t("Всё")}</strong>
+      <p>{t("все сайты и приложения через VPN")}</p>
+      <button
+        className="demo-locked demo-traffic-choice"
+        type="button"
+        disabled={registration.busy}
+        onClick={() => void registration.register()}
+      >
+        {t("Выбранное")} / {t("Кроме выбранного")}
+        <small>{t("недоступно в DEMO")}</small>
+      </button>
+      {registration.error && (
+        <p role="alert">
+          {t("не удалось завершить гостевую сессию. попробуйте снова")}
+        </p>
+      )}
+    </section>
+  );
+}
+function RegisteredTrafficRouting({
   refreshKey = 0,
 }: {
   readonly refreshKey?: number;

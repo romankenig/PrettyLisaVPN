@@ -167,11 +167,15 @@ func TestNoDirectDNSLoggingOrIPv6Escape(t *testing.T) {
 			t.Fatal("logging enabled")
 		}
 		outs := c["outbounds"].([]any)
-		if len(outs) != 2 || outs[0].(map[string]any)["tag"] != "vpn" || outs[1].(map[string]any)["protocol"] != "blackhole" {
+		wantOutbounds, ruleOffset := 2, 0
+		if !mobile {
+			wantOutbounds, ruleOffset = 3, 2
+		}
+		if len(outs) != wantOutbounds || outs[0].(map[string]any)["tag"] != "vpn" || outs[1].(map[string]any)["protocol"] != "blackhole" {
 			t.Fatal("unexpected outbound")
 		}
 		rules := c["routing"].(map[string]any)["rules"].([]any)
-		if rules[0].(map[string]any)["ip"].([]any)[0] != "::/0" || rules[0].(map[string]any)["outboundTag"] != "blocked" || rules[1].(map[string]any)["outboundTag"] != "vpn" {
+		if rules[ruleOffset].(map[string]any)["ip"].([]any)[0] != "::/0" || rules[ruleOffset].(map[string]any)["outboundTag"] != "blocked" || rules[ruleOffset+1].(map[string]any)["outboundTag"] != "vpn" {
 			t.Fatal("traffic can escape")
 		}
 		tun := c["inbounds"].([]any)[0].(map[string]any)["settings"].(map[string]any)
@@ -181,7 +185,7 @@ func TestNoDirectDNSLoggingOrIPv6Escape(t *testing.T) {
 		if !mobile && (len(tun["autoSystemRoutingTable"].([]any)) != 2 || len(tun["autoSystemWfpBlockLeak"].([]any)) != 2) {
 			t.Fatal("desktop protection missing")
 		}
-		if c["dns"] != nil || strings.Contains(string(data), `"freedom"`) {
+		if (mobile && c["dns"] != nil) || strings.Contains(string(data), `"freedom"`) {
 			t.Fatal("unexpected external resolver or direct route")
 		}
 	}

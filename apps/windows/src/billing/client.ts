@@ -1,6 +1,11 @@
 import { ApiError } from "../api/client";
 import type { HttpTransport } from "../native/http";
-import { parseOperation, parseOverview, type BillingClient } from "./model";
+import {
+  parseOperation,
+  parseOverview,
+  parseOffers,
+  type BillingClient,
+} from "./model";
 
 // Server overview; operation methods remain guarded by backend capabilities.
 export function createBillingClient(
@@ -45,6 +50,17 @@ export function createBillingClient(
     }
   }
   return {
+    catalog: async (signal) => {
+      const response = await transport(base + "/billing/catalog", {
+        signal: AbortSignal.any([signal, AbortSignal.timeout(timeout)]),
+        credentials: "omit",
+        redirect: "error",
+        cache: "no-store",
+      });
+      if (!response.ok) throw new ApiError("SERVER_ERROR");
+      const value = await response.json();
+      return parseOffers(value?.offers);
+    },
     portal: async (token, signal) => {
       const value = await request("/billing/portal", token, signal, {});
       const raw =

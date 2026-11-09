@@ -30,7 +30,13 @@ export function Devices() {
     setListState({ phase: "loading" });
     void api
       .listDevices(activeSession.accessToken, controller.signal)
-      .then((devices) => setListState({ phase: "ready", devices }))
+      .then((devices) => {
+        if (!controller.signal.aborted)
+          setListState({
+            phase: "ready",
+            devices: devices.filter((device) => device.status === "ACTIVE"),
+          });
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         if (isUnauthorized(error)) {
@@ -79,7 +85,11 @@ export function Devices() {
     <section className="devices-page" aria-labelledby="devices-title">
       <h1 id="devices-title">{t("устройства")}</h1>
       <p className="devices-limit">
-        {t("в аккаунте может быть не более 5 активных устройств.")}
+        {t(
+          activeSession.plan === "DEMO"
+            ? "DEMO доступен на этом устройстве"
+            : "в аккаунте может быть не более 5 активных устройств.",
+        )}
         <br />
         {t(
           "отзовите доступ ненужного устройства, чтобы освободить место для нового.",

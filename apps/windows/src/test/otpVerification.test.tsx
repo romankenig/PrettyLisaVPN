@@ -60,6 +60,7 @@ function mockApi(): ApiClient {
     getHealth: vi.fn(),
     getVersion: vi.fn(),
     requestOtp: vi.fn().mockResolvedValue({ status: "accepted" }),
+    demo: vi.fn(),
     verifyOtp: vi.fn().mockResolvedValue(verifiedSession),
     refresh: vi.fn(),
     me: vi.fn(),
@@ -326,4 +327,29 @@ describe("OTP login integration", () => {
     expect(localStorage).toHaveLength(0);
     expect(sessionStorage).toHaveLength(0);
   });
+});
+
+it("returns to the email form with the address preserved and clears the OTP", async () => {
+  const api = mockApi();
+  renderVerification({ api });
+  enterCode("12345");
+  fireEvent.click(screen.getByRole("button", { name: "изменить email" }));
+  expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue(email);
+  expect(
+    screen.queryByRole("textbox", { name: "Шестизначный код" }),
+  ).not.toBeInTheDocument();
+  expect(api.verifyOtp).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByRole("textbox", { name: "Email" }), {
+    target: { value: "new@example.com" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "продолжить" }));
+  await waitFor(() =>
+    expect(api.requestOtp).toHaveBeenCalledWith(
+      "new@example.com",
+      expect.any(AbortSignal),
+    ),
+  );
+  expect(
+    await screen.findByRole("textbox", { name: "Шестизначный код" }),
+  ).toHaveValue("");
 });

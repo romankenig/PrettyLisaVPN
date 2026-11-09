@@ -67,6 +67,7 @@ export interface BillingOperation {
   readonly redirect_url: string | null;
 }
 export interface BillingClient {
+  catalog?(signal: AbortSignal): Promise<readonly Offer[]>;
   portal?(token: string, signal: AbortSignal): Promise<string>;
   overview(token: string, signal: AbortSignal): Promise<BillingOverview>;
   start(
@@ -241,18 +242,7 @@ export function parseOverview(value: unknown): BillingOverview {
   }
   if (v.next_charge_at && (!v.auto_renew || !method || !nextPrice))
     throw new Error("INVALID_BILLING_RESPONSE");
-  const offers = v.offers.map((raw) => {
-    const p = record(raw),
-      prices = record(p.prices);
-    if (!text(p.id) || !plan(p.plan) || p.period !== "MONTH")
-      throw new Error("INVALID_BILLING_RESPONSE");
-    return {
-      id: p.id,
-      plan: p.plan,
-      period: "MONTH" as const,
-      prices: { RUB: parsePrice(prices.RUB), USD: parsePrice(prices.USD) },
-    };
-  });
+  const offers = parseOffers(v.offers);
   if (new Set(offers.map((o) => o.id)).size !== offers.length)
     throw new Error("INVALID_BILLING_RESPONSE");
   return {
@@ -343,4 +333,24 @@ function money(value: unknown): value is number {
 }
 function currency(value: unknown): value is Currency {
   return value === "RUB" || value === "USD";
+}
+
+export function parseOffers(value: unknown): readonly Offer[] {
+  if (!Array.isArray(value) || value.length > 100)
+    throw new Error("INVALID_BILLING_RESPONSE");
+  const offers = value.map((raw) => {
+    const p = record(raw),
+      prices = record(p.prices);
+    if (!text(p.id) || !plan(p.plan) || p.period !== "MONTH")
+      throw new Error("INVALID_BILLING_RESPONSE");
+    return {
+      id: p.id,
+      plan: p.plan,
+      period: "MONTH" as const,
+      prices: { RUB: parsePrice(prices.RUB), USD: parsePrice(prices.USD) },
+    };
+  });
+  if (new Set(offers.map((o) => o.id)).size !== offers.length)
+    throw new Error("INVALID_BILLING_RESPONSE");
+  return offers;
 }

@@ -36,6 +36,7 @@ function mockApi(): ApiClient {
     getHealth: vi.fn(),
     getVersion: vi.fn(),
     requestOtp: vi.fn(),
+    demo: vi.fn(),
     verifyOtp: vi.fn(),
     refresh: vi.fn(),
     me: vi.fn().mockResolvedValue(profile),
@@ -624,7 +625,7 @@ describe("authenticated Home", () => {
   });
 
   it.each([
-    ["FREE", "FREE"],
+    ["FREE", "FREE 🕊️"],
     ["PREMIUM", "PREMIUM ⭐"],
     ["PLATINUM", "PLATINUM 💎"],
   ] as const)("shows the %s plan decoration", async (plan, label) => {
@@ -702,7 +703,7 @@ describe("authenticated Home", () => {
     );
     resolveProfile(profile);
 
-    expect(await screen.findByText(profile.email)).toBeInTheDocument();
+    expect(await screen.findByText(profile.email!)).toBeInTheDocument();
     expect(screen.getByText("PREMIUM ⭐")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.queryByText("активен")).not.toBeInTheDocument();
@@ -718,7 +719,7 @@ describe("authenticated Home", () => {
     const api = mockApi();
     renderRestored(api);
 
-    expect(screen.getByText(profile.email)).toBeInTheDocument();
+    expect(screen.getByText(profile.email!)).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Not connected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled();
@@ -738,7 +739,7 @@ describe("authenticated Home", () => {
       active_device_count: 1,
     });
     fireEvent.click(screen.getByRole("link", { name: "главная" }));
-    expect(await screen.findByText("FREE")).toBeVisible();
+    expect(await screen.findByText("FREE 🕊️")).toBeVisible();
     expect(screen.getByText("1")).toBeVisible();
     expect(screen.queryByText("PREMIUM ⭐")).not.toBeInTheDocument();
     expect(api.me).toHaveBeenCalledTimes(2);
@@ -756,7 +757,7 @@ describe("authenticated Home", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
 
-    expect(await screen.findByText(profile.email)).toBeInTheDocument();
+    expect(await screen.findByText(profile.email!)).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledTimes(2);
   });
 

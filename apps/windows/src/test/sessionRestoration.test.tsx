@@ -49,6 +49,7 @@ function mockApi(): ApiClient {
       environment: "test",
     }),
     requestOtp: vi.fn(),
+    demo: vi.fn(),
     verifyOtp: vi.fn(),
     refresh: vi.fn().mockResolvedValue(refreshed),
     me: vi.fn().mockResolvedValue(profile),
@@ -121,7 +122,7 @@ describe("authentication session restoration", () => {
     const storage = mockStorage();
     const { session } = renderStartup(api, storage);
 
-    expect(await screen.findByText(profile.email)).toBeInTheDocument();
+    expect(await screen.findByText(profile.email!)).toBeInTheDocument();
     expect(api.refresh).toHaveBeenCalledWith({
       session_id: stored.sessionId,
       refresh_token: stored.refreshToken,
@@ -184,7 +185,7 @@ describe("authentication session restoration", () => {
     expect(storage.delete).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "повторить" }));
 
-    expect(await screen.findByText(profile.email)).toBeInTheDocument();
+    expect(await screen.findByText(profile.email!)).toBeInTheDocument();
     expect(api.refresh).toHaveBeenCalledTimes(2);
   });
 

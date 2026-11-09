@@ -10,7 +10,8 @@ export function freeTimeRemaining(
   const rights = profile.entitlements;
   const seconds = rights?.free_seconds_usable ?? rights?.free_seconds_remaining;
   const running = rights?.free_running_sessions ?? 0;
-  const limit = rights?.daily_vpn_limit_seconds ?? 3600;
+  const limit =
+    rights?.daily_vpn_limit_seconds ?? (profile.plan === "DEMO" ? 900 : 3600);
   if (
     typeof seconds !== "number" ||
     !Number.isInteger(seconds) ||
@@ -38,7 +39,7 @@ export function FreeTimeBalance({ profile }: { profile: MeResponse }) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  if (profile.plan !== "FREE") return null;
+  if (profile.plan !== "FREE" && profile.plan !== "DEMO") return null;
   const seconds = freeTimeRemaining(profile, now);
   const balance =
     seconds === null

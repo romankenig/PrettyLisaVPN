@@ -142,3 +142,39 @@ def test_guest_profile_does_not_expose_synthetic_email_and_reports_900_seconds()
     assert value.entitlements.daily_vpn_limit_seconds == 900
     assert not value.entitlements.country_selection_allowed
     assert not value.entitlements.split_tunneling_allowed
+
+
+@pytest.mark.parametrize("platform", ["ANDROID", "WINDOWS"])
+def test_guest_endpoint_passes_supported_platform_and_preserves_android_default(platform):
+    from prettylisavpn.devices.domain import DevicePlatform
+
+    app = FastAPI()
+    app.include_router(router)
+    service = SimpleNamespace(login=AsyncMock(side_effect=DemoUnavailableError))
+    app.state.demo = service
+    with TestClient(app) as client:
+        body = {"device_key": KEY}
+        if platform == "WINDOWS":
+            body["platform"] = platform
+        assert client.post("/auth/demo", json=body).status_code == 503
+        assert service.login.await_args.args[2] is DevicePlatform(platform)
+        service.login.reset_mock()
+        assert client.post("/auth/demo", json={**body, "platform": "IOS"}).status_code == 422
+        service.login.assert_not_awaited()
+
+
+async def test_windows_identity_is_namespaced_without_resetting_android_principal():
+    from prettylisavpn.devices.domain import DevicePlatform
+
+    secret = "isolated-windows-demo-test-secret"
+    limiter = SimpleNamespace(admit=AsyncMock(side_effect=DemoRateLimitedError))
+    pg = AsyncMock()
+    service = DemoService(pg, Settings(demo_enabled=True, demo_identity_secret=secret), limiter)
+    for platform, scoped in [
+        (DevicePlatform.ANDROID, KEY),
+        (DevicePlatform.WINDOWS, "windows:" + KEY),
+    ]:
+        with pytest.raises(DemoRateLimitedError):
+            await service.login(KEY, "192.0.2.1", platform)
+        assert limiter.admit.await_args.args[1] == identity_digest(secret, scoped).hex()
+    assert not pg.mock_calls

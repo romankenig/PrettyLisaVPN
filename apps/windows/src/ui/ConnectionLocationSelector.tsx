@@ -4,6 +4,7 @@ import { ApiError, type VpnCountriesResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import type { VpnLocationSelection } from "../vpn/selection";
 import { CountryIcon } from "./CountryIcon";
+import { useRegistration } from "../auth/useRegistration";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
 
 const AVAILABILITY_MAX_AGE_MS = 60_000;
@@ -41,6 +42,8 @@ export function ConnectionLocationSelector({
   useLanguage();
   const { api, session } = useApplication();
   const activeSession = session.current();
+  const guest = activeSession?.plan === "DEMO";
+  const registration = useRegistration();
   const [state, setState] = useState<AvailabilityState>({ phase: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
@@ -176,6 +179,11 @@ export function ConnectionLocationSelector({
   const expanded = open && usable;
   function choose(choice: Choice) {
     if (!usable || !choice.available) return;
+    if (guest && choice.selection.mode === "COUNTRY") {
+      setOpen(false);
+      void registration.register();
+      return;
+    }
     onSelectionChange(choice.selection);
     setOpen(false);
     trigger.current?.focus();
@@ -301,7 +309,7 @@ export function ConnectionLocationSelector({
                       role="option"
                       id={`${id}-${optionIndex}`}
                       key={choice.key}
-                      className={`location-option${active === optionIndex ? " location-option--active" : ""}`}
+                      className={`location-option${active === optionIndex ? " location-option--active" : ""}${guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
                       aria-selected={selected.key === choice.key}
                       disabled={!choice.available}
                       tabIndex={-1}
@@ -310,6 +318,9 @@ export function ConnectionLocationSelector({
                       onClick={() => choose(choice)}
                     >
                       <ChoiceLabel choice={choice} />
+                      {guest && choice.selection.mode === "COUNTRY" && (
+                        <small>{t("недоступно в DEMO")}</small>
+                      )}
                     </button>
                   );
                 })
@@ -320,6 +331,11 @@ export function ConnectionLocationSelector({
           ))}
         </div>
       ) : null}
+      {registration.error && (
+        <p role="alert">
+          {t("не удалось завершить гостевую сессию. попробуйте снова")}
+        </p>
+      )}
       {state.phase === "loading" || state.phase === "refreshing" ? (
         <p className="availability-note" role="status">
           {t("загружаем доступные локации…")}

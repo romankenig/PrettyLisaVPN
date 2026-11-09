@@ -232,7 +232,7 @@ async function main() {
           await page.waitForFunction(
             (expected) =>
               window.document
-                .querySelector(".connection-info p")
+                .querySelector(".connection-info")
                 ?.textContent?.startsWith(expected),
             expected,
           );
@@ -243,6 +243,50 @@ async function main() {
           )
             await delay(500);
           row.sustained_seconds = Math.floor((Date.now() - sustained) / 1000);
+          if (mode === "all") {
+            // Fixed owner-requested regression targets; never collect browsing history,
+            // page content, cookies or response headers in diagnostics/artifacts.
+            row.website_probes = [];
+            for (const [label, origin] of [
+              ["yandex", "https://yandex.ru/"],
+              ["rutracker", "https://rutracker.org/"],
+            ]) {
+              const probe = spawnSync(
+                "curl.exe",
+                [
+                  "--silent",
+                  "--location",
+                  "--max-redirs",
+                  "5",
+                  "--proto-redir",
+                  "=https",
+                  "--output",
+                  "NUL",
+                  "--write-out",
+                  "%{http_code}",
+                  "--max-time",
+                  "25",
+                  "--interface",
+                  "172.30.255.1",
+                  "-4",
+                  origin,
+                ],
+                { encoding: "utf8", timeout: 30000 },
+              );
+              row.website_probes.push({
+                site: label,
+                transport_ok: probe.status === 0,
+                http_status: /^[1-5][0-9]{2}$/.test(probe.stdout)
+                  ? Number(probe.stdout)
+                  : null,
+              });
+            }
+            save();
+            if (row.website_probes.some((probe) => !probe.transport_ok))
+              throw new Error(
+                "Full tunnel website regression: DNS/TLS/HTTP transport failed",
+              );
+          }
           row.native_up = await nativeUp();
           // Independent HTTPS request explicitly bound to the real Wintun address.
           const probe = spawnSync(

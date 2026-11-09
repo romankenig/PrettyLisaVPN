@@ -126,7 +126,10 @@ export function Home() {
     }
     setConnectionErrorMessage(null);
     try {
-      await vpnConnection.connect(accessToken, locationSelection);
+      await vpnConnection.connect(
+        accessToken,
+        activeSession?.plan === "DEMO" ? { mode: "AUTO" } : locationSelection,
+      );
     } catch (error) {
       setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
@@ -187,7 +190,11 @@ export function Home() {
           <ConnectionLocationSelector
             refreshKey={refreshKey}
             allowUnavailable
-            selection={locationSelection}
+            selection={
+              activeSession.plan === "DEMO"
+                ? { mode: "AUTO" }
+                : locationSelection
+            }
             onSelectionChange={(selection) => {
               setLocationSelection(selection);
               saveLocationSelection(activeSession.userId, selection);
@@ -289,21 +296,25 @@ function AccountSummary({ profile }: { readonly profile: MeResponse }) {
     <div className="account-summary">
       <div>
         <span>{t("аккаунт")}</span>
-        <strong title={profile.email}>{profile.email}</strong>
+        <strong title={profile.email ?? undefined}>
+          {profile.email ?? t("гость на этом устройстве")}
+        </strong>
       </div>
       <div>
         <span>{t("план")}</span>
-        <strong>
-          {t(profile.plan)}
+        <strong className="plan-name">
+          {profile.plan}
           {t(
             profile.plan === "PREMIUM"
               ? " ⭐"
               : profile.plan === "PLATINUM"
                 ? " 💎"
-                : "",
+                : profile.plan === "DEMO"
+                  ? " ⏳"
+                  : " 🕊️",
           )}
         </strong>
-        {profile.plan === "FREE" ? (
+        {profile.plan === "FREE" || profile.plan === "DEMO" ? (
           <Link className="account-upgrade" to="/settings/subscription">
             {t("улучшить")}
           </Link>

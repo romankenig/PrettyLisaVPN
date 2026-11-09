@@ -140,7 +140,10 @@ async function screenshot(name) {
     for (const button of document.querySelectorAll(
       "button, select, option, .method-checkbox, .connection-attempt, .connection-info, .upgrade-plan",
     )) {
-      if (getComputedStyle(button).textTransform !== "lowercase")
+      if (
+        getComputedStyle(button).textTransform !== "lowercase" &&
+        !button.matches(".plan-currencies button")
+      )
         throw new Error(
           "Interface labels must use lowercase text: " + button.className,
         );
@@ -175,7 +178,8 @@ async function screenshot(name) {
       if (
         node &&
         ((node.scrollHeight > node.clientHeight + 1 &&
-          !node.matches(".connection-card")) ||
+          !node.matches(".connection-card") &&
+          !["auto", "scroll"].includes(getComputedStyle(node).overflowY)) ||
           (node.scrollWidth > node.clientWidth + 1 &&
             // The popup intentionally extends beyond the narrow sidebar.
             !(languageMenu && node.matches(".sidebar"))))
@@ -187,7 +191,9 @@ async function screenshot(name) {
     return bad;
   });
   if (layout.length)
-    throw new Error("Content exceeds fixed canvas: " + layout.join(", "));
+    throw new Error(
+      "Content clips outside a scrollable viewport: " + layout.join(", "),
+    );
   const chromeLabels = {
     ru: ["Свернуть", "Закрыть"],
     en: ["Minimize", "Close"],
@@ -211,6 +217,7 @@ async function main() {
   app = spawn(executable, [], {
     env: {
       ...process.env,
+      PRETTYLISA_UI_REVIEW_SCOPE: require("node:crypto").randomUUID(),
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
         "--remote-debugging-port=9222 --disable-gpu",
       WEBVIEW2_USER_DATA_FOLDER: webviewProfile,
@@ -255,7 +262,7 @@ async function main() {
     .locator(".sidebar-versions > div")
     .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
     .getByText(
-      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.16.0",
+      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.40.0",
       {
         exact: true,
       },
@@ -339,6 +346,16 @@ async function main() {
     .getByRole("heading", { name: "введите код", exact: true })
     .waitFor();
   await screenshot("03-otp");
+  await page
+    .getByRole("button", { name: "изменить email", exact: true })
+    .click();
+  if (
+    (await page.getByLabel("Email", { exact: true }).inputValue()) !==
+    accountEmail
+  )
+    throw new Error("Email was lost on back navigation");
+  await page.getByRole("button", { name: "продолжить", exact: true }).click();
+  await page.getByLabel("Шестизначный код", { exact: true }).waitFor();
 
   await page.getByLabel("Шестизначный код", { exact: true }).fill("123456");
   await page.getByRole("button", { name: "подтвердить", exact: true }).click();
@@ -675,7 +692,9 @@ async function main() {
       { method: "POST" },
     );
     if (!response.ok) throw new Error("Billing fixture confirmation failed");
-    await page.getByRole("button", { name: "обновить", exact: true }).click();
+    await page
+      .getByRole("button", { name: "обновить подписку", exact: true })
+      .click();
     await page.getByText("автопродление включено", { exact: true }).waitFor();
     await page
       .getByRole("button", { name: "отменить подписку", exact: true })
@@ -691,9 +710,7 @@ async function main() {
   await billingScenario("free");
   await page.getByRole("link", { name: /подписка/ }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
-  await page
-    .getByRole("button", { name: "оформить подписку", exact: true })
-    .waitFor();
+  await page.getByRole("button", { name: "купить", exact: true }).waitFor();
   if (
     (await page
       .getByRole("link", { name: "настройки", exact: true })
@@ -702,16 +719,14 @@ async function main() {
     throw new Error("Settings must stay active on subscription");
   if (
     (await page
-      .getByRole("button", { name: "₽", exact: true })
+      .getByRole("button", { name: "RUB", exact: true })
       .getAttribute("aria-pressed")) !== "true"
   )
     throw new Error("Russia before VPN must prefer RUB");
   if ((await page.getByLabel("цена в рублях").locator("del").count()) !== 1)
     throw new Error("Backend discount must be shown");
   await screenshot("05a-subscription-free");
-  await page
-    .getByRole("button", { name: "оформить подписку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "купить", exact: true }).click();
   await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
   const paymentOptions = page.getByRole("dialog").getByRole("radio");
   if (
@@ -735,10 +750,8 @@ async function main() {
       throw new Error("RUB checkout must respect server currency availability");
   }
   await page.getByRole("button", { name: "назад", exact: true }).click();
-  await page.getByRole("button", { name: "$", exact: true }).click();
-  await page
-    .getByRole("button", { name: "оформить подписку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "USD", exact: true }).click();
+  await page.getByRole("button", { name: "купить", exact: true }).click();
   await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
   if (
     (await paymentOptions.first().inputValue()) !== "BANK_CARD" ||
@@ -762,10 +775,8 @@ async function main() {
   await screenshot("05ac-payment-choice-nonrecurring");
   await page.keyboard.press("Escape");
   await page.getByRole("dialog").waitFor({ state: "hidden" });
-  await page.getByRole("button", { name: "₽", exact: true }).click();
-  await page
-    .getByRole("button", { name: "оформить подписку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "RUB", exact: true }).click();
+  await page.getByRole("button", { name: "купить", exact: true }).click();
   await page
     .getByRole("button", { name: "перейти к оплате", exact: true })
     .click();
@@ -777,7 +788,7 @@ async function main() {
     .waitFor();
   if (
     !(await page
-      .getByRole("button", { name: "оформить подписку", exact: true })
+      .getByRole("button", { name: "купить", exact: true })
       .isDisabled())
   )
     throw new Error("Pending operation must block duplicate checkout");
@@ -834,41 +845,44 @@ async function main() {
     .waitFor();
   await screenshot("05e-subscription-canceled");
   await billingScenario("error");
-  await page.getByRole("button", { name: "обновить", exact: true }).click();
+  await page
+    .getByRole("button", { name: "обновить подписку", exact: true })
+    .click();
   await page.getByRole("alert").waitFor();
-  if (await page.getByLabel("цена в рублях").count())
-    throw new Error("Unavailable backend must not expose a checkout quote");
-  await page.getByText("399 ₽", { exact: true }).waitFor();
-  await page.getByText("$5", { exact: true }).waitFor();
-  await page.getByText(/Справочные цены для новой подписки/).waitFor();
-  if (
-    await page
-      .getByRole("button", { name: "оформить подписку", exact: true })
-      .count()
-  )
-    throw new Error("Reference prices must not enable checkout");
+  await page.getByRole("button", { name: "RUB", exact: true }).click();
+  if (!(await page.getByLabel("цена в рублях").innerText()).includes("399"))
+    throw new Error("Missing offline RUB offer");
+  await page.getByRole("button", { name: "USD", exact: true }).click();
+  if (!(await page.getByLabel("цена в долларах").innerText()).includes("5"))
+    throw new Error("Missing offline USD offer");
+  if (await page.getByRole("dialog").count())
+    throw new Error("Offline prices opened checkout");
   await screenshot("05f-subscription-unavailable");
   for (const scenario of ["sandbox", "disabled"]) {
     await billingScenario(scenario);
-    await page.getByRole("button", { name: "обновить", exact: true }).click();
+    await page
+      .getByRole("button", { name: "обновить подписку", exact: true })
+      .click();
     await page
       .getByText(
         "оплата пока недоступна. данные подписки доступны для просмотра.",
         { exact: true },
       )
       .waitFor();
+    const purchase = page.getByRole("button", { name: "купить", exact: true });
+    if (await purchase.count()) await purchase.click();
     if (
-      !(await page
-        .getByRole("button", { name: "оформить подписку", exact: true })
-        .isDisabled()) ||
+      (await page.getByRole("dialog").count()) ||
       (await lastBillingCommand())
     )
-      throw new Error("Non-live provider must not enable Windows payments");
+      throw new Error("Non-live provider enabled a payment operation");
     await screenshot(`05fa-provider-${scenario}-disabled`);
   }
   await billingScenario("sbp");
-  await page.getByRole("button", { name: "обновить", exact: true }).click();
-  await page.locator(".billing-next-charge").waitFor();
+  await page
+    .getByRole("button", { name: "обновить подписку", exact: true })
+    .click();
+  await page.getByText("следующее списание", { exact: true }).waitFor();
   await page
     .getByText("СБП · привязанный банковский счёт", { exact: true })
     .waitFor();
@@ -885,7 +899,7 @@ async function main() {
     () => delete document.documentElement.dataset.paymentReviewUrl,
   );
   await page
-    .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
+    .getByRole("button", { name: "изменить подписку", exact: true })
     .click();
   await page.waitForFunction(
     () => document.documentElement.dataset.paymentReviewUrl === "opened",
@@ -897,7 +911,9 @@ async function main() {
       billingEvidence.snapshots,
     )) {
       await billingScenario(`server-${scenario}`);
-      await page.getByRole("button", { name: "обновить", exact: true }).click();
+      await page
+        .getByRole("button", { name: "обновить подписку", exact: true })
+        .click();
       await page
         .getByText(
           "оплата пока недоступна. данные подписки доступны для просмотра.",
@@ -910,6 +926,7 @@ async function main() {
           ["RUB", "цена в рублях"],
           ["USD", "цена в долларах"],
         ]) {
+          await page.getByRole("button", { name: code, exact: true }).click();
           const amount = offer.prices[code].amount_minor;
           const formatted = new Intl.NumberFormat("ru-RU", {
             style: "currency",
@@ -925,34 +942,20 @@ async function main() {
             throw new Error("Native price differs from recorded backend");
         }
       }
-      if (scenario === "platinum" && !offer) {
+      if (scenario === "platinum")
         await page
-          .getByText(
-            "тариф назначен вручную. продление через оплату недоступно.",
-            { exact: true },
-          )
+          .getByText("тариф назначен вручную", { exact: true })
           .waitFor();
-        if (await page.getByLabel("цена в рублях").count())
-          throw new Error("Manual Platinum must not be sold");
-      } else {
-        const action = page.getByRole("button", {
-          name:
-            (overview.new_contract_required ?? overview.plan === "FREE")
-              ? "оформить подписку"
-              : "продлить подписку",
-          exact: true,
-        });
-        if (!(await action.isDisabled()))
-          throw new Error("Read-only payment action is enabled");
-      }
+      const purchase = page.getByRole("button", {
+        name: /^(купить|продлить подписку)$/,
+      });
+      // Focus after portal review can refresh the overview and briefly render
+      // a disabled fallback CTA. Assert the recorded plan, not that transient DOM.
+      if (overview.plan === "PREMIUM" && !overview.new_contract_required)
+        await purchase.waitFor({ state: "hidden" });
+      else await purchase.click();
       if (scenario === "active-unknown")
-        await page
-          .getByText("стоимость подписки: сведения недоступны", { exact: true })
-          .waitFor();
-      if (scenario === "expired")
-        await page
-          .getByText("платный доступ не активен", { exact: true })
-          .waitFor();
+        await page.getByText("сведения недоступны", { exact: true }).waitFor();
       if (await page.getByRole("dialog").count())
         throw new Error("Read-only overview opened checkout");
       await screenshot(`05g-billing-backend-${scenario}`);
@@ -999,6 +1002,14 @@ async function main() {
     .getByText("последний вход: нет данных", { exact: false })
     .waitFor();
   await screenshot("06-devices");
+  await page.locator(".settings-devices").evaluate((node) => {
+    if (node.scrollHeight > node.clientHeight) {
+      node.scrollTop = node.scrollHeight;
+      if (node.scrollTop <= 0)
+        throw new Error("Device list cannot scroll to the last device");
+      node.scrollTop = 0;
+    }
+  });
   await page
     .getByRole("button", { name: "отозвать доступ", exact: true })
     .click();
@@ -1008,7 +1019,11 @@ async function main() {
     await page
       .getByRole("button", { name: "да, отозвать", exact: true })
       .click();
-    await devicesPage.getByText("отозвано", { exact: true }).waitFor();
+    await devicesPage
+      .getByRole("heading", { name: "Android phone", exact: true })
+      .waitFor({ state: "hidden" });
+    if (await devicesPage.getByText("отозвано", { exact: true }).count())
+      throw new Error("Revoked device is still listed");
     await screenshot("07b-device-revoked");
   } else {
     await page.getByRole("button", { name: "отмена", exact: true }).click();
@@ -1203,6 +1218,17 @@ async function main() {
   await page.getByRole("button", { name: /выйти/ }).click();
   await page.getByRole("heading", { name: "вход по email" }).waitFor();
   await screenshot("09-after-logout");
+  await page
+    .getByRole("button", { name: /попробовать без регистрации/ })
+    .click();
+  await page.getByText("гость на этом устройстве", { exact: true }).waitFor();
+  await screenshot("17-demo-home");
+  await page.getByRole("link", { name: "улучшить", exact: true }).click();
+  await page.getByRole("region", { name: "PREMIUM", exact: true }).waitFor();
+  await screenshot("18-demo-subscription");
+  await page.getByRole("button", { name: "купить", exact: true }).click();
+  await page.getByRole("textbox", { name: "Email", exact: true }).waitFor();
+  await screenshot("19-demo-register");
   nativeWindow("VerifyFixed", "10-login-fixed");
   await page.getByRole("button", { name: "Свернуть", exact: true }).click();
   await delay(300);

@@ -33,8 +33,10 @@ export interface ManagedConfiguration {
 }
 let routing: RoutingPolicy = { mode: "all", domains: [] };
 export const managedNative: SessionEngine<ManagedConfiguration> = {
-  async prepare() {
-    routing = routingPolicy(getDeviceTrafficSelection().current());
+  async prepare(fullTrafficOnly = false) {
+    routing = fullTrafficOnly
+      ? { mode: "all", domains: [] }
+      : routingPolicy(getDeviceTrafficSelection().current());
     // Request binding only: these transports do not use a WireGuard private key.
     return btoa(
       String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))),
@@ -51,7 +53,8 @@ export function createManagedAdapter(options: {
   baseUrl: string;
   transport: HttpTransport;
   bearer: () => Promise<string>;
-  lost: () => void;
+  lost: (code?: string) => void;
+  fullTrafficOnly?: () => boolean;
   id: string;
   name: string;
   native?: SessionEngine<ManagedConfiguration>;
