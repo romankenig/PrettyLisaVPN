@@ -255,6 +255,11 @@ async function main() {
                 "curl.exe",
                 [
                   "--silent",
+                  "--location",
+                  "--max-redirs",
+                  "5",
+                  "--proto-redir",
+                  "=https",
                   "--output",
                   "NUL",
                   "--write-out",

@@ -470,7 +470,11 @@ function SubscriptionContent() {
             saveCurrency(active.userId, value);
           }}
           busy={disabled}
-          buyLabel={newContract ? "купить" : "продлить подписку"}
+          buyLabel={
+            (data?.plan ?? active.plan) !== "PREMIUM" || newContract
+              ? "купить"
+              : "продлить подписку"
+          }
           onBuy={
             (data?.plan ?? active.plan) !== "PREMIUM" ||
             newContract ||

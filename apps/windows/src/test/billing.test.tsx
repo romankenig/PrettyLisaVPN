@@ -111,6 +111,7 @@ describe("subscription screen", () => {
   it("labels manual Platinum access even when the API retains an earlier contract price", async () => {
     setup("canceled", undefined, { ...fixtures.canceled, plan: "PLATINUM" });
     expect(await screen.findByText("тариф назначен вручную")).toBeVisible();
+    expect(screen.getByRole("button", { name: "купить" })).toBeVisible();
     expect(
       screen.getByRole("region", { name: "тариф и стоимость" }),
     ).toHaveTextContent("299 ₽ / месяц");
@@ -568,7 +569,7 @@ describe("billing contract and provider navigation", () => {
 });
 
 describe("read-only server billing", () => {
-  it("keeps an expired contract on renewal and offers a new contract to manual Platinum", async () => {
+  it("keeps API-disabled purchases read-only for expired FREE and manual Platinum", async () => {
     const view = setup("free", undefined, {
       ...fixtures.active,
       plan: "FREE",
@@ -579,10 +580,10 @@ describe("read-only server billing", () => {
       new_contract_required: false,
     });
     await screen.findByText(/оплата пока недоступна/);
-    fireEvent.click(screen.getByRole("button", { name: "продлить подписку" }));
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "купить" }),
+      screen.queryByRole("button", { name: "продлить подписку" }),
     ).not.toBeInTheDocument();
     view.unmount();
     setup("free", undefined, {
