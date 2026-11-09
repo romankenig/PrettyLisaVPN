@@ -65,9 +65,6 @@ test("DEMO is below Premium and Free with localized device limits and Android en
     assert.ok(section.includes(escape(locales[language].pricing.demo.description)));
     assert.ok(section.includes(routeFor(language, '/download/android/')));
     assert.ok(!section.includes('class="button"'));
-    for (const document of ['terms', 'privacy']) {
-      assert.match(all.get(routeFor(language, `/legal/${document}/`)), /DEMO/);
-    }
   }
 });
 test("all six client languages have complete UI, download instructions and four documents", async () => {
@@ -180,6 +177,74 @@ test("all links and anchors resolve; documents and language links preserve conte
     assert.ok(!all.has(route));
   assert.equal(legalKeys.length, 4);
 });
+test("legal templates keep numbered sections, working contents and every localized clause", () => {
+  const all = pages();
+  for (const language of languages) {
+    for (const key of legalKeys) {
+      assert.doesNotMatch(
+        JSON.stringify(locales[language].legal[key]),
+        /PREMIUM|PLATINUM|DEMO|\bSBP\b|СБП|Platega/i,
+      );
+      assert.doesNotMatch(
+        JSON.stringify(locales[language].legal[key]),
+        /\bFREE\b/,
+      );
+    }
+    for (const [key, sectionCount] of [
+      ["terms", 10],
+      ["privacy", 7],
+    ]) {
+      const document = locales[language].legal[key];
+      const html = all.get(routeFor(language, `/legal/${key}/`));
+      assert.equal(document.length, sectionCount);
+      assert.equal(
+        (html.match(/class="document-section"/g) ?? []).length,
+        sectionCount,
+      );
+      assert.match(html, /class="document-contents"/);
+      assert.match(html, /class="document-list"/);
+      assert.match(html, /href="mailto:help@prettylisavpn.com"/);
+      assert.doesNotMatch(
+        html,
+        /183475316809|Кениг Роман|Roman Kenig|ваш сайт|тг бот|\/start/,
+      );
+      for (const [index, section] of document.entries()) {
+        assert.ok(html.includes(`href="#section-${index + 1}"`));
+        assert.ok(html.includes(`id="section-${index + 1}"`));
+        for (const [
+          paragraphIndex,
+          paragraph,
+        ] of section.paragraphs.entries()) {
+          // The template's final acceptance sentence is intentionally unnumbered.
+          if (key === "terms" && index === 9 && paragraphIndex === 1) continue;
+          assert.ok(
+            paragraph.startsWith(`${index + 1}.${paragraphIndex + 1}. `),
+          );
+        }
+      }
+    }
+  }
+});
+
+test("legal section titles, paragraphs and list items are escaped before rendering", () => {
+  const section = locales.ru.legal.terms[0];
+  const previous = { title: section.title, paragraphs: section.paragraphs };
+  try {
+    section.title = '<img src=x onerror="alert(1)">';
+    section.paragraphs = [
+      '1.1. <script>alert(1)</script>\n<a href="javascript:alert(1)">unsafe</a>\nhelp@prettylisavpn.com',
+    ];
+    const html = pages().get("/legal/terms/");
+    assert.ok(html.includes(escape(section.title)));
+    assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+    assert.match(html, /<li>&lt;a href=&quot;javascript:/);
+    assert.match(html, /<li><a href="mailto:help@prettylisavpn.com">/);
+    assert.doesNotMatch(html, /<img src=x|<script>alert|href="javascript:/);
+  } finally {
+    Object.assign(section, previous);
+  }
+});
+
 test("release metadata is optional, validated and cannot change download destinations", () => {
   const data = {
     version: "0.21.0",

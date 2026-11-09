@@ -1,4 +1,12 @@
-# PrettyLisaVPN website · 0.4.1
+# PrettyLisaVPN website · 0.5.2
+
+This publication combines the already live legal templates with Windows guest
+identity disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
+
+The privacy policy and terms now follow the owner's supplied templates, with
+numbered sections, contents links and six synchronized translations. See the
+[legal revision handoff](../../docs/public-website-legal.md) for adaptations,
+validation and the distinction between editing and legal approval/publication.
 
 Minimal static website on https://prettylisavpn.com. Five homepage sections,
 seven platform pages, four documents, a billing portal and six translated languages.

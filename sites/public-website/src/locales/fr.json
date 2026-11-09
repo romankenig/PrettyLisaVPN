@@ -146,46 +146,169 @@
     "documents": "documents"
   },
   "legal": {
-    "updated": "version du 7 novembre 2026",
+    "updated": "Version du 8 novembre 2026",
     "terms": [
-      "PrettyLisaVPN fournit un accès vpn via ses applications android et windows. questions sur le service, les paiements et les réclamations : help@prettylisavpn.com.",
-      "la connexion utilise une adresse e-mail et un code à usage unique. un compte peut avoir jusqu’à cinq appareils actifs. ne communiquez pas vos codes de connexion à d’autres personnes.",
-      "l’offre free comprend une heure de connexion par jour, partagée sur tout le compte. le quota est réinitialisé à 00:00 utc. aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’offre, le temps restant et la période d’accès sont affichés dans l’application.",
-      "DEMO sur Android ne nécessite ni courriel ni inscription : 15 minutes par appareil et par jour, sélection automatique du serveur et protection de tout le trafic. le quota est renouvelé à 00:00 UTC. une réinstallation ordinaire ne réinitialise pas la consommation. l’inscription donne une heure FREE distincte ; la consommation d’un compte FREE existant est conservée.",
-      "le vpn chiffre la connexion entre votre appareil et le serveur du service. la vitesse et la disponibilité dépendent du réseau, de l’appareil et du serveur. un vpn ne remplace pas la protection de l’appareil et ne garantit pas un anonymat absolu.",
-      "utilisez le service dans le respect de la loi. les accès non autorisés aux systèmes d’autrui, les logiciels malveillants, le spam et les attaques contre l’infrastructure sont interdits.",
-      "contactez l’assistance pour toute question sur le fonctionnement de l’application. les conditions de paiement et de traitement des demandes financières figurent sur des pages distinctes. ces conditions ne limitent pas les droits prévus par la législation applicable."
+      {
+        "title": "Dispositions générales",
+        "paragraphs": [
+          "1.1. Le présent Accord d’utilisation (l’« Accord ») régit l’utilisation de PrettyLisaVPN sur prettylisavpn.com et dans les applications clientes (le « Service »), fourni par l’administration du Service (l’« Administration »).",
+          "1.2. En utilisant le Service, notamment en s’inscrivant, en établissant une connexion VPN ou en payant une prestation, l’Utilisateur confirme avoir lu intégralement cet Accord et en accepter les conditions.",
+          "1.3. En cas de désaccord, l’Utilisateur doit cesser d’utiliser le Service."
+        ]
+      },
+      {
+        "title": "Nature des prestations",
+        "paragraphs": [
+          "2.1. Le Service fournit des prestations immatérielles : un accès VPN dans les applications et une connexion proxy dans l’extension de navigateur. Les plateformes et fonctions disponibles figurent sur le site et dans l’application concernée ; l’extension protège uniquement le trafic du navigateur pris en charge.",
+          "2.2. Les prestations peuvent comprendre :\nune connexion sécurisée à un serveur du Service ;\nle choix d’un serveur ou pays disponible selon la formule ;\nl’accompagnement, l’assistance et les mises à jour.",
+          "2.3. L’Utilisateur reconnaît que la formule choisie détermine la prestation. La période d’accès, les limites, les fonctions et le nombre d’appareils sont indiqués dans le Service. La connexion au compte utilise un email et un code à usage unique que l’Utilisateur doit garder confidentiel.",
+          "2.4. Le Service peut proposer un accès gratuit, d’essai ou payant selon la formule concernée. L’expiration ou l’épuisement du quota peut limiter l’utilisation ultérieure. Changer d’appareil ou réinstaller l’application ne donne pas à lui seul un nouveau quota."
+        ]
+      },
+      {
+        "title": "Exclusion de garanties et de responsabilité",
+        "paragraphs": [
+          "3.1. Le Service est fourni « AS IS » (« en l’état »), sous réserve des exigences impératives de la loi applicable.",
+          "3.2. L’Administration ne garantit pas :\nla conformité aux attentes subjectives de l’Utilisateur ;\ndes résultats financiers, commerciaux, professionnels ou autres ;\nun fonctionnement ininterrompu et sans erreur, un débit constant ou l’accès à certaines ressources externes.",
+          "3.3. Dans les limites autorisées par la loi, l’Administration n’est pas responsable :\ndes pertes directes ou indirectes, y compris le manque à gagner, résultant de circonstances qui ne lui sont pas imputables ;\ndes conséquences d’un usage illicite par l’Utilisateur ;\ndes actes ou omissions de tiers ;\ndes incidents temporaires et restrictions d’accès indépendants de sa volonté.",
+          "3.4. L’Utilisateur décide de l’usage des prestations de manière autonome et à ses risques. Le VPN ne remplace pas la sécurité de l’appareil et n’assure pas un anonymat absolu. Cette section n’exclut ni une responsabilité légalement impérative ni les droits liés aux défauts de la prestation."
+        ]
+      },
+      {
+        "title": "Utilisation légale",
+        "paragraphs": [
+          "4.1. Le Service n’a pas pour objet d’encourager, d’organiser ou de faciliter des activités illicites.",
+          "4.2. L’Utilisateur s’engage à respecter la loi applicable et les règles des tiers. Les accès non autorisés, logiciels malveillants, spams et attaques contre des infrastructures sont interdits.",
+          "4.3. L’Utilisateur répond de la légalité de ses actes lors de l’utilisation du Service."
+        ]
+      },
+      {
+        "title": "Propriété intellectuelle",
+        "paragraphs": [
+          "5.1. Les contenus et logiciels proposés par le Service sont protégés par le droit de la propriété intellectuelle.",
+          "5.2. Sans autorisation du titulaire, l’Utilisateur ne peut copier, distribuer, revendre, transmettre ou exploiter les contenus, sauf usage prévu, autorisation légale ou droits accordés par la licence des composants concernés. Les licences libres restent applicables.",
+          "5.3. Une atteinte aux droits peut entraîner une restriction d’accès. Les paiements et remboursements relèvent de la section 7 et de la loi applicable."
+        ]
+      },
+      {
+        "title": "Restriction d’accès",
+        "paragraphs": [
+          "6.1. L’Administration peut suspendre ou restreindre l’accès en cas :\nde violation de cet Accord ;\nd’abus constaté ;\nd’exigence légale ou d’un prestataire de paiement.",
+          "6.2. La restriction ne supprime ni les obligations antérieures ni les droits légaux de l’Utilisateur.",
+          "6.3. L’Administration peut refuser de servir un Utilisateur dont les actes créent une menace de sécurité fondée pour le Service, les prestataires de paiement ou des tiers. Les questions relatives aux restrictions peuvent être adressées à help@prettylisavpn.com."
+        ]
+      },
+      {
+        "title": "Paiements et remboursements",
+        "paragraphs": [
+          "7.1. Les prestations sont payées aux conditions présentées avant paiement. La formule, la période, le prix, la devise et les moyens de paiement disponibles sont affichés avant confirmation. Le renouvellement automatique nécessite un accord distinct sur le montant et la périodicité. Le montant convenu reste fixe jusqu’à résiliation et nouvelle souscription. Un paiement ponctuel n’active pas de renouvellement automatique. Si le paiement est indisponible, aucun accès payant n’est acheté.",
+          "7.2. L’Utilisateur peut mettre fin aux prestations futures et demander un remboursement conformément à la loi. Le caractère immatériel ou l’ouverture de l’accès ne supprime pas ce droit. Toute retenue doit avoir un fondement légal, notamment les dépenses réelles justifiées lorsque la loi le prévoit.",
+          "7.3. Un remboursement peut notamment être fondé sur :\nune prestation non fournie en raison d’une défaillance technique imputable au Service ;\nun accès payé non fourni ;\ntout autre motif prévu par la loi applicable.",
+          "7.4. Il est recommandé d’écrire rapidement à help@prettylisavpn.com avec l’email du compte, la date, le montant et, si disponible, la référence du paiement. Une demande après 24 heures ne constitue pas à elle seule un motif de refus ; les délais légaux s’appliquent.",
+          "7.5. Chaque demande est examinée selon les circonstances et la loi. La réponse, le calcul et les suites sont envoyés par email dans les délais légaux. Les prélèvements futurs et le moyen de paiement lié peuvent être supprimés dans la gestion de l’abonnement ; l’accès payé reste valable jusqu’à la date indiquée. Désactiver le renouvellement ne constitue pas en soi une demande de remboursement.",
+          "7.6. Il est recommandé de contacter l’assistance avant de contester un paiement. Cela ne limite pas les recours auprès de la banque, du système de paiement, d’une autorité ou d’un tribunal. Les règles de paiement et de remboursement du site complètent cette section sans limiter les droits impératifs."
+        ]
+      },
+      {
+        "title": "Confidentialité",
+        "paragraphs": [
+          "8.1. L’Administration peut collecter les données minimales nécessaires au fonctionnement. Leur nature, leurs finalités et leur traitement sont définis dans la Politique de confidentialité publiée sur le site.",
+          "8.2. L’Administration prend des mesures raisonnables de protection sans garantir une sécurité absolue des transmissions. Ses obligations légales de protection restent applicables."
+        ]
+      },
+      {
+        "title": "Modification des conditions",
+        "paragraphs": [
+          "9.1. L’Administration peut modifier cet Accord.",
+          "9.2. La version actuelle et sa date sont publiées dans le Service. Les modifications substantielles sont communiquées via le Service ou par email avant leur application.",
+          "9.3. La poursuite de l’utilisation après leur entrée en vigueur vaut acceptation dans les limites légales. Les modifications ne dégradent pas une période déjà payée et ne remplacent pas un accord distinct requis. Le montant de renouvellement convenu reste fixe jusqu’à résiliation et nouvelle souscription."
+        ]
+      },
+      {
+        "title": "Contact",
+        "paragraphs": [
+          "10.1. Pour toute question, notamment concernant les paiements, réclamations et données personnelles, l’Utilisateur peut écrire à help@prettylisavpn.com.",
+          "En utilisant le Service, notamment en créant un compte ou en établissant une connexion VPN, l’Utilisateur confirme avoir pris connaissance de cet Accord et l’accepter intégralement."
+        ]
+      }
     ],
     "privacy": [
-      "questions sur le traitement des données personnelles par PrettyLisaVPN : help@prettylisavpn.com.",
-      "le fonctionnement du compte utilise l’e-mail, l’identifiant, le statut et les dates de création et de modification. la gestion des appareils utilise l’identifiant d’installation, le nom et la plateforme de l’appareil, ainsi que les dates de connexion et de révocation d’accès.",
-      "le service traite les informations relatives à l’offre, à la période d’accès, aux événements de connexion au compte, aux sessions vpn et aux résultats techniques des connexions. ces informations servent à l’authentification, au décompte du temps, à la gestion des connexions, à l’assistance et à l’évaluation du fonctionnement du service.",
-      "pour DEMO, l’application transmet le hachage d’un identifiant propre à sa clé de signature, au profil Android et à l’appareil. le serveur conserve uniquement un hachage avec clé secrète et une fiche technique de visiteur pour le décompte du temps. l’Android ID d’origine n’est pas envoyé ; ni IMEI ni identifiant publicitaire ne sont utilisés. les limites temporaires de connexion utilisent un hachage de l’adresse IP pendant une heure maximum. une réinstallation avec la même clé conserve le quota ; une réinitialisation d’usine, un autre profil Android ou une autre clé peuvent modifier l’identifiant.",
-      "l’analyse du produit porte sur les événements d’utilisation du compte et le fonctionnement technique du service. ses événements n’incluent ni historique de navigation, ni adresses de pages visitées, ni requêtes dns, ni contenu des paquets. cela décrit l’analyse du produit et ne signifie pas l’absence de tout journal technique.",
-      "Sous Windows, DEMO utilise une empreinte de l’identifiant d’installation Windows, propre à PrettyLisaVPN. Le MachineGuid original ne quitte pas l’application. Le serveur conserve une empreinte avec clé secrète pour le quota quotidien ; réinstaller PrettyLisaVPN ne le réinitialise pas. Réinstaller ou cloner Windows peut modifier ou dupliquer l’identifiant. Il ne s’agit pas d’une attestation matérielle. Windows DEMO offre aussi 15 minutes par jour, avec pilote automatique et protection de tout le trafic uniquement.",
-      "lors d’un contact avec l’assistance, le message et les pièces jointes sont traités. n’envoyez pas de mots de passe, de codes à usage unique ou de coordonnées complètes de carte bancaire.",
-      "les données quotidiennes d’analyse et les rapports datant de plus de 180 jours sont supprimés. le contenu des demandes et les pièces jointes sont supprimés de la base de travail de l’assistance après 30 jours. ces délais ne signifient pas la suppression de toute la correspondance ou de toutes les données du compte.",
-      "Le site n’utilise pas de traceurs publicitaires. Le portail de paiement utilise un cookie HttpOnly sécurisé pendant deux heures au maximum et un identifiant local d’opération en attente pour la reprise après fermeture. Le site ne conserve pas les identifiants de paiement. La langue suit l’adresse de la page ; les polices et images proviennent de l’infrastructure du service.",
-      "Lors de la souscription, votre adresse e-mail, le montant et un identifiant technique sont transmis à Platega pour traiter et rapprocher le paiement. PrettyLisaVPN conserve les statuts des paiements et les périodes d’accès ; les coordonnées bancaires et les données de carte sont traitées par le prestataire de paiement.",
-      "pour demander des renseignements sur vos données, leur rectification ou leur suppression, écrivez à l’assistance depuis l’adresse de votre compte. une vérification de la propriété de l’adresse peut être nécessaire."
+      {
+        "title": "Dispositions générales",
+        "paragraphs": [
+          "1.1. La présente Politique de confidentialité (la « Politique ») régit le traitement et la protection des informations fournies lors de l’utilisation de PrettyLisaVPN sur prettylisavpn.com et dans ses applications (le « Service »). L’Administration organise ce traitement ; contact pour les données personnelles : help@prettylisavpn.com.",
+          "1.2. L’Utilisateur est informé de cette Politique lors de l’utilisation. S’il refuse le traitement nécessaire à la prestation, il peut cesser d’utiliser le Service. Cette Politique informe et ne remplace pas un consentement distinct exigé par la loi."
+        ]
+      },
+      {
+        "title": "Collecte d’informations",
+        "paragraphs": [
+          "2.1. Le Service peut collecter :\nles identifiants de compte, email, statut, dates d’inscription et de connexion ;\nles informations techniques nécessaires à la connexion et à la sécurité : adresse IP, navigateur, identifiant, nom, plateforme et système de l’appareil ;\nles interactions avec le Service : formule, période d’accès, sessions VPN, temps utilisé, volume et vitesse de transfert, résultats de connexion, statuts des paiements, messages et pièces jointes d’assistance.",
+          "2.2. Le Service n’exige pas de passeport, document, photo ou autre information personnelle au-delà du nécessaire. N’envoyez pas de mots de passe, codes à usage unique ou coordonnées de paiement complètes à l’assistance.",
+          "2.3. Les interactions avec le Service ne sont pas l’historique de navigation. Le Service ne collecte ni ne journalise les ressources visitées, adresses de pages, destinations du trafic, requêtes DNS ou contenus des paquets. Les données techniques de connexion et d’utilisation du compte ne sont pas un journal de navigation.",
+          "2.4. L’accès invité sans inscription ne nécessite pas d’email. Un identifiant technique d’appareil haché et une fiche invité servent au suivi du quota. Une adresse IP hachée est traitée temporairement, pendant une heure maximum, pour prévenir les abus. Ces informations ne servent pas à suivre les ressources visitées. Sous Windows, l’accès invité utilise une empreinte de l’identifiant d’installation Windows, propre à PrettyLisaVPN. Le MachineGuid original ne quitte pas l’application. Le serveur conserve une empreinte avec clé secrète pour le quota quotidien ; réinstaller PrettyLisaVPN ne le réinitialise pas. Réinstaller ou cloner Windows peut modifier ou dupliquer l’identifiant. Il ne s’agit pas d’une attestation matérielle.",
+          "2.5. Le site n’utilise pas de traceurs publicitaires. Le portail de paiement utilise un cookie HttpOnly sécurisé pendant deux heures maximum et un enregistrement local d’opération en cours pour en restaurer l’état, sans coordonnées bancaires. La langue dépend de l’adresse de la page ; les polices et images proviennent de l’infrastructure du Service."
+        ]
+      },
+      {
+        "title": "Utilisation des informations",
+        "paragraphs": [
+          "3.1. Les informations servent exclusivement à :\nassurer les fonctions, connexions, appareils, formules et paiements ;\ncommuniquer avec l’Utilisateur, y compris notifications et assistance ;\nanalyser et améliorer le Service et prévenir les abus, sans analyser l’historique de navigation.",
+          "3.2. Les données nécessaires à la prestation demandée sont traitées pour conclure et exécuter le contrat ; celles nécessaires aux obligations légales reposent sur le fondement correspondant. Le consentement est recueilli séparément lorsqu’il est requis. Les données ne sont pas utilisées à des fins incompatibles ; l’utilisation ne vaut pas consentement à la publicité."
+        ]
+      },
+      {
+        "title": "Transmission à des tiers",
+        "paragraphs": [
+          "4.1. L’Administration ne transmet les informations que :\nsi la loi l’exige ;\nsi cela est nécessaire à ses obligations envers l’Utilisateur, par exemple paiement, hébergement et emails de service, sur un fondement légal ;\nsi l’Utilisateur y a consenti.",
+          "4.2. Lorsque le paiement est disponible, email, montant et identifiant technique sont transmis au prestataire de paiement pour traiter et rapprocher le paiement. PrettyLisaVPN reçoit le statut et la période d’accès ; les données complètes de carte, CVC et mots de passe bancaires sont traités par le prestataire sans être stockés dans le Service.",
+          "4.3. Seules les informations nécessaires sont transmises. L’accès des destinataires est limité par leur mission et les exigences de confidentialité. Les serveurs étrangers et transferts internationaux sont soumis à la loi applicable ; choisir un pays VPN ne choisit pas le pays de stockage du compte. Les informations sur les destinataires et le traitement peuvent être demandées à help@prettylisavpn.com."
+        ]
+      },
+      {
+        "title": "Conservation et protection",
+        "paragraphs": [
+          "5.1. Les données sont conservées aussi longtemps que nécessaire aux finalités, au contrat et aux obligations légales. Le traitement comprend collecte, enregistrement, conservation, rectification, utilisation, transmission selon la section 4, blocage et suppression, par automatisation et traitement des demandes par des personnes habilitées.",
+          "5.2. L’Administration adopte des mesures organisationnelles et techniques raisonnables, notamment des accès limités et des connexions protégées, sans garantir une sécurité absolue sur internet.",
+          "5.3. Les données analytiques quotidiennes et rapports de plus de 180 jours sont supprimés ; les intervalles de vitesse de plus de huit jours également. Les messages et pièces jointes sont retirés de la base opérationnelle d’assistance après 30 jours. Ces durées concernent ces catégories, pas une suppression simultanée des comptes, de tous les emails ou des sauvegardes.",
+          "5.4. Lorsque la finalité est atteinte ou le fondement disparaît, les données doivent être supprimées ou anonymisées sauf conservation légalement requise. L’Utilisateur peut demander information, rectification, blocage ou suppression, retirer son consentement et contester des violations. Écrivez à help@prettylisavpn.com ; une vérification proportionnée du titulaire du compte peut être nécessaire. Les délais légaux s’appliquent. Le retrait ne met pas fin au traitement sur un autre fondement légal communiqué à l’Utilisateur."
+        ]
+      },
+      {
+        "title": "Exclusion de responsabilité",
+        "paragraphs": [
+          "6.1. L’Utilisateur comprend et accepte que la transmission d’informations sur internet comporte toujours des risques.",
+          "6.2. L’Administration n’est pas responsable des pertes, vols ou divulgations causés par des tiers ou l’Utilisateur dans la mesure autorisée par la loi. Ses obligations de protection et sa responsabilité en cas de manquement restent applicables."
+        ]
+      },
+      {
+        "title": "Modifications de la Politique",
+        "paragraphs": [
+          "7.1. L’Administration peut modifier la Politique. La version datée est publiée dans le Service ; les modifications substantielles sont annoncées via le Service ou par email avant le traitement concerné.",
+          "7.2. La poursuite de l’utilisation ne remplace pas un consentement distinct requis. Si une nouvelle finalité exige un consentement, celui-ci est recueilli avant le traitement. Les questions peuvent être adressées à help@prettylisavpn.com."
+        ]
+      }
     ],
     "refunds": [
       "pour toute question sur la qualité du service, la fin de l’accès payant ou les remboursements, écrivez à help@prettylisavpn.com.",
       "indiquez l’adresse du compte, la date et le montant du paiement, la devise, la référence de l’opération si vous la possédez, ainsi que l’objet de votre demande. pour un problème technique, précisez la plateforme, la version de l’application, le serveur, l’heure approximative et le texte de l’erreur.",
       "n’envoyez pas de numéro complet de carte, de cvc, de mots de passe bancaires ou de codes à usage unique. masquez les données personnelles superflues dans les documents joints.",
       "les demandes sont examinées en tenant compte de leurs circonstances, du service fourni et de la législation applicable. après vérification, l’assistance vous communiquera la décision et les étapes suivantes.",
+      "L’Utilisateur peut mettre fin aux prestations futures et demander un remboursement sur un fondement légal. L’ouverture de l’accès ou l’écoulement de 24 heures ne l’excluent pas à eux seuls. Les retenues nécessitent un fondement légal ; calcul et réponse sont envoyés par email dans les délais légaux. Le recours à l’assistance ne limite pas les recours auprès de la banque, du système de paiement, d’une autorité ou d’un tribunal.",
       "déconnecter le vpn ou désinstaller l’application n’envoie pas automatiquement de demande de remboursement. vous devez contacter l’assistance pour faire examiner une demande financière.",
       "ces règles ne limitent pas les droits prévus par la législation applicable."
     ],
     "payments": [
-      "l’abonnement payant donne accès à premium pendant un mois calendaire. la période commence après confirmation du paiement. la date exacte de fin est affichée dans l’application.",
-      "le mois calendaire se termine au même jour du mois suivant ; si ce jour n’existe pas, il se termine le dernier jour de ce mois. il ne s’agit pas d’une durée fixe de 30 jours.",
-      "Les abonnements SBP se renouvellent automatiquement une fois par mois civil après votre accord. Le montant convenu reste fixe jusqu’à la résiliation et une nouvelle souscription. Un lien de paiement ponctuel n’active pas le renouvellement automatique.",
-      "Vous pouvez arrêter les prélèvements futurs et dissocier votre compte bancaire dans la gestion de l’abonnement. L’accès payé reste disponible jusqu’à la date affichée. Une nouvelle souscription utilise le tarif alors en vigueur.",
+      "L’accès payant est fourni pour la durée de la formule choisie après confirmation du paiement. Prix, devise et période sont indiqués avant souscription ; la date exacte de fin est disponible dans le Service.",
+      "Si la formule prévoit un mois calendaire, il se termine au même jour du mois suivant ou, si ce jour n’existe pas, au dernier jour du mois. Il ne s’agit pas de 30 jours fixes.",
+      "Le renouvellement automatique par un moyen de paiement disponible nécessite un accord distinct sur le montant et la périodicité. Le montant convenu reste fixe jusqu’à résiliation et nouvelle souscription. Un paiement ponctuel n’active pas de renouvellement automatique.",
+      "Les prélèvements futurs et le moyen de paiement lié peuvent être supprimés dans la gestion de l’abonnement. L’accès payé reste valable jusqu’à la date indiquée. Une nouvelle souscription utilise le prix alors disponible.",
       "lors du paiement, vérifiez l’offre, la devise, le montant total et les informations sur les frais sur la page de paiement. les coordonnées de carte et le cvc doivent être saisis uniquement sur la page de paiement du prestataire, jamais sur le site de PrettyLisaVPN ni dans les messages à l’assistance.",
       "pour toute question sur un paiement, un reçu, la période d’accès ou un débit erroné, écrivez à help@prettylisavpn.com. indiquez l’adresse du compte et les informations permettant de retrouver le paiement.",
       "le montant maximal par transaction est de 10 000 RUB. les recharges de solde et les montants libres ne sont pas proposés. les paiements ne sont pas encore disponibles."
-    ]
+    ],
+    "contents": "Sommaire",
+    "privacyIntro": "La présente Politique régit la collecte, l’utilisation et la protection des informations des utilisateurs de PrettyLisaVPN. Les identifiants de compte, informations techniques et interactions avec le Service sont collectés, mais pas l’historique de navigation. Les données servent au fonctionnement, à la communication avec l’Utilisateur et à l’analyse. Leur transmission repose sur les fondements de la section 4. Elles sont conservées pendant la durée nécessaire et l’Administration prend des mesures de protection. Les risques de transmission et les modifications sont traités aux sections 6 et 7."
   },
   "notFound": {
     "title": "page introuvable",

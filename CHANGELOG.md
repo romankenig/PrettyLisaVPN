@@ -6,6 +6,28 @@
 
 ## Unreleased
 
+### Public website — 0.5.2
+
+- Preserve the already published legal templates from PR #70 when publishing
+  Windows guest-identity disclosure from #74. Keep generic plan/payment wording,
+  the 10/7 document sections and all six languages. Website 0.5.1 was independently
+  assigned to both tasks; the combined artifact is 0.5.2. No payment activation.
+- Windows 0.27.0, backend 0.40.0 and managed engine 0.6.2 remain unchanged.
+  See [publication reconciliation](docs/windows-android-parity.md#website-publication-reconciliation).
+
+### Public website — 0.5.1
+
+- Replace the brief terms/privacy summaries with the owner's supplied legal
+  templates: retain 10/7 sections, numbering and core wording, adapting the
+  service description to PrettyLisaVPN and preserving actual plan/payment/data
+  disclosures in all six languages. Contact is help@prettylisavpn.com; seller
+  identifiers are omitted at the owner's explicit request.
+- Add accessible contents links and readable legal sections; align the refund
+  page with statutory rights, without a blanket 24-hour or chargeback exclusion.
+- Client/backend versions, APIs, schema and payment activation are unchanged.
+  Legal review, provider acceptance and production publication are separate;
+  see [legal revision handoff](docs/public-website-legal.md).
+
 ### Windows — 0.27.0 / Backend — 0.40.0 / Managed engine — 0.6.2 / Website — 0.5.1
 
 - Add reinstall-stable Windows DEMO with existing daily limits, legal links and
