@@ -16,13 +16,12 @@ export function createSessionTransport(
       init?.headers ?? (input instanceof Request ? input.headers : undefined),
     );
     const authorization = headers.get("Authorization");
+    if (!authorization) return transport(input, init);
     if (
-      !authorization ||
       url.origin !== base.origin ||
       !url.pathname.startsWith(base.pathname.replace(/\/$/, "") + "/")
-    ) {
-      return transport(input, init);
-    }
+    )
+      throw new Error("AUTH_DESTINATION_INVALID");
     const owner = session.current();
     if (!owner || authorization !== `Bearer ${owner.accessToken}`)
       throw new Error("AUTH_CHANGED");

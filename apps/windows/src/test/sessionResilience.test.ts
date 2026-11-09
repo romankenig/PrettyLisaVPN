@@ -173,7 +173,9 @@ it("does not refresh revoked sessions or substitute credentials into foreign/old
     headers: { Authorization: `Bearer ${credentials.accessToken}` },
   };
   expect((await send("https://api.example.test/me", init)).status).toBe(401);
-  await send("https://other.example.test/me", init);
+  await expect(send("https://other.example.test/me", init)).rejects.toThrow(
+    "AUTH_DESTINATION_INVALID",
+  );
   expect(api.refresh).not.toHaveBeenCalled();
   await session.establish({
     ...credentials,
@@ -184,5 +186,5 @@ it("does not refresh revoked sessions or substitute credentials into foreign/old
   await expect(send("https://api.example.test/me", init)).rejects.toThrow(
     "AUTH_CHANGED",
   );
-  expect(transport).toHaveBeenCalledTimes(2);
+  expect(transport).toHaveBeenCalledOnce();
 });
