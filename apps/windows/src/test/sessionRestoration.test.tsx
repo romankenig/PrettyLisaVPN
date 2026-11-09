@@ -126,6 +126,7 @@ describe("authentication session restoration", () => {
     expect(api.refresh).toHaveBeenCalledWith({
       session_id: stored.sessionId,
       refresh_token: stored.refreshToken,
+      rotation_id: expect.any(String),
     });
     expect(storage.replace).toHaveBeenCalledWith({
       sessionId: refreshed.session_id,
@@ -210,6 +211,7 @@ describe("authentication session restoration", () => {
       "authenticated",
       "authenticated",
     ]);
-    expect(storage.replace).toHaveBeenCalledOnce();
+    expect(storage.replace).toHaveBeenCalledTimes(2);
+    expect(api.refresh).toHaveBeenCalledOnce();
   });
 });

@@ -1,5 +1,6 @@
 import type { CredentialStorage } from "../native/credentialStorage";
-import type { ApiClient, MeResponse } from "../api/client";
+import { ApiError, type ApiClient, type MeResponse } from "../api/client";
+import { refreshStoredSession } from "./refresh";
 
 export interface SessionCredentials {
   readonly accessToken: string;
@@ -29,7 +30,10 @@ export interface AuthenticationSession {
   current(): ActiveSession | null;
   subscribe(listener: () => void): () => void;
   clear(): Promise<void>;
-  bearer(api: Pick<ApiClient, "refresh" | "me">): Promise<string>;
+  bearer(
+    api: Pick<ApiClient, "refresh" | "me">,
+    rejectedToken?: string,
+  ): Promise<string>;
 }
 
 export interface RestoredSessionCredentials {
@@ -112,7 +116,9 @@ export function createAuthenticationSession(
         publish();
       });
     },
-    bearer(api) {
+    bearer(api, rejectedToken) {
+      if (rejectedToken && activeSession?.accessToken === rejectedToken)
+        expiresAt = 0;
       if (activeSession && Date.now() < expiresAt - 30_000)
         return Promise.resolve(activeSession.accessToken);
       if (renewing) return renewing;
@@ -120,29 +126,24 @@ export function createAuthenticationSession(
       renewing = serialize(async () => {
         const previous = activeSession;
         if (!previous || generation !== expectedGeneration)
-          throw new Error("AUTH_INVALID");
+          throw new ApiError("AUTH_INVALID");
         try {
           const stored = await credentialStorage.retrieve();
-          if (!stored || stored.sessionId !== previous.sessionId)
-            throw new Error("AUTH_INVALID");
-          // Remove the one-use refresh credential before consumption. A crash/timeout
-          // requires OTP again, and cannot replay an ambiguously consumed credential.
-          await credentialStorage.delete();
-          const refreshed = await api.refresh({
-            session_id: stored.sessionId,
-            refresh_token: stored.refreshToken,
-          });
-          if (generation !== expectedGeneration)
-            throw new Error("AUTH_CHANGED");
-          if (refreshed.session_id !== previous.sessionId)
-            throw new Error("AUTH_INVALID");
-          await credentialStorage.save({
-            sessionId: refreshed.session_id,
-            refreshToken: refreshed.refresh_token,
-            expiresAt: refreshed.refresh_token_expires_at,
-          });
-          if (generation !== expectedGeneration)
-            throw new Error("AUTH_CHANGED");
+          if (
+            !stored ||
+            stored.sessionId !== previous.sessionId ||
+            Date.parse(stored.expiresAt) <= Date.now()
+          )
+            throw new ApiError("AUTH_INVALID");
+          const refreshed = await refreshStoredSession(
+            api,
+            credentialStorage,
+            stored,
+            () => {
+              if (generation !== expectedGeneration)
+                throw new Error("AUTH_CHANGED");
+            },
+          );
           activeSession = Object.freeze({
             ...previous,
             accessToken: refreshed.access_token,
@@ -152,9 +153,14 @@ export function createAuthenticationSession(
           publish();
           return refreshed.access_token;
         } catch (error) {
-          if (generation === expectedGeneration) {
+          if (
+            generation === expectedGeneration &&
+            error instanceof ApiError &&
+            (error.code === "AUTH_INVALID" || error.code === "AUTH_FORBIDDEN")
+          ) {
             activeSession = null;
             publish();
+            await credentialStorage.delete();
           }
           throw error;
         }

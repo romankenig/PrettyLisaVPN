@@ -262,7 +262,7 @@ async function main() {
     .locator(".sidebar-versions > div")
     .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
     .getByText(
-      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.40.0",
+      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.40.1",
       {
         exact: true,
       },
@@ -434,6 +434,43 @@ async function main() {
   if ((await page.locator(".account-summary").innerText()).includes("статус"))
     throw new Error("Account status must be removed");
   await screenshot("04-home");
+  async function authRecovery(mode) {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/auth-recovery",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      },
+    );
+    if (!response.ok) throw new Error("Auth recovery fixture unavailable");
+  }
+  await authRecovery("outage");
+  await page
+    .getByRole("button", { name: "Обновить главную", exact: true })
+    .click();
+  await page.locator(".account-home [role=alert]").waitFor({ timeout: 25000 });
+  if (
+    !(await page.locator(".account-summary").isVisible()) ||
+    (await page.getByRole("heading", { name: "вход по email" }).count())
+  )
+    throw new Error(
+      "A temporary refresh outage must retain the signed-in Home",
+    );
+  await screenshot("04-home-auth-outage");
+  await authRecovery("recovered");
+  await page
+    .getByRole("button", { name: "Обновить главную", exact: true })
+    .click();
+  await page.locator(".account-home [role=alert]").waitFor({ state: "hidden" });
+  const authEvidence = await (
+    await fetch("http://127.0.0.1:8000/ui-review/auth-recovery")
+  ).json();
+  if (authEvidence.attempts < 2 || !authEvidence.same_operation)
+    throw new Error(
+      "Refresh retries must retain their persisted operation identifier",
+    );
+  await screenshot("04-home-auth-recovered");
   if (await page.locator(".traffic-mode .current-location").count())
     throw new Error("Full-traffic mode must have only one location");
   for (const mode of ["include", "exclude"]) {

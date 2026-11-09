@@ -4,6 +4,7 @@ export interface RefreshCredential {
   readonly sessionId: string;
   readonly refreshToken: string;
   readonly expiresAt: string;
+  readonly rotationId?: string;
 }
 
 export interface CredentialStorage {
@@ -24,6 +25,7 @@ interface NativeRefreshCredential {
   readonly session_id: string;
   readonly refresh_token: string;
   readonly expires_at: string;
+  readonly rotation_id?: string;
 }
 
 type NativeInvoke = <T>(
@@ -55,6 +57,7 @@ export function createCredentialStorage(
           sessionId: value.session_id,
           refreshToken: value.refresh_token,
           expiresAt: value.expires_at,
+          ...(value.rotation_id ? { rotationId: value.rotation_id } : {}),
         };
       } catch {
         throw new CredentialStorageError();
@@ -86,6 +89,7 @@ function toNativeCredential(
     session_id: credential.sessionId,
     refresh_token: credential.refreshToken,
     expires_at: credential.expiresAt,
+    ...(credential.rotationId ? { rotation_id: credential.rotationId } : {}),
   };
 }
 
@@ -97,6 +101,11 @@ function isNativeCredential(value: unknown): value is NativeRefreshCredential {
     typeof candidate.refresh_token === "string" &&
     candidate.refresh_token.length > 0 &&
     typeof candidate.expires_at === "string" &&
-    Number.isFinite(Date.parse(candidate.expires_at))
+    Number.isFinite(Date.parse(candidate.expires_at)) &&
+    (candidate.rotation_id === undefined ||
+      (typeof candidate.rotation_id === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          candidate.rotation_id,
+        )))
   );
 }
