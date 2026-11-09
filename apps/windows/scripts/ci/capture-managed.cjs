@@ -232,7 +232,7 @@ async function main() {
           await page.waitForFunction(
             (expected) =>
               window.document
-                .querySelector(".connection-info p")
+                .querySelector(".connection-info")
                 ?.textContent?.startsWith(expected),
             expected,
           );

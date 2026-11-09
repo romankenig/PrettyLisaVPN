@@ -949,7 +949,11 @@ async function main() {
       const purchase = page.getByRole("button", {
         name: /^(купить|продлить подписку)$/,
       });
-      if (await purchase.count()) await purchase.click();
+      // Focus after portal review can refresh the overview and briefly render
+      // a disabled fallback CTA. Assert the recorded plan, not that transient DOM.
+      if (overview.plan === "PREMIUM" && !overview.new_contract_required)
+        await purchase.waitFor({ state: "hidden" });
+      else await purchase.click();
       if (scenario === "active-unknown")
         await page.getByText("сведения недоступны", { exact: true }).waitFor();
       if (await page.getByRole("dialog").count())

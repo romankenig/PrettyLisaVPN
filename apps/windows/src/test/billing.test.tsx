@@ -108,6 +108,13 @@ async function openPaymentChoice(name = "купить") {
 }
 
 describe("subscription screen", () => {
+  it("labels manual Platinum access even when the API retains an earlier contract price", async () => {
+    setup("canceled", undefined, { ...fixtures.canceled, plan: "PLATINUM" });
+    expect(await screen.findByText("тариф назначен вручную")).toBeVisible();
+    expect(
+      screen.getByRole("region", { name: "тариф и стоимость" }),
+    ).toHaveTextContent("299 ₽ / месяц");
+  });
   it("shows the SBP schedule without unsupported manual renewal", async () => {
     setup("active", undefined, fixtures.sbp);
     expect(

@@ -448,6 +448,9 @@ function SubscriptionContent() {
           <strong className="plan-name">
             {planLabel(data?.plan ?? active.plan)}
           </strong>
+          {data?.plan === "PLATINUM" && (
+            <span>{t("тариф назначен вручную")}</span>
+          )}
           {paid && data?.paid_until && (
             <span>
               {t("доступ до")}{" "}
@@ -505,23 +508,21 @@ function SubscriptionContent() {
           >
             <h2>{t("ваша подписка")}</h2>
             <dl className="subscription-facts">
-              <div>
-                <dt>{t("стоимость подписки:")}</dt>
-                <dd>
-                  {data.current_price
-                    ? formatPrice(
-                        data.current_price.amount_minor,
-                        data.current_price.currency,
-                      ) +
-                      " " +
-                      t("/ месяц")
-                    : t(
-                        data.plan === "PLATINUM"
-                          ? "тариф назначен вручную"
-                          : "сведения недоступны",
-                      )}
-                </dd>
-              </div>
+              {(data.plan !== "PLATINUM" || data.current_price) && (
+                <div>
+                  <dt>{t("стоимость подписки:")}</dt>
+                  <dd>
+                    {data.current_price
+                      ? formatPrice(
+                          data.current_price.amount_minor,
+                          data.current_price.currency,
+                        ) +
+                        " " +
+                        t("/ месяц")
+                      : t("сведения недоступны")}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt>{t("автопродление")}</dt>
                 <dd>
