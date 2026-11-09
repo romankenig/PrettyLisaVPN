@@ -112,3 +112,34 @@ func TestRoutingRejectsUnsafeMasks(t *testing.T) {
 		}
 	}
 }
+
+func TestDesktopFullTunnelDNSHasNoDirectOrFakeResolution(t *testing.T) {
+	p := sample("WIREGUARD")
+	for _, routing := range []*Routing{nil, {Mode: "all"}} {
+		p.Routing = routing
+		data, err := p.CoreConfig(false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, required := range []string{`"queryStrategy":"UseIPv4"`, `"tag":"resolver"`, `"port":"53"`, `"nonIPQuery":"drop"`, `"198.18.0.0/15"`} {
+			if !bytes.Contains(data, []byte(required)) {
+				t.Fatalf("missing DNS protection %s", required)
+			}
+		}
+		for _, forbidden := range []string{`"fakedns"`, `"freedom"`, `"direct"`} {
+			if bytes.Contains(data, []byte(forbidden)) {
+				t.Fatalf("full tunnel contains %s", forbidden)
+			}
+		}
+		if _, err := serial.LoadJSONConfig(bytes.NewReader(data)); err != nil {
+			t.Fatal(err)
+		}
+		mobile, err := p.CoreConfig(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(mobile, []byte(`"nonIPQuery"`)) {
+			t.Fatal("desktop DNS changed mobile behavior")
+		}
+	}
+}

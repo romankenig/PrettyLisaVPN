@@ -23,6 +23,7 @@ export function AccountMessages({ version }: { readonly version: string }) {
   const { pathname } = useLocation();
   if (
     !active ||
+    active.plan === "DEMO" ||
     !messages ||
     pathname === "/login" ||
     pathname === "/auth/verify-otp" ||

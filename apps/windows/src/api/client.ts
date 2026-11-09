@@ -36,7 +36,7 @@ export interface VerifyOtpResponse {
     readonly status: "ACTIVE" | "REVOKED";
   };
   readonly subscription: {
-    readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
+    readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
     readonly status: "ACTIVE" | "CANCELED" | "EXPIRED";
   };
 }
@@ -57,8 +57,8 @@ export interface RefreshResponse {
 
 export interface MeResponse {
   readonly id: string;
-  readonly email: string;
-  readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
+  readonly email: string | null;
+  readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   readonly active_device_count: number;
   readonly entitlements?: {
     readonly daily_vpn_limit_seconds?: number | null;
@@ -124,6 +124,7 @@ export type ApiErrorCode =
   | "DEVICE_NOT_FOUND"
   | "COUNTRY_UNAVAILABLE"
   | "VPN_UNAVAILABLE"
+  | "DEMO_UNAVAILABLE"
   | "AUTH_FORBIDDEN"
   | "AUTH_INVALID"
   | "SERVER_ERROR"
@@ -145,6 +146,7 @@ export interface ApiClient {
     body: VerifyOtpRequest,
     signal?: AbortSignal,
   ): Promise<VerifyOtpResponse>;
+  demo(deviceKey: string, signal?: AbortSignal): Promise<VerifyOtpResponse>;
   refresh(body: RefreshRequest, signal?: AbortSignal): Promise<RefreshResponse>;
   me(accessToken: string, signal?: AbortSignal): Promise<MeResponse>;
   logout(accessToken: string, signal?: AbortSignal): Promise<LogoutResponse>;
@@ -322,6 +324,33 @@ export function createApiClient(
       if (!isVerifyOtpResponse(value)) throw new ApiError("INVALID_RESPONSE");
       return value;
     },
+    async demo(deviceKey, signal) {
+      if (!/^[0-9a-f]{64}$/.test(deviceKey))
+        throw new ApiError("INVALID_RESPONSE");
+      // Older APIs ignore platform and would create an Android guest principal.
+      // Windows admission first shipped in 0.40.0; fail before sending identity.
+      const backend = await requestJson("/version", { method: "GET" }, signal);
+      const version =
+        isRecord(backend) && typeof backend.application_version === "string"
+          ? /^(\d+)\.(\d+)\.\d+(?:[-+][0-9A-Za-z.+-]+)?$/.exec(
+              backend.application_version,
+            )
+          : null;
+      if (!version || (Number(version[1]) === 0 && Number(version[2]) < 40))
+        throw new ApiError("DEMO_UNAVAILABLE");
+      const value = await requestJson(
+        "/auth/demo",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ device_key: deviceKey, platform: "WINDOWS" }),
+        },
+        signal,
+      );
+      if (!isVerifyOtpResponse(value) || value.subscription.plan !== "DEMO")
+        throw new ApiError("INVALID_RESPONSE");
+      return value;
+    },
     async refresh(body, signal) {
       const value = await requestJson(
         "/auth/refresh",
@@ -495,8 +524,10 @@ function isMeResponse(value: unknown): value is MeResponse {
   return (
     isRecord(value) &&
     isUuid(value.id) &&
-    isNonEmptyString(value.email) &&
-    ["FREE", "PREMIUM", "PLATINUM"].includes(String(value.plan)) &&
+    (value.plan === "DEMO"
+      ? value.email === null
+      : isNonEmptyString(value.email)) &&
+    ["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(String(value.plan)) &&
     typeof value.active_device_count === "number" &&
     Number.isInteger(value.active_device_count) &&
     value.active_device_count >= 0
@@ -519,7 +550,7 @@ function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {
     !isUuid(value.device.installation_id) ||
     !["ACTIVE", "REVOKED"].includes(String(value.device.status)) ||
     !isRecord(value.subscription) ||
-    !["FREE", "PREMIUM", "PLATINUM"].includes(
+    !["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(
       String(value.subscription.plan),
     ) ||
     !["ACTIVE", "CANCELED", "EXPIRED"].includes(

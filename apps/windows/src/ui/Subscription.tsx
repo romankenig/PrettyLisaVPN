@@ -1,3 +1,5 @@
+import { GuestSubscription } from "./GuestSubscription";
+import { PlanComparison, referenceOffer, planLabel } from "./PlanComparison";
 import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
@@ -24,7 +26,6 @@ import {
   saveCurrency,
   savePendingOperation,
 } from "../billing/preferences";
-import { NavigationIcon } from "./NavigationIcon";
 import { PaymentChoice } from "./PaymentChoice";
 
 type CheckoutSelection = {
@@ -42,7 +43,13 @@ export function Subscription() {
     session.current,
     session.current,
   );
-  return active ? <SubscriptionContent key={active.sessionId} /> : null;
+  return active ? (
+    active.plan === "DEMO" ? (
+      <GuestSubscription key={active.sessionId} />
+    ) : (
+      <SubscriptionContent key={active.sessionId} />
+    )
+  ) : null;
 }
 
 function SubscriptionContent() {
@@ -67,7 +74,6 @@ function SubscriptionContent() {
   const [currency, setCurrency] = useState<Currency>(() =>
     preferredCurrency(active?.userId ?? ""),
   );
-  const [offerId, setOfferId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [operation, setOperation] = useState<BillingOperation | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -234,10 +240,7 @@ function SubscriptionContent() {
     data?.new_contract_required ?? (!paid || data?.plan === "PLATINUM");
   const purchaseAction = newContract ? "SUBSCRIBE" : "RENEW";
   const offers = data?.offers ?? [];
-  const offer =
-    offers.find((o) => o.id === offerId) ??
-    offers.find((o) => o.plan === data?.plan) ??
-    offers[0];
+  const offer = offers.find((o) => o.plan === data?.plan) ?? offers[0];
   const pending = operation?.status === "PENDING";
   const disabled = busy || pending || loading;
   const can = (action: BillingAction) =>
@@ -251,14 +254,14 @@ function SubscriptionContent() {
       ) ??
         false));
   const readOnly = !paymentsEnabled(data);
+  const checkoutCurrency =
+    purchaseAction === "RENEW" && data?.current_price
+      ? data.current_price.currency
+      : currency;
   const currencyAvailable =
-    data?.payment_routes.some((cap) => cap.currencies.includes(currency)) ??
-    false;
-  const manualPlan = data?.plan === "PLATINUM" && offers.length === 0;
-  const showOffer =
-    data?.payment_method?.kind !== "SBP" ||
-    newContract ||
-    data.actions.includes("RENEW");
+    data?.payment_routes.some((cap) =>
+      cap.currencies.includes(checkoutCurrency),
+    ) ?? false;
 
   async function openProvider(url: string) {
     if (!paymentsEnabled(latestData.current)) return;
@@ -273,7 +276,26 @@ function SubscriptionContent() {
   function choosePayment(action: CheckoutSelection["action"]) {
     if (!data || !offer || disabled || !can(action) || !currencyAvailable)
       return;
-    setCheckout({ action, offer, currency, revision: data.revision });
+    const contract = action === "RENEW" ? data.current_price : null;
+    if (action === "RENEW" && !contract) return;
+    const quotedOffer = contract
+      ? {
+          ...offer,
+          prices: {
+            ...offer.prices,
+            [contract.currency]: {
+              amount_minor: contract.amount_minor,
+              original_amount_minor: null,
+            },
+          },
+        }
+      : offer;
+    setCheckout({
+      action,
+      offer: quotedOffer,
+      currency: contract?.currency ?? currency,
+      revision: data.revision,
+    });
   }
 
   async function start(
@@ -408,306 +430,188 @@ function SubscriptionContent() {
       </Link>
       <div className="subscription-heading">
         <h1 id="subscription-title">{t("подписка")}</h1>
-        {billing?.portal ? (
-          <button
-            className="billing-primary billing-portal"
-            type="button"
-            disabled={busy || loading}
-            onClick={() => void openPortal()}
-          >
-            {t("управлять подпиской и оплатой")}
-          </button>
-        ) : null}
         <button
-          className="billing-refresh"
+          className="location-refresh"
+          aria-label={t("обновить подписку")}
+          title={t("обновить подписку")}
           type="button"
           disabled={busy || loading}
           onClick={() => setAttempt((a) => a + 1)}
         >
-          {t("обновить")}
+          <span aria-hidden="true">↻</span>
         </button>
       </div>
       <div className="subscription-scroll">
         {loading ? <p role="status">{t("загружаем подписку…")}</p> : null}
-        {!loading && !data ? (
-          <div className="billing-card">
-            <h2>{t(planName(active.plan))}</h2>
-            <p>{t("данные подписки пока недоступны")}</p>
-            <h3>Premium</h3>
-            <p>
-              <s>499 ₽</s> <strong>399 ₽</strong> · <s>$7</s>{" "}
-              <strong>$5</strong> {t("/ месяц")}
-            </p>
-            <p>
+        <div className="current-plan-summary">
+          <span>{t("ваш тариф")}</span>
+          <strong className="plan-name">
+            {planLabel(data?.plan ?? active.plan)}
+          </strong>
+          {paid && data?.paid_until && (
+            <span>
+              {t("доступ до")}{" "}
+              <time dateTime={data.paid_until}>
+                {dateLabel(data.paid_until)}
+              </time>{" "}
+              · {t(`осталось дней: ${remainingPaidDays(data.paid_until, now)}`)}
+            </span>
+          )}
+        </div>
+        <PlanComparison
+          plan={data?.plan ?? active.plan}
+          offer={offer ?? referenceOffer}
+          currency={currency}
+          onCurrency={(value) => {
+            setCurrency(value);
+            saveCurrency(active.userId, value);
+          }}
+          busy={disabled}
+          buyLabel={newContract ? "купить" : "продлить подписку"}
+          onBuy={
+            (data?.plan ?? active.plan) !== "PREMIUM" ||
+            newContract ||
+            can("RENEW")
+              ? () => {
+                  if (
+                    !readOnly &&
+                    offer &&
+                    can(purchaseAction) &&
+                    currencyAvailable
+                  )
+                    choosePayment(purchaseAction);
+                  else if (billing?.portal) {
+                    void openPortal();
+                  } else setNotice("оплата пока недоступна. попробуйте позже");
+                }
+              : undefined
+          }
+        >
+          {!readOnly && !currencyAvailable && (
+            <p>{t("в этой валюте оплата недоступна")}</p>
+          )}
+          {readOnly && (
+            <p className="plan-purchase-note">
               {t(
-                "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
+                "оплата пока недоступна. данные подписки доступны для просмотра.",
               )}
             </p>
-          </div>
-        ) : null}
-        {data ? (
-          <div className="billing-grid">
-            <section
-              className="billing-card billing-plan"
-              aria-label={t("тариф и стоимость")}
-            >
-              <span className="billing-eyebrow">{t("ваш тариф")}</span>
-              <h2>{t(planName(data.plan))}</h2>
-              <p className="billing-term">
-                {paid ? (
-                  <>
-                    {t("доступ до")}
-                    {t(" ")}
-                    <time dateTime={data.paid_until!}>
-                      {t(dateLabel(data.paid_until!))}
-                    </time>
-                    {remainingPaidDays(data.paid_until, now) !== null ? (
-                      <span className="billing-remaining">
-                        {t(
-                          `осталось дней: ${remainingPaidDays(data.paid_until, now)}`,
-                        )}
-                      </span>
-                    ) : null}
-                  </>
-                ) : data.status === "EXPIRED" ? (
-                  "платный доступ не активен"
-                ) : (
-                  "бесплатный доступ"
-                )}
-              </p>
-              {paid && data.current_price ? (
-                <p className="billing-current">
-                  {t("стоимость подписки:")}
-                  {t(" ")}
-                  {t(
-                    formatPrice(
-                      data.current_price.amount_minor,
-                      data.current_price.currency,
-                    ),
-                  )}
-                  {t(" ")}
-                  {t("/ месяц")}
-                </p>
-              ) : null}
-              {paid && !data.current_price ? (
-                <p className="billing-current">
-                  {t("стоимость подписки: сведения недоступны")}
-                </p>
-              ) : null}
-              {paid ? (
-                <p
-                  className={`billing-renewal ${data.auto_renew ? "" : "billing-renewal--off"}`}
-                >
+          )}
+        </PlanComparison>
+        {data && paid && (
+          <section
+            className="billing-card subscription-details"
+            aria-label={t("тариф и стоимость")}
+          >
+            <h2>{t("ваша подписка")}</h2>
+            <dl className="subscription-facts">
+              <div>
+                <dt>{t("стоимость подписки:")}</dt>
+                <dd>
+                  {data.current_price
+                    ? formatPrice(
+                        data.current_price.amount_minor,
+                        data.current_price.currency,
+                      ) +
+                      " " +
+                      t("/ месяц")
+                    : t(
+                        data.plan === "PLATINUM"
+                          ? "тариф назначен вручную"
+                          : "сведения недоступны",
+                      )}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("автопродление")}</dt>
+                <dd>
                   {t(
                     data.auto_renew
                       ? "автопродление включено"
                       : "автопродление отключено",
                   )}
-                </p>
-              ) : null}
-              {readOnly ? (
-                <p className="billing-footnote" role="status">
-                  {t(
-                    "оплата пока недоступна. данные подписки доступны для просмотра.",
-                  )}
-                </p>
-              ) : null}
-              {data.next_charge_at && data.next_charge_price ? (
-                <p className="billing-next-charge">
-                  {t("следующее списание")}:{" "}
-                  <time dateTime={data.next_charge_at}>
-                    {dateLabel(data.next_charge_at)}
-                  </time>
-                  {" · "}
-                  {formatPrice(
-                    data.next_charge_price.amount_minor,
-                    data.next_charge_price.currency,
-                  )}
-                </p>
-              ) : null}
-              {data.current_price && !newContract ? (
-                <p className="billing-footnote">
-                  {t("цена закреплена до отмены подписки и нового оформления")}
-                </p>
-              ) : paid && newContract && data.plan !== "PLATINUM" ? (
-                <p className="billing-footnote">
-                  {t(
-                    "списаний больше не будет. новую подписку можно оформить по текущей цене",
-                  )}
-                </p>
-              ) : null}
-              {manualPlan ? (
-                <p>
-                  {t(
-                    "тариф назначен вручную. продление через оплату недоступно.",
-                  )}
-                </p>
-              ) : showOffer ? (
-                <>
-                  {offers.length > 1 ? (
-                    <label className="billing-offer-select">
-                      {t("тариф на месяц")}
-                      <select
-                        aria-label={t("тариф на месяц")}
-                        value={offer.id}
-                        disabled={disabled}
-                        onChange={(e) => setOfferId(e.target.value)}
-                      >
-                        {offers.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {t(planName(o.plan))}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : null}
-                  <div className="billing-price-heading">
-                    <span>
-                      {t(
-                        readOnly && paid
-                          ? "предложение на месяц"
-                          : paid
-                            ? "продлить на месяц"
-                            : `${offer ? planName(offer.plan) : "подписка"} на месяц`,
-                      )}
-                    </span>
-                    <div
-                      className="billing-currencies"
-                      role="group"
-                      aria-label={t("основная валюта")}
-                    >
-                      {(["RUB", "USD"] as const).map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={currency === value}
-                          disabled={disabled}
-                          onClick={() => {
-                            setCurrency(value);
-                            saveCurrency(active.userId, value);
-                          }}
-                        >
-                          {t(value === "RUB" ? "₽" : "$")}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {offer ? (
-                    <OfferPrices offer={offer} currency={currency} />
-                  ) : (
-                    <p>{t("цены пока недоступны")}</p>
-                  )}
-                  <button
-                    className="billing-primary"
-                    type="button"
-                    disabled={
-                      disabled ||
-                      !offer ||
-                      !currencyAvailable ||
-                      !can(purchaseAction)
-                    }
-                    onClick={() => choosePayment(purchaseAction)}
-                  >
-                    {t(
-                      busy
-                        ? "подождите…"
-                        : !newContract
-                          ? "продлить подписку"
-                          : "оформить подписку",
-                    )}
-                  </button>
-                  {!readOnly && !currencyAvailable ? (
-                    <p className="billing-footnote">
-                      {t(
-                        "в этой валюте оплата недоступна. выберите другую валюту",
-                      )}
-                    </p>
-                  ) : null}
-                  <p className="billing-footnote">
-                    {t(
-                      readOnly
-                        ? paid && data.current_price
-                          ? "условия действующей подписки. списание не выполняется."
-                          : "цены предложения на месяц. списание не выполняется."
-                        : paid
-                          ? "оплата и новый способ оплаты — на стороне платёжного сервиса"
-                          : "способ оплаты и автопродление подтверждаются при оформлении",
-                    )}
-                  </p>
-                </>
-              ) : null}
-            </section>
-            <section
-              className="billing-card billing-method"
-              aria-labelledby="payment-method-title"
-            >
-              <div className="billing-method-heading">
-                <NavigationIcon name="subscription" />
-                <h2 id="payment-method-title">{t("способ оплаты")}</h2>
+                </dd>
               </div>
-              {data.payment_method ? (
-                <div className="billing-method-value">
-                  <strong>
-                    {data.payment_method.kind === "SBP"
+              <div>
+                <dt>{t("способ оплаты")}</dt>
+                <dd>
+                  {data.payment_method
+                    ? data.payment_method.kind === "SBP"
                       ? t("СБП · привязанный банковский счёт")
-                      : paymentMethodLabel(data.payment_method)}
-                  </strong>
+                      : paymentMethodLabel(data.payment_method)
+                    : t(
+                        data.status === "ACTIVE" && data.plan !== "PLATINUM"
+                          ? "сведения о способе оплаты недоступны"
+                          : "не привязан",
+                      )}
+                </dd>
+              </div>
+              {data.next_charge_at && data.next_charge_price && (
+                <div>
+                  <dt>{t("следующее списание")}</dt>
+                  <dd>
+                    <time dateTime={data.next_charge_at}>
+                      {dateLabel(data.next_charge_at)}
+                    </time>{" "}
+                    ·{" "}
+                    {formatPrice(
+                      data.next_charge_price.amount_minor,
+                      data.next_charge_price.currency,
+                    )}
+                  </dd>
                 </div>
-              ) : (
-                <p className="billing-method-value">
-                  {t(
-                    data.auto_renew
-                      ? "сведения о способе оплаты недоступны"
-                      : "не привязан",
-                  )}
-                </p>
               )}
-              {can("CHANGE_METHOD") ? (
-                <button
-                  className="billing-secondary"
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => void start("CHANGE_METHOD")}
-                >
-                  {t(
-                    data.payment_method
-                      ? "изменить способ оплаты"
-                      : "привязать способ оплаты",
-                  )}
-                </button>
-              ) : null}
+            </dl>
+            {data.current_price && !newContract && (
               <p className="billing-footnote">
+                {t("цена закреплена до отмены подписки и нового оформления")}
+              </p>
+            )}
+            {newContract && data.plan !== "PLATINUM" && (
+              <p>
                 {t(
-                  readOnly
-                    ? "управление оплатой пока недоступно"
-                    : "реквизиты хранятся у платёжного сервиса. подтверждение откроется в браузере",
+                  "списаний больше не будет. новую подписку можно оформить по текущей цене",
                 )}
               </p>
-              {paid && !data.auto_renew && !readOnly ? (
-                <p className="billing-no-renew">
-                  {t("автоматических списаний нет")}
-                </p>
-              ) : null}
-              {can("CANCEL") ? (
-                <div className="billing-cancel-area">
-                  <p>
-                    {t(
-                      "отмена продления отвяжет способ оплаты. доступ сохранится до конца оплаченного срока.",
-                    )}
-                  </p>
-                  <button
-                    className="billing-danger"
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setConfirm(true)}
-                  >
-                    {t("отменить подписку")}
-                  </button>
-                </div>
-              ) : null}
-            </section>
-          </div>
-        ) : null}
+            )}
+          </section>
+        )}
+        {(can("CHANGE_METHOD") ||
+          can("CANCEL") ||
+          (paid && billing?.portal)) && (
+          <section className="billing-card subscription-management">
+            {can("CHANGE_METHOD") && (
+              <button
+                type="button"
+                className="billing-secondary"
+                disabled={disabled}
+                onClick={() => void start("CHANGE_METHOD")}
+              >
+                {t("изменить способ оплаты")}
+              </button>
+            )}
+            {paid && billing?.portal && (
+              <button
+                type="button"
+                className="billing-secondary"
+                disabled={disabled}
+                onClick={() => void openPortal()}
+              >
+                {t("изменить подписку")}
+              </button>
+            )}
+            {can("CANCEL") && (
+              <button
+                type="button"
+                className="billing-danger"
+                disabled={disabled}
+                onClick={() => setConfirm(true)}
+              >
+                {t("отменить подписку")}
+              </button>
+            )}
+          </section>
+        )}
         {pending ? (
           <div className="billing-pending" role="status">
             <span>{t("ожидаем подтверждения платёжного сервиса")}</span>
@@ -755,46 +659,6 @@ function SubscriptionContent() {
   );
 }
 
-function OfferPrices({
-  offer,
-  currency,
-}: {
-  readonly offer: Offer;
-  readonly currency: Currency;
-}) {
-  useLanguage();
-  const secondary: Currency = currency === "RUB" ? "USD" : "RUB";
-  return (
-    <div className="billing-prices">
-      {([currency, secondary] as const).map((code, i) => (
-        <div
-          key={code}
-          className={
-            i === 0 ? "billing-price-primary" : "billing-price-secondary"
-          }
-          aria-label={t(code === "RUB" ? "цена в рублях" : "цена в долларах")}
-        >
-          {offer.prices[code].original_amount_minor !== null ? (
-            <del>
-              {t(formatPrice(offer.prices[code].original_amount_minor!, code))}
-            </del>
-          ) : null}
-          <strong>
-            {t(formatPrice(offer.prices[code].amount_minor, code))}
-          </strong>
-          <span>{t("/ месяц")}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-function planName(plan: string) {
-  return plan === "PREMIUM"
-    ? "premium ⭐"
-    : plan === "PLATINUM"
-      ? "platinum 💎"
-      : plan.toLowerCase();
-}
 function dateLabel(date: string) {
   const formatter = new Intl.DateTimeFormat(getLanguage(), {
     day: "numeric",

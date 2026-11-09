@@ -69,7 +69,14 @@ export function SessionRestorationGate({
     return <Navigate to="/login" replace />;
   }
   if (activeSession !== null && authenticationRoute) {
-    return <Navigate to="/" replace />;
+    const destination = (location.state as { returnTo?: string } | null)
+      ?.returnTo;
+    return (
+      <Navigate
+        to={destination === "/settings/subscription" ? destination : "/"}
+        replace
+      />
+    );
   }
   return children;
 }

@@ -31,6 +31,7 @@ from prettylisavpn.demo.domain import DemoRateLimitedError, RegistrationRequired
 from prettylisavpn.demo.model import DemoDeviceRecord
 from prettylisavpn.demo.router import router
 from prettylisavpn.demo.service import DemoService, RedisAdmissionLimit
+from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.devices.management import DeviceManagementService
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.devices.router import router as devices_router
@@ -38,8 +39,8 @@ from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.users.model import UserRecord
 
 
-@pytest.fixture
-async def guest(vpn_state):
+@pytest.fixture(params=[DevicePlatform.ANDROID, DevicePlatform.WINDOWS])
+async def guest(vpn_state, request):
     pg, vpn, worker, provider, registered = vpn_state
     config = settings(
         client_vpn_enabled=True,
@@ -49,6 +50,13 @@ async def guest(vpn_state):
     auth = AuthenticatedSessionService(pg, AsyncMock(), config)
     service = DemoService(pg, config, SimpleNamespace(admit=AsyncMock()))
     key = uuid4().hex * 2
+    raw_login = service.login
+
+    async def platform_login(device_key, ip, platform=request.param):
+        return await raw_login(device_key, ip, platform)
+
+    service.login = platform_login
+    service.platform = request.param
     result = await service.login(key, "192.0.2.1")
     vpn.auth = auth
     try:
@@ -71,11 +79,14 @@ async def test_guest_endpoint_profile_and_successful_reinstallation_keep_one_dev
     app.include_router(account_router)
     app.state.demo, app.state.authenticated_sessions = service, auth
     async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
-        response = await client.post("/auth/demo", json={"device_key": key})
+        response = await client.post(
+            "/auth/demo", json={"device_key": key, "platform": service.platform.value}
+        )
         assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
         login = response.json()
         assert login["user"]["id"] == str(result.user.id)
         assert login["device"]["id"] == str(result.device.id)
+        assert result.device.platform == service.platform
         assert login["subscription"]["plan"] == "DEMO"
         me = (
             await client.get("/me", headers={"Authorization": "Bearer " + login["access_token"]})

@@ -1,3 +1,4 @@
+import { isTerminalVpnFailure } from "./sessionAdapter";
 import type { ConnectionAdapter, ProtocolStatus } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
@@ -65,7 +66,7 @@ export interface VpnConnectionManager {
   disconnect(accessToken: string): Promise<void>;
   setOwner?(owner: string | null): void;
   dispose(): void;
-  connectionLost?(): Promise<void>;
+  connectionLost?(code?: string): Promise<void>;
 }
 
 export class VpnConnectionError extends Error {
@@ -90,6 +91,7 @@ export function createVpnConnectionManager(
   adapters: readonly ConnectionAdapter[],
   preference = createMethodPreference(),
   enabledMethods: () => readonly string[] | null = () => null,
+  beforeConnect?: (signal: AbortSignal) => Promise<void>,
 ): VpnConnectionManager {
   const idle = (): VpnConnectionState => ({
     phase: "DISCONNECTED",
@@ -199,6 +201,21 @@ export function createVpnConnectionManager(
       };
       run = current;
       current.done = (async () => {
+        if (beforeConnect) {
+          emit({ phase: "CONNECTING", backend: "NONE", tunnel: "DOWN" });
+          try {
+            await beforeConnect(current.controller.signal);
+          } catch (error) {
+            if (!current.controller.signal.aborted)
+              fail(
+                "",
+                typeof error === "string" && /^[A-Z_]{1,64}$/.test(error)
+                  ? error
+                  : "VPN_CONFLICT",
+              );
+            return;
+          }
+        }
         let previousMethod: string | null = null;
         let firstFailure: string | null = null;
         const preferred = preference.current();
@@ -222,6 +239,7 @@ export function createVpnConnectionManager(
               retry: previousMethod !== null,
             },
           });
+          let attemptFailure: string | null = null;
           try {
             const result = await adapter.connect(
               selection,
@@ -258,7 +276,10 @@ export function createVpnConnectionManager(
                 : typeof error === "string"
                   ? error
                   : "";
-            if (/^[A-Z_]{1,64}$/.test(code)) firstFailure ??= code;
+            if (/^[A-Z_]{1,64}$/.test(code)) {
+              firstFailure ??= code;
+              attemptFailure = code;
+            }
             /* An individual adapter failure continues after cleanup. */
           }
           try {
@@ -268,6 +289,10 @@ export function createVpnConnectionManager(
             throw error;
           }
           if (current.controller.signal.aborted) return;
+          if (attemptFailure && isTerminalVpnFailure(attemptFailure)) {
+            fail(adapter.name, attemptFailure);
+            return;
+          }
           previousMethod = adapter.name;
         }
         fail(previousMethod ?? "", firstFailure ?? "METHODS_EXHAUSTED");
@@ -285,12 +310,14 @@ export function createVpnConnectionManager(
       }
     },
     disconnect,
-    async connectionLost() {
+    async connectionLost(code = "VPN_CONNECTION_LOST") {
+      if (run || !active) return;
+      const method = active.name;
       try {
         await disconnect();
-        fail("WireGuard", "VPN_CONNECTION_LOST");
+        fail(method, code);
       } catch {
-        fail("WireGuard", "CLEANUP_FAILED");
+        fail(method, "CLEANUP_FAILED");
       }
     },
     dispose() {

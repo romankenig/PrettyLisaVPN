@@ -10,9 +10,10 @@ interface Lease<C> {
   expires_at: string;
   heartbeat_seconds: number;
   configuration?: C;
+  code?: string;
 }
 export interface SessionEngine<C> {
-  prepare(): Promise<string>;
+  prepare(fullTrafficOnly?: boolean): Promise<string>;
   start(
     configuration: C,
     context: { id: string; country: string },
@@ -25,7 +26,8 @@ export interface SessionAdapterOptions<C> {
   baseUrl: string;
   transport: HttpTransport;
   bearer: () => Promise<string>;
-  lost: () => void;
+  lost: (code?: string) => void;
+  fullTrafficOnly?: () => boolean;
   native: SessionEngine<C>;
   method: string;
   name: string;
@@ -45,8 +47,25 @@ export function createSessionAdapter<C>(
   let heartbeat: ReturnType<typeof setTimeout> | undefined;
   let expiry: ReturnType<typeof setTimeout> | undefined;
   let epoch = 0;
+  let connected = false;
+  let failure: string | null = null;
+  let healthFailures = 0;
   const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 1000));
-  const check = (signal: AbortSignal) => signal.throwIfAborted();
+  const check = (signal: AbortSignal) => {
+    signal.throwIfAborted();
+    if (failure) throw new Error(failure);
+  };
+  function lost(code: string) {
+    failure = code;
+    clearTimeout(heartbeat);
+    clearTimeout(expiry);
+    // During setup the adapter throws into the sequential fallback executor.
+    // Cancelling the manager here would also cancel all remaining methods.
+    if (connected) {
+      connected = false;
+      options.lost(code);
+    }
+  }
   async function call(
     suffix = "",
     method = "GET",
@@ -121,7 +140,7 @@ export function createSessionAdapter<C>(
   function armDeadline(row: Lease<C>) {
     clearTimeout(expiry);
     expiry = setTimeout(
-      options.lost,
+      () => lost("VPN_ACCESS_ENDED"),
       Math.max(
         0,
         Math.min(Date.parse(row.expires_at) - Date.now(), 2_147_000_000),
@@ -137,15 +156,38 @@ export function createSessionAdapter<C>(
         if (
           !row ||
           !["PROVISIONING", "READY"].includes(row.status) ||
-          Date.parse(row.expires_at) <= Date.now() ||
-          (local && !(await native.isUp()))
+          Date.parse(row.expires_at) <= Date.now()
         )
-          throw new Error("VPN_ACCESS_ENDED");
-        lease = row;
+          throw new Error(row?.code ?? "VPN_ACCESS_ENDED");
+        lease = {
+          ...row,
+          configuration: row.configuration ?? lease?.configuration,
+        };
         armDeadline(row);
+        if (connected && local) {
+          if (!(await native.isUp())) {
+            if (run === epoch && !failure) lost("VPN_CONNECTION_LOST");
+            return;
+          }
+          const configuration = lease.configuration;
+          const healthy =
+            configuration !== undefined &&
+            (await native.verify(
+              configuration,
+              row.id,
+              await options.bearer(),
+            ));
+          if (run !== epoch || failure) return;
+          if (!healthy) throw new Error("VPN_CONNECTION_LOST");
+        }
+        healthFailures = 0;
         keepAlive(run);
-      } catch {
-        if (run === epoch) options.lost();
+      } catch (error) {
+        if (run !== epoch || failure) return;
+        const code =
+          error instanceof Error ? error.message : "VPN_CONNECTION_LOST";
+        if (isTerminalVpnFailure(code) || ++healthFailures >= 2) lost(code);
+        else keepAlive(run);
       }
     }, 30_000);
   }
@@ -154,9 +196,14 @@ export function createSessionAdapter<C>(
     name,
     recover: () => cleanup(true),
     async connect(selection, signal) {
+      connected = false;
+      failure = null;
+      healthFailures = 0;
       await cleanup(true); // Recover only our local tunnel and this device's remote grant.
       check(signal);
-      const publicKey = await native.prepare();
+      const publicKey = options.fullTrafficOnly?.()
+        ? await native.prepare(true)
+        : await native.prepare();
       check(signal);
       allocated = true; // An ambiguous POST still requires lookup and confirmed removal.
       lease = await call(
@@ -207,6 +254,8 @@ export function createSessionAdapter<C>(
         }
       }
       if (!verified) throw new Error("VPN_EGRESS_MISMATCH");
+      check(signal);
+      connected = true;
       const session: ConnectedVpnSession = {
         sessionId: row.id,
         countryCode: row.country,
@@ -222,10 +271,18 @@ export function createSessionAdapter<C>(
     },
     async disconnect() {
       epoch++;
+      connected = false;
+      failure = null;
       clearTimeout(heartbeat);
       clearTimeout(expiry);
       // Also stop an install that succeeded while its caller was being cancelled.
       await cleanup();
     },
   };
+}
+
+export function isTerminalVpnFailure(code: string): boolean {
+  return /^(VPN_ACCESS_ENDED|VPN_SESSION_EXPIRED|FREE_QUOTA_EXHAUSTED|FREE_QUOTA_RESERVED|DEMO_QUOTA_EXHAUSTED|REGISTRATION_REQUIRED|ACCOUNT_UNAVAILABLE|AUTH_.*|DEVICE_REVOKED)$/.test(
+    code,
+  );
 }

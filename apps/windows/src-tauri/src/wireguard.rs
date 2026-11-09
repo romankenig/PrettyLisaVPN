@@ -42,7 +42,7 @@ fn command(program: PathBuf) -> Command {
     command
 }
 pub(super) fn route_preflight() -> Result<(), &'static str> {
-    // Read-only. In particular, never disable the user's Kaspersky tunnel.
+    // Read-only verification after the explicit, VPN-only handoff.
     let script = "$ErrorActionPreference='Stop'; $r=Get-NetRoute -AddressFamily IPv4; if($r | Where-Object {$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')}) {exit 17}; $v=Get-NetAdapter | Where-Object {$_.InterfaceDescription -match 'WireGuard|Wintun|TAP|VPN|Kaspersky'}; if($r | Where-Object {$_.DestinationPrefix -eq '0.0.0.0/0' -and $_.InterfaceIndex -in $v.ifIndex}) {exit 17}";
     let status = command(system("WindowsPowerShell\\v1.0\\powershell.exe"))
         .args(["-NoProfile", "-NonInteractive", "-Command", script])

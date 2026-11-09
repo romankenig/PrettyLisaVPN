@@ -1,5 +1,8 @@
+import { useApplication } from "../state/application";
+import { useRegistration } from "../auth/useRegistration";
 import { t, useLanguage } from "../i18n";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useSyncExternalStore } from "react";
+import { LegalDocuments } from "./LegalDocuments";
 import { SupportDialog } from "./SupportDialog";
 import { Link } from "react-router-dom";
 
@@ -44,6 +47,17 @@ export function About({
   readonly backend: string;
 }) {
   useLanguage();
+  const { session } = useApplication();
+  const active = useSyncExternalStore(
+    session.subscribe,
+    session.current,
+    session.current,
+  );
+  const registration = useRegistration();
+  const openSupport = () => {
+    if (active?.plan === "DEMO") void registration.register();
+    else setSupportOpen(true);
+  };
   const [supportOpen, setSupportOpen] = useState(false);
   const [question, setQuestion] = useState(0);
   const entry = faq[question];
@@ -99,7 +113,7 @@ export function About({
                         className="faq-inline-link"
                         type="button"
                         key={index}
-                        onClick={() => setSupportOpen(true)}
+                        onClick={openSupport}
                       >
                         {label}
                       </button>
@@ -120,11 +134,17 @@ export function About({
         <section className="about-card" aria-labelledby="support-title">
           <h2 id="support-title">{t("помощь и поддержка")}</h2>
           <p>{t("расскажите, с чем нужна помощь")}</p>
-          <button type="button" onClick={() => setSupportOpen(true)}>
+          <button type="button" onClick={openSupport}>
             {t("написать в поддержку")}
           </button>
         </section>
       </div>
+      {registration.error && (
+        <p role="alert">
+          {t("не удалось завершить гостевую сессию. попробуйте снова")}
+        </p>
+      )}
+      <LegalDocuments />
       <p className="about-dedication">inspired by love of my life, Lisa</p>
       {supportOpen ? (
         <SupportDialog

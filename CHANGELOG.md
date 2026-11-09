@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Windows — 0.27.0 / Backend — 0.40.0 / Managed engine — 0.6.2 / Website — 0.5.1
+
+- Add reinstall-stable Windows DEMO with existing daily limits, legal links and
+  change-email navigation; preserve Android guest identities and independent FREE time.
+- Rework subscription cards, immutable renewal confirmation, icon refresh and active
+  device scrolling. Keep prices visible during API outages without authorizing payment.
+- Continue method fallback after setup-time heartbeat failures; validate tunnel health
+  after connection. Add bounded, signed Kaspersky VPN-only handoff and full-tunnel DNS
+  handling/cache cleanup. Update Windows identity disclosure on the website.
+- See [Windows parity and verification handoff](docs/windows-android-parity.md).
+
 ### Android — 0.27.0 / Backend — 0.39.0
 
 - Show authenticated account email and reply email in support messages.

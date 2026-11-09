@@ -42,6 +42,7 @@ function mockApi(): ApiClient {
     getHealth: vi.fn(),
     getVersion: vi.fn(),
     requestOtp: vi.fn(),
+    demo: vi.fn(),
     verifyOtp: vi.fn(),
     refresh: vi.fn(),
     me: vi.fn(),
@@ -261,4 +262,16 @@ describe("Devices screen", () => {
     await waitFor(() => expect(storage.delete).toHaveBeenCalledOnce());
     expect(session.current()).toBeNull();
   });
+});
+
+it("hides revoked devices even when the server returns their history", async () => {
+  const api = mockApi();
+  vi.mocked(api.listDevices).mockResolvedValue([
+    currentDevice,
+    { ...otherDevice, status: "REVOKED" },
+  ]);
+  renderDevices(api);
+  await screen.findByText(currentDevice.device_name);
+  expect(screen.queryByText(otherDevice.device_name)).not.toBeInTheDocument();
+  expect(screen.queryByText("отозвано")).not.toBeInTheDocument();
 });

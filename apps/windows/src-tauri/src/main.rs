@@ -1,10 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod demo_identity;
 mod installation_id;
 mod managed;
 mod payment_browser;
+mod public_documents;
 mod public_location;
 mod refresh_credentials;
+mod vpn_handoff;
 mod vpn_service;
 mod window_frame;
 mod wireguard;
@@ -39,6 +42,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             payment_browser::open_payment_url,
+            demo_identity::get_demo_device_key,
+            public_documents::open_public_document,
             public_location::get_public_location,
             public_location::get_vpn_location,
             public_location::get_direct_location,
@@ -47,6 +52,7 @@ fn main() {
             refresh_credentials::load_refresh_credential,
             refresh_credentials::replace_refresh_credential,
             refresh_credentials::delete_refresh_credential,
+            vpn_handoff::vpn_handoff,
             wireguard::wg_prepare,
             wireguard::wg_start_routed,
             wireguard::wg_stop,

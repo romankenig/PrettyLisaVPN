@@ -1,11 +1,13 @@
 import { t, useLanguage } from "../i18n";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, type VerifyOtpResponse } from "../api/client";
+import { LegalDocuments } from "./LegalDocuments";
 import { useApplication } from "../state/application";
 
 interface OtpRouteState {
   readonly email: string;
+  readonly returnTo?: string;
 }
 
 type VerificationState =
@@ -29,11 +31,13 @@ export function OtpVerification() {
   const location = useLocation();
   const routeState = location.state as OtpRouteState | null;
   if (!routeState?.email) return <Navigate to="/login" replace />;
-  return <OtpForm email={routeState.email} />;
+  return <OtpForm key={routeState.email} email={routeState.email} />;
 }
 
 function OtpForm({ email }: { readonly email: string }) {
   useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { api, installationId, session } = useApplication();
   const verificationRequest = useRef<AbortController | null>(null);
   const resendRequest = useRef<AbortController | null>(null);
@@ -185,6 +189,22 @@ function OtpForm({ email }: { readonly email: string }) {
         <button className="primary-button" type="submit" disabled={submitting}>
           {t(submitting ? "проверяем…" : "подтвердить")}
         </button>
+        <button
+          className="text-button change-email"
+          type="button"
+          disabled={submitting}
+          onClick={() => {
+            verificationRequest.current?.abort();
+            resendRequest.current?.abort();
+            setCode("");
+            navigate("/login", {
+              replace: true,
+              state: { ...(location.state as OtpRouteState), email },
+            });
+          }}
+        >
+          {t("изменить email")}
+        </button>
         <div className="resend-row">
           <button
             className="text-button"
@@ -212,11 +232,12 @@ function OtpForm({ email }: { readonly email: string }) {
           ) : null}
         </div>
       </form>
+      <LegalDocuments compact />
     </section>
   );
 }
 
-function toCredentials(result: VerifyOtpResponse) {
+export function toCredentials(result: VerifyOtpResponse) {
   return {
     accessToken: result.access_token,
     accessTokenExpiresIn: result.access_token_expires_in,

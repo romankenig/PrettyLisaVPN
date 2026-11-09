@@ -77,11 +77,20 @@ class DemoService:
     def __init__(self, postgres: Postgres, settings: Settings, limiter: AdmissionLimit) -> None:
         self.postgres, self.settings, self.limiter = postgres, settings, limiter
 
-    async def login(self, device_key: str, client_ip: str) -> LoginResult:
+    async def login(
+        self,
+        device_key: str,
+        client_ip: str,
+        platform: DevicePlatform = DevicePlatform.ANDROID,
+    ) -> LoginResult:
+        if platform not in (DevicePlatform.ANDROID, DevicePlatform.WINDOWS):
+            raise DemoUnavailableError
         if not self.settings.demo_enabled or self.settings.demo_identity_secret is None:
             raise DemoUnavailableError
         secret = self.settings.demo_identity_secret.get_secret_value()
-        digest = identity_digest(secret, device_key)
+        # Keep existing Android identities/quotas; namespace the new platform.
+        scoped_key = device_key if platform is DevicePlatform.ANDROID else "windows:" + device_key
+        digest = identity_digest(secret, scoped_key)
         await self.limiter.admit(identity_digest(secret, "ip:" + client_ip).hex(), digest.hex())
         now = datetime.now(UTC)
         user: User | None
@@ -116,7 +125,10 @@ class DemoService:
                     if subscription is None or subscription.plan is not SubscriptionPlan.DEMO:
                         raise DemoUnavailableError
                 device = await DeviceService(DeviceRepository(session)).register(
-                    user.id, principal.installation_id, DevicePlatform.ANDROID, "Android DEMO"
+                    user.id,
+                    principal.installation_id,
+                    platform,
+                    "Android DEMO" if platform is DevicePlatform.ANDROID else "Windows DEMO",
                 )
                 # A fresh installation cannot safely resume an old private tunnel key.
                 # Retain its reservation until the worker confirms removal.

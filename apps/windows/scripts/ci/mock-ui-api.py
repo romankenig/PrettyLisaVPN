@@ -37,6 +37,7 @@ BILLING_LAST_COMMAND = None
 BILLING_REQUESTS = {}
 SIMULATE_BILLING = False
 SIMULATE_MESSAGES = False
+DEMO_REVIEW = False
 QUOTA_REVIEW = False
 QUOTA_EXTENDED = False
 MESSAGE_RECEIPTS = set()
@@ -66,7 +67,7 @@ MESSAGE_FIXTURES = [
 def fixture(method, path, body):
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
-    global QUOTA_REVIEW, QUOTA_EXTENDED
+    global QUOTA_REVIEW, QUOTA_EXTENDED, DEMO_REVIEW
     if method == "POST" and path == "/ui-review/free-quota":
         QUOTA_REVIEW = body.get("enabled") is True
         QUOTA_EXTENDED = body.get("extended") is True
@@ -92,7 +93,7 @@ def fixture(method, path, body):
             DEVICE_REVOKED = True
             return 200, DEVICE_EVIDENCE["revoked_response"]
     if method == "GET" and path == "/version":
-        return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.16.0-dev.40321791718+g177a078abd4f1e60fcba49f8acc849da622939f7", "environment": "test"}
+        return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.40.0-dev.1+gfixture", "environment": "test"}
     if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
         return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
     if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):
@@ -163,7 +164,12 @@ def fixture(method, path, body):
             "refresh_token_expires_at": "2099-01-01T00:00:00Z",
             "session_id": SESSION_ID,
         }
-    if method == "POST" and path == "/auth/verify-otp":
+    if method == "GET" and path == "/billing/catalog":
+        return 200, {"offers": BILLING_FIXTURES["free"]["offers"]}
+    if method == "POST" and path in ("/auth/verify-otp", "/auth/demo"):
+        DEMO_REVIEW = path == "/auth/demo"
+        if DEMO_REVIEW and (body.get("platform") != "WINDOWS" or body.get("device_key") != "d" * 64):
+            return 422, {"error": {"code": "INVALID_DEMO_FIXTURE"}}
         return 200, {
             "token_type": "bearer",
             "access_token": "ui-review-access-not-a-real-token",
@@ -177,10 +183,12 @@ def fixture(method, path, body):
                 "installation_id": body.get("installation_id", INSTALLATION_ID),
                 "status": "ACTIVE",
             },
-            "subscription": {"plan": "PREMIUM", "status": "ACTIVE"},
+            "subscription": {"plan": "DEMO" if DEMO_REVIEW else "PREMIUM", "status": "ACTIVE"},
         }
     if method == "GET" and path == "/public-location":
         return 200, {"success": True, "ip": "203.0.113.42", "country_code": "RU", "city": "Москва"}
+    if method == "GET" and path == "/me" and DEMO_REVIEW:
+        return 200, {"id": USER_ID, "email": None, "plan": "DEMO", "active_device_count": 1, "entitlements": {"daily_vpn_limit_seconds": 900, "free_seconds_usable": 900}}
     if method == "GET" and path == "/me":
         return 200, {
             "id": USER_ID, "email": ACCOUNT_EMAIL,
@@ -220,6 +228,7 @@ def fixture(method, path, body):
             ],
         }
     if method == "POST" and path == "/auth/logout":
+        DEMO_REVIEW = False
         return 200, {"status": "logged_out"}
     # Fail closed: no VPN session creation or device mutation.
     return 404, {"error": {"code": "HTTP_ERROR"}}

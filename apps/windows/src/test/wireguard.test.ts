@@ -204,3 +204,94 @@ it("serializes refresh and never replays an ambiguously consumed refresh credent
   expect(await storage.retrieve()).toBeNull();
   expect(session.current()).toBeNull();
 });
+
+it("does not cancel method fallback when a slow initial verification overlaps a heartbeat failure", async () => {
+  const direct = setup(),
+    relay = setup(true);
+  vi.mocked(direct.native.verify).mockImplementation(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 35000));
+    return false;
+  });
+  const normal = direct.transport.getMockImplementation()!;
+  direct.transport.mockImplementation(async (input, init) =>
+    String(input).endsWith("/heartbeat")
+      ? Response.json({ error: { code: "VPN_UNAVAILABLE" } }, { status: 503 })
+      : normal(input, init),
+  );
+  const manager = createVpnConnectionManager([direct.adapter, relay.adapter]);
+  direct.lost.mockImplementation((code) => {
+    void manager.connectionLost?.(code);
+  });
+  const connecting = manager.connect("", selection);
+  await vi.advanceTimersByTimeAsync(120000);
+  await connecting;
+  expect(direct.lost).not.toHaveBeenCalled();
+  expect(direct.row.status).toBe("CLOSED");
+  expect(relay.native.start).toHaveBeenCalledOnce();
+  expect(manager.current().phase).toBe("CONNECTED");
+  await manager.disconnect("");
+});
+
+it("retains private configuration across heartbeat responses and tolerates one probe failure", async () => {
+  const { adapter, native, transport, lost } = setup();
+  const normal = transport.getMockImplementation()!;
+  transport.mockImplementation(async (input, init) => {
+    const response = await normal(input, init);
+    if (!String(input).endsWith("/heartbeat")) return response;
+    const value = await response.json();
+    delete value.configuration;
+    return Response.json(value);
+  });
+  const connecting = adapter.connect(selection, new AbortController().signal);
+  await vi.advanceTimersByTimeAsync(2500);
+  await connecting;
+  vi.mocked(native.verify)
+    .mockResolvedValueOnce(false)
+    .mockResolvedValueOnce(true)
+    .mockResolvedValue(false);
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(lost).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(lost).toHaveBeenCalledExactlyOnceWith("VPN_CONNECTION_LOST");
+  await adapter.disconnect();
+});
+
+it("ignores a late health check after disconnection", async () => {
+  const { adapter, native, lost } = setup();
+  const connecting = adapter.connect(selection, new AbortController().signal);
+  await vi.advanceTimersByTimeAsync(2500);
+  await connecting;
+  let finish!: (result: boolean) => void;
+  vi.mocked(native.isUp).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await vi.advanceTimersByTimeAsync(30000);
+  await adapter.disconnect();
+  finish(false);
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(lost).not.toHaveBeenCalled();
+});
+
+it("does not try other methods when the device's daily budget is exhausted", async () => {
+  const direct = setup(),
+    relay = setup(true);
+  const normal = direct.transport.getMockImplementation()!;
+  direct.transport.mockImplementation(async (input, init) =>
+    init?.method === "POST" && String(input).endsWith("/sessions")
+      ? Response.json(
+          { error: { code: "DEMO_QUOTA_EXHAUSTED" } },
+          { status: 403 },
+        )
+      : normal(input, init),
+  );
+  const manager = createVpnConnectionManager([direct.adapter, relay.adapter]);
+  await manager.connect("", selection);
+  expect(manager.current()).toMatchObject({
+    phase: "FAILED",
+    failure_code: "DEMO_QUOTA_EXHAUSTED",
+  });
+  expect(relay.native.prepare).not.toHaveBeenCalled();
+});

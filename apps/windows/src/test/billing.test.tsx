@@ -102,7 +102,7 @@ function setup(
   return { billing, open, session, vpnConnection, ...view };
 }
 
-async function openPaymentChoice(name = "оформить подписку") {
+async function openPaymentChoice(name = "купить") {
   fireEvent.click(await screen.findByRole("button", { name }));
   return screen.getByRole("dialog");
 }
@@ -124,10 +124,15 @@ describe("subscription screen", () => {
   it("opens the account portal without starting a charge in the client", async () => {
     const url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43);
     const portal = vi.fn().mockResolvedValue(url);
-    const { open, billing } = setup("free", undefined, fixtures.free, portal);
+    const { open, billing } = setup(
+      "free",
+      undefined,
+      { ...fixtures.free, provider_mode: "DISABLED", actions: [] },
+      portal,
+    );
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "управлять подпиской и оплатой",
+        name: "купить",
       }),
     );
     await waitFor(() => expect(open).toHaveBeenCalledWith(url));
@@ -138,12 +143,12 @@ describe("subscription screen", () => {
     const { open, session } = setup(
       "free",
       undefined,
-      fixtures.free,
+      { ...fixtures.free, provider_mode: "DISABLED", actions: [] },
       vi.fn().mockRejectedValue(new ApiError("AUTH_INVALID")),
     );
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "управлять подпиской и оплатой",
+        name: "купить",
       }),
     );
     await waitFor(() => expect(session.current()).toBeNull());
@@ -153,7 +158,7 @@ describe("subscription screen", () => {
     const { billing, open } = setup(
       "free",
       undefined,
-      fixtures.free,
+      { ...fixtures.free, provider_mode: "DISABLED", actions: [] },
       vi
         .fn()
         .mockResolvedValue(
@@ -162,7 +167,7 @@ describe("subscription screen", () => {
     );
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "управлять подпиской и оплатой",
+        name: "купить",
       }),
     );
     await waitFor(() => expect(open).toHaveBeenCalled());
@@ -191,9 +196,9 @@ describe("subscription screen", () => {
     };
     setup("active", undefined, value);
     await screen.findByText("Visa •••• 4242");
-    expect(screen.getByText(/следующее списание/)).toHaveTextContent(
-      "6 декабря 2026",
-    );
+    expect(
+      screen.getByText(/следующее списание/).parentElement,
+    ).toHaveTextContent("6 декабря 2026");
     expect(screen.getByText(/цена закреплена/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "отменить подписку" }));
     expect(
@@ -209,9 +214,7 @@ describe("subscription screen", () => {
       new_contract_required: true,
       actions: ["SUBSCRIBE"],
     });
-    expect(
-      await screen.findByRole("button", { name: "оформить подписку" }),
-    ).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "купить" })).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: "продлить подписку" }),
     ).not.toBeInTheDocument();
@@ -244,24 +247,25 @@ describe("subscription screen", () => {
   it("loads backend prices, promotes RUB for the saved home country and preserves a manual choice", async () => {
     rememberHomeCountry("RU");
     const { billing } = setup();
-    await screen.findByRole("button", { name: "оформить подписку" });
+    await screen.findByRole("button", { name: "купить" });
     expect(billing.overview).toHaveBeenCalledWith(
       "token",
       expect.any(AbortSignal),
     );
-    expect(screen.getByRole("button", { name: "₽" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "RUB" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(
       screen.getByLabelText("цена в рублях").querySelector("del"),
     ).toHaveTextContent("299");
+    fireEvent.click(screen.getByRole("button", { name: "USD" }));
     expect(
       screen.getByLabelText("цена в долларах").querySelector("strong"),
     ).toHaveTextContent("2,99");
-    fireEvent.click(screen.getByRole("button", { name: "$" }));
+    fireEvent.click(screen.getByRole("button", { name: "USD" }));
     rememberHomeCountry("RU");
-    expect(screen.getByRole("button", { name: "$" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "USD" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -302,7 +306,7 @@ describe("subscription screen", () => {
   it("opens the provider once and does not treat redirect as payment success", async () => {
     const { billing, open } = setup();
     const button = await screen.findByRole("button", {
-      name: "оформить подписку",
+      name: "купить",
     });
     fireEvent.click(button);
     expect(billing.start).not.toHaveBeenCalled();
@@ -313,9 +317,8 @@ describe("subscription screen", () => {
       expect(open).toHaveBeenCalledWith(pending.redirect_url),
     );
     expect(billing.start).toHaveBeenCalledTimes(1);
-    expect(
-      screen.getByRole("button", { name: "оформить подписку" }),
-    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(
       "ожидаем подтверждения",
     );
@@ -423,20 +426,18 @@ describe("subscription screen", () => {
   });
   it("shows reference prices without checkout authority after a backend failure", async () => {
     const { billing } = setup();
-    await screen.findByRole("button", { name: "оформить подписку" });
+    await screen.findByRole("button", { name: "купить" });
     vi.mocked(billing.overview).mockRejectedValue(new Error("offline"));
-    fireEvent.click(screen.getByRole("button", { name: "обновить" }));
+    fireEvent.click(screen.getByRole("button", { name: "обновить подписку" }));
     await screen.findByRole("alert");
-    expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
-    expect(screen.getByText("399 ₽")).toBeInTheDocument();
-    expect(screen.getByText("$5")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Справочные цены для новой подписки/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "купить" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
+    expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("399");
+    fireEvent.click(screen.getByRole("button", { name: "USD" }));
+    expect(screen.getByLabelText("цена в долларах")).toHaveTextContent("5");
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
     expect(billing.start).not.toHaveBeenCalled();
-    expect(
-      screen.queryByRole("button", { name: "оформить подписку" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
   it("reuses the same idempotency key after a timeout", () => {
     const a = requestId("user", "revision", "SUBSCRIBE", "offer", "RUB");
@@ -460,7 +461,7 @@ describe("subscription screen", () => {
       tunnel: "UNKNOWN",
     });
     resolve({ ip: "203.0.113.42", countryCode: "RU", city: null });
-    await screen.findByRole("button", { name: "оформить подписку" });
+    await screen.findByRole("button", { name: "купить" });
     expect(preferredCurrency("user")).toBe("USD");
   });
 });
@@ -570,11 +571,11 @@ describe("read-only server billing", () => {
       provider_mode: "DISABLED",
       new_contract_required: false,
     });
+    await screen.findByText(/оплата пока недоступна/);
+    fireEvent.click(screen.getByRole("button", { name: "продлить подписку" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
-      await screen.findByRole("button", { name: "продлить подписку" }),
-    ).toBeDisabled();
-    expect(
-      screen.queryByRole("button", { name: "оформить подписку" }),
+      screen.queryByRole("button", { name: "купить" }),
     ).not.toBeInTheDocument();
     view.unmount();
     setup("free", undefined, {
@@ -587,9 +588,9 @@ describe("read-only server billing", () => {
       provider_mode: "DISABLED",
       new_contract_required: true,
     });
-    expect(
-      await screen.findByRole("button", { name: "оформить подписку" }),
-    ).toBeDisabled();
+    await screen.findByText(/оплата пока недоступна/);
+    expect(screen.getByRole("button", { name: "купить" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
     expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("199");
   });
   function overview(scenario: "free" | "active" | "canceled" = "free") {
@@ -606,15 +607,17 @@ describe("read-only server billing", () => {
     savePendingOperation("user", "legacy-operation");
     const { billing, open } = setup("free", undefined, overview());
     await screen.findByText(/оплата пока недоступна/);
-    const subscribe = screen.getByRole("button", { name: "оформить подписку" });
-    expect(subscribe).toBeDisabled();
+    const subscribe = screen.getByRole("button", { name: "купить" });
+    expect(subscribe).toBeEnabled();
     fireEvent.click(subscribe);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(billing.start).not.toHaveBeenCalled();
     expect(billing.operation).not.toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
     expect(pendingOperation("user")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
     expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("199");
+    fireEvent.click(screen.getByRole("button", { name: "USD" }));
     expect(screen.getByLabelText("цена в долларах")).toHaveTextContent("2,99");
   });
   it("does not invent a historical price or payment method for an active legacy subscription", async () => {
@@ -630,8 +633,8 @@ describe("read-only server billing", () => {
       screen.queryByRole("button", { name: "отменить подписку" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "продлить подписку" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "продлить подписку" }),
+    ).not.toBeInTheDocument();
   });
   it("shows an independently fixed current contract price alongside a different new offer", async () => {
     setup("active", undefined, {
@@ -640,18 +643,18 @@ describe("read-only server billing", () => {
     });
     await screen.findByText(/оплата пока недоступна/);
     expect(screen.getByText(/123,45/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
     expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("299");
   });
-  it("shows unavailability when the server has no current group/date offer", async () => {
+  it("keeps display fallback without checkout authority when no offer exists", async () => {
     setup("free", undefined, { ...overview(), offers: [] });
-    await screen.findByText("цены пока недоступны");
-    expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
-
-    expect(
-      screen.getByRole("button", { name: "оформить подписку" }),
-    ).toBeDisabled();
+    await screen.findByText(/оплата пока недоступна/);
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
+    expect(screen.getByLabelText("цена в рублях")).toHaveTextContent("399");
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
-  it("keeps manually assigned Platinum out of sales and price comparisons", async () => {
+  it("distinguishes manually assigned Platinum from a new Premium offer", async () => {
     setup("active", undefined, {
       ...overview("active"),
       plan: "PLATINUM",
@@ -661,7 +664,7 @@ describe("read-only server billing", () => {
     expect(
       screen.queryByRole("button", { name: "продлить подписку" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("цена в рублях")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "купить" })).toBeVisible();
   });
   it("preserves an expired subscription's actual renewal flag without granting paid access", () => {
     expect(
@@ -686,9 +689,9 @@ describe("server payment route capabilities", () => {
         provider_mode: mode,
       });
       await screen.findByText(/оплата пока недоступна/);
-      fireEvent.click(
-        screen.getByRole("button", { name: "продлить подписку" }),
-      );
+      expect(
+        screen.queryByRole("button", { name: "продлить подписку" }),
+      ).not.toBeInTheDocument();
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(
         screen.queryByRole("button", { name: "отменить подписку" }),
@@ -711,9 +714,8 @@ describe("server payment route capabilities", () => {
     expect(paymentsEnabled(parseOverview(legacy))).toBe(false);
     const { billing, open } = setup("free", undefined, legacy);
     await screen.findByText(/оплата пока недоступна/);
-    expect(
-      screen.getByRole("button", { name: "оформить подписку" }),
-    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(billing.start).not.toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
   });
@@ -756,14 +758,11 @@ describe("server payment route capabilities", () => {
       })),
     });
     await screen.findByText(/в этой валюте оплата недоступна/);
-    expect(
-      screen.getByRole("button", { name: "оформить подписку" }),
-    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "купить" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByLabelText("цена в долларах")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "₽" }));
-    expect(
-      screen.getByRole("button", { name: "оформить подписку" }),
-    ).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "RUB" }));
+    expect(screen.getByRole("button", { name: "купить" })).toBeEnabled();
   });
   it("closes a stale quote when capabilities change on refresh", async () => {
     const { billing } = setup();
@@ -775,7 +774,7 @@ describe("server payment route capabilities", () => {
         provider_mode: "DISABLED",
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "обновить" }));
+    fireEvent.click(screen.getByRole("button", { name: "обновить подписку" }));
     await screen.findByText(/оплата пока недоступна/);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(billing.start).not.toHaveBeenCalled();
@@ -831,4 +830,26 @@ describe("server payment route capabilities", () => {
   ])("rejects malformed or contradictory capability metadata %#", (change) => {
     expect(() => parseOverview({ ...fixtures.free, ...change })).toThrow();
   });
+});
+
+it("confirms renewal at the immutable contract price and currency despite a newer offer and display currency", async () => {
+  saveCurrency("user", "USD");
+  const { billing } = setup("active", undefined, {
+    ...fixtures.active,
+    current_price: { amount_minor: 12345, currency: "RUB" },
+  });
+  const dialog = await openPaymentChoice("продлить подписку");
+  expect(dialog.querySelector(".payment-choice-summary")).toHaveTextContent(
+    "123,45 ₽",
+  );
+  fireEvent.click(
+    within(dialog).getByRole("button", { name: "перейти к оплате" }),
+  );
+  await waitFor(() =>
+    expect(billing.start).toHaveBeenCalledWith(
+      "token",
+      expect.objectContaining({ action: "RENEW", currency: "RUB" }),
+      expect.any(AbortSignal),
+    ),
+  );
 });

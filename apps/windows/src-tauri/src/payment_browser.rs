@@ -34,10 +34,11 @@ pub fn open_payment_url(url: String) -> Result<(), &'static str> {
     {
         return Err("PAYMENT_URL_NOT_ALLOWED");
     }
-    let wide: Vec<u16> = OsStr::new(parsed.as_str())
-        .encode_wide()
-        .chain(Some(0))
-        .collect();
+    open_browser(parsed.as_str())
+}
+
+pub(super) fn open_browser(url: &str) -> Result<(), &'static str> {
+    let wide: Vec<u16> = OsStr::new(url).encode_wide().chain(Some(0)).collect();
     let verb: Vec<u16> = OsStr::new("open").encode_wide().chain(Some(0)).collect();
     let result = unsafe {
         ShellExecuteW(

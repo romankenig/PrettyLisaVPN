@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { createVpnConnectionManager } from "./connection";
 import type { ApiClient } from "../api/client";
 import type { AuthenticationSession } from "../auth/session";
@@ -17,8 +18,9 @@ export function createDefaultVpnConnection(
     baseUrl,
     transport: createHttpTransport(),
     bearer: () => session.bearer(api),
-    lost: () => {
-      void manager.connectionLost?.();
+    fullTrafficOnly: () => session.current()?.plan === "DEMO",
+    lost: (code?: string) => {
+      void manager.connectionLost?.(code);
     },
   };
   const manager = createVpnConnectionManager(
@@ -33,10 +35,21 @@ export function createDefaultVpnConnection(
     ],
     createDeviceMethodPreference(),
     getDeviceMethodSelection().current,
+    async (signal) => {
+      signal.throwIfAborted();
+      await invoke("vpn_handoff");
+      signal.throwIfAborted();
+    },
   );
   manager.localTunnelStatus = async () =>
     (await wireGuardNative.isUp()) || (await managedNative.isUp())
       ? "UP"
       : "DOWN";
+  const connect = manager.connect;
+  manager.connect = (token, selection) =>
+    connect(
+      token,
+      session.current()?.plan === "DEMO" ? { mode: "AUTO" } : selection,
+    );
   return manager;
 }

@@ -81,6 +81,7 @@ try {
               ),
           desktop: desktopAdapter,
           installationId: installationIdProvider,
+          demoDeviceKey: reviewVpn ? async () => "d".repeat(64) : undefined,
           session,
           sessionRestoration,
           vpnConnection,

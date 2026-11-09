@@ -9,7 +9,7 @@ export interface SessionCredentials {
   readonly sessionId: string;
   readonly userId: string;
   readonly deviceId: string;
-  readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
+  readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
 }
 
 export interface ActiveSession {
@@ -18,7 +18,7 @@ export interface ActiveSession {
   readonly sessionId: string;
   readonly userId: string;
   readonly deviceId: string | null;
-  readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
+  readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   readonly profile: MeResponse | null;
 }
 
@@ -37,7 +37,7 @@ export interface RestoredSessionCredentials {
   readonly accessTokenExpiresIn: number;
   readonly sessionId: string;
   readonly userId: string;
-  readonly plan: "FREE" | "PREMIUM" | "PLATINUM";
+  readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   readonly profile: MeResponse;
 }
 
