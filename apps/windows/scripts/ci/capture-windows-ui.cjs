@@ -262,7 +262,7 @@ async function main() {
     .locator(".sidebar-versions > div")
     .filter({ has: page.locator("dt", { hasText: /^Backend$/ }) })
     .getByText(
-      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.40.0",
+      deviceEvidence?.version.application_version.split(/[+-]/)[0] || "0.40.1",
       {
         exact: true,
       },
