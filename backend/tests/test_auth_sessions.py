@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -68,6 +69,55 @@ async def test_rotate_replaces_hash_and_expiration():
         rotated.session.refresh_token_hash,
         rotated.session.expires_at,
         rotated.session.updated_at,
+        previous_refresh_token_hash=None,
+        refresh_rotation_id=None,
+    )
+
+
+async def test_same_rotation_recovers_successor_without_extending_expiry_or_rotating_again():
+    repository = AsyncMock(spec=AuthSessionRepository)
+    current = auth_session(expires_at=datetime.now(UTC) + timedelta(days=1))
+    service = AuthSessionService(repository, timedelta(days=30), rotation_secret=b"test-only-key")
+    operation = uuid4()
+    issued = await service.rotate_validated(
+        current, refresh_token="current-token", rotation_id=operation
+    )
+    recovered = await service.rotate_validated(
+        issued.session, refresh_token="current-token", rotation_id=operation
+    )
+    assert recovered == issued
+    repository.rotate.assert_awaited_once()
+    assert issued.session.previous_refresh_token_hash == current.refresh_token_hash
+    assert not service.accepts_refresh(issued.session, "current-token", datetime.now(UTC))
+    assert not service.accepts_refresh(issued.session, "current-token", datetime.now(UTC), uuid4())
+    assert not service.accepts_refresh(issued.session, "wrong-token", datetime.now(UTC), operation)
+    for changed in [
+        replace(issued.session, revoked_at=datetime.now(UTC)),
+        replace(issued.session, expires_at=datetime.now(UTC) - timedelta(seconds=1)),
+        replace(issued.session, id=uuid4()),
+    ]:
+        assert not service.accepts_refresh(changed, "current-token", datetime.now(UTC), operation)
+    next_rotation = await service.rotate_validated(
+        issued.session, refresh_token=issued.refresh_token, rotation_id=uuid4()
+    )
+    assert not service.accepts_refresh(
+        next_rotation.session, "current-token", datetime.now(UTC), operation
+    )
+
+
+async def test_legacy_rotation_discards_recovery_metadata():
+    repository = AsyncMock(spec=AuthSessionRepository)
+    service = AuthSessionService(repository, timedelta(days=30), rotation_secret=b"test-only-key")
+    current = auth_session(expires_at=datetime.now(UTC) + timedelta(days=1))
+    operation = uuid4()
+    issued = await service.rotate_validated(
+        current, refresh_token="current-token", rotation_id=operation
+    )
+    legacy = await service.rotate_validated(issued.session)
+    assert legacy.session.previous_refresh_token_hash is None
+    assert legacy.session.refresh_rotation_id is None
+    assert not service.accepts_refresh(
+        legacy.session, "current-token", datetime.now(UTC), operation
     )
 
 

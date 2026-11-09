@@ -44,6 +44,7 @@ export interface VerifyOtpResponse {
 export interface RefreshRequest {
   readonly session_id: string;
   readonly refresh_token: string;
+  readonly rotation_id?: string;
 }
 
 export interface RefreshResponse {

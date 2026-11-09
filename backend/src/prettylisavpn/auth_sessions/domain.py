@@ -15,10 +15,19 @@ class AuthSession:
     revoked_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    previous_refresh_token_hash: bytes | None = field(default=None, repr=False)
+    refresh_rotation_id: UUID | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if len(self.refresh_token_hash) != 32:
             raise ValueError("refresh_token_hash must be a SHA-256 digest")
+        if (
+            self.previous_refresh_token_hash is not None
+            and len(self.previous_refresh_token_hash) != 32
+        ):
+            raise ValueError("previous_refresh_token_hash must be a SHA-256 digest")
+        if (self.previous_refresh_token_hash is None) != (self.refresh_rotation_id is None):
+            raise ValueError("refresh retry metadata must be complete")
         for field_name in ("expires_at", "revoked_at", "created_at", "updated_at"):
             value = getattr(self, field_name)
             if value is None:

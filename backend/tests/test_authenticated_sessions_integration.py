@@ -105,6 +105,91 @@ def auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+async def test_refresh_retry_survives_lost_response_concurrency_and_service_restart():
+    config = settings()
+    postgres = Postgres(config)
+    email = f"refresh-recovery-{uuid4()}@example.com"
+    state = await create_auth_state(postgres, config, email)
+    app = create_app(config, postgres=postgres, valkey=FakeDependency(), product_events=AsyncMock())
+    body = {
+        "session_id": str(state.issued.session.id),
+        "refresh_token": state.issued.refresh_token,
+        "rotation_id": str(uuid4()),
+    }
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            results = await asyncio.gather(
+                client.post("/auth/refresh", json=body), client.post("/auth/refresh", json=body)
+            )
+            assert [r.status_code for r in results] == [200, 200]
+            first, repeated = [r.json() for r in results]
+            assert first["refresh_token"] == repeated["refresh_token"]
+            assert first["refresh_token_expires_at"] == repeated["refresh_token_expires_at"]
+            assert (
+                await client.post("/auth/refresh", json={**body, "rotation_id": str(uuid4())})
+            ).status_code == 401
+            assert (
+                await client.post(
+                    "/auth/refresh", json={k: v for k, v in body.items() if k != "rotation_id"}
+                )
+            ).status_code == 401
+
+    # A fresh application/process has no in-memory receipt; PostgreSQL is authoritative.
+    postgres = Postgres(config)
+    app = create_app(config, postgres=postgres, valkey=FakeDependency(), product_events=AsyncMock())
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            recovered = await client.post("/auth/refresh", json=body)
+            assert recovered.status_code == 200
+            assert recovered.json()["refresh_token"] == first["refresh_token"]
+            current_body = {
+                **body,
+                "refresh_token": first["refresh_token"],
+                "rotation_id": str(uuid4()),
+            }
+            advanced = await client.post("/auth/refresh", json=current_body)
+            assert advanced.status_code == 200
+            assert (await client.post("/auth/refresh", json=body)).status_code == 401
+            assert (
+                await client.post(
+                    "/auth/logout", headers=auth_headers(advanced.json()["access_token"])
+                )
+            ).status_code == 200
+            assert (await client.post("/auth/refresh", json=current_body)).status_code == 401
+        await cleanup_user(postgres, email)
+
+
+@pytest.mark.parametrize("principal", ["blocked", "revoked"])
+async def test_refresh_recovery_still_checks_account_and_device(principal):
+    config = settings()
+    postgres = Postgres(config)
+    email = f"refresh-recovery-{principal}-{uuid4()}@example.com"
+    state = await create_auth_state(postgres, config, email)
+    app = create_app(config, postgres=postgres, valkey=FakeDependency(), product_events=AsyncMock())
+    body = {
+        "session_id": str(state.issued.session.id),
+        "refresh_token": state.issued.refresh_token,
+        "rotation_id": str(uuid4()),
+    }
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            assert (await client.post("/auth/refresh", json=body)).status_code == 200
+            async with postgres.session() as session:
+                statement = (
+                    update(UserRecord)
+                    .where(UserRecord.id == state.user.id)
+                    .values(status=UserStatus.BLOCKED)
+                    if principal == "blocked"
+                    else update(DeviceRecord)
+                    .where(DeviceRecord.id == state.devices[0].id)
+                    .values(status=DeviceStatus.REVOKED, revoked_at=datetime.now(UTC))
+                )
+                await session.execute(statement)
+                await session.commit()
+            assert (await client.post("/auth/refresh", json=body)).status_code == 403
+        await cleanup_user(postgres, email)
+
+
 async def test_refresh_rotates_hash_and_rejects_replayed_token():
     config = settings()
     postgres = Postgres(config)

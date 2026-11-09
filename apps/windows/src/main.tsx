@@ -12,6 +12,7 @@ import {
   validatePaymentUrl,
 } from "./native/paymentBrowser";
 import { createAuthenticationSession } from "./auth/session";
+import { createSessionTransport } from "./auth/transport";
 import { createSessionRestoration } from "./auth/restoration";
 import { desktopAdapter } from "./native/desktop";
 import { createCredentialStorage } from "./native/credentialStorage";
@@ -29,15 +30,26 @@ import "./ui/styles.css";
 const root = createRoot(document.getElementById("root")!);
 try {
   const config = loadConfig(import.meta.env);
-  const api = createApiClient(
+  const rawApi = createApiClient(
     config.backendBaseUrl,
     createHttpTransport(),
     config.backendTimeoutMs,
   );
   const credentialStorage = createCredentialStorage();
   const session = createAuthenticationSession(credentialStorage);
+  const authenticatedTransport = createSessionTransport(
+    config.backendBaseUrl,
+    createHttpTransport(),
+    session,
+    rawApi,
+  );
+  const api = createApiClient(
+    config.backendBaseUrl,
+    authenticatedTransport,
+    config.backendTimeoutMs,
+  );
   const sessionRestoration = createSessionRestoration(
-    api,
+    rawApi,
     credentialStorage,
     session,
   );
@@ -55,15 +67,15 @@ try {
           api,
           support: createSupportSender(
             config.backendBaseUrl,
-            createHttpTransport(),
+            authenticatedTransport,
           ),
           messages: createMessagesClient(
             config.backendBaseUrl,
-            createHttpTransport(),
+            authenticatedTransport,
           ),
           billing: createBillingClient(
             config.backendBaseUrl,
-            createHttpTransport(),
+            authenticatedTransport,
             config.backendTimeoutMs,
           ),
           paymentBrowser: reviewVpn

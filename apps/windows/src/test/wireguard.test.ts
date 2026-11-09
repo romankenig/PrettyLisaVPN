@@ -175,7 +175,7 @@ it("cleans an abandoned device grant on startup once and leaves a new connection
   await manager.reconcile("");
   expect(requests).toHaveLength(count);
 });
-it("serializes refresh and never replays an ambiguously consumed refresh credential", async () => {
+it("serializes refresh and retains its recovery credential after a network failure", async () => {
   const storage = createTestCredentialStorage();
   const session = createAuthenticationSession(storage);
   await session.establish({
@@ -190,7 +190,7 @@ it("serializes refresh and never replays an ambiguously consumed refresh credent
   });
   const api = {
     refresh: vi.fn(async () => {
-      expect(await storage.retrieve()).toBeNull();
+      expect((await storage.retrieve())?.rotationId).toBeTruthy();
       throw new Error("timeout");
     }),
     me: vi.fn(),
@@ -201,8 +201,8 @@ it("serializes refresh and never replays an ambiguously consumed refresh credent
   ]);
   expect(results.every((value) => value.status === "rejected")).toBe(true);
   expect(api.refresh).toHaveBeenCalledOnce();
-  expect(await storage.retrieve()).toBeNull();
-  expect(session.current()).toBeNull();
+  expect((await storage.retrieve())?.refreshToken).toBe("one-use");
+  expect(session.current()?.userId).toBe("user");
 });
 
 it("does not cancel method fallback when a slow initial verification overlaps a heartbeat failure", async () => {

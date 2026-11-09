@@ -4,6 +4,7 @@ import {
   type CredentialStorage,
 } from "../native/credentialStorage";
 import type { AuthenticationSession } from "./session";
+import { refreshStoredSession } from "./refresh";
 
 export type RestorationResult =
   | "authenticated"
@@ -64,15 +65,7 @@ async function restoreSession(
       return await clearInvalidSession(session);
     }
 
-    const refreshed = await api.refresh({
-      session_id: stored.sessionId,
-      refresh_token: stored.refreshToken,
-    });
-    await storage.replace({
-      sessionId: refreshed.session_id,
-      refreshToken: refreshed.refresh_token,
-      expiresAt: refreshed.refresh_token_expires_at,
-    });
+    const refreshed = await refreshStoredSession(api, storage, stored);
     const profile = await api.me(refreshed.access_token);
     session.activateRestored({
       accessToken: refreshed.access_token,
