@@ -322,7 +322,7 @@
     <string name="vpn_checking">verbindung wird geprüft…</string>
     <string name="vpn_waiting_network">warten auf das netzwerk…</string>
     <string name="vpn_reconnecting">verbindung wird wiederhergestellt…</string>
-    <string name="vpn_reset_methods">gespeicherte methoden zurücksetzen und neu verbinden</string>
+    <string name="vpn_reset_methods">verbindungsmethode ändern</string>
     <string name="vpn_unstable">die verbindung ist instabil. die automatische wiederherstellung wurde gestoppt; versuchen sie erneut, eine verbindung herzustellen</string>
     <string name="legal_documents">dokumente</string>
     <string name="legal_intro">aktuelle Bedingungen auf der Website von PrettyLisaVPN</string>
@@ -359,7 +359,9 @@
     <string name="traffic_remaining_group">weitere Dienste</string>
     <string name="plan_registration_required">nach Registrierung</string>
     <string name="plan_no_registration">ohne Registrierung</string>
-    <string name="vpn_reset_settings">einstellungen zurücksetzen</string>
     <string name="free_quota_exhausted">deine kostenlose Stunde für heute ist aufgebraucht. kaufe PREMIUM für unbegrenzten Zugang.</string>
     <string name="free_quota_buy">jetzt PREMIUM kaufen</string>
+    <string name="vpn_reset_title">verbindungsmethode ändern?</string>
+    <string name="vpn_reset_description">die gespeicherte Methode wird vergessen und die verfügbaren Optionen werden erneut geprüft. das VPN wird kurz getrennt. land und ausgewählte Dienste bleiben erhalten.</string>
+    <string name="vpn_reset_confirm">ja, neu verbinden</string>
 </resources>

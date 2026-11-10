@@ -3,7 +3,11 @@ package com.prettylisavpn.android.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -23,6 +27,8 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     val tr = strings()
     fun methodName(method: VpnMethod) = if (method.id == "wireguard_relay") tr(R.string.vpn_wireguard_relay) else method.shortLabel
     val status by (actions?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
+    var confirmReset by remember(actions, status.method, status.phase, country, signedIn) { mutableStateOf(false) }
+    val canReset = actions != null && signedIn && canConnect && status.error != VpnError.CLEANUP
     val active = status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING) || status.error == VpnError.CLEANUP
     if (quotaExhausted || status.error == VpnError.FREE_LIMIT) {
         Text(tr(R.string.free_quota_exhausted), Modifier.testTag("free-quota-notice"), style = MaterialTheme.typography.bodyMedium, color = Brand.Christalle)
@@ -50,13 +56,18 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     if (status.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING)) status.method?.let {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(methodName(it), Modifier.testTag("vpn-method"), style = MaterialTheme.typography.bodyMedium)
-            TextButton({ actions?.resetMethods(country) }, Modifier.testTag("vpn-reset-methods").semantics { contentDescription = tr(R.string.vpn_reset_methods) },
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                colors = ButtonDefaults.textButtonColors(contentColor = Brand.Christalle.copy(alpha = .6f)),
-                enabled = actions != null && signedIn && canConnect && status.error != VpnError.CLEANUP) {
-                Text(tr(R.string.vpn_reset_settings), style = MaterialTheme.typography.labelSmall)
+            IconButton({ confirmReset = true }, Modifier.size(40.dp).testTag("vpn-reset-methods"), enabled = canReset) {
+                Icon(Icons.Outlined.Refresh, tr(R.string.vpn_reset_methods), Modifier.size(18.dp), tint = Brand.Christalle.copy(alpha = .6f))
             }
         }
+        if (confirmReset && canReset) AlertDialog(
+            onDismissRequest = { confirmReset = false }, containerColor = Brand.Mercury,
+            modifier = Modifier.testTag("vpn-reset-confirmation"),
+            title = { Text(tr(R.string.vpn_reset_title)) },
+            text = { Text(tr(R.string.vpn_reset_description)) },
+            confirmButton = { TextButton({ confirmReset = false; actions?.resetMethods(country) }, Modifier.testTag("vpn-reset-confirm")) { Text(tr(R.string.vpn_reset_confirm)) } },
+            dismissButton = { TextButton({ confirmReset = false }, Modifier.testTag("vpn-reset-cancel")) { Text(tr(R.string.ui_cancel)) } },
+        )
     }
     if (status.phase == VpnPhase.CONNECTING) Text(tr(R.string.vpn_first_connection_hint),
         Modifier.testTag("vpn-duration-hint"), style = MaterialTheme.typography.bodySmall,

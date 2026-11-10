@@ -39,6 +39,14 @@ class PlaceholderConnectionTest {
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()
             compose.waitUntil(5_000) { controller.status.value.method?.id == "vless" }
             compose.onNodeWithTag("vpn-reset-methods").performScrollTo().assertIsEnabled().performClick()
+            compose.onNodeWithTag("vpn-reset-confirmation").assertExists()
+            assertEquals(listOf("start:vless"), events)
+            screenshot("vpn-reset-confirmation")
+            compose.onNodeWithTag("vpn-reset-cancel").performClick()
+            compose.onNodeWithTag("vpn-reset-confirmation").assertDoesNotExist()
+            assertEquals(listOf("start:vless"), events)
+            compose.onNodeWithTag("vpn-reset-methods").performClick()
+            compose.onNodeWithTag("vpn-reset-confirm").performClick()
             compose.waitUntil(5_000) { controller.status.value.method?.id == "wireguard" }
             assertEquals(listOf("start:vless", "stop:vless", "start:wireguard"), events)
             screenshot("vpn-reset-methods")

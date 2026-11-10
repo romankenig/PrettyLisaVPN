@@ -368,7 +368,16 @@
     "сброс настроек": "сброс настроек",
     "забыть успешный способ и подключиться заново": "забыть успешный способ и подключиться заново",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.",
-    "Купить PREMIUM": "Купить PREMIUM"
+    "Купить PREMIUM": "Купить PREMIUM",
+    "изменить способ подключения": "изменить способ подключения",
+    "Изменить способ подключения?": "Изменить способ подключения?",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.",
+    "да, переподключиться": "да, переподключиться",
+    "выйти на этом устройстве": "выйти на этом устройстве",
+    "Выйти на этом устройстве?": "Выйти на этом устройстве?",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.",
+    "да, выйти": "да, выйти",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -739,7 +748,16 @@
     "сброс настроек": "reset settings",
     "забыть успешный способ и подключиться заново": "forget the successful method and reconnect",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Your free hour for today is used up. Buy PREMIUM for unlimited access.",
-    "Купить PREMIUM": "Buy PREMIUM"
+    "Купить PREMIUM": "Buy PREMIUM",
+    "изменить способ подключения": "change connection method",
+    "Изменить способ подключения?": "Change connection method?",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "Forget the remembered method and try the available options again. VPN will disconnect briefly. Your country and selected services will stay the same.",
+    "да, переподключиться": "yes, reconnect",
+    "выйти на этом устройстве": "sign out on this device",
+    "Выйти на этом устройстве?": "Sign out on this device?",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN will disconnect and the sign-in page will open. Sign in again to reconnect.",
+    "да, выйти": "yes, sign out",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Device “{0}” will sign out and all its active sessions will end."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1110,7 +1128,16 @@
     "сброс настроек": "重置设置",
     "забыть успешный способ и подключиться заново": "忘记成功的连接方式并重新连接",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "今天的免费一小时已用完。购买 PREMIUM 即可享受不限时访问。",
-    "Купить PREMIUM": "购买 PREMIUM"
+    "Купить PREMIUM": "购买 PREMIUM",
+    "изменить способ подключения": "更改连接方式",
+    "Изменить способ подключения?": "更改连接方式？",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "清除已记住的方式并重新尝试可用选项。VPN 将短暂断开。国家和已选服务保持不变。",
+    "да, переподключиться": "是，重新连接",
+    "выйти на этом устройстве": "在此设备上退出",
+    "Выйти на этом устройстве?": "在此设备上退出？",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN 将断开并打开登录页面。再次连接需要重新登录。",
+    "да, выйти": "是，退出",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "设备“{0}”将退出账户，其所有活动会话将结束。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1481,7 +1508,16 @@
     "сброс настроек": "restablecer ajustes",
     "забыть успешный способ и подключиться заново": "olvidar el método que funcionó y reconectar",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Tu hora gratuita de hoy se ha agotado. Compra PREMIUM para acceso ilimitado.",
-    "Купить PREMIUM": "Comprar PREMIUM"
+    "Купить PREMIUM": "Comprar PREMIUM",
+    "изменить способ подключения": "cambiar método de conexión",
+    "Изменить способ подключения?": "¿Cambiar el método de conexión?",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "Olvidaremos el método guardado y probaremos de nuevo las opciones disponibles. La VPN se desconectará brevemente. Se conservarán el país y los servicios seleccionados.",
+    "да, переподключиться": "sí, reconectar",
+    "выйти на этом устройстве": "cerrar sesión en este dispositivo",
+    "Выйти на этом устройстве?": "¿Cerrar sesión en este dispositivo?",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "La VPN se desconectará y se abrirá la pantalla de acceso. Inicia sesión de nuevo para reconectar.",
+    "да, выйти": "sí, cerrar sesión",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "El dispositivo «{0}» cerrará sesión y se terminarán todas sus sesiones activas."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1852,7 +1888,16 @@
     "сброс настроек": "Einstellungen zurücksetzen",
     "забыть успешный способ и подключиться заново": "erfolgreiche Methode vergessen und neu verbinden",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Deine kostenlose Stunde für heute ist aufgebraucht. Kaufe PREMIUM für unbegrenzten Zugang.",
-    "Купить PREMIUM": "PREMIUM kaufen"
+    "Купить PREMIUM": "PREMIUM kaufen",
+    "изменить способ подключения": "verbindungsmethode ändern",
+    "Изменить способ подключения?": "Verbindungsmethode ändern?",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "Die gespeicherte Methode wird vergessen und die verfügbaren Optionen werden erneut geprüft. Das VPN wird kurz getrennt. Land und ausgewählte Dienste bleiben erhalten.",
+    "да, переподключиться": "ja, neu verbinden",
+    "выйти на этом устройстве": "auf diesem gerät abmelden",
+    "Выйти на этом устройстве?": "Auf diesem Gerät abmelden?",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "Das VPN wird getrennt und die Anmeldeseite geöffnet. Melde dich erneut an, um dich zu verbinden.",
+    "да, выйти": "ja, abmelden",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2223,6 +2268,15 @@
     "сброс настроек": "réinitialiser les réglages",
     "забыть успешный способ и подключиться заново": "oublier la méthode réussie et se reconnecter",
     "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Votre heure gratuite du jour est épuisée. Achetez PREMIUM pour un accès illimité.",
-    "Купить PREMIUM": "Acheter PREMIUM"
+    "Купить PREMIUM": "Acheter PREMIUM",
+    "изменить способ подключения": "changer de méthode de connexion",
+    "Изменить способ подключения?": "Changer de méthode de connexion ?",
+    "Забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. Страна и выбранные сервисы сохранятся.": "La méthode mémorisée sera oubliée et les options disponibles seront réessayées. Le VPN sera brièvement déconnecté. Le pays et les services sélectionnés seront conservés.",
+    "да, переподключиться": "oui, reconnecter",
+    "выйти на этом устройстве": "se déconnecter sur cet appareil",
+    "Выйти на этом устройстве?": "Se déconnecter sur cet appareil ?",
+    "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "Le VPN sera déconnecté et la page de connexion s’ouvrira. Reconnectez-vous à votre compte pour utiliser le VPN.",
+    "да, выйти": "oui, se déconnecter",
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "L’appareil « {0} » sera déconnecté du compte et toutes ses sessions actives seront fermées."
   }
 }

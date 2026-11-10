@@ -714,11 +714,33 @@ async function main() {
   });
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page
-    .getByRole("button", { name: "сброс настроек", exact: true })
+    .getByRole("button", { name: "изменить способ подключения", exact: true })
     .waitFor();
   await screenshot("04f-home-method-reset");
   await page
-    .getByRole("button", { name: "сброс настроек", exact: true })
+    .getByRole("button", { name: "изменить способ подключения", exact: true })
+    .click();
+  await page
+    .getByRole("alertdialog", { name: "Изменить способ подключения?" })
+    .waitFor();
+  await screenshot("04g-method-reset-confirmation");
+  await page.getByRole("button", { name: "отмена", exact: true }).click();
+  if (
+    (await page.evaluate(
+      () => document.documentElement.dataset.vpnReviewAttempts,
+    )) !== "wireguard,amneziawg"
+  )
+    throw Error("Cancelling confirmation changed the VPN method");
+  await page
+    .getByRole("button", { name: "изменить способ подключения", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("alertdialog").waitFor({ state: "hidden" });
+  await page
+    .getByRole("button", { name: "изменить способ подключения", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "да, переподключиться", exact: true })
     .click();
   await page.waitForFunction(
     () =>
@@ -731,7 +753,7 @@ async function main() {
     .waitFor();
   if (
     await page
-      .getByRole("button", { name: "сброс настроек", exact: true })
+      .getByRole("button", { name: "изменить способ подключения", exact: true })
       .count()
   )
     throw Error("Method reset must disappear without a current method");
@@ -1095,14 +1117,42 @@ async function main() {
     .getByText("последний вход: нет данных", { exact: false })
     .waitFor();
   await screenshot("06-devices");
-  await page.locator(".settings-devices").evaluate((node) => {
-    if (node.scrollHeight > node.clientHeight) {
-      node.scrollTop = node.scrollHeight;
-      if (node.scrollTop <= 0)
-        throw new Error("Device list cannot scroll to the last device");
-      node.scrollTop = 0;
-    }
+  // Expand only the loopback fixture; preserve the original recorded responses above.
+  await fetch("http://127.0.0.1:8000/ui-review/devices", {
+    method: "POST",
+    body: JSON.stringify({ long_list: true }),
   });
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+  await page.getByRole("link", { name: /устройства/ }).click();
+  await page
+    .getByRole("heading", { name: "Review device 2", exact: true })
+    .waitFor();
+  await page.locator("main").evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await page.locator(".device-card").first().hover();
+  await page.mouse.wheel(0, 800);
+  await page.waitForFunction(
+    () => document.querySelector("main").scrollTop > 40,
+  );
+  await page.waitForFunction(() => {
+    const main = document.querySelector("main").getBoundingClientRect();
+    const last = document
+      .querySelector(".device-card:last-child")
+      .getBoundingClientRect();
+    return last.bottom <= main.bottom + 1;
+  });
+  await screenshot("06b-devices-mouse-wheel-bottom");
+  await page.mouse.wheel(0, -1600);
+  await page.waitForFunction(
+    () => document.querySelector("main").scrollTop === 0,
+  );
+  await fetch("http://127.0.0.1:8000/ui-review/devices", {
+    method: "POST",
+    body: JSON.stringify({ long_list: false }),
+  });
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+  await page.getByRole("link", { name: /устройства/ }).click();
   await page
     .getByRole("button", { name: "отозвать доступ", exact: true })
     .click();
@@ -1326,6 +1376,38 @@ async function main() {
   await page.getByRole("button", { name: "купить", exact: true }).click();
   await page.getByRole("textbox", { name: "Email", exact: true }).waitFor();
   await screenshot("19-demo-register");
+  await page
+    .getByRole("button", { name: /попробовать без регистрации/ })
+    .click();
+  await page.getByText("гость на этом устройстве", { exact: true }).waitFor();
+  await fetch("http://127.0.0.1:8000/ui-review/devices", {
+    method: "POST",
+    body: JSON.stringify({ allow_current_revoke: true }),
+  });
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "настройки", exact: true })
+    .click();
+  await page.getByRole("link", { name: /устройства/ }).click();
+  await page
+    .getByRole("button", { name: "выйти на этом устройстве", exact: true })
+    .click();
+  await page
+    .getByRole("alertdialog", { name: "Выйти на этом устройстве?" })
+    .waitFor();
+  await screenshot("20-current-device-signout");
+  await page.getByRole("button", { name: "отмена", exact: true }).click();
+  await page
+    .getByRole("button", { name: "выйти на этом устройстве", exact: true })
+    .click();
+  await page.getByRole("button", { name: "да, выйти", exact: true }).click();
+  await page.getByRole("heading", { name: "вход по email" }).waitFor();
+  if (
+    !(await (await fetch("http://127.0.0.1:8000/ui-review/devices")).json())
+      .current_revoked
+  )
+    throw Error("Current device was not revoked through the API");
+  await screenshot("21-current-device-signed-out");
   nativeWindow("VerifyFixed", "10-login-fixed");
   await page.getByRole("button", { name: "Свернуть", exact: true }).click();
   await delay(300);
@@ -1355,6 +1437,9 @@ async function main() {
         authNavigationDisabledVerified: true,
         iconNavigationVerified: true,
         settingsDevicesAndLogoutVerified: true,
+        devicesMouseWheelVerified: true,
+        currentDeviceRevocationAndLoginVerified: true,
+        methodResetConfirmationVerified: true,
         subscriptionBillingUiVerified: true,
         paymentChoiceVerified: true,
         aboutSupportUiVerified: true,
