@@ -6,6 +6,24 @@
 
 ## Unreleased
 
+### Windows — 0.28.0 / Android — 0.27.1
+
+- Service selection shows each service once: selected alphabetically, remaining
+  top-10 popular services, then the alphabetical remainder. Toggling a service
+  updates its group immediately; search and include/exclude selections remain independent.
+- FREE and DEMO cards emphasize “after registration” / “without registration”.
+  An exhausted FREE hour offers PREMIUM; Connect opens subscription instead of
+  trying protocols against a confirmed exhausted balance. Stale balances and
+  reserved time are not treated as exhaustion. Server admission stays authoritative.
+- Small translucent “reset settings” next to the current protocol replaces the
+  Android reset icon and adds the same action on Windows. It clears learned method
+  preference, confirms old-session cleanup and retries allowed methods; explicit
+  disconnect/account change cancels a pending reconnect.
+- Windows 0.27.1 → 0.28.0 (new reset action); Android 0.27.0/code 50 →
+  0.27.1/code 51 (existing controls and behavior correction). Backend 0.40.1,
+  website 0.5.2 and engines unchanged; no migration or payment activation.
+  Evidence and publication boundary: [client handoff](docs/client-selection-polish.md).
+
 ### Public website — 0.5.2
 
 - Preserve the already published legal templates from PR #70 when publishing

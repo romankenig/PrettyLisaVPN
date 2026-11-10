@@ -283,8 +283,6 @@
     <string name="notification_vpn_disconnecting">正在断开 VPN…</string>
     <string name="notification_open">打开应用</string>
     <string name="notification_disconnect">断开 VPN</string>
-    <string name="traffic_top">十大热门服务</string>
-    <string name="traffic_all_services">全部服务</string>
     <string name="traffic_selected_label">所选服务：</string>
     <string name="traffic_add_service">添加自定义服务</string>
     <string name="direct_location">非 VPN 位置：</string>
@@ -356,4 +354,12 @@
     <string name="plan_fresh_hour">注册后享有独立的 1 小时时限</string>
     <string name="plan_register">注册</string>
     <string name="plan_buy">购买</string>
+    <string name="traffic_selected_group">已选服务</string>
+    <string name="traffic_popular_group">热门服务</string>
+    <string name="traffic_remaining_group">其他服务</string>
+    <string name="plan_registration_required">注册后使用</string>
+    <string name="plan_no_registration">无需注册</string>
+    <string name="vpn_reset_settings">重置设置</string>
+    <string name="free_quota_exhausted">今天的免费一小时已用完。购买 PREMIUM 即可享受不限时访问。</string>
+    <string name="free_quota_buy">购买 PREMIUM</string>
 </resources>

@@ -10,7 +10,9 @@ export function serviceGroups(
     sensitivity: "base",
     numeric: true,
   });
-  const all = [...services].sort(
+  const all = [
+    ...new Map(services.map((service) => [service.id, service])).values(),
+  ].sort(
     (a, b) => collator.compare(a.name, b.name) || a.id.localeCompare(b.id),
   );
   const category =
@@ -24,12 +26,24 @@ export function serviceGroups(
     )
     .slice(0, 10);
   const selected = new Set(savedSelection);
-  const order = (a: TrafficService, b: TrafficService) =>
-    Number(selected.has(b.id)) - Number(selected.has(a.id)) ||
-    collator.compare(a.name, b.name) ||
-    a.id.localeCompare(b.id);
+  const popular = new Set(top.map((service) => service.id));
   return [
-    { key: "top", title: "Топ-10 популярных", services: top.sort(order) },
-    { key: "all", title: "Все сервисы", services: all.sort(order) },
+    {
+      key: "selected",
+      title: "Выбранные сервисы",
+      services: all.filter((service) => selected.has(service.id)),
+    },
+    {
+      key: "top",
+      title: "Популярные",
+      services: top.filter((service) => !selected.has(service.id)),
+    },
+    {
+      key: "all",
+      title: "Остальные сервисы",
+      services: all.filter(
+        (service) => !selected.has(service.id) && !popular.has(service.id),
+      ),
+    },
   ];
 }

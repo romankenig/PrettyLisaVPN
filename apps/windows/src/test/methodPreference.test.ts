@@ -4,6 +4,90 @@ import { createMethodPreference } from "../vpn/methodPreference";
 import type { ConnectionAdapter, ConnectionResult } from "../vpn/protocol";
 
 const selection = { mode: "COUNTRY", country_code: "DE" } as const;
+
+it("reset forgets the saved success and restarts allowed methods after cleanup", async () => {
+  const saved = storage("wireguard_relay"),
+    calls: string[] = [];
+  const manager = createVpnConnectionManager(
+    adapters(calls, { wireguard_relay: true }),
+    createMethodPreference(saved),
+    () => ["wireguard", "wireguard_relay"],
+  );
+  await manager.connect("", selection);
+  expect(calls).toEqual(["wireguard_relay"]);
+  await manager.resetMethods!("", selection);
+  expect(calls).toEqual([
+    "wireguard_relay",
+    "stop-wireguard_relay",
+    "wireguard",
+    "stop-wireguard",
+    "wireguard_relay",
+  ]);
+  expect(saved.setItem).toHaveBeenCalledWith(expect.any(String), "");
+  expect(manager.current().phase).toBe("CONNECTED");
+  await manager.disconnect("");
+});
+
+it.each(["disconnect", "owner", "dispose"])(
+  "%s during reset cleanup cancels the new connection",
+  async (action) => {
+    let finish!: () => void;
+    const connect = vi.fn(async () => verified);
+    const manager = createVpnConnectionManager(
+      [
+        {
+          id: "wireguard",
+          name: "WireGuard",
+          connect,
+          disconnect: () =>
+            new Promise<void>((resolve) => {
+              finish = resolve;
+            }),
+        },
+      ],
+      createMethodPreference(storage()),
+    );
+    await manager.connect("", selection);
+    const reset = manager.resetMethods!("", selection);
+    await vi.waitFor(() => expect(finish).toBeDefined());
+    const stopped =
+      action === "disconnect" ? manager.disconnect("") : undefined;
+    if (action === "owner") manager.setOwner!("another-account");
+    if (action === "dispose") manager.dispose();
+    finish();
+    await Promise.all([reset, stopped]);
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(manager.current().phase).toBe("DISCONNECTED");
+  },
+);
+
+it("reset cannot connect again when old tunnel cleanup fails", async () => {
+  const connect = vi.fn(async () => verified);
+  const saved = storage("wireguard");
+  const manager = createVpnConnectionManager(
+    [
+      {
+        id: "wireguard",
+        name: "WireGuard",
+        connect,
+        disconnect: async () => {
+          throw Error("CLEANUP_FAILED");
+        },
+      },
+    ],
+    createMethodPreference(saved),
+  );
+  await manager.connect("", selection);
+  await expect(manager.resetMethods!("", selection)).rejects.toThrow(
+    "CLEANUP_FAILED",
+  );
+  expect(connect).toHaveBeenCalledTimes(1);
+  expect(manager.current()).toMatchObject({
+    phase: "FAILED",
+    failure_code: "CLEANUP_FAILED",
+  });
+  expect(createMethodPreference(saved).current()).toBeNull();
+});
 const verified: ConnectionResult = {
   connected: true,
   internetVerified: true,

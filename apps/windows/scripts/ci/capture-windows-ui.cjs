@@ -51,7 +51,7 @@ fs.writeFileSync(
     "Announcements and acknowledgements use --simulate-messages; real cross-device delivery is not tested.",
     "Primary PNGs capture the real native window, including the custom application title bar.",
     "Extra *-content.png files capture the fixed WebView canvas (only collections scroll).",
-    "This review replaces the real WireGuard adapter with a placeholder. The shared executor invokes 14 timed fixtures; fallback and cancellation are verified.",
+    "This review uses synthetic adapters, never real VPN traffic. The shared executor invokes 14 timed failure fixtures; an explicit synthetic success scenario verifies method reset and reconnect.",
     "No WireGuard service, keys or session API are used in this UI review; real tunnel acceptance is separate.",
     "This exe is a UI review build, not a production VPN distribution.",
     "It targets http://127.0.0.1:8000; run mock-ui-api.py to use the fixtures.",
@@ -495,13 +495,27 @@ async function main() {
     exact: true,
   });
   await trafficDialog
-    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "YouTube", exact: true })
     .check();
   await trafficDialog
-    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "Instagram", exact: true })
     .check();
+  const selectedNames = await trafficDialog
+    .locator('[data-testid="traffic-group-selected"]')
+    .getByRole("switch")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("aria-label")),
+    );
+  if (selectedNames.indexOf("Instagram") >= selectedNames.indexOf("YouTube"))
+    throw Error("Selected services must be alphabetical");
+  const serviceNames = await trafficDialog
+    .getByRole("switch")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("aria-label")),
+    );
+  if (new Set(serviceNames).size !== serviceNames.length)
+    throw Error("Services must not repeat between groups");
+  await screenshot("04-traffic-selected-first");
   await trafficDialog
     .getByRole("button", { name: "Добавить свой сервис", exact: false })
     .click();
@@ -537,13 +551,11 @@ async function main() {
     .click();
   if (
     await trafficDialog
-      .locator('[data-testid="traffic-group-all"]')
       .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked()
   )
     throw new Error("Traffic lists are not independent");
   await trafficDialog
-    .locator('[data-testid="traffic-group-all"]')
     .getByRole("switch", { name: "Instagram", exact: true })
     .check();
   await trafficDialog.locator(".traffic-dialog__body").evaluate((body) => {
@@ -559,7 +571,6 @@ async function main() {
     .click();
   if (
     !(await trafficDialog
-      .locator('[data-testid="traffic-group-all"]')
       .getByRole("switch", { name: "YouTube", exact: true })
       .isChecked())
   )
@@ -631,6 +642,21 @@ async function main() {
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: true, exhausted: true }),
+  });
+  await page.getByRole("link", { name: "настройки", exact: true }).click();
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await page.getByRole("timer").filter({ hasText: "00:00" }).waitFor();
+  await screenshot("04-home-free-exhausted");
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  await page.getByText(/Бесплатный час на сегодня закончился/).waitFor();
+  await page.getByRole("button", { name: "купить", exact: true }).waitFor();
+  await screenshot("04-home-free-exhausted-premium");
+  await page.getByRole("link", { name: "главная", exact: true }).click();
+  await fetch("http://127.0.0.1:8000/ui-review/free-quota", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled: false }),
   });
   await page.getByRole("link", { name: "настройки", exact: true }).click();
@@ -682,6 +708,36 @@ async function main() {
     .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
   await screenshot("04e-home-cancelled");
+  await page.evaluate(() => {
+    document.documentElement.dataset.vpnReviewConnect = "1";
+    document.documentElement.dataset.vpnReviewAttempts = "";
+  });
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page
+    .getByRole("button", { name: "сброс настроек", exact: true })
+    .waitFor();
+  await screenshot("04f-home-method-reset");
+  await page
+    .getByRole("button", { name: "сброс настроек", exact: true })
+    .click();
+  await page.waitForFunction(
+    () =>
+      document.documentElement.dataset.vpnReviewAttempts ===
+      "wireguard,amneziawg,wireguard,amneziawg",
+  );
+  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Not connected", exact: true })
+    .waitFor();
+  if (
+    await page
+      .getByRole("button", { name: "сброс настроек", exact: true })
+      .count()
+  )
+    throw Error("Method reset must disappear without a current method");
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.vpnReviewConnect;
+  });
 
   await page
     .getByRole("navigation")
@@ -1263,6 +1319,10 @@ async function main() {
   await page.getByRole("link", { name: "улучшить", exact: true }).click();
   await page.getByRole("region", { name: "PREMIUM", exact: true }).waitFor();
   await screenshot("18-demo-subscription");
+  await page.locator(".plan-secondary-grid").scrollIntoViewIfNeeded();
+  await page.getByText("после регистрации", { exact: true }).waitFor();
+  await page.getByText("без регистрации", { exact: true }).waitFor();
+  await screenshot("18b-plan-registration");
   await page.getByRole("button", { name: "купить", exact: true }).click();
   await page.getByRole("textbox", { name: "Email", exact: true }).waitFor();
   await screenshot("19-demo-register");

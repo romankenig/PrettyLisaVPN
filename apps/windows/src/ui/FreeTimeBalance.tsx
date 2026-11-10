@@ -32,6 +32,22 @@ export function freeTimeRemaining(
   return Math.max(0, seconds - elapsed * running);
 }
 
+/** Stale/unknown balances and yesterday's quota must not block a new attempt. */
+export function freeQuotaExhausted(profile: MeResponse, now = Date.now()) {
+  const received = profile.quotaReceivedAt;
+  return (
+    profile.plan === "FREE" &&
+    typeof received === "number" &&
+    now >= received &&
+    now - received <= 60_000 &&
+    Date.parse(profile.entitlements?.free_quota_resets_at ?? "") > now &&
+    freeTimeRemaining(profile, now) === 0
+  );
+}
+
+export const freeQuotaMessage =
+  "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.";
+
 export function FreeTimeBalance({ profile }: { profile: MeResponse }) {
   const language = useLanguage();
   const [now, setNow] = useState(Date.now);
@@ -67,8 +83,15 @@ export function FreeTimeBalance({ profile }: { profile: MeResponse }) {
       {resetText ? (
         <p className="field-help">{t(`Обновится: ${resetText}`)}</p>
       ) : null}
+      {freeQuotaExhausted(profile, now) && (
+        <p className="free-quota-notice" role="status">
+          {t(freeQuotaMessage)}
+        </p>
+      )}
       <Link className="upgrade-plan" to="/settings/subscription">
-        {t("улучшить план")}
+        {t(
+          freeQuotaExhausted(profile, now) ? "Купить PREMIUM" : "улучшить план",
+        )}
       </Link>
     </div>
   );

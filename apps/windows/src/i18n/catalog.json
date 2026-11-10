@@ -361,7 +361,14 @@
     "тариф назначен вручную": "тариф назначен вручную",
     "оплата пока недоступна. попробуйте позже": "оплата пока недоступна. попробуйте позже",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO временно недоступен. Попробуйте позже или войдите по email.",
-    "DEMO доступен только на этом устройстве.": "DEMO доступен только на этом устройстве."
+    "DEMO доступен только на этом устройстве.": "DEMO доступен только на этом устройстве.",
+    "Популярные": "Популярные",
+    "Остальные сервисы": "Остальные сервисы",
+    "после регистрации": "после регистрации",
+    "сброс настроек": "сброс настроек",
+    "забыть успешный способ и подключиться заново": "забыть успешный способ и подключиться заново",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.",
+    "Купить PREMIUM": "Купить PREMIUM"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -725,7 +732,14 @@
     "тариф назначен вручную": "manually assigned plan",
     "оплата пока недоступна. попробуйте позже": "payment is not available yet. try later",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO is temporarily unavailable. Try later or sign in by email.",
-    "DEMO доступен только на этом устройстве.": "DEMO is available only on this device."
+    "DEMO доступен только на этом устройстве.": "DEMO is available only on this device.",
+    "Популярные": "Popular",
+    "Остальные сервисы": "Other services",
+    "после регистрации": "after registration",
+    "сброс настроек": "reset settings",
+    "забыть успешный способ и подключиться заново": "forget the successful method and reconnect",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Your free hour for today is used up. Buy PREMIUM for unlimited access.",
+    "Купить PREMIUM": "Buy PREMIUM"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1016,7 +1030,7 @@
     "Всё": "全部",
     "Выбранное": "所选",
     "Кроме выбранного": "除所选外",
-    "Выбранные сервисы": "所选服务",
+    "Выбранные сервисы": "已选服务",
     "Найти сервис": "搜索服务",
     "Популярные сервисы": "热门服务",
     "Белый список": "白名单",
@@ -1089,7 +1103,14 @@
     "тариф назначен вручную": "手动分配的套餐",
     "оплата пока недоступна. попробуйте позже": "暂时无法付款，请稍后重试",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO 暂时不可用，请稍后重试或使用邮箱登录。",
-    "DEMO доступен только на этом устройстве.": "DEMO 仅适用于此设备。"
+    "DEMO доступен только на этом устройстве.": "DEMO 仅适用于此设备。",
+    "Популярные": "热门服务",
+    "Остальные сервисы": "其他服务",
+    "после регистрации": "注册后使用",
+    "сброс настроек": "重置设置",
+    "забыть успешный способ и подключиться заново": "忘记成功的连接方式并重新连接",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "今天的免费一小时已用完。购买 PREMIUM 即可享受不限时访问。",
+    "Купить PREMIUM": "购买 PREMIUM"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1380,7 +1401,7 @@
     "Всё": "Todo",
     "Выбранное": "Elegidos",
     "Кроме выбранного": "Excepto elegidos",
-    "Выбранные сервисы": "Servicios elegidos",
+    "Выбранные сервисы": "Servicios seleccionados",
     "Найти сервис": "Buscar un servicio",
     "Популярные сервисы": "Servicios populares",
     "Белый список": "Lista permitida",
@@ -1453,7 +1474,14 @@
     "тариф назначен вручную": "plan asignado manualmente",
     "оплата пока недоступна. попробуйте позже": "el pago aún no está disponible. inténtalo más tarde",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO no está disponible temporalmente. Inténtalo más tarde o entra con email.",
-    "DEMO доступен только на этом устройстве.": "DEMO solo está disponible en este dispositivo."
+    "DEMO доступен только на этом устройстве.": "DEMO solo está disponible en este dispositivo.",
+    "Популярные": "Populares",
+    "Остальные сервисы": "Otros servicios",
+    "после регистрации": "con registro",
+    "сброс настроек": "restablecer ajustes",
+    "забыть успешный способ и подключиться заново": "olvidar el método que funcionó y reconectar",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Tu hora gratuita de hoy se ha agotado. Compra PREMIUM para acceso ilimitado.",
+    "Купить PREMIUM": "Comprar PREMIUM"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1817,7 +1845,14 @@
     "тариф назначен вручную": "manuell zugewiesener Tarif",
     "оплата пока недоступна. попробуйте позже": "Zahlung noch nicht verfügbar. Später versuchen",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO ist vorübergehend nicht verfügbar. Später versuchen oder per E-Mail anmelden.",
-    "DEMO доступен только на этом устройстве.": "DEMO ist nur auf diesem Gerät verfügbar."
+    "DEMO доступен только на этом устройстве.": "DEMO ist nur auf diesem Gerät verfügbar.",
+    "Популярные": "Beliebt",
+    "Остальные сервисы": "Weitere Dienste",
+    "после регистрации": "nach Registrierung",
+    "сброс настроек": "Einstellungen zurücksetzen",
+    "забыть успешный способ и подключиться заново": "erfolgreiche Methode vergessen und neu verbinden",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Deine kostenlose Stunde für heute ist aufgebraucht. Kaufe PREMIUM für unbegrenzten Zugang.",
+    "Купить PREMIUM": "PREMIUM kaufen"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2181,6 +2216,13 @@
     "тариф назначен вручную": "forfait attribué manuellement",
     "оплата пока недоступна. попробуйте позже": "paiement indisponible pour le moment. réessayez plus tard",
     "DEMO временно недоступен. Попробуйте позже или войдите по email.": "DEMO est temporairement indisponible. Réessayez plus tard ou connectez-vous par e-mail.",
-    "DEMO доступен только на этом устройстве.": "DEMO est disponible uniquement sur cet appareil."
+    "DEMO доступен только на этом устройстве.": "DEMO est disponible uniquement sur cet appareil.",
+    "Популярные": "Populaires",
+    "Остальные сервисы": "Autres services",
+    "после регистрации": "après inscription",
+    "сброс настроек": "réinitialiser les réglages",
+    "забыть успешный способ и подключиться заново": "oublier la méthode réussie et se reconnecter",
+    "Бесплатный час на сегодня закончился. Купите PREMIUM для доступа без ограничений.": "Votre heure gratuite du jour est épuisée. Achetez PREMIUM pour un accès illimité.",
+    "Купить PREMIUM": "Acheter PREMIUM"
   }
 }

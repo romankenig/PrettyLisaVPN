@@ -14,6 +14,14 @@ export function createMethodPreference(
   }
   return {
     current: () => method,
+    clear() {
+      method = null;
+      try {
+        storage?.setItem(KEY, "");
+      } catch {
+        /* Reset still applies to this process when storage is unavailable. */
+      }
+    },
     remember(verifiedMethod: string) {
       method = verifiedMethod;
       try {

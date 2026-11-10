@@ -12,47 +12,50 @@ const catalog: TrafficService[] = Array.from({ length: 24 }, (_, index) => ({
   popularity_rank: index + 1,
 }));
 
-it("promotes ten popular services in include and non-Russian exclude, then keeps the entire alphabetic catalog", () => {
+it("partitions selected, popular and remaining services without duplicates", () => {
   for (const [mode, language] of [
     ["include", "ru"],
     ["include", "en"],
-    ["exclude", "en"],
+    ["exclude", "ru"],
+    ["exclude", "de"],
   ] as const) {
-    const [top, all] = serviceGroups(catalog, mode, language);
-    expect(top.services.map((service) => service.id)).toEqual(
-      catalog
-        .slice(0, 10)
-        .reverse()
-        .map((service) => service.id),
+    const selectedIds = ["0", "12", "1"];
+    const [selected, top, remaining] = serviceGroups(
+      catalog,
+      mode,
+      language,
+      selectedIds,
     );
-    expect(all.services).toHaveLength(24);
-    expect(all.services[0].name).toBe("Service 1");
-    expect(all.services.at(-1)?.name).toBe("Service 24");
+    expect(selected.services.map((s) => s.id)).toEqual(["12", "1", "0"]);
+    const candidates =
+      mode === "exclude" && language === "ru"
+        ? catalog.slice(12, 22)
+        : catalog.slice(0, 10);
+    expect(top.services.map((s) => s.id)).toEqual(
+      candidates.filter((s) => !selectedIds.includes(s.id)).map((s) => s.id),
+    );
+    expect(remaining.services.map((s) => s.name)).toEqual(
+      remaining.services
+        .map((s) => s.name)
+        .sort(new Intl.Collator(language, { numeric: true }).compare),
+    );
+    const result = [selected, top, remaining].flatMap((g) =>
+      g.services.map((s) => s.id),
+    );
+    expect(result).toHaveLength(catalog.length);
+    expect(new Set(result).size).toBe(catalog.length);
   }
 });
-
-it("Russian exclude promotes the allowlist with the requested popular heading", () => {
-  const [top, all] = serviceGroups(catalog, "exclude", "ru");
-  expect(top.title).toBe("Топ-10 популярных");
-  expect(top.services).toHaveLength(10);
+it("moves newly selected services into the first group without refilling the top ten", () => {
+  const before = serviceGroups(catalog, "include", "en");
+  const after = serviceGroups(catalog, "include", "en", ["0", "23"]);
+  expect(before[0].services).toEqual([]);
+  expect(after[0].services.map((s) => s.id)).toEqual(["23", "0"]);
+  expect(after[1].services).toHaveLength(9);
+  expect(after[2].services.some((s) => s.id === "23")).toBe(false);
   expect(
-    top.services.every((service) => service.category === "whitelist"),
-  ).toBe(true);
-  expect(all.services).toHaveLength(24);
-  expect(
-    serviceGroups(
-      catalog.map((service) => ({ ...service, popularity_rank: null })),
-      "include",
-      "de",
-    )[0].services,
-  ).toHaveLength(10);
-});
-
-it("sorts each block by saved selection then alphabetically without changing top membership", () => {
-  const [top, all] = serviceGroups(catalog, "include", "en", ["0", "12", "1"]);
-  expect(top.services.slice(0, 2).map((s) => s.id)).toEqual(["1", "0"]);
-  expect(all.services.slice(0, 3).map((s) => s.id)).toEqual(["12", "1", "0"]);
-  expect(new Set(top.services.map((s) => s.id))).toEqual(
-    new Set(catalog.slice(0, 10).map((s) => s.id)),
-  );
+    serviceGroups([...catalog, catalog[0]], "include", "en").flatMap(
+      (g) => g.services,
+    ),
+  ).toHaveLength(24);
 });

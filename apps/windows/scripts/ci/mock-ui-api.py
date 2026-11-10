@@ -40,6 +40,7 @@ SIMULATE_MESSAGES = False
 DEMO_REVIEW = False
 QUOTA_REVIEW = False
 QUOTA_EXTENDED = False
+QUOTA_EXHAUSTED = False
 AUTH_RECOVERY_MODE = "normal"
 AUTH_EXPIRED_ONCE = False
 AUTH_ROTATIONS = []
@@ -70,7 +71,7 @@ MESSAGE_FIXTURES = [
 def fixture(method, path, body):
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
-    global QUOTA_REVIEW, QUOTA_EXTENDED, DEMO_REVIEW
+    global QUOTA_REVIEW, QUOTA_EXTENDED, QUOTA_EXHAUSTED, DEMO_REVIEW
     global AUTH_RECOVERY_MODE, AUTH_EXPIRED_ONCE
     if method == "POST" and path == "/ui-review/auth-recovery":
         AUTH_RECOVERY_MODE = body.get("mode", "normal")
@@ -86,6 +87,7 @@ def fixture(method, path, body):
     if method == "POST" and path == "/ui-review/free-quota":
         QUOTA_REVIEW = body.get("enabled") is True
         QUOTA_EXTENDED = body.get("extended") is True
+        QUOTA_EXHAUSTED = body.get("exhausted") is True
         return 200, {"enabled": QUOTA_REVIEW}
     if BILLING_SCENARIO.startswith("server-") and BILLING_EVIDENCE:
         if method == "GET" and urlsplit(path).path == "/billing/overview":
@@ -142,7 +144,7 @@ def fixture(method, path, body):
     if method == "GET" and path == "/billing/overview":
         if BILLING_SCENARIO == "error":
             return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
-        return 200, {**BILLING_FIXTURES[BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
+        return 200, {**BILLING_FIXTURES["free" if QUOTA_REVIEW else BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
     if SIMULATE_BILLING and method == "POST" and path == "/billing/operations":
         request_id = body.get("request_id")
         if request_id in BILLING_REQUESTS:
@@ -214,7 +216,7 @@ def fixture(method, path, body):
             "id": USER_ID, "email": ACCOUNT_EMAIL,
             "plan": "FREE" if QUOTA_REVIEW else "PREMIUM", "active_device_count": 2,
             **({"entitlements": {"daily_vpn_limit_seconds": 10800 if QUOTA_EXTENDED else 3600,
-                "free_seconds_remaining": 0, "free_seconds_usable": 10800 if QUOTA_EXTENDED else 615,
+                "free_seconds_remaining": 0, "free_seconds_usable": 0 if QUOTA_EXHAUSTED else 10800 if QUOTA_EXTENDED else 615,
                 "free_running_sessions": 0, "free_quota_resets_at": "2030-01-02T00:00:00Z"}} if QUOTA_REVIEW else {}),
         }
     if method == "GET" and path == "/devices":

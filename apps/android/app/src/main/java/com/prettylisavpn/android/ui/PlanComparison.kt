@@ -49,6 +49,11 @@ internal fun PlanTierCard(plan: String, current: Boolean, register: (() -> Unit)
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (current) PlanCurrentBadge(plan)
             Text(planLabel(plan), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Surface(color = Brand.PurpleHeart.copy(alpha = .08f), shape = MaterialTheme.shapes.small) {
+                Text(tr(if (plan == "FREE") R.string.plan_registration_required else R.string.plan_no_registration),
+                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp).testTag("plan-registration-$plan"),
+                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = Brand.Christalle)
+            }
             Text(tr(if (plan == "FREE") R.string.plan_hour else R.string.plan_quarter_hour),
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             PlanHighlights(plan)

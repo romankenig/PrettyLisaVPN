@@ -18,10 +18,10 @@ import { ConnectionInfo } from "./ConnectionInfo";
 import { TrafficRouting } from "./TrafficRouting";
 import { VpnConnectionError, type VpnConnectionState } from "../vpn/connection";
 import { attemptMessage } from "../vpn/attempt";
-import { FreeTimeBalance } from "./FreeTimeBalance";
+import { FreeTimeBalance, freeQuotaExhausted } from "./FreeTimeBalance";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
 import { ProductText } from "./ProductText";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type ProfileState =
   | { phase: "loading" }
@@ -30,6 +30,8 @@ type ProfileState =
 
 export function Home() {
   useLanguage();
+  const navigate = useNavigate();
+  const [resetting, setResetting] = useState(false);
   const { api, session, vpnConnection } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
@@ -125,11 +127,28 @@ export function Home() {
       return;
     }
     setConnectionErrorMessage(null);
+    if (profile && freeQuotaExhausted(profile)) {
+      navigate("/settings/subscription", {
+        state: { freeQuotaExhausted: true },
+      });
+      return;
+    }
     try {
       await vpnConnection.connect(
         accessToken,
         activeSession?.plan === "DEMO" ? { mode: "AUTO" } : locationSelection,
       );
+      const result = vpnConnection.current();
+      if (
+        activeSession?.plan === "FREE" &&
+        result.phase === "FAILED" &&
+        ["FREE_QUOTA_EXHAUSTED", "FREE_DAILY_LIMIT_REACHED"].includes(
+          result.failure_code ?? "",
+        )
+      )
+        navigate("/settings/subscription", {
+          state: { freeQuotaExhausted: true },
+        });
     } catch (error) {
       setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
@@ -141,6 +160,22 @@ export function Home() {
       await vpnConnection.disconnect(accessToken);
     } catch (error) {
       setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
+    }
+  }
+
+  async function resetConnection() {
+    if (resetting || !vpnConnection.resetMethods) return;
+    setResetting(true);
+    setConnectionErrorMessage(null);
+    try {
+      await vpnConnection.resetMethods(
+        accessToken,
+        activeSession?.plan === "DEMO" ? { mode: "AUTO" } : locationSelection,
+      );
+    } catch (error) {
+      setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -247,7 +282,15 @@ export function Home() {
               </p>
             ) : null}
             {connectionState.phase === "CONNECTED" ? (
-              <ConnectionInfo sessionId={connectionState.session.sessionId} />
+              <ConnectionInfo
+                sessionId={connectionState.session.sessionId}
+                onReset={
+                  vpnConnection.resetMethods
+                    ? () => void resetConnection()
+                    : undefined
+                }
+                resetting={resetting}
+              />
             ) : null}
             {connectionState.phase === "CONNECTING" ? (
               <p

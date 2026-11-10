@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.channels.Channel
 
 enum class VpnPhase { DISCONNECTED, CONNECTING, CONNECTED, CHECKING, WAITING_NETWORK, RECONNECTING, DISCONNECTING, FAILED }
-enum class VpnError { METHODS_EXHAUSTED, CLEANUP, ACCESS, UNSTABLE, DEMO_LIMIT }
+enum class VpnError { METHODS_EXHAUSTED, CLEANUP, ACCESS, UNSTABLE, DEMO_LIMIT, FREE_LIMIT }
+/** Preserve the existing support API v2 vocabulary. */
+internal fun supportFailureCode(error: VpnError?): String? = if (error == VpnError.FREE_LIMIT) "ACCESS" else error?.name
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
 data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null,
     val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
@@ -90,7 +92,8 @@ class VpnController(
                             failure = diagnosticFailure(error)
                             terminalError = when (error.code) {
                                 "DEMO_QUOTA_EXHAUSTED" -> VpnError.DEMO_LIMIT
-                                "REGISTRATION_REQUIRED" -> VpnError.ACCESS
+                                "FREE_QUOTA_EXHAUSTED", "FREE_DAILY_LIMIT_REACHED" -> VpnError.FREE_LIMIT
+                                "REGISTRATION_REQUIRED", "FREE_QUOTA_RESERVED" -> VpnError.ACCESS
                                 else -> null
                             }
                         }

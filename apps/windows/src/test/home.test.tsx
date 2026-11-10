@@ -118,6 +118,43 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("opens PREMIUM without starting a tunnel when the fresh FREE hour is exhausted", async () => {
+    const api = mockApi(),
+      storage = createTestCredentialStorage(),
+      vpn = createTestVpnConnection();
+    const free: MeResponse = {
+      ...profile,
+      plan: "FREE",
+      quotaReceivedAt: Date.now(),
+      entitlements: {
+        free_seconds_usable: 0,
+        free_running_sessions: 0,
+        free_quota_resets_at: new Date(Date.now() + 3600000).toISOString(),
+      },
+    };
+    vi.mocked(api.me).mockResolvedValue(free);
+    const session = createAuthenticationSession(storage);
+    session.activateRestored({
+      accessToken: "access-token",
+      accessTokenExpiresIn: 900,
+      sessionId: "session",
+      userId: free.id,
+      plan: "FREE",
+      profile: free,
+    });
+    const connect = vi.spyOn(vpn, "connect");
+    renderWithSession(api, storage, session, vpn);
+    await screen.findByRole("timer");
+    fireEvent.click(screen.getByRole("button", { name: "CONNECT" }));
+    expect(
+      await screen.findByRole("heading", { name: "подписка" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Бесплатный час на сегодня закончился/),
+    ).toBeVisible();
+    expect(connect).not.toHaveBeenCalled();
+  });
+
   it("loads first-use split defaults through the authenticated catalog and renders both lists", async () => {
     const catalog = ["youtube", "telegram", "gosuslugi", "max"].map(
       (slug, index) => ({
@@ -400,12 +437,7 @@ describe("authenticated Home", () => {
       expect(screen.getByLabelText("локация VPN")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
       const dialog = within(await screen.findByRole("dialog"));
-      fireEvent.click(
-        await within(dialog.getByTestId("traffic-group-all")).findByRole(
-          "switch",
-          { name: "YouTube" },
-        ),
-      );
+      fireEvent.click(await dialog.findByRole("switch", { name: "YouTube" }));
       expect(dialog.queryByText("youtube.com, *.youtube.com")).toBeNull();
       fireEvent.click(
         dialog.getByRole("button", { name: /Добавить свой сервис/ }),
@@ -438,7 +470,7 @@ describe("authenticated Home", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: /Выбрать сервисы/ }));
       const excluded = within(await screen.findByRole("dialog"));
-      const excludedList = within(excluded.getByTestId("traffic-group-all"));
+      const excludedList = excluded;
       expect(
         await excludedList.findByRole("switch", { name: "YouTube" }),
       ).not.toBeChecked();

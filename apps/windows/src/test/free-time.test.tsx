@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 import type { MeResponse } from "../api/client";
-import { FreeTimeBalance, freeTimeRemaining } from "../ui/FreeTimeBalance";
+import {
+  FreeTimeBalance,
+  freeTimeRemaining,
+  freeQuotaExhausted,
+} from "../ui/FreeTimeBalance";
 
 const profile: MeResponse = {
   id: "user",
@@ -17,6 +21,31 @@ const profile: MeResponse = {
     free_quota_resets_at: "2030-01-02T00:00:00Z",
   },
 };
+it("only treats a fresh exhausted FREE balance before its UTC reset as exhausted", () => {
+  const exhausted = {
+    ...profile,
+    entitlements: { ...profile.entitlements, free_seconds_usable: 0 },
+  };
+  expect(freeQuotaExhausted(exhausted, 1000)).toBe(true);
+  expect(freeQuotaExhausted(profile, 1000)).toBe(false); // Remaining time is reserved on other devices.
+  expect(freeQuotaExhausted(exhausted, 62000)).toBe(false);
+  expect(freeQuotaExhausted({ ...exhausted, plan: "DEMO" }, 1000)).toBe(false);
+  expect(
+    freeQuotaExhausted({ ...exhausted, quotaReceivedAt: undefined }, 1000),
+  ).toBe(false);
+  expect(
+    freeQuotaExhausted(
+      {
+        ...exhausted,
+        entitlements: {
+          ...exhausted.entitlements,
+          free_quota_resets_at: new Date(1000).toISOString(),
+        },
+      },
+      1000,
+    ),
+  ).toBe(false);
+});
 it("includes reserved time on other devices and counts down the account balance", () => {
   expect(freeTimeRemaining(profile, 31000)).toBe(540);
   expect(freeTimeRemaining(profile, 400000)).toBe(480);

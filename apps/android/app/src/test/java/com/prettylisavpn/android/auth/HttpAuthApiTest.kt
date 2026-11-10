@@ -8,6 +8,13 @@ import org.junit.*
 import org.junit.Assert.*
 
 class HttpAuthApiTest {
+    @Test fun preservesAuthoritativeQuotaCodesForVpnUi() = runBlocking {
+        for (code in listOf("FREE_QUOTA_EXHAUSTED", "FREE_QUOTA_RESERVED", "FREE_DAILY_LIMIT_REACHED")) {
+            server.enqueue(MockResponse().setResponseCode(409).setBody("""{"error":{"code":"$code"}}"""))
+            try { api.request("vpn/sessions", access="test"); fail("Quota should reject admission") }
+            catch (error: AuthFailure) { assertEquals(code, error.code) }
+        }
+    }
     private val server = MockWebServer()
     private lateinit var api: HttpAuthApi
     @Before fun start() { server.start(); api = HttpAuthApi(server.url("/api/").toString(), true) }

@@ -193,15 +193,16 @@ private fun TrafficDialog(model: ScreenModel, initial: TrafficSelection, busy: B
                 Text(mask, Modifier.weight(1f))
                 TextButton({ update(list.copy(masks = list.masks - mask)) }, enabled = !busy) { Text(tr(R.string.traffic_remove)) }
             } }
-            serviceGroups(services, tab, java.util.Locale.forLanguageTag(language.code), (if (tab == "include") initial.include else initial.exclude).services.map { it.id }.toSet()).forEach { (group, entries) ->
-                Text(tr(if (group == "top") R.string.traffic_top else R.string.traffic_all_services), style = MaterialTheme.typography.titleSmall, color = Brand.Scorpion)
-                entries.filter { it.name.contains(query.trim(), ignoreCase = true) }.forEach { service ->
+            serviceGroups(services, tab, java.util.Locale.forLanguageTag(language.code), list.services.map { it.id }.toSet()).forEach { (group, entries) ->
+                val visible = entries.filter { it.name.contains(query.trim(), ignoreCase = true) }
+                if (visible.isNotEmpty()) Text(tr(when (group) { "selected" -> R.string.traffic_selected_group; "top" -> R.string.traffic_popular_group; else -> R.string.traffic_remaining_group }), style = MaterialTheme.typography.titleSmall, color = Brand.Scorpion)
+                visible.forEach { service ->
                     val checked = list.services.any { it.id == service.id }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ServiceIcon(service.icon, brand = true)
                         Text(service.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Switch(checked, { update(list.copy(services = if (checked) list.services.filter { it.id != service.id } else list.services + service)) }, enabled = !busy,
-                            modifier = Modifier.testTag(if (group == "all") "traffic-service-${service.slug}" else "traffic-top-service-${service.slug}").semantics { contentDescription = service.name })
+                            modifier = Modifier.testTag("traffic-service-${service.slug}").semantics { contentDescription = service.name })
                     }
                 }
             }

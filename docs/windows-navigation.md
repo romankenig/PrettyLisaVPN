@@ -914,3 +914,28 @@ or explicit logout still returns to Login. No new route or external link is adde
 Backend 0.40.1 adds optional idempotent refresh (migration 0048); deployment and
 exact native screenshots are recorded separately in the task PR. See
 [session recovery handoff](windows-session-resilience.md).
+
+## Windows 0.28.0 / Android 0.27.1 — service selection and FREE upgrade
+
+Implemented on both clients: service picker → selected (alphabetical) → remaining
+popular top ten → remaining catalog (alphabetical), without duplicate rows. Empty
+groups disappear and toggles immediately move a service; saving/cancelling keeps
+the existing draft boundary. FREE/DEMO comparison explicitly marks registration.
+
+Home Connect with a fresh exhausted FREE balance → Subscription with the PREMIUM
+offer first. Windows also follows this route after authoritative quota rejection;
+Android displays the quota explanation and Buy PREMIUM action for that rejection.
+No payment starts from either transition. Unknown, stale or previous-UTC-day quota
+does not block a server-validated attempt; reserved-but-usable seconds are retained.
+Existing DEMO restrictions and paid-account controls are unchanged.
+
+Only a displayed current protocol has the small “reset settings” action. Windows
+now clears its remembered successful method and retries enabled methods after
+confirmed cleanup; Android keeps its existing reset/recovery implementation.
+Allowed-method settings, country and traffic selection remain. Cancellation,
+account change or disposal prevents a queued Windows reconnect; cleanup failure
+leaves the connection stopped/failed without creating another tunnel.
+
+No backend endpoint, migration or integration is pending for these transitions.
+Billing capability gates still decide whether Buy can open real checkout.
+See [client handoff](client-selection-polish.md) for validation and artifact identity.
