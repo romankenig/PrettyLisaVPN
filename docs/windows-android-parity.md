@@ -77,4 +77,21 @@ the actual API version before sending a guest identity: pre-0.40/unknown APIs ca
 silently interpret it as an Android guest. Email login stays compatible. Existing Android DEMO
 principals and quotas require no migration/reset. After separately approved merge,
 verify the shared publisher's stable Windows download and website 0.5.1 publication.
-Merge, publication and production deployment have not been authorized for this task.
+The owner authorized merge/publication on 2026-11-09; #74 merged as
+`8abd893373cb9f77c6d51b67cb6bf9d98d57b81c`. Actual deployment evidence is recorded in the PR.
+
+## Website publication reconciliation
+
+Pre-publication inspection found that the live website already serves the separately
+authorized legal revision `3cc30e87d497e54ab3544a4653e253851e3a2463` from PR #70,
+run 42464416970/1. Publishing #74's website artifact would revert those documents.
+Preserve that exact legal revision and insert the Windows identity disclosure into
+privacy clause 2.4 in each language, retaining generic plan names and numbering.
+The combined website is **0.5.1 → 0.5.2** (PATCH); all client/backend versions and
+payment gates remain unchanged. This does not merge or change the separate PR #70.
+
+Verify syntax, all website tests, the 96-route build and isolated Caddy checks.
+Compare the candidate files with the currently published artifact before switching
+the relative website symlink. Record the final source/build SHA, CI run/attempt,
+artifact, complete CI audit and live hashes in the publication PR. The previous
+relative release remains available for rollback; no database migration is involved.

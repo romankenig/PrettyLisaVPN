@@ -151,6 +151,24 @@ function download(lang, platform) {
     }<p class="download-help"><a href="${routeFor(lang)}#help">${text(d.help)} ${arrow}</a></p></div>`,
   );
 }
+function legalDocument(lang, key) {
+  const t = locales[lang];
+  const legalText = (value) =>
+    text(value).replaceAll(
+      "help@prettylisavpn.com",
+      `<a href="${mail}">help@prettylisavpn.com</a>`,
+    );
+  const paragraphs = (items) =>
+    items
+      .map((paragraph) => {
+        const [lead, ...list] = paragraph.split("\n");
+        return `<p>${legalText(lead)}</p>${list.length ? `<ul class="document-list">${list.map((item) => `<li>${legalText(item)}</li>`).join("")}</ul>` : ""}`;
+      })
+      .join("");
+  const document = t.legal[key];
+  if (typeof document[0] === "string") return paragraphs(document);
+  return `${key === "privacy" ? paragraphs([t.legal.privacyIntro]) : ""}<nav class="document-contents" aria-label="${escape(t.legal.contents)}"><h2>${text(t.legal.contents)}</h2><ol>${document.map((section, index) => `<li><a href="#section-${index + 1}">${text(section.title)}</a></li>`).join("")}</ol></nav>${document.map((section, index) => `<section class="document-section" aria-labelledby="section-${index + 1}"><h2 id="section-${index + 1}">${index + 1}. ${text(section.title)}</h2>${paragraphs(section.paragraphs)}</section>`).join("")}`;
+}
 export function pages() {
   const result = new Map();
   for (const lang of languages) {
@@ -169,7 +187,7 @@ export function pages() {
           lang,
           route,
           t.footer[key],
-          `<article class="legal-page wrap"><a class="back" href="${routeFor(lang)}">← ${text(t.nav.home)}</a><h1>${text(t.footer[key])}</h1><p class="document-date">${text(t.legal.updated)}</p>${key === "payments" ? paymentNotice(lang) : ""}${t.legal[key].map((p) => `<p>${text(p).replaceAll("help@prettylisavpn.com", `<a href="${mail}">help@prettylisavpn.com</a>`)}</p>`).join("")}</article>`,
+          `<article class="legal-page wrap"><a class="back" href="${routeFor(lang)}">← ${text(t.nav.home)}</a><h1>${text(t.footer[key])}</h1><p class="document-date">${text(t.legal.updated)}</p>${key === "payments" ? paymentNotice(lang) : ""}${legalDocument(lang, key)}</article>`,
         ),
       );
     }

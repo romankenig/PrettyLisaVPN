@@ -1,5 +1,9 @@
 # PrettyLisaVPN website 0.2.0 — minimalist multilingual revision
 
+Later legal revision: [website 0.5.1](public-website-legal.md) follows the owner's
+supplied templates and supersedes the brief terms/privacy copy described below.
+This document otherwise records the historical 0.2.0 task.
+
 ## Scope and versions
 
 Owner request dated 2026-11-03: four main sections, real screenshots, all platforms,

@@ -146,46 +146,169 @@
     "documents": "dokumente"
   },
   "legal": {
-    "updated": "fassung vom 7. november 2026",
+    "updated": "Fassung vom 8. November 2026",
     "terms": [
-      "PrettyLisaVPN bietet vpn-zugang über apps für android und windows. fragen zum dienst, zu zahlungen und reklamationen: help@prettylisavpn.com.",
-      "für die anmeldung werden eine e-mail-adresse und ein einmalcode verwendet. ein konto kann bis zu fünf aktive geräte haben. geben sie anmeldecodes nicht an andere personen weiter.",
-      "der tarif free bietet eine gemeinsame stunde verbindungszeit pro tag und konto. das kontingent wird um 00:00 utc zurückgesetzt. während des bezahlten premium-zeitraums gibt es kein tägliches zeitlimit. tarif, restzeit und zugangszeitraum werden in der app angezeigt.",
-      "Android DEMO benötigt keine E-Mail-Adresse oder Registrierung: 15 Minuten pro Gerät und Tag, automatische Serverwahl und Schutz des gesamten Datenverkehrs. zurückgesetzt wird um 00:00 UTC. eine normale Neuinstallation setzt den Verbrauch nicht zurück. die Registrierung bietet eine separate FREE-Stunde; der Verbrauch eines bestehenden FREE-Kontos bleibt bestehen.",
-      "vpn verschlüsselt die verbindung zwischen ihrem gerät und dem server des dienstes. geschwindigkeit und verfügbarkeit hängen vom netzwerk, gerät und server ab. vpn ersetzt keinen geräteschutz und bietet keine absolute anonymität.",
-      "nutzen sie den dienst rechtmäßig. unbefugter zugriff auf fremde systeme, schadsoftware, spam und angriffe auf die infrastruktur sind unzulässig.",
-      "wenden sie sich bei fragen zur app an den support. zahlungsbedingungen und die bearbeitung finanzieller ansprüche werden auf gesonderten seiten beschrieben. diese bedingungen schränken keine rechte nach anwendbarem recht ein."
+      {
+        "title": "Allgemeine Bestimmungen",
+        "paragraphs": [
+          "1.1. Diese Nutzungsvereinbarung (nachfolgend „Vereinbarung“) regelt die Nutzung von PrettyLisaVPN auf prettylisavpn.com und in den Client-Anwendungen (nachfolgend „Dienst“), bereitgestellt durch die Administration des Dienstes (nachfolgend „Administration“).",
+          "1.2. Durch die Nutzung des Dienstes, einschließlich Registrierung, Aufbau einer VPN-Verbindung oder Zahlung, bestätigt der Nutzer, diese Vereinbarung vollständig gelesen zu haben und ihre Bedingungen anzunehmen.",
+          "1.3. Ist der Nutzer mit den Bedingungen nicht einverstanden, muss er die Nutzung des Dienstes einstellen."
+        ]
+      },
+      {
+        "title": "Art der Dienstleistungen",
+        "paragraphs": [
+          "2.1. Der Dienst bietet immaterielle Leistungen: VPN-Zugang über Client-Anwendungen und eine Proxy-Verbindung über die Browser-Erweiterung. Verfügbare Plattformen und Funktionen sind auf der Website und in der jeweiligen Anwendung angegeben; die Erweiterung schützt nur den unterstützten Browserverkehr.",
+          "2.2. Die Leistungen können Folgendes umfassen:\neine geschützte Verbindung zu einem Server des Dienstes;\ndie Auswahl eines verfügbaren Servers oder Landes im Rahmen des Tarifs;\nBetreuung, Support und Aktualisierungen der Anwendungen.",
+          "2.3. Der Nutzer erkennt an, dass der gewählte Tarif den Leistungsumfang bestimmt. Zugangszeitraum, Nutzungslimits, verfügbare Funktionen und Gerätezahl werden im Dienst angegeben. Die Kontoanmeldung erfolgt per E-Mail und Einmalcode, den der Nutzer geheim halten muss.",
+          "2.4. Der Dienst kann kostenlosen, probeweisen oder kostenpflichtigen Zugang nach dem jeweiligen Tarif anbieten. Ablauf oder Verbrauch des Kontingents können die weitere Nutzung beschränken. Gerätewechsel oder Neuinstallation gewähren allein kein neues Kontingent."
+        ]
+      },
+      {
+        "title": "Gewährleistungs- und Haftungsausschluss",
+        "paragraphs": [
+          "3.1. Der Dienst wird „AS IS“ („wie besehen“) unter Beachtung zwingender gesetzlicher Anforderungen bereitgestellt.",
+          "3.2. Die Administration garantiert nicht:\ndie Erfüllung subjektiver Erwartungen des Nutzers;\nbestimmte finanzielle, geschäftliche, berufliche oder andere Ergebnisse;\neinen unterbrechungs- und fehlerfreien Betrieb, eine konstante Geschwindigkeit oder die Erreichbarkeit einzelner externer Angebote.",
+          "3.3. Soweit gesetzlich zulässig, haftet die Administration nicht für:\ndirekte oder indirekte Schäden einschließlich entgangenen Gewinns aufgrund von Umständen, die sie nicht zu vertreten hat;\nFolgen einer rechtswidrigen Nutzung durch den Nutzer;\nHandlungen oder Unterlassungen Dritter;\nvorübergehende technische Störungen und Zugangsbeschränkungen außerhalb ihres Einflussbereichs.",
+          "3.4. Der Nutzer entscheidet eigenständig und auf eigenes Risiko über die Nutzung. Ein VPN ersetzt keinen Geräteschutz und gewährleistet keine absolute Anonymität. Dieser Abschnitt schließt weder gesetzlich zwingende Haftung noch Rechte bei mangelhaften Leistungen aus."
+        ]
+      },
+      {
+        "title": "Rechtmäßige Nutzung",
+        "paragraphs": [
+          "4.1. Der Dienst dient nicht der Förderung, Organisation oder Unterstützung rechtswidriger Tätigkeiten.",
+          "4.2. Der Nutzer verpflichtet sich zur Nutzung im Rahmen geltenden Rechts und der Regeln Dritter. Unbefugte Zugriffe, Schadsoftware, Spam und Angriffe auf Infrastruktur sind untersagt.",
+          "4.3. Der Nutzer ist für die Rechtmäßigkeit seiner Handlungen bei der Nutzung verantwortlich."
+        ]
+      },
+      {
+        "title": "Geistiges Eigentum",
+        "paragraphs": [
+          "5.1. Die im Dienst bereitgestellten Materialien und Programme sind durch das Recht des geistigen Eigentums geschützt.",
+          "5.2. Ohne Erlaubnis des Rechteinhabers darf der Nutzer Materialien nicht kopieren, verbreiten, weiterverkaufen, Dritten überlassen oder anderweitig nutzen. Ausgenommen sind die bestimmungsgemäße Nutzung, gesetzliche Erlaubnisse und Rechte aus den Lizenzen der jeweiligen Komponenten. Open-Source-Lizenzen bleiben wirksam.",
+          "5.3. Rechtsverletzungen können zu einer Zugangsbeschränkung führen. Zahlungs- und Erstattungsfragen richten sich nach Abschnitt 7 und geltendem Recht."
+        ]
+      },
+      {
+        "title": "Zugangsbeschränkungen",
+        "paragraphs": [
+          "6.1. Die Administration darf den Zugang aussetzen oder beschränken bei:\nVerstößen gegen diese Vereinbarung;\nfestgestelltem Missbrauch;\ngesetzlichen Anforderungen oder Anforderungen von Zahlungsdienstleistern.",
+          "6.2. Eine Beschränkung befreit nicht von bereits entstandenen Pflichten und hebt gesetzliche Rechte nicht auf.",
+          "6.3. Die Administration darf die Leistung verweigern, wenn Handlungen eines Nutzers eine begründete Sicherheitsgefahr für den Dienst, Zahlungsdienstleister oder Dritte schaffen. Rückfragen zu Beschränkungen können an help@prettylisavpn.com gerichtet werden."
+        ]
+      },
+      {
+        "title": "Zahlungen und Erstattungen",
+        "paragraphs": [
+          "7.1. Zahlungen erfolgen zu den vorab angezeigten Bedingungen. Tarif, Zugangszeitraum, Preis, Währung und verfügbare Zahlungsarten werden vor Bestätigung angezeigt. Eine automatische Verlängerung erfordert eine gesonderte Zustimmung zu Betrag und Abbuchungshäufigkeit. Der vereinbarte Betrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert. Eine Einmalzahlung aktiviert keine automatische Verlängerung. Ist die Zahlung nicht verfügbar, wird kein kostenpflichtiger Zugang erworben.",
+          "7.2. Der Nutzer darf weitere Leistungen beenden und nach geltendem Recht eine Erstattung verlangen. Der immaterielle Charakter oder die Freischaltung allein beseitigen dieses Recht nicht. Abzüge benötigen eine gesetzliche Grundlage; dazu können nachgewiesene tatsächlich entstandene Aufwendungen gehören, soweit gesetzlich zulässig.",
+          "7.3. Erstattungsgründe sind insbesondere:\neine wegen eines dem Dienst zuzurechnenden technischen Fehlers nicht erbrachte Leistung;\nein nicht bereitgestellter bezahlter Zugang;\nweitere gesetzliche Erstattungsgründe.",
+          "7.4. Für Erstattungen wird eine zeitnahe Nachricht an help@prettylisavpn.com mit Konto-E-Mail, Zahlungsdatum, Betrag und gegebenenfalls Transaktionsnummer empfohlen. Eine Meldung nach 24 Stunden ist allein kein Ablehnungsgrund; gesetzliche Fristen gelten.",
+          "7.5. Anträge werden anhand der Umstände und des geltenden Rechts einzeln geprüft. Antwort, Berechnung und nächste Schritte erfolgen innerhalb gesetzlicher Fristen per E-Mail. Künftige Abbuchungen und die Verknüpfung der Zahlungsart können in der Abonnementverwaltung beendet werden; bezahlter Zugang bleibt bis zum angezeigten Datum bestehen. Die Kündigung der Verlängerung ist allein kein Erstattungsantrag.",
+          "7.6. Vor einer Zahlungsanfechtung wird die Kontaktaufnahme mit dem Support empfohlen. Der Zugang zu Bank, Zahlungssystem, zuständiger Behörde oder Gericht bleibt uneingeschränkt. Die Zahlungs- und Erstattungsregeln der Website ergänzen diesen Abschnitt und beschränken keine zwingenden Nutzerrechte."
+        ]
+      },
+      {
+        "title": "Vertraulichkeit",
+        "paragraphs": [
+          "8.1. Die Administration darf die für den Betrieb mindestens erforderlichen Daten erheben. Umfang, Zwecke und Verarbeitung regelt die auf der Website veröffentlichte Datenschutzerklärung.",
+          "8.2. Die Administration trifft angemessene Schutzmaßnahmen, garantiert aber keine absolute Übertragungssicherheit. Gesetzliche Datenschutzpflichten bleiben bestehen."
+        ]
+      },
+      {
+        "title": "Änderungen der Bedingungen",
+        "paragraphs": [
+          "9.1. Die Administration darf diese Vereinbarung ändern.",
+          "9.2. Die aktuelle Fassung mit Datum wird im Dienst veröffentlicht. Wesentliche Änderungen werden vor ihrer Anwendung über den Dienst oder per E-Mail mitgeteilt.",
+          "9.3. Die weitere Nutzung nach Wirksamwerden gilt im gesetzlich zulässigen Umfang als Annahme. Änderungen verschlechtern keinen bereits bezahlten Zeitraum und ersetzen keine erforderliche gesonderte Zustimmung. Der vereinbarte Verlängerungsbetrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert."
+        ]
+      },
+      {
+        "title": "Kontaktinformationen",
+        "paragraphs": [
+          "10.1. Für alle Fragen, einschließlich Zahlungen, Beschwerden und personenbezogener Daten, ist der Support unter help@prettylisavpn.com erreichbar.",
+          "Mit der Nutzung, insbesondere Registrierung oder Aufbau einer VPN-Verbindung, bestätigt der Nutzer, diese Vereinbarung gelesen zu haben und vollständig anzunehmen."
+        ]
+      }
     ],
     "privacy": [
-      "fragen zur verarbeitung personenbezogener daten bei PrettyLisaVPN: help@prettylisavpn.com.",
-      "für den kontobetrieb werden e-mail-adresse, kennung, status sowie erstellungs- und änderungsdatum verwendet. die geräteverwaltung verwendet die installationskennung, gerätename und plattform sowie zeitpunkte der anmeldung und des zugangsentzugs.",
-      "der dienst verarbeitet informationen zum tarif, zugangszeitraum, zu anmeldeereignissen, vpn-sitzungen und technischen verbindungsergebnissen. sie werden für die autorisierung, zeiterfassung, verbindungsverwaltung, unterstützung und bewertung der dienstleistung benötigt.",
-      "für DEMO sendet die App einen Hash einer Kennung, die auf Signaturschlüssel, Android-Nutzer und Gerät begrenzt ist. der Server speichert nur einen schlüsselbasierten Hash und einen technischen Gasteintrag zur Zeiterfassung. die ursprüngliche Android ID wird nicht übertragen; IMEI und Werbe-ID werden nicht verwendet. temporäre Anmeldelimits verwenden einen IP-Hash für höchstens eine Stunde. eine Neuinstallation mit demselben Signaturschlüssel erhält das Limit; Werksreset, anderes Android-Profil oder anderer Signaturschlüssel können die Kennung ändern.",
-      "die produktanalyse erfasst ereignisse der kontonutzung und den technischen betrieb des dienstes. ihre ereignisse enthalten keinen browserverlauf, keine adressen besuchter seiten, dns-anfragen oder paketinhalte. dies beschreibt die analyse und behauptet nicht, dass keinerlei technische protokolle existieren.",
-      "Unter Windows verwendet DEMO einen auf PrettyLisaVPN begrenzten Hash der Windows-Installationskennung. Die ursprüngliche MachineGuid verlässt die App nicht. Der Server speichert einen schlüsselgebundenen Hash zur Erfassung des Tageslimits; eine Neuinstallation von PrettyLisaVPN setzt es nicht zurück. Eine Neuinstallation oder das Klonen von Windows kann die Kennung ändern oder duplizieren. Dies ist keine Hardware-Attestierung. Windows DEMO bietet ebenfalls 15 Minuten täglich, nur Autopilot und den gesamten Datenverkehr.",
-      "bei einer supportanfrage werden ihre nachricht und beigefügte materialien verarbeitet. senden sie keine passwörter, einmalcodes oder vollständigen bankkartendaten.",
-      "tägliche analytikdatensätze und berichte werden nach mehr als 180 tagen gelöscht. inhalte von supportanfragen und anhänge werden nach 30 tagen aus der operativen supportdatenbank gelöscht. diese fristen bedeuten nicht, dass die gesamte korrespondenz oder alle kontodaten gelöscht werden.",
-      "Die Website verwendet keine Werbetracker. Das Zahlungsportal nutzt ein sicheres HttpOnly-Cookie für bis zu zwei Stunden und eine lokale Kennung für ausstehende Vorgänge zur Wiederherstellung nach dem Schließen. Zahlungszugangsdaten werden nicht von der Website gespeichert. Die Sprache folgt der Seitenadresse; Schriften und Bilder werden von der Infrastruktur des Dienstes geladen.",
-      "Beim Abschluss eines Abonnements werden Ihre E-Mail-Adresse, der Betrag und eine technische Vorgangskennung an Platega übermittelt, um die Zahlung abzuwickeln und zuzuordnen. PrettyLisaVPN speichert Zahlungsstatus und Zugangszeiträume; Bankkonto- und Kartendaten verarbeitet der Zahlungsanbieter.",
-      "für auskunft über ihre daten, eine berichtigung oder löschung schreiben sie dem support von der e-mail-adresse ihres kontos. möglicherweise müssen sie bestätigen, dass die adresse ihnen gehört."
+      {
+        "title": "Allgemeine Bestimmungen",
+        "paragraphs": [
+          "1.1. Diese Datenschutzerklärung (nachfolgend „Erklärung“) regelt die Verarbeitung und den Schutz von Informationen bei der Nutzung von PrettyLisaVPN auf prettylisavpn.com und in Client-Anwendungen (nachfolgend „Dienst“). Die Verarbeitung wird durch die Administration organisiert; Kontakt für Datenschutzfragen: help@prettylisavpn.com.",
+          "1.2. Der Nutzer wird bei Nutzung über diese Erklärung informiert. Wer mit der für die Leistung notwendigen Verarbeitung nicht einverstanden ist, kann die Nutzung beenden. Diese Erklärung informiert und ersetzt keine gesetzlich erforderliche gesonderte Einwilligung."
+        ]
+      },
+      {
+        "title": "Erhebung von Informationen",
+        "paragraphs": [
+          "2.1. Der Dienst kann folgende Daten erheben:\nKontokennungen, E-Mail, Status sowie Registrierungs- und Anmeldedaten;\nfür Verbindung und Sicherheit erforderliche technische Angaben: IP-Adresse, Browser, Gerätekennung, Gerätename, Plattform und Betriebssystem;\nInteraktionen mit dem Dienst: Tarif, Zugangszeitraum, VPN-Sitzungen, Zeitverbrauch, Übertragungsvolumen und Geschwindigkeit, Verbindungsergebnisse, Zahlungsstatus, Supportnachrichten und Anhänge.",
+          "2.2. Der Dienst verlangt keine Ausweise, Dokumente, Fotos oder sonstigen persönlichen Informationen über das betriebsnotwendige Maß hinaus. Senden Sie dem Support keine Passwörter, Einmalcodes oder vollständigen Zahlungsdaten.",
+          "2.3. Interaktionen mit dem Dienst sind kein Browserverlauf. Besuchte Ressourcen, Seitenadressen, Ziele des Nutzerverkehrs, DNS-Anfragen und Paketinhalte werden nicht erhoben oder protokolliert. Technische Verbindungs- und Kontonutzungsdaten sind kein Besuchsprotokoll.",
+          "2.4. Gastzugang ohne Registrierung benötigt keine E-Mail. Ein Hash einer technischen Gerätekennung und ein Gastdatensatz dienen der Kontingentverwaltung. Zum Missbrauchsschutz wird ein Hash der IP-Adresse vorübergehend für bis zu eine Stunde verarbeitet. Diese Angaben dienen nicht der Verfolgung besuchter Ressourcen. Unter Windows verwendet der Gastzugang einen auf PrettyLisaVPN begrenzten Hash der Windows-Installationskennung. Die ursprüngliche MachineGuid verlässt die App nicht. Der Server speichert einen schlüsselgebundenen Hash zur Erfassung des Tageslimits; eine Neuinstallation von PrettyLisaVPN setzt es nicht zurück. Eine Neuinstallation oder das Klonen von Windows kann die Kennung ändern oder duplizieren. Dies ist keine Hardware-Attestierung.",
+          "2.5. Die Website nutzt keine Werbetracker. Das Zahlungsportal verwendet ein geschütztes HttpOnly-Cookie für bis zu zwei Stunden und einen lokalen Datensatz zum Wiederherstellen einer offenen Operation. Bankzugangsdaten werden darin nicht gespeichert. Die Sprache folgt der Seitenadresse; Schriften und Bilder kommen aus der Infrastruktur des Dienstes."
+        ]
+      },
+      {
+        "title": "Nutzung von Informationen",
+        "paragraphs": [
+          "3.1. Informationen dürfen ausschließlich verwendet werden für:\nFunktionen, Anmeldung, Geräte-, Verbindungs-, Tarif- und Zahlungsverwaltung;\nKommunikation mit dem Nutzer einschließlich Mitteilungen und Support;\nAnalyse und Verbesserung des Dienstes sowie Missbrauchsschutz, ohne Auswertung des Browserverlaufs.",
+          "3.2. Für die angefragte Leistung erforderliche Daten dienen dem Vertragsabschluss und der Vertragserfüllung; Daten für gesetzliche Pflichten werden auf der entsprechenden Rechtsgrundlage verarbeitet. Erforderliche Einwilligungen werden gesondert eingeholt. Eine zweckwidrige Nutzung erfolgt nicht; die Dienstnutzung bedeutet keine Einwilligung in Werbung."
+        ]
+      },
+      {
+        "title": "Weitergabe an Dritte",
+        "paragraphs": [
+          "4.1. Die Administration gibt Informationen nur weiter:\nwenn dies gesetzlich erforderlich ist;\nwenn es zur Erfüllung gegenüber dem Nutzer nötig ist, etwa für Zahlungen, Hosting und Service-E-Mails, auf rechtmäßiger Grundlage;\nwenn der Nutzer eingewilligt hat.",
+          "4.2. Bei verfügbarer Zahlung werden E-Mail, Betrag und technische Vorgangskennung an den Zahlungsdienstleister zur Durchführung und Zuordnung übermittelt. PrettyLisaVPN erhält Zahlungsstatus und Zugangszeitraum; vollständige Kartendaten, CVC und Bankpasswörter verarbeitet der Zahlungsdienstleister, ohne Speicherung im Dienst.",
+          "4.3. Es werden nur zwecknotwendige Daten übermittelt. Empfängerzugriffe richten sich nach Aufgaben und Vertraulichkeitsanforderungen. Ausländische Server und grenzüberschreitende Übermittlungen unterliegen geltendem Recht; die VPN-Länderwahl bestimmt nicht den Speicherort der Kontodaten. Informationen über Empfänger und Verarbeitung können unter help@prettylisavpn.com angefordert werden."
+        ]
+      },
+      {
+        "title": "Speicherung und Schutz",
+        "paragraphs": [
+          "5.1. Daten werden für Verarbeitungszwecke, Vertragserfüllung und gesetzliche Pflichten so lange wie erforderlich gespeichert. Die Verarbeitung umfasst Erhebung, Aufzeichnung, Speicherung, Berichtigung, Nutzung, Weitergabe gemäß Abschnitt 4, Sperrung und Löschung; sie erfolgt automatisiert und durch befugte Bearbeitung von Anfragen.",
+          "5.2. Die Administration trifft angemessene organisatorische und technische Maßnahmen einschließlich Zugriffsbeschränkungen und Verbindungsschutz, garantiert jedoch keine absolute Sicherheit bei Internetübertragungen.",
+          "5.3. Tägliche Analysedaten und Berichte werden nach 180 Tagen entfernt, Intervallwerte der Verbindungsgeschwindigkeit nach acht Tagen. Supportinhalte und Anhänge werden nach 30 Tagen aus der operativen Supportdatenbank gelöscht. Dies betrifft die genannten Kategorien und bedeutet keine gleichzeitige Löschung des Kontos, aller E-Mails oder Sicherungskopien.",
+          "5.4. Nach Zweckerfüllung oder Wegfall der Rechtsgrundlage sind Daten zu löschen oder zu anonymisieren, sofern keine gesetzliche Aufbewahrungspflicht besteht. Nutzer dürfen Auskunft, Berichtigung, Sperrung oder Löschung verlangen, Einwilligungen widerrufen und Verstöße beanstanden. Anfragen an help@prettylisavpn.com können eine angemessene Kontoinhaberschaftsprüfung erfordern und werden innerhalb gesetzlicher Fristen behandelt. Ein Widerruf beendet keine Verarbeitung auf einer anderen, dem Nutzer mitgeteilten Rechtsgrundlage."
+        ]
+      },
+      {
+        "title": "Haftungsausschluss",
+        "paragraphs": [
+          "6.1. Der Nutzer versteht und akzeptiert, dass die Übertragung von Informationen über das Internet stets Risiken birgt.",
+          "6.2. Für durch Dritte oder den Nutzer verursachten Verlust, Diebstahl oder Offenlegung haftet die Administration nur im gesetzlich vorgeschriebenen Umfang. Eigene Datenschutzpflichten und die Haftung für deren Verletzung bleiben bestehen."
+        ]
+      },
+      {
+        "title": "Änderungen der Erklärung",
+        "paragraphs": [
+          "7.1. Die Administration darf die Erklärung ändern. Die aktuelle Fassung mit Datum wird im Dienst veröffentlicht; wesentliche Änderungen werden vor Beginn der betreffenden Verarbeitung über den Dienst oder per E-Mail mitgeteilt.",
+          "7.2. Die weitere Nutzung ersetzt keine gesetzlich erforderliche gesonderte Einwilligung. Erfordern geänderte Zwecke eine neue Einwilligung, wird sie vor Beginn dieser Verarbeitung eingeholt. Fragen können an help@prettylisavpn.com gerichtet werden."
+        ]
+      }
     ],
     "refunds": [
       "bei fragen zur dienstleistungsqualität, zur beendigung des bezahlten zugangs und zu erstattungen schreiben sie an help@prettylisavpn.com.",
       "geben sie die e-mail-adresse ihres kontos, datum und betrag der zahlung, die währung, gegebenenfalls die transaktionsnummer und den grund ihrer anfrage an. bei technischen problemen sind plattform, app-version, server, ungefährer zeitpunkt und fehlertext hilfreich.",
       "senden sie keine vollständige kartennummer, cvc, banking-passwörter oder einmalcodes. machen sie nicht benötigte personenbezogene daten in beigefügten dokumenten unkenntlich.",
       "ansprüche werden unter berücksichtigung der umstände der anfrage, der erbrachten leistung und des anwendbaren rechts geprüft. nach der prüfung teilt der support die entscheidung und die nächsten schritte mit.",
+      "Der Nutzer darf weitere Leistungen beenden und eine Erstattung auf gesetzlicher Grundlage verlangen. Freigeschalteter Zugang oder der Ablauf von 24 Stunden schließen dies allein nicht aus. Abzüge benötigen eine gesetzliche Grundlage; Berechnung und Antwort erfolgen per E-Mail innerhalb gesetzlicher Fristen. Die Kontaktaufnahme mit dem Support beschränkt nicht den Zugang zu Bank, Zahlungssystem, zuständiger Behörde oder Gericht.",
       "das trennen der vpn-verbindung oder deinstallieren der app stellt für sich genommen keinen erstattungsantrag dar. für die prüfung eines finanziellen anspruchs müssen sie sich an den support wenden.",
       "diese regeln schränken keine rechte nach anwendbarem recht ein."
     ],
     "payments": [
-      "ein bezahltes abonnement bietet premium-zugang für einen kalendermonat. der zeitraum beginnt nach bestätigung der zahlung. das genaue ablaufdatum wird in der app angezeigt.",
-      "ein kalendermonat endet am entsprechenden tag des folgenden monats; gibt es diesen tag nicht, endet er am letzten tag des monats. dies sind keine festen 30 tage.",
-      "SBP-Abonnements verlängern sich nach Ihrer Zustimmung einmal pro Kalendermonat automatisch. Der vereinbarte Betrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert. Ein einmaliger Zahlungslink aktiviert keine automatische Verlängerung.",
-      "In der Abonnementverwaltung können Sie künftige Abbuchungen stoppen und das Bankkonto entfernen. Der bezahlte Zugang bleibt bis zum angezeigten Datum erhalten. Bei einem neuen Abschluss gilt der dann aktuelle Preis.",
+      "Kostenpflichtiger Zugang wird nach Zahlungsbestätigung für den Zeitraum des gewählten Tarifs bereitgestellt. Preis, Währung und Zeitraum werden vor Abschluss angezeigt; das genaue Enddatum ist im Dienst verfügbar.",
+      "Sieht der Tarif einen Kalendermonat vor, endet dieser am entsprechenden Tag des Folgemonats oder, wenn dieser fehlt, an dessen letztem Tag. Dies sind nicht pauschal 30 Tage.",
+      "Automatische Verlängerung über eine verfügbare Zahlungsart erfordert eine gesonderte Zustimmung zu Betrag und Abbuchungshäufigkeit. Der vereinbarte Betrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert. Eine Einmalzahlung aktiviert keine automatische Verlängerung.",
+      "Künftige Abbuchungen und die Verknüpfung der Zahlungsart können in der Abonnementverwaltung beendet werden. Bezahlter Zugang bleibt bis zum angezeigten Datum bestehen. Bei einem neuen Abschluss gilt der dann verfügbare Preis.",
       "prüfen sie bei der zahlung tarif, währung, gesamtbetrag und gebührenangaben auf der zahlungsseite. kartendaten und cvc werden nur auf der zahlungsseite des anbieters eingegeben, nicht auf der website von PrettyLisaVPN oder in e-mails an den support.",
       "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt.",
       "der höchstbetrag pro transaktion beträgt 10.000 RUB. guthabenaufladungen und frei wählbare beträge werden nicht angeboten. zahlungen sind noch nicht verfügbar."
-    ]
+    ],
+    "contents": "Inhalt",
+    "privacyIntro": "Diese Datenschutzerklärung regelt die Erhebung, Nutzung und den Schutz von Informationen der Nutzer von PrettyLisaVPN. Erfasst werden Kontokennungen, technische Informationen und Interaktionen mit dem Dienst, jedoch kein Browserverlauf. Die Daten dienen dem Betrieb, der Kommunikation mit dem Nutzer und der Analyse. Eine Weitergabe ist auf den in Abschnitt 4 genannten Grundlagen möglich. Daten werden für den erforderlichen Zeitraum gespeichert; die Administration trifft Schutzmaßnahmen. Übertragungsrisiken und Änderungen dieser Erklärung sind in den Abschnitten 6 und 7 geregelt."
   },
   "notFound": {
     "title": "seite nicht gefunden",
