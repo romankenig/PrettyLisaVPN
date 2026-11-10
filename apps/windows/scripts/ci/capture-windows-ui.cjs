@@ -1379,6 +1379,12 @@ async function main() {
   await page
     .getByRole("button", { name: /попробовать без регистрации/ })
     .click();
+  // Buy stores an allowlisted return route; a new guest login returns there too.
+  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "главная", exact: true })
+    .click();
   await page.getByText("гость на этом устройстве", { exact: true }).waitFor();
   await fetch("http://127.0.0.1:8000/ui-review/devices", {
     method: "POST",
