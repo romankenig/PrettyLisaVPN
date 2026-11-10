@@ -717,6 +717,12 @@ async function main() {
     .getByRole("button", { name: "изменить способ подключения", exact: true })
     .waitFor();
   await screenshot("04f-home-method-reset");
+  await page.locator(".connection-reset").evaluate((node) => {
+    if (getComputedStyle(node).marginTop !== "0px")
+      throw Error(
+        "Reset icon must align with its protocol without the global button top margin",
+      );
+  });
   await page
     .getByRole("button", { name: "изменить способ подключения", exact: true })
     .click();
