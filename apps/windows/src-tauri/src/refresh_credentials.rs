@@ -6,20 +6,23 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use windows_sys::Win32::Foundation::{GetLastError, ERROR_NOT_FOUND};
 use windows_sys::Win32::Security::Credentials::{
-    CredDeleteW, CredFree, CredReadW, CredWriteW, CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE,
-    CRED_TYPE_GENERIC,
+    CredDeleteW, CredFree, CredReadW, CredWriteW, CREDENTIALW, CREDENTIAL_ATTRIBUTEW,
+    CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
 };
 use zeroize::{Zeroize, Zeroizing};
 
 const CREDENTIAL_TARGET: &str = "PrettyLisaVPN/auth/refresh-token/v1";
 const MAX_REFRESH_TOKEN_BYTES: usize = 512;
 const STORAGE_ERROR: &str = "credential_storage_unavailable";
+const ROTATION_ATTRIBUTE: &str = "PrettyLisaVPN/refresh-rotation/v1";
 
 #[derive(Deserialize)]
 pub struct RefreshCredentialInput {
     session_id: String,
     refresh_token: String,
     expires_at: String,
+    #[serde(default)]
+    rotation_id: Option<String>,
 }
 
 impl Drop for RefreshCredentialInput {
@@ -33,6 +36,8 @@ pub struct StoredRefreshCredential {
     session_id: String,
     refresh_token: String,
     expires_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rotation_id: Option<String>,
 }
 
 impl Drop for StoredRefreshCredential {
@@ -69,6 +74,15 @@ impl RefreshCredentialState {
         let session_id = std::mem::take(&mut input.session_id);
         let refresh_token = Zeroizing::new(std::mem::take(&mut input.refresh_token));
         let expires_at = std::mem::take(&mut input.expires_at);
+        let rotation_id = input.rotation_id.take();
+        let mut rotation_keyword = wide(ROTATION_ATTRIBUTE);
+        let mut rotation_bytes = rotation_id.as_deref().unwrap_or("").as_bytes().to_vec();
+        let mut attribute = CREDENTIAL_ATTRIBUTEW {
+            Keyword: rotation_keyword.as_mut_ptr(),
+            Flags: 0,
+            ValueSize: rotation_bytes.len() as u32,
+            Value: rotation_bytes.as_mut_ptr(),
+        };
         let mut target = wide(&self.target);
         let mut username = wide(&session_id);
         let mut comment = wide(&expires_at);
@@ -81,6 +95,12 @@ impl RefreshCredentialState {
             CredentialBlob: refresh_token.as_ptr().cast_mut(),
             Persist: CRED_PERSIST_LOCAL_MACHINE,
             UserName: username.as_mut_ptr(),
+            AttributeCount: u32::from(rotation_id.is_some()),
+            Attributes: if rotation_id.is_some() {
+                &mut attribute
+            } else {
+                ptr::null_mut()
+            },
             ..Default::default()
         };
 
@@ -117,16 +137,19 @@ impl RefreshCredentialState {
         let refresh_token = String::from_utf8(blob.to_vec()).map_err(|_| invalid_data())?;
         let session_id = read_wide(credential.UserName)?;
         let expires_at = read_wide(credential.Comment)?;
+        let rotation_id = read_rotation_id(credential)?;
         let mut stored = RefreshCredentialInput {
             session_id,
             refresh_token,
             expires_at,
+            rotation_id,
         };
         validate(&stored).map_err(|_| invalid_data())?;
         Ok(Some(StoredRefreshCredential {
             session_id: std::mem::take(&mut stored.session_id),
             refresh_token: std::mem::take(&mut stored.refresh_token),
             expires_at: std::mem::take(&mut stored.expires_at),
+            rotation_id: stored.rotation_id.take(),
         }))
     }
 
@@ -184,6 +207,12 @@ pub fn delete_refresh_credential(
 
 fn validate(input: &RefreshCredentialInput) -> io::Result<()> {
     Uuid::parse_str(&input.session_id).map_err(|_| invalid_input())?;
+    if let Some(value) = &input.rotation_id {
+        let parsed = Uuid::parse_str(value).map_err(|_| invalid_input())?;
+        if value.len() != 36 || parsed.get_version_num() != 4 {
+            return Err(invalid_input());
+        }
+    }
     if input.refresh_token.is_empty()
         || input.refresh_token.len() > MAX_REFRESH_TOKEN_BYTES
         || input.expires_at.trim().is_empty()
@@ -191,6 +220,31 @@ fn validate(input: &RefreshCredentialInput) -> io::Result<()> {
         return Err(invalid_input());
     }
     Ok(())
+}
+
+fn read_rotation_id(credential: &CREDENTIALW) -> io::Result<Option<String>> {
+    if credential.AttributeCount == 0 {
+        return Ok(None);
+    }
+    if credential.AttributeCount > 64 || credential.Attributes.is_null() {
+        return Err(invalid_data());
+    }
+    // SAFETY: the array belongs to the live CredReadW allocation, bounded above.
+    let attributes =
+        unsafe { slice::from_raw_parts(credential.Attributes, credential.AttributeCount as usize) };
+    let mut result = None;
+    for attribute in attributes {
+        if read_wide(attribute.Keyword)? != ROTATION_ATTRIBUTE {
+            continue;
+        }
+        if result.is_some() || attribute.ValueSize != 36 || attribute.Value.is_null() {
+            return Err(invalid_data());
+        }
+        // SAFETY: CredReadW owns ValueSize bytes and its guard remains alive.
+        let value = unsafe { slice::from_raw_parts(attribute.Value, 36) };
+        result = Some(String::from_utf8(value.to_vec()).map_err(|_| invalid_data())?);
+    }
+    Ok(result)
 }
 
 fn wide(value: &str) -> Vec<u16> {
@@ -232,6 +286,7 @@ mod tests {
             session_id: Uuid::new_v4().to_string(),
             refresh_token: "test-refresh-token".to_owned(),
             expires_at: "2026-10-09T00:00:00Z".to_owned(),
+            rotation_id: None,
         }
     }
 
@@ -277,6 +332,8 @@ mod tests {
 
         let mut replacement = input();
         replacement.refresh_token = "replacement-token".to_owned();
+        let rotation_id = Uuid::new_v4().to_string();
+        replacement.rotation_id = Some(rotation_id.clone());
         store
             .write(replacement)
             .expect("credential should be replaced");
@@ -284,6 +341,12 @@ mod tests {
             store.read().unwrap().unwrap().refresh_token,
             "replacement-token"
         );
+        assert_eq!(
+            store.read().unwrap().unwrap().rotation_id.as_deref(),
+            Some(rotation_id.as_str())
+        );
+        store.write(input()).unwrap();
+        assert!(store.read().unwrap().unwrap().rotation_id.is_none());
 
         store.delete().expect("test credential should be deleted");
         assert!(store

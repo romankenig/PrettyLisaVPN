@@ -84,7 +84,9 @@ class MeSummary:
 class AuthenticatedSessionHandler(Protocol):
     async def authenticate(self, access_token: str) -> AccessIdentity: ...
 
-    async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens: ...
+    async def refresh(
+        self, session_id: UUID, refresh_token: str, rotation_id: UUID | None = None
+    ) -> RefreshedTokens: ...
 
     async def logout(self, access_token: str) -> None: ...
 
@@ -105,6 +107,7 @@ class AuthenticatedSessionService:
         self._events = events
         self._access_tokens = AccessTokenService(settings)
         self._refresh_token_ttl = timedelta(seconds=settings.refresh_token_ttl_seconds)
+        self._rotation_secret = settings.otp_hmac_secret.get_secret_value().encode()
 
     async def authenticate(self, access_token: str) -> AccessIdentity:
         identity = self._decode_identity(access_token)
@@ -122,27 +125,33 @@ class AuthenticatedSessionService:
             identity.user_id, identity.device_id, identity.session_id, is_demo_email(user.email)
         )
 
-    async def refresh(self, session_id: UUID, refresh_token: str) -> RefreshedTokens:
+    async def refresh(
+        self, session_id: UUID, refresh_token: str, rotation_id: UUID | None = None
+    ) -> RefreshedTokens:
         try:
             async with self._postgres.session() as session:
                 async with session.begin():
                     repository = AuthSessionRepository(session)
                     candidate = await repository.get(session_id)
                     now = datetime.now(UTC)
-                    session_service = AuthSessionService(repository, self._refresh_token_ttl)
-                    if candidate is None or not session_service.is_refresh_token_usable(
-                        candidate, refresh_token, now
+                    session_service = AuthSessionService(
+                        repository, self._refresh_token_ttl, rotation_secret=self._rotation_secret
+                    )
+                    if candidate is None or not session_service.accepts_refresh(
+                        candidate, refresh_token, now, rotation_id
                     ):
                         raise InvalidRefreshTokenError
 
                     await self._load_principals(session, candidate, for_update=True)
                     try:
                         locked = await session_service.validate_refresh_token(
-                            session_id, refresh_token
+                            session_id, refresh_token, rotation_id
                         )
                     except InvalidAuthSessionError:
                         raise InvalidRefreshTokenError from None
-                    rotated = await session_service.rotate_validated(locked)
+                    rotated = await session_service.rotate_validated(
+                        locked, refresh_token=refresh_token, rotation_id=rotation_id
+                    )
                     access_token = self._access_tokens.issue(
                         rotated.session.user_id,
                         rotated.session.device_id,

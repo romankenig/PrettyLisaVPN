@@ -40,6 +40,9 @@ SIMULATE_MESSAGES = False
 DEMO_REVIEW = False
 QUOTA_REVIEW = False
 QUOTA_EXTENDED = False
+AUTH_RECOVERY_MODE = "normal"
+AUTH_EXPIRED_ONCE = False
+AUTH_ROTATIONS = []
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
 MESSAGE_FIXTURES = [
@@ -68,6 +71,18 @@ def fixture(method, path, body):
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
     global QUOTA_REVIEW, QUOTA_EXTENDED, DEMO_REVIEW
+    global AUTH_RECOVERY_MODE, AUTH_EXPIRED_ONCE
+    if method == "POST" and path == "/ui-review/auth-recovery":
+        AUTH_RECOVERY_MODE = body.get("mode", "normal")
+        if AUTH_RECOVERY_MODE == "outage":
+            AUTH_EXPIRED_ONCE = True
+            AUTH_ROTATIONS.clear()
+        return 200, {"mode": AUTH_RECOVERY_MODE}
+    if method == "GET" and path == "/ui-review/auth-recovery":
+        return 200, {"attempts": len(AUTH_ROTATIONS), "same_operation": bool(AUTH_ROTATIONS) and bool(AUTH_ROTATIONS[0]) and len(set(AUTH_ROTATIONS)) == 1}
+    if method == "GET" and path == "/me" and AUTH_EXPIRED_ONCE:
+        AUTH_EXPIRED_ONCE = False
+        return 401, {"error": {"code": "invalid_access_token"}}
     if method == "POST" and path == "/ui-review/free-quota":
         QUOTA_REVIEW = body.get("enabled") is True
         QUOTA_EXTENDED = body.get("extended") is True
@@ -93,7 +108,7 @@ def fixture(method, path, body):
             DEVICE_REVOKED = True
             return 200, DEVICE_EVIDENCE["revoked_response"]
     if method == "GET" and path == "/version":
-        return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.40.0-dev.1+gfixture", "environment": "test"}
+        return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.40.1-dev.1+gfixture", "environment": "test"}
     if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
         return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
     if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):
@@ -154,6 +169,11 @@ def fixture(method, path, body):
     if method == "POST" and path == "/auth/request-otp":
         return 200, {"status": "accepted"}
     if method == "POST" and path == "/auth/refresh":
+        if AUTH_RECOVERY_MODE in ("outage", "recovered"):
+            AUTH_ROTATIONS.append(body.get("rotation_id"))
+            if AUTH_RECOVERY_MODE == "outage":
+                return 503, {"error": {"code": "authentication_unavailable"}}
+            AUTH_RECOVERY_MODE = "normal"
         if body.get("session_id") != SESSION_ID or body.get("refresh_token") != "ui-review-refresh-not-a-real-token":
             return 401, {"error": {"code": "AUTH_INVALID"}}
         return 200, {

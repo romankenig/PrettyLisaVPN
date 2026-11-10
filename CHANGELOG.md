@@ -28,6 +28,15 @@
   Legal review, provider acceptance and production publication are separate;
   see [legal revision handoff](docs/public-website-legal.md).
 
+### Windows — 0.27.1 / Backend — 0.40.1
+
+- Preserve Windows sign-in across transient network/API failures and refresh
+  expired access tokens for all authenticated UI requests as well as VPN heartbeats.
+- Persist refresh operation IDs in Windows Credential Manager; additive migration
+  0048 permits recovery of the latest committed rotation after a lost response.
+  Account/device revocation, expiry and legacy one-use behavior remain enforced.
+- See [session recovery and validation](docs/windows-session-resilience.md).
+
 ### Windows — 0.27.0 / Backend — 0.40.0 / Managed engine — 0.6.2 / Website — 0.5.1
 
 - Add reinstall-stable Windows DEMO with existing daily limits, legal links and

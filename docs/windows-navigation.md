@@ -901,3 +901,16 @@ capability and idempotency gates remain; a portal return reloads authoritative d
 Backend integration is implemented in 0.40.0 (`POST /auth/demo`, platform WINDOWS),
 awaiting deployment. See [full handoff](windows-android-parity.md) for identity limits,
 Kaspersky handoff, fallback/DNS verification and release evidence.
+
+## Windows 0.27.1 — keep authentication through network failures
+
+Implemented: Home, Devices, Subscription and authenticated dialogs renew expiring
+access tokens through the same session service as VPN heartbeats. A temporary
+refresh/storage/API failure keeps the existing screen and account; Home can retry
+through its refresh icon or periodic reload. Startup restoration keeps its existing
+temporary-unavailable retry screen. Confirmed revocation, blocked/expired session
+or explicit logout still returns to Login. No new route or external link is added.
+
+Backend 0.40.1 adds optional idempotent refresh (migration 0048); deployment and
+exact native screenshots are recorded separately in the task PR. See
+[session recovery handoff](windows-session-resilience.md).

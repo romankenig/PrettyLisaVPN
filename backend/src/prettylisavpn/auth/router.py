@@ -102,7 +102,8 @@ class VerifyOtpResponse(BaseModel):
 
 class RefreshBody(BaseModel):
     session_id: UUID
-    refresh_token: Annotated[str, Field(min_length=1, max_length=512)]
+    refresh_token: Annotated[str, Field(min_length=1, max_length=512, repr=False)]
+    rotation_id: UUID | None = Field(default=None, repr=False)
 
 
 class RefreshResponse(BaseModel):
@@ -247,7 +248,10 @@ async def verify_otp(body: VerifyOtpBody, request: Request) -> VerifyOtpResponse
 async def refresh(body: RefreshBody, request: Request) -> RefreshResponse | JSONResponse:
     service = cast(AuthenticatedSessionHandler, request.app.state.authenticated_sessions)
     try:
-        result = await service.refresh(body.session_id, body.refresh_token)
+        if body.rotation_id is None:
+            result = await service.refresh(body.session_id, body.refresh_token)
+        else:
+            result = await service.refresh(body.session_id, body.refresh_token, body.rotation_id)
     except InvalidRefreshTokenError:
         return error_response("invalid_refresh_token", 401)
     except BlockedUserError:
