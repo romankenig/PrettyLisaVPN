@@ -90,6 +90,8 @@ internal fun LiveHome(model: ScreenModel, register: () -> Unit = {}, upgrade: ()
     val tr = strings()
     val state by model.state.collectAsState()
     val demo = state.data.plan.equals("Demo", ignoreCase = true)
+    var quotaNow by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { quotaNow = System.currentTimeMillis(); delay(1_000) } }
     val presentation = LocalPresentation.current
     val location by presentation.location.collectAsState()
     val locating by presentation.locating.collectAsState()
@@ -168,7 +170,9 @@ internal fun LiveHome(model: ScreenModel, register: () -> Unit = {}, upgrade: ()
                 Text(tr(R.string.demo_exhausted), color = Brand.Christalle, style = MaterialTheme.typography.bodyMedium)
                 TextButton(register, Modifier.testTag("demo-limit-register")) { Text(tr(R.string.demo_upgrade)) }
             }
-            VpnControls(model.vpn, if (demo) "AUTO" else selected, state.data.signedIn, canConnect = !exhausted)
+            VpnControls(model.vpn, if (demo) "AUTO" else selected, state.data.signedIn, canConnect = !exhausted,
+                quotaExhausted = state.data.plan.equals("FREE", ignoreCase = true) && state.data.freeTime?.exhausted(quotaNow) == true,
+                onUpgrade = upgrade)
             HorizontalDivider(color = Brand.DustyGray)
             Row(Modifier.fillMaxWidth().testTag("home-network"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (locating) CircularProgressIndicator(Modifier.size(20.dp).testTag("home-location-loading"), strokeWidth = 2.dp)

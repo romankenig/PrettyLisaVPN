@@ -6,6 +6,8 @@ import java.time.Instant
 /** Read-only account balance. The backend remains authoritative for admission/expiry. */
 data class FreeTime(val seconds: Int, val running: Int, val resetsAt: String, val receivedAtMillis: Long, val dailyLimitSeconds: Int = 3600) {
     fun remaining(nowMillis: Long): Int = (seconds - ((nowMillis - receivedAtMillis).coerceAtLeast(0) / 1000).coerceAtMost(60) * running).coerceIn(0, dailyLimitSeconds.toLong()).toInt()
+    fun exhausted(nowMillis: Long): Boolean = nowMillis - receivedAtMillis in 0..60_000 &&
+        runCatching { Instant.parse(resetsAt).toEpochMilli() > nowMillis }.getOrDefault(false) && remaining(nowMillis) == 0
 }
 
 internal fun readFreeTime(json: JsonObject, nowMillis: Long = System.currentTimeMillis()): FreeTime? = runCatching {

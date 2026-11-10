@@ -48,7 +48,7 @@ fun androidDiagnostics(context: Context, backendVersion: String?, language: Stri
         "plan" to plan.uppercase(Locale.ROOT).takeIf { it in setOf("DEMO","FREE","PREMIUM","PLATINUM") },
         "device" to device, "network" to networkDiagnostic(context),
         "vpn" to linkedMapOf("phase" to vpn?.phase?.name, "method" to (vpn?.method ?: vpn?.attempt?.method)?.id,
-            "failure_code" to vpn?.error?.name, "routing_mode" to if (plan.equals("DEMO", true)) "ALL" else current.mode.uppercase(Locale.ROOT), "enabled_methods" to methods.toList().sorted()),
+            "failure_code" to com.prettylisavpn.android.vpn.supportFailureCode(vpn?.error), "routing_mode" to if (plan.equals("DEMO", true)) "ALL" else current.mode.uppercase(Locale.ROOT), "enabled_methods" to methods.toList().sorted()),
         "logs" to AppDiagnostics.get(context).snapshot(),
     )).asJsonObject.apply {
         if (!has("backend_version")) add("backend_version", com.google.gson.JsonNull.INSTANCE)

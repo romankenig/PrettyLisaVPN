@@ -5,6 +5,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FreeTimeTest {
+    @Test fun exhaustedOnlyForFreshQuotaBeforeItsDailyReset() {
+        val balance = FreeTime(0, 0, "2030-01-02T00:00:00Z", 1000)
+        assertTrue(balance.exhausted(1000)); assertFalse(balance.exhausted(62000))
+        assertFalse(balance.exhausted(999)); assertFalse(balance.copy(seconds=600).exhausted(1000))
+        assertFalse(balance.copy(resetsAt="1970-01-01T00:00:01Z").exhausted(1000))
+        assertFalse(balance.copy(resetsAt="invalid").exhausted(1000))
+    }
     @Test fun explicitDailyAllowanceSupportsThreeHoursAndIdleTime() {
         val json = JsonParser.parseString("""{"entitlements":{"daily_vpn_limit_seconds":10800,"free_seconds_usable":10800,"free_running_sessions":0,"free_quota_resets_at":"2030-01-02T00:00:00Z"}}""").asJsonObject
         val value = requireNotNull(readFreeTime(json, 1000))

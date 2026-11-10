@@ -107,6 +107,7 @@ export function PlanComparison({
               <span className="plan-current">{t("ваш тариф")}</span>
             )}
           </div>
+          <p className="plan-registration">{t("после регистрации")}</p>
           <ul className="plan-benefits">
             <li>
               <strong>{t("1 час в день")}</strong>
@@ -131,12 +132,12 @@ export function PlanComparison({
               <span className="plan-current">{t("ваш тариф")}</span>
             )}
           </div>
+          <p className="plan-registration">{t("без регистрации")}</p>
           <ul className="plan-benefits">
             <li>
               <strong>{t("15 минут в день на этом устройстве")}</strong>
             </li>
             <li>{t("только автопилот и весь трафик")}</li>
-            <li>{t("без регистрации")}</li>
           </ul>
         </section>
       </div>

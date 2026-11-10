@@ -356,4 +356,12 @@
     <string name="plan_fresh_hour">une heure distincte après inscription</string>
     <string name="plan_register">s’inscrire</string>
     <string name="plan_buy">acheter</string>
+    <string name="traffic_selected_group">services sélectionnés</string>
+    <string name="traffic_popular_group">populaires</string>
+    <string name="traffic_remaining_group">autres services</string>
+    <string name="plan_registration_required">après inscription</string>
+    <string name="plan_no_registration">sans inscription</string>
+    <string name="vpn_reset_settings">réinitialiser les réglages</string>
+    <string name="free_quota_exhausted">votre heure gratuite du jour est épuisée. achetez PREMIUM pour un accès illimité.</string>
+    <string name="free_quota_buy">acheter PREMIUM</string>
 </resources>

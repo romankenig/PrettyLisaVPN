@@ -64,6 +64,10 @@ export interface VpnConnectionManager {
   reconcile(accessToken: string): Promise<void>;
   connect(accessToken: string, selection: VpnLocationSelection): Promise<void>;
   disconnect(accessToken: string): Promise<void>;
+  resetMethods?(
+    accessToken: string,
+    selection: VpnLocationSelection,
+  ): Promise<void>;
   setOwner?(owner: string | null): void;
   dispose(): void;
   connectionLost?(code?: string): Promise<void>;
@@ -105,6 +109,7 @@ export function createVpnConnectionManager(
   let run: { controller: AbortController; done: Promise<void> } | null = null;
   let stopping: Promise<void> | null = null;
   let disposed = false;
+  let intentRevision = 0;
   let recoveredOwner: string | null = null;
   const listeners = new Set<() => void>();
   const emit = (value: VpnConnectionState) => {
@@ -146,7 +151,7 @@ export function createVpnConnectionManager(
     }
   };
 
-  return {
+  const manager: VpnConnectionManager = {
     current: () => state,
     subscribe(listener) {
       listeners.add(listener);
@@ -189,12 +194,14 @@ export function createVpnConnectionManager(
     },
     setOwner(value) {
       if (owner !== value) {
+        intentRevision++;
         owner = value;
         void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       }
     },
     async connect(_accessToken, selection) {
       if (disposed || run || stopping || active) return;
+      intentRevision++;
       const current = {
         controller: new AbortController(),
         done: Promise.resolve(),
@@ -309,7 +316,19 @@ export function createVpnConnectionManager(
         if (run === current) run = null;
       }
     },
-    disconnect,
+    disconnect() {
+      intentRevision++;
+      return disconnect();
+    },
+    async resetMethods(accessToken, selection) {
+      if (disposed || run || stopping) return;
+      const revision = ++intentRevision;
+      const expectedOwner = owner;
+      preference.clear();
+      await disconnect();
+      if (revision === intentRevision && owner === expectedOwner && !disposed)
+        await manager.connect(accessToken, selection);
+    },
     async connectionLost(code = "VPN_CONNECTION_LOST") {
       if (run || !active) return;
       const method = active.name;
@@ -321,9 +340,11 @@ export function createVpnConnectionManager(
       }
     },
     dispose() {
+      intentRevision++;
       disposed = true;
       void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       listeners.clear();
     },
   };
+  return manager;
 }

@@ -3,7 +3,15 @@ import { useEffect, useState } from "react";
 import type { ConnectionDetails } from "../vpn/connectionDetails";
 import { useApplication } from "../state/application";
 
-export function ConnectionInfo({ sessionId }: { readonly sessionId: string }) {
+export function ConnectionInfo({
+  sessionId,
+  onReset,
+  resetting = false,
+}: {
+  readonly sessionId: string;
+  readonly onReset?: () => void;
+  readonly resetting?: boolean;
+}) {
   useLanguage();
   const { vpnConnection } = useApplication();
   const [state, setState] = useState<{
@@ -44,6 +52,17 @@ export function ConnectionInfo({ sessionId }: { readonly sessionId: string }) {
   return (
     <p className="connection-info" aria-label={t("способ подключения")}>
       {t(info.protocol)}
+      {onReset && (
+        <button
+          type="button"
+          className="connection-reset"
+          disabled={resetting}
+          title={t("забыть успешный способ и подключиться заново")}
+          onClick={onReset}
+        >
+          {t("сброс настроек")}
+        </button>
+      )}
     </p>
   );
 }

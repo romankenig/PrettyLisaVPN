@@ -7,6 +7,21 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionRecoveryTest {
+    @Test fun freeQuotaStopsRetriesAndKeepsSupportVocabularyCompatible() = runTest {
+        for (code in listOf("FREE_QUOTA_EXHAUSTED", "FREE_DAILY_LIMIT_REACHED", "FREE_QUOTA_RESERVED")) {
+            val events = mutableListOf<String>()
+            val denied = object : ConnectionAdapter {
+                override val method = VpnMethod("wireguard", "WireGuard")
+                override suspend fun connect(country: String): ConnectionResult { events += "start"; throw com.prettylisavpn.android.auth.AuthFailure(code) }
+                override suspend fun disconnect() { events += "cleanup" }
+            }
+            val controller = VpnController({ "owner" }, backgroundScope, listOf(denied, Adapter("vless", events)))
+            controller.connect("AUTO"); runCurrent()
+            assertEquals(listOf("start", "cleanup"), events)
+            assertEquals(if (code == "FREE_QUOTA_RESERVED") VpnError.ACCESS else VpnError.FREE_LIMIT, controller.status.value.error)
+            assertEquals("ACCESS", supportFailureCode(controller.status.value.error))
+        }
+    }
     @Test fun demoQuotaStopsMethodExplorationAfterCleanup() = runTest {
         val events = mutableListOf<String>()
         val exhausted = object : ConnectionAdapter {

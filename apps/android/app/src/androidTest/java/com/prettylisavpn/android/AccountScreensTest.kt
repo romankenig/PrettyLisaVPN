@@ -24,6 +24,8 @@ class AccountScreensTest {
     private val message="30000000-0000-0000-0000-000000000003"
     private var mode="DISABLED"
     private var plan="Premium"
+    private var freeSeconds=3600
+    private var connections=0
     private var revision="r1"
     private var active=true
     private var billingFail=false
@@ -49,7 +51,7 @@ class AccountScreensTest {
         fun tokens()=Tokens("fake",900,Credentials(device,"fake","2030-01-01T00:00:00Z"))
         override suspend fun refresh(credentials:Credentials)=tokens()
         override suspend fun me(access:String):Profile { profileReads++; return Profile(if(plan=="Demo")"" else "screens@example.com",plan,if(plan=="Demo")1 else if(active)2 else 1,owner,
-            if(plan in setOf("Free","Demo")) FreeTime(if(plan=="Demo")900 else 3600,0,"2030-01-01T00:00:00Z",System.currentTimeMillis(),if(plan=="Demo")900 else 3600) else null) }
+            if(plan in setOf("Free","Demo")) FreeTime(if(plan=="Demo")900 else freeSeconds,0,"2030-01-01T00:00:00Z",System.currentTimeMillis(),if(plan=="Demo")900 else 3600) else null) }
         override suspend fun logout(access:String)=Unit
     }
     private val accounts=object:AccountApi {
@@ -92,7 +94,14 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         compose.waitForIdle();instrumentation.waitForIdleSync();instrumentation.uiAutomation.waitForIdle(500,5_000)
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
-        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test",demoIdentity={ "a".repeat(64) }),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
+        val liveSource=LiveSessionSource(SessionCoordinator(api,vault,"Test",demoIdentity={ "a".repeat(64) }),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
+        SourceFactory.sourceForTests=object:ScreenSource by liveSource {
+            override val vpn=object:com.prettylisavpn.android.vpn.VpnActions {
+                override val status=kotlinx.coroutines.flow.MutableStateFlow(com.prettylisavpn.android.vpn.VpnStatus())
+                override fun connect(country:String) { connections++ }
+                override fun disconnect() {}
+            }
+        }
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
     }
@@ -214,9 +223,13 @@ class AccountScreensTest {
         compose.onNodeWithTag("live-subscription-screen").assertExists()
         compose.onNodeWithTag("billing-price").assertTextEquals("399 ₽")
         compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-demo-premium-ru")
-        compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-demo-free-ru")
+        compose.onNodeWithTag("plan-tier-FREE").performScrollTo()
+        compose.onNodeWithTag("plan-registration-FREE").assertTextEquals("после регистрации")
+        screenshot("plan-polish-demo-free-ru")
         compose.onNodeWithTag("current-plan-DEMO").assertExists()
-        compose.onNodeWithTag("plan-tier-DEMO").performScrollTo();screenshot("plan-polish-demo-current-ru")
+        compose.onNodeWithTag("plan-tier-DEMO").performScrollTo()
+        compose.onNodeWithTag("plan-registration-DEMO").assertTextEquals("без регистрации")
+        screenshot("plan-polish-demo-current-ru")
         assertEquals(0,billingReads)
         click("plan-buy");waitFor("screen_LOGIN")
         enterAuth("login-email","buyer@example.com");click("auth-submit");waitFor("screen_OTP")
@@ -231,6 +244,17 @@ class AccountScreensTest {
         compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-free-current-ru")
         click("plan-buy");waitFor("purchase-unavailable")
         assertEquals(0,starts)
+    }
+
+    @Test fun exhaustedFreeConnectOpensPremiumWithoutStartingVpnOrPayment() {
+        click("language-picker");click("language-ru")
+        compose.runOnUiThread { plan="Free";freeSeconds=0;model.load(Area.HOME) };idle()
+        waitFor("free-quota-notice")
+        compose.onNodeWithTag("free-quota-notice").performScrollTo();screenshot("free-exhausted-home-ru")
+        click("home-connect");waitFor("plan-buy")
+        compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("free-exhausted-premium-ru")
+        compose.onNodeWithTag("current-plan-FREE").assertExists()
+        assertEquals(0,connections);assertEquals(0,starts)
     }
 
     @Test fun devicesRevokeUpdatesHomeAndBack() {

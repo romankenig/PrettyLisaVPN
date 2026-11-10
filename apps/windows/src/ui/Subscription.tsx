@@ -2,7 +2,8 @@ import { GuestSubscription } from "./GuestSubscription";
 import { PlanComparison, referenceOffer, planLabel } from "./PlanComparison";
 import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { freeQuotaMessage } from "./FreeTimeBalance";
 import { ApiError } from "../api/client";
 import { useApplication } from "../state/application";
 import {
@@ -54,6 +55,7 @@ export function Subscription() {
 
 function SubscriptionContent() {
   useLanguage();
+  const location = useLocation();
   const { billing, paymentBrowser, session } = useApplication();
   const active = useSyncExternalStore(
     session.subscribe,
@@ -442,6 +444,12 @@ function SubscriptionContent() {
         </button>
       </div>
       <div className="subscription-scroll">
+        {active?.plan === "FREE" &&
+          location.state?.freeQuotaExhausted === true && (
+            <p role="status" className="free-quota-notice">
+              {t(freeQuotaMessage)}
+            </p>
+          )}
         {loading ? <p role="status">{t("загружаем подписку…")}</p> : null}
         <div className="current-plan-summary">
           <span>{t("ваш тариф")}</span>

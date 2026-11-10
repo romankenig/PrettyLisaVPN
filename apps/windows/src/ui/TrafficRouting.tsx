@@ -546,53 +546,63 @@ function TrafficDialog({
           services,
           tab,
           getLanguage(),
-          initial[tab].services.map((s) => s.id),
-        ).map((group) => (
-          <section
-            key={group.key}
-            className="traffic-category"
-            aria-label={t(group.title)}
-            data-testid={`traffic-group-${group.key}`}
-          >
-            <h3>{t(group.title)}</h3>
-            <div className="traffic-services">
-              {group.services
-                .filter((service) =>
-                  service.name
-                    .toLocaleLowerCase()
-                    .includes(query.trim().toLocaleLowerCase()),
-                )
-                .map((service) => (
-                  <label key={service.id}>
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      className="service-switch"
-                      aria-label={service.name}
-                      checked={list.services.some((s) => s.id === service.id)}
-                      disabled={busy}
-                      onChange={() =>
-                        setDraft({
-                          ...draft,
-                          preset_defaults: false,
-                          [tab]: {
-                            ...list,
-                            services: list.services.some(
-                              (s) => s.id === service.id,
-                            )
-                              ? list.services.filter((s) => s.id !== service.id)
-                              : [...list.services, service],
-                          },
-                        })
-                      }
-                    />
-                    <ServiceIcon name={service.icon} />
-                    <span>{service.name}</span>
-                  </label>
-                ))}
-            </div>
-          </section>
-        ))}
+          list.services.map((s) => s.id),
+        )
+          .filter((group) =>
+            group.services.some((service) =>
+              service.name
+                .toLocaleLowerCase()
+                .includes(query.trim().toLocaleLowerCase()),
+            ),
+          )
+          .map((group) => (
+            <section
+              key={group.key}
+              className="traffic-category"
+              aria-label={t(group.title)}
+              data-testid={`traffic-group-${group.key}`}
+            >
+              <h3>{t(group.title)}</h3>
+              <div className="traffic-services">
+                {group.services
+                  .filter((service) =>
+                    service.name
+                      .toLocaleLowerCase()
+                      .includes(query.trim().toLocaleLowerCase()),
+                  )
+                  .map((service) => (
+                    <label key={service.id}>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        className="service-switch"
+                        aria-label={service.name}
+                        checked={list.services.some((s) => s.id === service.id)}
+                        disabled={busy}
+                        onChange={() =>
+                          setDraft({
+                            ...draft,
+                            preset_defaults: false,
+                            [tab]: {
+                              ...list,
+                              services: list.services.some(
+                                (s) => s.id === service.id,
+                              )
+                                ? list.services.filter(
+                                    (s) => s.id !== service.id,
+                                  )
+                                : [...list.services, service],
+                            },
+                          })
+                        }
+                      />
+                      <ServiceIcon name={service.icon} />
+                      <span>{service.name}</span>
+                    </label>
+                  ))}
+              </div>
+            </section>
+          ))}
       </div>
       {error && (
         <p role="alert">
