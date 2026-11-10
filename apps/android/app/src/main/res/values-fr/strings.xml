@@ -283,7 +283,6 @@
     <string name="notification_vpn_disconnecting">déconnexion du VPN…</string>
     <string name="notification_open">ouvrir l’application</string>
     <string name="notification_disconnect">déconnecter le VPN</string>
-    <string name="traffic_all_services">tous les services</string>
     <string name="traffic_selected_label">services sélectionnés :</string>
     <string name="traffic_add_service">ajouter un service</string>
     <string name="direct_location">localisation sans VPN :</string>

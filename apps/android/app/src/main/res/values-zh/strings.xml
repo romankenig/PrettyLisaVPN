@@ -283,7 +283,6 @@
     <string name="notification_vpn_disconnecting">正在断开 VPN…</string>
     <string name="notification_open">打开应用</string>
     <string name="notification_disconnect">断开 VPN</string>
-    <string name="traffic_all_services">全部服务</string>
     <string name="traffic_selected_label">所选服务：</string>
     <string name="traffic_add_service">添加自定义服务</string>
     <string name="direct_location">非 VPN 位置：</string>

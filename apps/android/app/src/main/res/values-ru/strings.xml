@@ -283,7 +283,6 @@
     <string name="notification_vpn_disconnecting">отключение VPN…</string>
     <string name="notification_open">открыть приложение</string>
     <string name="notification_disconnect">отключить VPN</string>
-    <string name="traffic_all_services">все сервисы</string>
     <string name="traffic_selected_label">выбранные сервисы:</string>
     <string name="traffic_add_service">добавить свой сервис</string>
     <string name="direct_location">локация без VPN:</string>
