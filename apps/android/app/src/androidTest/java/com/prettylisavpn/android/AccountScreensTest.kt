@@ -94,14 +94,7 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         compose.waitForIdle();instrumentation.waitForIdleSync();instrumentation.uiAutomation.waitForIdle(500,5_000)
         compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
-        val liveSource=LiveSessionSource(SessionCoordinator(api,vault,"Test",demoIdentity={ "a".repeat(64) }),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
-        SourceFactory.sourceForTests=object:ScreenSource by liveSource {
-            override val vpn=object:com.prettylisavpn.android.vpn.VpnActions {
-                override val status=kotlinx.coroutines.flow.MutableStateFlow(com.prettylisavpn.android.vpn.VpnStatus())
-                override fun connect(country:String) { connections++ }
-                override fun disconnect() {}
-            }
-        }
+        SourceFactory.sourceForTests=LiveSessionSource(SessionCoordinator(api,vault,"Test",demoIdentity={ "a".repeat(64) }),accounts,uploads={ readSupportImages(instrumentation.targetContext,it) })
         compose.runOnUiThread { compose.activity.viewModelStore.clear() };compose.activityRule.scenario.recreate()
         compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
     }
@@ -247,8 +240,19 @@ class AccountScreensTest {
     }
 
     @Test fun exhaustedFreeConnectOpensPremiumWithoutStartingVpnOrPayment() {
+        val liveSource=requireNotNull(SourceFactory.sourceForTests)
+        SourceFactory.sourceForTests=object:ScreenSource by liveSource {
+            override val vpn=object:com.prettylisavpn.android.vpn.VpnActions {
+                override val status=kotlinx.coroutines.flow.MutableStateFlow(com.prettylisavpn.android.vpn.VpnStatus())
+                override fun connect(country:String) { connections++ }
+                override fun disconnect() {}
+            }
+        }
+        compose.runOnUiThread { plan="Free";freeSeconds=0;compose.activity.viewModelStore.clear() }
+        compose.activityRule.scenario.recreate()
+        compose.runOnUiThread { model=compose.activity.screenModel };waitFor("live-account")
         click("language-picker");click("language-ru")
-        compose.runOnUiThread { plan="Free";freeSeconds=0;model.load(Area.HOME) };idle()
+        compose.runOnUiThread { model.load(Area.HOME) };idle()
         waitFor("free-quota-notice")
         compose.onNodeWithTag("free-quota-notice").performScrollTo();screenshot("free-exhausted-home-ru")
         click("home-connect");waitFor("plan-buy")

@@ -515,6 +515,7 @@ async function main() {
     );
   if (new Set(serviceNames).size !== serviceNames.length)
     throw Error("Services must not repeat between groups");
+  await screenshot("04-traffic-selected-first");
   await trafficDialog
     .getByRole("button", { name: "Добавить свой сервис", exact: false })
     .click();
@@ -1318,6 +1319,10 @@ async function main() {
   await page.getByRole("link", { name: "улучшить", exact: true }).click();
   await page.getByRole("region", { name: "PREMIUM", exact: true }).waitFor();
   await screenshot("18-demo-subscription");
+  await page.locator(".plan-secondary-grid").scrollIntoViewIfNeeded();
+  await page.getByText("после регистрации", { exact: true }).waitFor();
+  await page.getByText("без регистрации", { exact: true }).waitFor();
+  await screenshot("18b-plan-registration");
   await page.getByRole("button", { name: "купить", exact: true }).click();
   await page.getByRole("textbox", { name: "Email", exact: true }).waitFor();
   await screenshot("19-demo-register");
