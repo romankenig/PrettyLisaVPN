@@ -650,6 +650,7 @@ async function main() {
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
   await page.getByText(/Бесплатный час на сегодня закончился/).waitFor();
+  await page.getByRole("button", { name: "купить", exact: true }).waitFor();
   await screenshot("04-home-free-exhausted-premium");
   await page.getByRole("link", { name: "главная", exact: true }).click();
   await fetch("http://127.0.0.1:8000/ui-review/free-quota", {

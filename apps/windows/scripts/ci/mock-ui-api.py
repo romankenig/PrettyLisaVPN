@@ -144,7 +144,7 @@ def fixture(method, path, body):
     if method == "GET" and path == "/billing/overview":
         if BILLING_SCENARIO == "error":
             return 503, {"error": {"code": "BILLING_UNAVAILABLE"}}
-        return 200, {**BILLING_FIXTURES[BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
+        return 200, {**BILLING_FIXTURES["free" if QUOTA_REVIEW else BILLING_SCENARIO], "pending_operation_id": BILLING_OPERATION["id"] if BILLING_OPERATION and BILLING_OPERATION["status"] == "PENDING" else None}
     if SIMULATE_BILLING and method == "POST" and path == "/billing/operations":
         request_id = body.get("request_id")
         if request_id in BILLING_REQUESTS:
