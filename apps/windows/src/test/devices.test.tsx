@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiClient, type DeviceResponse } from "../api/client";
 import { createAuthenticationSession } from "../auth/session";
 import { loadConfig } from "../config/config";
@@ -56,7 +56,16 @@ function mockApi(): ApiClient {
   };
 }
 
-function renderDevices(api = mockApi()) {
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute("open", "");
+  };
+});
+
+function renderDevices(
+  api = mockApi(),
+  vpnConnection = createTestVpnConnection(),
+) {
   const storage = createTestCredentialStorage();
   storage.delete = vi.fn(storage.delete);
   const session = createAuthenticationSession(storage);
@@ -85,7 +94,7 @@ function renderDevices(api = mockApi()) {
         },
         session,
         sessionRestoration: createTestSessionRestoration(),
-        vpnConnection: createTestVpnConnection(),
+        vpnConnection,
       }}
     >
       <MemoryRouter initialEntries={["/devices"]}>
@@ -274,4 +283,93 @@ it("hides revoked devices even when the server returns their history", async () 
   await screen.findByText(currentDevice.device_name);
   expect(screen.queryByText(otherDevice.device_name)).not.toBeInTheDocument();
   expect(screen.queryByText("отозвано")).not.toBeInTheDocument();
+});
+
+it("can cancel current-device sign-out without touching the tunnel or credentials", async () => {
+  const vpn = { ...createTestVpnConnection(), disconnect: vi.fn() };
+  const { api, session } = renderDevices(mockApi(), vpn);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "выйти на этом устройстве" }),
+  );
+  expect(screen.getByRole("alertdialog")).toHaveTextContent("VPN отключится");
+  fireEvent.click(screen.getByRole("button", { name: "отмена" }));
+  expect(vpn.disconnect).not.toHaveBeenCalled();
+  expect(api.revokeDevice).not.toHaveBeenCalled();
+  expect(session.current()).not.toBeNull();
+});
+
+it("stops the tunnel before revoking this device, clears credentials and opens login", async () => {
+  let finishStop!: () => void;
+  const vpn = {
+    ...createTestVpnConnection(),
+    disconnect: vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishStop = resolve;
+        }),
+    ),
+  };
+  const { api, session, storage } = renderDevices(mockApi(), vpn);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "выйти на этом устройстве" }),
+  );
+  const confirm = screen.getByRole("button", { name: "да, выйти" });
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  expect(vpn.disconnect).toHaveBeenCalledOnce();
+  expect(api.revokeDevice).not.toHaveBeenCalled();
+  expect(storage.delete).not.toHaveBeenCalled();
+  finishStop();
+  await screen.findByRole("heading", { name: "вход по email" });
+  expect(api.revokeDevice).toHaveBeenCalledExactlyOnceWith(
+    "access-token",
+    currentDevice.id,
+  );
+  expect(api.logout).not.toHaveBeenCalled();
+  expect(storage.delete).toHaveBeenCalledOnce();
+  expect(session.current()).toBeNull();
+});
+
+it.each(["cleanup", "cleanup-auth", "network"])(
+  "keeps sign-in and allows retry when current-device %s fails",
+  async (failure) => {
+    const vpn = {
+      ...createTestVpnConnection(),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+    };
+    const api = mockApi();
+    if (failure === "cleanup")
+      vpn.disconnect.mockRejectedValue(new Error("CLEANUP_FAILED"));
+    else if (failure === "cleanup-auth")
+      vpn.disconnect.mockRejectedValue(new ApiError("AUTH_INVALID"));
+    else
+      vi.mocked(api.revokeDevice).mockRejectedValue(
+        new ApiError("NETWORK_ERROR"),
+      );
+    const { session, storage } = renderDevices(api, vpn);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "выйти на этом устройстве" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "да, выйти" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось завершить сессию",
+    );
+    expect(session.current()).not.toBeNull();
+    expect(storage.delete).not.toHaveBeenCalled();
+    if (failure.startsWith("cleanup"))
+      expect(api.revokeDevice).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "да, выйти" })).toBeEnabled();
+  },
+);
+
+it("clears this device after the server reports it was already revoked", async () => {
+  const api = mockApi();
+  vi.mocked(api.revokeDevice).mockRejectedValue(new ApiError("AUTH_INVALID"));
+  const { session } = renderDevices(api);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "выйти на этом устройстве" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "да, выйти" }));
+  await screen.findByRole("heading", { name: "вход по email" });
+  expect(session.current()).toBeNull();
 });

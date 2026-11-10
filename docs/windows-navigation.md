@@ -939,3 +939,17 @@ leaves the connection stopped/failed without creating another tunnel.
 No backend endpoint, migration or integration is pending for these transitions.
 Billing capability gates still decide whether Buy can open real checkout.
 See [client handoff](client-selection-polish.md) for validation and artifact identity.
+
+## Windows 0.28.1 / Android 0.27.2 — confirmed reset and current-device exit
+
+Implemented: the protocol's refresh icon opens an explanation → Cancel closes it
+without a connection change; Confirm invokes the existing method reset/reconnect.
+Escape (Windows) or Back/outside dismissal (Android) also cancels. A lost/currently
+hidden protocol removes the dialog. Country and traffic choices are preserved.
+
+Windows Settings → Devices scrolls through the main content viewport, including
+mouse-wheel input over device cards. Current-device Sign out → confirmation →
+local VPN cleanup → existing device revoke API → secure credential deletion → Login.
+Failures remain retryable without a new tunnel or automatic logout. Other-device
+revocation remains on the device list. No new route or backend integration is pending.
+See [handoff](device-scroll-reset-confirm.md) for native tests and release evidence.

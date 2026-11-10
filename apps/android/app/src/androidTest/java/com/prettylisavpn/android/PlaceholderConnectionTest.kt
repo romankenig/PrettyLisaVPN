@@ -39,9 +39,18 @@ class PlaceholderConnectionTest {
             compose.onNodeWithTag("home-connect").performScrollTo().performClick()
             compose.waitUntil(5_000) { controller.status.value.method?.id == "vless" }
             compose.onNodeWithTag("vpn-reset-methods").performScrollTo().assertIsEnabled().performClick()
+            compose.onNodeWithTag("vpn-reset-confirmation").assertExists()
+            assertEquals(listOf("start:vless"), events)
+            screenshot("vpn-reset-confirmation", settleWindow = true)
+            compose.onNodeWithTag("vpn-reset-cancel").performClick()
+            compose.onNodeWithTag("vpn-reset-confirmation").assertDoesNotExist()
+            assertEquals(listOf("start:vless"), events)
+            compose.onNodeWithTag("vpn-reset-methods").performClick()
+            compose.onNodeWithTag("vpn-reset-confirm").performClick()
             compose.waitUntil(5_000) { controller.status.value.method?.id == "wireguard" }
+            compose.onNodeWithTag("vpn-reset-confirmation").assertDoesNotExist()
             assertEquals(listOf("start:vless", "stop:vless", "start:wireguard"), events)
-            screenshot("vpn-reset-methods")
+            screenshot("vpn-reset-methods", settleWindow = true)
             compose.runOnUiThread { observedHealth = TunnelHealth.NO_NETWORK; controller.transportLost("wireguard") }
             compose.waitUntil(5_000) { controller.status.value.phase == VpnPhase.WAITING_NETWORK }
             compose.onNodeWithTag("vpn-status").assertTextEquals("waiting for network…")
@@ -119,8 +128,15 @@ class PlaceholderConnectionTest {
         } finally { compose.runOnUiThread { controller.disconnect(); scope.cancel() } }
     }
 
-    private fun screenshot(name: String) {
+    private fun screenshot(name: String, settleWindow: Boolean = false) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        if (settleWindow) {
+            compose.waitForIdle()
+            instrumentation.waitForIdleSync()
+            // Dialog windows are composed separately; allow their opening/removal
+            // to reach the display before UiAutomator captures the native frame.
+            android.os.SystemClock.sleep(300)
+        }
         val folder = File(instrumentation.targetContext.getExternalFilesDir(null), "acceptance").apply { mkdirs() }
         assertTrue(UiDevice.getInstance(instrumentation).takeScreenshot(File(folder, "$name.png")))
     }

@@ -322,7 +322,7 @@
     <string name="vpn_checking">正在检查连接…</string>
     <string name="vpn_waiting_network">等待网络…</string>
     <string name="vpn_reconnecting">正在恢复连接…</string>
-    <string name="vpn_reset_methods">重置已记住的方式并重新连接</string>
+    <string name="vpn_reset_methods">更改连接方式</string>
     <string name="vpn_unstable">连接不稳定。自动恢复已停止，请尝试重新连接</string>
     <string name="legal_documents">文档</string>
     <string name="legal_intro">PrettyLisaVPN 网站上的现行条款</string>
@@ -359,7 +359,9 @@
     <string name="traffic_remaining_group">其他服务</string>
     <string name="plan_registration_required">注册后使用</string>
     <string name="plan_no_registration">无需注册</string>
-    <string name="vpn_reset_settings">重置设置</string>
     <string name="free_quota_exhausted">今天的免费一小时已用完。购买 PREMIUM 即可享受不限时访问。</string>
     <string name="free_quota_buy">购买 PREMIUM</string>
+    <string name="vpn_reset_title">更改连接方式？</string>
+    <string name="vpn_reset_description">清除已记住的方式并重新尝试可用选项。VPN 将短暂断开。国家和已选服务保持不变。</string>
+    <string name="vpn_reset_confirm">是，重新连接</string>
 </resources>

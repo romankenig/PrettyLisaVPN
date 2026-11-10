@@ -322,7 +322,7 @@
     <string name="vpn_checking">проверяем соединение…</string>
     <string name="vpn_waiting_network">ожидаем сеть…</string>
     <string name="vpn_reconnecting">восстанавливаем соединение…</string>
-    <string name="vpn_reset_methods">сбросить запомненные способы и подключиться заново</string>
+    <string name="vpn_reset_methods">изменить способ подключения</string>
     <string name="vpn_unstable">соединение нестабильно. автоматическое восстановление остановлено; попробуйте подключиться снова</string>
     <string name="legal_documents">документы</string>
     <string name="legal_intro">актуальные условия на сайте PrettyLisaVPN</string>
@@ -359,7 +359,9 @@
     <string name="traffic_remaining_group">остальные сервисы</string>
     <string name="plan_registration_required">после регистрации</string>
     <string name="plan_no_registration">без регистрации</string>
-    <string name="vpn_reset_settings">сброс настроек</string>
     <string name="free_quota_exhausted">бесплатный час на сегодня закончился. купите PREMIUM для доступа без ограничений.</string>
     <string name="free_quota_buy">купить PREMIUM</string>
+    <string name="vpn_reset_title">изменить способ подключения?</string>
+    <string name="vpn_reset_description">забудем запомненный способ и заново проверим доступные варианты. VPN ненадолго отключится. страна и выбранные сервисы сохранятся.</string>
+    <string name="vpn_reset_confirm">да, переподключиться</string>
 </resources>

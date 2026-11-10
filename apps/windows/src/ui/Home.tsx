@@ -283,6 +283,7 @@ export function Home() {
             ) : null}
             {connectionState.phase === "CONNECTED" ? (
               <ConnectionInfo
+                key={connectionState.session.sessionId}
                 sessionId={connectionState.session.sessionId}
                 onReset={
                   vpnConnection.resetMethods

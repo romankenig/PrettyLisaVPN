@@ -2,6 +2,8 @@ import { t, useLanguage, getLanguage } from "../i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ApiError, type DeviceResponse } from "../api/client";
 import { useApplication } from "../state/application";
+import { ActionConfirmation } from "./ActionConfirmation";
+import { useNavigate } from "react-router-dom";
 
 type ListState =
   | { readonly phase: "loading" }
@@ -10,7 +12,8 @@ type ListState =
 
 export function Devices() {
   useLanguage();
-  const { api, session } = useApplication();
+  const navigate = useNavigate();
+  const { api, session, vpnConnection } = useApplication();
   const activeSession = useSyncExternalStore(
     session.subscribe,
     session.current,
@@ -54,7 +57,6 @@ export function Devices() {
   async function revokeDevice() {
     if (
       confirmation === null ||
-      confirmation.is_current ||
       confirmation.status !== "ACTIVE" ||
       revokeInFlight.current
     ) {
@@ -64,17 +66,39 @@ export function Devices() {
     setRevokingId(confirmation.id);
     setActionError(null);
     setNotice(null);
+    let localCleanupConfirmed = !confirmation.is_current;
     try {
-      await api.revokeDevice(accessToken, confirmation.id);
+      // Stop this computer's tunnel before invalidating the credentials it uses
+      // for cleanup. Other devices keep their own connection/session lifecycle.
+      if (confirmation.is_current) await vpnConnection.disconnect(accessToken);
+      localCleanupConfirmed = true;
+      if (session.current()?.sessionId !== activeSession?.sessionId) return;
+      const token = await session.bearer(api);
+      if (session.current()?.sessionId !== activeSession?.sessionId) return;
+      await api.revokeDevice(token, confirmation.id);
+      if (session.current()?.sessionId !== activeSession?.sessionId) return;
+      if (confirmation.is_current) {
+        await session.clear();
+        navigate("/login", { replace: true });
+        return;
+      }
       setConfirmation(null);
       setNotice(`Доступ устройства «${confirmation.device_name}» отозван.`);
       setListAttempt((value) => value + 1);
     } catch (error) {
-      if (isUnauthorized(error)) {
+      const current = session.current();
+      if (current && current.sessionId !== activeSession?.sessionId) return;
+      if (isUnauthorized(error) && localCleanupConfirmed) {
         await clearUnauthorizedSession(session.clear, setListState);
+        if (confirmation.is_current && session.current() === null)
+          navigate("/login", { replace: true });
         return;
       }
-      setActionError(revokeError(error));
+      setActionError(
+        confirmation.is_current
+          ? "Не удалось завершить сессию. Проверьте сеть и попробуйте снова."
+          : revokeError(error),
+      );
     } finally {
       revokeInFlight.current = false;
       setRevokingId(null);
@@ -144,7 +168,7 @@ export function Devices() {
                   >
                     {t(device.status === "ACTIVE" ? "активно" : "отозвано")}
                   </span>
-                  {!device.is_current && device.status === "ACTIVE" ? (
+                  {device.status === "ACTIVE" ? (
                     <button
                       className="revoke-button"
                       type="button"
@@ -154,7 +178,11 @@ export function Devices() {
                         setActionError(null);
                       }}
                     >
-                      {t("отозвать доступ")}
+                      {t(
+                        device.is_current
+                          ? "выйти на этом устройстве"
+                          : "отозвать доступ",
+                      )}
                     </button>
                   ) : null}
                 </div>
@@ -165,48 +193,43 @@ export function Devices() {
       ) : null}
 
       {confirmation ? (
-        <div
-          className="revoke-confirmation"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="revoke-confirmation-title"
-          aria-describedby="revoke-confirmation-description"
+        <ActionConfirmation
+          title={
+            confirmation.is_current
+              ? "Выйти на этом устройстве?"
+              : "Отозвать доступ?"
+          }
+          description={
+            confirmation.is_current
+              ? "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова."
+              : `Устройство «${confirmation.device_name}» выйдет из аккаунта, а все его активные сессии будут завершены.`
+          }
+          confirmLabel={
+            revokingId
+              ? "отзываем…"
+              : confirmation.is_current
+                ? "да, выйти"
+                : "да, отозвать"
+          }
+          busy={revokingId !== null}
+          danger
+          onConfirm={() => void revokeDevice()}
+          onCancel={() => setConfirmation(null)}
         >
-          <h2 id="revoke-confirmation-title">{t("Отозвать доступ?")}</h2>
-          <p id="revoke-confirmation-description">
-            {t("Устройство «")}
-            {confirmation.device_name}
-            {t(
-              "» выйдет из аккаунта, а все его активные сессии будут завершены.",
-            )}
-          </p>
           <p className="device-identity">id: {t(confirmation.id)}</p>
-          <div className="confirmation-actions">
-            <button
-              className="revoke-button"
-              type="button"
-              disabled={revokingId !== null}
-              onClick={() => void revokeDevice()}
-            >
-              {t(revokingId ? "отзываем…" : "да, отозвать")}
-            </button>
-            <button
-              className="text-button"
-              type="button"
-              disabled={revokingId !== null}
-              onClick={() => setConfirmation(null)}
-            >
-              {t("отмена")}
-            </button>
-          </div>
-        </div>
+          {actionError ? (
+            <p className="confirmation-error" role="alert">
+              {t(actionError)}
+            </p>
+          ) : null}
+        </ActionConfirmation>
       ) : null}
       {notice ? (
         <p className="device-notice" role="status">
           {t(notice)}
         </p>
       ) : null}
-      {actionError ? (
+      {actionError && !confirmation ? (
         <p className="logout-error" role="alert">
           {t(actionError)}
         </p>

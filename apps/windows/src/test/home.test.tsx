@@ -1035,3 +1035,71 @@ it("does not submit logout twice while the request is pending", async () => {
   finish({ status: "logged_out" });
   await waitFor(() => expect(session.current()).toBeNull());
 });
+
+it.each(["cancel", "escape", "confirm"])(
+  "asks before resetting the remembered method: %s",
+  async (choice) => {
+    HTMLDialogElement.prototype.showModal = function () {
+      this.setAttribute("open", "");
+    };
+    const connectedState: ReturnType<VpnConnectionManager["current"]> = {
+      phase: "CONNECTED",
+      backend: "ACTIVE",
+      tunnel: "UP",
+      session: {
+        sessionId: "reset-session",
+        countryCode: "DE",
+        expiresAt: null,
+        remainingSeconds: null,
+      },
+    };
+    const vpn: VpnConnectionManager = {
+      ...createTestVpnConnection(),
+      current: () => connectedState,
+      connectionDetails: async () => ({
+        protocol: "WireGuard+",
+        transport: "UDP",
+        server: "192.0.2.1",
+        encryption: "test",
+        obfuscation: "test",
+        mtu: 1280,
+        dns: [],
+        serverPublicKey: "test",
+      }),
+      resetMethods: vi.fn().mockResolvedValue(undefined),
+    };
+    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
+    const icon = await screen.findByRole("button", {
+      name: "изменить способ подключения",
+    });
+    expect(icon).not.toHaveTextContent("сброс настроек");
+    icon.focus();
+    fireEvent.click(icon);
+    const dialog = screen.getByRole("alertdialog", {
+      name: "Изменить способ подключения?",
+    });
+    expect(dialog).toHaveTextContent("Страна и выбранные сервисы сохранятся");
+    expect(vpn.resetMethods).not.toHaveBeenCalled();
+    expect(
+      within(dialog).getByRole("button", { name: "отмена" }),
+    ).toHaveFocus();
+    if (choice === "escape")
+      fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    else
+      fireEvent.click(
+        within(dialog).getByRole("button", {
+          name: choice === "cancel" ? "отмена" : "да, переподключиться",
+        }),
+      );
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    if (choice === "confirm")
+      await waitFor(() =>
+        expect(vpn.resetMethods).toHaveBeenCalledExactlyOnceWith(
+          "access-token",
+          expect.any(Object),
+        ),
+      );
+    else expect(vpn.resetMethods).not.toHaveBeenCalled();
+    if (choice !== "confirm") expect(icon).toHaveFocus();
+  },
+);

@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Windows — 0.28.1 / Android — 0.27.2
+
+- Windows device lists scroll with the mouse wheel through a single viewport.
+  The current device can sign out after confirmation: stop its VPN, revoke its
+  access, clear local credentials and return to Login. Cleanup/network failures
+  preserve sign-in for retry.
+- Both clients use a subtle refresh icon beside the current protocol. It opens
+  an explanation and requires confirmation before resetting learned methods and
+  reconnecting. Cancel leaves the connection unchanged; country/services remain.
+- Backend 0.40.1, website 0.5.2 and engines unchanged. No migration or payment
+  activation. See [handoff](docs/device-scroll-reset-confirm.md).
+
 ### Windows — 0.28.0 / Android — 0.27.1
 
 - Service selection shows each service once: selected alphabetically, remaining

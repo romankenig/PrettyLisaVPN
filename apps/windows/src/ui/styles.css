@@ -16,8 +16,11 @@
   font-weight: 600;
 }
 .connection-info .connection-reset {
-  margin-left: 8px;
-  padding: 4px 7px;
+  margin: 0 0 0 8px;
+  padding: 5px;
+  display: inline-grid;
+  place-items: center;
+  vertical-align: middle;
   min-width: 0;
   min-height: 28px;
   border: 0;
@@ -2420,9 +2423,30 @@ input,
   scrollbar-gutter: stable;
 }
 .settings-devices {
-  height: 100%;
-  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
   padding-right: 8px;
+}
+/* The main viewport alone scrolls; nested overscroll containment swallowed wheels. */
+.settings-devices > .devices-page {
+  flex: none;
+  height: auto;
+}
+.settings-devices .device-list {
+  flex: none;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+.action-confirmation {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.action-confirmation .confirmation-actions {
+  flex-wrap: wrap;
+}
+.action-confirmation .confirmation-error {
+  color: var(--color-persian-red);
 }
 .auth-page {
   min-height: calc(100% - 24px);

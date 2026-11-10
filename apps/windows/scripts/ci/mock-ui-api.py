@@ -19,6 +19,9 @@ BILLING_EVIDENCE_PATH = os.getenv("BILLING_BACKEND_EVIDENCE_PATH")
 BILLING_EVIDENCE = json.loads(Path(BILLING_EVIDENCE_PATH).read_text(encoding="utf-8")) if BILLING_EVIDENCE_PATH else None
 BILLING_READONLY_OPERATION_ATTEMPTS = 0
 DEVICE_REVOKED = False
+LONG_DEVICE_LIST = False
+ALLOW_CURRENT_REVOKE = False
+CURRENT_REVOKED = False
 SUPPORT_REQUESTS = {}
 SUPPORT_ATTEMPTS = 0
 SUPPORT_DROP_FIRST = True
@@ -73,6 +76,26 @@ def fixture(method, path, body):
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
     global QUOTA_REVIEW, QUOTA_EXTENDED, QUOTA_EXHAUSTED, DEMO_REVIEW
     global AUTH_RECOVERY_MODE, AUTH_EXPIRED_ONCE
+    global LONG_DEVICE_LIST, ALLOW_CURRENT_REVOKE, CURRENT_REVOKED
+    if method == "POST" and path == "/ui-review/devices":
+        LONG_DEVICE_LIST = body.get("long_list") is True
+        ALLOW_CURRENT_REVOKE = body.get("allow_current_revoke") is True
+        return 200, {"long_list": LONG_DEVICE_LIST}
+    if method == "GET" and path == "/ui-review/devices":
+        return 200, {"current_revoked": CURRENT_REVOKED}
+    if method == "GET" and path == "/devices" and LONG_DEVICE_LIST:
+        LONG_DEVICE_LIST = False
+        _, devices = fixture(method, path, body)
+        LONG_DEVICE_LIST = True
+        current = next(item for item in devices if item["is_current"])
+        extras = [{**current, "id": f"66666666-6666-4666-8666-66666666666{i}",
+                   "device_name": f"Review device {i}", "is_current": False} for i in range(3)]
+        return 200, devices + extras
+    if method == "DELETE" and path == "/devices/" + DEVICE_ID and ALLOW_CURRENT_REVOKE:
+        _, devices = fixture("GET", "/devices", {})
+        current = next(item for item in devices if item["is_current"])
+        CURRENT_REVOKED = True
+        return 200, {"status": "revoked", "device": {**current, "status": "REVOKED", "revoked_at": DATE}}
     if method == "POST" and path == "/ui-review/auth-recovery":
         AUTH_RECOVERY_MODE = body.get("mode", "normal")
         if AUTH_RECOVERY_MODE == "outage":
@@ -171,6 +194,8 @@ def fixture(method, path, body):
     if method == "POST" and path == "/auth/request-otp":
         return 200, {"status": "accepted"}
     if method == "POST" and path == "/auth/refresh":
+        if CURRENT_REVOKED:
+            return 401, {"error": {"code": "AUTH_INVALID"}}
         if AUTH_RECOVERY_MODE in ("outage", "recovered"):
             AUTH_ROTATIONS.append(body.get("rotation_id"))
             if AUTH_RECOVERY_MODE == "outage":
@@ -189,6 +214,7 @@ def fixture(method, path, body):
     if method == "GET" and path == "/billing/catalog":
         return 200, {"offers": BILLING_FIXTURES["free"]["offers"]}
     if method == "POST" and path in ("/auth/verify-otp", "/auth/demo"):
+        CURRENT_REVOKED = False
         DEMO_REVIEW = path == "/auth/demo"
         if DEMO_REVIEW and (body.get("platform") != "WINDOWS" or body.get("device_key") != "d" * 64):
             return 422, {"error": {"code": "INVALID_DEMO_FIXTURE"}}
@@ -331,6 +357,10 @@ def self_test():
         assert fixture("POST", "/auth/refresh", {})[0] == 401
         assert fixture("POST", "/vpn/sessions", {})[0] == 404
         assert fixture("DELETE", "/devices/" + DEVICE_ID, {})[0] == 404
+        fixture("POST", "/ui-review/devices", {"long_list": True, "allow_current_revoke": True})
+        assert len(fixture("GET", "/devices", {})[1]) == 5
+        assert fixture("DELETE", "/devices/" + DEVICE_ID, {})[1]["device"]["status"] == "REVOKED"
+        assert fixture("POST", "/auth/refresh", refresh_body)[0] == 401
         assert fixture("GET", "/vpn/sessions/current", {})[0] == 404
         print("Loopback fixture checks passed")
     finally:
