@@ -333,7 +333,7 @@
     "basePrice": "prix de base",
     "currentPrice": "prix actuel",
     "period": "par mois",
-    "buy": "acheter",
+    "buy": "payer",
     "renewal": "un paiement pour un mois. renouvellement manuel, sans prélèvement automatique.",
     "availability": "les paiements ne sont pas encore disponibles. vous pouvez déjà essayer le forfait gratuit dans l’application.",
     "documents": "conditions d’achat",

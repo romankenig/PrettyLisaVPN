@@ -1,3 +1,19 @@
+# Website 0.5.3 — visible purchase path
+
+Homepage Pay → localized account page preserves the selected RUB/USD currency.
+The account page displays PREMIUM, its monthly price and benefits beside email
+sign-in. After OTP, FREE/DEMO/PLATINUM users see the purchase card before current
+access details. Pay either opens the existing consent step for an eligible fresh
+LIVE RUB/SBP offer, or an informational payment-unavailable screen with Back.
+The placeholder creates no operation and never routes to payment success.
+Unavailable overview/catalog still provides a reference-priced purchase card;
+reference/cached data cannot authorize checkout. Existing PREMIUM contract and
+pending-operation recovery remain authoritative. All six languages are covered.
+
+No native Windows navigation changes. The website destination used by clients is
+updated; real payments still await merchant setup and live acceptance. See
+[purchase-path handoff](website-purchase-path.md).
+
 # Android 0.27.0 — support diagnostics
 
 About → Support keeps the existing registered-account guard and form. The

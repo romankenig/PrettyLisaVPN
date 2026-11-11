@@ -1,7 +1,12 @@
-# PrettyLisaVPN website · 0.5.2
+# PrettyLisaVPN website · 0.5.3
 
-This publication combines the already live legal templates with Windows guest
-identity disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
+The account page now keeps PREMIUM, its monthly price and a visible Pay button
+through email sign-in and unavailable-provider/catalog states. Until live checkout
+is available, Pay opens an explicit informational placeholder without charging or
+changing access. See the [purchase-path handoff](../../docs/website-purchase-path.md).
+
+Version 0.5.2 combined the already live legal templates with Windows guest identity
+disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
 
 The privacy policy and terms now follow the owner's supplied templates, with
 numbered sections, contents links and six synchronized translations. See the
@@ -43,8 +48,9 @@ website publication and do not activate payments.
 - `src/structure.mjs`, `src/pages.mjs`: 96 static pages; contextual language links.
 - `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
   version/size/hash metadata; no browsing analytics.
-- `src/portal.mjs`: OTP/cookie-authenticated billing portal; prices and payment
-  operations come only from the backend API. The browser holds no provider secrets
+- `src/portal.mjs`: OTP/cookie-authenticated billing portal; payment-authorizing
+  prices and operations come only from the backend API. A public cached/reference
+  price is display-only when account offers are unavailable. The browser holds no provider secrets
   or card details. Its account-scoped local journal stores only operation/request
   identifiers and the original command for safe retries; the session cookie is
   Secure, HttpOnly and SameSite=Strict. Bank agreement happens on Platega's page.
