@@ -1,3 +1,16 @@
+# Website 0.5.4 — placeholder success page
+
+Placeholder Pay → localized `/account/success/?preview=1&currency=RUB|USD`.
+This is a real page navigation, with a checkmark and success heading, but a visible
+demonstration label states that nothing was charged and the subscription did not
+change. Reload keeps the preview. Back returns to the localized account page;
+Home returns to the localized website. An expired login still requires OTP, and
+pending provider operations/journal recovery take precedence over the preview.
+The success URL without the explicit preview flag does not assert success. Live
+RUB/SBP checkout and verified provider results are unchanged. No native navigation
+or backend integration changes. See
+[handoff](website-purchase-path.md#success-preview-follow-up--054).
+
 # Website 0.5.3 — visible purchase path
 
 Homepage Pay → localized account page preserves the selected RUB/USD currency.

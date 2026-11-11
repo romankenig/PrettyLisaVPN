@@ -1,5 +1,38 @@
 # Website purchase path — 0.5.3
 
+## Success preview follow-up — 0.5.4
+
+Website 0.5.3 → 0.5.4 (PATCH): the owner requested that the placeholder Pay button
+lead to the success page. Backend 0.40.1, Windows 0.28.1, Android 0.27.2 and Chrome
+0.2.1 remain unchanged. No schema, endpoint or payment activation changes.
+
+The button now navigates to the existing localized account success route with
+`preview=1` and the selected RUB/USD currency. The page shows a checkmark, success
+heading and short product/price summary. A visible localized demonstration label
+and explanation state that no money was charged and the subscription is unchanged.
+The button itself discloses this preview before it is clicked. No account/payment
+state or idempotency journal is written by the preview action.
+
+Reload preserves the preview. Back returns to the localized account page with
+the same currency; Home preserves the language. Normal overview/authentication
+and pending-operation recovery run first: an expired session requests sign-in,
+and a real pending payment remains pending even when `preview=1` is present.
+An overview outage still permits a clearly marked reference-price preview, as
+the previous unavailable-payment placeholder did. The success URL alone is never
+evidence of a completed payment. Eligible LIVE RUB/SBP checkout is unchanged.
+
+Validation extends the existing built-site browser acceptance: full navigation,
+reload, Back, currency/language retention, six languages and mobile layout, no
+payment command or entitlement change, authentication, pending-operation priority,
+blocked storage/API outage, and the existing real-provider fixture result flow.
+The task PR records exact source/build SHA, run/attempt, artifact and CI evidence.
+No native client capture or real payment is claimed for this website-only change.
+
+Baseline publication: website 0.5.3, source
+`c9f7ce15b8194d86196b43675a0b1e58c8aed517`, run `43006161375`, attempt `1`,
+published after owner-authorized PR #79 merge. Version 0.5.4 is not claimed
+published here; merge/publication status belongs to this follow-up PR.
+
 ## Scope and compatibility
 
 Website 0.5.2 → 0.5.3 (PATCH): restore a missing purchase action in the existing

@@ -6,15 +6,15 @@
 
 ## Unreleased
 
-### Android — 0.27.3
+### Public website — 0.5.4
 
-- Keep the location row in the connected “selected” / “except selected” card
-  visible when geolocation fails. Use the active session's allocated country and
-  expected egress IP for selected traffic, or the last direct observation for
-  excluded traffic, with an expected-location label until a fresh lookup succeeds.
-- Keep successful observations during retries and clear VPN observations when
-  changing sessions/modes. No routing, tunnel-health, backend or billing change.
-  See [handoff](docs/android-secondary-location.md).
+- The placeholder Pay button now navigates to the localized success page with
+  the selected currency. The page is explicitly marked as a payment demonstration:
+  no charge, payment operation or subscription change occurs.
+- Reload preserves the preview; Back returns to the purchase card and the website
+  link preserves the language. Real pending payments and verified provider results
+  retain priority. Backend and clients unchanged. See
+  [purchase-path handoff](docs/website-purchase-path.md#success-preview-follow-up--054).
 
 ### Public website — 0.5.3
 
@@ -28,6 +28,16 @@
 - Preserve accepted contract prices and pending-operation recovery. Backend and
   clients unchanged; no migration or payment activation. See
   [purchase-path handoff](docs/website-purchase-path.md).
+
+### Android — 0.27.3
+
+- Keep the location row in the connected “selected” / “except selected” card
+  visible when geolocation fails. Use the active session's allocated country and
+  expected egress IP for selected traffic, or the last direct observation for
+  excluded traffic, with an expected-location label until a fresh lookup succeeds.
+- Keep successful observations during retries and clear VPN observations when
+  changing sessions/modes. No routing, tunnel-health, backend or billing change.
+  See [handoff](docs/android-secondary-location.md).
 
 ### Windows — 0.28.1 / Android — 0.27.2
 

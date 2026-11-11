@@ -1472,6 +1472,9 @@ figcaption {
 .portal-currency input:checked + span { background: #51d6ca; border-color: #51d6ca; color: #2c016d; font-weight: 600; }
 .portal-currency input:focus-visible + span { outline: 3px solid #ac73ff; outline-offset: 3px; }
 .portal-account { overflow-wrap: anywhere; font-size: 14px; }
+.portal-success-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #51d6ca; color: #2c016d; font-size: 36px; margin: 24px 0 12px; }
+.portal-preview-label { color: #5f22d9; font-size: 14px; font-weight: 600; }
+.portal h1[tabindex="-1"]:focus { outline: none; }
 @media (max-width: 700px) {
   .portal { padding-block: 32px 56px; }
   .portal-login-layout { grid-template-columns: 1fr; gap: 20px; }

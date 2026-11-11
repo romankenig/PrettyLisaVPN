@@ -1,5 +1,5 @@
 export const website = Object.freeze({
-  version: "0.5.3",
+  version: "0.5.4",
   reviewedOn: "2026-11-09",
   mode: "prelaunch",
   moderationMarker: "platega test",
