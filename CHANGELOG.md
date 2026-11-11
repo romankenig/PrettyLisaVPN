@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Android — 0.27.3
+
+- Keep the location row in the connected “selected” / “except selected” card
+  visible when geolocation fails. Use the active session's allocated country and
+  expected egress IP for selected traffic, or the last direct observation for
+  excluded traffic, with an expected-location label until a fresh lookup succeeds.
+- Keep successful observations during retries and clear VPN observations when
+  changing sessions/modes. No routing, tunnel-health, backend or billing change.
+  See [handoff](docs/android-secondary-location.md).
+
 ### Windows — 0.28.1 / Android — 0.27.2
 
 - Windows device lists scroll with the mouse wheel through a single viewport.

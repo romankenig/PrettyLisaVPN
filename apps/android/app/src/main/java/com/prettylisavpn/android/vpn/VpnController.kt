@@ -14,7 +14,7 @@ enum class VpnError { METHODS_EXHAUSTED, CLEANUP, ACCESS, UNSTABLE, DEMO_LIMIT, 
 internal fun supportFailureCode(error: VpnError?): String? = if (error == VpnError.FREE_LIMIT) "ACCESS" else error?.name
 data class VpnAttempt(val method: VpnMethod, val previousMethod: VpnMethod? = null)
 data class VpnStatus(val phase: VpnPhase = VpnPhase.DISCONNECTED, val error: VpnError? = null,
-    val method: VpnMethod? = null, val attempt: VpnAttempt? = null)
+    val method: VpnMethod? = null, val attempt: VpnAttempt? = null, val egress: VpnEgress? = null)
 interface VpnActions {
     val status: kotlinx.coroutines.flow.StateFlow<VpnStatus>
     fun connect(country: String)
@@ -85,7 +85,7 @@ class VpnController(
                                 active = adapter; connected = true; connectedAdapter = adapter
                                 preference.remember(adapter.method.id)
                                 outcome = DiagnosticOutcome.SUCCESS
-                                mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method)
+                                mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method, egress = adapter.egress)
                             }
                         } catch (e: CancellationException) { outcome = DiagnosticOutcome.CANCELLED; failure = diagnosticFailure(e); throw e }
                         catch (error: AuthFailure) {
@@ -197,7 +197,7 @@ class VpnController(
             if (owner() != id) return false
             when (health) {
                 TunnelHealth.SUSPENDED -> { failures = 0 } // Doze forbids probes; retain the last real state.
-                TunnelHealth.HEALTHY -> { failures = 0; mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method) }
+                TunnelHealth.HEALTHY -> { failures = 0; mutable.value = VpnStatus(VpnPhase.CONNECTED, method = adapter.method, egress = adapter.egress) }
                 TunnelHealth.NO_NETWORK -> { failures = 0; mutable.value = VpnStatus(VpnPhase.WAITING_NETWORK, method = adapter.method) }
                 TunnelHealth.UNKNOWN -> { failures = 0; mutable.value = VpnStatus(VpnPhase.CHECKING, method = adapter.method) }
                 TunnelHealth.UNREACHABLE -> {

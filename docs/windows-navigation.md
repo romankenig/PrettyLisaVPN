@@ -953,3 +953,11 @@ local VPN cleanup → existing device revoke API → secure credential deletion 
 Failures remain retryable without a new tunnel or automatic logout. Other-device
 revocation remains on the device list. No new route or backend integration is pending.
 See [handoff](device-scroll-reset-confirm.md) for native tests and release evidence.
+
+## Android 0.27.3 — split-traffic location
+
+Android Home keeps the secondary location row visible while connected in
+“selected” and “except selected” modes, including failed metadata lookups.
+Expected session/direct-location fallback and fresh observations use the existing
+card; no route, popup or external transition is added. Windows is unchanged.
+There is no pending backend integration. See [handoff](android-secondary-location.md).

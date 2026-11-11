@@ -26,6 +26,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -48,14 +49,16 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
             }
         }
     }
-    var vpnLocation by remember { mutableStateOf<PublicLocation?>(null) }
-    var locating by remember { mutableStateOf(false) }
-    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method, refreshKey) {
-        vpnLocation = null; locating = false
+    val directFallback by presentation.directLocationFallback.collectAsState()
+    var vpnLocation by remember(selected.mode, vpn.phase, vpn.method, vpn.egress) { mutableStateOf<PublicLocation?>(null) }
+    var locating by remember(selected.mode, vpn.phase, vpn.method, vpn.egress) { mutableStateOf(false) }
+    LaunchedEffect(presentation, selected.mode, vpn.phase, vpn.method, vpn.egress, refreshKey) {
         if (selected.mode != "all" && vpn.phase == VpnPhase.CONNECTED) {
             while (true) {
                 locating = true
-                vpnLocation = if (selected.mode == "exclude") presentation.directLocation() else presentation.vpnLocation()
+                val observed = if (selected.mode == "exclude") presentation.directLocation() else presentation.vpnLocation()
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (observed != null) vpnLocation = observed
                 locating = false
                 delay(60_000)
             }
@@ -124,25 +127,31 @@ internal fun TrafficRouting(model: ScreenModel, refreshKey: Int = 0) {
                 colors = ButtonDefaults.buttonColors(containerColor = Brand.Viking, contentColor = Brand.Black), shape = MaterialTheme.shapes.medium) { Text(tr(R.string.traffic_services)) }
         }
         if (failed) Text(tr(R.string.traffic_save_failed), color = Brand.PersianRed)
-        SecondaryLocation(selected.mode, vpn.phase == VpnPhase.CONNECTED, vpnLocation, locating)
+        SecondaryLocation(selected.mode, vpn.phase == VpnPhase.CONNECTED,
+            secondaryLocation(selected.mode, vpnLocation, vpn.egress, directFallback), locating)
     }
     if (opened) TrafficDialog(model, selected, busy, failed, { opened = false }, ::save)
 }
 
-/** Optional metadata, not a tunnel-health signal. Never substitute the selected server. */
+/** Keep the split-traffic row visible even when optional metadata is unavailable. */
 @Composable
-internal fun SecondaryLocation(mode: String, connected: Boolean, value: PublicLocation?, refreshing: Boolean) {
-    if (mode == "all" || !connected || value == null) return
+internal fun SecondaryLocation(mode: String, connected: Boolean, display: LocationDisplay, refreshing: Boolean) {
+    if (mode == "all" || !connected) return
     val tr = strings()
     val language by LocalPresentation.current.preference.language.collectAsState()
     val locale = java.util.Locale.forLanguageTag(language.code)
-    val region = listOfNotNull(value.city, value.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
+    val value = display.value
+    val region = listOfNotNull(value?.city, value?.country?.let { java.util.Locale("", it).getDisplayCountry(locale) }).joinToString(", ")
     HorizontalDivider(color = Brand.DustyGray, modifier = Modifier.testTag("vpn-location-divider"))
     Column(Modifier.fillMaxWidth().testTag("vpn-location"), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(tr(if (mode == "exclude") R.string.direct_location else R.string.vpn_location), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+        val label = if (display.expected) {
+            if (mode == "exclude") R.string.direct_location_expected else R.string.vpn_location_expected
+        } else if (mode == "exclude") R.string.direct_location else R.string.vpn_location
+        Text(tr(label), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
         if (refreshing) CircularProgressIndicator(Modifier.size(20.dp).testTag("vpn-location-loading"), strokeWidth = 2.dp)
-        if (region.isNotBlank()) Text((countryFlag(value.country) + " " + region).trim(), style = MaterialTheme.typography.bodySmall)
-        Text("IP: " + value.ip, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
+        if (region.isNotBlank()) Text((countryFlag(value?.country) + " " + region).trim(), style = MaterialTheme.typography.bodySmall)
+        else if (value == null) Text(tr(if (refreshing) R.string.vpn_location_loading else R.string.unavailable), style = MaterialTheme.typography.bodySmall)
+        value?.ip?.let { Text("IP: " + it, style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion) }
     }
 }
 

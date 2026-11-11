@@ -364,4 +364,6 @@
     <string name="vpn_reset_title">changer de méthode de connexion ?</string>
     <string name="vpn_reset_description">la méthode mémorisée sera oubliée et les options disponibles seront réessayées. le VPN sera brièvement déconnecté. le pays et les services sélectionnés seront conservés.</string>
     <string name="vpn_reset_confirm">oui, reconnecter</string>
+    <string name="vpn_location_expected">localisation VPN attendue :</string>
+    <string name="direct_location_expected">localisation attendue sans VPN :</string>
 </resources>
