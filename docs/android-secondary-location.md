@@ -2,7 +2,9 @@
 
 Task baseline: develop `f9e69f389124740d83210d650364083c5777a8d6`.
 Android 0.27.2/code52 → 0.27.3/code53 (PATCH: missing Home metadata).
-Windows 0.28.1, backend 0.40.1, website 0.5.2 and managed engines are unchanged.
+Windows 0.28.1, backend 0.40.1 and managed engines are unchanged.
+The branch also incorporates develop `f400752d6cc0692aacd44ed158f4a0135e88c10a`
+(independent website 0.5.3), preserving both changelog entries.
 No API/schema change, migration, dependency or pending backend integration.
 
 ## Behavior

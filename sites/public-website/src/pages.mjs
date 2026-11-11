@@ -104,7 +104,7 @@ function platformCard(lang, platform) {
 }
 function prices(lang) {
   const p = locales[lang].pricing;
-  return `<div class="price-options">${["RUB", "USD"].map((currency) => `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><s data-reference-price="${currency}">${text(formatMonthlyPrice(referenceOriginalPrices[currency], currency, lang))}</s><strong data-price="${currency}">${text(formatMonthlyPrice(referencePrices[currency], currency, lang))}</strong></p><p class="price-period">${text(p.period)}</p><a class="button" href="${routeFor(lang, "/account/")}">${text(p.buy)}</a></div>`).join("")}</div>`;
+  return `<div class="price-options">${["RUB", "USD"].map((currency) => `<div class="price-option" data-currency="${currency}"><p class="currency-label">${text(p.currencies[currency])}</p><p class="price"><s data-reference-price="${currency}">${text(formatMonthlyPrice(referenceOriginalPrices[currency], currency, lang))}</s><strong data-price="${currency}">${text(formatMonthlyPrice(referencePrices[currency], currency, lang))}</strong></p><p class="price-period">${text(p.period)}</p><a class="button" href="${routeFor(lang, "/account/")}?currency=${currency}">${text(p.buy)}</a></div>`).join("")}</div>`;
 }
 function pricing(lang) {
   const p = locales[lang].pricing;

@@ -44,6 +44,8 @@ test("billing preserves the published moderation layout and uses API-owned prici
     const pricing = html.match(/<section class="pricing[\s\S]*?<\/section>/)[0];
     const purchaseLabel = `>${escape(locales[language].pricing.buy)}</a>`;
     assert.equal(pricing.split(purchaseLabel).length - 1, 2);
+    for (const currency of ["RUB", "USD"])
+      assert.ok(pricing.includes(`href="${routeFor(language, "/account/")}?currency=${currency}"`));
     assert.ok(!pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`));
     assert.doesNotMatch(
       html,

@@ -16,6 +16,19 @@
   changing sessions/modes. No routing, tunnel-health, backend or billing change.
   See [handoff](docs/android-secondary-location.md).
 
+### Public website — 0.5.3
+
+- Restore the purchase path before and after email sign-in: PREMIUM benefits,
+  a prominent monthly price and a visible Pay button. Preserve RUB/USD selection
+  from the homepage through OTP; show the offer for FREE, DEMO and PLATINUM even
+  when the provider is disabled or the catalog is unavailable.
+- Unavailable payment opens an explicit informational placeholder without an
+  operation, charge or access change. Fresh LIVE RUB/SBP checkout keeps the existing
+  consent and server-side validation; reference prices never authorize payment.
+- Preserve accepted contract prices and pending-operation recovery. Backend and
+  clients unchanged; no migration or payment activation. See
+  [purchase-path handoff](docs/website-purchase-path.md).
+
 ### Windows — 0.28.1 / Android — 0.27.2
 
 - Windows device lists scroll with the mouse wheel through a single viewport.

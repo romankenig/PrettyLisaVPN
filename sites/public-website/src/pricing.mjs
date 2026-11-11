@@ -39,6 +39,60 @@ export function formatMonthlyPrice(amount, currency, language) {
 // Display only: no offer IDs, revisions, actions, entitlements or payment authority.
 export const referencePrices = Object.freeze({ RUB: 39900, USD: 500 });
 export const referenceOriginalPrices = Object.freeze({ RUB: 49900, USD: 700 });
+
+// Presentation never grants payment authority. Only a fresh account offer and
+// explicit live capabilities can continue into the existing server checkout.
+export function purchasePresentation(
+  overview,
+  selectedCurrency,
+  saved,
+  stale = false,
+) {
+  const validAmount = (value) =>
+    Number.isSafeInteger(value) && value > 0 && value <= 1e12;
+  const action = overview?.new_contract_required ? "SUBSCRIBE" : "RENEW";
+  const contract = action === "RENEW" && overview?.current_price;
+  const currency =
+    contract?.currency ?? (selectedCurrency === "USD" ? "USD" : "RUB");
+  const offer = overview?.offers?.find((item) =>
+    validAmount(item.prices?.[currency]?.amount_minor),
+  );
+  const quoted = contract?.amount_minor ?? offer?.prices[currency].amount_minor;
+  const reference = stale || !validAmount(quoted);
+  const amount = validAmount(contract?.amount_minor)
+    ? contract.amount_minor
+    : !reference
+      ? quoted
+      : (saved?.prices[currency] ?? referencePrices[currency]);
+  const original = contract
+    ? null
+    : reference
+      ? (saved?.original[currency] ?? referenceOriginalPrices[currency])
+      : offer?.prices[currency].original_amount_minor;
+  const canPay =
+    !reference &&
+    !!offer?.id &&
+    !!overview?.revision &&
+    overview.provider_mode === "LIVE" &&
+    overview.payment_operations_available === true &&
+    overview.actions?.includes(action) &&
+    currency === "RUB" &&
+    offer.prices[currency].amount_minor === amount &&
+    overview.payment_routes?.some(
+      (route) =>
+        route.id === "SBP" && route.recurring_currencies?.includes(currency),
+    );
+  return {
+    action,
+    offer,
+    currency,
+    amount,
+    original: validAmount(original) && original > amount ? original : null,
+    reference,
+    canPay: !!canPay,
+    contract: !!contract,
+  };
+}
 export const priceCacheKey = "prettylisa.public-prices.v1";
 const maxAge = 7 * 24 * 60 * 60 * 1000;
 export const referencePriceCopy = {

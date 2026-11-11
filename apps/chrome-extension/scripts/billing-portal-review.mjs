@@ -21,6 +21,8 @@ let authenticated = false,
   operation = null;
 let loseResponse = false;
 let overviewAvailable = true;
+let providerMode = "LIVE",
+  offersAvailable = true;
 const commands = [];
 const errors = [];
 const overview = () => ({
@@ -28,15 +30,18 @@ const overview = () => ({
   email: "subscriber@example.test",
   billing: {
     revision: "fixture-revision",
-    provider_mode: "LIVE",
-    payment_operations_available: true,
-    plan: state === "FREE" ? "FREE" : "PREMIUM",
+    provider_mode: providerMode,
+    payment_operations_available: providerMode === "LIVE",
+    plan:
+      state === "PLATINUM" ? "PLATINUM" : state === "FREE" ? "FREE" : "PREMIUM",
     status:
       state === "FREE" ? "FREE" : state === "CANCELED" ? "CANCELED" : "ACTIVE",
     paid_until: state === "FREE" ? null : "2026-12-06T10:00:00Z",
     auto_renew: state === "ACTIVE",
     current_price:
-      state === "FREE" ? null : { amount_minor: 19900, currency: "RUB" },
+      state === "FREE" || state === "PLATINUM"
+        ? null
+        : { amount_minor: 19900, currency: "RUB" },
     payment_method:
       state === "ACTIVE"
         ? { kind: "SBP", label: "СБП · банковский счёт" }
@@ -50,16 +55,23 @@ const overview = () => ({
     payment_routes: [
       { id: "SBP", currencies: ["RUB"], recurring_currencies: ["RUB"] },
     ],
-    offers: [
-      {
-        id: offer,
-        prices: {
-          RUB: { amount_minor: state === "FREE" ? 19900 : 29900 },
-          USD: { amount_minor: 399 },
-        },
-      },
-    ],
-    actions: state === "ACTIVE" ? ["CANCEL"] : ["SUBSCRIBE"],
+    offers: !offersAvailable
+      ? []
+      : [
+          {
+            id: offer,
+            prices: {
+              RUB: { amount_minor: state === "FREE" ? 19900 : 29900 },
+              USD: { amount_minor: 399 },
+            },
+          },
+        ],
+    actions:
+      providerMode !== "LIVE"
+        ? []
+        : state === "ACTIVE"
+          ? ["CANCEL"]
+          : ["SUBSCRIBE"],
   },
 });
 try {
@@ -218,6 +230,137 @@ try {
     }
     return reply({ error: { code: "NOT_FOUND" } }, 404);
   });
+  // Follow the actual purchase link, including the selected currency, through OTP.
+  providerMode = "DISABLED";
+  offersAvailable = false;
+  catalogAvailable = false;
+  await page.goto(origin + "/");
+  await page.getByText("$ USD", { exact: true }).click();
+  await page.locator('.price-option[data-currency="USD"] .button').click();
+  await page.getByLabel("Электронная почта").waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
+  assert.match(await page.locator(".portal-price strong").textContent(), /5/);
+  await page.screenshot({
+    path: `${output}/11-purchase-login.png`,
+    fullPage: true,
+  });
+  await page.getByLabel("Электронная почта").fill("subscriber@example.test");
+  await page.getByRole("button", { name: "Получить код" }).click();
+  await page.getByLabel("Код из письма").fill("123456");
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
+  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  assert.match(await page.locator(".portal-price strong").textContent(), /5/);
+  await page.screenshot({
+    path: `${output}/12-purchase-free-usd.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  assert.equal(commands.length, 0);
+  await page.screenshot({
+    path: `${output}/13-payment-placeholder.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Назад", exact: true }).click();
+  await page.getByLabel("RUB", { exact: true }).check();
+  assert.equal(
+    await page
+      .getByLabel("RUB", { exact: true })
+      .evaluate((input) => input === globalThis.document.activeElement),
+    true,
+  );
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await page.getByLabel("USD", { exact: true }).isChecked(), true);
+  await page.keyboard.press("ArrowUp");
+  assert.equal(await page.getByLabel("RUB", { exact: true }).isChecked(), true);
+  await page.reload();
+  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "RUB");
+  assert.match(await page.locator(".portal-price strong").textContent(), /399/);
+  assert.match(await page.locator(".portal-price s").textContent(), /499/);
+  await page.screenshot({
+    path: `${output}/14-purchase-free-rub.png`,
+    fullPage: true,
+  });
+  state = "PLATINUM";
+  for (const language of ["", "en", "de", "fr", "es", "zh"]) {
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(
+        origin + (language ? `/${language}` : "") + "/account/?currency=RUB",
+      );
+      await page.locator("[data-purchase-offer] > .button").waitFor();
+      assert.match(
+        await page.locator(".portal-price strong").textContent(),
+        /399/,
+      );
+      assert.equal(
+        await page.evaluate(
+          () =>
+            globalThis.document.documentElement.scrollWidth <=
+            globalThis.innerWidth,
+        ),
+        true,
+      );
+      if (!language && width === 390)
+        assert.ok(
+          (await page.locator("[data-purchase-offer] > .button").boundingBox())
+            .y < 844,
+          "payment action should be visible on the initial mobile screen",
+        );
+      if (!language && width === 390)
+        await page.screenshot({
+          path: `${output}/15-purchase-platinum-mobile.png`,
+          fullPage: true,
+        });
+    }
+  }
+  assert.equal(commands.length, 0, "disabled checkout never creates a payment");
+  const privatePage = await browser.newPage();
+  privatePage.on("pageerror", (error) => errors.push(error.message));
+  let privateMutations = 0;
+  await privatePage.addInitScript(() => {
+    Object.defineProperty(globalThis, "localStorage", {
+      get() {
+        throw new Error("Storage unavailable");
+      },
+    });
+  });
+  await privatePage.route("**/api/web/billing/**", (route) => {
+    if (route.request().method() === "POST") privateMutations++;
+    return route.fulfill({ json: overview() });
+  });
+  await privatePage.goto(origin + "/account/");
+  await privatePage
+    .getByRole("button", { name: "Оплатить", exact: true })
+    .click();
+  await privatePage
+    .getByRole("heading", { name: "Оплата пока недоступна" })
+    .waitFor();
+  assert.equal(
+    privateMutations,
+    0,
+    "blocked optional storage must not hide the purchase or create payments",
+  );
+  await privatePage.close();
+  // Valid prices in sandbox and unsupported USD still open the local placeholder.
+  offersAvailable = true;
+  providerMode = "SANDBOX";
+  state = "FREE";
+  await page.goto(origin + "/account/");
+  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  providerMode = "LIVE";
+  await page.goto(origin + "/account/?currency=USD");
+  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  assert.equal(
+    commands.length,
+    0,
+    "unsupported currency cannot silently charge RUB",
+  );
+  authenticated = false;
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto(origin + "/account/");
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
   await page.getByRole("button", { name: "Получить код" }).click();
@@ -225,10 +368,10 @@ try {
   await page.screenshot({ path: `${output}/01-otp.png`, fullPage: true });
   await page.getByLabel("Код из письма").fill("123456");
   await page.getByRole("button", { name: "Войти", exact: true }).click();
-  await page.getByRole("button", { name: "Оформить через СБП" }).waitFor();
+  await page.getByRole("button", { name: "Оплатить" }).waitFor();
   await page.screenshot({ path: `${output}/02-free.png`, fullPage: true });
-  await page.getByRole("button", { name: "Оформить через СБП" }).click();
-  const pay = page.getByRole("button", { name: "Перейти к защищённой оплате" });
+  await page.getByRole("button", { name: "Оплатить" }).click();
+  const pay = page.getByRole("button", { name: "Оплатить" });
   assert.equal(await pay.isDisabled(), true);
   await page.getByRole("checkbox").check();
   await page.screenshot({ path: `${output}/03-consent.png`, fullPage: true });
@@ -252,7 +395,7 @@ try {
     .getByText("СБП · привязанный банковский счёт", { exact: true })
     .waitFor();
   assert.equal(
-    await page.getByRole("heading", { name: /299/ }).count(),
+    await page.locator("[data-purchase-offer]").count(),
     0,
     "active contract must not adopt new catalog price",
   );
@@ -270,7 +413,7 @@ try {
   await page.getByRole("heading", { name: "Всё получилось" }).waitFor();
   await page.getByRole("button", { name: "Управлять подпиской" }).click();
   await page.getByText("Автопродление отключено.", { exact: false }).waitFor();
-  await page.getByRole("heading", { name: /299/ }).waitFor();
+  assert.match(await page.locator(".portal-price strong").textContent(), /299/);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
     path: `${output}/08-canceled-mobile.png`,
@@ -280,18 +423,16 @@ try {
   status = "FAILED";
   operation = null;
   await page.reload();
-  await page.getByRole("button", { name: "Оформить через СБП" }).click();
+  await page.getByRole("button", { name: "Оплатить" }).click();
   await page.getByRole("checkbox").check();
-  await page
-    .getByRole("button", { name: "Перейти к защищённой оплате" })
-    .click();
+  await page.getByRole("button", { name: "Оплатить" }).click();
   await page.getByRole("heading", { name: "Оплата не завершена" }).waitFor();
   await page.screenshot({
     path: `${output}/09-failure-mobile.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "Попробовать снова" }).click();
-  await page.getByRole("button", { name: "Оформить через СБП" }).waitFor();
+  await page.getByRole("button", { name: "Оплатить" }).waitFor();
   const commandCount = commands.length;
   overviewAvailable = false;
   await page.reload();
@@ -300,18 +441,23 @@ try {
     await page.locator("[data-reference-prices]").textContent(),
     /399/,
   );
-  assert.equal(
-    await page.getByRole("button", { name: "Оформить через СБП" }).count(),
-    0,
-  );
+  assert.equal(await page.getByRole("button", { name: "Оплатить" }).count(), 1);
   assert.equal(commands.length, commandCount);
+  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  assert.equal(
+    commands.length,
+    commandCount,
+    "an outage cannot authorize a payment from stale data",
+  );
   await page.screenshot({
     path: `${output}/10-overview-offline.png`,
     fullPage: true,
   });
   overviewAvailable = true;
+  await page.getByRole("button", { name: "Назад", exact: true }).click();
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
-  await page.getByRole("button", { name: "Оформить через СБП" }).waitFor();
+  await page.getByRole("button", { name: "Оплатить" }).waitFor();
   assert.deepEqual(errors, []);
   console.log(
     "Billing portal: OTP, consent, lost-response recovery, verified success, cancellation, fixed price, failure/retry and mobile layout passed.",

@@ -8,6 +8,7 @@ import {
   acquisitionPrices,
   acquisitionReferencePrices,
   formatMonthlyPrice,
+  purchasePresentation,
 } from "../src/pricing.mjs";
 
 const catalog = (rub = 12345) => ({
@@ -18,6 +19,93 @@ const catalog = (rub = 12345) => ({
       prices: { RUB: { amount_minor: rub }, USD: { amount_minor: 789 } },
     },
   ],
+});
+
+const liveOverview = () => ({
+  revision: "server-revision",
+  plan: "FREE",
+  new_contract_required: true,
+  provider_mode: "LIVE",
+  payment_operations_available: true,
+  actions: ["SUBSCRIBE"],
+  payment_routes: [{ id: "SBP", recurring_currencies: ["RUB"] }],
+  offers: [
+    {
+      id: "server-offer",
+      prices: { RUB: { amount_minor: 39900 }, USD: { amount_minor: 500 } },
+    },
+  ],
+});
+test("purchase remains visible with reference prices without granting checkout authority", () => {
+  for (const plan of ["FREE", "PLATINUM", "DEMO"]) {
+    const value = {
+      ...liveOverview(),
+      plan,
+      offers: [],
+      actions: [],
+      provider_mode: "DISABLED",
+    };
+    for (const [currency, amount] of [
+      ["RUB", 39900],
+      ["USD", 500],
+    ]) {
+      const display = purchasePresentation(value, currency);
+      assert.equal(display.amount, amount);
+      assert.equal(display.reference, true);
+      assert.equal(display.canPay, false);
+      assert.equal(display.offer, undefined);
+    }
+  }
+});
+test("live checkout requires a fresh supported offer and explicit account capabilities", () => {
+  const value = liveOverview();
+  assert.equal(purchasePresentation(value, "RUB").canPay, true);
+  for (const changed of [
+    { provider_mode: "DISABLED" },
+    { provider_mode: "SANDBOX" },
+    { payment_operations_available: false },
+    { actions: [] },
+    { payment_routes: [] },
+    { revision: null },
+    { offers: [{ prices: { RUB: { amount_minor: 39900 } } }] },
+  ])
+    assert.equal(
+      purchasePresentation({ ...value, ...changed }, "RUB").canPay,
+      false,
+    );
+  assert.equal(purchasePresentation(value, "USD").canPay, false);
+  assert.equal(purchasePresentation(value, "RUB", null, true).canPay, false);
+});
+test("renewal keeps the immutable contract price and currency even when the catalog changes", () => {
+  const value = {
+    ...liveOverview(),
+    plan: "PREMIUM",
+    new_contract_required: false,
+    current_price: { amount_minor: 19900, currency: "RUB" },
+    actions: ["RENEW"],
+  };
+  const display = purchasePresentation(value, "USD");
+  assert.equal(display.amount, 19900);
+  assert.equal(display.currency, "RUB");
+  assert.equal(display.original, null);
+  assert.equal(
+    display.canPay,
+    false,
+    "a mismatched new offer cannot charge the existing contract",
+  );
+  value.offers[0].prices.RUB.amount_minor = 19900;
+  assert.equal(purchasePresentation(value, "USD").canPay, true);
+  assert.equal(purchasePresentation(value, "USD", null, true).amount, 19900);
+});
+test("a cached public price affects display only and never supplies an offer or a charge", () => {
+  const display = purchasePresentation(null, "USD", {
+    prices: { RUB: 45500, USD: 600 },
+    original: {},
+  });
+  assert.equal(display.amount, 600);
+  assert.equal(display.canPay, false);
+  assert.equal(display.offer, undefined);
+  assert.equal(purchasePresentation(null, "invalid").currency, "RUB");
 });
 test("prices come from the API in minor units without conversion", () => {
   assert.deepEqual(acquisitionPrices(catalog()), { RUB: 12345, USD: 789 });
