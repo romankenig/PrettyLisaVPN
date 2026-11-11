@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Public website — 0.5.4
+
+- The placeholder Pay button now navigates to the localized success page with
+  the selected currency. The page is explicitly marked as a payment demonstration:
+  no charge, payment operation or subscription change occurs.
+- Reload preserves the preview; Back returns to the purchase card and the website
+  link preserves the language. Real pending payments and verified provider results
+  retain priority. Backend and clients unchanged. See
+  [purchase-path handoff](docs/website-purchase-path.md#success-preview-follow-up--054).
+
 ### Public website — 0.5.3
 
 - Restore the purchase path before and after email sign-in: PREMIUM benefits,

@@ -8,11 +8,11 @@ export const portalCopy = {
     monthly: "Pro Kalendermonat",
     currency: "Währung",
     yourPlan: "Ihr aktueller Tarif",
-    placeholderTitle: "Zahlung noch nicht verfügbar",
+    placeholderTitle: "Zahlungsdemo",
     placeholderText:
-      "Die Zahlung ist auf dieser Seite noch nicht verfügbar. Diese Schaltfläche bucht nichts ab und ändert Ihr Abonnement nicht.",
+      "Dies ist eine Vorschau einer erfolgreichen Zahlung. Es wurde nichts abgebucht und Ihr Abonnement bleibt unverändert.",
     placeholderHint:
-      "Zahlungen sind noch nicht eingerichtet. Diese Schaltfläche öffnet Informationen ohne Abbuchung.",
+      "Demomodus: Diese Schaltfläche öffnet die Erfolgsseite ohne Abbuchung.",
 
     signIn: "Anmelden",
     signInText:
@@ -87,11 +87,11 @@ export const portalCopy = {
     monthly: "Par mois civil",
     currency: "Devise",
     yourPlan: "Votre forfait actuel",
-    placeholderTitle: "Paiement indisponible pour le moment",
+    placeholderTitle: "Démonstration du paiement",
     placeholderText:
-      "Le paiement n’est pas encore disponible sur cet écran. Ce bouton ne prélève rien et ne modifie pas votre abonnement.",
+      "Ceci est un aperçu d’un paiement réussi. Aucun montant n’a été prélevé et votre abonnement reste inchangé.",
     placeholderHint:
-      "Les paiements ne sont pas encore disponibles. Ce bouton affiche des informations sans prélèvement.",
+      "Mode démonstration : ce bouton ouvre la page de confirmation sans prélèvement.",
 
     signIn: "Se connecter",
     signInText: "Connectez-vous par e-mail pour souscrire avec votre compte.",
@@ -164,11 +164,11 @@ export const portalCopy = {
     monthly: "Por mes natural",
     currency: "Moneda",
     yourPlan: "Tu plan actual",
-    placeholderTitle: "El pago aún no está disponible",
+    placeholderTitle: "Demostración del pago",
     placeholderText:
-      "El pago aún no está disponible en esta pantalla. Este botón no realiza cobros ni cambia tu suscripción.",
+      "Esta es una vista previa de un pago correcto. No se ha realizado ningún cobro y tu suscripción no ha cambiado.",
     placeholderHint:
-      "Los pagos aún no están habilitados. Este botón muestra información sin realizar ningún cobro.",
+      "Modo de demostración: este botón abre la página de confirmación sin realizar cobros.",
 
     signIn: "Iniciar sesión",
     signInText: "Inicia sesión por correo para suscribirte con tu cuenta.",
@@ -242,9 +242,9 @@ export const portalCopy = {
     monthly: "每个日历月",
     currency: "货币",
     yourPlan: "当前套餐",
-    placeholderTitle: "付款暂不可用",
-    placeholderText: "此页面暂不支持付款。点击此按钮不会扣费，也不会更改订阅。",
-    placeholderHint: "付款功能尚未开通。点击按钮仅显示说明，不会扣费。",
+    placeholderTitle: "付款演示",
+    placeholderText: "这是付款成功页面的演示。未扣费，您的订阅保持不变。",
+    placeholderHint: "演示模式：点击按钮将打开付款成功页面，不会扣费。",
 
     signIn: "登录",
     signInText: "通过电子邮箱登录，为您的账户开通订阅。",
@@ -306,11 +306,11 @@ export const portalCopy = {
     monthly: "Per calendar month",
     currency: "Currency",
     yourPlan: "Your current plan",
-    placeholderTitle: "Payment is not available yet",
+    placeholderTitle: "Payment preview",
     placeholderText:
-      "Payment is not available on this screen yet. This button does not charge you or change your subscription.",
+      "This is a payment success preview. No money was charged and your subscription is unchanged.",
     placeholderHint:
-      "Payments are not connected yet. This button opens information without charging you.",
+      "Preview mode: this button opens the success page without charging you.",
 
     signIn: "Sign in",
     signInText: "Sign in by email to subscribe with your account.",
@@ -383,11 +383,11 @@ export const portalCopy = {
     monthly: "За календарный месяц",
     currency: "Валюта",
     yourPlan: "Ваш текущий тариф",
-    placeholderTitle: "Оплата пока недоступна",
+    placeholderTitle: "Демонстрация оплаты",
     placeholderText:
-      "Оплата на этом экране пока недоступна. По этой кнопке деньги не списываются, подписка не меняется.",
+      "Это демонстрация успешной оплаты. Деньги не списаны, подписка не изменилась.",
     placeholderHint:
-      "Оплата пока не подключена. Кнопка откроет информацию без списания.",
+      "Демонстрационный режим: кнопка откроет страницу успешной оплаты без списания.",
 
     signIn: "Войти",
     signInText: "Войдите по email, чтобы оформить подписку на свой аккаунт.",

@@ -36,7 +36,17 @@ export async function mountPortal(root) {
     new URLSearchParams(location.search).get("currency") === "USD"
       ? "USD"
       : "RUB";
-  const pagePath = () => location.pathname + "?currency=" + currency;
+  const pagePath = () =>
+    location.pathname +
+    "?currency=" +
+    currency +
+    (isSuccessPreview() ? "&preview=1" : "");
+  const languagePrefix = location.pathname.match(/^\/(en|de|fr|es|zh)\//)?.[1];
+  const accountPath =
+    (languagePrefix ? "/" + languagePrefix : "") + "/account/";
+  const isSuccessPreview = () =>
+    location.pathname === accountPath + "success/" &&
+    new URLSearchParams(location.search).get("preview") === "1";
   const savedPrices = () => {
     try {
       return cachedPrices(localStorage);
@@ -191,7 +201,7 @@ export async function mountPortal(root) {
       card.append(
         button(
           t.pay,
-          () => (p.canPay ? confirm(p.action, p.offer) : paymentPlaceholder(p)),
+          () => (p.canPay ? confirm(p.action, p.offer) : openSuccessPreview(p)),
           true,
         ),
       );
@@ -208,9 +218,50 @@ export async function mountPortal(root) {
       );
     return card;
   }
-  function paymentPlaceholder(preview) {
-    screen(t.placeholderTitle, t.placeholderText);
-    root.append(purchaseCard({ preview }), button(t.back, load, true));
+  function openSuccessPreview(preview) {
+    location.assign(
+      accountPath + "success/?preview=1&currency=" + preview.currency,
+    );
+  }
+  function successPreview(stale = false) {
+    const preview = purchasePresentation(
+      overview,
+      currency,
+      savedPrices(),
+      stale,
+    );
+    screen(t.success, t.placeholderText);
+    const icon = el("span", "✓", "portal-success-icon");
+    icon.setAttribute("aria-hidden", "true");
+    root
+      .querySelector("h1")
+      .before(icon, el("p", t.placeholderTitle, "portal-preview-label"));
+    const receipt = el("section", null, "portal-plan");
+    receipt.dataset.successPreview = "";
+    receipt.append(
+      el("h2", "PREMIUM ⭐"),
+      el(
+        "p",
+        formatMonthlyPrice(
+          preview.amount,
+          preview.currency,
+          document.documentElement.lang,
+        ) +
+          " · " +
+          t.monthly,
+      ),
+    );
+    root.append(
+      receipt,
+      button(
+        t.back,
+        () => location.assign(accountPath + "?currency=" + preview.currency),
+        true,
+      ),
+    );
+    const home = el("a", t.home, "portal-secondary");
+    home.href = languagePrefix ? "/" + languagePrefix + "/" : "/";
+    root.append(home);
     root.querySelector("h1").tabIndex = -1;
     root.querySelector("h1").focus();
   }
@@ -273,6 +324,7 @@ export async function mountPortal(root) {
       value = await request("/overview");
     } catch (error) {
       if (error.code === "AUTH_INVALID") throw error;
+      if (isSuccessPreview()) return successPreview(true);
       screen(t.title, t.error);
       if (overview?.current_price)
         root.append(
@@ -312,6 +364,7 @@ export async function mountPortal(root) {
         );
       if (journal.command) return send(journal.command);
     }
+    if (isSuccessPreview()) return successPreview();
     summary();
   }
   function summary() {

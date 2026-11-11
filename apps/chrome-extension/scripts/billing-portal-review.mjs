@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { build } from "../../../sites/public-website/scripts/build.mjs";
 import { createPreviewServer } from "../../../sites/public-website/scripts/preview.mjs";
+import { portalCopy } from "../../../sites/public-website/src/portal-copy.mjs";
 
 // Real rendered website, simulated account/provider API. No merchant credentials or charges.
 await build();
@@ -255,10 +256,21 @@ try {
     fullPage: true,
   });
   await page.getByRole("button", { name: "Оплатить", exact: true }).click();
-  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  await page.locator("[data-success-preview]").waitFor();
+  assert.equal(new URL(page.url()).pathname, "/account/success/");
+  assert.equal(new URL(page.url()).searchParams.get("preview"), "1");
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
+  assert.equal(
+    await page.getByText(portalCopy.ru.placeholderText).isVisible(),
+    true,
+  );
   assert.equal(commands.length, 0);
+  assert.equal(state, "FREE", "preview cannot grant Premium");
+  await page.reload();
+  await page.locator("[data-success-preview]").waitFor();
+  assert.match(await page.locator("[data-success-preview]").textContent(), /5/);
   await page.screenshot({
-    path: `${output}/13-payment-placeholder.png`,
+    path: `${output}/13-success-preview.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "Назад", exact: true }).click();
@@ -282,6 +294,13 @@ try {
     path: `${output}/14-purchase-free-rub.png`,
     fullPage: true,
   });
+  await page.goto(origin + "/account/success/");
+  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  assert.equal(
+    await page.locator("[data-success-preview]").count(),
+    0,
+    "the success path alone cannot assert payment or preview",
+  );
   state = "PLATINUM";
   for (const language of ["", "en", "de", "fr", "es", "zh"]) {
     for (const width of [320, 390, 1280]) {
@@ -313,6 +332,38 @@ try {
           path: `${output}/15-purchase-platinum-mobile.png`,
           fullPage: true,
         });
+      await page.locator("[data-purchase-offer] > .button").click();
+      await page.locator("[data-success-preview]").waitFor();
+      const prefix = language ? `/${language}` : "";
+      const copy = portalCopy[language === "zh" ? "zh-CN" : language || "ru"];
+      assert.equal(new URL(page.url()).pathname, prefix + "/account/success/");
+      assert.equal(
+        await page
+          .getByRole("heading", { name: copy.success, exact: true })
+          .isVisible(),
+        true,
+      );
+      assert.equal(
+        await page.getByText(copy.placeholderText).isVisible(),
+        true,
+      );
+      assert.equal(
+        await page.getByRole("link", { name: copy.home }).getAttribute("href"),
+        prefix + "/",
+      );
+      assert.equal(
+        await page.evaluate(
+          () =>
+            globalThis.document.documentElement.scrollWidth <=
+            globalThis.innerWidth,
+        ),
+        true,
+      );
+      if (!language && width === 390)
+        await page.screenshot({
+          path: `${output}/16-success-preview-mobile.png`,
+          fullPage: true,
+        });
     }
   }
   assert.equal(commands.length, 0, "disabled checkout never creates a payment");
@@ -334,26 +385,24 @@ try {
   await privatePage
     .getByRole("button", { name: "Оплатить", exact: true })
     .click();
-  await privatePage
-    .getByRole("heading", { name: "Оплата пока недоступна" })
-    .waitFor();
+  await privatePage.locator("[data-success-preview]").waitFor();
   assert.equal(
     privateMutations,
     0,
     "blocked optional storage must not hide the purchase or create payments",
   );
   await privatePage.close();
-  // Valid prices in sandbox and unsupported USD still open the local placeholder.
+  // Sandbox and unsupported USD use the marked success preview without charging.
   offersAvailable = true;
   providerMode = "SANDBOX";
   state = "FREE";
   await page.goto(origin + "/account/");
   await page.getByRole("button", { name: "Оплатить", exact: true }).click();
-  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  await page.locator("[data-success-preview]").waitFor();
   providerMode = "LIVE";
   await page.goto(origin + "/account/?currency=USD");
   await page.getByRole("button", { name: "Оплатить", exact: true }).click();
-  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  await page.locator("[data-success-preview]").waitFor();
   assert.equal(
     commands.length,
     0,
@@ -361,6 +410,9 @@ try {
   );
   authenticated = false;
   await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto(origin + "/account/success/?preview=1");
+  await page.getByLabel("Электронная почта").waitFor();
+  assert.equal(await page.locator("[data-success-preview]").count(), 0);
   await page.goto(origin + "/account/");
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
   await page.getByRole("button", { name: "Получить код" }).click();
@@ -386,6 +438,14 @@ try {
     "lost response must not create a new charge",
   );
   await page.screenshot({ path: `${output}/04-pending.png`, fullPage: true });
+  await page.goto(origin + "/account/success/?preview=1");
+  await page.getByRole("heading", { name: "Ждём подтверждения" }).waitFor();
+  assert.equal(
+    await page.locator("[data-success-preview]").count(),
+    0,
+    "pending provider operation takes precedence over the preview flag",
+  );
+  assert.equal(commands.length, 1);
   status = "SUCCEEDED";
   await page.getByRole("button", { name: "Проверить оплату" }).click();
   await page.getByRole("heading", { name: "Всё получилось" }).waitFor();
@@ -444,7 +504,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "Оплатить" }).count(), 1);
   assert.equal(commands.length, commandCount);
   await page.getByRole("button", { name: "Оплатить", exact: true }).click();
-  await page.getByRole("heading", { name: "Оплата пока недоступна" }).waitFor();
+  await page.locator("[data-success-preview]").waitFor();
   assert.equal(
     commands.length,
     commandCount,
