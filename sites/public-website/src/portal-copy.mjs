@@ -1,7 +1,22 @@
 export const portalCopy = {
   de: {
+    productSummary: "VPN für alle Ihre Geräte.",
+    unlimited: "Unbegrenzte Zeit und Daten",
+    premiumServers: "Zugang zu Premium-Servern",
+    devices: "Bis zu 5 Geräte · ohne Werbung",
+    selected: "Monatliches Abonnement",
+    monthly: "Pro Kalendermonat",
+    currency: "Währung",
+    yourPlan: "Ihr aktueller Tarif",
+    placeholderTitle: "Zahlung noch nicht verfügbar",
+    placeholderText:
+      "Die Zahlung ist auf dieser Seite noch nicht verfügbar. Diese Schaltfläche bucht nichts ab und ändert Ihr Abonnement nicht.",
+    placeholderHint:
+      "Zahlungen sind noch nicht eingerichtet. Diese Schaltfläche öffnet Informationen ohne Abbuchung.",
+
     signIn: "Anmelden",
-    signInText: "Verwenden Sie dieselbe E-Mail-Adresse wie in der App.",
+    signInText:
+      "Melden Sie sich per E-Mail an, um ein Abonnement für Ihr Konto abzuschließen.",
     email: "E-Mail",
     code: "Code aus der E-Mail",
     sendCode: "Code senden",
@@ -35,7 +50,7 @@ export const portalCopy = {
       "Die erste Zahlung erfolgt jetzt. Danach wird derselbe Betrag einmal pro Kalendermonat per SBP abgebucht, bis Sie die Verlängerung stoppen.",
     consent:
       "Ich stimme monatlichen automatischen Zahlungen und den Abonnementbedingungen zu.",
-    pay: "Zur sicheren Zahlung",
+    pay: "Bezahlen",
     back: "Zurück",
     cancelText:
       "Das Entfernen stoppt künftige Abbuchungen. Der bezahlte Zugang bleibt bis zum bezahlten Datum erhalten.",
@@ -64,8 +79,22 @@ export const portalCopy = {
     home: "Zur Website",
   },
   fr: {
+    productSummary: "Un VPN pour tous vos appareils.",
+    unlimited: "Durée et trafic illimités",
+    premiumServers: "Accès aux serveurs premium",
+    devices: "Jusqu’à 5 appareils · sans publicité",
+    selected: "Abonnement mensuel",
+    monthly: "Par mois civil",
+    currency: "Devise",
+    yourPlan: "Votre forfait actuel",
+    placeholderTitle: "Paiement indisponible pour le moment",
+    placeholderText:
+      "Le paiement n’est pas encore disponible sur cet écran. Ce bouton ne prélève rien et ne modifie pas votre abonnement.",
+    placeholderHint:
+      "Les paiements ne sont pas encore disponibles. Ce bouton affiche des informations sans prélèvement.",
+
     signIn: "Se connecter",
-    signInText: "Utilisez la même adresse e-mail que dans l’application.",
+    signInText: "Connectez-vous par e-mail pour souscrire avec votre compte.",
     email: "Adresse e-mail",
     code: "Code reçu par e-mail",
     sendCode: "Recevoir le code",
@@ -98,7 +127,7 @@ export const portalCopy = {
       "Le premier paiement est prélevé maintenant. Le même montant est ensuite prélevé par SBP une fois par mois civil, jusqu’à l’arrêt du renouvellement.",
     consent:
       "J’accepte les prélèvements automatiques mensuels et les conditions d’abonnement.",
-    pay: "Passer au paiement sécurisé",
+    pay: "Payer",
     back: "Retour",
     cancelText:
       "La dissociation arrête les prélèvements futurs. L’accès payé reste actif jusqu’à la date payée.",
@@ -127,8 +156,22 @@ export const portalCopy = {
     home: "Retour au site",
   },
   es: {
+    productSummary: "VPN para todos tus dispositivos.",
+    unlimited: "Tiempo y tráfico ilimitados",
+    premiumServers: "Acceso a servidores premium",
+    devices: "Hasta 5 dispositivos · sin anuncios",
+    selected: "Suscripción mensual",
+    monthly: "Por mes natural",
+    currency: "Moneda",
+    yourPlan: "Tu plan actual",
+    placeholderTitle: "El pago aún no está disponible",
+    placeholderText:
+      "El pago aún no está disponible en esta pantalla. Este botón no realiza cobros ni cambia tu suscripción.",
+    placeholderHint:
+      "Los pagos aún no están habilitados. Este botón muestra información sin realizar ningún cobro.",
+
     signIn: "Iniciar sesión",
-    signInText: "Usa el mismo correo que en la aplicación.",
+    signInText: "Inicia sesión por correo para suscribirte con tu cuenta.",
     email: "Correo electrónico",
     code: "Código del correo",
     sendCode: "Enviar código",
@@ -162,7 +205,7 @@ export const portalCopy = {
       "El primer pago se cobra ahora. Después se cobra el mismo importe por SBP una vez por mes natural hasta que detengas la renovación.",
     consent:
       "Acepto los cobros automáticos mensuales y las condiciones de la suscripción.",
-    pay: "Continuar al pago seguro",
+    pay: "Pagar",
     back: "Volver",
     cancelText:
       "La desvinculación detiene los cobros futuros. El acceso pagado sigue activo hasta la fecha pagada.",
@@ -191,8 +234,20 @@ export const portalCopy = {
     home: "Volver al sitio",
   },
   "zh-CN": {
+    productSummary: "适用于所有设备的 VPN。",
+    unlimited: "不限时长和流量",
+    premiumServers: "使用高级服务器",
+    devices: "最多 5 台设备 · 无广告",
+    selected: "包月订阅",
+    monthly: "每个日历月",
+    currency: "货币",
+    yourPlan: "当前套餐",
+    placeholderTitle: "付款暂不可用",
+    placeholderText: "此页面暂不支持付款。点击此按钮不会扣费，也不会更改订阅。",
+    placeholderHint: "付款功能尚未开通。点击按钮仅显示说明，不会扣费。",
+
     signIn: "登录",
-    signInText: "请使用与应用中相同的电子邮箱。",
+    signInText: "通过电子邮箱登录，为您的账户开通订阅。",
     email: "电子邮箱",
     code: "邮件验证码",
     sendCode: "发送验证码",
@@ -219,7 +274,7 @@ export const portalCopy = {
     recurringTerms:
       "现在收取首笔费用。此后每个日历月通过 SBP 扣取相同金额，直至您停止续费。",
     consent: "我同意每月自动扣款及订阅条款。",
-    pay: "继续安全付款",
+    pay: "付款",
     back: "返回",
     cancelText: "解绑后将停止后续自动扣款，已付款的访问权限保留至有效期结束。",
     changeMethod:
@@ -243,8 +298,22 @@ export const portalCopy = {
     home: "返回网站",
   },
   en: {
+    productSummary: "VPN for all your devices.",
+    unlimited: "Unlimited time and traffic",
+    premiumServers: "Access to premium servers",
+    devices: "Up to 5 devices · no ads",
+    selected: "Monthly subscription",
+    monthly: "Per calendar month",
+    currency: "Currency",
+    yourPlan: "Your current plan",
+    placeholderTitle: "Payment is not available yet",
+    placeholderText:
+      "Payment is not available on this screen yet. This button does not charge you or change your subscription.",
+    placeholderHint:
+      "Payments are not connected yet. This button opens information without charging you.",
+
     signIn: "Sign in",
-    signInText: "Use the same email as in the app to manage your subscription.",
+    signInText: "Sign in by email to subscribe with your account.",
     email: "Email",
     code: "Email code",
     sendCode: "Send code",
@@ -277,7 +346,7 @@ export const portalCopy = {
       "The first payment is charged now. Then the same amount is charged once every calendar month through SBP until you cancel renewal.",
     consent:
       "I agree to monthly automatic payments and the subscription terms.",
-    pay: "Continue to secure payment",
+    pay: "Pay",
     back: "Back",
     cancelText:
       "Unlinking stops future automatic payments. Your paid access stays active until the paid date.",
@@ -306,9 +375,22 @@ export const portalCopy = {
     home: "Back to website",
   },
   ru: {
+    productSummary: "VPN для всех ваших устройств.",
+    unlimited: "Безлимитное время и трафик",
+    premiumServers: "Доступ к премиум-серверам",
+    devices: "До 5 устройств · без рекламы",
+    selected: "Подписка на месяц",
+    monthly: "За календарный месяц",
+    currency: "Валюта",
+    yourPlan: "Ваш текущий тариф",
+    placeholderTitle: "Оплата пока недоступна",
+    placeholderText:
+      "Оплата на этом экране пока недоступна. По этой кнопке деньги не списываются, подписка не меняется.",
+    placeholderHint:
+      "Оплата пока не подключена. Кнопка откроет информацию без списания.",
+
     signIn: "Войти",
-    signInText:
-      "Используйте ту же почту, что и в приложении, чтобы управлять подпиской.",
+    signInText: "Войдите по email, чтобы оформить подписку на свой аккаунт.",
     email: "Электронная почта",
     code: "Код из письма",
     sendCode: "Получить код",
@@ -342,7 +424,7 @@ export const portalCopy = {
       "Первый платёж будет списан сейчас. Затем та же сумма списывается через СБП один раз в календарный месяц до отключения продления.",
     consent:
       "Я согласен с ежемесячными автоматическими списаниями и условиями подписки.",
-    pay: "Перейти к защищённой оплате",
+    pay: "Оплатить",
     back: "Назад",
     cancelText:
       "После отвязки автоматических списаний больше не будет. Доступ сохранится до оплаченной даты.",

@@ -1334,7 +1334,7 @@ figcaption {
 }
 
 .portal {
-  max-width: 760px;
+  max-width: 960px;
   padding-block: 64px 96px;
   min-height: 65vh;
 }
@@ -1359,14 +1359,15 @@ figcaption {
   border-radius: 24px;
 }
 .portal-plan {
-  background: #2c016d;
-  color: #e4e4e4;
+  background: #f0ebf7;
+  border-color: var(--line);
+  color: #2c016d;
 }
 .portal-plan p {
-  color: #e4e4e4;
+  color: #5b5b5b;
 }
 .portal-badge {
-  color: #51d6ca;
+  color: #2c016d;
   font-weight: 600;
 }
 .portal .button,
@@ -1428,6 +1429,55 @@ figcaption {
 .portal :focus-visible {
   outline: 3px solid #ac73ff;
   outline-offset: 4px;
+}
+
+.portal-login-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-top: 28px;
+}
+.portal-login-layout form {
+  margin: 0;
+  max-width: none;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+}
+.portal-purchase {
+  background: #2c016d;
+  border: 0;
+  color: #fff;
+  padding: 32px;
+}
+.portal-login-layout .portal-purchase { margin: 0; }
+.portal-purchase p, .portal-purchase li { color: #fff; }
+.portal-purchase h2 { font-size: 30px; margin: 8px 0; }
+.portal-product-label { font-size: 13px; }
+.portal-benefits { padding-left: 20px; margin: 24px 0; line-height: 1.6; }
+.portal-benefits li + li { margin-top: 8px; }
+.portal-benefits li::marker { color: #51d6ca; }
+.portal-price-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 28px 0 20px; }
+.portal-purchase .portal-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0; line-height: 1.15; }
+.portal-price strong { font-size: clamp(36px, 5vw, 54px); letter-spacing: -1.5px; }
+.portal-price s { font-size: 18px; color: #ddd0f1; }
+.portal-price-period { font-size: 13px; margin: 8px 0 0; }
+.portal-purchase .portal-price-note { font-size: 12px; line-height: 1.6; color: #e1d8ef; margin-top: 12px; }
+.portal-purchase > .button { width: 100%; margin: 8px 0 0; min-height: 52px; }
+.portal-currency { display: flex; flex-direction: column; gap: 6px; border: 0; padding: 0; margin: 0; }
+.portal-currency label { display: block; position: relative; cursor: pointer; }
+.portal-currency input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; }
+.portal-currency span { display: block; padding: 9px 13px; border: 1px solid #ac73ff; border-radius: 10px; font-size: 13px; }
+.portal-currency input:checked + span { background: #51d6ca; border-color: #51d6ca; color: #2c016d; font-weight: 600; }
+.portal-currency input:focus-visible + span { outline: 3px solid #ac73ff; outline-offset: 3px; }
+.portal-account { overflow-wrap: anywhere; font-size: 14px; }
+@media (max-width: 700px) {
+  .portal { padding-block: 32px 56px; }
+  .portal-login-layout { grid-template-columns: 1fr; gap: 20px; }
+  .portal-login-layout form { order: -1; }
+  .portal-purchase, .portal-login-layout form, .portal-plan { padding: 22px; }
+  .portal-price-row { gap: 12px; }
 }
 
 /* DEMO is a quiet third option after the primary Premium and secondary Free cards. */

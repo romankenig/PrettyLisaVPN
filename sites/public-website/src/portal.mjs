@@ -1,10 +1,9 @@
 import { portalCopy } from "./portal-copy.mjs";
 import {
   cachedPrices,
-  referencePrices,
-  referenceOriginalPrices,
   referencePriceCopy,
   formatMonthlyPrice,
+  purchasePresentation,
 } from "./pricing.mjs";
 
 export function providerURL(raw) {
@@ -22,6 +21,10 @@ export function providerURL(raw) {
 
 export async function mountPortal(root) {
   const t = portalCopy[document.documentElement.lang] ?? portalCopy.en;
+  const priceLanguage =
+    document.documentElement.lang === "zh-CN"
+      ? "zh"
+      : document.documentElement.lang;
   const api = "/api/web/billing";
   let account,
     accountEmail,
@@ -29,6 +32,18 @@ export async function mountPortal(root) {
     timer,
     generation = 0,
     locked = false;
+  let currency =
+    new URLSearchParams(location.search).get("currency") === "USD"
+      ? "USD"
+      : "RUB";
+  const pagePath = () => location.pathname + "?currency=" + currency;
+  const savedPrices = () => {
+    try {
+      return cachedPrices(localStorage);
+    } catch {
+      return null;
+    }
+  };
   const money = (p) =>
     new Intl.NumberFormat(document.documentElement.lang, {
       style: "currency",
@@ -108,6 +123,97 @@ export async function mountPortal(root) {
     if (account && accountEmail)
       root.append(el("p", accountEmail, "portal-account"));
   }
+  function purchaseCard({
+    signedIn = false,
+    stale = false,
+    preview = null,
+  } = {}) {
+    const p =
+      preview ?? purchasePresentation(overview, currency, savedPrices(), stale);
+    const card = el("section", null, "portal-offer portal-purchase");
+    card.dataset.purchaseOffer = "";
+    if (p.reference) card.dataset.referencePrices = "";
+    card.append(
+      el("p", p.contract ? t.fixedPrice : t.selected, "portal-product-label"),
+      el("h2", "PREMIUM ⭐"),
+      el("p", t.productSummary),
+    );
+    const features = el("ul", null, "portal-benefits");
+    for (const feature of [t.unlimited, t.premiumServers, t.devices])
+      features.append(el("li", feature));
+    card.append(features);
+    const row = el("div", null, "portal-price-row"),
+      price = el("div");
+    const amount = el("p", null, "portal-price");
+    if (p.original)
+      amount.append(
+        el(
+          "s",
+          formatMonthlyPrice(
+            p.original,
+            p.currency,
+            document.documentElement.lang,
+          ),
+        ),
+      );
+    amount.append(
+      el(
+        "strong",
+        formatMonthlyPrice(p.amount, p.currency, document.documentElement.lang),
+      ),
+    );
+    price.append(amount, el("p", t.monthly, "portal-price-period"));
+    row.append(price);
+    if (!p.contract && !preview) {
+      const picker = el("fieldset", null, "portal-currency");
+      picker.append(el("legend", t.currency, "sr-only"));
+      for (const code of ["RUB", "USD"]) {
+        const label = el("label"),
+          input = el("input");
+        input.type = "radio";
+        input.name = "purchase-currency";
+        input.value = code;
+        input.checked = p.currency === code;
+        input.addEventListener("change", () => {
+          currency = code;
+          history.replaceState(null, "", pagePath());
+          const next = purchaseCard({ signedIn, stale });
+          card.replaceWith(next);
+          next.querySelector(`input[value="${code}"]`).focus();
+        });
+        label.append(input, el("span", code));
+        picker.append(label);
+      }
+      row.append(picker);
+    }
+    card.append(row);
+    if (signedIn) {
+      card.append(
+        button(
+          t.pay,
+          () => (p.canPay ? confirm(p.action, p.offer) : paymentPlaceholder(p)),
+          true,
+        ),
+      );
+      if (!p.canPay)
+        card.append(el("p", t.placeholderHint, "portal-price-note"));
+    }
+    if (p.reference)
+      card.append(
+        el(
+          "p",
+          referencePriceCopy[priceLanguage] ?? referencePriceCopy.en,
+          "portal-price-note",
+        ),
+      );
+    return card;
+  }
+  function paymentPlaceholder(preview) {
+    screen(t.placeholderTitle, t.placeholderText);
+    root.append(purchaseCard({ preview }), button(t.back, load, true));
+    root.querySelector("h1").tabIndex = -1;
+    root.querySelector("h1").focus();
+  }
   function login() {
     account = accountEmail = overview = null;
     screen(t.signIn, t.signInText);
@@ -156,7 +262,9 @@ export async function mountPortal(root) {
         }
       });
     });
-    root.append(form);
+    const layout = el("div", null, "portal-login-layout");
+    layout.append(purchaseCard(), form);
+    root.append(layout);
   }
   const journalKey = () => "prettylisa.billing." + account;
   async function load() {
@@ -171,60 +279,21 @@ export async function mountPortal(root) {
           el("p", t.fixedPrice),
           el("h2", money(overview.current_price)),
         );
-      let storage;
-      try {
-        storage = localStorage;
-      } catch {
-        /* Optional public cache. */
-      }
-      const display = cachedPrices(storage) ?? {
-        prices: referencePrices,
-        original: referenceOriginalPrices,
-      };
-      const card = el("section", null, "portal-offer");
-      card.dataset.referencePrices = "";
-      card.append(el("h2", "Premium"));
-      for (const currency of ["RUB", "USD"]) {
-        const row = el("p");
-        if (display.original[currency])
-          row.append(
-            el(
-              "s",
-              formatMonthlyPrice(
-                display.original[currency],
-                currency,
-                document.documentElement.lang,
-              ) + " ",
-            ),
-          );
-        row.append(
-          el(
-            "strong",
-            formatMonthlyPrice(
-              display.prices[currency],
-              currency,
-              document.documentElement.lang,
-            ) +
-              " / " +
-              t.month,
-          ),
-        );
-        card.append(row);
-      }
-      card.append(
-        el(
-          "p",
-          referencePriceCopy[document.documentElement.lang] ??
-            referencePriceCopy.en,
-        ),
+      root.append(
+        purchaseCard({ signedIn: true, stale: true }),
+        button(t.refresh, load),
       );
-      root.append(card, button(t.refresh, load));
       return;
     }
     account = value.account_id;
     accountEmail = value.email;
     overview = value.billing;
-    const saved = localStorage.getItem(journalKey());
+    let saved;
+    try {
+      saved = localStorage.getItem(journalKey());
+    } catch {
+      /* Reading the account does not require optional browser storage. */
+    }
     if (overview.pending_operation_id)
       return watch({ id: overview.pending_operation_id, status: "PENDING" });
     if (saved) {
@@ -246,9 +315,13 @@ export async function mountPortal(root) {
     summary();
   }
   function summary() {
-    screen(t.title, overview.new_contract_required ? t.choose : t.fixedPrice);
+    const showPurchase =
+      overview.new_contract_required ||
+      overview.plan !== "PREMIUM" ||
+      overview.actions.includes("RENEW");
+    screen(t.title, showPurchase ? null : t.fixedPrice);
     const card = el("section", null, "portal-plan");
-    card.append(el("span", overview.plan, "portal-badge"));
+    card.append(el("p", t.yourPlan), el("span", overview.plan, "portal-badge"));
     if (overview.current_price)
       card.append(el("h2", money(overview.current_price) + " / " + t.month));
     if (overview.paid_until)
@@ -279,35 +352,19 @@ export async function mountPortal(root) {
       );
     else if (!overview.auto_renew && overview.paid_until)
       card.append(el("p", t.noRenewal));
-    root.append(card);
+    if (showPurchase) {
+      const current = el("p", null, "portal-current-summary");
+      current.append(
+        document.createTextNode(t.yourPlan + ": "),
+        el("strong", overview.plan),
+      );
+      root.append(current, purchaseCard({ signedIn: true }));
+    }
+    if (!showPurchase || overview.current_price || overview.paid_until)
+      root.append(card);
     const live =
       overview.provider_mode === "LIVE" &&
       overview.payment_operations_available;
-    const purchase = overview.new_contract_required ? "SUBSCRIBE" : "RENEW";
-    for (const offer of overview.new_contract_required ||
-    overview.actions.includes(purchase)
-      ? overview.offers
-      : []) {
-      const p = {
-        amount_minor: offer.prices.RUB.amount_minor,
-        currency: "RUB",
-      };
-      const option = el("section", null, "portal-offer");
-      option.append(
-        el("h2", "Premium · " + money(p) + " / " + t.month),
-        el("p", t.features),
-      );
-      const sbp = overview.payment_routes.some(
-        (route) =>
-          route.id === "SBP" && route.recurring_currencies.includes("RUB"),
-      );
-      if (live && sbp && overview.actions.includes(purchase))
-        option.append(
-          button(t.subscribe, () => confirm(purchase, offer), true),
-        );
-      else option.append(el("p", t.unavailable));
-      root.append(option);
-    }
     if (live && overview.actions.includes("CANCEL"))
       root.append(button(t.cancel, cancel));
     root.append(
@@ -437,7 +494,7 @@ export async function mountPortal(root) {
   }
   const fragment = new URLSearchParams(location.hash.slice(1));
   const handoff = fragment.get("handoff");
-  history.replaceState(null, "", location.pathname);
+  history.replaceState(null, "", pagePath());
   await guard(async () => {
     if (handoff) await request("/exchange", { token: handoff });
     await load();
