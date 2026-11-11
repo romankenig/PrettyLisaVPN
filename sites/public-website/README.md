@@ -1,9 +1,10 @@
-# PrettyLisaVPN website · 0.5.3
+# PrettyLisaVPN website · 0.5.4
 
 The account page now keeps PREMIUM, its monthly price and a visible Pay button
 through email sign-in and unavailable-provider/catalog states. Until live checkout
-is available, Pay opens an explicit informational placeholder without charging or
-changing access. See the [purchase-path handoff](../../docs/website-purchase-path.md).
+is available, Pay opens a localized success-page preview without charging or
+changing access. A visible demonstration label distinguishes it from a confirmed
+provider result. See the [purchase-path handoff](../../docs/website-purchase-path.md#success-preview-follow-up--054).
 
 Version 0.5.2 combined the already live legal templates with Windows guest identity
 disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
