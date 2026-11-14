@@ -105,6 +105,8 @@ class PublicWebsiteTests(unittest.TestCase):
             "downloads.mjs",
             "style.css",
             "lock.svg",
+            "favicon-light.svg",
+            "favicon-dark.svg",
             "Rubik.ttf",
             "screenshots/android-home.png",
         ):

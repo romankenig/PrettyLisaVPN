@@ -7,6 +7,16 @@ import {
   formatMonthlyPrice,
 } from "./pricing.mjs";
 
+const favicon = document.querySelector('link[rel="icon"]');
+if (favicon) {
+  const theme = matchMedia("(prefers-color-scheme: dark)");
+  const updateFavicon = () => {
+    favicon.href = `/assets/favicon-${theme.matches ? "dark" : "light"}.svg`;
+  };
+  updateFavicon();
+  theme.addEventListener("change", updateFavicon);
+}
+
 const pricing = document.querySelector("[data-pricing]");
 if (pricing) {
   let storage;
@@ -15,7 +25,7 @@ if (pricing) {
   } catch {
     /* Private mode may block storage. */
   }
-  const render = ({ prices, original }, reference) => {
+  const render = ({ prices, original }) => {
     for (const node of pricing.querySelectorAll("[data-price]")) {
       const currency = node.dataset.price;
       node.textContent = formatMonthlyPrice(
@@ -35,10 +45,9 @@ if (pricing) {
             document.documentElement.lang,
           );
     }
-    pricing.querySelector("[data-price-reference-note]").hidden = !reference;
   };
   const saved = cachedPrices(storage);
-  if (saved) render(saved, true);
+  if (saved) render(saved);
   fetch("/api/billing/catalog", {
     cache: "no-store",
     credentials: "omit",
@@ -48,7 +57,7 @@ if (pricing) {
     .then((value) => {
       const prices = acquisitionPrices(value);
       if (!prices) return;
-      render({ prices, original: acquisitionReferencePrices(value) }, false);
+      render({ prices, original: acquisitionReferencePrices(value) });
       savePublicPrices(storage, value);
     })
     .catch(() => {

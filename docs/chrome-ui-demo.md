@@ -97,3 +97,15 @@ Follow-up acceptance:
 
 Chrome's [service-worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle)
 documents normal idle termination; this alone is not evidence of extension removal.
+
+## Authorized release and integration with website PR #83
+
+On 2026-11-14 the owner explicitly authorized merging PR #84, deploying backend
+0.41.0 and publishing Chrome 0.3.0 on the official website. Before merge, develop
+advanced to 89f1c87bfae1d28ccd8deab7845204e97eaf3a57 (PR #83, website 0.5.5).
+The integration preserves its copy, device frames, current native screenshots,
+lowercase portal and theme-aware favicon while retaining Chrome download support.
+Website 0.6.0 now includes both tasks; no additional component version bump.
+Fresh product/merge/develop SHAs, all CI jobs, actual backend runtime and public ZIP
+hash are recorded in PR #84 after the rollout. Historical evidence above remains
+historical; the previous 9dd0a087 build does not validate this combined revision.
