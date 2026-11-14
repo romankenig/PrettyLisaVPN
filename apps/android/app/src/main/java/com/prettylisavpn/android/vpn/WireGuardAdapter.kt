@@ -34,6 +34,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     private var heartbeat: Job? = null
     private var deadline: Job? = null
     private var lease: WireGuardLease? = null
+    override val egress get() = lease?.let { VpnEgress(it.id, it.country, it.configuration?.expected_egress_ips?.firstOrNull()) }
     private var expectingUp = false
     val isRunning get() = expectingUp
     private var acquired = false

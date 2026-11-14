@@ -33,6 +33,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
     private var heartbeat: Job? = null
     private var deadline: Job? = null
     private var lease: ManagedLease? = null
+    override val egress get() = lease?.let { VpnEgress(it.id, it.country, it.configuration?.expected_egress_ips?.firstOrNull()) }
     private var acquired = false
     @Volatile private var stage = "IDLE"
         set(value) {

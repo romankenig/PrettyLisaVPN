@@ -7,6 +7,26 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionRecoveryTest {
+    @Test fun allocatedEgressSurvivesHealthRefreshButClearsOnDisconnect() = runTest {
+        val adapter = object : ConnectionAdapter {
+            override val method = VpnMethod("wireguard_relay", "WireGuard+")
+            override val egress = VpnEgress("allocated-session", "NL", "198.51.100.42")
+            override suspend fun connect(country: String): ConnectionResult {
+                assertEquals("AUTO", country)
+                return ConnectionResult.Verified
+            }
+            override suspend fun disconnect() {}
+            override suspend fun health() = TunnelHealth.HEALTHY
+        }
+        val controller = VpnController({ "owner" }, backgroundScope, listOf(adapter), healthPolicy = policy)
+        controller.connect("AUTO"); runCurrent()
+        assertEquals(adapter.egress, controller.status.value.egress)
+        advanceTimeBy(30); runCurrent()
+        assertEquals(adapter.egress, controller.status.value.egress)
+        controller.disconnect(); runCurrent()
+        assertEquals(VpnPhase.DISCONNECTED, controller.status.value.phase)
+        assertNull(controller.status.value.egress)
+    }
     @Test fun freeQuotaStopsRetriesAndKeepsSupportVocabularyCompatible() = runTest {
         for (code in listOf("FREE_QUOTA_EXHAUSTED", "FREE_DAILY_LIMIT_REACHED", "FREE_QUOTA_RESERVED")) {
             val events = mutableListOf<String>()

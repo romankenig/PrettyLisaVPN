@@ -69,7 +69,7 @@ internal class LanguagePreference(saved: String?, private val persist: (String) 
     val automatic get() = !manual
 }
 
-internal data class PublicLocation(val ip: String, val country: String?, val city: String?)
+internal data class PublicLocation(val ip: String?, val country: String?, val city: String?)
 
 /** Independent public metadata only: no auth headers, email, session or installation ID. */
 internal class PublicMetadata(
@@ -168,7 +168,17 @@ internal class PresentationState(context: Context, private val network: Boolean)
     }
     private val mutableVersion = MutableStateFlow<String?>(null)
     val version = mutableVersion.asStateFlow()
-    private val locationRefresh = LocationRefresh { if (network) metadata.location() else null }
+    private val lastDirectLocation = MutableStateFlow<PublicLocation?>(null)
+    val directLocationFallback = lastDirectLocation.asStateFlow()
+    private val locationRefresh = LocationRefresh {
+        val direct = !vpnActive()
+        (if (network) metadata.location() else null)?.also {
+            currentCoroutineContext().ensureActive()
+            // Remember only direct observations, in memory. A VPN lookup must
+            // never replace the fallback for services excluded from the VPN.
+            if (direct && !vpnActive()) lastDirectLocation.value = it
+        }
+    }
     val location = locationRefresh.value
     val locating = locationRefresh.loading
     suspend fun refreshServer(): Boolean = metadata.reachable()
@@ -191,7 +201,7 @@ internal class PresentationState(context: Context, private val network: Boolean)
             val route = withTimeout(5_000) { available.await() }
             metadata.directLocation(route)?.takeIf {
                 manager.getNetworkCapabilities(route)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
-            }
+            }?.also { currentCoroutineContext().ensureActive(); lastDirectLocation.value = it }
         } catch (_: TimeoutCancellationException) { null }
         catch (error: CancellationException) { throw error }
         catch (_: Exception) { null }
