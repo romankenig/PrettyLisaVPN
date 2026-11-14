@@ -119,6 +119,13 @@ try {
         true,
       );
       assert.equal(await page.locator(".document-button").count(), 4);
+      assert.equal(await page.locator(".device-pair").count(), 2);
+      assert.equal(
+        await page
+          .locator("figcaption, .eyebrow, [data-price-reference-note]")
+          .count(),
+        0,
+      );
       assert.equal(
         await page.evaluate(
           () =>
@@ -127,6 +134,16 @@ try {
         ),
         true,
       );
+      if (!language && width === 1280)
+        for (const section of ["features", "download"])
+          await page
+            .locator(`#${section}`)
+            .screenshot({ path: `${output}/00-${section}-desktop.png` });
+      if (!language && width === 390)
+        for (const section of ["features", "download"])
+          await page
+            .locator(`#${section}`)
+            .screenshot({ path: `${output}/00-${section}-mobile.png` });
       if (!language && width === 1280)
         await page
           .locator("#pricing")
@@ -157,10 +174,7 @@ try {
     await page.locator('[data-price="RUB"]').textContent(),
     /123[.,]45/,
   );
-  assert.equal(
-    await page.locator("[data-price-reference-note]").isVisible(),
-    true,
-  );
+  assert.equal(await page.locator("[data-price-reference-note]").count(), 0);
   await page.evaluate(() => globalThis.localStorage.clear());
   await Promise.all([
     page.waitForResponse("**/api/billing/catalog"),
@@ -246,16 +260,16 @@ try {
     fullPage: true,
   });
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
-  await page.getByRole("button", { name: "Получить код" }).click();
+  await page.getByRole("button", { name: "получить код" }).click();
   await page.getByLabel("Код из письма").fill("123456");
-  await page.getByRole("button", { name: "Войти", exact: true }).click();
-  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  await page.getByRole("button", { name: "войти", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
   assert.match(await page.locator(".portal-price strong").textContent(), /5/);
   await page.screenshot({
     path: `${output}/12-purchase-free-usd.png`,
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
   await page.locator("[data-success-preview]").waitFor();
   assert.equal(new URL(page.url()).pathname, "/account/success/");
   assert.equal(new URL(page.url()).searchParams.get("preview"), "1");
@@ -273,7 +287,7 @@ try {
     path: `${output}/13-success-preview.png`,
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Назад", exact: true }).click();
+  await page.getByRole("button", { name: "назад", exact: true }).click();
   await page.getByLabel("RUB", { exact: true }).check();
   assert.equal(
     await page
@@ -286,7 +300,7 @@ try {
   await page.keyboard.press("ArrowUp");
   assert.equal(await page.getByLabel("RUB", { exact: true }).isChecked(), true);
   await page.reload();
-  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
   assert.equal(new URL(page.url()).searchParams.get("currency"), "RUB");
   assert.match(await page.locator(".portal-price strong").textContent(), /399/);
   assert.match(await page.locator(".portal-price s").textContent(), /499/);
@@ -295,7 +309,7 @@ try {
     fullPage: true,
   });
   await page.goto(origin + "/account/success/");
-  await page.getByRole("button", { name: "Оплатить", exact: true }).waitFor();
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
   assert.equal(
     await page.locator("[data-success-preview]").count(),
     0,
@@ -383,7 +397,7 @@ try {
   });
   await privatePage.goto(origin + "/account/");
   await privatePage
-    .getByRole("button", { name: "Оплатить", exact: true })
+    .getByRole("button", { name: "оплатить", exact: true })
     .click();
   await privatePage.locator("[data-success-preview]").waitFor();
   assert.equal(
@@ -397,11 +411,11 @@ try {
   providerMode = "SANDBOX";
   state = "FREE";
   await page.goto(origin + "/account/");
-  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
   await page.locator("[data-success-preview]").waitFor();
   providerMode = "LIVE";
   await page.goto(origin + "/account/?currency=USD");
-  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
   await page.locator("[data-success-preview]").waitFor();
   assert.equal(
     commands.length,
@@ -415,15 +429,15 @@ try {
   assert.equal(await page.locator("[data-success-preview]").count(), 0);
   await page.goto(origin + "/account/");
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
-  await page.getByRole("button", { name: "Получить код" }).click();
+  await page.getByRole("button", { name: "получить код" }).click();
   await page.getByLabel("Код из письма").waitFor();
   await page.screenshot({ path: `${output}/01-otp.png`, fullPage: true });
   await page.getByLabel("Код из письма").fill("123456");
-  await page.getByRole("button", { name: "Войти", exact: true }).click();
-  await page.getByRole("button", { name: "Оплатить" }).waitFor();
+  await page.getByRole("button", { name: "войти", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
   await page.screenshot({ path: `${output}/02-free.png`, fullPage: true });
-  await page.getByRole("button", { name: "Оплатить" }).click();
-  const pay = page.getByRole("button", { name: "Оплатить" });
+  await page.getByRole("button", { name: "оплатить" }).click();
+  const pay = page.getByRole("button", { name: "оплатить" });
   assert.equal(await pay.isDisabled(), true);
   await page.getByRole("checkbox").check();
   await page.screenshot({ path: `${output}/03-consent.png`, fullPage: true });
@@ -431,7 +445,7 @@ try {
   await pay.click();
   await page.getByRole("alert").waitFor();
   await page.reload();
-  await page.getByRole("heading", { name: "Ждём подтверждения" }).waitFor();
+  await page.getByRole("heading", { name: "ждём подтверждения" }).waitFor();
   assert.equal(
     commands.length,
     1,
@@ -439,7 +453,7 @@ try {
   );
   await page.screenshot({ path: `${output}/04-pending.png`, fullPage: true });
   await page.goto(origin + "/account/success/?preview=1");
-  await page.getByRole("heading", { name: "Ждём подтверждения" }).waitFor();
+  await page.getByRole("heading", { name: "ждём подтверждения" }).waitFor();
   assert.equal(
     await page.locator("[data-success-preview]").count(),
     0,
@@ -447,13 +461,11 @@ try {
   );
   assert.equal(commands.length, 1);
   status = "SUCCEEDED";
-  await page.getByRole("button", { name: "Проверить оплату" }).click();
-  await page.getByRole("heading", { name: "Всё получилось" }).waitFor();
+  await page.getByRole("button", { name: "проверить оплату" }).click();
+  await page.getByRole("heading", { name: "всё получилось" }).waitFor();
   await page.screenshot({ path: `${output}/05-success.png`, fullPage: true });
-  await page.getByRole("button", { name: "Управлять подпиской" }).click();
-  await page
-    .getByText("СБП · привязанный банковский счёт", { exact: true })
-    .waitFor();
+  await page.getByRole("button", { name: "управлять подпиской" }).click();
+  await page.getByText(portalCopy.ru.sbpAccount, { exact: true }).waitFor();
   assert.equal(
     await page.locator("[data-purchase-offer]").count(),
     0,
@@ -461,18 +473,18 @@ try {
   );
   await page.screenshot({ path: `${output}/06-premium.png`, fullPage: true });
   await page
-    .getByRole("button", { name: "Отвязать счёт и отключить продление" })
+    .getByRole("button", { name: "отвязать счёт и отключить продление" })
     .click();
   await page.screenshot({ path: `${output}/07-cancel.png`, fullPage: true });
   await page
     .getByRole("button", {
-      name: "Отвязать и отключить продление",
+      name: "отвязать и отключить продление",
       exact: true,
     })
     .click();
-  await page.getByRole("heading", { name: "Всё получилось" }).waitFor();
-  await page.getByRole("button", { name: "Управлять подпиской" }).click();
-  await page.getByText("Автопродление отключено.", { exact: false }).waitFor();
+  await page.getByRole("heading", { name: "всё получилось" }).waitFor();
+  await page.getByRole("button", { name: "управлять подпиской" }).click();
+  await page.getByText("автопродление отключено.", { exact: false }).waitFor();
   assert.match(await page.locator(".portal-price strong").textContent(), /299/);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
@@ -483,16 +495,16 @@ try {
   status = "FAILED";
   operation = null;
   await page.reload();
-  await page.getByRole("button", { name: "Оплатить" }).click();
+  await page.getByRole("button", { name: "оплатить" }).click();
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Оплатить" }).click();
-  await page.getByRole("heading", { name: "Оплата не завершена" }).waitFor();
+  await page.getByRole("button", { name: "оплатить" }).click();
+  await page.getByRole("heading", { name: "оплата не завершена" }).waitFor();
   await page.screenshot({
     path: `${output}/09-failure-mobile.png`,
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Попробовать снова" }).click();
-  await page.getByRole("button", { name: "Оплатить" }).waitFor();
+  await page.getByRole("button", { name: "попробовать снова" }).click();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
   const commandCount = commands.length;
   overviewAvailable = false;
   await page.reload();
@@ -501,9 +513,9 @@ try {
     await page.locator("[data-reference-prices]").textContent(),
     /399/,
   );
-  assert.equal(await page.getByRole("button", { name: "Оплатить" }).count(), 1);
+  assert.equal(await page.getByRole("button", { name: "оплатить" }).count(), 1);
   assert.equal(commands.length, commandCount);
-  await page.getByRole("button", { name: "Оплатить", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
   await page.locator("[data-success-preview]").waitFor();
   assert.equal(
     commands.length,
@@ -515,9 +527,9 @@ try {
     fullPage: true,
   });
   overviewAvailable = true;
-  await page.getByRole("button", { name: "Назад", exact: true }).click();
-  await page.getByRole("button", { name: "Обновить", exact: true }).click();
-  await page.getByRole("button", { name: "Оплатить" }).waitFor();
+  await page.getByRole("button", { name: "назад", exact: true }).click();
+  await page.getByRole("button", { name: "обновить", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
   assert.deepEqual(errors, []);
   console.log(
     "Billing portal: OTP, consent, lost-response recovery, verified success, cancellation, fixed price, failure/retry and mobile layout passed.",

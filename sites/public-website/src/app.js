@@ -15,7 +15,7 @@ if (pricing) {
   } catch {
     /* Private mode may block storage. */
   }
-  const render = ({ prices, original }, reference) => {
+  const render = ({ prices, original }) => {
     for (const node of pricing.querySelectorAll("[data-price]")) {
       const currency = node.dataset.price;
       node.textContent = formatMonthlyPrice(
@@ -35,10 +35,9 @@ if (pricing) {
             document.documentElement.lang,
           );
     }
-    pricing.querySelector("[data-price-reference-note]").hidden = !reference;
   };
   const saved = cachedPrices(storage);
-  if (saved) render(saved, true);
+  if (saved) render(saved);
   fetch("/api/billing/catalog", {
     cache: "no-store",
     credentials: "omit",
@@ -48,7 +47,7 @@ if (pricing) {
     .then((value) => {
       const prices = acquisitionPrices(value);
       if (!prices) return;
-      render({ prices, original: acquisitionReferencePrices(value) }, false);
+      render({ prices, original: acquisitionReferencePrices(value) });
       savePublicPrices(storage, value);
     })
     .catch(() => {

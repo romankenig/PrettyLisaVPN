@@ -12,41 +12,38 @@
     "skip": "zum inhalt",
     "pricing": "tarife"
   },
-  "launch": "start für den 15. november geplant",
+  "launch": "bald verfügbar",
   "hero": {
-    "title": "verbindungsschutz.\nauf ihren geräten.",
-    "text": "vpn für den alltag. auf telefon und computer — mit verständlichen einstellungen und einem konto.",
+    "title": "ihr internet.\nihre regeln.",
+    "text": "VPN für alltägliche aufgaben auf mehreren geräten",
     "button": "gerät auswählen",
     "link": "so funktioniert es"
   },
   "features": {
-    "eyebrow": "weniger schritte",
-    "title": "eine verschlüsselte verbindung\nfür den alltag",
+    "title": "weniger einrichten.\nmehr freiheit.",
     "items": [
       {
-        "title": "schutz des netzwerkverkehrs",
-        "text": "vpn stellt eine verschlüsselte verbindung zwischen ihrem gerät und dem server des dienstes her."
+        "title": "mit einem tippen verbinden",
+        "text": "autopilot wählt einen server für sie — oder sie wählen selbst, wo sie sich verbinden."
       },
       {
-        "title": "übersichtliche bedienung",
-        "text": "mit einer taste verbinden und trennen. die app zeigt den verbindungsstatus an."
+        "title": "sie wählen, was geschützt wird",
+        "text": "leiten sie den gesamten datenverkehr oder nur ausgewählte apps und websites durch das VPN."
       },
       {
-        "title": "ein konto, fünf geräte",
-        "text": "anmeldung mit einem code per e-mail. ohne zusätzliches passwort, mit geräteverwaltung in der app."
+        "title": "telefon und computer zusammen",
+        "text": "ein konto für fünf geräte. anmeldung mit einem code per e-mail."
       }
     ]
   },
   "screens": {
-    "caption": "echte app-ansichten · demodaten",
     "windows": "startseite der windows-app",
     "android": "startbildschirm der android-app",
     "settings": "einstellungen der verbindungsarten für windows"
   },
   "platforms": {
-    "eyebrow": "wo es für sie passt",
-    "title": "auf ihren geräten",
-    "text": "wählen sie ihre plattform und installieren sie die app. ein konto verbindet telefon und computer.",
+    "title": "verbindet sie alle",
+    "text": "wählen sie ihre plattform und installieren sie die app. verbinden sie bis zu fünf geräte mit einem konto.",
     "soon": "bald verfügbar",
     "open": "herunterladen",
     "planned": "plattformen",
@@ -67,7 +64,8 @@
       "linux": "für linux-computer",
       "android-tv": "für fernseher und tv-boxen",
       "chrome": "erweiterung für den browser-datenverkehr"
-    }
+    },
+    "account": "1 konto"
   },
   "download": {
     "title": "für",
@@ -104,7 +102,6 @@
     }
   },
   "help": {
-    "eyebrow": "kurz und klar",
     "title": "FAQ",
     "contactTitle": "brauchen sie hilfe?",
     "contactText": "beschreiben sie, was passiert ist, und nennen sie gerät, app-version und zeitpunkt des fehlers. ohne passwörter oder anmeldecodes.",
@@ -149,7 +146,7 @@
     "updated": "Fassung vom 8. November 2026",
     "terms": [
       {
-        "title": "Allgemeine Bestimmungen",
+        "title": "allgemeine bestimmungen",
         "paragraphs": [
           "1.1. Diese Nutzungsvereinbarung (nachfolgend „Vereinbarung“) regelt die Nutzung von PrettyLisaVPN auf prettylisavpn.com und in den Client-Anwendungen (nachfolgend „Dienst“), bereitgestellt durch die Administration des Dienstes (nachfolgend „Administration“).",
           "1.2. Durch die Nutzung des Dienstes, einschließlich Registrierung, Aufbau einer VPN-Verbindung oder Zahlung, bestätigt der Nutzer, diese Vereinbarung vollständig gelesen zu haben und ihre Bedingungen anzunehmen.",
@@ -157,7 +154,7 @@
         ]
       },
       {
-        "title": "Art der Dienstleistungen",
+        "title": "art der dienstleistungen",
         "paragraphs": [
           "2.1. Der Dienst bietet immaterielle Leistungen: VPN-Zugang über Client-Anwendungen und eine Proxy-Verbindung über die Browser-Erweiterung. Verfügbare Plattformen und Funktionen sind auf der Website und in der jeweiligen Anwendung angegeben; die Erweiterung schützt nur den unterstützten Browserverkehr.",
           "2.2. Die Leistungen können Folgendes umfassen:\neine geschützte Verbindung zu einem Server des Dienstes;\ndie Auswahl eines verfügbaren Servers oder Landes im Rahmen des Tarifs;\nBetreuung, Support und Aktualisierungen der Anwendungen.",
@@ -166,7 +163,7 @@
         ]
       },
       {
-        "title": "Gewährleistungs- und Haftungsausschluss",
+        "title": "gewährleistungs- und haftungsausschluss",
         "paragraphs": [
           "3.1. Der Dienst wird „AS IS“ („wie besehen“) unter Beachtung zwingender gesetzlicher Anforderungen bereitgestellt.",
           "3.2. Die Administration garantiert nicht:\ndie Erfüllung subjektiver Erwartungen des Nutzers;\nbestimmte finanzielle, geschäftliche, berufliche oder andere Ergebnisse;\neinen unterbrechungs- und fehlerfreien Betrieb, eine konstante Geschwindigkeit oder die Erreichbarkeit einzelner externer Angebote.",
@@ -175,7 +172,7 @@
         ]
       },
       {
-        "title": "Rechtmäßige Nutzung",
+        "title": "rechtmäßige nutzung",
         "paragraphs": [
           "4.1. Der Dienst dient nicht der Förderung, Organisation oder Unterstützung rechtswidriger Tätigkeiten.",
           "4.2. Der Nutzer verpflichtet sich zur Nutzung im Rahmen geltenden Rechts und der Regeln Dritter. Unbefugte Zugriffe, Schadsoftware, Spam und Angriffe auf Infrastruktur sind untersagt.",
@@ -183,7 +180,7 @@
         ]
       },
       {
-        "title": "Geistiges Eigentum",
+        "title": "geistiges eigentum",
         "paragraphs": [
           "5.1. Die im Dienst bereitgestellten Materialien und Programme sind durch das Recht des geistigen Eigentums geschützt.",
           "5.2. Ohne Erlaubnis des Rechteinhabers darf der Nutzer Materialien nicht kopieren, verbreiten, weiterverkaufen, Dritten überlassen oder anderweitig nutzen. Ausgenommen sind die bestimmungsgemäße Nutzung, gesetzliche Erlaubnisse und Rechte aus den Lizenzen der jeweiligen Komponenten. Open-Source-Lizenzen bleiben wirksam.",
@@ -191,7 +188,7 @@
         ]
       },
       {
-        "title": "Zugangsbeschränkungen",
+        "title": "zugangsbeschränkungen",
         "paragraphs": [
           "6.1. Die Administration darf den Zugang aussetzen oder beschränken bei:\nVerstößen gegen diese Vereinbarung;\nfestgestelltem Missbrauch;\ngesetzlichen Anforderungen oder Anforderungen von Zahlungsdienstleistern.",
           "6.2. Eine Beschränkung befreit nicht von bereits entstandenen Pflichten und hebt gesetzliche Rechte nicht auf.",
@@ -199,7 +196,7 @@
         ]
       },
       {
-        "title": "Zahlungen und Erstattungen",
+        "title": "zahlungen und erstattungen",
         "paragraphs": [
           "7.1. Zahlungen erfolgen zu den vorab angezeigten Bedingungen. Tarif, Zugangszeitraum, Preis, Währung und verfügbare Zahlungsarten werden vor Bestätigung angezeigt. Eine automatische Verlängerung erfordert eine gesonderte Zustimmung zu Betrag und Abbuchungshäufigkeit. Der vereinbarte Betrag bleibt bis zur Kündigung und einem neuen Abschluss unverändert. Eine Einmalzahlung aktiviert keine automatische Verlängerung. Ist die Zahlung nicht verfügbar, wird kein kostenpflichtiger Zugang erworben.",
           "7.2. Der Nutzer darf weitere Leistungen beenden und nach geltendem Recht eine Erstattung verlangen. Der immaterielle Charakter oder die Freischaltung allein beseitigen dieses Recht nicht. Abzüge benötigen eine gesetzliche Grundlage; dazu können nachgewiesene tatsächlich entstandene Aufwendungen gehören, soweit gesetzlich zulässig.",
@@ -210,14 +207,14 @@
         ]
       },
       {
-        "title": "Vertraulichkeit",
+        "title": "vertraulichkeit",
         "paragraphs": [
           "8.1. Die Administration darf die für den Betrieb mindestens erforderlichen Daten erheben. Umfang, Zwecke und Verarbeitung regelt die auf der Website veröffentlichte Datenschutzerklärung.",
           "8.2. Die Administration trifft angemessene Schutzmaßnahmen, garantiert aber keine absolute Übertragungssicherheit. Gesetzliche Datenschutzpflichten bleiben bestehen."
         ]
       },
       {
-        "title": "Änderungen der Bedingungen",
+        "title": "änderungen der bedingungen",
         "paragraphs": [
           "9.1. Die Administration darf diese Vereinbarung ändern.",
           "9.2. Die aktuelle Fassung mit Datum wird im Dienst veröffentlicht. Wesentliche Änderungen werden vor ihrer Anwendung über den Dienst oder per E-Mail mitgeteilt.",
@@ -225,7 +222,7 @@
         ]
       },
       {
-        "title": "Kontaktinformationen",
+        "title": "kontaktinformationen",
         "paragraphs": [
           "10.1. Für alle Fragen, einschließlich Zahlungen, Beschwerden und personenbezogener Daten, ist der Support unter help@prettylisavpn.com erreichbar.",
           "Mit der Nutzung, insbesondere Registrierung oder Aufbau einer VPN-Verbindung, bestätigt der Nutzer, diese Vereinbarung gelesen zu haben und vollständig anzunehmen."
@@ -234,14 +231,14 @@
     ],
     "privacy": [
       {
-        "title": "Allgemeine Bestimmungen",
+        "title": "allgemeine bestimmungen",
         "paragraphs": [
           "1.1. Diese Datenschutzerklärung (nachfolgend „Erklärung“) regelt die Verarbeitung und den Schutz von Informationen bei der Nutzung von PrettyLisaVPN auf prettylisavpn.com und in Client-Anwendungen (nachfolgend „Dienst“). Die Verarbeitung wird durch die Administration organisiert; Kontakt für Datenschutzfragen: help@prettylisavpn.com.",
-          "1.2. Der Nutzer wird bei Nutzung über diese Erklärung informiert. Wer mit der für die Leistung notwendigen Verarbeitung nicht einverstanden ist, kann die Nutzung beenden. Diese Erklärung informiert und ersetzt keine gesetzlich erforderliche gesonderte Einwilligung."
+          "1.2. Der Nutzer wird bei Nutzung über diese Erklärung informiert. Wer mit der für die Leistung notwendigen Verarbeitung nicht einverstanden ist, kann die Nutzung beenden. Diese Erklärung ersetzt keine gesetzlich erforderliche gesonderte Einwilligung."
         ]
       },
       {
-        "title": "Erhebung von Informationen",
+        "title": "erhebung von informationen",
         "paragraphs": [
           "2.1. Der Dienst kann folgende Daten erheben:\nKontokennungen, E-Mail, Status sowie Registrierungs- und Anmeldedaten;\nfür Verbindung und Sicherheit erforderliche technische Angaben: IP-Adresse, Browser, Gerätekennung, Gerätename, Plattform und Betriebssystem;\nInteraktionen mit dem Dienst: Tarif, Zugangszeitraum, VPN-Sitzungen, Zeitverbrauch, Übertragungsvolumen und Geschwindigkeit, Verbindungsergebnisse, Zahlungsstatus, Supportnachrichten und Anhänge.",
           "2.2. Der Dienst verlangt keine Ausweise, Dokumente, Fotos oder sonstigen persönlichen Informationen über das betriebsnotwendige Maß hinaus. Senden Sie dem Support keine Passwörter, Einmalcodes oder vollständigen Zahlungsdaten.",
@@ -251,14 +248,14 @@
         ]
       },
       {
-        "title": "Nutzung von Informationen",
+        "title": "nutzung von informationen",
         "paragraphs": [
           "3.1. Informationen dürfen ausschließlich verwendet werden für:\nFunktionen, Anmeldung, Geräte-, Verbindungs-, Tarif- und Zahlungsverwaltung;\nKommunikation mit dem Nutzer einschließlich Mitteilungen und Support;\nAnalyse und Verbesserung des Dienstes sowie Missbrauchsschutz, ohne Auswertung des Browserverlaufs.",
           "3.2. Für die angefragte Leistung erforderliche Daten dienen dem Vertragsabschluss und der Vertragserfüllung; Daten für gesetzliche Pflichten werden auf der entsprechenden Rechtsgrundlage verarbeitet. Erforderliche Einwilligungen werden gesondert eingeholt. Eine zweckwidrige Nutzung erfolgt nicht; die Dienstnutzung bedeutet keine Einwilligung in Werbung."
         ]
       },
       {
-        "title": "Weitergabe an Dritte",
+        "title": "weitergabe an dritte",
         "paragraphs": [
           "4.1. Die Administration gibt Informationen nur weiter:\nwenn dies gesetzlich erforderlich ist;\nwenn es zur Erfüllung gegenüber dem Nutzer nötig ist, etwa für Zahlungen, Hosting und Service-E-Mails, auf rechtmäßiger Grundlage;\nwenn der Nutzer eingewilligt hat.",
           "4.2. Bei verfügbarer Zahlung werden E-Mail, Betrag und technische Vorgangskennung an den Zahlungsdienstleister zur Durchführung und Zuordnung übermittelt. PrettyLisaVPN erhält Zahlungsstatus und Zugangszeitraum; vollständige Kartendaten, CVC und Bankpasswörter verarbeitet der Zahlungsdienstleister, ohne Speicherung im Dienst.",
@@ -266,7 +263,7 @@
         ]
       },
       {
-        "title": "Speicherung und Schutz",
+        "title": "speicherung und schutz",
         "paragraphs": [
           "5.1. Daten werden für Verarbeitungszwecke, Vertragserfüllung und gesetzliche Pflichten so lange wie erforderlich gespeichert. Die Verarbeitung umfasst Erhebung, Aufzeichnung, Speicherung, Berichtigung, Nutzung, Weitergabe gemäß Abschnitt 4, Sperrung und Löschung; sie erfolgt automatisiert und durch befugte Bearbeitung von Anfragen.",
           "5.2. Die Administration trifft angemessene organisatorische und technische Maßnahmen einschließlich Zugriffsbeschränkungen und Verbindungsschutz, garantiert jedoch keine absolute Sicherheit bei Internetübertragungen.",
@@ -275,14 +272,14 @@
         ]
       },
       {
-        "title": "Haftungsausschluss",
+        "title": "haftungsausschluss",
         "paragraphs": [
           "6.1. Der Nutzer versteht und akzeptiert, dass die Übertragung von Informationen über das Internet stets Risiken birgt.",
           "6.2. Für durch Dritte oder den Nutzer verursachten Verlust, Diebstahl oder Offenlegung haftet die Administration nur im gesetzlich vorgeschriebenen Umfang. Eigene Datenschutzpflichten und die Haftung für deren Verletzung bleiben bestehen."
         ]
       },
       {
-        "title": "Änderungen der Erklärung",
+        "title": "änderungen der erklärung",
         "paragraphs": [
           "7.1. Die Administration darf die Erklärung ändern. Die aktuelle Fassung mit Datum wird im Dienst veröffentlicht; wesentliche Änderungen werden vor Beginn der betreffenden Verarbeitung über den Dienst oder per E-Mail mitgeteilt.",
           "7.2. Die weitere Nutzung ersetzt keine gesetzlich erforderliche gesonderte Einwilligung. Erfordern geänderte Zwecke eine neue Einwilligung, wird sie vor Beginn dieser Verarbeitung eingeholt. Fragen können an help@prettylisavpn.com gerichtet werden."
@@ -307,7 +304,7 @@
       "fragen zu zahlung, beleg, zugangszeitraum oder fehlerhafter abbuchung senden sie an help@prettylisavpn.com. geben sie die e-mail-adresse ihres kontos und informationen an, mit denen sich die zahlung finden lässt.",
       "der höchstbetrag pro transaktion beträgt 10.000 RUB. guthabenaufladungen und frei wählbare beträge werden nicht angeboten. zahlungen sind noch nicht verfügbar."
     ],
-    "contents": "Inhalt",
+    "contents": "inhalt",
     "privacyIntro": "Diese Datenschutzerklärung regelt die Erhebung, Nutzung und den Schutz von Informationen der Nutzer von PrettyLisaVPN. Erfasst werden Kontokennungen, technische Informationen und Interaktionen mit dem Dienst, jedoch kein Browserverlauf. Die Daten dienen dem Betrieb, der Kommunikation mit dem Nutzer und der Analyse. Eine Weitergabe ist auf den in Abschnitt 4 genannten Grundlagen möglich. Daten werden für den erforderlichen Zeitraum gespeichert; die Administration trifft Schutzmaßnahmen. Übertragungsrisiken und Änderungen dieser Erklärung sind in den Abschnitten 6 und 7 geregelt."
   },
   "notFound": {
@@ -315,16 +312,15 @@
     "text": "gehen sie zur startseite, um die app herunterzuladen oder hilfe zu finden."
   },
   "pricing": {
-    "eyebrow": "in ihrem tempo",
-    "title": "ein konto. ein klarer preis.",
+    "title": "verfügbare tarife",
     "intro": "kostenlos starten oder premium für einen kalendermonat wählen.",
-    "free": "eine stunde vpn pro tag und konto.",
+    "free": "1 Stunde täglich",
     "freeButton": "kostenlos starten",
-    "description": "vpn ohne zeitlimit.",
+    "description": "ohne Zeit- oder Datenlimit",
     "features": [
-      "ein verfügbares serverland wählen",
-      "bis zu fünf aktive geräte pro konto",
-      "ohne werbung"
+      "Premium-Server und alle Standorte",
+      "bis zu 5 Geräte",
+      "gesamter oder ausgewählter Datenverkehr"
     ],
     "currencies": {
       "RUB": "in rubel",
@@ -347,14 +343,23 @@
     "unavailable": "Preise nicht verfügbar",
     "unavailableCheckout": "Abo-Abschluss bald verfügbar",
     "terms": "monatliche Verlängerung. der vereinbarte Preis bleibt bis zur Kündigung erhalten.",
-    "manage": "Abonnement verwalten",
-    "loading": "Abonnement wird geladen…",
+    "manage": "abonnement verwalten",
+    "loading": "abonnement wird geladen…",
     "upgrade": "Upgrade",
     "demo": {
       "title": "ohne Registrierung testen",
-      "description": "15 Minuten pro Gerät und Tag. nur Autopilot und Schutz des gesamten Datenverkehrs.",
-      "button": "auf Android testen",
-      "upgrade": "mit FREE registrieren: eine volle Stunde täglich, Länderwahl und selektiver Schutz. DEMO-Zeit wird nicht von FREE abgezogen."
-    }
+      "description": "15 Minuten täglich",
+      "button": "auf android testen",
+      "upgrade": "eigene Stunde nach der Registrierung",
+      "features": [
+        "nur Autopilot",
+        "nur dieses Gerät",
+        "nur gesamter Datenverkehr"
+      ]
+    },
+    "freeFeatures": [
+      "nur kostenlose Server",
+      "gesamter oder ausgewählter Datenverkehr"
+    ]
   }
 }

@@ -4,7 +4,6 @@ import { website } from "./model.mjs";
 import {
   referencePrices,
   referenceOriginalPrices,
-  referencePriceCopy,
   formatMonthlyPrice,
 } from "./pricing.mjs";
 
@@ -89,6 +88,9 @@ function screenshot(file, alt) {
   const android = file.startsWith("android");
   return `<img class="app-screen" src="/assets/screenshots/${file}.png" alt="${escape(alt)}" width="${android ? 1080 : 960}" height="${android ? 1920 : 640}" loading="lazy" decoding="async">`;
 }
+function devicePair(t) {
+  return `<div class="device-pair"><div class="device-laptop"><div class="laptop-display">${screenshot("windows-home", t.screens.windows)}</div><div class="laptop-base" aria-hidden="true"></div></div><div class="device-phone">${screenshot("android-home", t.screens.android)}</div></div>`;
+}
 function shell(lang, route, title, content) {
   const t = locales[lang],
     home = routeFor(lang);
@@ -108,7 +110,7 @@ function prices(lang) {
 }
 function pricing(lang) {
   const p = locales[lang].pricing;
-  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><p class="eyebrow">${text(p.eyebrow)}</p><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan premium-plan"><h3>premium ⭐</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article><article class="plan free-plan"><h3>free 🆓</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article></div><aside class="demo-plan" data-demo-plan><div><h3>demo 🌱 · ${text(p.demo.title)}</h3><p>${text(p.demo.description)}</p><p class="demo-upgrade">${text(p.demo.upgrade)}</p></div><a class="text-link" href="${routeFor(lang, "/download/android/")}">${text(p.demo.button)} ${arrow}</a></aside><div class="purchase-details"><p data-price-reference-note>${text(referencePriceCopy[lang])}</p><p>${text(p.terms)}</p></div></section>`;
+  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan premium-plan"><h3>premium ⭐</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article><article class="plan free-plan"><h3>free 🕊️</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><ul>${p.freeFeatures.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article></div><aside class="demo-plan" data-demo-plan><div><h3>demo ⏳ · ${text(p.demo.title)}</h3><p>${text(p.demo.description)}</p><ul>${p.demo.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><p class="demo-upgrade">${text(p.demo.upgrade)}</p></div><a class="text-link" href="${routeFor(lang, "/download/android/")}">${text(p.demo.button)} ${arrow}</a></aside><div class="purchase-details"><p>${text(p.terms)}</p></div></section>`;
 }
 function paymentNotice(lang) {
   const p = locales[lang].pricing;
@@ -121,11 +123,11 @@ function home(lang) {
     "/",
     t.title,
     `
-  <section class="hero wrap"><p class="launch"><span aria-hidden="true"></span>${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
-  <section class="features section wrap" id="features"><div class="section-heading"><p class="eyebrow">${text(t.features.eyebrow)}</p><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div><figure class="desktop-shot">${screenshot("windows-home", t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></section>
+  <section class="hero wrap"><p class="launch">${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
+  <section class="features section wrap" id="features"><div class="section-heading"><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div>${devicePair(t)}</div></section>
   ${pricing(lang)}
-  <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><p class="eyebrow">${text(t.platforms.eyebrow)}</p><h2>${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div><figure class="phone-shot">${screenshot("android-home", t.screens.android)}<figcaption>${text(t.screens.caption)}</figcaption></figure></div></div></section>
-  <section class="help section wrap" id="help"><div class="section-heading"><p class="eyebrow">${text(t.help.eyebrow)}</p><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
+  <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><h2><strong class="account-highlight">${text(t.platforms.account)}</strong> ${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div>${devicePair(t)}</div></div></section>
+  <section class="help section wrap" id="help"><div class="section-heading"><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
   );
 }
 function download(lang, platform) {
@@ -143,7 +145,7 @@ function download(lang, platform) {
     `${d.title} ${name}`,
     `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">← ${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
       platform.file
-        ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${d.steps.map((step) => `<li>${text(step)}</li>`).join("")}</ol></section><figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-home" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure>`
+        ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${d.steps.map((step) => `<li>${text(step)}</li>`).join("")}</ol></section><figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-home" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}</figure>`
         : `<p class="upcoming-copy">${text(d.upcoming)}</p><div class="alternative-platforms">${platforms
             .filter((p) => p.file)
             .map((p) => platformCard(lang, p))
