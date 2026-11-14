@@ -45,7 +45,7 @@ on the apex domain. API-domain dashboard authentication is unchanged. Public-hos
 access logs stay disabled, and security/no-store/noindex headers cover the website.
 
 Public GET/HEAD `/downloads/{android.apk,windows.exe,android-sources.tar.gz,
-windows-sources.tar.gz,windows-licenses.txt,index.json}` reads the existing verified
+windows-sources.tar.gz,windows-licenses.txt,chrome-extension.zip,index.json}` reads the existing verified
 client publisher's `downloads/current` snapshot through a separate read-only
 `/srv/client-downloads` mount containing only the downloads subdirectory.
 This is an exact file allowlist, not a public dashboard root. No other paths

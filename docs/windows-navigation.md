@@ -1001,3 +1001,20 @@ still apply. Home's confirmed reset/reconnect action is independent and unchange
 Apple's shared Settings method editor keeps its disconnected-only guard. No new
 routes or external transitions, and no backend integration is pending. See
 [handoff](random-method-selection.md) for persistence compatibility and evidence.
+
+## Chrome 0.3.0 — guest entry, languages and public links
+
+Windows navigation/version are unchanged. Chrome Login → DEMO calls real guest
+admission (backend 0.41.0), persists auth and opens Home. Guest country/subscription/
+support → confirmed proxy cleanup and logout → email OTP Login. Existing device
+and connection flows remain; DEMO is AUTO-only. No fake local session fallback.
+
+Login/About → localized official website or one of four documents in a browser
+tab. The six-language flag menu preserves selection. Remove the sign-in-tab link,
+persistence explanation and redundant HTTPS proxy settings card, keeping transport
+and scope in Home/About. Website Chrome download → fixed public ZIP with actual
+publisher version and unpacked-install instructions. Store installation is pending.
+
+Implementation is complete; production backend rollout and live guest traffic
+acceptance remain separate. See [handoff](chrome-ui-demo.md) and its explicitly
+deferred investigation of Chrome disabling the extension after closing the popup.

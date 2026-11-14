@@ -83,13 +83,21 @@ class DemoService:
         client_ip: str,
         platform: DevicePlatform = DevicePlatform.ANDROID,
     ) -> LoginResult:
-        if platform not in (DevicePlatform.ANDROID, DevicePlatform.WINDOWS):
+        if platform not in (
+            DevicePlatform.ANDROID,
+            DevicePlatform.WINDOWS,
+            DevicePlatform.CHROME_EXTENSION,
+        ):
             raise DemoUnavailableError
         if not self.settings.demo_enabled or self.settings.demo_identity_secret is None:
             raise DemoUnavailableError
         secret = self.settings.demo_identity_secret.get_secret_value()
         # Keep existing Android identities/quotas; namespace the new platform.
-        scoped_key = device_key if platform is DevicePlatform.ANDROID else "windows:" + device_key
+        scoped_key = (
+            device_key
+            if platform is DevicePlatform.ANDROID
+            else platform.value.lower() + ":" + device_key
+        )
         digest = identity_digest(secret, scoped_key)
         await self.limiter.admit(identity_digest(secret, "ip:" + client_ip).hex(), digest.hex())
         now = datetime.now(UTC)
@@ -128,7 +136,11 @@ class DemoService:
                     user.id,
                     principal.installation_id,
                     platform,
-                    "Android DEMO" if platform is DevicePlatform.ANDROID else "Windows DEMO",
+                    {
+                        DevicePlatform.ANDROID: "Android DEMO",
+                        DevicePlatform.WINDOWS: "Windows DEMO",
+                        DevicePlatform.CHROME_EXTENSION: "Chrome DEMO",
+                    }[platform],
                 )
                 # A fresh installation cannot safely resume an old private tunnel key.
                 # Retain its reservation until the worker confirms removal.

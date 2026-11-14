@@ -1,6 +1,6 @@
 // Binary/source URLs are fixed allowlisted paths. Ignore redirect URLs in metadata.
 export function releaseMetadata(index, platform, language = "en") {
-  if (!["android", "windows"].includes(platform) || index?.schema !== 1)
+  if (!["android", "windows", "chrome"].includes(platform) || index?.schema !== 1)
     return null;
   const data = index.clients?.[platform];
   if (
