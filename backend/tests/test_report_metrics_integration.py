@@ -13,6 +13,7 @@ from test_fleet import settings
 from test_fleet_integration import configured, fleet_state  # noqa: F401
 
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
+from prettylisavpn.fleet.model import FleetNodeRecord
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
 from prettylisavpn.fleet.service_check_worker import ServiceCheckWorker
 from prettylisavpn.fleet.service_checks import ServiceAnalytics
@@ -30,6 +31,42 @@ pytestmark = [
         os.getenv("RUN_INTEGRATION_TESTS") != "1", reason="Requires disposable PostgreSQL"
     ),
 ]
+
+
+async def test_legacy_client_mode_is_unknown_and_service_checks_allow_renewal(vpn_state):  # noqa: F811
+    postgres, service, worker, _, _ = vpn_state
+    lease_id = UUID((await connect(service))["id"])
+    await worker.tick()
+    now, token = datetime.now(UTC), uuid4()
+    async with postgres.session() as session, session.begin():
+        lease = await session.get(ClientLeaseRecord, lease_id)
+        assert lease.traffic_mode is None and lease.service_ids is None
+        lease.next_attempt_at = now
+        node = await session.get(FleetNodeRecord, lease.node_id)
+        node.lock_owner, node.lock_until = token, now + timedelta(seconds=150)
+        service_id = await session.scalar(select(TrafficServiceRecord.id).limit(1))
+        session.add(
+            ServiceCheckRecord(
+                service_id=service_id,
+                day=day(now),
+                scheduled_at=now,
+                next_attempt_at=now,
+                claim_token=token,
+                claim_until=node.lock_until,
+                attempts=[],
+            )
+        )
+    try:
+        claim = await worker.claim(now)
+        assert claim is not None and claim.id == lease_id
+        async with postgres.session() as session:
+            node = await session.get(FleetNodeRecord, claim.node.id)
+            assert node.lock_owner == token
+    finally:
+        async with postgres.session() as session, session.begin():
+            await session.execute(
+                delete(ServiceCheckRecord).where(ServiceCheckRecord.claim_token == token)
+            )
 
 
 async def test_selected_services_counter_silence_and_disconnect_survive_restart(vpn_state):  # noqa: F811

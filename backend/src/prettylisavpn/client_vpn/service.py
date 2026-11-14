@@ -334,7 +334,9 @@ class ClientVpnService:
                     auth_session_id=identity.session_id,
                     node_id=node.id,
                     method=data.method,
-                    traffic_mode=data.traffic_mode,
+                    traffic_mode=data.traffic_mode
+                    if "traffic_mode" in data.model_fields_set
+                    else None,
                     service_ids=list(dict.fromkeys(str(value) for value in data.service_ids))
                     if data.service_ids is not None and data.traffic_mode == "include"
                     else None,

@@ -9,7 +9,7 @@ metadata at admission. Client screens and navigation are unchanged. Apple and
 Chrome versions remain unchanged; their existing all-traffic sessions contribute
 device and duration metrics through backend evidence.
 
-Migration `0048_report_metrics` is additive except for extending the analytics
+Migration `0049_report_metrics` follows `0048_refresh_retry` and is additive except for extending the analytics
 plan constraint to include DEMO. Deploy backend/migration before new clients:
 older clients remain accepted; older backend builds reject the new optional
 request fields. Billing, entitlements, admission and quota semantics are unchanged.
@@ -106,7 +106,7 @@ PostgreSQL upgrade/check/downgrade, integration tests, Linux deployment tests,
 Android builds/lint/tests, managed engines and triggered client builds. Dashboard
 browser review uses explicitly synthetic fixtures, not live production metrics.
 
-Rollout requires backend 0048, the matching verified node-engine artifact and
+Rollout requires backend 0049, the matching verified node-engine artifact and
 updated Ansible node helpers (including `service_probe.py`), fleet worker, then
 dashboard/Caddy and clients. Existing running customer connections are preserved.
 Allow a week for a complete availability history; silence history starts with

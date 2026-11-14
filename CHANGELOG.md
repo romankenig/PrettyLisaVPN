@@ -16,7 +16,7 @@
   average connected-session duration and histograms to disconnect/first silence.
   Missing or incomplete observations remain explicitly unobserved.
 - Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
-  Migration 0048; backend and node helpers must precede client rollout. No client
+  Migration 0049; backend and node helpers must precede client rollout. No client
   screen changes. See [report definitions and handoff](docs/report-analytics.md).
 
 ### Public website — 0.5.4
