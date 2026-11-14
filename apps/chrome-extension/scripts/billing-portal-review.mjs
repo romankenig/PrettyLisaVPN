@@ -518,6 +518,50 @@ try {
   await page.getByRole("button", { name: "Назад", exact: true }).click();
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
   await page.getByRole("button", { name: "Оплатить" }).waitFor();
+  // Public Chrome downloads share the publisher's verified metadata, across locales.
+  await page.route("**/downloads/index.json", (route) =>
+    route.fulfill({
+      json: {
+        schema: 1,
+        clients: {
+          chrome: {
+            version: "0.3.0",
+            bytes: 300000,
+            sha256: "a".repeat(64),
+            url: "https://untrusted.invalid/download",
+          },
+        },
+      },
+    }),
+  );
+  for (const locale of ["ru", "en", "de", "fr", "es", "zh"]) {
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(
+        origin + (locale === "ru" ? "" : `/${locale}`) + "/download/chrome/",
+      );
+      await page.locator("[data-release=chrome]:not([hidden])").waitFor();
+      assert.equal(await page.locator("[data-version]").textContent(), "0.3.0");
+      assert.equal(
+        await page.locator("a[download]").getAttribute("href"),
+        "/downloads/chrome-extension.zip",
+      );
+      assert.equal(await page.locator(".setup li").count(), 3);
+      assert.equal(await page.locator(".download-screen").count(), 0);
+      assert.ok(
+        await page.evaluate(
+          () =>
+            globalThis.document.documentElement.scrollWidth <=
+            globalThis.document.documentElement.clientWidth,
+        ),
+        `Chrome download ${locale} at ${width}px must not overflow`,
+      );
+      await page.screenshot({
+        path: `${output}/chrome-download-${locale}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
   assert.deepEqual(errors, []);
   console.log(
     "Billing portal: OTP, consent, lost-response recovery, verified success, cancellation, fixed price, failure/retry and mobile layout passed.",

@@ -82,7 +82,8 @@
     "checksum": "sha-256-prüfsumme",
     "requirements": {
       "android": "android 8.0 oder neuer · arm64",
-      "windows": "windows 10 / 11 · x64"
+      "windows": "windows 10 / 11 · x64",
+      "chrome": "chrome 120 oder neuer · zip-archiv der erweiterung"
     },
     "setup": "in drei schritten verbinden",
     "steps": [
@@ -101,7 +102,13 @@
       "apple": "app store",
       "chrome": "chrome web store",
       "flathub": "flathub"
-    }
+    },
+    "chromeText": "laden sie das archiv herunter. die erweiterung schützt den verkehr normaler browser-tabs.",
+    "chromeSteps": [
+      "entpacken sie das zip in einen dauerhaften ordner. verschieben oder löschen sie ihn nach der installation nicht.",
+      "öffnen sie chrome://extensions, aktivieren sie den entwicklermodus und wählen sie „entpackte erweiterung laden“. wählen sie den ordner mit manifest.json.",
+      "hefte PrettyLisaVPN im erweiterungsmenü an. melde dich mit dem e-mail-code an und verbinde dich."
+    ]
   },
   "help": {
     "eyebrow": "kurz und klar",

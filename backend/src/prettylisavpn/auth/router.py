@@ -34,6 +34,7 @@ from prettylisavpn.emailing.domain import EmailProvider
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
 from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
+from prettylisavpn.users.email_identity import EmailAliasConflictError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 account_router = APIRouter(tags=["account"])
@@ -205,6 +206,8 @@ async def verify_otp(body: VerifyOtpBody, request: Request) -> VerifyOtpResponse
             body.platform,
             body.device_name,
         )
+    except EmailAliasConflictError:
+        return error_response("EMAIL_ALIAS_CONFLICT", 409)
     except InvalidOtpError:
         return error_response("otp_invalid_or_expired", 401)
     except BlockedUserError:

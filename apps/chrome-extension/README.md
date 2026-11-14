@@ -1,6 +1,6 @@
 # PrettyLisaVPN Chrome Extension
 
-Manifest V3 browser-only client, version **0.2.1**. The Windows client is the UI
+Manifest V3 browser-only client, version **0.3.0**. The Windows client is the UI
 reference: canonical logo, Rubik, purple surfaces, mint actions, sidebar Home /
 Settings / About, account, country, devices, billing overview and support screens.
 
@@ -24,7 +24,8 @@ select this package's `dist` directory. Pin PrettyLisaVPN and open its popup.
 Chrome 120+ is required. This is an unpacked review build, not a Chrome Web Store
 publication. `dist/build-identity.json` identifies the exact artifact.
 
-Sign in using the existing email OTP. Select AUTO or an available country, connect,
+Sign in using email OTP, or enter DEMO without registration (15 minutes/day UTC,
+AUTO and one device; backend 0.41.0 required). Select AUTO or an available country, connect,
 and wait for the authenticated expected-egress check. Only then is the status
 Connected. Disconnect restores Chrome's previous settings by clearing this
 extension's overrides. Other applications and system VPN settings are untouched.
@@ -44,7 +45,7 @@ extension's overrides. Other applications and system VPN settings are untouched.
   does not sign the user out. This is profile storage, not an encrypted OS keychain.
 - Proxy credentials, pending leases and requested OTP email remain in
   `chrome.storage.session`. The code itself is never stored. Closing the popup
-  preserves the code-entry screen, and sign-in can also open in a normal tab.
+  preserves the code-entry screen. The separate sign-in-tab action was removed.
   After browser exit, stale proxy overrides are cleared and sign-in is retained;
   the user starts a new connection. Existing server heartbeat expiry frees the old
   lease, and Connect confirms cleanup before allocating another. No browsing data.
@@ -72,8 +73,11 @@ extension's overrides. Other applications and system VPN settings are untouched.
 ## Verification
 
 `scripts/review.mjs` loads the real built MV3 artifact in isolated Chromium. API
-responses are clearly named fixtures; it checks reopened OTP, sign-in tab, a full
-browser/profile restart, navigation/support and honest
+responses are clearly named fixtures; it checks six languages, guest entry,
+worker restart, reopened OTP, a full browser/profile restart, navigation/support and honest
 connection failure. Its screenshots do **not** prove live proxy connectivity.
 Current live acceptance, deployment identity and node rollout follow-up are in
 [the Chrome handoff](../../docs/chrome-extension.md).
+
+UI, guest identity limitations, public website publication and the deferred Chrome
+disable-toggle investigation: [current handoff](../../docs/chrome-ui-demo.md).

@@ -82,7 +82,8 @@
     "checksum": "sha-256 校验值",
     "requirements": {
       "android": "android 8.0 及以上版本 · arm64",
-      "windows": "windows 10 / 11 · x64"
+      "windows": "windows 10 / 11 · x64",
+      "chrome": "chrome 120 或更新版本 · 扩展 zip 压缩包"
     },
     "setup": "三步即可连接",
     "steps": [
@@ -101,7 +102,13 @@
       "apple": "app store",
       "chrome": "chrome web store",
       "flathub": "flathub"
-    }
+    },
+    "chromeText": "下载扩展压缩包。它保护普通浏览器标签页的流量。",
+    "chromeSteps": [
+      "将 zip 解压到固定文件夹。安装后请勿移动或删除该文件夹。",
+      "打开 chrome://extensions，启用开发者模式并选择“加载已解压的扩展程序”。选择包含 manifest.json 的文件夹。",
+      "在扩展程序菜单中固定 PrettyLisaVPN。使用邮件验证码登录，然后连接。"
+    ]
   },
   "help": {
     "eyebrow": "实用解答",
@@ -321,7 +328,11 @@
     "free": "每个账户每天一小时 vpn。",
     "freeButton": "免费开始",
     "description": "不限时使用 vpn。",
-    "features": ["选择可用的服务器国家", "每个账号最多五台活跃设备", "无广告"],
+    "features": [
+      "选择可用的服务器国家",
+      "每个账号最多五台活跃设备",
+      "无广告"
+    ],
     "currencies": {
       "RUB": "卢布价格",
       "USD": "美元价格"

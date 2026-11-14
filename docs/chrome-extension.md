@@ -250,3 +250,20 @@ evidence that the new login code repairs reachability. Add the documented A reco
 issue trusted certificates and enable corresponding node capabilities, then verify
 real browser traffic directly. The owner selected an independent browser-only
 extension; native Windows tunnels/helpers are outside this task.
+
+## UI and DEMO — 2026-11-14
+
+Chrome 0.3.0, backend 0.41.0 and website 0.6.0 add six languages with flags, guest
+entry, shared email identities and public Chrome downloads. Read the
+[current task handoff](chrome-ui-demo.md) for compatibility and release evidence.
+The sign-in-tab UI and proxy settings card described historically above have
+been removed by the owner; auth persistence and proxy transport remain.
+
+### Deferred: Chrome enable toggle / puzzle menu
+
+The owner allowed deferral of the intermittent disabled-extension report (Chrome,
+unpacked folder in Downloads intact, no visible error). Root cause is unconfirmed.
+The actionable investigation and acceptance checklist is
+[in the current handoff](chrome-ui-demo.md#deferred-task-chrome-disables-or-hides-the-unpacked-extension),
+alongside the existing DNS/rollout follow-up above. Worker-idle termination alone
+must not be reported as the cause of a changed enable toggle.

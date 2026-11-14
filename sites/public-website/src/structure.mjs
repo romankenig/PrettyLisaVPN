@@ -7,7 +7,7 @@ export const platforms = [
   { id: "macos", stores: ["apple"] },
   { id: "linux", stores: ["flathub"] },
   { id: "android-tv", stores: ["google"] },
-  { id: "chrome", stores: ["chrome"] },
+  { id: "chrome", file: "chrome-extension.zip", stores: ["chrome"] },
 ];
 export function routeFor(language, route = "/") {
   if (!languages.includes(language)) throw new Error("Unknown language");

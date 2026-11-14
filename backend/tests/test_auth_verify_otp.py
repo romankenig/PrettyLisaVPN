@@ -31,6 +31,7 @@ from prettylisavpn.otp import OtpServiceUnavailableError
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.subscriptions.domain import Subscription
 from prettylisavpn.users.domain import User, UserStatus
+from prettylisavpn.users.email_identity import EmailAliasConflictError
 
 
 def settings(**overrides: object) -> Settings:
@@ -122,6 +123,7 @@ def test_access_token_contains_scoped_identity_claims_and_rejects_tampering():
     ("error", "status_code", "error_code"),
     [
         (InvalidOtpError(), 401, "otp_invalid_or_expired"),
+        (EmailAliasConflictError(), 409, "EMAIL_ALIAS_CONFLICT"),
         (BlockedUserError(), 403, "user_blocked"),
         (DeviceLimitReachedError(), 409, "device_limit_reached"),
         (OtpStorageUnavailableError(), 503, "otp_service_unavailable"),

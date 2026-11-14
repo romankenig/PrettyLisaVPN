@@ -327,3 +327,78 @@ code {
 .reference-price strong {
   display: inline;
 }
+
+.shell {
+  text-transform: lowercase;
+}
+input,
+textarea,
+code,
+.email,
+.product-name {
+  text-transform: none;
+}
+.secondary {
+  width: 100%;
+  border: 1px solid #5f22d9;
+  color: #5f22d9;
+  background: transparent;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.public-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 18px;
+}
+.public-links a {
+  font-size: 11px;
+}
+.language-picker {
+  position: relative;
+}
+.language-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #ac73ff;
+  border-radius: 9px;
+  color: #e4e4e4;
+  background: transparent;
+  padding: 4px;
+  font-size: 11px;
+}
+.language-options {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 170px;
+  padding: 6px;
+  z-index: 10;
+  border-radius: 12px;
+  background: #e4e4e4;
+  box-shadow: 0 4px 24px #01010155;
+}
+.language-options button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  color: #2c016d;
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+}
+.language-options button[aria-pressed="true"],
+.language-options button:hover {
+  background: #51d6ca;
+}

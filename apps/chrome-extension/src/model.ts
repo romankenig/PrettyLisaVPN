@@ -4,8 +4,8 @@ export const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export interface Account {
   id: string;
-  email: string;
-  plan: "FREE" | "PREMIUM" | "PLATINUM";
+  email: string | null;
+  plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   active_device_count: number;
   entitlements?: {
     free_seconds_remaining?: number | null;

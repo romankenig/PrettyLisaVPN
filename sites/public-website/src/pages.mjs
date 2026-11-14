@@ -133,7 +133,7 @@ function download(lang, platform) {
     d = t.download,
     name = t.platforms.names[platform.id];
   const route = `/download/${platform.id}/`;
-  const sources = platform.file
+  const sources = platform.file && platform.id !== "chrome"
     ? `<div class="source-links"><a href="/downloads/${platform.id}-sources.tar.gz" download>${text(d.sources)}</a>${platform.id === "windows" ? `<a href="/downloads/windows-licenses.txt">${text(d.licenses)}</a>` : ""}</div>`
     : "";
   const choices = `<div class="download-card"><h2>${text(d.direct)}</h2>${platform.file ? `<p>${text(d.requirements[platform.id])}</p><a class="button" href="/downloads/${platform.file}" download>${text(d.file)} <span aria-hidden="true">↓</span></a><div class="release-meta" data-release="${platform.id}" hidden><p><span>${text(d.latest)}</span> <strong data-version></strong> · <span data-size></span></p><details><summary>${text(d.checksum)}</summary><code data-checksum></code></details></div>${sources}` : `<button class="button" disabled>${text(t.platforms.soon)}</button>`}</div><div class="download-card stores"><h2>${text(d.stores)}</h2>${platform.stores.map((store) => `<button class="store-option" disabled><span>${text(d.storeNames[store])}</span><small>${text(t.platforms.soon)}</small></button>`).join("")}</div>`;
@@ -141,9 +141,9 @@ function download(lang, platform) {
     lang,
     route,
     `${d.title} ${name}`,
-    `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">← ${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
+    `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">← ${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.id === "chrome" ? d.chromeText : platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
       platform.file
-        ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${d.steps.map((step) => `<li>${text(step)}</li>`).join("")}</ol></section><figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-home" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure>`
+        ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${(platform.id === "chrome" ? d.chromeSteps : d.steps).map((step) => `<li>${text(step)}</li>`).join("")}</ol></section>${platform.id === "chrome" ? "" : `<figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-home" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}<figcaption>${text(t.screens.caption)}</figcaption></figure>`}`
         : `<p class="upcoming-copy">${text(d.upcoming)}</p><div class="alternative-platforms">${platforms
             .filter((p) => p.file)
             .map((p) => platformCard(lang, p))
