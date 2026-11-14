@@ -2,7 +2,8 @@
 
 ## Versions and contract
 
-Backend 0.40.1 → 0.41.0; dashboard 0.8.0 → 0.9.0; managed engine
+Backend 0.41.0 → 0.42.0 (after integrating the independent Chrome/email-identity
+release); dashboard 0.8.0 → 0.9.0; managed engine
 0.6.2 → 0.7.0 (new server-only synthetic service request). Windows
 0.28.1 → 0.28.2 and Android 0.27.3 → 0.27.4 / code 54 add configured-selection
 metadata at admission. Client screens and navigation are unchanged. Apple and

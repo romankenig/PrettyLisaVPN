@@ -26,6 +26,8 @@ const id = "11111111-1111-4111-8111-111111111111";
 const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
 let billingAvailable = true;
+let guest = false;
+const demoKeys = [];
 async function mockAPI() {
   await context.route("https://prettylisavpn.com/account/**", (route) =>
     route.fulfill({
@@ -43,9 +45,16 @@ async function mockAPI() {
     let value;
     let status = 200;
     if (p === "/version")
-      value = { application_version: "0.34.0-test-fixture" };
+      value = { application_version: "0.41.0-test-fixture" };
     else if (p === "/auth/request-otp") value = { status: "accepted" };
-    else if (p === "/auth/verify-otp")
+    else if (p === "/auth/demo" || p === "/auth/verify-otp") {
+      guest = p === "/auth/demo";
+      if (guest) {
+        const body = route.request().postDataJSON();
+        assert.equal(body.platform, "CHROME_EXTENSION");
+        assert.match(body.device_key, /^[a-f0-9]{64}$/);
+        demoKeys.push(body.device_key);
+      }
       value = {
         session_id: id,
         access_token: "fixture-access",
@@ -53,13 +62,14 @@ async function mockAPI() {
         user: { id },
         device: { id: device },
       };
+    } else if (p === "/auth/logout") value = {};
     else if (p === "/me")
       value = {
         id,
-        email: "preview@example.com",
-        plan: "FREE",
-        active_device_count: 2,
-        entitlements: { free_seconds_usable: 3600 },
+        email: guest ? null : "preview@example.com",
+        plan: guest ? "DEMO" : "FREE",
+        active_device_count: guest ? 1 : 2,
+        entitlements: { free_seconds_usable: guest ? 900 : 3600 },
       };
     else if (p === "/vpn/countries")
       value = {
@@ -132,6 +142,77 @@ try {
   let page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  // All six complete locales and document destinations on the installed artifact.
+  for (const [lang, name, picker] of [
+    ["en", "english", "язык"],
+    ["de", "deutsch", "language"],
+    ["fr", "français", "sprache"],
+    ["es", "español", "langue"],
+    ["zh", "中文", "idioma"],
+    ["ru", "русский", "语言"],
+  ]) {
+    await page.getByRole("button", { name: picker, exact: true }).click();
+    assert.equal(await page.locator(".language-options button").count(), 6);
+    await page.getByRole("button", { name, exact: true }).click();
+    await page.reload();
+    await page.locator(".language-trigger").filter({ hasText: lang }).waitFor();
+    const base =
+      "https://prettylisavpn.com" + (lang === "ru" ? "" : "/" + lang);
+    for (const key of ["terms", "privacy", "refunds", "payments"])
+      assert.equal(
+        await page.locator(`a[href="${base}/legal/${key}/"]`).count(),
+        1,
+      );
+    assert.equal(await page.locator(`a[href="${base}/"]`).count(), 1);
+    assert.equal(
+      await page.evaluate(() => globalThis.document.body.scrollWidth > 480),
+      false,
+    );
+    await page.screenshot({ path: path.join(output, `login-${lang}.png`) });
+  }
+  assert.equal(await page.getByText("открыть вход во вкладке").count(), 0);
+  assert.equal(
+    await page.getByText("Вход сохраняется", { exact: false }).count(),
+    0,
+  );
+  await page
+    .getByRole("button", { name: "попробовать без регистрации" })
+    .click();
+  await page.getByText("гость", { exact: true }).waitFor();
+  assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
+  await page.screenshot({ path: path.join(output, "demo-home.png") });
+  await page.close();
+  page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  await page.getByText("гость", { exact: true }).waitFor();
+  assert.equal(await page.getByText("15:00", { exact: true }).count(), 1);
+  // Real MV3 worker termination verifies recovery, not the reported enable-toggle issue.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("ServiceWorker.enable");
+  await cdp.send("ServiceWorker.stopAllWorkers");
+  await page.reload();
+  await page.getByText("гость", { exact: true }).waitFor();
+  assert.equal(
+    (
+      await page.evaluate(() =>
+        chrome.runtime.sendMessage({ type: "snapshot" }),
+      )
+    ).ok,
+    true,
+  );
+  await cdp.detach();
+  await page
+    .getByRole("button", { name: "войти или зарегистрироваться" })
+    .click();
+  await page
+    .getByRole("button", { name: "попробовать без регистрации" })
+    .click();
+  await page.getByText("гость", { exact: true }).waitFor();
+  assert.equal(demoKeys.length, 2);
+  assert.equal(demoKeys[0], demoKeys[1]);
+  await page
+    .getByRole("button", { name: "войти или зарегистрироваться" })
+    .click();
   await page.getByLabel("ваша почта").fill("preview@example.com");
   await page.screenshot({ path: path.join(output, "login-fixture.png") });
   await page.getByRole("button", { name: "получить код" }).click();
@@ -147,11 +228,6 @@ try {
   await page.screenshot({
     path: path.join(output, "otp-reopened-fixture.png"),
   });
-  const opened = context.waitForEvent("page");
-  await page.getByRole("button", { name: "открыть вход во вкладке" }).click();
-  const loginTab = await opened;
-  await loginTab.getByLabel("код из письма").waitFor();
-  await loginTab.close();
   await page.getByLabel("код из письма").fill("123456");
   await page.getByRole("button", { name: "войти", exact: true }).click();
   await page.getByText("preview@example.com", { exact: true }).waitFor();
@@ -252,11 +328,11 @@ try {
     .getByLabel("что случилось?")
     .fill("Локальная проверка интерфейса; сообщение не отправляется.");
   await page.getByRole("button", { name: "отправить", exact: true }).click();
-  await page.getByText("Обращение принято.", { exact: false }).waitFor();
+  await page.getByText("обращение принято.", { exact: false }).waitFor();
   await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.getByRole("button", { name: "подключить", exact: true }).click();
   await page
-    .getByText("Сейчас нет доступных прокси-серверов.", { exact: false })
+    .getByText("сейчас нет доступных прокси-серверов.", { exact: false })
     .waitFor();
   assert.equal(await page.getByText("подключено", { exact: true }).count(), 0);
   const state = await page.evaluate(() =>
@@ -267,12 +343,13 @@ try {
     chrome.proxy.settings.get({ incognito: false }),
   );
   assert.notEqual(settings.levelOfControl, "controlled_by_this_extension");
-  await page.getByLabel("Language").selectOption("1");
+  await page.getByRole("button", { name: "язык", exact: true }).click();
+  await page.getByRole("button", { name: "english", exact: true }).click();
   await page.getByRole("button", { name: "settings", exact: true }).click();
   await page.getByText("manage account access").waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "Installed MV3 artifact: reopened OTP, sign-in tab, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",
+    "Installed MV3 artifact: reopened OTP, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",
   );
 } finally {
   await context.close();

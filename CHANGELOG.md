@@ -6,18 +6,20 @@
 
 ## Unreleased
 
-### Reports — backend 0.41.0 / dashboard 0.9.0 / managed engine 0.7.0
+### Chrome — 0.3.0 / Backend — 0.41.0 / Public website — 0.6.0
 
-- Default seven-day speed analytics now aggregate seven completed GMT+3 days
-  from original counters. Add per-service daily availability, random public
-  samples and VPN routes, minute retries and recovery-time scores, plus selected
-  service counts/shares in open sessions and private UNKNOWN rule evidence.
-- Product analytics include DEMO, tariff shares over time, device platforms,
-  average connected-session duration and histograms to disconnect/first silence.
-  Missing or incomplete observations remain explicitly unobserved.
-- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
-  Migration 0049; backend and node helpers must precede client rollout. No client
-  screen changes. See [report definitions and handoff](docs/report-analytics.md).
+- Chrome uses lowercase UI copy, six languages with local flags, real DEMO entry
+  and localized website/legal links. Remove the sign-in-tab link, persistence
+  explanation and redundant proxy settings card; preserve proxy protection.
+- Backend admits Chrome guest proxy leases with the existing 15-minute UTC daily
+  quota. Share email identity, OTP limits and account-creation locks across
+  confirmed Yandex, Gmail and Proton domains; keep the first stored address.
+  Legacy duplicate accounts require explicit reconciliation, not destructive merge.
+- Publish Chrome ZIP/version/size/hash through the website's existing client-download
+  feed, with six translated unpacked-install guides. Other clients and schema
+  remain unchanged. Chrome-disable diagnosis is explicitly deferred by the owner.
+- See [implementation and release handoff](docs/chrome-ui-demo.md) and
+  [provider evidence and compatibility](docs/email-identities.md).
 
 ### Public website — 0.5.5
 
@@ -31,6 +33,19 @@
   and decorative subtitles, and apply lowercase interface copy across six languages.
 - Keep existing prices, authentication, recurring consent and payment authority
   unchanged. See the [website copy and devices handoff](docs/website-copy-devices.md).
+
+### Reports — backend 0.42.0 / dashboard 0.9.0 / managed engine 0.7.0
+
+- Default seven-day speed analytics now aggregate seven completed GMT+3 days
+  from original counters. Add per-service daily availability, random public
+  samples and VPN routes, minute retries and recovery-time scores, plus selected
+  service counts/shares in open sessions and private UNKNOWN rule evidence.
+- Product analytics include DEMO, tariff shares over time, device platforms,
+  average connected-session duration and histograms to disconnect/first silence.
+  Missing or incomplete observations remain explicitly unobserved.
+- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
+  Migration 0049; backend and node helpers must precede client rollout. No client
+  screen changes. See [report definitions and handoff](docs/report-analytics.md).
 
 ### Public website — 0.5.4
 

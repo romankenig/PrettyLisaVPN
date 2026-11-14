@@ -14,6 +14,7 @@ from prettylisavpn.billing.domain import overview_for
 from prettylisavpn.billing.operations_domain import BillingOperation
 from prettylisavpn.billing.web_routes import native_router, router
 from prettylisavpn.billing.web_sessions import COOKIE, WEB_ORIGIN
+from prettylisavpn.users.email_identity import EmailAliasConflictError
 
 HEADERS = {"Origin": WEB_ORIGIN, "X-PrettyLisa-Web": "1"}
 TOKEN = "a" * 43
@@ -103,6 +104,19 @@ def test_login_and_exchange_only_issue_secure_httponly_cookie(web, path, body):
     cookie = response.headers["set-cookie"]
     assert COOKIE in cookie and "HttpOnly" in cookie and "Secure" in cookie
     assert "SameSite=strict" in cookie and "Path=/" in cookie and "Domain" not in cookie
+
+
+def test_ambiguous_legacy_email_never_issues_a_web_cookie(web):
+    client, _, sessions, _, _ = web
+    sessions.login.side_effect = EmailAliasConflictError
+    response = client.post(
+        "/api/web/billing/login",
+        headers=HEADERS,
+        json={"email": "member@ya.ru", "code": "123456"},
+    )
+    assert response.status_code == 409
+    assert response.json() == {"error": {"code": "EMAIL_ALIAS_CONFLICT"}}
+    assert "set-cookie" not in response.headers
 
 
 def test_web_read_and_command_use_authenticated_account_only(web):

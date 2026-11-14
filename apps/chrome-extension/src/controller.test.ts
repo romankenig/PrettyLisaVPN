@@ -63,6 +63,61 @@ function fixture() {
   return { controller, io, calls, saved: () => saved };
 }
 describe("browser lease lifecycle", () => {
+  it("admits a real DEMO account using a stable hashed profile identity without email", async () => {
+    const { controller, io, saved } = fixture();
+    delete controller.state.session;
+    const keys: string[] = [];
+    io.fetch = async (url, options = {}) => {
+      const path = new URL(String(url)).pathname;
+      if (path === "/auth/demo") {
+        const body = JSON.parse(String(options.body));
+        expect(body.platform).toBe("CHROME_EXTENSION");
+        expect(body.device_key).toMatch(/^[a-f0-9]{64}$/);
+        expect(body).not.toHaveProperty("email");
+        keys.push(body.device_key);
+        return Response.json({
+          session_id: id,
+          access_token: "guest-access",
+          refresh_token: "guest-refresh",
+        });
+      }
+      if (path === "/version")
+        return Response.json({ application_version: "0.41.0" });
+      if (path === "/me")
+        return Response.json({
+          id,
+          email: null,
+          plan: "DEMO",
+          active_device_count: 1,
+          entitlements: { free_seconds_usable: 900 },
+        });
+      if (path === "/vpn/countries") return Response.json({ countries: [] });
+      return Response.json({});
+    };
+    await controller.demo();
+    expect(controller.snapshot()).toMatchObject({
+      signedIn: true,
+      account: { email: null, plan: "DEMO" },
+    });
+    expect(saved()?.session?.refresh_token).toBe("guest-refresh");
+    const restored = new Controller(io);
+    await restored.init();
+    expect(restored.snapshot().account?.plan).toBe("DEMO");
+    await restored.logout();
+    await restored.demo();
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBe(keys[1]);
+    await expect(restored.demo()).rejects.toThrow("ALREADY_SIGNED_IN");
+  });
+  it("does not invent a DEMO session when admission is disabled", async () => {
+    const { controller, io, saved } = fixture();
+    delete controller.state.session;
+    io.fetch = async () =>
+      Response.json({ error: { code: "DEMO_UNAVAILABLE" } }, { status: 503 });
+    await expect(controller.demo()).rejects.toThrow("DEMO_UNAVAILABLE");
+    expect(controller.snapshot().signedIn).toBe(false);
+    expect(saved()?.session).toBeUndefined();
+  });
   it("requires real egress proof and actual browser ownership before connected", async () => {
     const { controller, io, calls } = fixture();
     await controller.connect("NL");

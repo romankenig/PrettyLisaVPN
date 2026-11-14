@@ -28,7 +28,7 @@ def private_error(code: str, status: int) -> JSONResponse:
 
 
 class DemoLoginBody(BaseModel):
-    platform: Literal["ANDROID", "WINDOWS"] = "ANDROID"
+    platform: Literal["ANDROID", "WINDOWS", "CHROME_EXTENSION"] = "ANDROID"
     device_key: Annotated[
         str, Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$", repr=False)
     ]

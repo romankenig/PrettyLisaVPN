@@ -80,7 +80,8 @@
     "checksum": "somme de contrôle sha-256",
     "requirements": {
       "android": "android 8.0 ou version ultérieure · arm64",
-      "windows": "windows 10 / 11 · x64"
+      "windows": "windows 10 / 11 · x64",
+      "chrome": "chrome 120 ou ultérieur · archive zip de l’extension"
     },
     "setup": "trois étapes pour vous connecter",
     "steps": [
@@ -99,7 +100,13 @@
       "apple": "app store",
       "chrome": "chrome web store",
       "flathub": "flathub"
-    }
+    },
+    "chromeText": "téléchargez l’archive. l’extension protège le trafic des onglets classiques du navigateur.",
+    "chromeSteps": [
+      "décompressez le zip dans un dossier permanent. ne déplacez ni ne supprimez ce dossier après l’installation.",
+      "ouvrez chrome://extensions, activez le mode développeur et choisissez « charger l’extension non empaquetée ». sélectionnez le dossier contenant manifest.json.",
+      "épinglez PrettyLisaVPN dans le menu des extensions. connectez-vous avec le code reçu par e-mail, puis lancez la connexion."
+    ]
   },
   "help": {
     "title": "FAQ",

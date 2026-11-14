@@ -236,6 +236,34 @@ export class Controller {
     await this.persist();
     await this.refreshAccount();
   }
+  async demo() {
+    if (this.state.session) throw new Error("ALREADY_SIGNED_IN");
+    // Profile-local identity, not a hardware fingerprint. Logout and browser
+    // restart keep the quota identity; uninstall/profile deletion may reset it.
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(
+        "PrettyLisaVPN:chrome:demo:" + (await this.io.installation()),
+      ),
+    );
+    const device_key = Array.from(new Uint8Array(digest), (b) =>
+      b.toString(16).padStart(2, "0"),
+    ).join("");
+    this.acceptSession(
+      await this.request(
+        "/auth/demo",
+        this.json({
+          platform: "CHROME_EXTENSION",
+          device_key,
+        }),
+        false,
+      ),
+    );
+    delete this.state.otpEmail;
+    this.state.error = null;
+    await this.persist();
+    await this.refreshAccount();
+  }
   async refreshAccount() {
     const version = (await this.request("/version", {}, false).catch(
       () => null,
@@ -249,8 +277,10 @@ export class Controller {
       if (
         !account ||
         !UUID.test(account.id) ||
-        typeof account.email !== "string" ||
-        !["FREE", "PREMIUM", "PLATINUM"].includes(account.plan)
+        (account.plan === "DEMO"
+          ? account.email !== null
+          : typeof account.email !== "string") ||
+        !["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(account.plan)
       )
         throw new Error("INVALID_RESPONSE");
       this.state.account = account;
