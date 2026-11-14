@@ -68,7 +68,7 @@ class ServiceCheckWorker:
 
     async def claim(
         self, now: datetime
-    ) -> tuple[UUID, date, UUID, Node, Node, str, list[str], datetime] | None:
+    ) -> tuple[UUID, date, UUID, Node, Node, str, list[str], datetime, datetime] | None:
         async with self.postgres.session() as session, session.begin():
             job = await session.scalar(
                 select(ServiceCheckRecord)
@@ -203,6 +203,7 @@ class ServiceCheckWorker:
                 method,
                 service.domains,
                 now,
+                job.started_at + timedelta(minutes=30),
             )
 
     async def tick(self) -> None:
@@ -211,11 +212,11 @@ class ServiceCheckWorker:
         claim = await self.claim(now)
         if claim is None:
             return
-        service_id, on, token, source, target, method, domains, attempt_at = claim
+        service_id, on, token, source, target, method, domains, attempt_at, deadline = claim
         result: Observation | None = None
         code = "SERVICE_SAMPLE_UNAVAILABLE"
         try:
-            async with asyncio.timeout(120):
+            async with asyncio.timeout(min(120, (deadline - datetime.now(UTC)).total_seconds())):
                 url = await asyncio.to_thread(discover, domains)
                 if url:
                     result = await (
@@ -229,6 +230,7 @@ class ServiceCheckWorker:
         async with self.postgres.session() as session, session.begin():
             job = await session.get(ServiceCheckRecord, (service_id, on), with_for_update=True)
             if job and job.claim_token == token:
+                finished = datetime.now(UTC)
                 tested = (
                     result is not None
                     and result.mode == "SYNTHETIC"
@@ -247,7 +249,11 @@ class ServiceCheckWorker:
                     {**job.attempts[-1], "code": code, "tested": tested},
                 ]
                 job.code, job.claim_token, job.claim_until = code, None, None
-                if (
+                if finished >= deadline:
+                    job.score = 0 if any(a.get("tested") for a in job.attempts) else None
+                    job.code = "UNAVAILABLE" if job.score == 0 else "NOT_OBSERVED"
+                    job.finished_at = finished
+                elif (
                     result is not None
                     and result.status == "HEALTHY"
                     and result.code == "SERVICE_CHECK_PASSED"
@@ -255,10 +261,10 @@ class ServiceCheckWorker:
                 ):
                     assert job.started_at is not None
                     job.score = assessment_score(job.started_at, attempt_at, True)
-                    job.finished_at = datetime.now(UTC)
+                    job.finished_at = finished
                 elif len(job.attempts) >= 30:
                     job.score = 0 if any(a.get("tested") for a in job.attempts) else None
-                    job.finished_at = datetime.now(UTC)
+                    job.finished_at = finished
             await session.execute(
                 update(FleetNodeRecord)
                 .where(FleetNodeRecord.lock_owner == token)

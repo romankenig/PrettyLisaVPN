@@ -1,5 +1,6 @@
 from datetime import UTC, date, datetime, timedelta
-from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -146,6 +147,59 @@ def test_random_retry_changes_both_dimensions_and_never_repeats_pair():
         boundary(date(2026, 11, 14)) <= slot < boundary(date(2026, 11, 15)) - timedelta(minutes=30)
         for slot in slots
     )
+
+
+@pytest.mark.parametrize("late", [False, True])
+async def test_probe_success_must_finish_before_assessment_deadline(monkeypatch, late):
+    import prettylisavpn.fleet.service_check_worker as module
+
+    class Clock:
+        value = NOW + timedelta(minutes=29)
+
+        @classmethod
+        def now(cls, tz):
+            return cls.value
+
+    token, service_id = uuid4(), uuid4()
+    row = SimpleNamespace(
+        claim_token=token,
+        started_at=NOW,
+        finished_at=None,
+        attempts=[{"tested": True}, {"tested": False}],
+    )
+    session = AsyncMock()
+    session.__aenter__.return_value = session
+    session.begin = MagicMock(return_value=AsyncMock())
+    session.get.return_value = row
+    postgres = SimpleNamespace(session=MagicMock(return_value=session))
+
+    async def probe(*args):
+        Clock.value = NOW + timedelta(minutes=31 if late else 29, seconds=10)
+        return SimpleNamespace(
+            status="HEALTHY", mode="SYNTHETIC", code="SERVICE_CHECK_PASSED", cleanup_confirmed=True
+        )
+
+    worker = module.ServiceCheckWorker(postgres, SimpleNamespace(probe=probe), AsyncMock())
+    worker.schedule = AsyncMock()
+    worker.claim = AsyncMock(
+        return_value=(
+            service_id,
+            NOW.date(),
+            token,
+            None,
+            None,
+            "wireguard",
+            ["example.com"],
+            Clock.value,
+            NOW + timedelta(minutes=30),
+        )
+    )
+    monkeypatch.setattr(module, "datetime", Clock)
+    monkeypatch.setattr(module, "discover", lambda _: "https://example.com/news/item")
+    await worker.tick()
+    assert row.finished_at == Clock.value
+    assert row.score == (0 if late else 3.3)
+    assert row.code == ("UNAVAILABLE" if late else "SERVICE_CHECK_PASSED")
 
 
 def test_sampler_prefers_fresh_links_and_rejects_credentials_external_redirects():
