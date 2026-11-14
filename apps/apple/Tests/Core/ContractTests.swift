@@ -11,6 +11,29 @@ func leaseData(changes: [String: Any] = [:]) throws -> Data {
                                                         "expires_at": "2099-01-01T00:00:00Z", "heartbeat_seconds": 30, "heartbeat_required": false, "configuration": config])
 }
 final class ContractTests: XCTestCase {
+    func testRandomMethodsAreNonemptyUniqueOrderedAndDifferent() {
+        struct Generator: RandomNumberGenerator {
+            var state: UInt64
+            mutating func next() -> UInt64 {
+                state = state &* 6364136223846793005 &+ 1442695040888963407
+                return state
+            }
+        }
+        var previous = Methods.all
+        var sizes = Set<Int>()
+        for seed in 1...100 {
+            var generator = Generator(state: UInt64(seed))
+            let next = Methods.randomSelection(current: previous, using: &generator)
+            XCTAssertFalse(next.isEmpty)
+            XCTAssertEqual(next.count, Set(next).count)
+            XCTAssertTrue(next.allSatisfy(Methods.all.contains))
+            XCTAssertNotEqual(next, previous)
+            generator = Generator(state: UInt64(seed))
+            XCTAssertNotEqual(Methods.randomSelection(current: next, using: &generator), next)
+            sizes.insert(next.count); previous = next
+        }
+        XCTAssertGreaterThan(sizes.count, 1)
+    }
     func testManagedProfilePreservesTLSAndTransportParameters() throws {
         let profile: [String: Any] = ["version": 1, "session": "22222222-2222-4222-8222-222222222222",
                                       "country": "DE", "method": "VLESS_TLS", "server": "8.8.4.4", "port": 443,

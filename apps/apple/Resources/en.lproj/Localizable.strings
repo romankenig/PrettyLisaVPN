@@ -168,6 +168,7 @@
 "plan_split" = "all or selected traffic";
 "plan_unlimited" = "VPN without time limits";
 "processing" = "processing…";
+"randomize_methods" = "random method selection and order";
 "reply_email" = "reply email";
 "server_connection_lost" = "no connection to the server, check your internet connection";
 "settings" = "settings";

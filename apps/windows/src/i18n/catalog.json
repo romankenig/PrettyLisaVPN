@@ -377,7 +377,9 @@
     "Выйти на этом устройстве?": "Выйти на этом устройстве?",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.",
     "да, выйти": "да, выйти",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены."
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.",
+    "Случайный набор и порядок способов": "случайный набор и порядок способов",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "выбранные способы показаны в порядке попыток. последний успешный может проверяться первым."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -757,7 +759,9 @@
     "Выйти на этом устройстве?": "Sign out on this device?",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN will disconnect and the sign-in page will open. Sign in again to reconnect.",
     "да, выйти": "yes, sign out",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Device “{0}” will sign out and all its active sessions will end."
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Device “{0}” will sign out and all its active sessions will end.",
+    "Случайный набор и порядок способов": "random method selection and order",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "selected methods are shown in attempt order. the last successful method may be tried first."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1137,7 +1141,9 @@
     "Выйти на этом устройстве?": "在此设备上退出？",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "VPN 将断开并打开登录页面。再次连接需要重新登录。",
     "да, выйти": "是，退出",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "设备“{0}”将退出账户，其所有活动会话将结束。"
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "设备“{0}”将退出账户，其所有活动会话将结束。",
+    "Случайный набор и порядок способов": "随机选择连接方式和顺序",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1517,7 +1523,9 @@
     "Выйти на этом устройстве?": "¿Cerrar sesión en este dispositivo?",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "La VPN se desconectará y se abrirá la pantalla de acceso. Inicia sesión de nuevo para reconectar.",
     "да, выйти": "sí, cerrar sesión",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "El dispositivo «{0}» cerrará sesión y se terminarán todas sus sesiones activas."
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "El dispositivo «{0}» cerrará sesión y se terminarán todas sus sesiones activas.",
+    "Случайный набор и порядок способов": "selección y orden aleatorios de métodos",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1897,7 +1905,9 @@
     "Выйти на этом устройстве?": "Auf diesem Gerät abmelden?",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "Das VPN wird getrennt und die Anmeldeseite geöffnet. Melde dich erneut an, um dich zu verbinden.",
     "да, выйти": "ja, abmelden",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet."
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet.",
+    "Случайный набор и порядок способов": "zufällige Methoden und Reihenfolge",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2277,6 +2287,8 @@
     "Выйти на этом устройстве?": "Se déconnecter sur cet appareil ?",
     "VPN отключится, и откроется страница входа. Для нового подключения понадобится войти снова.": "Le VPN sera déconnecté et la page de connexion s’ouvrira. Reconnectez-vous à votre compte pour utiliser le VPN.",
     "да, выйти": "oui, se déconnecter",
-    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "L’appareil « {0} » sera déconnecté du compte et toutes ses sessions actives seront fermées."
+    "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "L’appareil « {0} » sera déconnecté du compte et toutes ses sessions actives seront fermées.",
+    "Случайный набор и порядок способов": "sélection et ordre aléatoires des méthodes",
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "les méthodes sélectionnées suivent l’ordre des essais. la dernière méthode réussie peut être essayée en premier."
   }
 }

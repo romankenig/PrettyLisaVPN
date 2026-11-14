@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Windows — 0.29.0 / Android — 0.28.0 / iOS — 0.4.0 / macOS — 0.3.0
+
+- Add a refresh icon to connection-method settings: each click selects a random
+  nonempty subset and shuffles its base attempt order. Selected methods appear
+  first in that order and persist across restarts. Manual changes preserve it.
+- Existing successful-method priority, Android exploration/cooldown, reset on
+  Home, connection recovery and cleanup remain in force. This settings action
+  does not disconnect or start a VPN. Apple retains its disconnected-only editor.
+- Backend, engines and Chrome proxy unchanged. See
+  [handoff](docs/random-method-selection.md).
+
 ### Public website — 0.5.4
 
 - The placeholder Pay button now navigates to the localized success page with

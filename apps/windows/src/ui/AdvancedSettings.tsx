@@ -16,6 +16,14 @@ export function AdvancedSettings({
     preference.current,
   );
   const active = selected ?? connectionMethods.map((method) => method.id);
+  const displayed = [...connectionMethods].sort((a, b) => {
+    const rank = (id: string) =>
+      active.includes(id)
+        ? active.indexOf(id)
+        : active.length +
+          connectionMethods.findIndex((method) => method.id === id);
+    return rank(a.id) - rank(b.id);
+  });
   return (
     <section
       className="settings-page advanced-settings"
@@ -30,10 +38,36 @@ export function AdvancedSettings({
         role="group"
         aria-labelledby="method-options-title"
       >
-        <h2 id="method-options-title">{t("Способы подключения")}</h2>
+        <div className="method-options-heading">
+          <h2 id="method-options-title">{t("Способы подключения")}</h2>
+          <button
+            type="button"
+            className="method-randomize"
+            title={t("Случайный набор и порядок способов")}
+            aria-label={t("Случайный набор и порядок способов")}
+            onClick={() => preference.randomize()}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="M20 11a8 8 0 1 0-2.3 6.7M20 4v7h-7" />
+            </svg>
+          </button>
+        </div>
         <p>
           {t(
             "Изменения применятся при следующем подключении. Выберите хотя бы один способ.",
+          )}
+        </p>
+        <p className="method-order-hint">
+          {t(
+            "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.",
           )}
         </p>
         <label className="method-checkbox method-checkbox--all">
@@ -46,7 +80,7 @@ export function AdvancedSettings({
           <span>{t("Все способы")}</span>
         </label>
         <div className="method-grid">
-          {connectionMethods.map((method) => (
+          {displayed.map((method) => (
             <label key={method.id} className="method-checkbox">
               <input
                 type="checkbox"

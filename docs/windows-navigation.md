@@ -990,3 +990,14 @@ Android Home keeps the secondary location row visible while connected in
 Expected session/direct-location fallback and fresh observations use the existing
 card; no route, popup or external transition is added. Windows is unchanged.
 There is no pending backend integration. See [handoff](android-secondary-location.md).
+
+## Random methods — Windows 0.29.0 / Android 0.28.0 / iOS 0.4.0 / macOS 0.3.0
+
+Settings → Advanced settings → refresh icon selects a nonempty random subset and
+shuffles its saved base attempt order. Selected methods are displayed first in
+that order. The action updates local settings without a popup, backend call or
+connection interruption. Existing success priority and Android recovery/cooldown
+still apply. Home's confirmed reset/reconnect action is independent and unchanged.
+Apple's shared Settings method editor keeps its disconnected-only guard. No new
+routes or external transitions, and no backend integration is pending. See
+[handoff](random-method-selection.md) for persistence compatibility and evidence.

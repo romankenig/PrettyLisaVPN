@@ -366,4 +366,6 @@
     <string name="vpn_reset_confirm">是，重新连接</string>
     <string name="vpn_location_expected">预计 VPN 位置：</string>
     <string name="direct_location_expected">预计非 VPN 位置：</string>
+    <string name="randomize_methods">随机选择连接方式和顺序</string>
+    <string name="method_order_hint">所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。</string>
 </resources>

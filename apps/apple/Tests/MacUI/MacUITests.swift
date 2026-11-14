@@ -47,6 +47,12 @@ final class MacUITests: XCTestCase {
             for page in ["devices", "subscription", "support", "settings", "about", "home"] {
                 let item = app.descendants(matching: .any)["nav-" + page].firstMatch
                 XCTAssertTrue(item.exists); item.click()
+                if page == "settings" {
+                    let randomize = app.buttons["randomize-methods"]
+                    XCTAssertTrue(randomize.waitForExistence(timeout: 5)); randomize.click()
+                    let randomShot = XCTAttachment(screenshot: window.screenshot())
+                    randomShot.name = "macOS-\(theme)-random-methods"; randomShot.lifetime = .keepAlways; add(randomShot)
+                }
             }
             XCTAssertTrue(app.staticTexts["vpn-status"].waitForExistence(timeout: 5))
             let resized = XCTAttachment(screenshot: window.screenshot())
