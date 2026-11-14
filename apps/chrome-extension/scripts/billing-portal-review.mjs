@@ -100,6 +100,23 @@ try {
       },
     }),
   );
+  // Check both initial themes and live changes under the production-equivalent CSP.
+  for (const initial of ["light", "dark"]) {
+    await page.emulateMedia({ colorScheme: initial });
+    await page.goto(origin + "/");
+    assert.equal(await page.title(), "PrettyLisaVPN");
+    for (const theme of [initial, initial === "light" ? "dark" : "light"]) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.waitForFunction(
+        (expected) =>
+          globalThis.document
+            .querySelector('link[rel="icon"]')
+            ?.getAttribute("href") === `/assets/favicon-${expected}.svg`,
+        theme,
+      );
+    }
+  }
+  await page.emulateMedia({ colorScheme: "light" });
   for (const language of ["", "en", "de", "fr", "es", "zh"]) {
     for (const width of [320, 390, 1280]) {
       await page.setViewportSize({ width, height: 1000 });

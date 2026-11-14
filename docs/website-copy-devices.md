@@ -8,6 +8,16 @@ Windows **0.28.1**, Android **0.27.3** and Chrome **0.2.1** remain unchanged.
 Base source: `6868e4849ee1795863e3d6ff1a3caca1c054eb01`.
 No API, database, authentication, payment-provider or download route changes.
 
+Owner follow-up in the same review keeps version **0.5.5** unchanged: every tab
+is titled exactly `PrettyLisaVPN`. Build-time favicon variants preserve the
+canonical lock geometry: Christalle `#2c016d` for light themes and Mercury
+`#e4e4e4` for dark themes. The existing external script follows the browser's
+`prefers-color-scheme` preference on initial load and live changes. Separate SVG
+files avoid inline styles and keep CSP unchanged; the page's logo is untouched.
+Browser acceptance verifies both initial themes and switching in both directions.
+Node/Caddy checks cover both generated assets and all 96 titles. Custom browser
+themes can only be detected when the browser exposes their color scheme.
+
 The final product HEAD, push build SHA/run/attempt, separate PR merge build,
 artifacts and all CI jobs are recorded in the task PR after the final push.
 Neither the baseline build nor the native screenshot builds verify the new

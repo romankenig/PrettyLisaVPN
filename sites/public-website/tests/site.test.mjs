@@ -209,6 +209,15 @@ test("all links and anchors resolve; documents and language links preserve conte
     "windows-licenses.txt",
   ]);
   for (const [route, html] of all) {
+    assert.equal(
+      html.match(/<title>(.*?)<\/title>/)?.[1],
+      "PrettyLisaVPN",
+      route,
+    );
+    assert.match(
+      html,
+      /rel="icon" href="\/assets\/favicon-light.svg" type="image\/svg\+xml"/,
+    );
     assert.equal((html.match(/<h1[ >]/g) ?? []).length, 1, route);
     assert.match(html, /noindex,nofollow/);
     assert.equal((html.match(/hreflang=/g) ?? []).length, 12);
@@ -407,6 +416,8 @@ test("clean build removes stale routes and HTTP serves localized assets without 
   }
   for (const asset of [
     "lock.svg",
+    "favicon-light.svg",
+    "favicon-dark.svg",
     "Rubik.ttf",
     "OFL.txt",
     "app.js",
@@ -416,6 +427,18 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
+  const lock = await readFile(path.join(dist, "assets/lock.svg"), "utf8");
+  for (const [theme, color] of [
+    ["light", "#2c016d"],
+    ["dark", "#e4e4e4"],
+  ]) {
+    const response = await fetch(origin + `/assets/favicon-${theme}.svg`);
+    assert.match(response.headers.get("content-type"), /^image\/svg\+xml/);
+    assert.equal(
+      await response.text(),
+      lock.replace('fill="#e4e4e4"', `fill="${color}"`),
+    );
+  }
   for (const route of ["/readiness/", "/plans/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);

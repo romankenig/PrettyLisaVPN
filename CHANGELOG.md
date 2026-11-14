@@ -8,6 +8,8 @@
 
 ### Public website — 0.5.5
 
+- Use `PrettyLisaVPN` as every page's browser-tab title and switch the original
+  lock favicon between dark purple/light gray with the browser's color scheme.
 - Replace the dated launch badge with a plain “launching soon” notice and use
   the owner-approved headline and benefits, including automatic or manual server selection.
 - Present current native Windows and Android captures together in laptop/phone

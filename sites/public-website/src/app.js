@@ -7,6 +7,16 @@ import {
   formatMonthlyPrice,
 } from "./pricing.mjs";
 
+const favicon = document.querySelector('link[rel="icon"]');
+if (favicon) {
+  const theme = matchMedia("(prefers-color-scheme: dark)");
+  const updateFavicon = () => {
+    favicon.href = `/assets/favicon-${theme.matches ? "dark" : "light"}.svg`;
+  };
+  updateFavicon();
+  theme.addEventListener("change", updateFavicon);
+}
+
 const pricing = document.querySelector("[data-pricing]");
 if (pricing) {
   let storage;
