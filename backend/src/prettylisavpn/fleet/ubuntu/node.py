@@ -808,6 +808,16 @@ def probe_child(payload: dict[str, Any]) -> dict[str, Any]:
             return observation("FAILED", "SYNTHETIC", "EGRESS_IP_MISMATCH", **flags)
     except Exception:
         return observation("FAILED", "SYNTHETIC", "HTTPS_FAILED", **flags)
+    if payload.get("service_url"):
+        from service_probe import check  # type: ignore[import-not-found]
+
+        passed = check(payload["service_url"], payload["service_domains"])
+        return observation(
+            "HEALTHY" if passed else "FAILED",
+            "SYNTHETIC",
+            "SERVICE_CHECK_PASSED" if passed else "SERVICE_HTTP_FAILED",
+            **flags,
+        )
     try:
         data, seconds = measure_request("/download")
         if len(data) == MAX_BYTES:
@@ -874,7 +884,18 @@ def probe(payload: dict[str, Any]) -> dict[str, Any]:
         output = cmd(
             execute + ["python3", HELPER, "probe-child"],
             data=json.dumps(
-                {"interface": interface, "expected_egress_ips": payload["expected_egress_ips"]}
+                {
+                    "interface": interface,
+                    "expected_egress_ips": payload["expected_egress_ips"],
+                    **(
+                        {
+                            "service_url": payload["service_url"],
+                            "service_domains": payload["service_domains"],
+                        }
+                        if payload.get("service_url")
+                        else {}
+                    ),
+                }
             ),
             timeout=100,
         )

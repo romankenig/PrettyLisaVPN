@@ -85,7 +85,14 @@ class WireGuardMethod(VpnMethod):
     async def rollback(self, node: Node, operation_id: UUID) -> None:
         await self.transport.call(node, "rollback", {"operation_id": str(operation_id)})
 
-    async def probe(self, source: Node, target: Node, check_id: UUID) -> Observation:
+    async def probe(
+        self,
+        source: Node,
+        target: Node,
+        check_id: UUID,
+        service_url: str | None = None,
+        service_domains: list[str] | None = None,
+    ) -> Observation:
         # The reserved monitoring address is independent of all customer peers.
         state = await self.inspect(target)
         if not state.public_key or not state.configuration:
@@ -116,6 +123,11 @@ class WireGuardMethod(VpnMethod):
                     "address": access.address,
                     "mtu": state.configuration["mtu"],
                     "expected_egress_ips": target.expected_egress_ips,
+                    **(
+                        {"service_url": service_url, "service_domains": service_domains}
+                        if service_url
+                        else {}
+                    ),
                 },
                 command_timeout=150,
             )

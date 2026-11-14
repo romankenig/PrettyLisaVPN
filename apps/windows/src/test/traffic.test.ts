@@ -8,6 +8,7 @@ import {
   refreshServices,
   normalizeServiceNetwork,
   seedTrafficDefaults,
+  selectionAnalytics,
 } from "../vpn/traffic";
 
 describe("device traffic rules", () => {
@@ -241,5 +242,21 @@ describe("device traffic rules", () => {
         },
       }),
     ).toThrow();
+  });
+});
+
+it("reports only the active configured selection, and never DEMO or excluded rules", () => {
+  const selection = emptyTraffic();
+  selection.mode = "include";
+  selection.include.masks = ["*.Example.com", "*.example.com"];
+  selection.exclude.masks = ["private.example.org"];
+  expect(selectionAnalytics(selection)).toEqual({
+    traffic_mode: "include",
+    service_ids: [],
+    custom_rules: ["*.example.com"],
+  });
+  expect(selectionAnalytics(selection, true)).toEqual({ traffic_mode: "all" });
+  expect(selectionAnalytics({ ...selection, mode: "exclude" })).toEqual({
+    traffic_mode: "exclude",
   });
 });

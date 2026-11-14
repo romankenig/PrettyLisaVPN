@@ -2,6 +2,7 @@ import type { HttpTransport } from "../native/http";
 import type { ConnectionAdapter } from "./protocol";
 import type { ConnectedVpnSession } from "./connection";
 import type { ConnectionDetails } from "./connectionDetails";
+import { getDeviceTrafficSelection, selectionAnalytics } from "./traffic";
 
 interface Lease<C> {
   id: string;
@@ -201,6 +202,10 @@ export function createSessionAdapter<C>(
       healthFailures = 0;
       await cleanup(true); // Recover only our local tunnel and this device's remote grant.
       check(signal);
+      const analytics = selectionAnalytics(
+        getDeviceTrafficSelection().current(),
+        options.fullTrafficOnly?.(),
+      );
       const publicKey = options.fullTrafficOnly?.()
         ? await native.prepare(true)
         : await native.prepare();
@@ -211,6 +216,7 @@ export function createSessionAdapter<C>(
         "POST",
         {
           public_key: publicKey,
+          ...analytics,
           method,
           country:
             selection.mode === "COUNTRY" ? selection.country_code : "AUTO",

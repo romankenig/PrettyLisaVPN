@@ -3,6 +3,7 @@ import { Check, ChevronDown, Clock3, LockKeyhole, RefreshCw, Server, ShieldCheck
 import { GROUPS, groupNames, groupSummaries, nodeGroup, type Group } from "./groups";
 import HistoryChart from "./HistoryChart";
 import ActiveUserSpeed from "./ActiveUserSpeed";
+import ServiceAvailability from "./ServiceAvailability";
 import HourDetails from "./HourDetails";
 import type { Measurement, FocusedHour } from "./history";
 import ClientDownloads from "./ClientDownloads";
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [selected, setSelected] = useState("all");
   const [group, setGroup] = useState<Group | "all">("all");
+  const [trafficView, setTrafficView] = useState("all");
   const [focused, setFocused] = useState<FocusedHour | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState(false);
@@ -81,6 +83,8 @@ export default function Dashboard() {
         {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{availabilityStates.map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
       </section>
       <ActiveUserSpeed key={`active-${group}-${selected}`} nodes={nodes} refreshKey={snapshot?.generated_at ?? null} />
+      <div className="panel analytics-chart"><label>Режим защиты <select aria-label="Режим защиты для отчёта" value={trafficView} onChange={event => setTrafficView(event.target.value)}><option value="all">Защита всего трафика</option><option value="include">Защита выбранного трафика</option></select></label></div>
+      {trafficView === "include" && <ServiceAvailability />}
       <HistoryChart key={`${group}-${selected}`} aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
       {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}
       <section className="nodes-section"><div className="section-title"><h2>Серверы <span className="count">{nodes.length}</span></h2><span className="muted">Автообновление каждую минуту</span></div>

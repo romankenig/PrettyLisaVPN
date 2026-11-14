@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, String, text
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,7 +14,9 @@ from prettylisavpn.database import Base
 class ActivityRecord(Base):
     __tablename__ = "product_activity_days"
     __table_args__ = (
-        CheckConstraint("plan IN ('FREE','PREMIUM','PLATINUM','UNKNOWN')", name="ck_activity_plan"),
+        CheckConstraint(
+            "plan IN ('DEMO','FREE','PREMIUM','PLATINUM','UNKNOWN')", name="ck_activity_plan"
+        ),
         Index("ix_product_activity_day", "day"),
     )
     user_id: Mapped[UUID] = mapped_column(
@@ -39,3 +41,16 @@ class AnalyticsCollectionRecord(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
+
+
+class SessionSilenceRecord(Base):
+    """Counter-only first-silence evidence; no destination or packet data."""
+
+    __tablename__ = "product_session_silence"
+    lease_id: Mapped[UUID] = mapped_column(
+        ForeignKey("client_wireguard_leases.id", ondelete="CASCADE"), primary_key=True
+    )
+    observed_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    quiet_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    first_silence_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    complete: Mapped[bool] = mapped_column(Boolean)

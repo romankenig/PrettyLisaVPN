@@ -37,7 +37,7 @@ two calendar months through yesterday, including both ends. The first MAU reads
   inclusive calendar days ending at the point. Login, token refresh, logout,
   authenticated requests and VPN heartbeat count. Multiple devices count once.
 - Tariff: effective tariff at the latest recorded activity within that window.
-  Each account belongs to one category, so Free + Premium + Platinum + Unknown
+  Each account belongs to one category, so DEMO + Free + Premium + Platinum + Unknown
   equals the total. Later upgrades never relabel older activity. Expired paid
   subscriptions record Free according to the existing entitlement rules.
 - Historical evidence: successful auth events and legacy VPN creation/verified
@@ -99,3 +99,9 @@ Current implementation is not a claim of deployed/native acceptance. The task PR
 records final product HEAD, actual build SHA/run/attempt, screenshot/live routing
 proof, all Actions/jobs/check suites, publication identities and deployment checks.
 Do not reuse earlier client binaries as evidence for these UI/location changes.
+
+## Report revision 2
+
+Backend 0.41.0 / dashboard 0.9.0 extends these metrics with DEMO, tariff shares,
+device platforms, logical session lengths and counter-only first silence. See
+[report definitions and rollout](report-analytics.md) for coverage and retention.

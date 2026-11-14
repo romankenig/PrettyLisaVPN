@@ -109,3 +109,12 @@ async def active_user_speed(
     from prettylisavpn.fleet.traffic_service import TrafficService
 
     return await TrafficService(service.postgres, service.settings).history(period, node_ids)
+
+
+@router.get("/monitoring/services")
+async def service_analytics(
+    service: Annotated[FleetService, Depends(reader)],
+) -> dict[str, Any]:
+    from prettylisavpn.fleet.service_checks import ServiceAnalytics
+
+    return await ServiceAnalytics(service.postgres).report()

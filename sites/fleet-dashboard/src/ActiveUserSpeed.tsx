@@ -56,7 +56,7 @@ function DirectionChart({ history, direction }: { history: SpeedHistory; directi
 
 export default function ActiveUserSpeed({ nodes, refreshKey }: { nodes: Server[]; refreshKey: string | null }) {
   const exits = nodes.filter(node => node.group !== "INTERMEDIATE");
-  const [period, setPeriod] = useState("24h");
+  const [period, setPeriod] = useState("7d");
   const [selected, setSelected] = useState<string[] | null>(null);
   const ids = exits.filter(node => selected === null || selected.includes(node.id)).map(node => node.id).sort();
   const query = new URLSearchParams({ period });
@@ -92,7 +92,7 @@ export default function ActiveUserSpeed({ nodes, refreshKey }: { nodes: Server[]
       {!available && <p className="notice">За этот период ещё нет подтверждённых активных интервалов. Отсутствие данных и отсутствие активности не отображаются нулевой скоростью.</p>}
       <DirectionChart key={`${key}-down`} history={data} direction="download" />
       <DirectionChart key={`${key}-up`} history={data} direction="upload" />
-      <p className="history-note">Активность: строго больше {speedNumber(data.activity_threshold_bps / 1000)} Кбит/с за интервал около 5 секунд, отдельно по направлениям. Все подключения аккаунта на выбранных серверах объединены. Точка: до {data.bucket_seconds / 60} мин · {TIME_ZONE_LABEL}; текущий блок — только завершённые минуты. Наведите курсор или установите фокус на график для подробностей.</p>
+      <p className="history-note">Активность: строго больше {speedNumber(data.activity_threshold_bps / 1000)} Кбит/с за интервал около 5 секунд, отдельно по направлениям. Все подключения аккаунта на выбранных серверах объединены. {period === "7d" ? "Точка — завершённый календарный день; показаны предыдущие 7 дней." : `Точка: до ${data.bucket_seconds / 60} мин; текущий блок — только завершённые минуты.`} Время {TIME_ZONE_LABEL}. Наведите курсор или установите фокус на график для подробностей.</p>
       <p className="history-note">Ориентир — медиана результатов синтетических проверок выбранных серверов в том же временном блоке, а не гарантированный максимум пользователя. Линии соединяют известные точки, в том числе через пропуски; значения в пропусках не восстанавливаются. Процент сравнивает среднюю с ориентиром при полной выборке; это не загрузка канала, он может превышать 100%.</p>
     </>}
   </section>;

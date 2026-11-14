@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Reports — backend 0.41.0 / dashboard 0.9.0 / managed engine 0.7.0
+
+- Default seven-day speed analytics now aggregate seven completed GMT+3 days
+  from original counters. Add per-service daily availability, random public
+  samples and VPN routes, minute retries and recovery-time scores, plus selected
+  service counts/shares in open sessions and private UNKNOWN rule evidence.
+- Product analytics include DEMO, tariff shares over time, device platforms,
+  average connected-session duration and histograms to disconnect/first silence.
+  Missing or incomplete observations remain explicitly unobserved.
+- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
+  Migration 0048; backend and node helpers must precede client rollout. No client
+  screen changes. See [report definitions and handoff](docs/report-analytics.md).
+
 ### Public website — 0.5.4
 
 - The placeholder Pay button now navigates to the localized success page with

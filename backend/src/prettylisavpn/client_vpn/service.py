@@ -189,6 +189,21 @@ class ClientVpnService:
                     or previous.public_key != data.public_key
                     or previous.country != data.country
                     or previous.method != data.method
+                    or (
+                        previous.traffic_mode is not None
+                        and previous.traffic_mode != data.traffic_mode
+                    )
+                    or (
+                        data.traffic_mode == "include"
+                        and data.service_ids is not None
+                        and set(previous.service_ids or [])
+                        != {str(value) for value in data.service_ids}
+                    )
+                    or (
+                        data.traffic_mode == "include"
+                        and data.custom_rules is not None
+                        and set(previous.custom_rules or []) != set(data.custom_rules)
+                    )
                 ):
                     raise FleetError("VPN_IDEMPOTENCY_CONFLICT", 409)
                 return await view(session, previous, self.settings)
@@ -319,6 +334,11 @@ class ClientVpnService:
                     auth_session_id=identity.session_id,
                     node_id=node.id,
                     method=data.method,
+                    traffic_mode=data.traffic_mode,
+                    service_ids=list(dict.fromkeys(str(value) for value in data.service_ids))
+                    if data.service_ids is not None and data.traffic_mode == "include"
+                    else None,
+                    custom_rules=data.custom_rules if data.traffic_mode == "include" else None,
                     relay_node_id=relay.id if relay else None,
                     relay_port=relay_port,
                     country=data.country,
@@ -369,6 +389,7 @@ class ClientVpnService:
             if action == "heartbeat" and row.status in ("PROVISIONING", "READY"):
                 row.heartbeat_at = now
             if action == "revoke" and row.removed_at is None:
+                row.disconnected_at = row.disconnected_at or now
                 row.status, row.next_attempt_at = "REVOKING", now
             if action == "probe":
                 node = await session.get(FleetNodeRecord, row.node_id)

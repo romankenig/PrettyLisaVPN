@@ -47,11 +47,15 @@ class DatabaseActivitySink:
     async def record(self, user_id: UUID) -> None:
         async with self.postgres.session() as session, session.begin():
             user = await session.get(UserRecord, user_id)
-            if user is None or is_test_account(user.email) or is_demo_email(user.email):
+            if user is None or is_test_account(user.email):
                 return
             subscription = await SubscriptionRepository(session).get_by_user_id(user_id)
             now = datetime.now(UTC)
-            plan = subscription.effective_plan(now).value if subscription else "UNKNOWN"
+            plan = (
+                "DEMO"
+                if is_demo_email(user.email)
+                else (subscription.effective_plan(now).value if subscription else "UNKNOWN")
+            )
             statement = insert(ActivityRecord).values(
                 user_id=user_id, day=day(now), observed_at=now, plan=plan
             )

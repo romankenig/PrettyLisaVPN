@@ -2,8 +2,10 @@
 
 import base64
 import math
+import re
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Interface
+from uuid import UUID
 
 from pydantic import Field, field_validator
 
@@ -21,6 +23,30 @@ class ConnectRequest(Value):
     country: str = Field(default="AUTO", pattern=r"^(AUTO|[A-Z]{2})$")
     method: str = "wireguard"
     traffic_mode: str = Field(default="all", pattern=r"^(all|include|exclude)$")
+    service_ids: list[UUID] | None = Field(default=None, max_length=64)
+    custom_rules: list[str] | None = Field(default=None, max_length=256)
+
+    @field_validator("custom_rules")
+    @classmethod
+    def rules_only(cls, values: list[str] | None) -> list[str] | None:
+        if values is None:
+            return None
+        result = []
+        for value in values:
+            value = value.strip().lower()
+            host = value.removeprefix("*.")
+            if (
+                len(host) > 253
+                or "." not in host
+                or not all(
+                    re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", part)
+                    for part in host.split(".")
+                )
+                or not any(c.isalpha() for c in host.split(".")[-1])
+            ):
+                raise ValueError("Expected a configured domain rule, never a URL")
+            result.append(value)
+        return list(dict.fromkeys(result))
 
     @field_validator("method")
     @classmethod

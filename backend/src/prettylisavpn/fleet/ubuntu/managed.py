@@ -378,6 +378,14 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
                     "measure_ca": (ROOT.parent / "measure.crt").read_text(),
                     "measure_token": measure["token"],
                     "expected_egress_ips": payload["expected_egress_ips"],
+                    **(
+                        {
+                            "service_url": payload["service_url"],
+                            "service_domains": payload["service_domains"],
+                        }
+                        if payload.get("service_url")
+                        else {}
+                    ),
                 }
             ),
             timeout=85,

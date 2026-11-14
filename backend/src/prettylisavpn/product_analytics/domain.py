@@ -4,13 +4,26 @@ import calendar
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta, timezone
-from statistics import median
+from statistics import mean, median
 from typing import Any, Literal
 from uuid import UUID
 
 MOSCOW = timezone(timedelta(hours=3))
-Plan = Literal["FREE", "PREMIUM", "PLATINUM", "UNKNOWN"]
-PLANS: tuple[Plan, ...] = ("FREE", "PREMIUM", "PLATINUM", "UNKNOWN")
+Plan = Literal["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"]
+PLANS: tuple[Plan, ...] = ("DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN")
+DURATION_BOUNDS = (10, 60, 180, 300, 900)
+
+
+def distribution(values: list[float]) -> dict[str, Any]:
+    counts = [0] * 6
+    for value in values:
+        counts[next((i for i, bound in enumerate(DURATION_BOUNDS) if value <= bound), 5)] += 1
+    return {
+        "bounds_seconds": list(DURATION_BOUNDS),
+        "counts": counts,
+        "shares": [100 * value / len(values) if values else None for value in counts],
+        "samples": len(values),
+    }
 
 
 def day(at: datetime) -> date:
@@ -42,6 +55,34 @@ class Attempt:
     verified_at: datetime | None
     removed_at: datetime | None
     method: str
+    platform: str = "UNKNOWN"
+    disconnected_at: datetime | None = None
+    first_silence_at: datetime | None = None
+    silence_complete: bool = False
+
+
+def duration(a: Attempt, cutoff: datetime) -> float | None:
+    if (
+        a.verified_at is not None
+        and a.disconnected_at is not None
+        and (a.verified_at <= a.disconnected_at < cutoff)
+    ):
+        return (a.disconnected_at - a.verified_at).total_seconds()
+    return None
+
+
+def silence_duration(a: Attempt, cutoff: datetime) -> float | None:
+    if (
+        a.silence_complete
+        and a.verified_at is not None
+        and a.first_silence_at is not None
+        and (
+            a.verified_at <= a.first_silence_at
+            and a.first_silence_at + timedelta(seconds=10) < cutoff
+        )
+    ):
+        return (a.first_silence_at - a.verified_at).total_seconds()
+    return None
 
 
 def latest_activity(values: list[Activity]) -> list[Activity]:
@@ -109,7 +150,16 @@ def snapshot(
             if a.verified_at is not None and a.verified_at >= a.created_at
         ]
         covered = attempts_from is not None and current >= day(attempts_from)
+        closed_seconds = [
+            seconds
+            for a in attempts
+            if a.disconnected_at is not None
+            and day(a.disconnected_at) == current
+            and (seconds := duration(a, cutoff)) is not None
+        ]
         point.update(
+            mean_session_seconds=round(mean(closed_seconds), 1) if closed_seconds else None,
+            completed_sessions=len(closed_seconds),
             verified_sessions=len(verified) if covered else None,
             connection_success_percent=round(100 * len(passed) / len(closed), 1)
             if closed
@@ -128,6 +178,11 @@ def snapshot(
         for a in attempts
         if a.verified_at is not None and start <= day(a.verified_at) <= through
     )
+    cohort = [
+        a for a in attempts if a.verified_at is not None and start <= day(a.verified_at) <= through
+    ]
+    session_lengths = [seconds for a in cohort if (seconds := duration(a, cutoff)) is not None]
+    quiet = [seconds for a in cohort if (seconds := silence_duration(a, cutoff)) is not None]
     return {
         "schema": 1,
         "generated_at": now.isoformat(),
@@ -141,4 +196,11 @@ def snapshot(
         "attempts_from": attempts_from.isoformat() if attempts_from else None,
         "points": points,
         "methods": dict(sorted(methods.items())),
+        "devices": dict(sorted(Counter(a.platform for a in cohort).items())),
+        "session_duration": distribution(session_lengths),
+        "time_to_silence": distribution(quiet),
+        "mean_session_seconds": round(mean(session_lengths), 1) if session_lengths else None,
+        "duration_unobserved_sessions": len(cohort) - len(session_lengths),
+        "silence_unobserved_sessions": len(cohort) - len(quiet),
+        "metrics_revision": 2,
     }

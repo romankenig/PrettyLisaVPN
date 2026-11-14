@@ -18,10 +18,10 @@ data class WireGuardLease(val id: String, val status: String, val country: Strin
 class WireGuardApi(private val http: HttpAuthApi, private val sessions: SessionCoordinator) {
     private val gson = Gson()
     private val path = "vpn/wireguard/sessions"
-    private suspend fun call(suffix: String = "", method: String = "GET", body: Map<String,String>? = null, request: String? = null): WireGuardLease? =
+    private suspend fun call(suffix: String = "", method: String = "GET", body: Map<String, Any>? = null, request: String? = null): WireGuardLease? =
         sessions.request { token ->
             val json = http.request(path + suffix, method,
-                if (method == "POST") gson.toJson(body ?: emptyMap<String,String>()).toRequestBody("application/json".toMediaType()) else null,
+                if (method == "POST") gson.toJson(body ?: emptyMap<String, Any>()).toRequestBody("application/json".toMediaType()) else null,
                 token, headers = request?.let { mapOf("Idempotency-Key" to it) } ?: emptyMap())
             if (json.isJsonNull) null else gson.fromJson(json, WireGuardLease::class.java).also {
                 UUID.fromString(it.id); Instant.parse(it.expires_at)
@@ -29,9 +29,9 @@ class WireGuardApi(private val http: HttpAuthApi, private val sessions: SessionC
                 require(it.heartbeat_seconds == 30)
             }
         }
-    suspend fun connect(country: String, publicKey: String, request: String, method: String = "wireguard", trafficMode: String = "all"): WireGuardLease {
+    suspend fun connect(country: String, publicKey: String, request: String, method: String = "wireguard", trafficMode: String = "all", selection: Map<String, Any> = emptyMap()): WireGuardLease {
         require(method in setOf("wireguard", "wireguard_relay"))
-        return requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method, "traffic_mode" to trafficMode), request = request))
+        return requireNotNull(call(method = "POST", body = mapOf("country" to country, "public_key" to publicKey, "method" to method, "traffic_mode" to trafficMode) + selection, request = request))
     }
     suspend fun current() = call("/current")
     suspend fun get(id: String) = requireNotNull(call("/${UUID.fromString(id)}"))
