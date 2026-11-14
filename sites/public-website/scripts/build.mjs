@@ -1,4 +1,12 @@
-import { mkdir, copyFile, writeFile, cp, rm, lstat } from "node:fs/promises";
+import {
+  mkdir,
+  copyFile,
+  readFile,
+  writeFile,
+  cp,
+  rm,
+  lstat,
+} from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { pages } from "../src/pages.mjs";
@@ -66,6 +74,15 @@ export async function build() {
   };
   for (const [name, source] of Object.entries(sources))
     await copyFile(path.resolve(root, source), path.join(dist, "assets", name));
+  const lock = await readFile(path.join(dist, "assets/lock.svg"), "utf8");
+  for (const [theme, color] of [
+    ["light", "#2c016d"],
+    ["dark", "#e4e4e4"],
+  ])
+    await writeFile(
+      path.join(dist, `assets/favicon-${theme}.svg`),
+      lock.replace('fill="#e4e4e4"', `fill="${color}"`),
+    );
   await cp(
     path.join(root, "assets/screenshots"),
     path.join(dist, "assets/screenshots"),

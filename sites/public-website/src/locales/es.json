@@ -12,41 +12,38 @@
     "skip": "ir al contenido",
     "pricing": "planes"
   },
-  "launch": "lanzamiento previsto para el 15 de noviembre",
+  "launch": "disponible pronto",
   "hero": {
-    "title": "protección de la conexión.\nen tus dispositivos.",
-    "text": "una vpn para tu día a día. en el móvil y en el ordenador, con ajustes sencillos y una sola cuenta.",
+    "title": "tu internet.\ntus reglas.",
+    "text": "VPN para tus tareas diarias en varios dispositivos",
     "button": "elegir dispositivo",
     "link": "cómo funciona"
   },
   "features": {
-    "eyebrow": "menos pasos",
-    "title": "una conexión cifrada\npara el día a día",
+    "title": "menos ajustes.\nmás libertad.",
     "items": [
       {
-        "title": "protege tu tráfico de red",
-        "text": "la vpn crea una conexión cifrada entre tu dispositivo y el servidor del servicio."
+        "title": "conéctate con un toque",
+        "text": "el piloto automático elige un servidor por ti, o elige tú dónde conectarte."
       },
       {
-        "title": "controles claros",
-        "text": "conéctate y desconéctate con un botón. la aplicación muestra el estado de la conexión."
+        "title": "tú eliges qué proteger",
+        "text": "dirige todo el tráfico por la VPN o solo las aplicaciones y los sitios que elijas."
       },
       {
-        "title": "una cuenta, cinco dispositivos",
-        "text": "accede con un código por correo. sin otra contraseña y con gestión de dispositivos en la aplicación."
+        "title": "teléfono y ordenador juntos",
+        "text": "una cuenta para cinco dispositivos. accede con un código enviado a tu correo."
       }
     ]
   },
   "screens": {
-    "caption": "pantallas reales de las aplicaciones · datos de demostración",
     "windows": "pantalla principal de la aplicación para windows",
     "android": "pantalla de inicio de la aplicación android",
     "settings": "ajustes de los métodos de conexión para windows"
   },
   "platforms": {
-    "eyebrow": "donde te resulte cómodo",
-    "title": "en tus dispositivos",
-    "text": "elige tu plataforma e instala la aplicación. una sola cuenta para el móvil y el ordenador.",
+    "title": "los une a todos",
+    "text": "elige tu plataforma e instala la aplicación. conecta hasta cinco dispositivos a una cuenta.",
     "soon": "próximamente",
     "open": "descargar",
     "planned": "plataformas",
@@ -67,7 +64,8 @@
       "linux": "para ordenadores con linux",
       "android-tv": "para televisores y dispositivos de tv",
       "chrome": "extensión para el tráfico del navegador"
-    }
+    },
+    "account": "1 cuenta"
   },
   "download": {
     "title": "para",
@@ -104,7 +102,6 @@
     }
   },
   "help": {
-    "eyebrow": "lo esencial",
     "title": "FAQ",
     "contactTitle": "¿necesitas ayuda?",
     "contactText": "cuéntanos qué ha pasado e indica tu dispositivo, la versión de la aplicación y la hora del error. no envíes contraseñas ni códigos de acceso.",
@@ -149,7 +146,7 @@
     "updated": "Versión del 8 de noviembre de 2026",
     "terms": [
       {
-        "title": "Disposiciones generales",
+        "title": "disposiciones generales",
         "paragraphs": [
           "1.1. El presente Acuerdo de uso (el «Acuerdo») regula PrettyLisaVPN, disponible en prettylisavpn.com y en las aplicaciones cliente (el «Servicio»), prestado por la administración del Servicio (la «Administración»).",
           "1.2. Al utilizar el Servicio, incluido registrarse, iniciar una conexión VPN o pagar servicios, el Usuario confirma que ha leído íntegramente este Acuerdo y acepta sus condiciones.",
@@ -157,7 +154,7 @@
         ]
       },
       {
-        "title": "Naturaleza de los servicios",
+        "title": "naturaleza de los servicios",
         "paragraphs": [
           "2.1. El Servicio ofrece prestaciones inmateriales: acceso VPN mediante aplicaciones y conexión proxy mediante la extensión del navegador. Las plataformas y funciones disponibles se indican en el sitio y en la aplicación correspondiente; la extensión protege únicamente el tráfico compatible del navegador.",
           "2.2. Las prestaciones pueden incluir:\nuna conexión segura con un servidor del Servicio;\nla elección de un servidor o país disponible dentro del plan;\nasistencia, soporte y actualizaciones de las aplicaciones.",
@@ -166,7 +163,7 @@
         ]
       },
       {
-        "title": "Exclusión de garantías y responsabilidad",
+        "title": "exclusión de garantías y responsabilidad",
         "paragraphs": [
           "3.1. El Servicio se presta «AS IS» («tal cual»), sujeto a las exigencias imperativas de la legislación aplicable.",
           "3.2. La Administración no garantiza:\nque se cumplan las expectativas subjetivas del Usuario;\nresultados financieros, comerciales, profesionales o de otra índole;\nfuncionamiento ininterrumpido y sin errores, velocidad constante o acceso a determinados recursos externos.",
@@ -175,7 +172,7 @@
         ]
       },
       {
-        "title": "Uso lícito",
+        "title": "uso lícito",
         "paragraphs": [
           "4.1. El Servicio no está destinado a fomentar, organizar o facilitar actividades ilícitas.",
           "4.2. El Usuario debe respetar la legislación aplicable y las normas de terceros. Se prohíben accesos no autorizados, programas maliciosos, spam y ataques a infraestructuras.",
@@ -183,7 +180,7 @@
         ]
       },
       {
-        "title": "Propiedad intelectual",
+        "title": "propiedad intelectual",
         "paragraphs": [
           "5.1. Los materiales y programas del Servicio están protegidos por la legislación sobre propiedad intelectual.",
           "5.2. El Usuario no puede copiar, distribuir, revender, transferir ni explotar materiales sin autorización del titular, salvo su uso previsto, los supuestos legales y los derechos concedidos por las licencias de los componentes. Las licencias de código abierto siguen vigentes.",
@@ -191,7 +188,7 @@
         ]
       },
       {
-        "title": "Restricciones de acceso",
+        "title": "restricciones de acceso",
         "paragraphs": [
           "6.1. La Administración puede suspender o limitar el acceso en caso de:\nincumplimiento de este Acuerdo;\nabusos detectados;\nexigencias legales o de proveedores de pago.",
           "6.2. Las restricciones no extinguen obligaciones previas ni derechos legales del Usuario.",
@@ -199,7 +196,7 @@
         ]
       },
       {
-        "title": "Pagos y reembolsos",
+        "title": "pagos y reembolsos",
         "paragraphs": [
           "7.1. Los pagos se realizan según las condiciones mostradas previamente. Plan, período, precio, moneda y métodos de pago se muestran antes de confirmar. La renovación automática exige consentimiento separado al importe y la frecuencia de cobro. El importe acordado permanece fijo hasta cancelar y contratar de nuevo. Un pago único no activa renovaciones automáticas. Si el pago no está disponible, no se adquiere acceso de pago.",
           "7.2. El Usuario puede poner fin a prestaciones futuras y solicitar un reembolso conforme a la ley. El carácter inmaterial o la concesión de acceso no eliminan por sí solos este derecho. Las deducciones requieren fundamento legal, incluidos gastos reales documentados cuando la ley lo permita.",
@@ -210,14 +207,14 @@
         ]
       },
       {
-        "title": "Confidencialidad",
+        "title": "confidencialidad",
         "paragraphs": [
           "8.1. La Administración puede recopilar los datos mínimos necesarios para operar. Su composición, fines y tratamiento figuran en la Política de privacidad publicada en el sitio.",
           "8.2. La Administración adopta medidas razonables de protección, sin garantizar seguridad absoluta de transmisión. Se mantienen sus obligaciones legales de protección de datos."
         ]
       },
       {
-        "title": "Modificación de las condiciones",
+        "title": "modificación de las condiciones",
         "paragraphs": [
           "9.1. La Administración puede modificar este Acuerdo.",
           "9.2. La versión vigente y su fecha se publican en el Servicio. Los cambios sustanciales se comunican mediante el Servicio o email antes de aplicarse.",
@@ -225,7 +222,7 @@
         ]
       },
       {
-        "title": "Información de contacto",
+        "title": "información de contacto",
         "paragraphs": [
           "10.1. Para cualquier consulta, incluidos pagos, reclamaciones y datos personales, el Usuario puede escribir a help@prettylisavpn.com.",
           "Al utilizar el Servicio, incluido registrar una cuenta o iniciar una conexión VPN, el Usuario confirma que conoce este Acuerdo y acepta íntegramente sus condiciones."
@@ -234,14 +231,14 @@
     ],
     "privacy": [
       {
-        "title": "Disposiciones generales",
+        "title": "disposiciones generales",
         "paragraphs": [
           "1.1. Esta Política de privacidad (la «Política») regula el tratamiento y protección de la información facilitada al utilizar PrettyLisaVPN en prettylisavpn.com y sus aplicaciones (el «Servicio»). La Administración organiza el tratamiento; contacto sobre datos personales: help@prettylisavpn.com.",
-          "1.2. El Usuario recibe información de esta Política al utilizar el Servicio. Si no acepta el tratamiento necesario para la prestación, puede dejar de usarlo. La Política es informativa y no sustituye un consentimiento separado exigido por la ley."
+          "1.2. El Usuario recibe información de esta Política al utilizar el Servicio. Si no acepta el tratamiento necesario para la prestación, puede dejar de usarlo. La Política no sustituye un consentimiento separado exigido por la ley."
         ]
       },
       {
-        "title": "Recopilación de información",
+        "title": "recopilación de información",
         "paragraphs": [
           "2.1. El Servicio puede recopilar:\nidentificadores de cuenta, email, estado y fechas de registro y acceso;\ninformación técnica necesaria para conexión y seguridad: IP, navegador, identificador, nombre, plataforma y sistema operativo del dispositivo;\ninteracciones con el Servicio: plan, período de acceso, sesiones VPN, tiempo consumido, volumen y velocidad de transferencia, resultados de conexión, estados de pago, mensajes y adjuntos de soporte.",
           "2.2. No se exigen pasaportes, documentos, fotografías u otros datos personales más allá de lo necesario. No envíe contraseñas, códigos de un solo uso ni credenciales de pago completas al soporte.",
@@ -251,14 +248,14 @@
         ]
       },
       {
-        "title": "Uso de la información",
+        "title": "uso de la información",
         "paragraphs": [
           "3.1. La información se utiliza exclusivamente para:\noperar funciones, acceso, dispositivos, conexiones, planes y pagos;\ncomunicarse con el Usuario, incluidas notificaciones y soporte;\nanalizar y mejorar el Servicio y prevenir abusos, sin analizar el historial de navegación.",
           "3.2. Los datos necesarios para la prestación solicitada sirven para celebrar y ejecutar el contrato; los necesarios para obligaciones legales se tratan conforme a su fundamento correspondiente. El consentimiento se obtiene por separado cuando procede. No se usan datos para fines incompatibles; el uso no implica consentimiento publicitario."
         ]
       },
       {
-        "title": "Transmisión a terceros",
+        "title": "transmisión a terceros",
         "paragraphs": [
           "4.1. La Administración solo transmite información:\nsi lo exige la ley;\nsi es necesaria para cumplir obligaciones con el Usuario, como pagos, alojamiento y emails de servicio, con base legal;\nsi el Usuario ha consentido.",
           "4.2. Cuando el pago está disponible, email, importe e identificador técnico se transmiten al proveedor de pago para procesar y conciliar el pago. PrettyLisaVPN recibe el estado y período de acceso; los datos completos de tarjeta, CVC y contraseñas bancarias se tratan por el proveedor y no se guardan en el Servicio.",
@@ -266,7 +263,7 @@
         ]
       },
       {
-        "title": "Conservación y protección",
+        "title": "conservación y protección",
         "paragraphs": [
           "5.1. Los datos se conservan durante el tiempo necesario para sus fines, el contrato y las obligaciones legales. El tratamiento incluye recopilación, registro, almacenamiento, rectificación, uso, transmisión conforme al apartado 4, bloqueo y supresión, mediante sistemas automáticos y atención de solicitudes por personas autorizadas.",
           "5.2. La Administración adopta medidas organizativas y técnicas razonables, como accesos limitados y conexiones protegidas, sin garantizar seguridad absoluta en internet.",
@@ -275,14 +272,14 @@
         ]
       },
       {
-        "title": "Exclusión de responsabilidad",
+        "title": "exclusión de responsabilidad",
         "paragraphs": [
           "6.1. El Usuario entiende y acepta que transmitir información por internet siempre implica riesgos.",
           "6.2. La Administración no responde de pérdida, robo o divulgación causados por terceros o el Usuario en la medida legalmente permitida. Sus obligaciones de protección y responsabilidad por incumplirlas permanecen vigentes."
         ]
       },
       {
-        "title": "Cambios en la Política",
+        "title": "cambios en la política",
         "paragraphs": [
           "7.1. La Administración puede modificar la Política. La versión fechada se publica en el Servicio; los cambios sustanciales se comunican mediante el Servicio o email antes del tratamiento correspondiente.",
           "7.2. Continuar utilizando el Servicio no sustituye el consentimiento separado exigido por la ley. Si nuevos fines requieren consentimiento, se obtiene antes de comenzar ese tratamiento. Las consultas pueden dirigirse a help@prettylisavpn.com."
@@ -307,7 +304,7 @@
       "para dudas sobre un pago, un recibo, el periodo de acceso o un cargo erróneo, escribe a help@prettylisavpn.com. indica el correo de la cuenta y los datos que permitan localizar el pago.",
       "el importe máximo por transacción es de 10 000 RUB. no se ofrecen recargas de saldo ni importes personalizados. los pagos aún no están disponibles."
     ],
-    "contents": "Contenido",
+    "contents": "contenido",
     "privacyIntro": "Esta Política regula la recopilación, el uso y la protección de la información de los usuarios de PrettyLisaVPN. Se recopilan identificadores de cuenta, información técnica e interacciones con el Servicio, pero no el historial de navegación. Los datos se utilizan para prestar el Servicio, comunicarse con el Usuario y analizar su funcionamiento. La transmisión se basa en los supuestos del apartado 4. Los datos se conservan durante el tiempo necesario y la Administración adopta medidas de protección. Los riesgos de transmisión y los cambios se regulan en los apartados 6 y 7."
   },
   "notFound": {
@@ -315,16 +312,15 @@
     "text": "vuelve al inicio para descargar la aplicación o encontrar ayuda."
   },
   "pricing": {
-    "eyebrow": "a tu ritmo",
-    "title": "una cuenta. un precio claro.",
+    "title": "planes disponibles",
     "intro": "empieza gratis o elige premium por un mes natural.",
-    "free": "una hora de vpn al día por cuenta.",
+    "free": "1 hora cada día",
     "freeButton": "empezar gratis",
-    "description": "vpn sin límite de tiempo.",
+    "description": "sin límites de tiempo ni datos",
     "features": [
-      "elige un país de servidor disponible",
-      "hasta cinco dispositivos activos por cuenta",
-      "sin anuncios"
+      "servidores premium y todas las ubicaciones",
+      "hasta 5 dispositivos",
+      "todo el tráfico o solo el elegido"
     ],
     "currencies": {
       "RUB": "en rublos",
@@ -347,14 +343,23 @@
     "unavailable": "precios no disponibles",
     "unavailableCheckout": "la contratación estará disponible pronto",
     "terms": "renovación mensual. el precio acordado se mantiene hasta que canceles.",
-    "manage": "Gestionar suscripción",
-    "loading": "Cargando suscripción…",
+    "manage": "gestionar suscripción",
+    "loading": "cargando suscripción…",
     "upgrade": "mejorar",
     "demo": {
       "title": "probar sin registro",
-      "description": "15 minutos por dispositivo al día. solo piloto automático y protección de todo el tráfico.",
-      "button": "probar en Android",
-      "upgrade": "regístrate en FREE: una hora completa al día, selección de país y protección selectiva. el tiempo DEMO no se descuenta de FREE."
-    }
+      "description": "15 minutos cada día",
+      "button": "probar en android",
+      "upgrade": "una hora independiente al registrarte",
+      "features": [
+        "solo piloto automático",
+        "solo este dispositivo",
+        "solo todo el tráfico"
+      ]
+    },
+    "freeFeatures": [
+      "solo servidores gratuitos",
+      "todo el tráfico o solo el elegido"
+    ]
   }
 }

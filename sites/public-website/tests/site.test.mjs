@@ -15,6 +15,62 @@ import { website, releaseBlockers } from "../src/model.mjs";
 import { releaseMetadata } from "../src/downloads.mjs";
 import { build, dist, root } from "../scripts/build.mjs";
 import { createPreviewServer } from "../scripts/preview.mjs";
+import { portalCopy } from "../src/portal-copy.mjs";
+
+test("public plan benefits match Android in every language and in the purchase portal", async () => {
+  for (const language of languages) {
+    const android = await readFile(
+      path.resolve(
+        root,
+        `../../apps/android/app/src/main/res/values${language === "en" ? "" : "-" + language}/strings.xml`,
+      ),
+      "utf8",
+    );
+    const value = (key) =>
+      android.match(new RegExp(`<string name="${key}">([^<]+)</string>`))[1];
+    const p = locales[language].pricing;
+    const portal = portalCopy[language === "zh" ? "zh-CN" : language];
+    assert.equal(p.description, value("plan_unlimited"));
+    assert.deepEqual(
+      p.features,
+      ["plan_all_countries", "plan_five_devices", "plan_split"].map(value),
+    );
+    assert.equal(p.free, value("plan_hour"));
+    assert.deepEqual(
+      p.freeFeatures,
+      ["plan_free_countries", "plan_split"].map(value),
+    );
+    assert.equal(p.demo.description, value("plan_quarter_hour"));
+    assert.deepEqual(
+      p.demo.features,
+      ["plan_auto_only", "plan_device_only", "plan_all_traffic_only"].map(
+        value,
+      ),
+    );
+    assert.deepEqual(
+      [portal.unlimited, portal.premiumServers, portal.devices, portal.traffic],
+      [p.description, ...p.features],
+    );
+    const html = pages().get(routeFor(language));
+    for (const label of ["premium ⭐", "free 🕊️", "demo ⏳"])
+      assert.ok(html.includes(label));
+  }
+});
+
+test("homepage pairs real device screens and emphasizes one account without editorial captions", () => {
+  for (const language of languages) {
+    const html = pages().get(routeFor(language));
+    assert.equal((html.match(/class="device-pair"/g) ?? []).length, 2);
+    assert.equal((html.match(/class="device-laptop"/g) ?? []).length, 2);
+    assert.equal((html.match(/class="device-phone"/g) ?? []).length, 2);
+    assert.ok(
+      html.includes(
+        `<strong class="account-highlight">${escape(locales[language].platforms.account)}</strong>`,
+      ),
+    );
+    assert.doesNotMatch(html, /figcaption|eyebrow|data-price-reference-note/);
+  }
+});
 
 function shape(value) {
   if (Array.isArray(value)) return value.map(shape);
@@ -45,8 +101,14 @@ test("billing preserves the published moderation layout and uses API-owned prici
     const purchaseLabel = `>${escape(locales[language].pricing.buy)}</a>`;
     assert.equal(pricing.split(purchaseLabel).length - 1, 2);
     for (const currency of ["RUB", "USD"])
-      assert.ok(pricing.includes(`href="${routeFor(language, "/account/")}?currency=${currency}"`));
-    assert.ok(!pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`));
+      assert.ok(
+        pricing.includes(
+          `href="${routeFor(language, "/account/")}?currency=${currency}"`,
+        ),
+      );
+    assert.ok(
+      !pricing.includes(`>${escape(locales[language].pricing.manage)}</a>`),
+    );
     assert.doesNotMatch(
       html,
       /data-amount-minor=|data-purchase=|id="payment-dialog"/,
@@ -63,9 +125,11 @@ test("DEMO is below Premium and Free with localized device limits and Android en
     const free = html.indexOf('class="plan free-plan"');
     const demo = html.indexOf('class="demo-plan"');
     assert.ok(premium >= 0 && free > premium && demo > free);
-    const section = html.slice(demo, html.indexOf('</aside>', demo));
-    assert.ok(section.includes(escape(locales[language].pricing.demo.description)));
-    assert.ok(section.includes(routeFor(language, '/download/android/')));
+    const section = html.slice(demo, html.indexOf("</aside>", demo));
+    assert.ok(
+      section.includes(escape(locales[language].pricing.demo.description)),
+    );
+    assert.ok(section.includes(routeFor(language, "/download/android/")));
     assert.ok(!section.includes('class="button"'));
   }
 });
@@ -145,6 +209,15 @@ test("all links and anchors resolve; documents and language links preserve conte
     "windows-licenses.txt",
   ]);
   for (const [route, html] of all) {
+    assert.equal(
+      html.match(/<title>(.*?)<\/title>/)?.[1],
+      "PrettyLisaVPN",
+      route,
+    );
+    assert.match(
+      html,
+      /rel="icon" href="\/assets\/favicon-light.svg" type="image\/svg\+xml"/,
+    );
     assert.equal((html.match(/<h1[ >]/g) ?? []).length, 1, route);
     assert.match(html, /noindex,nofollow/);
     assert.equal((html.match(/hreflang=/g) ?? []).length, 12);
@@ -343,6 +416,8 @@ test("clean build removes stale routes and HTTP serves localized assets without 
   }
   for (const asset of [
     "lock.svg",
+    "favicon-light.svg",
+    "favicon-dark.svg",
     "Rubik.ttf",
     "OFL.txt",
     "app.js",
@@ -352,6 +427,18 @@ test("clean build removes stale routes and HTTP serves localized assets without 
     "screenshots/android-home.png",
   ])
     assert.equal((await fetch(origin + "/assets/" + asset)).status, 200);
+  const lock = await readFile(path.join(dist, "assets/lock.svg"), "utf8");
+  for (const [theme, color] of [
+    ["light", "#2c016d"],
+    ["dark", "#e4e4e4"],
+  ]) {
+    const response = await fetch(origin + `/assets/favicon-${theme}.svg`);
+    assert.match(response.headers.get("content-type"), /^image\/svg\+xml/);
+    assert.equal(
+      await response.text(),
+      lock.replace('fill="#e4e4e4"', `fill="${color}"`),
+    );
+  }
   for (const route of ["/readiness/", "/plans/", "/checkout/"])
     assert.equal((await fetch(origin + route)).status, 404);
   assert.equal((await fetch(origin + "/%5c..%5ckeys")).status, 400);
