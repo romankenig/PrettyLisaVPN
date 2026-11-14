@@ -95,14 +95,6 @@ export function purchasePresentation(
 }
 export const priceCacheKey = "prettylisa.public-prices.v1";
 const maxAge = 7 * 24 * 60 * 60 * 1000;
-export const referencePriceCopy = {
-  ru: "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
-  en: "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.",
-  de: "Richtpreise für ein neues Abonnement. Die aktuellen Konditionen werden vor der Zahlung bestätigt. Ihr bestehender Vertragspreis bleibt unverändert.",
-  es: "Precios orientativos para una nueva suscripción. Confirmaremos las condiciones antes del pago. El precio de tu contrato actual no cambia.",
-  fr: "Prix indicatifs pour un nouvel abonnement. Les conditions seront confirmées avant le paiement. Le prix de votre contrat actuel reste inchangé.",
-  zh: "新订阅的参考价格。付款前将确认最新条款。现有订阅的合同价格保持不变。",
-};
 
 export function cachedPrices(storage, now = Date.now()) {
   try {

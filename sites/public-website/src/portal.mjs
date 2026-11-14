@@ -1,7 +1,6 @@
 import { portalCopy } from "./portal-copy.mjs";
 import {
   cachedPrices,
-  referencePriceCopy,
   formatMonthlyPrice,
   purchasePresentation,
 } from "./pricing.mjs";
@@ -21,10 +20,6 @@ export function providerURL(raw) {
 
 export async function mountPortal(root) {
   const t = portalCopy[document.documentElement.lang] ?? portalCopy.en;
-  const priceLanguage =
-    document.documentElement.lang === "zh-CN"
-      ? "zh"
-      : document.documentElement.lang;
   const api = "/api/web/billing";
   let account,
     accountEmail,
@@ -125,10 +120,7 @@ export async function mountPortal(root) {
   function screen(title, text) {
     clearTimeout(timer);
     generation++;
-    root.replaceChildren(
-      el("p", "PrettyLisaVPN Premium", "eyebrow"),
-      el("h1", title),
-    );
+    root.replaceChildren(el("h1", title));
     if (text) root.append(el("p", text, "portal-lead"));
     if (account && accountEmail)
       root.append(el("p", accountEmail, "portal-account"));
@@ -145,11 +137,11 @@ export async function mountPortal(root) {
     if (p.reference) card.dataset.referencePrices = "";
     card.append(
       el("p", p.contract ? t.fixedPrice : t.selected, "portal-product-label"),
-      el("h2", "PREMIUM ⭐"),
+      el("h2", "premium ⭐"),
       el("p", t.productSummary),
     );
     const features = el("ul", null, "portal-benefits");
-    for (const feature of [t.unlimited, t.premiumServers, t.devices])
+    for (const feature of [t.unlimited, t.premiumServers, t.devices, t.traffic])
       features.append(el("li", feature));
     card.append(features);
     const row = el("div", null, "portal-price-row"),
@@ -208,14 +200,6 @@ export async function mountPortal(root) {
       if (!p.canPay)
         card.append(el("p", t.placeholderHint, "portal-price-note"));
     }
-    if (p.reference)
-      card.append(
-        el(
-          "p",
-          referencePriceCopy[priceLanguage] ?? referencePriceCopy.en,
-          "portal-price-note",
-        ),
-      );
     return card;
   }
   function openSuccessPreview(preview) {
@@ -239,7 +223,7 @@ export async function mountPortal(root) {
     const receipt = el("section", null, "portal-plan");
     receipt.dataset.successPreview = "";
     receipt.append(
-      el("h2", "PREMIUM ⭐"),
+      el("h2", "premium ⭐"),
       el(
         "p",
         formatMonthlyPrice(
@@ -374,7 +358,10 @@ export async function mountPortal(root) {
       overview.actions.includes("RENEW");
     screen(t.title, showPurchase ? null : t.fixedPrice);
     const card = el("section", null, "portal-plan");
-    card.append(el("p", t.yourPlan), el("span", overview.plan, "portal-badge"));
+    card.append(
+      el("p", t.yourPlan),
+      el("span", overview.plan.toLowerCase(), "portal-badge"),
+    );
     if (overview.current_price)
       card.append(el("h2", money(overview.current_price) + " / " + t.month));
     if (overview.paid_until)
@@ -409,7 +396,7 @@ export async function mountPortal(root) {
       const current = el("p", null, "portal-current-summary");
       current.append(
         document.createTextNode(t.yourPlan + ": "),
-        el("strong", overview.plan),
+        el("strong", overview.plan.toLowerCase()),
       );
       root.append(current, purchaseCard({ signedIn: true }));
     }

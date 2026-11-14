@@ -19,6 +19,19 @@
   Migration 0049; backend and node helpers must precede client rollout. No client
   screen changes. See [report definitions and handoff](docs/report-analytics.md).
 
+### Public website — 0.5.5
+
+- Use `PrettyLisaVPN` as every page's browser-tab title and switch the original
+  lock favicon between dark purple/light gray with the browser's color scheme.
+- Replace the dated launch badge with a plain “launching soon” notice and use
+  the owner-approved headline and benefits, including automatic or manual server selection.
+- Present current native Windows and Android captures together in laptop/phone
+  frames in both homepage sections; highlight one account and remove captions.
+- Match plan emoji and benefits to Android, remove reference-price explanations
+  and decorative subtitles, and apply lowercase interface copy across six languages.
+- Keep existing prices, authentication, recurring consent and payment authority
+  unchanged. See the [website copy and devices handoff](docs/website-copy-devices.md).
+
 ### Public website — 0.5.4
 
 - The placeholder Pay button now navigates to the localized success page with
