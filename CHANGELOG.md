@@ -6,6 +6,21 @@
 
 ## Unreleased
 
+### Chrome — 0.3.0 / Backend — 0.41.0 / Public website — 0.6.0
+
+- Chrome uses lowercase UI copy, six languages with local flags, real DEMO entry
+  and localized website/legal links. Remove the sign-in-tab link, persistence
+  explanation and redundant proxy settings card; preserve proxy protection.
+- Backend admits Chrome guest proxy leases with the existing 15-minute UTC daily
+  quota. Share email identity, OTP limits and account-creation locks across
+  confirmed Yandex, Gmail and Proton domains; keep the first stored address.
+  Legacy duplicate accounts require explicit reconciliation, not destructive merge.
+- Publish Chrome ZIP/version/size/hash through the website's existing client-download
+  feed, with six translated unpacked-install guides. Other clients and schema
+  remain unchanged. Chrome-disable diagnosis is explicitly deferred by the owner.
+- See [implementation and release handoff](docs/chrome-ui-demo.md) and
+  [provider evidence and compatibility](docs/email-identities.md).
+
 ### Public website — 0.5.5
 
 - Use `PrettyLisaVPN` as every page's browser-tab title and switch the original

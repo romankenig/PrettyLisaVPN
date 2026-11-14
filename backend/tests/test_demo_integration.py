@@ -125,6 +125,34 @@ async def test_concurrent_guest_logins_share_identity_and_only_last_session_surv
         assert len(active) == 1
 
 
+async def test_chrome_admission_preserves_identity_without_sharing_android_windows_quota(guest):
+    pg, _, _, _, _, service, key, original, auth = guest
+    chrome = await service.login(key, "192.0.2.1", DevicePlatform.CHROME_EXTENSION)
+    try:
+        assert chrome.user.id != original.user.id
+        assert chrome.device.platform is DevicePlatform.CHROME_EXTENSION
+        assert chrome.device.device_name == "Chrome DEMO"
+        assert chrome.device.last_login_at is None
+        repeated = await service.login(key, "192.0.2.1", DevicePlatform.CHROME_EXTENSION)
+        assert repeated.user.id == chrome.user.id
+        assert repeated.device.id == chrome.device.id
+        with pytest.raises(InvalidSessionError):
+            await auth.authenticate(chrome.access_token.token)
+        assert (await auth.authenticate(repeated.access_token.token)).is_demo
+        async with pg.session() as session:
+            assert (
+                await ClientQuotaRepository(session).display(
+                    chrome.user.id, repeated.user.created_at
+                )
+            ).daily_limit_seconds == 900
+    finally:
+        async with pg.session() as session, session.begin():
+            await session.execute(
+                delete(DemoDeviceRecord).where(DemoDeviceRecord.user_id == chrome.user.id)
+            )
+            await session.execute(delete(UserRecord).where(UserRecord.id == chrome.user.id))
+
+
 @pytest.mark.parametrize(
     "changes",
     [
@@ -136,7 +164,14 @@ async def test_concurrent_guest_logins_share_identity_and_only_last_session_surv
 )
 async def test_guest_cannot_request_paid_selection_or_split_or_browser_proxy(guest, changes):
     pg, vpn, _, provider, _, _, _, result, _ = guest
-    with pytest.raises(FleetError, match="REGISTRATION_REQUIRED"):
+    if changes.get("method") == "https_proxy":
+        vpn.settings.managed_vpn_enabled = True
+    with pytest.raises(
+        FleetError,
+        match="ACCOUNT_UNAVAILABLE"
+        if changes.get("method") == "https_proxy"
+        else "REGISTRATION_REQUIRED",
+    ):
         await vpn.connect(
             result.access_token.token, ConnectRequest(public_key=KEY, **changes), uuid4()
         )

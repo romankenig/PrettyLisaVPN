@@ -33,6 +33,7 @@ class PublicWebsiteTests(unittest.TestCase):
         for name in (
             "android.apk",
             "windows.exe",
+            "chrome-extension.zip",
             "android-sources.tar.gz",
             "windows-sources.tar.gz",
             "windows-licenses.txt",
@@ -118,6 +119,7 @@ class PublicWebsiteTests(unittest.TestCase):
         for name in (
             "android.apk",
             "windows.exe",
+            "chrome-extension.zip",
             "android-sources.tar.gz",
             "windows-sources.tar.gz",
             "windows-licenses.txt",

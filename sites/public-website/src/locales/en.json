@@ -80,7 +80,8 @@
     "checksum": "sha-256 checksum",
     "requirements": {
       "android": "android 8.0 or later · arm64",
-      "windows": "windows 10 / 11 · x64"
+      "windows": "windows 10 / 11 · x64",
+      "chrome": "chrome 120 or later · extension zip archive"
     },
     "setup": "three steps to connect",
     "steps": [
@@ -99,7 +100,13 @@
       "apple": "app store",
       "chrome": "chrome web store",
       "flathub": "flathub"
-    }
+    },
+    "chromeText": "download the extension archive. it protects traffic in regular browser tabs.",
+    "chromeSteps": [
+      "extract the zip into a permanent folder. keep that folder in place after installation.",
+      "open chrome://extensions, enable developer mode and choose “load unpacked”. select the folder containing manifest.json.",
+      "pin PrettyLisaVPN in the extensions menu. sign in by email code, then connect."
+    ]
   },
   "help": {
     "title": "FAQ",

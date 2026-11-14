@@ -14,6 +14,7 @@ from test_managed_vpn_integration import managed_state  # noqa: F401
 
 from prettylisavpn.client_vpn.domain import ConnectRequest
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
+from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.fleet.domain import FleetError
@@ -104,6 +105,70 @@ async def test_unconfigured_proxy_node_is_not_allocated(browser_state):
             method.configuration = {}
     with pytest.raises(FleetError, match="VPN_NO_AVAILABLE_NODE"):
         await connect(service, method="https_proxy")
+
+
+async def test_chrome_demo_proxy_uses_900_second_budget_auto_and_confirmed_cleanup(browser_state):
+    from types import SimpleNamespace
+
+    from pydantic import SecretStr
+    from sqlalchemy import delete
+
+    from prettylisavpn.auth.session_service import AuthenticatedSessionService
+    from prettylisavpn.demo.model import DemoDeviceRecord
+    from prettylisavpn.demo.service import DemoService
+    from prettylisavpn.users.model import UserRecord
+
+    postgres, service, worker, managed, _, _ = browser_state
+    config = service.settings.model_copy(
+        update={
+            "demo_enabled": True,
+            "demo_identity_secret": SecretStr("chrome-demo-integration-secret-" + "a" * 32),
+        }
+    )
+    guest = await DemoService(postgres, config, SimpleNamespace(admit=AsyncMock())).login(
+        uuid4().hex * 2, "192.0.2.1", DevicePlatform.CHROME_EXTENSION
+    )
+    service.auth = AuthenticatedSessionService(postgres, AsyncMock(), config)
+    token = guest.access_token.token
+    try:
+        for options in [
+            {"country": "DE"},
+            {"traffic_mode": "include"},
+            {"traffic_mode": "exclude"},
+        ]:
+            with pytest.raises(FleetError, match="REGISTRATION_REQUIRED"):
+                await service.connect(
+                    token, ConnectRequest(public_key=KEY, method="https_proxy", **options), uuid4()
+                )
+        with pytest.raises(FleetError, match="ACCOUNT_UNAVAILABLE"):
+            await service.connect(token, ConnectRequest(public_key=KEY), uuid4())
+        before = datetime.now(UTC)
+        created = await service.connect(
+            token, ConnectRequest(public_key=KEY, method="https_proxy"), uuid4()
+        )
+        identifier = UUID(created["id"])
+        midnight = (before + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        assert created["expires_at"] <= min(before + timedelta(seconds=901), midnight)
+        assert await worker.tick()
+        assert (await service.get(token, identifier))["configuration"]["scope"] == "browser"
+        assert (await service.get(token, identifier, "probe", "1.1.1.1"))["verified"]
+        async with postgres.session() as session:
+            assert (
+                await ClientQuotaRepository(session).display(guest.user.id, datetime.now(UTC))
+            ).daily_limit_seconds == 900
+        await service.get(token, identifier, "revoke")
+        assert await worker.tick()
+        assert (await service.get(token, identifier))["status"] == "CLOSED"
+        managed.revoke_access.assert_awaited_once()
+    finally:
+        async with postgres.session() as session, session.begin():
+            await session.execute(
+                delete(ClientLeaseRecord).where(ClientLeaseRecord.user_id == guest.user.id)
+            )
+            await session.execute(
+                delete(DemoDeviceRecord).where(DemoDeviceRecord.user_id == guest.user.id)
+            )
+            await session.execute(delete(UserRecord).where(UserRecord.id == guest.user.id))
 
 
 async def test_browser_country_selection_filters_proxy_capability_and_free_nodes(browser_state):

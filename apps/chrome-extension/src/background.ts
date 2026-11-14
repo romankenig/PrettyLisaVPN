@@ -139,6 +139,9 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
       ? ready.then(() => controller.snapshot())
       : enqueue(async () => {
           switch (data.type) {
+            case "demo":
+              await controller.demo();
+              break;
             case "requestOtp":
               await controller.requestOtp(text(data.email, 254));
               break;

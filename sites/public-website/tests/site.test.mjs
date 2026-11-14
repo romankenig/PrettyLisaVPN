@@ -190,7 +190,13 @@ test("home has five sections including database-backed prices, one launch notice
       );
       if (platform.file) {
         assert.ok(page.includes(`href="/downloads/${platform.file}" download`));
-        assert.ok(page.includes(`/downloads/${platform.id}-sources.tar.gz`));
+        if (platform.id === "chrome") {
+          assert.ok(page.includes("chrome://extensions"));
+          assert.ok(page.includes("manifest.json"));
+          assert.ok(!page.includes("windows-home.png"));
+          assert.ok(!page.includes("chrome-sources.tar.gz"));
+        } else
+          assert.ok(page.includes(`/downloads/${platform.id}-sources.tar.gz`));
       } else {
         assert.ok(page.includes(escape(locales[language].platforms.soon)));
         assert.doesNotMatch(page, /href="\/downloads\//);
@@ -204,6 +210,7 @@ test("all links and anchors resolve; documents and language links preserve conte
   const files = new Set([
     "android.apk",
     "windows.exe",
+    "chrome-extension.zip",
     "android-sources.tar.gz",
     "windows-sources.tar.gz",
     "windows-licenses.txt",
@@ -327,13 +334,18 @@ test("release metadata is optional, validated and cannot change download destina
     sha256: "a".repeat(64),
     url: "https://attacker.invalid/",
   };
-  const index = { schema: 1, clients: { android: data } };
-  for (const language of languages) {
-    const result = releaseMetadata(index, "android", language);
-    assert.equal(result.version, "0.21.0");
-    assert.equal(result.sha256, data.sha256);
-    assert.ok(result.size.length);
-    assert.equal(result.url, undefined);
+  const index = {
+    schema: 1,
+    clients: { android: data, windows: data, chrome: data },
+  };
+  for (const platform of ["android", "windows", "chrome"]) {
+    for (const language of languages) {
+      const result = releaseMetadata(index, platform, language);
+      assert.equal(result.version, "0.21.0");
+      assert.equal(result.sha256, data.sha256);
+      assert.ok(result.size.length);
+      assert.equal(result.url, undefined);
+    }
   }
   for (const value of [null, {}, { schema: 2, clients: index.clients }])
     assert.equal(releaseMetadata(value, "android"), null);

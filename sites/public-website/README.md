@@ -1,6 +1,12 @@
-# PrettyLisaVPN website · 0.5.4
+# PrettyLisaVPN website · 0.6.0
 
-The account page now keeps PREMIUM, its monthly price and a visible Pay button
+Chrome now has a public ZIP download, six translated installation guides and
+version/size/hash metadata from the same verified publisher used by other clients.
+Successful develop builds update the public feed automatically; unpacked Chrome
+installations still require replacing files and reloading. See the
+[Chrome handoff](../../docs/chrome-ui-demo.md) for exact publication evidence.
+
+The account page keeps PREMIUM, its monthly price and a visible Pay button
 through email sign-in and unavailable-provider/catalog states. Until live checkout
 is available, Pay opens a localized success-page preview without charging or
 changing access. A visible demonstration label distinguishes it from a confirmed

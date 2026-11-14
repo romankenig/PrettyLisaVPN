@@ -144,7 +144,7 @@ def test_guest_profile_does_not_expose_synthetic_email_and_reports_900_seconds()
     assert not value.entitlements.split_tunneling_allowed
 
 
-@pytest.mark.parametrize("platform", ["ANDROID", "WINDOWS"])
+@pytest.mark.parametrize("platform", ["ANDROID", "WINDOWS", "CHROME_EXTENSION"])
 def test_guest_endpoint_passes_supported_platform_and_preserves_android_default(platform):
     from prettylisavpn.devices.domain import DevicePlatform
 
@@ -154,7 +154,7 @@ def test_guest_endpoint_passes_supported_platform_and_preserves_android_default(
     app.state.demo = service
     with TestClient(app) as client:
         body = {"device_key": KEY}
-        if platform == "WINDOWS":
+        if platform != "ANDROID":
             body["platform"] = platform
         assert client.post("/auth/demo", json=body).status_code == 503
         assert service.login.await_args.args[2] is DevicePlatform(platform)
@@ -173,6 +173,7 @@ async def test_windows_identity_is_namespaced_without_resetting_android_principa
     for platform, scoped in [
         (DevicePlatform.ANDROID, KEY),
         (DevicePlatform.WINDOWS, "windows:" + KEY),
+        (DevicePlatform.CHROME_EXTENSION, "chrome_extension:" + KEY),
     ]:
         with pytest.raises(DemoRateLimitedError):
             await service.login(KEY, "192.0.2.1", platform)

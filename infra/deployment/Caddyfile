@@ -63,7 +63,7 @@ prettylisavpn.com {
 	# Only verified publisher outputs are public. Never expose the dashboard directory.
 	@client_downloads {
 		method GET HEAD
-		path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz /downloads/windows-licenses.txt /downloads/index.json
+		path /downloads/android.apk /downloads/windows.exe /downloads/chrome-extension.zip /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz /downloads/windows-licenses.txt /downloads/index.json
 	}
 	handle @client_downloads {
 		uri strip_prefix /downloads
@@ -73,7 +73,7 @@ prettylisavpn.com {
 			X-Content-Type-Options "nosniff"
 			X-Robots-Tag "noindex, nofollow"
 		}
-		@binary path /downloads/android.apk /downloads/windows.exe /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz
+		@binary path /downloads/android.apk /downloads/windows.exe /downloads/chrome-extension.zip /downloads/android-sources.tar.gz /downloads/windows-sources.tar.gz
 		header @binary Content-Disposition "attachment"
 		file_server
 	}

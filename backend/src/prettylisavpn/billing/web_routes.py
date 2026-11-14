@@ -18,6 +18,7 @@ from prettylisavpn.billing.router import BillingRoute
 from prettylisavpn.billing.service import BillingOverviewService
 from prettylisavpn.billing.web_sessions import COOKIE, SESSION_TTL, WEB_ORIGIN, BillingWebSessions
 from prettylisavpn.main_errors import error_response
+from prettylisavpn.users.email_identity import EmailAliasConflictError
 
 
 class WebRoute(BillingRoute):
@@ -99,6 +100,8 @@ async def send_otp(body: RequestOtpBody, request: Request) -> Response:
 async def login(body: LoginBody, request: Request) -> Response:
     try:
         token = await service(request).login(str(body.email), body.code)
+    except EmailAliasConflictError:
+        return error_response("EMAIL_ALIAS_CONFLICT", 409)
     except InvalidOtpError:
         return error_response("otp_invalid", 401)
     return await accept(request, token)

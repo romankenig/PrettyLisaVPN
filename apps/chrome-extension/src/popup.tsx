@@ -5,146 +5,16 @@ import type { Device, Snapshot } from "./model";
 import type { Billing, Money } from "./billing";
 import "./style.css";
 
-const labels = {
-  upgrade: ["улучшить", "upgrade"],
-  sbpAccount: [
-    "СБП · привязанный банковский счёт",
-    "SBP · linked bank account",
-  ],
-  method: ["способ оплаты", "payment method"],
-  noMethod: ["не привязан", "not linked"],
-  nextCharge: ["следующее списание", "next payment"],
-  monthly: ["в месяц", "per month"],
-  contractPrice: ["ваша стоимость подписки", "your subscription price"],
-  fixedPrice: [
-    "цена закреплена до отмены подписки и нового оформления",
-    "your agreed price stays fixed until you cancel and subscribe again",
-  ],
-  resubscribe: [
-    "списаний больше не будет. новое оформление — по текущей цене",
-    "no more automatic payments. a new subscription uses the current price",
-  ],
-  home: ["главная", "home"],
-  settings: ["настройки", "settings"],
-  about: ["о приложении", "about"],
-  account: ["аккаунт", "account"],
-  plan: ["план", "plan"],
-  devices: ["устройства", "devices"],
-  activeDevices: ["активные устройства", "active devices"],
-  destination: ["куда подключаемся", "where to connect"],
-  auto: ["🌐 автопилот", "🌐 autopilot"],
-  connect: ["подключить", "connect"],
-  disconnect: ["отключить", "disconnect"],
-  DISCONNECTED: ["не подключено", "not connected"],
-  CONNECTING: ["подключаемся…", "connecting…"],
-  VERIFYING: ["проверяем интернет…", "verifying internet…"],
-  CONNECTED: ["подключено", "connected"],
-  DISCONNECTING: ["отключаемся…", "disconnecting…"],
-  FAILED: ["подключение не подтверждено", "connection not verified"],
-  scope: ["что защищаем", "what we protect"],
-  browser: ["сайты в Chrome", "websites in Chrome"],
-  scopeDetail: [
-    "Трафик других приложений и режим инкогнито не защищены этим расширением.",
-    "Other apps and incognito traffic are not protected by this extension.",
-  ],
-  remaining: ["осталось сегодня", "remaining today"],
-  subscription: ["подписка", "subscription"],
-  subscriptionDetail: [
-    "ваш план и оплаченный период",
-    "your plan and paid period",
-  ],
-  devicesDetail: ["управление доступом к аккаунту", "manage account access"],
-  logout: ["выйти", "sign out"],
-  logoutDetail: [
-    "завершить сессию в этом браузере",
-    "end this browser session",
-  ],
-  back: ["назад", "back"],
-  unavailable: ["недоступна", "unavailable"],
-  refresh: ["обновить", "refresh"],
-  login: ["вход в аккаунт", "sign in"],
-  email: ["ваша почта", "your email"],
-  sendCode: ["получить код", "get a code"],
-  otp: ["код из письма", "email code"],
-  enter: ["войти", "sign in"],
-  otherEmail: ["другая почта", "another email"],
-  loginDetail: [
-    "Без пароля. Пришлём шестизначный код на вашу почту.",
-    "No password. We will email you a six-digit code.",
-  ],
-  sessionDetail: [
-    "Вход сохраняется после закрытия браузера. Можно открыть почту и вернуться сюда: экран ввода кода сохранится.",
-    "You stay signed in after closing the browser. Open your email and return here: the code entry screen is preserved.",
-  ],
-  openTab: ["открыть вход во вкладке", "open sign-in in a tab"],
-  current: ["это устройство", "this device"],
-  added: ["добавлено", "added"],
-  lastLogin: ["последний вход", "last sign-in"],
-  revoke: ["отозвать доступ", "revoke access"],
-  revokeConfirm: [
-    "Отозвать доступ у этого устройства? Его подключение будет завершено.",
-    "Revoke this device? Its connection will end.",
-  ],
-  logoutConfirm: [
-    "Отключить прокси и выйти из аккаунта?",
-    "Disconnect the proxy and sign out?",
-  ],
-  support: ["помощь и поддержка", "help and support"],
-  writeSupport: ["написать в поддержку", "contact support"],
-  supportDetail: [
-    "расскажите, с чем нужна помощь",
-    "tell us what you need help with",
-  ],
-  subject: ["тема", "subject"],
-  description: ["что случилось?", "what happened?"],
-  send: ["отправить", "send"],
-  accepted: [
-    "Обращение принято. Ответ придёт на почту аккаунта.",
-    "Request accepted. We will reply to your account email.",
-  ],
-  faqTitle: ["как подключиться?", "how do I connect?"],
-  faqText: [
-    "Выберите страну на главной и нажмите «подключить». Статус появится после проверки реального выхода в интернет через сервер.",
-    "Choose a country on Home and connect. The connected status appears after verifying internet access through the server.",
-  ],
-  faqFree: ["что входит в free?", "what is included in free?"],
-  freeText: [
-    "Один общий час в сутки на аккаунт, без рекламы. Лимит обновляется в 00:00 UTC; неиспользованное время возвращается после подтверждённого отключения на сервере.",
-    "One shared hour per account per UTC day, without ads. Unused time returns after confirmed server cleanup.",
-  ],
-  privacy: ["Конфиденциальность", "Privacy"],
-  privacyText: [
-    "Расширение не собирает историю посещений, DNS-запросы или содержимое страниц. Доступ ко всем сайтам нужен для авторизации у прокси. Настройки WebRTC ограничиваются на время подключения и восстанавливаются при отключении.",
-    "The extension does not collect browsing history, DNS queries or page content. All-sites permission enables proxy authentication. WebRTC settings are restricted while connected and restored on disconnect.",
-  ],
-  scopeFAQ: ["что не входит в защиту?", "what is outside this protection?"],
-  scopeFAQText: [
-    "Расширение использует HTTPS-прокси для обычного веб-трафика. Системные службы Chrome, другие приложения и инкогнито находятся вне его действия. DNS сайтов разрешает сервер; IPv6 к назначениям блокируется. Локальные адреса и нестандартные порты, кроме 80, 443, 8080 и 8443, недоступны через прокси.",
-    "The HTTPS proxy covers ordinary web traffic. Chrome internal services, other apps and incognito are outside its scope. Website DNS resolves on the server; IPv6 destinations are blocked. Local addresses and ports other than 80, 443, 8080 and 8443 are unavailable through the proxy.",
-  ],
-  referencePrices: [
-    "Справочные цены для новой подписки. Перед оплатой подтвердим актуальные условия. Цена действующей подписки не меняется.",
-    "Reference prices for a new subscription. We will confirm current terms before payment. Your existing contract price stays unchanged.",
-  ],
-  paidUntil: ["оплачено до", "paid until"],
-  billingPortal: [
-    "управлять подпиской и оплатой",
-    "manage subscription and payments",
-  ],
-  billingPortalHint: [
-    "Откроется защищённый кабинет в новой вкладке.",
-    "The secure billing portal opens in a new tab.",
-  ],
-  cleanup: [
-    "Настройки браузера восстановлены. Ожидаем подтверждения удаления доступа на сервере.",
-    "Browser settings restored. Waiting for confirmed server cleanup.",
-  ],
-  genericError: [
-    "Не удалось выполнить действие. Повторите попытку.",
-    "The action failed. Please retry.",
-  ],
-} as const;
-type Label = keyof typeof labels;
+import {
+  labels,
+  languageCode,
+  translate,
+  publicUrl,
+  legalKeys,
+  type Language,
+  type Label,
+} from "./i18n";
+import { LanguagePicker } from "./LanguagePicker";
 type Page =
   "home" | "settings" | "about" | "devices" | "subscription" | "support";
 
@@ -157,7 +27,7 @@ async function send<T>(
   return result.value as T;
 }
 function App() {
-  const [language, setLanguage] = useState(0),
+  const [language, setLanguage] = useState<Language>("ru"),
     [page, setPage] = useState<Page>("home");
   const [state, setState] = useState<Snapshot | null>(null),
     [error, setError] = useState<string | null>(null),
@@ -173,14 +43,14 @@ function App() {
     [description, setDescription] = useState(""),
     [requestId, setRequestId] = useState(() => crypto.randomUUID()),
     [sent, setSent] = useState(false);
-  const t = (key: Label) => labels[key][language];
+  const t = (key: Label) => translate(key, language);
   const refresh = useCallback(async () => {
     setState(await send<Snapshot>("snapshot"));
   }, []);
   useEffect(() => {
     void chrome.storage.local
       .get("language")
-      .then((v) => setLanguage(v.language === "en" ? 1 : 0));
+      .then((v) => setLanguage(languageCode(v.language)));
     void refresh().catch(() => setError("REQUEST_FAILED"));
     void send("refresh")
       .then(refresh)
@@ -203,6 +73,13 @@ function App() {
     }
   };
   const navigate = (next: Page) => {
+    if (
+      state?.account?.plan === "DEMO" &&
+      (next === "subscription" || next === "support")
+    ) {
+      register();
+      return;
+    }
     setPage(next);
     setError(null);
     if (next === "devices")
@@ -214,7 +91,16 @@ function App() {
       void action(async () => setBilling(await send<Billing>("billing")));
   };
   const date = (value: string | null) =>
-    value ? new Date(value).toLocaleString(language ? "en" : "ru") : "—";
+    value ? new Date(value).toLocaleString(language) : "—";
+  const demo = state?.account?.plan === "DEMO";
+  const register = () =>
+    void action(async () => {
+      await send("logout");
+      setPage("home");
+      setEmail("");
+      setCode("");
+      setCountry("AUTO");
+    });
   const connected = state?.phase === "CONNECTED";
   const active =
     state &&
@@ -228,43 +114,11 @@ function App() {
       : page === "support"
         ? "about"
         : page;
-  const errors: Record<string, string> = {
-    NETWORK_ERROR: language
-      ? "Network unavailable. Proxy protection is not verified."
-      : "Сеть недоступна. Подключение через прокси не подтверждено.",
-    EGRESS_MISMATCH: language
-      ? "Server exit IP was not confirmed."
-      : "Выход через выбранный сервер не подтверждён.",
-    PROXY_CONTROL_LOST: language
-      ? "Another extension or browser policy controls the proxy."
-      : "Прокси контролирует другое расширение или политика браузера.",
-    PRIVACY_CONTROL_LOST: language
-      ? "Browser policy prevents safe WebRTC settings."
-      : "Политика браузера не позволяет применить настройки WebRTC.",
-    RATE_LIMITED: language
-      ? "Too many requests. Please wait before retrying."
-      : "Слишком много запросов. Подождите перед повторной попыткой.",
-    FREE_QUOTA_EXHAUSTED: language
-      ? "Today's free hour is exhausted."
-      : "Бесплатный час на сегодня закончился.",
-    FREE_QUOTA_RESERVED: language
-      ? "Free time is reserved by another active device."
-      : "Бесплатное время занято другим активным устройством.",
-    SIGN_IN_REQUIRED: language
-      ? "Sign in again to continue."
-      : "Для продолжения войдите снова.",
-    VPN_NO_AVAILABLE_NODE: language
-      ? "No proxy servers are currently available."
-      : "Сейчас нет доступных прокси-серверов.",
-    INVALID_OTP: language
-      ? "Check the code from your email."
-      : "Проверьте код из письма.",
-  };
   const shownError = error ?? state?.error;
   return (
     <div className="shell">
       <aside>
-        <nav aria-label={language ? "Main navigation" : "Основная навигация"}>
+        <nav aria-label={t("navigation")}>
           {(["home", "settings", "about"] as const).map((tab) => (
             <button
               key={tab}
@@ -279,18 +133,13 @@ function App() {
           ))}
         </nav>
         <div className="side-bottom">
-          <select
-            aria-label="Language"
-            value={language}
-            onChange={(e) => {
-              const next = Number(e.target.value);
+          <LanguagePicker
+            language={language}
+            onChange={(next) => {
               setLanguage(next);
-              void chrome.storage.local.set({ language: next ? "en" : "ru" });
+              void chrome.storage.local.set({ language: next });
             }}
-          >
-            <option value={0}>RU</option>
-            <option value={1}>EN</option>
-          </select>
+          />
           <span>
             frontend
             <br />
@@ -308,11 +157,11 @@ function App() {
       <main>
         <header>
           <img src="logo.svg" alt="PrettyLisaVPN" />
-          <span>Chrome Extension</span>
+          <span>chrome extension</span>
         </header>
         {shownError && shownError !== "VPN_CLEANUP_PENDING" && (
           <div className="error" role="alert">
-            {errors[shownError] ?? t("genericError")}
+            {t(shownError in labels ? (shownError as Label) : "genericError")}
             <small>{shownError}</small>
           </div>
         )}
@@ -391,16 +240,21 @@ function App() {
             </form>
             <button
               type="button"
-              className="text"
-              onClick={() => {
-                void chrome.tabs.create({
-                  url: chrome.runtime.getURL("popup.html"),
-                });
-              }}
+              className="secondary"
+              disabled={busy}
+              onClick={() =>
+                void action(async () => {
+                  await send("demo");
+                  setPage("home");
+                  setCountry("AUTO");
+                  setCode("");
+                })
+              }
             >
-              {t("openTab")}
+              {t("demo")}
             </button>
-            <p className="muted">{t("sessionDetail")}</p>
+            <p className="muted">{t("demoDetail")}</p>
+            <PublicLinks language={language} />
           </section>
         ) : (
           <>
@@ -418,17 +272,24 @@ function App() {
                 <section className="card account">
                   <label>{t("account")}</label>
                   <strong className="email">
-                    {state.account?.email ?? "…"}
+                    {demo ? t("guest") : (state.account?.email ?? "…")}
                   </strong>
+                  {demo && (
+                    <button className="text" disabled={busy} onClick={register}>
+                      {t("register")}
+                    </button>
+                  )}
                   <div className="columns">
                     <div>
                       <label>{t("plan")}</label>
                       <strong>
-                        {state.account?.plan === "PLATINUM"
-                          ? "Platinum 💎"
-                          : state.account?.plan === "PREMIUM"
-                            ? "Premium"
-                            : "Free"}
+                        {demo
+                          ? "demo 🌱"
+                          : state.account?.plan === "PLATINUM"
+                            ? "Platinum 💎"
+                            : state.account?.plan === "PREMIUM"
+                              ? "Premium"
+                              : "Free"}
                       </strong>
                       {state.account?.plan === "FREE" && (
                         <button
@@ -442,7 +303,8 @@ function App() {
                     <div>
                       <label>{t("activeDevices")}</label>
                       <strong>
-                        {state.account?.active_device_count ?? "…"} / 5
+                        {state.account?.active_device_count ?? "…"} /{" "}
+                        {demo ? 1 : 5}
                       </strong>
                     </div>
                   </div>
@@ -461,8 +323,8 @@ function App() {
                   <select
                     className="country"
                     aria-label={t("destination")}
-                    value={country}
-                    disabled={!!active || busy}
+                    value={demo ? "AUTO" : country}
+                    disabled={!!active || busy || demo}
                     onChange={(e) => setCountry(e.target.value)}
                   >
                     <option value="AUTO">{t("auto")}</option>
@@ -472,22 +334,30 @@ function App() {
                         value={item.country_code}
                         disabled={!item.available}
                       >
-                        {new Intl.DisplayNames([language ? "en" : "ru"], {
+                        {new Intl.DisplayNames([language], {
                           type: "region",
                         }).of(item.country_code)}
                       </option>
                     ))}
                   </select>
+                  {demo && (
+                    <button className="text" disabled={busy} onClick={register}>
+                      {t("registrationRequired")}
+                    </button>
+                  )}
                   <button
                     className="primary"
                     disabled={
+                      (!active && demo && seconds === 0) ||
                       busy ||
                       state.phase === "DISCONNECTING" ||
                       state.cleanupPending
                     }
                     onClick={() =>
                       void action(() =>
-                        send(active ? "disconnect" : "connect", { country }),
+                        send(active ? "disconnect" : "connect", {
+                          country: demo ? "AUTO" : country,
+                        }),
                       )
                     }
                   >
@@ -547,17 +417,6 @@ function App() {
                     <small>{t("logoutDetail")}</small>
                   </span>
                 </button>
-                <section className="card">
-                  <strong>HTTPS proxy</strong>
-                  <p className="muted">{t("scopeDetail")}</p>
-                  <button
-                    className="text"
-                    disabled={busy}
-                    onClick={() => void action(() => send("refresh"))}
-                  >
-                    {t("refresh")}
-                  </button>
-                </section>
               </>
             )}
             {page === "devices" && (
@@ -569,7 +428,11 @@ function App() {
                     {device.is_current && (
                       <span className="tag">{t("current")}</span>
                     )}
-                    <p>{device.status}</p>
+                    <p>
+                      {device.status === "ACTIVE" || device.status === "REVOKED"
+                        ? t(device.status)
+                        : device.status}
+                    </p>
                     <label>id</label>
                     <code>{device.id}</code>
                     <label>{t("added")}</label>
@@ -714,6 +577,10 @@ function App() {
                   <summary>{t("privacy")}</summary>
                   <p>{t("privacyText")}</p>
                 </details>
+                <section className="card">
+                  <h2>{t("documents")}</h2>
+                  <PublicLinks language={language} />
+                </section>
                 <p className="credit">inspired by love of my life, Lisa</p>
               </>
             )}
@@ -791,11 +658,36 @@ createRoot(document.getElementById("root")!).render(
   </React.StrictMode>,
 );
 
-function priceLabel(price: Money, language: number): string {
-  return new Intl.NumberFormat(language === 0 ? "ru" : "en", {
+function priceLabel(price: Money, language: Language): string {
+  return new Intl.NumberFormat(language, {
     style: "currency",
     currency: price.currency,
     minimumFractionDigits: price.amount_minor % 100 ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(price.amount_minor / 100);
+}
+
+function PublicLinks({ language }: { language: Language }) {
+  return (
+    <div className="public-links">
+      {legalKeys.map((key) => (
+        <a
+          key={key}
+          href={publicUrl(language, key)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {translate(key === "privacy" ? "privacyPolicy" : key, language)}
+        </a>
+      ))}
+      <a
+        className="product-name"
+        href={publicUrl(language)}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {translate("website", language)} ↗
+      </a>
+    </div>
+  );
 }

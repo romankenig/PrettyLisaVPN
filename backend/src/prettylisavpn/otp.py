@@ -13,7 +13,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from prettylisavpn.config import Settings
-from prettylisavpn.users.domain import normalize_email
+from prettylisavpn.users.email_identity import email_identity
 
 ISSUE_SCRIPT = """
 local cooldown_seconds = tonumber(ARGV[3])
@@ -86,7 +86,7 @@ class OtpService:
         self._max_verification_attempts = settings.otp_max_verification_attempts
 
     async def request(self, email: str, client_ip: str) -> IssuedOtp | None:
-        normalized_email = normalize_email(email)
+        normalized_email = email_identity(email)
         normalized_ip = str(ip_address(client_ip.strip()))
         code = f"{secrets.randbelow(1_000_000):06d}"
         email_digest = self._identifier_digest("email", normalized_email)
@@ -122,7 +122,7 @@ class OtpService:
         )
 
     async def verify(self, email: str, code: str) -> bool:
-        normalized_email = normalize_email(email)
+        normalized_email = email_identity(email)
         email_digest = self._identifier_digest("email", normalized_email)
         try:
             verified = int(
@@ -142,7 +142,7 @@ class OtpService:
         return verified == 1
 
     async def discard(self, email: str) -> None:
-        normalized_email = normalize_email(email)
+        normalized_email = email_identity(email)
         email_digest = self._identifier_digest("email", normalized_email)
         try:
             await self._client.delete(f"otp:challenge:{email_digest}")
