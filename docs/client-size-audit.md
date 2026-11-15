@@ -6,7 +6,7 @@ privacy behavior are preserved. No backend migration or follow-up is required.
 
 | Component | Before | After | Change |
 | --- | --- | --- | --- |
-| Windows | 0.28.2 | 0.28.3 | Replace bundled TTF with lossless WOFF2 |
+| Windows | 0.28.2 | 0.28.3 | Brotli-packed engine and lossless WOFF2 |
 | Android | 0.27.4 / code 54 | 0.27.5 / code 55 | Remove unused Compose preview and tooling dependencies |
 | Chrome Extension | 0.3.0 | 0.3.1 | Replace bundled TTF with lossless WOFF2 |
 | iOS | 0.3.0 | 0.3.1 | Strip local symbols from Release app/extension |
@@ -33,6 +33,16 @@ only the WOFF2 head flag and checksum differ. All weights, glyphs, hinting and
 layout data remain. OFL notices remain. Native Android/iOS retain TTF support.
 The website copies the identical existing iOS TTF, preserving its output URL
 and bytes; its version is unchanged. Its CI now watches that source too.
+
+Windows replaces its embedded GZip engine with Brotli at build time, using the
+already locked permissive Brotli library. It embeds the original EXE's SHA-256
+separately and verifies it before execution. The 64 MiB decompression bound,
+private extraction directory/ACLs, signed Wintun and service lifecycle remain.
+Corrupt/truncated payloads, a wrong digest, a non-PE file and excessive output
+are rejected by native tests. The engine code, protocols and dependencies do
+not change; the same bytes are restored before launch. Compression work runs
+at build time, not at connection time. Brotli decompression still occurs on
+connection, like the former GZip decompression.
 
 Apple's ordinary Release `xcodebuild build` previously left local symbol names
 in the distributed app and tunnel binaries. Enable deployment postprocessing
@@ -70,8 +80,8 @@ changed; these checks are not a new live VPN or signed physical-iPhone acceptanc
 
 Rejected cuts: VPN engines/protocols, offline languages, licenses, required
 native architectures, Rust panic unwinding and backend/client contracts. Existing
-Windows release/LTO and compressed engine packaging and Android ABI splitting
-are retained. Caches, node_modules and source archives are not installed app bloat.
+Windows release/LTO and Android ABI splitting are retained. Caches, node_modules
+and source archives are not installed app bloat.
 
 Merge, signing, release publication and production deployment are separate tasks.
 After an approved merge, existing successful develop workflows publish the new

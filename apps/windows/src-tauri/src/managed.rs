@@ -1,6 +1,7 @@
 //! The installed Windows service owns the engine; the GUI stays unelevated.
 //! Local authenticated pipe, bounded typed profiles, no secrets in argv.
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{
     ffi::OsStr,
     fs::{self, File, OpenOptions},
@@ -32,17 +33,25 @@ const FRAME_LIMIT: usize = 132_096;
 const NO_WINDOW: u32 = 0x08000000;
 const EMBEDDED_ENGINE: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/engine/pl-engine.exe.gz"
+    "/engine/pl-engine.exe.br"
+));
+const EMBEDDED_ENGINE_SHA256: &[u8; 32] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/engine/pl-engine.sha256"
 ));
 
-fn unpack_engine(content: &[u8]) -> Result<Vec<u8>, &'static str> {
+fn unpack_engine(content: &[u8], expected_digest: &[u8; 32]) -> Result<Vec<u8>, &'static str> {
     const LIMIT: u64 = 64 * 1024 * 1024;
     let mut decoded = Vec::new();
-    flate2::read::GzDecoder::new(content)
+    brotli::Decompressor::new(content, 4096)
         .take(LIMIT + 1)
         .read_to_end(&mut decoded)
         .map_err(|_| ERROR)?;
     if decoded.len() < 64 || decoded.len() as u64 > LIMIT || !decoded.starts_with(b"MZ") {
+        return Err(ERROR);
+    }
+    let digest: [u8; 32] = Sha256::digest(&decoded).into();
+    if &digest != expected_digest {
         return Err(ERROR);
     }
     Ok(decoded)
@@ -426,7 +435,7 @@ fn serve(
 ) -> Result<(), &'static str> {
     fs::write(
         directory.join("pl-engine.exe"),
-        unpack_engine(EMBEDDED_ENGINE)?,
+        unpack_engine(EMBEDDED_ENGINE, EMBEDDED_ENGINE_SHA256)?,
     )
     .map_err(|_| ERROR)?;
     fs::write(
@@ -525,23 +534,33 @@ mod tests {
 
     #[test]
     fn embedded_engine_is_a_complete_executable_and_rejects_corruption() {
-        let decoded = unpack_engine(EMBEDDED_ENGINE).unwrap();
+        let decoded = unpack_engine(EMBEDDED_ENGINE, EMBEDDED_ENGINE_SHA256).unwrap();
         assert!(decoded.len() > 1024);
         assert_eq!(&decoded[..2], b"MZ");
-        assert!(unpack_engine(&EMBEDDED_ENGINE[..EMBEDDED_ENGINE.len() / 2]).is_err());
+        assert!(unpack_engine(
+            &EMBEDDED_ENGINE[..EMBEDDED_ENGINE.len() / 2],
+            EMBEDDED_ENGINE_SHA256,
+        )
+        .is_err());
         let mut damaged = EMBEDDED_ENGINE.to_vec();
-        let last = damaged.len() - 1;
-        damaged[last] ^= 1;
-        assert!(unpack_engine(&damaged).is_err());
+        let middle = damaged.len() / 2;
+        damaged[middle] ^= 1;
+        assert!(unpack_engine(&damaged, EMBEDDED_ENGINE_SHA256).is_err());
+        assert!(unpack_engine(EMBEDDED_ENGINE, &[0; 32]).is_err());
     }
 
     #[test]
     fn decompression_rejects_non_executable_and_excessive_payload() {
-        for data in [vec![0u8; 128], vec![0u8; 64 * 1024 * 1024 + 1]] {
-            let mut compressor =
-                flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
-            compressor.write_all(&data).unwrap();
-            assert!(unpack_engine(&compressor.finish().unwrap()).is_err());
+        let mut oversized = vec![0u8; 64 * 1024 * 1024 + 1];
+        oversized[..2].copy_from_slice(b"MZ");
+        for data in [vec![0u8; 128], oversized] {
+            let mut compressed = Vec::new();
+            {
+                let mut compressor = brotli::CompressorWriter::new(&mut compressed, 4096, 1, 22);
+                compressor.write_all(&data).unwrap();
+            }
+            let digest: [u8; 32] = Sha256::digest(&data).into();
+            assert!(unpack_engine(&compressed, &digest).is_err());
         }
     }
 
