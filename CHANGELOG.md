@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Client packaging — Windows 0.29.1 / Android 0.28.1 / Chrome 0.3.1 / iOS 0.4.1 / macOS 0.3.1
+
+- Remove unused Android Compose preview tooling; preserve all protocols, locales,
+  standalone CPU builds, development signing identity and installed app behavior.
+- Replace Windows/Chrome Rubik TTF with lossless WOFF2, retaining every glyph and
+  weight; use the identical native TTF source for the unchanged public website.
+- Pack the Windows engine with Brotli, verifying the restored EXE's SHA-256
+  before launch while preserving bounded extraction, ACLs and all protocols.
+- Strip only local symbols from Apple Release binaries, retaining external engine
+  entry points and Debug diagnostics. Check the actual packaged binaries.
+- See [size audit, compatibility and build evidence](docs/client-size-audit.md).
+  Backend/managed engine versions are unchanged; no schema or API changes.
+
 ### Chrome — 0.3.0 / Backend — 0.41.0 / Public website — 0.6.0
 
 - Chrome uses lowercase UI copy, six languages with local flags, real DEMO entry

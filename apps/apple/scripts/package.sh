@@ -12,6 +12,7 @@ go-licenses check ./cmd/pl-apple --allowed_licenses=MIT,MPL-2.0,Apache-2.0,BSD-2
 go-licenses save ./cmd/pl-apple --save_path="$out/licenses"
 tar -czf "$out/corresponding-source-and-licenses.tar.gz" -C "$out" source licenses
 cd "$root/apps/apple"
+python3 scripts/check-release-size.py
 # Preserve Xcode's Simulator signing/entitlement representation. Re-signing the
 # binary here as a host application can make CoreSimulator reject its launch.
 codesign --verify --strict DerivedData/Build/Products/Debug-iphonesimulator/PrettyLisaVPN.app

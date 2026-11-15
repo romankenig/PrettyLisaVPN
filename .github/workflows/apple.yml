@@ -25,7 +25,9 @@ jobs:
         working-directory: apps/apple
         run: swift test
       - name: Validate packaging boundaries
-        run: python3 apps/apple/scripts/check-project.py
+        run: |
+          python3 apps/apple/scripts/check-project.py
+          python3 -m unittest discover -s apps/apple/scripts -p 'test_*.py'
       - name: Check real public API through the Apple HTTPS transport
         working-directory: apps/apple
         run: swift run LiveAPIProbe
@@ -79,6 +81,8 @@ jobs:
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
           mkdir -p artifacts
           plutil -convert json -o artifacts/macOS-app-info.json DerivedData/Build/Products/Debug/PrettyLisaVPN.app/Contents/Info.plist
+      - name: Verify Release symbol tables before UI review
+        run: python3 apps/apple/scripts/check-release-size.py
       - name: Exercise native macOS UI
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
         timeout-minutes: 10

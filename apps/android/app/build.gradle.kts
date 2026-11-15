@@ -15,8 +15,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 55
-        versionName = "0.28.0"
+        versionCode = 56
+        versionName = "0.28.1"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
@@ -81,12 +81,10 @@ dependencies {
     implementation(libs.wireguard.tunnel)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.icons)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
-    debugImplementation(libs.androidx.compose.tooling)
 
     implementation(libs.okhttp.core)
     implementation(libs.gson)
