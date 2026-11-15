@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Device-limit cabinet — backend 0.46.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
+### Device-limit cabinet — backend 0.47.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 
 - Allow OTP sign-in when all five device slots are occupied. New installations
   enter a restricted cabinet with a red notice, dimmed features and links to
@@ -19,6 +19,16 @@
   [migration/rollback and validation handoff](docs/device-limit-access.md).
 - Website 0.6.1 unchanged; Linux/Android TV scaffolds share the tested backend
   contract and still require their own future client UI.
+
+### Current product day — backend 0.46.0 / dashboard 0.13.0
+
+- Include today's partial data in every product analytics chart and summary card,
+  marked «неполный день» and refreshed every minute. Duration distributions include
+  today's confirmed observations; open sessions remain unobserved.
+- Preserve completed-day snapshots and the existing device-day contract. Midnight
+  gaps stay unknown, display switches survive updates, and failures retain the
+  previous result with its timestamp. No schema, client or VPN-engine changes.
+- See [current product analytics handoff](docs/current-product-analytics.md).
 
 ### Current device day — backend 0.45.0 / dashboard 0.12.0
 

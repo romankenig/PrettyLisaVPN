@@ -159,6 +159,25 @@ async def test_live_device_day_is_fresh_separate_and_rolls_over_without_mutating
             )
     try:
         assert await analytics.refresh(now)
+        async with postgres.session() as session, session.begin():
+            await session.execute(
+                update(UserRecord).where(UserRecord.id == identity.user_id).values(created_at=now)
+            )
+            session.add(
+                ActivityRecord(
+                    user_id=identity.user_id, day=day(now), observed_at=now, plan="PREMIUM"
+                )
+            )
+            lease = await session.get(ClientLeaseRecord, lease_id)
+            lease.disconnected_at = now - timedelta(seconds=20)
+            session.add(
+                SessionSilenceRecord(
+                    lease_id=lease_id,
+                    observed_until=now,
+                    first_silence_at=midnight + timedelta(seconds=9),
+                    complete=True,
+                )
+            )
         first = await analytics.latest(now)
         assert first["through_date"] == yesterday.isoformat()
         assert first["points"][-1]["device_platforms"]["connections"] == {"WINDOWS": 1}
@@ -172,18 +191,35 @@ async def test_live_device_day_is_fresh_separate_and_rolls_over_without_mutating
             },
         }
         later = await analytics.latest(now + timedelta(minutes=1))
+        current = first["live"]["point"]
+        assert first["live"]["partial"] and first["live"]["updated_at"] == now.isoformat()
+        assert current["dau"]["total"] == current["dau"]["plans"]["PREMIUM"] == 1
+        assert current["new_accounts"] == 1 and current["verified_sessions"] == 5
+        assert current["completed_sessions"] == 1
+        assert (
+            current["mean_session_seconds"]
+            == (now - timedelta(seconds=20) - (midnight - timedelta(seconds=1))).total_seconds()
+        )
+        assert first["live"]["summary"]["session_duration"]["samples"] == 1
+        assert first["live"]["summary"]["time_to_silence"]["counts"] == [1, 0, 0, 0, 0, 0]
+        assert later["live"]["point"]["verified_sessions"] == 6
         assert later["device_today"]["device_platforms"]["connections"]["CHROME_EXTENSION"] == 4
         assert later["device_today"]["device_platforms"]["users"]["CHROME_EXTENSION"] == 1
         assert later["points"] == first["points"]
         async with postgres.session() as session:
             saved = (await session.get(AnalyticsSnapshotRecord, yesterday)).data
             assert "device_today" not in saved
-            assert saved == {key: value for key, value in first.items() if key != "device_today"}
+            assert saved == {
+                key: value for key, value in first.items() if key not in {"device_today", "live"}
+            }
         assert email not in str(later) and str(identity.user_id) not in str(later)
         next_midnight = midnight + timedelta(days=1)
         rolled = await analytics.latest(next_midnight)
         assert rolled["device_today"]["date"] == day(next_midnight).isoformat()
         assert rolled["device_today"]["device_platforms"] == {"connections": {}, "users": {}}
+        assert rolled["live"]["point"]["dau"]["total"] == 0
+        assert rolled["live"]["point"]["wau"]["plans"]["PREMIUM"] == 1
+        assert rolled["live"]["point"]["new_accounts"] == 0
         assert await analytics.refresh(next_midnight)
         finalized = await analytics.latest(next_midnight)
         assert (
@@ -202,6 +238,9 @@ async def test_live_device_day_is_fresh_separate_and_rolls_over_without_mutating
             "connections": {},
             "users": {},
         }
+        assert before_midnight["live"]["point"]["dau"]["total"] == 0
+        assert before_midnight["live"]["point"]["new_accounts"] == 0
+        assert before_midnight["live"]["summary"]["session_duration"]["samples"] == 0
     finally:
         async with postgres.session() as session, session.begin():
             await session.execute(

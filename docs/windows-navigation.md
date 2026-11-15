@@ -11,7 +11,7 @@ explicit local cleanup → sign-in even offline. Home/settings navigation may
 remain usable to reach Devices, while private destinations are guarded.
 
 Implemented for Windows 0.30.0, Android 0.29.0, iOS 0.5.0, macOS 0.4.0 and Chrome
-0.5.0, with backend 0.46.0 integration. This is implemented API integration,
+0.5.0, with backend 0.47.0 integration. This is implemented API integration,
 not evidence of production deployment. Linux/Android TV have no shipping account
 UI yet. The independent website payment portal is unchanged. See
 [contract, tests and rollout](device-limit-access.md).
