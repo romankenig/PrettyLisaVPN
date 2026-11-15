@@ -1,5 +1,8 @@
 # Availability and product reports — 2026-11-14
 
+Current-day follow-up: [all product charts](current-product-analytics.md) include
+today's partial observations with minute refresh (backend 0.46.0/dashboard 0.13.0).
+
 ## Versions and contract
 
 Backend 0.41.0 → 0.42.0 (after integrating the independent Chrome/email-identity

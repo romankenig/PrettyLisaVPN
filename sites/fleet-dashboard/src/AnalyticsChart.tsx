@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { formatDay, formatNumber, segments, type Series } from "./analytics";
+import CurrentDayNote from "./CurrentDayNote";
 
-export default function AnalyticsChart({ title, dates, series, explanation, unit = "" }: { title: string; dates: string[]; series: Series[]; explanation: string; unit?: string }) {
+export default function AnalyticsChart({ title, dates, series, explanation, unit = "", partialDate }: { title: string; dates: string[]; series: Series[]; explanation: string; unit?: string; partialDate?: string }) {
   const plot = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(760);
   useLayoutEffect(() => {
@@ -18,6 +19,7 @@ export default function AnalyticsChart({ title, dates, series, explanation, unit
   const index = active === null ? null : Math.min(dates.length - 1, active);
   return <section className="panel analytics-chart">
     <h2>{title}</h2>
+    <CurrentDayNote date={partialDate} />
     <div className="analytics-legend">{series.map(line => <span key={line.name}><svg width="18" height="8" aria-hidden="true"><path d="M0 4H18" stroke={line.color} strokeWidth="3" strokeDasharray={line.dashed ? "3 2" : undefined} /></svg>{line.name}</span>)}</div>
     <div ref={plot} className="analytics-plot" tabIndex={0} role="group" aria-label={`${title}. Стрелки влево и вправо — значения по дням.`}
       onFocus={() => setActive(dates.length - 1)} onBlur={() => setActive(null)}
@@ -27,6 +29,7 @@ export default function AnalyticsChart({ title, dates, series, explanation, unit
         setActive(Math.max(0, Math.min(dates.length - 1, Math.round(((event.clientX - rect.left) * width / rect.width - 44) / (width - 68) * (dates.length - 1)))));
       }}>
         {[0, 0.5, 1].map(fraction => <g key={fraction}><path d={`M44 ${y(maximum * fraction)}H${width - 24}`} className="analytics-grid" /><text x="36" y={y(maximum * fraction) + 4} textAnchor="end" className="analytics-axis">{formatNumber(maximum * fraction)}</text></g>)}
+        {partialDate && dates.includes(partialDate) && <rect data-partial="true" x={x(dates.indexOf(partialDate)) - 6} y="28" width="12" height="180" fill="#5f22d9" fillOpacity=".08" stroke="#5f22d9" strokeDasharray="3 3"><title>{formatDay(partialDate)} · неполный день</title></rect>}
         {[0, Math.floor((dates.length - 1) / 2), dates.length - 1].map(i => <text key={i} x={x(i)} y="234" textAnchor={i === 0 ? "start" : i === dates.length - 1 ? "end" : "middle"} className="analytics-axis">{formatDay(dates[i])}</text>)}
         {series.map(line => <g key={line.name}>{segments(line.values).map((segment, i) => <g key={i}>
           <path d={segment.map((p, n) => `${n ? "L" : "M"}${x(p.index)},${y(p.value)}`).join(" ")} fill="none" stroke={line.color} strokeWidth="2.4" strokeDasharray={line.dashed ? "5 4" : undefined} />
@@ -34,7 +37,7 @@ export default function AnalyticsChart({ title, dates, series, explanation, unit
         </g>)}</g>)}
         {index !== null && <path d={`M${x(index)} 28V208`} className="analytics-cursor" />}
       </svg>
-      {index !== null && <div className="analytics-tooltip" role="tooltip"><strong>{formatDay(dates[index])} {dates[index].slice(0, 4)}</strong>{series.map(line => <div key={line.name}>{line.name}: <b>{formatNumber(line.values[index])}{line.values[index] !== null ? unit : ""}</b></div>)}</div>}
+      {index !== null && <div className="analytics-tooltip" role="tooltip"><strong>{formatDay(dates[index])} {dates[index].slice(0, 4)}{dates[index] === partialDate && " · неполный день"}</strong>{series.map(line => <div key={line.name}>{line.name}: <b>{formatNumber(line.values[index])}{line.values[index] !== null ? unit : ""}</b></div>)}</div>}
     </div>
     <p className="metric-definition">{explanation}</p>
   </section>;
