@@ -84,6 +84,8 @@ async function mockAPI() {
         countries: [
           { country_code: "NL", available: true, quality: 98 },
           { country_code: "DE", available: false, quality: 0 },
+          // US is an advertised fixture capability, not a claim about live fleet readiness.
+          { country_code: "US", available: true, quality: 90 },
         ],
       };
     else if (p === "/devices") {
@@ -233,7 +235,8 @@ try {
     .click();
   await page.getByText("гость", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
-  assert.equal(await page.getByLabel("куда подключаемся").inputValue(), "AUTO");
+  assert.match(await page.getByRole("combobox").textContent(), /автопилот/);
+  await page.getByText("DEMO ⏳", { exact: true }).waitFor();
   assert.equal(
     await page
       .getByRole("button", { name: "подключить", exact: true })
@@ -251,6 +254,19 @@ try {
     0,
   );
   await page.screenshot({ path: path.join(output, "demo-home.png") });
+  await page.getByRole("button", { name: "настройки", exact: true }).click();
+  await page
+    .getByRole("button", { name: "расширенные настройки способы подключения" })
+    .click();
+  await page.getByRole("checkbox", { name: "HTTPS proxy" }).waitFor();
+  assert.equal(
+    (
+      await page.evaluate(() =>
+        chrome.runtime.sendMessage({ type: "snapshot" }),
+      )
+    ).value.account.plan,
+    "DEMO",
+  );
   const openDevices = async () => {
     await page.getByRole("button", { name: "настройки", exact: true }).click();
     await page
@@ -369,6 +385,141 @@ try {
       .refresh_token,
     "fixture-refresh",
   );
+  const picker = page.getByRole("combobox");
+  await picker.click();
+  await page.getByRole("option", { name: "Нидерланды", exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole("option", { name: /Германия/ }).isDisabled(),
+    true,
+  );
+  for (const code of ["nl", "de", "us"])
+    assert.equal(
+      await page
+        .locator(`.country-options use[href="flags/countries.svg#${code}"]`)
+        .count(),
+      1,
+    );
+  await page.screenshot({
+    path: path.join(output, "country-flags-fixture.png"),
+  });
+  await page.getByRole("option", { name: "Нидерланды", exact: true }).click();
+  assert.match(await picker.textContent(), /Нидерланды/);
+  await picker.press("ArrowDown"); // Skip unavailable DE.
+  await picker.press("Enter");
+  assert.match(await picker.textContent(), /Соединенные Штаты/);
+  await picker.press("Home");
+  await picker.press("Enter");
+  assert.match(await picker.textContent(), /автопилот/);
+  await picker.click();
+  await picker.press("Escape");
+  assert.equal(await page.getByRole("listbox").count(), 0);
+  await picker.click();
+  await page.getByText("preview@example.com", { exact: true }).click();
+  assert.equal(await page.getByRole("listbox").count(), 0);
+
+  // Presentation-only snapshots exercise the connected row and every plan.
+  // They never claim a real proxy route or change the worker's lease state.
+  await page.evaluate(() => {
+    globalThis.presentationSend = chrome.runtime.sendMessage.bind(
+      chrome.runtime,
+    );
+    globalThis.presentationOverride = {};
+    chrome.runtime.sendMessage = async (message, ...args) => {
+      const result = await globalThis.presentationSend(message, ...args);
+      if (message.type === "snapshot" && result.ok)
+        return {
+          ...result,
+          value: { ...result.value, ...globalThis.presentationOverride },
+        };
+      return result;
+    };
+  });
+  const account = (
+    await page.evaluate(() => chrome.runtime.sendMessage({ type: "snapshot" }))
+  ).value.account;
+  for (const [plan, emoji] of [
+    ["PREMIUM", "⭐"],
+    ["PLATINUM", "💎"],
+    ["FREE", "🕊️"],
+  ]) {
+    await page.evaluate(
+      (account) => {
+        globalThis.presentationOverride = { account };
+      },
+      { ...account, plan },
+    );
+    await page.getByText(`${plan} ${emoji}`, { exact: true }).waitFor();
+    assert.equal(
+      await page
+        .locator(".plan-name")
+        .evaluate((el) => globalThis.getComputedStyle(el).textTransform),
+      "none",
+    );
+  }
+  await page.evaluate(() => {
+    globalThis.presentationOverride = {
+      phase: "CONNECTED",
+      country: "NL",
+      ip: "81.31.245.143",
+    };
+  });
+  await page.locator(".connection").waitFor();
+  await page.locator(".connection").scrollIntoViewIfNeeded();
+  for (const [lang, name, pickerLabel] of [
+    ["en", "english", "язык"],
+    ["de", "deutsch", "language"],
+    ["fr", "français", "sprache"],
+    ["es", "español", "langue"],
+    ["zh", "中文", "idioma"],
+    ["ru", "русский", "语言"],
+  ]) {
+    await page.getByRole("button", { name: pickerLabel, exact: true }).click();
+    await page.getByRole("button", { name, exact: true }).click();
+    const countryName = new Intl.DisplayNames([lang], { type: "region" }).of(
+      "NL",
+    );
+    await page
+      .locator(".connection")
+      .getByText(countryName, { exact: true })
+      .waitFor();
+    assert.equal(
+      await page
+        .locator('.connection use[href="flags/countries.svg#nl"]')
+        .count(),
+      1,
+    );
+    assert.equal(await picker.isDisabled(), true);
+    assert.equal(await page.getByText(/https proxy ·/i).count(), 0);
+    await page.screenshot({
+      path: path.join(output, `connected-country-${lang}-fixture.png`),
+    });
+  }
+  await page.evaluate(() => {
+    chrome.runtime.sendMessage = globalThis.presentationSend;
+  });
+  await picker.waitFor();
+  await page.waitForFunction(
+    () => !globalThis.document.querySelector('[role="combobox"]').disabled,
+  );
+  await page.getByRole("button", { name: "настройки", exact: true }).click();
+  await page
+    .getByRole("button", { name: "расширенные настройки способы подключения" })
+    .click();
+  await page
+    .getByRole("heading", { name: "расширенные настройки", exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByRole("checkbox", { name: "HTTPS proxy" }).isChecked(),
+    true,
+  );
+  assert.equal(
+    await page.getByRole("checkbox", { name: "HTTPS proxy" }).isDisabled(),
+    true,
+  );
+  assert.equal(await page.getByText("WireGuard", { exact: true }).count(), 0);
+  await page.screenshot({ path: path.join(output, "advanced-fixture.png") });
+  await page.getByRole("button", { name: "← назад", exact: true }).click();
+  await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   for (const [screen, label] of [
     ["home", "главная"],
     ["settings", "настройки"],
@@ -377,6 +528,13 @@ try {
     await page.getByRole("button", { name: label, exact: true }).click();
     await page.screenshot({ path: path.join(output, `${screen}-fixture.png`) });
   }
+  assert.equal(await page.locator("details.card").count(), 0);
+  assert.equal(
+    await page
+      .locator('a[href="https://prettylisavpn.com/legal/privacy/"]')
+      .count(),
+    1,
+  );
   await page.getByRole("button", { name: "настройки", exact: true }).click();
   await page
     .getByRole("button", { name: "устройства управление доступом к аккаунту" })
@@ -392,7 +550,10 @@ try {
   assert.equal(await otherCard.getByRole("button").isDisabled(), true);
   await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.getByRole("button", { name: "улучшить", exact: true }).click();
-  await page.getByRole("heading", { name: "Premium", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "FREE 🕊️", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "PREMIUM ⭐", exact: true })
+    .waitFor();
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
     .waitFor();

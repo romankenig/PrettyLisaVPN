@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Chrome — 0.4.0 / public website — 0.6.1
+
+- Show bundled country flags and localized full names in the destination picker
+  and active connection. Keep availability owned by the backend; add keyboard
+  navigation and a menu that fits inside the popup.
+- Add Android-style Advanced Settings with the extension's supported HTTPS proxy
+  method. Remove the redundant transport caption from Home and the separate
+  privacy accordion from About. Show DEMO ⏳, FREE 🕊️, PREMIUM ⭐ and PLATINUM 💎
+  consistently, preserving uppercase plan names.
+- Website privacy clause 2.6 now covers Chrome permissions, WebRTC and restored
+  settings in all six languages. Backend source/version is unchanged.
+- See [handoff](docs/chrome-country-settings.md) for live US capability findings,
+  the separately authorized legacy-alias reconciliation and delivery evidence.
+
 ### Chrome — 0.3.2
 
 - Fix Devices crashing for DEMO and registered accounts: consume the backend's

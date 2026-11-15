@@ -1,4 +1,4 @@
-# PrettyLisaVPN website · 0.6.0
+# PrettyLisaVPN website · 0.6.1
 
 Chrome now has a public ZIP download, six translated installation guides and
 version/size/hash metadata from the same verified publisher used by other clients.
