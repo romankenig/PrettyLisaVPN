@@ -1,5 +1,41 @@
 # Daily device distribution — 2026-11-15
 
+## Current day follow-up — backend 0.45.0 / dashboard 0.12.0
+
+The user requested today's connections on the device chart after confirming
+that Chrome already has its own CHROME_EXTENSION identity. Baseline is develop
+`df475bbc` (PR #88). Backend advances 0.44.0 → 0.45.0 and dashboard 0.11.0 → 0.12.0
+for the additional live reporting capability. Engine and client versions are
+unchanged; schema stays 0050 and saved metrics revision stays 3.
+
+GET `/admin/monitoring/product-analytics` keeps the completed-day snapshot and
+adds `device_today`: date, `partial=true`, an independent UTC `updated_at` and
+device connection/user counts. Only successful verifications from the current
+GMT+3 midnight through request time count, including subsequently closed
+sessions. Queries group accounts/platforms internally; repeated connections or
+several devices on one platform count as one user. Test accounts are excluded;
+Chrome, native Windows and missing metadata (UNKNOWN) remain distinct. No
+identifiers, emails or browsing data are returned or added to collection.
+
+The page reads the report every minute, including retries after a fetch failure.
+The last device bar has a dashed outline and «неполный день» in its axis label,
+tooltip and dated update caption. All other metrics and their refresh timestamps
+still describe completed days. A failed refresh retains the dated previous
+result and shows an error. On midnight rollover, the new current point replaces
+the old one; a delayed historical snapshot produces a missing-day gap until the
+daily worker finalizes it, never a zero or a copied partial total. Device display
+is bounded to the most recent 63 day positions. Older APIs without `device_today`
+remain readable; older dashboards ignore the additive field.
+
+Tests cover independent Chrome/Windows users and denominators, multiple devices,
+reserved account exclusion, the exact GMT+3 boundary, future/unverified rows,
+fresh GET values, immutable snapshots and rollover. Browser review checks the
+dated partial label, minute refresh/recovery, keyboard tooltip and mobile scroll.
+This source change does not claim deployment; the task PR records product and
+actual build SHA, run/attempt, artifacts, complete CI and live acceptance.
+
+## Original completed-day release
+
 The owner added this task while authorizing the PR #86 release. It advances
 the not-yet-released backend 0.43.0 → 0.44.0 and dashboard 0.10.0 → 0.11.0.
 Engine 0.8.0 and all client versions remain unchanged by this follow-up.

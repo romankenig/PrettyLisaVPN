@@ -1,5 +1,6 @@
 """Build daily aggregates from durable first-party evidence; serve stored snapshots."""
 
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -44,16 +45,53 @@ class ProductAnalyticsService:
     def __init__(self, postgres: Postgres) -> None:
         self.postgres = postgres
 
-    async def latest(self) -> dict[str, Any]:
+    async def latest(self, now: datetime | None = None) -> dict[str, Any]:
+        now = now or datetime.now(UTC)
         async with self.postgres.session() as session:
             row = await session.scalar(
                 select(AnalyticsSnapshotRecord)
+                .where(AnalyticsSnapshotRecord.through_date < day(now))
                 .order_by(AnalyticsSnapshotRecord.through_date.desc())
                 .limit(1)
             )
             if row is None:
                 raise FleetError("product_analytics_pending", 503)
-            return row.data
+            return {**row.data, "device_today": await self.current_devices(session, now)}
+
+    async def current_devices(self, session: AsyncSession, now: datetime) -> dict[str, Any]:
+        """Live device counts only; completed-day snapshots remain immutable on reads."""
+        rows = await session.execute(
+            select(
+                ClientLeaseRecord.user_id,
+                UserRecord.email,
+                DeviceRecord.platform,
+                func.count(),
+            )
+            .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
+            .outerjoin(DeviceRecord, DeviceRecord.id == ClientLeaseRecord.device_id)
+            .where(
+                ClientLeaseRecord.verified_at >= boundary(day(now)),
+                ClientLeaseRecord.verified_at <= now,
+            )
+            .group_by(ClientLeaseRecord.user_id, UserRecord.email, DeviceRecord.platform)
+        )
+        connections: Counter[str] = Counter()
+        users: Counter[str] = Counter()
+        for _, email, platform, count in rows:
+            if is_test_account(email):
+                continue
+            name = platform.value if platform else "UNKNOWN"
+            connections[name] += count
+            users[name] += 1
+        return {
+            "date": day(now).isoformat(),
+            "partial": True,
+            "updated_at": now.isoformat(),
+            "device_platforms": {
+                "connections": dict(sorted(connections.items())),
+                "users": dict(sorted(users.items())),
+            },
+        }
 
     async def refresh(self, now: datetime | None = None) -> bool:
         now = now or datetime.now(UTC)

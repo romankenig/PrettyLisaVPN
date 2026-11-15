@@ -171,7 +171,18 @@ async def test_failed_or_slow_analytics_cannot_break_authentication():
 )
 async def test_read_only_api_reuses_monitor_authorization(token, status):
     service = AsyncMock()
-    service.latest.return_value = data()
+    service.latest.return_value = {
+        **data(),
+        "device_today": {
+            "date": "2026-11-02",
+            "partial": True,
+            "updated_at": NOW.isoformat(),
+            "device_platforms": {
+                "connections": {"CHROME_EXTENSION": 2, "WINDOWS": 1},
+                "users": {"CHROME_EXTENSION": 1, "WINDOWS": 1},
+            },
+        },
+    }
     app = create_app(settings(), postgres=AsyncMock(), valkey=AsyncMock())
     async with (
         app.router.lifespan_context(app),
@@ -185,6 +196,7 @@ async def test_read_only_api_reuses_monitor_authorization(token, status):
         assert response.status_code == status
         if status == 200:
             assert response.json()["through_date"] == "2026-11-01"
+            assert response.json()["device_today"] == service.latest.return_value["device_today"]
             service.latest.assert_awaited_once()
             service.latest.side_effect = FleetError("product_analytics_pending", 503)
             assert (
