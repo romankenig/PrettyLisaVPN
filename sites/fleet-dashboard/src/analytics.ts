@@ -2,12 +2,14 @@ export const plans = ["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"] as const
 export type Plan = typeof plans[number];
 export type ActiveMetric = "dau" | "wau" | "mau";
 export type Count = { total: number | null; plans: Record<Plan, number | null>; complete: boolean };
+export type DevicePlatforms = { connections: Record<string, number> | null; users: Record<string, number> | null };
 export type AnalyticsPoint = {
   date: string; complete: boolean; dau: Count; wau: Count; mau: Count;
   new_accounts: number; verified_sessions: number | null; connection_success_percent: number | null;
   settled_attempts: number | null; pending_attempts: number | null;
   median_connection_seconds: number | null; engagement_percent: number | null;
   mean_session_seconds?: number | null; completed_sessions?: number;
+  device_platforms?: DevicePlatforms;
 };
 export type Distribution = { bounds_seconds: number[]; counts: number[]; shares: (number | null)[]; samples: number };
 export type Analytics = {
@@ -33,6 +35,16 @@ export function readAnalytics(value: unknown): Analytics {
       if (count.total !== null && plans.reduce((sum, plan) => sum + (count.plans[plan] ?? 0), 0) !== count.total) throw new Error("Invalid cohorts");
     }
     for (const metric of ["new_accounts", "verified_sessions", "connection_success_percent", "settled_attempts", "pending_attempts", "median_connection_seconds", "engagement_percent"] as const) if (!number(point[metric])) throw new Error("Invalid metric");
+    if (point.device_platforms !== undefined) {
+      const devices = point.device_platforms;
+      if (!devices || typeof devices !== "object") throw new Error("Invalid device distribution");
+      for (const metric of ["connections", "users"] as const) {
+        const counts = devices[metric];
+        if (counts !== null && (!counts || typeof counts !== "object" || Array.isArray(counts) || !Object.values(counts).every(v => Number.isSafeInteger(v) && v >= 0))) throw new Error("Invalid device counts");
+      }
+      if (devices.connections === null ? devices.users !== null : Object.entries(devices.users ?? {}).some(([platform, count]) => count > (devices.connections?.[platform] ?? 0))) throw new Error("Invalid device users");
+      if (devices.connections !== null && Object.values(devices.connections).reduce((sum, count) => sum + count, 0) !== point.verified_sessions) throw new Error("Invalid device connections");
+    }
   }
   if (data.points[0].date !== data.from_date || previous !== data.through_date) throw new Error("Invalid period");
   return data;

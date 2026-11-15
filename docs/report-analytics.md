@@ -75,8 +75,11 @@ request fields. Billing, entitlements, admission and quota semantics are unchang
 - Each DAU/WAU/MAU chart switches between counts and tariff shares (shares default).
   DEMO + Free + Premium + Platinum + Unknown sum to the active audience. No
   percentage is shown for an empty audience.
-- Device distribution counts confirmed VPN sessions by device platform within the
-  report period, including repeated sessions; it does not claim unique people.
+- Device distribution originally counted confirmed sessions for the whole period.
+  The owner-requested follow-up replaces that chart with daily stacked platform
+  bars and a users/connections switch (users default), while retaining count/share
+  units. See [daily device distribution](daily-device-distribution.md) for account
+  deduplication, percentage denominators and snapshot revision 3.
 - Connection duration starts at backend egress verification, ends at the first
   disconnect/revocation decision or entitlement expiry, and excludes peer-cleanup
   delay. It describes a logical VPN session: device sleep is not a disconnect.

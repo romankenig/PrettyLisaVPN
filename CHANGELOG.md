@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Daily device distribution — backend 0.44.0 / dashboard 0.11.0
+
+- Replace the period-wide device histogram with stacked daily platform bars.
+  Default to unique accounts per platform/day; offer connections and count/share
+  switches. Count repeat sessions separately only in connection mode.
+- Rebuild stored report revision 2 once as revision 3 from existing verified
+  leases. Preserve missing-history gaps, exclude test accounts, and keep account
+  identifiers private. Schema remains 0050; engine and clients are unchanged.
+- This owner-requested follow-up is included in PR #86 before its release.
+  See [metric definitions and rollout](docs/daily-device-distribution.md).
+
 ### Connection-method reports — backend 0.43.0 / dashboard 0.10.0 / managed engine 0.8.0
 
 - Add independent daily availability assessments for all connection methods,

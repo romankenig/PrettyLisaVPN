@@ -5,6 +5,10 @@ Backend 0.42.0 → 0.43.0; dashboard 0.9.0 → 0.10.0; managed engine 0.7.0 →
 are unchanged; method IDs already accompany every lease. Migration
 `0050_method_checks` follows `0049_report_metrics` and adds one table.
 
+Before release, the owner requested [daily device distributions](daily-device-distribution.md).
+That separate reporting task advances backend to 0.44.0 and dashboard to 0.11.0
+within the same PR; engine remains 0.8.0. The combined release uses those versions.
+
 ## Meaning of the report
 
 Each of the 23 supported method IDs has its own daily assessment. Direct and
@@ -71,8 +75,8 @@ artifact `14119015678`; those dashboard sources match the merge. Node engine
 sources. Exact final client publication and all-events CI evidence are kept in
 [PR #82](https://github.com/romankenig/PrettyLisaVPN/pull/82).
 
-For this follow-up, deploy verified engine 0.8.0 and backend 0050/0.43.0 before
-dashboard 0.10.0. Application rollback retains the additive table; database
+For this follow-up, deploy verified engine 0.8.0 and backend 0050/0.44.0 before
+dashboard 0.11.0. Application rollback retains the additive table; database
 downgrade deletes new method evidence. No release of this follow-up is claimed
 by source changes. The task PR records final product/build SHA, run/attempt,
 artifacts, test counts and actual deployment status after checks complete.
