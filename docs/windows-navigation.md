@@ -1018,3 +1018,21 @@ publisher version and unpacked-install instructions. Store installation is pendi
 Implementation is complete; production backend rollout and live guest traffic
 acceptance remain separate. See [handoff](chrome-ui-demo.md) and its explicitly
 deferred investigation of Chrome disabling the extension after closing the popup.
+
+## Chrome 0.3.2 — device-list crash recovery and connection feedback
+
+DEMO or registered account → Settings → Devices consumes the existing API's
+top-level device list and marks the current device. Malformed/unavailable data
+shows the existing error message while navigation remains usable; re-entering
+Devices retries the request without stale cards. A successful other-device revoke
+refreshes that same list. Current-device revoke finishes cleanup/sign-out and
+returns to Login without fetching devices with a removed session.
+
+Home's DEMO hint explicitly says location selection requires registration;
+autopilot and Connect stay available. A Chrome proxy-error event now rechecks
+ownership and verified egress before showing failure. Healthy checks preserve
+CONNECTED; actual failures remain visible, with recovery on a successful check.
+The existing registration transition and proxy settings are unchanged.
+
+No new screen, route, entitlement or backend integration is introduced. Windows
+and backend versions are unchanged. See [handoff](chrome-devices-fix.md).

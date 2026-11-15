@@ -633,13 +633,13 @@ export const labels = {
     "15 minutos al día sin registrarse",
     "每天免注册使用 15 分钟",
   ],
-  registrationRequired: [
-    "доступно после регистрации",
-    "available after registration",
-    "nach der Registrierung verfügbar",
-    "disponible après inscription",
-    "disponible tras registrarse",
-    "注册后可用",
+  locationRegistration: [
+    "выбор локации — после регистрации",
+    "choose a location after registration",
+    "Standortauswahl nach der Registrierung",
+    "choix du lieu après inscription",
+    "elige una ubicación tras registrarte",
+    "注册后可选择位置",
   ],
   language: ["язык", "language", "Sprache", "langue", "idioma", "语言"],
   navigation: [

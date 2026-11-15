@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Chrome — 0.3.2
+
+- Fix Devices crashing for DEMO and registered accounts: consume the backend's
+  top-level list on entry and after revocation, and validate it before rendering.
+- Keep the screen usable on malformed/unavailable responses. Skip list refresh
+  after current-device sign-out. Correct the browser fixture and cover guest
+  devices, error recovery and revocation.
+- Recheck browser ownership and verified exit IP after Chrome proxy-error events
+  instead of treating every failed transaction as a failed VPN connection. Keep
+  real verification failures visible; coalesce events to avoid recursive probes.
+- Clarify in all six languages that registration unlocks location selection;
+  DEMO can still connect with autopilot. Backend and website unchanged.
+  See [handoff](docs/chrome-devices-fix.md).
+
 ### Client packaging — Windows 0.29.1 / Android 0.28.1 / Chrome 0.3.1 / iOS 0.4.1 / macOS 0.3.1
 
 - Remove unused Android Compose preview tooling; preserve all protocols, locales,

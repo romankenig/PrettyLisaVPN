@@ -27,8 +27,15 @@ const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
 let billingAvailable = true;
 let guest = false;
+let deviceResponse = "valid";
+let otherDeviceRevoked = false;
+let deviceReads = 0;
+const otherDevice = "33333333-3333-4333-8333-333333333333";
 const demoKeys = [];
 async function mockAPI() {
+  context.on("page", (page) =>
+    page.on("pageerror", (e) => errors.push(e.message)),
+  );
   await context.route("https://prettylisavpn.com/account/**", (route) =>
     route.fulfill({
       contentType: "text/html",
@@ -79,20 +86,52 @@ async function mockAPI() {
           { country_code: "DE", available: false, quality: 0 },
         ],
       };
-    else if (p === "/devices")
-      value = {
-        devices: [
-          {
-            id: device,
-            device_name: "Chrome Preview",
-            is_current: true,
-            status: "ACTIVE",
-            created_at: "2026-11-04T10:00:00Z",
-            last_login_at: "2026-11-04T12:00:00Z",
-          },
-        ],
+    else if (p === "/devices") {
+      deviceReads++;
+      // GET /devices is a top-level list for every plan (devices/router.py).
+      const current = {
+        id: device,
+        installation_id: id,
+        device_name: guest ? "Chrome DEMO" : "Chrome Preview",
+        platform: "CHROME_EXTENSION",
+        is_current: true,
+        status: "ACTIVE",
+        created_at: "2026-11-04T10:00:00Z",
+        updated_at: "2026-11-04T12:00:00Z",
+        revoked_at: null,
+        last_login_at: guest ? null : "2026-11-04T12:00:00Z",
       };
-    else if (p === "/billing/overview")
+      value = guest
+        ? [current]
+        : [
+            current,
+            {
+              ...current,
+              id: otherDevice,
+              installation_id: otherDevice,
+              device_name: "Other device",
+              is_current: false,
+              status: otherDeviceRevoked ? "REVOKED" : "ACTIVE",
+            },
+          ];
+      if (deviceResponse === "invalid") value = { devices: value };
+      if (deviceResponse === "empty") value = [];
+      if (deviceResponse === "unavailable") {
+        status = 503;
+        value = { error: { code: "device_service_unavailable" } };
+      }
+    } else if (
+      p === "/devices/" + otherDevice &&
+      route.request().method() === "DELETE"
+    ) {
+      otherDeviceRevoked = true;
+      value = { status: "revoked", device: { id: otherDevice } };
+    } else if (
+      p === "/devices/" + device &&
+      route.request().method() === "DELETE"
+    ) {
+      value = { status: "revoked", device: { id: device } };
+    } else if (p === "/billing/overview")
       value = {
         plan: "FREE",
         status: "FREE",
@@ -140,7 +179,6 @@ try {
     (await context.waitForEvent("serviceworker"));
   const extensionId = new URL(worker.url()).host;
   let page = await context.newPage();
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
   assert.equal(
     await page.evaluate(async () => {
@@ -195,7 +233,77 @@ try {
     .click();
   await page.getByText("гость", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
+  assert.equal(await page.getByLabel("куда подключаемся").inputValue(), "AUTO");
+  assert.equal(
+    await page
+      .getByRole("button", { name: "подключить", exact: true })
+      .isEnabled(),
+    true,
+  );
+  await page
+    .getByRole("button", {
+      name: "выбор локации — после регистрации",
+      exact: true,
+    })
+    .waitFor();
+  assert.equal(
+    await page.getByText("доступно после регистрации", { exact: true }).count(),
+    0,
+  );
   await page.screenshot({ path: path.join(output, "demo-home.png") });
+  const openDevices = async () => {
+    await page.getByRole("button", { name: "настройки", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "устройства управление доступом к аккаунту",
+      })
+      .click();
+  };
+  await openDevices();
+  await page
+    .getByRole("heading", { name: "Chrome DEMO", exact: true })
+    .waitFor({ timeout: 5000 })
+    .catch((error) => {
+      assert.deepEqual(errors, []);
+      throw error;
+    });
+  assert.equal(
+    await page.getByText("это устройство", { exact: true }).count(),
+    1,
+  );
+  assert.equal(await page.getByText("—", { exact: true }).count(), 1);
+  await page.screenshot({ path: path.join(output, "demo-devices.png") });
+  for (const mode of ["invalid", "unavailable", "empty"]) {
+    deviceResponse = mode;
+    await openDevices();
+    if (mode === "empty") {
+      await page.waitForFunction(
+        () => !globalThis.document.querySelector("nav button:disabled"),
+      );
+      assert.equal(await page.locator("[role=alert]").count(), 0);
+    } else {
+      await page.locator("[role=alert]").waitFor();
+    }
+    assert.equal(
+      await page
+        .getByRole("heading", { name: "Chrome DEMO", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await page
+        .getByRole("heading", { name: "устройства", exact: true })
+        .count(),
+      1,
+    );
+    assert.deepEqual(errors, []);
+  }
+  deviceResponse = "valid";
+  await openDevices();
+  await page
+    .getByRole("heading", { name: "Chrome DEMO", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.close();
   page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -253,7 +361,6 @@ try {
   await mockAPI();
   await context.setOffline(false);
   page = await context.newPage();
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
   await page.getByText("preview@example.com", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("код из письма").count(), 0);
@@ -276,6 +383,13 @@ try {
     .click();
   await page.getByText("Chrome Preview", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "devices-fixture.png") });
+  page.once("dialog", (dialog) => dialog.accept());
+  const otherCard = page.locator("section.card").filter({
+    has: page.getByRole("heading", { name: "Other device", exact: true }),
+  });
+  await otherCard.getByRole("button").click();
+  await otherCard.getByText("доступ отозван", { exact: true }).waitFor();
+  assert.equal(await otherCard.getByRole("button").isDisabled(), true);
   await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.getByRole("button", { name: "улучшить", exact: true }).click();
   await page.getByRole("heading", { name: "Premium", exact: true }).waitFor();
@@ -362,6 +476,23 @@ try {
   await page.getByRole("button", { name: "english", exact: true }).click();
   await page.getByRole("button", { name: "settings", exact: true }).click();
   await page.getByText("manage account access").waitFor();
+  await page.getByRole("button", { name: "language", exact: true }).click();
+  await page.getByRole("button", { name: "русский", exact: true }).click();
+  await openDevices();
+  const currentCard = page.locator("section.card").filter({
+    has: page.getByRole("heading", { name: "Chrome Preview", exact: true }),
+  });
+  await currentCard.waitFor();
+  const readsBeforeRevoke = deviceReads;
+  page.once("dialog", (dialog) => dialog.accept());
+  await currentCard.getByRole("button").click();
+  await page.getByLabel("ваша почта").waitFor();
+  assert.equal(
+    deviceReads,
+    readsBeforeRevoke,
+    "revoked current device must not refetch an authenticated list",
+  );
+  assert.equal(await page.locator("[role=alert]").count(), 0);
   assert.deepEqual(errors, []);
   console.log(
     "Installed MV3 artifact: reopened OTP, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",

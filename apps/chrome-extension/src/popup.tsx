@@ -84,8 +84,8 @@ function App() {
     setError(null);
     if (next === "devices")
       void action(async () => {
-        const value = await send<{ devices: Device[] }>("devices");
-        setDevices(value.devices);
+        setDevices([]);
+        setDevices(await send<Device[]>("devices"));
       });
     if (next === "subscription")
       void action(async () => setBilling(await send<Billing>("billing")));
@@ -342,7 +342,7 @@ function App() {
                   </select>
                   {demo && (
                     <button className="text" disabled={busy} onClick={register}>
-                      {t("registrationRequired")}
+                      {t("locationRegistration")}
                     </button>
                   )}
                   <button
@@ -446,10 +446,9 @@ function App() {
                         if (confirm(t("revokeConfirm")))
                           void action(async () => {
                             await send("revokeDevice", { id: device.id });
-                            const next = await send<{ devices: Device[] }>(
-                              "devices",
-                            ).catch(() => ({ devices: [] }));
-                            setDevices(next.devices);
+                            setDevices([]);
+                            if (!device.is_current)
+                              setDevices(await send<Device[]>("devices"));
                           });
                       }}
                     >
