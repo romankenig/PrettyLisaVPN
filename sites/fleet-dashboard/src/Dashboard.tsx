@@ -4,6 +4,7 @@ import { GROUPS, groupNames, groupSummaries, nodeGroup, type Group } from "./gro
 import HistoryChart from "./HistoryChart";
 import ActiveUserSpeed from "./ActiveUserSpeed";
 import ServiceAvailability from "./ServiceAvailability";
+import MethodAvailability from "./MethodAvailability";
 import HourDetails from "./HourDetails";
 import type { Measurement, FocusedHour } from "./history";
 import ClientDownloads from "./ClientDownloads";
@@ -85,6 +86,7 @@ export default function Dashboard() {
       <ActiveUserSpeed key={`active-${group}-${selected}`} nodes={nodes} refreshKey={snapshot?.generated_at ?? null} />
       <div className="panel analytics-chart"><label>Режим защиты <select aria-label="Режим защиты для отчёта" value={trafficView} onChange={event => setTrafficView(event.target.value)}><option value="all">Защита всего трафика</option><option value="include">Защита выбранного трафика</option></select></label></div>
       {trafficView === "include" && <ServiceAvailability />}
+      <MethodAvailability />
       <HistoryChart key={`${group}-${selected}`} aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
       {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}
       <section className="nodes-section"><div className="section-title"><h2>Серверы <span className="count">{nodes.length}</span></h2><span className="muted">Автообновление каждую минуту</span></div>

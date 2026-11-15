@@ -66,50 +66,30 @@ func Probe(raw []byte) ProbeResult {
 	if !pool.AppendCertsFromPEM([]byte(input.MeasureCA)) {
 		return result
 	}
-	p, err := managed.ParseProfile(string(input.Profile))
-	if err != nil {
+	var kind struct {
+		Method string `json:"method"`
+	}
+	if json.Unmarshal(input.Profile, &kind) != nil {
 		return result
 	}
-	config, err := p.CoreConfig(true)
-	if err != nil {
-		return result
-	}
-	var settings map[string]any
-	if json.Unmarshal(config, &settings) != nil {
-		return result
-	}
-	clear(config)
-	delete(settings, "inbounds")
-	config, err = json.Marshal(settings)
-	if err != nil {
-		return result
-	}
-	parsed, err := serial.LoadJSONConfig(bytes.NewReader(config))
-	clear(config)
-	if err != nil {
-		return result
-	}
-	if p.Configure(parsed) != nil {
-		return result
-	}
-	instance, err := core.New(parsed)
-	if err != nil {
-		return result
-	}
-	defer instance.Close()
-	if instance.Start() != nil {
-		result.Code = "ENGINE_START_FAILED"
-		return result
+	remoteDNS := kind.Method == "HTTPS_PROXY"
+	var dial probeDialFunc
+	if remoteDNS {
+		p, err := parseProxyProbe(input.Profile)
+		if err != nil {
+			return result
+		}
+		dial = proxyProbeDial(p)
+	} else {
+		var closeEngine func()
+		dial, closeEngine, err = nativeProbeDial(input.Profile)
+		if err != nil {
+			return result
+		}
+		defer closeEngine()
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
 	defer cancel()
-	dial := func(ctx context.Context, network, address string) (net.Conn, error) {
-		destination, err := xnet.ParseDestination(network + ":" + address)
-		if err != nil {
-			return nil, errors.New("INVALID_DESTINATION")
-		}
-		return core.Dial(ctx, instance, destination)
-	}
 	transport := &http.Transport{Proxy: nil, DisableKeepAlives: true, TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, DialContext: dial}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{Transport: transport, Timeout: 10 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
@@ -165,14 +145,20 @@ func Probe(raw []byte) ProbeResult {
 		return result
 	}
 	dnsContext, dnsCancel := context.WithTimeout(ctx, 8*time.Second)
-	addresses, err := probeDNS(dnsContext, dial)
+	var addresses []net.IP
+	if !remoteDNS {
+		addresses, err = probeDNS(dnsContext, dial)
+	}
 	dnsCancel()
-	if err != nil || len(addresses) == 0 {
+	if !remoteDNS && (err != nil || len(addresses) == 0) {
 		result.Code = "DNS_FAILED"
 		return result
 	}
-	result.DNS = true
+	result.DNS = !remoteDNS
 	healthTransport := &http.Transport{Proxy: nil, DisableKeepAlives: true, DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+		if remoteDNS {
+			return dial(ctx, "tcp", "api.prettylisavpn.com:443")
+		}
 		return dial(ctx, "tcp", net.JoinHostPort(addresses[0].String(), "443"))
 	}}
 	defer healthTransport.CloseIdleConnections()
@@ -192,9 +178,9 @@ func Probe(raw []byte) ProbeResult {
 		result.Code = "HTTPS_FAILED"
 		return result
 	}
-	result.HTTPS = true
+	result.HTTPS, result.DNS = true, true
 	if input.ServiceURL != "" {
-		if probeService(ctx, dial, input.ServiceURL, input.ServiceDomains) {
+		if probeServiceRequest(ctx, dial, input.ServiceURL, input.ServiceDomains, remoteDNS) {
 			result.Status, result.Code = "HEALTHY", "SERVICE_CHECK_PASSED"
 		} else {
 			result.Code = "SERVICE_HTTP_FAILED"
@@ -269,4 +255,49 @@ func probeDNSName(ctx context.Context, dial func(context.Context, string, string
 		return nil, errors.New("DNS_FAILED")
 	}
 	return addresses, nil
+}
+
+func nativeProbeDial(profile json.RawMessage) (probeDialFunc, func(), error) {
+	p, err := managed.ParseProfile(string(profile))
+	if err != nil {
+		return nil, nil, err
+	}
+	config, err := p.CoreConfig(true)
+	if err != nil {
+		return nil, nil, err
+	}
+	var settings map[string]any
+	if err = json.Unmarshal(config, &settings); err != nil {
+		return nil, nil, err
+	}
+	clear(config)
+	delete(settings, "inbounds")
+	config, err = json.Marshal(settings)
+	if err != nil {
+		return nil, nil, err
+	}
+	parsed, err := serial.LoadJSONConfig(bytes.NewReader(config))
+	clear(config)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = p.Configure(parsed); err != nil {
+		return nil, nil, err
+	}
+	instance, err := core.New(parsed)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = instance.Start(); err != nil {
+		instance.Close()
+		return nil, nil, err
+	}
+	dial := func(ctx context.Context, network, address string) (net.Conn, error) {
+		destination, err := xnet.ParseDestination(network + ":" + address)
+		if err != nil {
+			return nil, errors.New("INVALID_DESTINATION")
+		}
+		return core.Dial(ctx, instance, destination)
+	}
+	return dial, func() { _ = instance.Close() }, nil
 }

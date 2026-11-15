@@ -111,7 +111,9 @@ Rollout requires backend 0049, the matching verified node-engine artifact and
 updated Ansible node helpers (including `service_probe.py`), fleet worker, then
 dashboard/Caddy and clients. Existing running customer connections are preserved.
 Allow a week for a complete availability history; silence history starts with
-newly observed sessions. No merge, production deploy, release or new public client
-publication is performed by this task. Existing develop publication remains active
-when the owner later merges. Ordinary rollback retains additive tables and stops
+newly observed sessions. The owner subsequently authorized release through develop: PR #82 merged at
+`6177e2e53da41413f60385686d9f1f8e425b0492`; backend 0.42.0 deployed in run
+`43690059961`, attempt 1. Dashboard and all four node helpers were installed
+before client publication. Exact artifact identities and final publication/CI
+evidence are in [PR #82](https://github.com/romankenig/PrettyLisaVPN/pull/82). Ordinary rollback retains additive tables and stops
 the new worker code; database downgrade deletes new analytics evidence.

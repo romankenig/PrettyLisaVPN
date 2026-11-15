@@ -44,6 +44,16 @@ handle /dashboard/* {
             path /dashboard/api/services
             method GET
         }
+        @connection_methods {
+            path /dashboard/api/connection-methods
+            method GET
+        }
+        handle @connection_methods {
+            rewrite * /admin/monitoring/connection-methods
+            reverse_proxy backend:8000 {
+                header_up Authorization "Bearer @@MONITOR_TOKEN@@"
+            }
+        }
         handle @services {
             rewrite * /admin/monitoring/services
             reverse_proxy backend:8000 {

@@ -3,6 +3,7 @@
 import base64
 import secrets
 from datetime import UTC, datetime, timedelta
+from ipaddress import IPv4Address
 from uuid import UUID
 
 from pydantic import SecretStr
@@ -115,6 +116,9 @@ class ManagedVpnMethod(VpnMethod):
         service_url: str | None = None,
         service_domains: list[str] | None = None,
         selected_method: str | None = None,
+        *,
+        relay: Node | None = None,
+        relay_port: int | None = None,
     ) -> Observation:
         state = await self.inspect(target)
         if not state.installed or not state.public_key:
@@ -124,7 +128,10 @@ class ManagedVpnMethod(VpnMethod):
         method = (
             selected_method or names[(int(now.timestamp()) // 3600 + target.id.int) % len(names)]
         )
-        if method not in names:
+        native = base_method(method)
+        if native not in (*names, "https_proxy") or method.endswith("_relay") != (
+            relay is not None
+        ):
             raise FleetError("VPN_METHOD_UNSUPPORTED")
         access = ManagedAccess(
             purpose="monitor",
@@ -137,23 +144,47 @@ class ManagedVpnMethod(VpnMethod):
         )
         result: Observation
         cleanup = False
+        forwarding: RelayAccess | None = None
         try:
             await self.grant_access(target, access)
+            if relay is not None:
+                if relay_port is None or relay.id in (source.id, target.id):
+                    raise FleetError("RELAY_PROBE_ROUTE_INVALID")
+                forwarding = RelayAccess(
+                    id=check_id,
+                    listen_port=relay_port,
+                    target_host=IPv4Address(target.host),
+                    target_port=access.listen_port,
+                    protocol=MANAGED_METHODS[native].network,
+                    expires_at=access.expires_at,
+                )
+                await self.grant_relay(relay, forwarding)
+            probe_profile = (
+                {
+                    "method": "HTTPS_PROXY",
+                    "server": state.configuration["proxy_host"],
+                    "port": access.listen_port,
+                    "username": str(check_id),
+                    "secret": lease_credential(self.key, check_id, target.id).get_secret_value(),
+                }
+                if native == "https_proxy"
+                else profile(
+                    method=method,
+                    lease_id=check_id,
+                    node_id=target.id,
+                    key=self.key,
+                    host=relay.host if relay else target.host,
+                    port=relay_port if relay_port is not None else access.listen_port,
+                    country=target.country_code,
+                    public_key=state.public_key,
+                    configuration=state.configuration,
+                )
+            )
             response = await self.transport.call(
                 source,
                 "managed-probe",
                 {
-                    "profile": profile(
-                        method=method,
-                        lease_id=check_id,
-                        node_id=target.id,
-                        key=self.key,
-                        host=target.host,
-                        port=access.listen_port,
-                        country=target.country_code,
-                        public_key=state.public_key,
-                        configuration=state.configuration,
-                    ),
+                    "profile": probe_profile,
                     "expected_egress_ips": target.expected_egress_ips,
                     **(
                         {"service_url": service_url, "service_domains": service_domains}
@@ -173,6 +204,11 @@ class ManagedVpnMethod(VpnMethod):
                 cleanup = await self.revoke_access(target, access)
             except FleetError:
                 cleanup = False
+            if relay is not None and forwarding is not None:
+                try:
+                    cleanup = await self.revoke_relay(relay, forwarding) and cleanup
+                except FleetError:
+                    cleanup = False
         if not cleanup:
             return Observation(
                 status="UNKNOWN",

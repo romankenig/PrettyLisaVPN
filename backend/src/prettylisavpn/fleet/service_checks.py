@@ -45,7 +45,7 @@ def assessment_score(started: datetime, attempt_at: datetime, success: bool) -> 
     )
 
 
-def daily_slot(service_id: UUID, on: date) -> datetime:
+def daily_slot(service_id: UUID | str, on: date) -> datetime:
     import hashlib
 
     value = int.from_bytes(hashlib.sha256(f"{service_id}:{on}".encode()).digest()[:8])

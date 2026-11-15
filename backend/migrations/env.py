@@ -16,6 +16,7 @@ from prettylisavpn.config import Settings
 from prettylisavpn.database import Base
 from prettylisavpn.demo import model as demo_model  # noqa: F401
 from prettylisavpn.devices import model as devices_model  # noqa: F401
+from prettylisavpn.fleet import method_check_model as method_check_model  # noqa: F401
 from prettylisavpn.fleet import model as fleet_model  # noqa: F401
 from prettylisavpn.fleet import service_check_model as service_check_model  # noqa: F401
 from prettylisavpn.fleet import traffic_model as fleet_traffic_model  # noqa: F401
