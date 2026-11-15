@@ -6,6 +6,28 @@
 
 ## Unreleased
 
+### Daily device distribution — backend 0.44.0 / dashboard 0.11.0
+
+- Replace the period-wide device histogram with stacked daily platform bars.
+  Default to unique accounts per platform/day; offer connections and count/share
+  switches. Count repeat sessions separately only in connection mode.
+- Rebuild stored report revision 2 once as revision 3 from existing verified
+  leases. Preserve missing-history gaps, exclude test accounts, and keep account
+  identifiers private. Schema remains 0050; engine and clients are unchanged.
+- This owner-requested follow-up is included in PR #86 before its release.
+  See [metric definitions and rollout](docs/daily-device-distribution.md).
+
+### Connection-method reports — backend 0.43.0 / dashboard 0.10.0 / managed engine 0.8.0
+
+- Add independent daily availability assessments for all connection methods,
+  including real relay (+) routes and HTTPS proxy. Keep the method fixed while
+  retrying random unused servers; reuse service recovery-time scoring and show
+  its definition beside the seven-day graph.
+- Add counts/shares of methods in confirmed open sessions. Keep absent evidence
+  distinct from zero and preserve synthetic relay reservations across crashes.
+- Add migration 0050; client versions and navigation remain unchanged. See
+  [connection-method analytics](docs/connection-method-analytics.md).
+
 ### Client packaging — Windows 0.29.1 / Android 0.28.1 / Chrome 0.3.1 / iOS 0.4.1 / macOS 0.3.1
 
 - Remove unused Android Compose preview tooling; preserve all protocols, locales,
@@ -58,19 +80,6 @@
   and decorative subtitles, and apply lowercase interface copy across six languages.
 - Keep existing prices, authentication, recurring consent and payment authority
   unchanged. See the [website copy and devices handoff](docs/website-copy-devices.md).
-
-### Reports — backend 0.42.0 / dashboard 0.9.0 / managed engine 0.7.0
-
-- Default seven-day speed analytics now aggregate seven completed GMT+3 days
-  from original counters. Add per-service daily availability, random public
-  samples and VPN routes, minute retries and recovery-time scores, plus selected
-  service counts/shares in open sessions and private UNKNOWN rule evidence.
-- Product analytics include DEMO, tariff shares over time, device platforms,
-  average connected-session duration and histograms to disconnect/first silence.
-  Missing or incomplete observations remain explicitly unobserved.
-- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
-  Migration 0049; backend and node helpers must precede client rollout. No client
-  screen changes. See [report definitions and handoff](docs/report-analytics.md).
 
 ### Public website — 0.5.4
 
@@ -1436,6 +1445,28 @@
   закреплённые в docs/versioning.md и AGENTS.md.
 - Recorded: текущий legacy runtime-формат backend dev-SHA и отдельная задача
   перехода его CI/deploy/rollback. Развёртывание в этой задаче не менялось.
+
+## Development reports — 2026-11-15 UTC
+
+### Reports — backend 0.42.0 / dashboard 0.9.0 / managed engine 0.7.0
+
+- Default seven-day speed analytics now aggregate seven completed GMT+3 days
+  from original counters. Add per-service daily availability, random public
+  samples and VPN routes, minute retries and recovery-time scores, plus selected
+  service counts/shares in open sessions and private UNKNOWN rule evidence.
+- Product analytics include DEMO, tariff shares over time, device platforms,
+  average connected-session duration and histograms to disconnect/first silence.
+  Missing or incomplete observations remain explicitly unobserved.
+- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
+  Migration 0049; backend and node helpers must precede client rollout. No client
+  screen changes. See [report definitions and handoff](docs/report-analytics.md).
+
+
+Released through develop `6177e2e53da41413f60385686d9f1f8e425b0492`; backend
+Actions run `43690059961`, attempt 1. Dashboard artifact `14119015678` and
+matching node engine artifact `14118201842`; exact build identities, checks and
+client publication evidence: [PR #82](https://github.com/romankenig/PrettyLisaVPN/pull/82).
+This is a development release, without stable release tags.
 
 ## Исходная база при принятии правил — 2026-10-16
 

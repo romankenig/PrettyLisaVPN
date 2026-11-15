@@ -12,6 +12,7 @@ MOSCOW = timezone(timedelta(hours=3))
 Plan = Literal["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"]
 PLANS: tuple[Plan, ...] = ("DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN")
 DURATION_BOUNDS = (10, 60, 180, 300, 900)
+METRICS_REVISION = 3
 
 
 def distribution(values: list[float]) -> dict[str, Any]:
@@ -59,6 +60,19 @@ class Attempt:
     disconnected_at: datetime | None = None
     first_silence_at: datetime | None = None
     silence_complete: bool = False
+    user_id: UUID | None = None
+
+
+def device_platforms(attempts: list[Attempt], covered: bool) -> dict[str, Any]:
+    """One connection per verified lease; one account per platform and day."""
+    if not covered:
+        return {"connections": None, "users": None}
+    connections = Counter(a.platform for a in attempts)
+    users = Counter(platform for platform, _ in {(a.platform, a.user_id) for a in attempts})
+    return {
+        "connections": dict(sorted(connections.items())),
+        "users": None if any(a.user_id is None for a in attempts) else dict(sorted(users.items())),
+    }
 
 
 def duration(a: Attempt, cutoff: datetime) -> float | None:
@@ -158,6 +172,7 @@ def snapshot(
             and (seconds := duration(a, cutoff)) is not None
         ]
         point.update(
+            device_platforms=device_platforms(verified, covered),
             mean_session_seconds=round(mean(closed_seconds), 1) if closed_seconds else None,
             completed_sessions=len(closed_seconds),
             verified_sessions=len(verified) if covered else None,
@@ -202,5 +217,5 @@ def snapshot(
         "mean_session_seconds": round(mean(session_lengths), 1) if session_lengths else None,
         "duration_unobserved_sessions": len(cohort) - len(session_lengths),
         "silence_unobserved_sessions": len(cohort) - len(quiet),
-        "metrics_revision": 2,
+        "metrics_revision": METRICS_REVISION,
     }

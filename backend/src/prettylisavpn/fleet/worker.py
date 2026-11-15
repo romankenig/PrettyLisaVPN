@@ -438,6 +438,7 @@ class FleetWorker:
 async def main() -> None:
     from prettylisavpn.client_vpn.worker import ClientVpnWorker
     from prettylisavpn.fleet.managed import ManagedVpnMethod
+    from prettylisavpn.fleet.method_check_worker import MethodCheckWorker
     from prettylisavpn.fleet.service_check_worker import ServiceCheckWorker
     from prettylisavpn.fleet.ssh import SshTransport
     from prettylisavpn.fleet.traffic_worker import TrafficWorker
@@ -462,6 +463,7 @@ async def main() -> None:
             methods["managed"] = managed
         async with asyncio.TaskGroup() as group:
             group.create_task(ServiceCheckWorker(postgres, method, managed).run(stop))
+            group.create_task(MethodCheckWorker(postgres, method, managed).run(stop))
             group.create_task(TrafficWorker(postgres, transport, settings).run(stop))
             group.create_task(FleetWorker(postgres, methods, settings).run(stop))
             group.create_task(

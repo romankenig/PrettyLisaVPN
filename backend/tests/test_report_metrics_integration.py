@@ -13,6 +13,8 @@ from test_fleet import settings
 from test_fleet_integration import configured, fleet_state  # noqa: F401
 
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
+from prettylisavpn.devices.domain import DevicePlatform
+from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.fleet.model import FleetNodeRecord
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
 from prettylisavpn.fleet.service_check_worker import ServiceCheckWorker
@@ -22,6 +24,7 @@ from prettylisavpn.fleet.traffic_service import TrafficService
 from prettylisavpn.product_analytics.activity import DatabaseActivitySink
 from prettylisavpn.product_analytics.domain import day
 from prettylisavpn.product_analytics.model import ActivityRecord, SessionSilenceRecord
+from prettylisavpn.product_analytics.service import ProductAnalyticsService
 from prettylisavpn.traffic.model import TrafficServiceRecord
 from prettylisavpn.users.model import UserRecord
 
@@ -31,6 +34,59 @@ pytestmark = [
         os.getenv("RUN_INTEGRATION_TESTS") != "1", reason="Requires disposable PostgreSQL"
     ),
 ]
+
+
+async def test_daily_device_report_uses_accounts_without_exposing_identity(vpn_state):  # noqa: F811
+    postgres, service, worker, _, identity = vpn_state
+    lease_id = UUID((await connect(service))["id"])
+    await worker.tick()
+    at = datetime(2098, 6, 1, 12, tzinfo=UTC)
+    email = f"daily-platforms-{uuid4()}@gmail.com"
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(UserRecord).where(UserRecord.id == identity.user_id).values(email=email)
+        )
+        await session.execute(
+            update(DeviceRecord)
+            .where(DeviceRecord.id == identity.device_id)
+            .values(platform=DevicePlatform.ANDROID)
+        )
+        lease = await session.get(ClientLeaseRecord, lease_id)
+        lease.created_at, lease.verified_at = at, at + timedelta(seconds=5)
+        lease.removed_at = lease.disconnected_at = at + timedelta(minutes=1)
+        lease.expires_at, lease.heartbeat_at = at + timedelta(hours=1), lease.removed_at
+        lease.status = "CLOSED"
+        await session.flush()
+        fields = {
+            column.key: getattr(lease, column.key) for column in ClientLeaseRecord.__table__.columns
+        }
+        fields.update(
+            id=uuid4(),
+            request_id=uuid4(),
+            created_at=at + timedelta(minutes=2),
+            verified_at=at + timedelta(minutes=2, seconds=5),
+            removed_at=at + timedelta(minutes=3),
+            disconnected_at=at + timedelta(minutes=3),
+            heartbeat_at=at + timedelta(minutes=3),
+        )
+        session.add(ClientLeaseRecord(**fields))
+    analytics = ProductAnalyticsService(postgres)
+    async with postgres.session() as session:
+        report = await analytics.build(session, at + timedelta(days=1))
+    assert report["points"][-1]["device_platforms"] == {
+        "connections": {"ANDROID": 2},
+        "users": {"ANDROID": 1},
+    }
+    assert str(identity.user_id) not in str(report) and email not in str(report)
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(UserRecord)
+            .where(UserRecord.id == identity.user_id)
+            .values(email=f"excluded-{uuid4()}@example.com")
+        )
+    async with postgres.session() as session:
+        excluded = await analytics.build(session, at + timedelta(days=1))
+    assert excluded["points"][-1]["device_platforms"] == {"connections": {}, "users": {}}
 
 
 async def test_legacy_client_mode_is_unknown_and_service_checks_allow_renewal(vpn_state):  # noqa: F811

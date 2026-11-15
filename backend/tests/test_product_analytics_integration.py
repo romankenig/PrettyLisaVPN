@@ -146,6 +146,15 @@ async def test_daily_snapshot_survives_failure_and_restart_without_relabelling(
         assert not await ProductAnalyticsService(postgres).refresh(now + timedelta(hours=1))
         assert await service.latest() == stored
         assert str(user.id) not in str(stored) and user.email not in str(stored)
+        # Existing daily snapshots are rebuilt once when new metrics become available.
+        async with postgres.session() as session, session.begin():
+            row = await session.get(AnalyticsSnapshotRecord, yesterday)
+            row.data = {**row.data, "metrics_revision": 2}
+        assert await ProductAnalyticsService(postgres).refresh(now + timedelta(hours=2))
+        revised = await service.latest()
+        assert revised["metrics_revision"] == 3
+        assert "device_platforms" in revised["points"][-1]
+        assert not await service.refresh(now + timedelta(hours=3))
     finally:
         async with postgres.session() as session, session.begin():
             await session.execute(
