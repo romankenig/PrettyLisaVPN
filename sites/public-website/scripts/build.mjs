@@ -63,7 +63,7 @@ export async function build() {
   }
   const sources = {
     "lock.svg": "../../apps/windows/src/assets/lock.svg",
-    "Rubik.ttf": "../../apps/windows/public/fonts/rubik/Rubik.ttf",
+    "Rubik.ttf": "../../apps/apple/Resources-iOS/Fonts/Rubik.ttf",
     "OFL.txt": "../../apps/windows/public/fonts/rubik/OFL.txt",
     "app.js": "./src/app.js",
     "downloads.mjs": "./src/downloads.mjs",

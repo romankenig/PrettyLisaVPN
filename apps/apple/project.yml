@@ -17,6 +17,12 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Release:
+      # Ordinary `build` artifacts are downloadable too, not only Xcode archives.
+      DEPLOYMENT_POSTPROCESSING: YES
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_STYLE: non-global
 targetTemplates:
   Application:
     type: application

@@ -178,7 +178,7 @@ Android не переводит CSS px механически в dp и не на
 
 Ресурсы: [полный SVG](../apps/windows/src/assets/prettylisavpn-logo.svg),
 [каноническая копия](assets/prettylisavpn-logo.svg),
-[Rubik.ttf](../apps/windows/public/fonts/rubik/Rubik.ttf),
+[Rubik.ttf](../apps/apple/Resources-iOS/Fonts/Rubik.ttf),
 [Rubik OFL](../apps/windows/public/fonts/rubik/OFL.txt),
 [лицензия флагов](../apps/windows/src/assets/country-flags-LICENSE.md).
 Перенос SVG в VectorDrawable/Compose vector требует визуального сравнения,

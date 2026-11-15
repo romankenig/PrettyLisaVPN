@@ -142,6 +142,21 @@ try {
   let page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
+  assert.equal(
+    await page.evaluate(async () => {
+      for (const weight of [400, 500, 600, 700]) {
+        const faces = await globalThis.document.fonts.load(
+          `${weight} 16px Rubik`,
+          "PrettyLisaVPN Привет Grüße español français",
+        );
+        if (!faces.length || faces.some((face) => face.status !== "loaded"))
+          return false;
+      }
+      return true;
+    }),
+    true,
+    "Bundled Rubik must load at every UI weight",
+  );
   // All six complete locales and document destinations on the installed artifact.
   for (const [lang, name, picker] of [
     ["en", "english", "язык"],
