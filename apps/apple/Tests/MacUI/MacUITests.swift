@@ -47,6 +47,27 @@ final class MacUITests: XCTestCase {
             for page in ["devices", "subscription", "support", "settings", "about", "home"] {
                 let item = app.descendants(matching: .any)["nav-" + page].firstMatch
                 XCTAssertTrue(item.exists); item.click()
+                if page == "settings" {
+                    let randomize = app.buttons["randomize-methods"]
+                    XCTAssertTrue(randomize.waitForExistence(timeout: 5)); randomize.click()
+                    // AppKit can reorder the rows before the switch animations finish.
+                    // Capture only once the visible selected rows form the leading group.
+                    let toggles = app.switches.count > 0 ? app.switches : app.checkBoxes
+                    let settled = NSPredicate { _, _ in
+                        let values = toggles.allElementsBoundByIndex.map { String(describing: $0.value ?? "") }
+                        guard !values.isEmpty, values.contains("1"), values.allSatisfy({ $0 == "0" || $0 == "1" }) else { return false }
+                        var unchecked = false
+                        for value in values {
+                            if value == "0" { unchecked = true }
+                            else if unchecked { return false }
+                        }
+                        return true
+                    }
+                    expectation(for: settled, evaluatedWith: app)
+                    waitForExpectations(timeout: 10)
+                    let randomShot = XCTAttachment(screenshot: window.screenshot())
+                    randomShot.name = "macOS-\(theme)-random-methods"; randomShot.lifetime = .keepAlways; add(randomShot)
+                }
             }
             XCTAssertTrue(app.staticTexts["vpn-status"].waitForExistence(timeout: 5))
             let resized = XCTAttachment(screenshot: window.screenshot())

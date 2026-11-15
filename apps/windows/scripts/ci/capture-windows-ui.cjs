@@ -793,6 +793,41 @@ async function main() {
       .isChecked()
   )
     throw new Error("Method selection was not persisted");
+  const selectedMethods = () =>
+    page
+      .locator(".method-grid label")
+      .evaluateAll((labels) =>
+        labels
+          .filter((label) => label.querySelector("input").checked)
+          .map((label) => label.textContent),
+      );
+  const beforeRandom = await selectedMethods();
+  await page
+    .getByRole("button", { name: /случайный набор и порядок способов/i })
+    .click();
+  const firstRandom = await selectedMethods();
+  if (
+    !firstRandom.length ||
+    JSON.stringify(firstRandom) === JSON.stringify(beforeRandom)
+  )
+    throw new Error("Random selection must change the nonempty ordered subset");
+  await page
+    .getByRole("button", { name: /случайный набор и порядок способов/i })
+    .click();
+  const nextRandom = await selectedMethods();
+  if (
+    !nextRandom.length ||
+    JSON.stringify(nextRandom) === JSON.stringify(firstRandom)
+  )
+    throw new Error("Repeated random selection must change the ordered subset");
+  await page.locator(".method-grid").evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await screenshot("05c-advanced-randomized-methods");
+  await page.getByRole("link", { name: "← настройки", exact: true }).click();
+  await page.getByRole("link", { name: /расширенные настройки/i }).click();
+  if (JSON.stringify(await selectedMethods()) !== JSON.stringify(nextRandom))
+    throw new Error("Random method order was not persisted");
   await page.getByRole("checkbox", { name: /^все способы$/i }).check();
   await page.getByRole("link", { name: "← настройки", exact: true }).click();
 

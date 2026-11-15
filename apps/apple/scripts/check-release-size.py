@@ -24,7 +24,8 @@ for platform, directory in (("iOS", "Release-iphoneos"), ("macOS", "Release")):
             assert not table["local"], (platform, binary.name, "Local symbols remain", table["local"][:10])
             if bundle.suffix == ".appex":
                 assert {"_PLStart", "_PLStop", "_PLRunning"} <= table["external"], "Engine C exports missing"
-        binaries.append({"path": str(binary.relative_to(app)), "bytes": binary.stat().st_size})
+        binaries.append({"path": str(binary.relative_to(app)), "bytes": binary.stat().st_size,
+                         "strip_markers": sum(table["strip_markers"] for table in tables)})
     assert len(binaries) == 2, (platform, "Expected app and tunnel binaries")
     report[platform] = {
         "bundle_bytes": sum(path.stat().st_size for path in app.rglob("*") if path.is_file()),

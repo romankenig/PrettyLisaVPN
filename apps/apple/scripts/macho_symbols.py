@@ -40,19 +40,27 @@ def symbol_tables(data):
     symbols, count, strings, string_bytes = symtab
     if symbols + count * 16 > len(data) or strings + string_bytes > len(data):
         raise ValueError("Truncated symbol or string table")
-    external, local, debug = set(), [], 0
+    external, local, debug, strip_markers = set(), [], 0, 0
     for index in range(count):
-        name_index, kind, _, _, _ = struct.unpack_from("<IBBHQ", data, symbols + index * 16)
+        name_index, kind, section, description, value = struct.unpack_from("<IBBHQ", data, symbols + index * 16)
         if name_index >= string_bytes:
             raise ValueError("Invalid symbol name index")
         end = data.find(b"\0", strings + name_index, strings + string_bytes)
         if end == -1:
             raise ValueError("Unterminated symbol name")
         name = data[strings + name_index:end].decode("utf-8")
-        if kind & 0xe0:  # N_STAB: debugger records, not runtime exports.
+        # Apple strip inserts this exact N_OPT sentinel at index zero to keep
+        # indirect-symbol indexes nonzero (cctools strip.c, radar 5614542).
+        # It is required linker metadata, not removable debug information.
+        if (index, name, kind, section, description, value) == (
+            0, "radr://5614542", 0x3c, 0, 0, 0x05614542
+        ):
+            strip_markers += 1
+        elif kind & 0xe0:  # N_STAB: debugger records, not runtime exports.
             debug += 1
         elif not kind & 1:  # N_EXT
             local.append(name)
         elif kind & 0x0e:  # N_TYPE != N_UNDF: defined external symbol.
             external.add(name)
-    return [{"cpu": cpu, "external": external, "local": local, "debug": debug}]
+    return [{"cpu": cpu, "external": external, "local": local, "debug": debug,
+             "strip_markers": strip_markers}]

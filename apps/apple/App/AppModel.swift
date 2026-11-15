@@ -166,6 +166,11 @@ import PrettyLisaCore
             open(try portal.validatedURL())
         }
     }
+    func saveMethods(_ selected: [String]) {
+        guard !selected.isEmpty, selected.allSatisfy(Methods.all.contains) else { return }
+        methods = selected
+        UserDefaults.standard.set(methods, forKey: "methods")
+    }
     func connect() {
         if simulation {
             controller.connect(country: country, methods: methods)

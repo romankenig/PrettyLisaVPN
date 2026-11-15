@@ -29,7 +29,7 @@ class VpnController(
     private val adapters: List<ConnectionAdapter>,
     private val preference: MethodPreference = MethodPreference(),
     private val recovery: ConnectionAdapter? = null,
-    private val enabledMethods: () -> Set<String>? = { null },
+    private val enabledMethods: () -> Collection<String>? = { null },
     private val healthPolicy: ConnectionHealthPolicy? = null,
     private val elapsedMillis: () -> Long = { System.nanoTime() / 1_000_000 },
     private val diagnostics: (DiagnosticEvent) -> Unit = {},
@@ -64,7 +64,7 @@ class VpnController(
                     if (owner() != id) { mutable.value = VpnStatus(); return@launch }
                     var previous: VpnMethod? = null
                     val selected = enabledMethods()
-                    val allowed = adapters.filter { selected == null || it.method.id in selected }
+                    val allowed = if (selected == null) adapters else selected.distinct().mapNotNull { method -> adapters.find { it.method.id == method } }
                     val priority = preference.order(allowed.map { it.method.id }.distinct())
                     val ordered = allowed.sortedBy { priority.indexOf(it.method.id) }
                     var connectedAdapter: ConnectionAdapter? = null

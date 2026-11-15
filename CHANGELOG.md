@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Client packaging — Windows 0.28.3 / Android 0.27.5 / Chrome 0.3.1 / iOS 0.3.1 / macOS 0.2.3
+### Client packaging — Windows 0.29.1 / Android 0.28.1 / Chrome 0.3.1 / iOS 0.4.1 / macOS 0.3.1
 
 - Remove unused Android Compose preview tooling; preserve all protocols, locales,
   standalone CPU builds, development signing identity and installed app behavior.
@@ -33,6 +33,18 @@
   remain unchanged. Chrome-disable diagnosis is explicitly deferred by the owner.
 - See [implementation and release handoff](docs/chrome-ui-demo.md) and
   [provider evidence and compatibility](docs/email-identities.md).
+
+### Windows — 0.29.0 / Android — 0.28.0 / iOS — 0.4.0 / macOS — 0.3.0
+
+- Android uses code 55, following the independently released 0.27.4/code 54.
+- Add a refresh icon to connection-method settings: each click selects a random
+  nonempty subset and shuffles its base attempt order. Selected methods appear
+  first in that order and persist across restarts. Manual changes preserve it.
+- Existing successful-method priority, Android exploration/cooldown, reset on
+  Home, connection recovery and cleanup remain in force. This settings action
+  does not disconnect or start a VPN. Apple retains its disconnected-only editor.
+- Backend, engines and Chrome proxy unchanged. See
+  [handoff](docs/random-method-selection.md).
 
 ### Public website — 0.5.5
 

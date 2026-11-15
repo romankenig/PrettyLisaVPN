@@ -102,7 +102,7 @@ captures or browsing history. Free acceptance sessions consume real quota.
 
 ## Boundaries and security
 
-- iOS **0.3.0**: `Config/iOS.xcconfig`; macOS **0.2.2**:
+- iOS **0.4.0**: `Config/iOS.xcconfig`; macOS **0.3.0**:
   `Config/macOS.xcconfig`. UI reads `CFBundleShortVersionString`; build number is
   `CURRENT_PROJECT_VERSION`, distinct from SemVer/SHA/run/attempt.
 - Backend owns access, quota and country availability. CryptoKit generates keys

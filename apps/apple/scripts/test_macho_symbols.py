@@ -27,6 +27,22 @@ class SymbolTablesTest(unittest.TestCase):
         self.assertEqual(value["local"], ["local"])
         self.assertEqual(value["debug"], 1)
 
+    def test_only_exact_apple_strip_sentinel_is_linker_metadata(self):
+        data = bytearray(binary(entries=(("radr://5614542", 0x3c), ("_PLStart", 0x0f))))
+        struct.pack_into("<BHQ", data, 56 + 5, 0, 0, 0x05614542)
+        value, = symbol_tables(data)
+        self.assertEqual(value["strip_markers"], 1)
+        self.assertEqual(value["debug"], 0)
+        self.assertEqual(value["external"], {"_PLStart"})
+        for field in (56 + 5, 56 + 6, 56 + 8):
+            invalid = data.copy()
+            invalid[field] ^= 1
+            value, = symbol_tables(invalid)
+            self.assertEqual(value["strip_markers"], 0)
+            self.assertEqual(value["debug"], 1)
+        value, = symbol_tables(binary(entries=(("radr://5614542", 0x3c),)))
+        self.assertEqual(value["debug"], 1)
+
     def test_every_universal_architecture_is_inspected(self):
         first, second = binary(), binary(0x1000007, (("unstripped", 0x0e),))
         fat = struct.pack(">II", 0xcafebabe, 2)

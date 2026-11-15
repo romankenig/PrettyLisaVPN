@@ -13,16 +13,24 @@ val connectionMethods: List<VpnMethod> = listOf(
 ).flatMap { (id, name) -> listOf(VpnMethod(id, name), VpnMethod("${id}_relay", "$name+")) }
 
 /** null selects all methods, including methods added by a later app update. */
-class MethodSelection(read: () -> Set<String>? = { null }, private val write: (Set<String>?) -> Unit = {}) {
-    private val ids = connectionMethods.map { it.id }.toSet()
-    private val mutable = MutableStateFlow(runCatching { read()?.intersect(ids)?.takeIf { it.isNotEmpty() } }.getOrNull())
+class MethodSelection(read: () -> Collection<String>? = { null }, private val write: (List<String>?) -> Unit = {}) {
+    private val ids = connectionMethods.map { it.id }
+    private val mutable = MutableStateFlow(runCatching { read()?.filter { it in ids }?.distinct()?.takeIf { it.isNotEmpty() } }.getOrNull())
     val selected = mutable.asStateFlow()
-    fun current(): Set<String>? = mutable.value
-    private fun save(value: Set<String>?) {
+    fun current(): List<String>? = mutable.value
+    private fun save(value: List<String>?) {
         mutable.value = value
         runCatching { write(value) }
     }
     fun all() = save(null)
+    fun randomize(random: kotlin.random.Random = kotlin.random.Random.Default) {
+        val next = ids.shuffled(random).take(random.nextInt(1, ids.size + 1)).toMutableList()
+        if (next == (mutable.value ?: ids)) {
+            if (next.size > 1) next.add(next.removeAt(0))
+            else next[0] = ids[(ids.indexOf(next[0]) + 1) % ids.size]
+        }
+        save(next)
+    }
     fun toggle(id: String) {
         if (id !in ids) return
         val active = mutable.value ?: ids

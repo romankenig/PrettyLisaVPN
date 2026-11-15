@@ -1,16 +1,19 @@
 # Client size audit
 
-Baseline: develop `6177e2e53da41413f60385686d9f1f8e425b0492`.
+Final baseline: develop `6fba44ca34dedab6809fd178b579ea831a1c3ef1`.
+The random-method selector merged during this audit; it is preserved, and final
+measurements use its builds on both sides. Earlier measurements against
+`6177e2e53da41413f60385686d9f1f8e425b0492` are preliminary evidence only.
 This task changes packaging only; account, billing, DEMO, routing, protocol and
 privacy behavior are preserved. No backend migration or follow-up is required.
 
 | Component | Before | After | Change |
 | --- | --- | --- | --- |
-| Windows | 0.28.2 | 0.28.3 | Brotli-packed engine and lossless WOFF2 |
-| Android | 0.27.4 / code 54 | 0.27.5 / code 55 | Remove unused Compose preview and tooling dependencies |
+| Windows | 0.29.0 | 0.29.1 | Brotli-packed engine and lossless WOFF2 |
+| Android | 0.28.0 / code 55 | 0.28.1 / code 56 | Remove unused Compose preview and tooling dependencies |
 | Chrome Extension | 0.3.0 | 0.3.1 | Replace bundled TTF with lossless WOFF2 |
-| iOS | 0.3.0 | 0.3.1 | Strip local symbols from Release app/extension |
-| macOS | 0.2.2 | 0.2.3 | Strip local symbols from Release app/extension |
+| iOS | 0.4.0 | 0.4.1 | Strip local symbols from Release app/extension |
+| macOS | 0.3.0 | 0.3.1 | Strip local symbols from Release app/extension |
 | Backend, managed engine, website | unchanged | unchanged | No delivered behavior change |
 
 Linux desktop and Android TV have no distributable client in this repository.
@@ -50,9 +53,13 @@ with `STRIP_STYLE=non-global` and Swift export stripping disabled: retain extern
 symbols and executable code.
 Debug/Simulator builds retain diagnostic symbols. Packaging inspects the actual
 Release Mach-O symbol tables directly (nm also synthesizes dyld records), rejects
-local/debug symbols, checks all three exported engine C entry points in every
+local/debug symbols except Apple's exact required `radr://5614542` linker sentinel,
+checks all three exported engine C entry points in every
 architecture and records installed bundle bytes. The source/license
 archives remain separate downloads. Unsigned device/Mac labels remain unchanged.
+The sentinel is inserted by [Apple's strip implementation](https://github.com/apple-oss-distributions/cctools/blob/main/misc/strip.c)
+to preserve indirect-symbol indexes; it must not be removed. The check validates
+its type, index, section, description and value, not only its name.
 
 ## Measurement and verification
 
@@ -62,13 +69,20 @@ Do not count GitHub artifact ZIPs containing corresponding source archives,
 screenshots or Simulator builds as the application's download size.
 Unpacked size and compressed download size are separate measurements.
 
-Fresh unmodified baseline builds:
+Preliminary unmodified baseline builds (before the concurrent selector merge):
 
 - [Android run 43690765823, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43690765823)
 - [Apple run 43690768395, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43690768395)
 - [Windows run 43690059958, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43690059958)
 
-Chrome before/after can additionally be built locally from the same lockfile.
+Final baseline builds from `6fba44c`, with the selector included:
+
+- [Android run 43692890012, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43692890012)
+- [Apple run 43692890024, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43692890024)
+- [Windows run 43692890021, attempt 1](https://github.com/romankenig/PrettyLisaVPN/actions/runs/43692890021)
+
+Chrome source is unchanged between these baselines. Its before/after can
+additionally be built locally from the same lockfile.
 The task PR records final product HEAD, actual build/merge SHA, run/attempt,
 artifact bytes/digests, measured deltas and every CI result after the final push.
 This document does not claim that pending checks or publication have completed.

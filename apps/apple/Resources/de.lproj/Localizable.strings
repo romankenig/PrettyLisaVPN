@@ -163,6 +163,7 @@
 "plan_split" = "gesamter oder ausgewählter Datenverkehr";
 "plan_unlimited" = "VPN ohne Zeitlimit";
 "processing" = "wird verarbeitet…";
+"randomize_methods" = "zufällige Methoden und Reihenfolge";
 "reply_email" = "antwortadresse";
 "server_connection_lost" = "keine verbindung zum server, bitte internetverbindung prüfen";
 "settings" = "einstellungen";
