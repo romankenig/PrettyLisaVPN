@@ -118,17 +118,21 @@ def snapshot(
     observed_from: datetime | None,
     collected_from: datetime,
     attempts_from: datetime | None,
+    *,
+    live: bool = False,
 ) -> dict[str, Any]:
+    """Saved history, or just today's point and the period totals as of now."""
     today = day(now)
-    start, through = two_months_before(today), today - timedelta(days=1)
-    cutoff = boundary(today)
+    start = two_months_before(today)
+    through = today if live else today - timedelta(days=1)
+    cutoff = now + timedelta(microseconds=1) if live else boundary(today)
     values = sorted(
-        (item for item in latest_activity(activity) if item.at < cutoff), key=lambda a: a.at
+        latest_activity([item for item in activity if item.at < cutoff]), key=lambda a: a.at
     )
     # The first full day after enabling collection is the reliable coverage boundary.
     complete_from = day(collected_from) + timedelta(days=1)
     points: list[dict[str, Any]] = []
-    current = start
+    current = today if live else start
     while current <= through:
         point: dict[str, Any] = {"date": current.isoformat(), "complete": current >= complete_from}
         for metric, width in (("dau", 1), ("wau", 7), ("mau", 30)):
@@ -144,7 +148,7 @@ def snapshot(
                 "plans": {plan: counts[plan] if known else None for plan in PLANS},
                 "complete": first >= complete_from,
             }
-        point["new_accounts"] = sum(day(at) == current for at in registrations)
+        point["new_accounts"] = sum(day(at) == current and at < cutoff for at in registrations)
         visible_attempts = [
             a for a in attempts if day(a.created_at) == current and a.created_at < cutoff
         ]
@@ -156,14 +160,18 @@ def snapshot(
         ]
         passed = [a for a in closed if a.verified_at is not None and a.verified_at < cutoff]
         verified = [
-            a for a in attempts if a.verified_at is not None and day(a.verified_at) == current
+            a
+            for a in attempts
+            if a.verified_at is not None
+            and a.verified_at < cutoff
+            and day(a.verified_at) == current
         ]
         durations = [
             (a.verified_at - a.created_at).total_seconds()
             for a in verified
             if a.verified_at is not None and a.verified_at >= a.created_at
         ]
-        covered = attempts_from is not None and current >= day(attempts_from)
+        covered = live or (attempts_from is not None and current >= day(attempts_from))
         closed_seconds = [
             seconds
             for a in attempts
@@ -191,10 +199,16 @@ def snapshot(
     methods = Counter(
         a.method
         for a in attempts
-        if a.verified_at is not None and start <= day(a.verified_at) <= through
+        if a.verified_at is not None
+        and a.verified_at < cutoff
+        and start <= day(a.verified_at) <= through
     )
     cohort = [
-        a for a in attempts if a.verified_at is not None and start <= day(a.verified_at) <= through
+        a
+        for a in attempts
+        if a.verified_at is not None
+        and a.verified_at < cutoff
+        and start <= day(a.verified_at) <= through
     ]
     session_lengths = [seconds for a in cohort if (seconds := duration(a, cutoff)) is not None]
     quiet = [seconds for a in cohort if (seconds := silence_duration(a, cutoff)) is not None]

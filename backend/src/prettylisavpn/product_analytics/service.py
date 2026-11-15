@@ -1,6 +1,5 @@
 """Build daily aggregates from durable first-party evidence; serve stored snapshots."""
 
-from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
@@ -47,7 +46,10 @@ class ProductAnalyticsService:
 
     async def latest(self, now: datetime | None = None) -> dict[str, Any]:
         now = now or datetime.now(UTC)
-        async with self.postgres.session() as session:
+        async with self.postgres.session() as session, session.begin():
+            await session.execute(
+                text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            )
             row = await session.scalar(
                 select(AnalyticsSnapshotRecord)
                 .where(AnalyticsSnapshotRecord.through_date < day(now))
@@ -56,42 +58,35 @@ class ProductAnalyticsService:
             )
             if row is None:
                 raise FleetError("product_analytics_pending", 503)
-            return {**row.data, "device_today": await self.current_devices(session, now)}
-
-    async def current_devices(self, session: AsyncSession, now: datetime) -> dict[str, Any]:
-        """Live device counts only; completed-day snapshots remain immutable on reads."""
-        rows = await session.execute(
-            select(
-                ClientLeaseRecord.user_id,
-                UserRecord.email,
-                DeviceRecord.platform,
-                func.count(),
-            )
-            .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
-            .outerjoin(DeviceRecord, DeviceRecord.id == ClientLeaseRecord.device_id)
-            .where(
-                ClientLeaseRecord.verified_at >= boundary(day(now)),
-                ClientLeaseRecord.verified_at <= now,
-            )
-            .group_by(ClientLeaseRecord.user_id, UserRecord.email, DeviceRecord.platform)
-        )
-        connections: Counter[str] = Counter()
-        users: Counter[str] = Counter()
-        for _, email, platform, count in rows:
-            if is_test_account(email):
-                continue
-            name = platform.value if platform else "UNKNOWN"
-            connections[name] += count
-            users[name] += 1
-        return {
-            "date": day(now).isoformat(),
-            "partial": True,
-            "updated_at": now.isoformat(),
-            "device_platforms": {
-                "connections": dict(sorted(connections.items())),
-                "users": dict(sorted(users.items())),
-            },
-        }
+            current = await self.build(session, now, live=True)
+            point = current["points"][0]
+            live = {
+                "partial": True,
+                "updated_at": now.isoformat(),
+                "point": point,
+                "from_date": current["from_date"],
+                "summary": {
+                    key: current[key]
+                    for key in (
+                        "session_duration",
+                        "time_to_silence",
+                        "mean_session_seconds",
+                        "duration_unobserved_sessions",
+                        "silence_unobserved_sessions",
+                    )
+                },
+            }
+            return {
+                **row.data,
+                "live": live,
+                # Keep the additive 0.45 contract for dashboards during rollout.
+                "device_today": {
+                    "date": point["date"],
+                    "partial": True,
+                    "updated_at": now.isoformat(),
+                    "device_platforms": point["device_platforms"],
+                },
+            }
 
     async def refresh(self, now: datetime | None = None) -> bool:
         now = now or datetime.now(UTC)
@@ -134,9 +129,11 @@ class ProductAnalyticsService:
             )
         return True
 
-    async def build(self, session: AsyncSession, now: datetime) -> dict[str, Any]:
+    async def build(
+        self, session: AsyncSession, now: datetime, *, live: bool = False
+    ) -> dict[str, Any]:
         lower = boundary(two_months_before(day(now)) - timedelta(days=29))
-        cutoff = boundary(day(now))
+        cutoff = now + timedelta(microseconds=1) if live else boundary(day(now))
         collection = await session.get(AnalyticsCollectionRecord, 1)
         if collection is None:
             raise FleetError("product_analytics_not_initialized", 503)
@@ -275,4 +272,5 @@ class ProductAnalyticsService:
             observed_from,
             collection.started_at,
             attempts_from,
+            live=live,
         )
