@@ -24,6 +24,7 @@ from prettylisavpn.fleet.domain import (
     RelayAccess,
     VpnMethod,
 )
+from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
@@ -105,25 +106,37 @@ class ClientVpnWorker:
                 for locked_node in locked:
                     if locked_node.lock_until is None or locked_node.lock_until < now:
                         continue
-                    if bool(
-                        await session.scalar(
-                            select(FleetOperationRecord.id).where(
-                                FleetOperationRecord.claim_token == locked_node.lock_owner,
-                                FleetOperationRecord.kind == "CHECK",
-                                FleetOperationRecord.status == "RUNNING",
-                                FleetOperationRecord.lease_until > now,
-                                or_(
-                                    FleetOperationRecord.node_id == locked_node.id,
-                                    FleetOperationRecord.source_id == locked_node.id,
-                                ),
+                    if (
+                        bool(
+                            await session.scalar(
+                                select(FleetOperationRecord.id).where(
+                                    FleetOperationRecord.claim_token == locked_node.lock_owner,
+                                    FleetOperationRecord.kind == "CHECK",
+                                    FleetOperationRecord.status == "RUNNING",
+                                    FleetOperationRecord.lease_until > now,
+                                    or_(
+                                        FleetOperationRecord.node_id == locked_node.id,
+                                        FleetOperationRecord.source_id == locked_node.id,
+                                    ),
+                                )
                             )
                         )
-                    ) or bool(
-                        await session.scalar(
-                            select(ServiceCheckRecord.service_id).where(
-                                ServiceCheckRecord.claim_token == locked_node.lock_owner,
-                                ServiceCheckRecord.claim_until > now,
-                                ServiceCheckRecord.finished_at.is_(None),
+                        or bool(
+                            await session.scalar(
+                                select(ServiceCheckRecord.service_id).where(
+                                    ServiceCheckRecord.claim_token == locked_node.lock_owner,
+                                    ServiceCheckRecord.claim_until > now,
+                                    ServiceCheckRecord.finished_at.is_(None),
+                                )
+                            )
+                        )
+                        or bool(
+                            await session.scalar(
+                                select(MethodCheckRecord.method).where(
+                                    MethodCheckRecord.claim_token == locked_node.lock_owner,
+                                    MethodCheckRecord.claim_until > now,
+                                    MethodCheckRecord.finished_at.is_(None),
+                                )
                             )
                         )
                     ):

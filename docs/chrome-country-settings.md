@@ -3,8 +3,12 @@
 Task baseline: `4e4a79feb721416c6236ab472c1933b9961b979f` (the verified 0.3.2
 fixes in PR #88). This separate UI task adds Advanced Settings and a custom
 country picker: Chrome **0.3.2 → 0.4.0 MINOR**. Website **0.6.0 → 0.6.1 PATCH**
-adds factual browser privacy disclosure. Backend **0.42.0**, schema and all other
-client versions remain unchanged. The earlier device/proxy fixes remain included.
+adds factual browser privacy disclosure. Backend started at **0.42.0**; the later
+sync with develop `ea1498a1` inherits **0.44.0** from the independently merged
+analytics PR #86. This task does not change backend/schema or other client versions.
+The earlier device/proxy fixes remain included. The 0.4.0 push artifact at
+`57f94292` passed real DEMO/device/Advanced Settings acceptance on that deployed
+0.44.0 backend; final merged-head CI identity is recorded separately in PR #88.
 
 ## Interface and compatibility
 

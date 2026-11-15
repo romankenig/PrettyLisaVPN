@@ -12,12 +12,13 @@ from sqlalchemy.dialects.postgresql import insert
 from prettylisavpn.client_vpn.methods import MANAGED_METHODS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.connections import Postgres
+from prettylisavpn.fleet.daily_checks import finish_attempt
 from prettylisavpn.fleet.domain import Node, Observation
 from prettylisavpn.fleet.managed import ManagedVpnMethod
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
-from prettylisavpn.fleet.service_checks import assessment_score, choose_candidate, daily_slot
+from prettylisavpn.fleet.service_checks import choose_candidate, daily_slot
 from prettylisavpn.fleet.ubuntu.service_probe import discover
 from prettylisavpn.fleet.wireguard import WireGuardMethod
 from prettylisavpn.product_analytics.domain import day
@@ -230,41 +231,7 @@ class ServiceCheckWorker:
         async with self.postgres.session() as session, session.begin():
             job = await session.get(ServiceCheckRecord, (service_id, on), with_for_update=True)
             if job and job.claim_token == token:
-                finished = datetime.now(UTC)
-                tested = (
-                    result is not None
-                    and result.mode == "SYNTHETIC"
-                    and result.code
-                    in {
-                        "SERVICE_CHECK_PASSED",
-                        "SERVICE_HTTP_FAILED",
-                        "HANDSHAKE_FAILED",
-                        "DNS_FAILED",
-                        "HTTPS_FAILED",
-                        "EGRESS_IP_MISMATCH",
-                    }
-                )
-                job.attempts = [
-                    *job.attempts[:-1],
-                    {**job.attempts[-1], "code": code, "tested": tested},
-                ]
-                job.code, job.claim_token, job.claim_until = code, None, None
-                if finished >= deadline:
-                    job.score = 0 if any(a.get("tested") for a in job.attempts) else None
-                    job.code = "UNAVAILABLE" if job.score == 0 else "NOT_OBSERVED"
-                    job.finished_at = finished
-                elif (
-                    result is not None
-                    and result.status == "HEALTHY"
-                    and result.code == "SERVICE_CHECK_PASSED"
-                    and result.cleanup_confirmed
-                ):
-                    assert job.started_at is not None
-                    job.score = assessment_score(job.started_at, attempt_at, True)
-                    job.finished_at = finished
-                elif len(job.attempts) >= 30:
-                    job.score = 0 if any(a.get("tested") for a in job.attempts) else None
-                    job.finished_at = finished
+                finish_attempt(job, result, code, attempt_at, datetime.now(UTC), deadline)
             await session.execute(
                 update(FleetNodeRecord)
                 .where(FleetNodeRecord.lock_owner == token)

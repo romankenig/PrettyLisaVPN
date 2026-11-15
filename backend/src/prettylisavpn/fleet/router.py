@@ -118,3 +118,10 @@ async def service_analytics(
     from prettylisavpn.fleet.service_checks import ServiceAnalytics
 
     return await ServiceAnalytics(service.postgres).report()
+
+
+@router.get("/monitoring/connection-methods")
+async def method_analytics(service: Annotated[FleetService, Depends(reader)]) -> dict[str, Any]:
+    from prettylisavpn.fleet.method_checks import MethodAnalytics
+
+    return await MethodAnalytics(service.postgres).report()

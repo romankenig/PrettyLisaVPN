@@ -24,6 +24,7 @@ from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform, DeviceStatus
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.fleet.domain import FleetError, proxy_address_supported
+from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord
 from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
@@ -269,6 +270,14 @@ class ClientVpnService:
                         ).all()
                     )
                     if len(ports) < intermediate.capacity:
+                        ports.update(
+                            await session.scalars(
+                                select(MethodCheckRecord.relay_port).where(
+                                    MethodCheckRecord.relay_node_id == intermediate.id,
+                                    MethodCheckRecord.reserved_until > now,
+                                )
+                            )
+                        )
                         relay_port = next(
                             (port for port in range(20000, 30000) if port not in ports), None
                         )

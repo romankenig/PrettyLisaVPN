@@ -14,6 +14,7 @@ from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.legacy_vpn.sessions import VpnSessionRecord
 from prettylisavpn.product_analytics.activity import is_test_account
 from prettylisavpn.product_analytics.domain import (
+    METRICS_REVISION,
     Activity,
     Attempt,
     Plan,
@@ -62,7 +63,7 @@ class ProductAnalyticsService:
             if not await session.scalar(text("SELECT pg_try_advisory_xact_lock(860120041)")):
                 return False
             existing = await session.get(AnalyticsSnapshotRecord, through)
-            if existing is not None and existing.data.get("metrics_revision") == 2:
+            if existing is not None and existing.data.get("metrics_revision") == METRICS_REVISION:
                 return False
             payload = await self.build(session, now)
             if existing is not None:
@@ -218,6 +219,7 @@ class ProductAnalyticsService:
                     row.disconnected_at,
                     quiet.first_silence_at if quiet else None,
                     quiet.complete if quiet else False,
+                    user_id=row.user_id,
                 )
             )
         observed = await session.scalar(

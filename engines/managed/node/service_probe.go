@@ -30,6 +30,10 @@ func allowedServiceURL(raw string, domains []string) bool {
 // Both DNS and HTTPS traverse the selected VPN core. Public addresses are pinned
 // for each request; redirects cannot escape the catalog service or reach a LAN.
 func probeService(ctx context.Context, dial func(context.Context, string, string) (net.Conn, error), raw string, domains []string) bool {
+	return probeServiceRequest(ctx, dial, raw, domains, false)
+}
+
+func probeServiceRequest(ctx context.Context, dial func(context.Context, string, string) (net.Conn, error), raw string, domains []string, remoteDNS bool) bool {
 	if !allowedServiceURL(raw, domains) {
 		return false
 	}
@@ -37,6 +41,9 @@ func probeService(ctx context.Context, dial func(context.Context, string, string
 		host, port, err := net.SplitHostPort(address)
 		if err != nil || port != "443" {
 			return nil, errors.New("INVALID_SERVICE_DESTINATION")
+		}
+		if remoteDNS {
+			return dial(ctx, network, address)
 		}
 		ips, err := probeDNSName(ctx, dial, host)
 		if err != nil || len(ips) == 0 {

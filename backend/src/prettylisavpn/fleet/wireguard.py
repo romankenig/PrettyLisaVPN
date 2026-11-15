@@ -1,7 +1,7 @@
 """WireGuard lifecycle adapter. All private keys stay on their Ubuntu nodes."""
 
 from datetime import UTC, datetime, timedelta
-from ipaddress import IPv4Interface
+from ipaddress import IPv4Address, IPv4Interface
 from uuid import UUID
 
 from prettylisavpn.fleet.domain import (
@@ -92,12 +92,16 @@ class WireGuardMethod(VpnMethod):
         check_id: UUID,
         service_url: str | None = None,
         service_domains: list[str] | None = None,
+        *,
+        relay: Node | None = None,
+        relay_port: int | None = None,
     ) -> Observation:
         # The reserved monitoring address is independent of all customer peers.
         state = await self.inspect(target)
         if not state.public_key or not state.configuration:
             raise FleetError("TARGET_CONFIGURATION_MISSING")
         access: Access | None = None
+        forwarding: RelayAccess | None = None
         result: Observation | None = None
         cleanup = True
         try:
@@ -112,14 +116,25 @@ class WireGuardMethod(VpnMethod):
                 expires_at=datetime.now(UTC) + timedelta(minutes=4),
             )
             await self.grant_access(target, access)
+            if relay is not None:
+                if relay_port is None or relay.id in (source.id, target.id):
+                    raise FleetError("RELAY_PROBE_ROUTE_INVALID")
+                forwarding = RelayAccess(
+                    id=check_id,
+                    listen_port=relay_port,
+                    target_host=IPv4Address(target.host),
+                    target_port=int(str(state.configuration["listen_port"])),
+                    expires_at=datetime.now(UTC) + timedelta(seconds=170),
+                )
+                await self.grant_relay(relay, forwarding)
             response = await self.transport.call(
                 source,
                 "probe",
                 {
                     "check_id": str(check_id),
                     "public_key": state.public_key,
-                    "endpoint": target.host,
-                    "listen_port": state.configuration["listen_port"],
+                    "endpoint": relay.host if relay else target.host,
+                    "listen_port": relay_port if relay else state.configuration["listen_port"],
                     "address": access.address,
                     "mtu": state.configuration["mtu"],
                     "expected_egress_ips": target.expected_egress_ips,
@@ -137,9 +152,14 @@ class WireGuardMethod(VpnMethod):
                 status="UNKNOWN", mode="CONTROL", code=exc.code, observed_at=datetime.now(UTC)
             )
         finally:
+            if relay is not None and forwarding is not None:
+                try:
+                    cleanup = await self.revoke_relay(relay, forwarding)
+                except FleetError:
+                    cleanup = False
             if access is not None:
                 try:
-                    cleanup = await self.revoke_access(target, access)
+                    cleanup = await self.revoke_access(target, access) and cleanup
                 except FleetError:
                     cleanup = False
             try:

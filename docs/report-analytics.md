@@ -75,8 +75,11 @@ request fields. Billing, entitlements, admission and quota semantics are unchang
 - Each DAU/WAU/MAU chart switches between counts and tariff shares (shares default).
   DEMO + Free + Premium + Platinum + Unknown sum to the active audience. No
   percentage is shown for an empty audience.
-- Device distribution counts confirmed VPN sessions by device platform within the
-  report period, including repeated sessions; it does not claim unique people.
+- Device distribution originally counted confirmed sessions for the whole period.
+  The owner-requested follow-up replaces that chart with daily stacked platform
+  bars and a users/connections switch (users default), while retaining count/share
+  units. See [daily device distribution](daily-device-distribution.md) for account
+  deduplication, percentage denominators and snapshot revision 3.
 - Connection duration starts at backend egress verification, ends at the first
   disconnect/revocation decision or entitlement expiry, and excludes peer-cleanup
   delay. It describes a logical VPN session: device sleep is not a disconnect.
@@ -111,7 +114,9 @@ Rollout requires backend 0049, the matching verified node-engine artifact and
 updated Ansible node helpers (including `service_probe.py`), fleet worker, then
 dashboard/Caddy and clients. Existing running customer connections are preserved.
 Allow a week for a complete availability history; silence history starts with
-newly observed sessions. No merge, production deploy, release or new public client
-publication is performed by this task. Existing develop publication remains active
-when the owner later merges. Ordinary rollback retains additive tables and stops
+newly observed sessions. The owner subsequently authorized release through develop: PR #82 merged at
+`6177e2e53da41413f60385686d9f1f8e425b0492`; backend 0.42.0 deployed in run
+`43690059961`, attempt 1. Dashboard and all four node helpers were installed
+before client publication. Exact artifact identities and final publication/CI
+evidence are in [PR #82](https://github.com/romankenig/PrettyLisaVPN/pull/82). Ordinary rollback retains additive tables and stops
 the new worker code; database downgrade deletes new analytics evidence.
