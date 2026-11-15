@@ -2828,6 +2828,7 @@ input,
   color: var(--color-purple-heart);
 }
 .device-limit-cabinet .verified-email {
+  color: var(--color-black);
   overflow-wrap: anywhere;
 }
 .device-limit-banner {
@@ -2855,6 +2856,10 @@ input,
   .device-limit-overview {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+.device-limit-features button,
+.device-limit-actions button {
+  margin: 0;
 }
 .device-limit-actions {
   display: flex;
