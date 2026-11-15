@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Current product day — backend 0.46.0 / dashboard 0.13.0
+
+- Include today's partial data in every product analytics chart and summary card,
+  marked «неполный день» and refreshed every minute. Duration distributions include
+  today's confirmed observations; open sessions remain unobserved.
+- Preserve completed-day snapshots and the existing device-day contract. Midnight
+  gaps stay unknown, display switches survive updates, and failures retain the
+  previous result with its timestamp. No schema, client or VPN-engine changes.
+- See [current product analytics handoff](docs/current-product-analytics.md).
+
 ### Android — 0.28.2 / code 57
 
 - Keep connection methods in alphabetical display order after random selection,

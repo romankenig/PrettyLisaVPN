@@ -65,7 +65,7 @@ the existing develop publisher will run after an approved merge.
 ## Android display correction — 2026-11-15
 
 Android **0.28.1/code 56 → 0.28.2/code 57**, PATCH for selection-screen feedback.
-Base develop: `29dd77c29713a76142ddac6b57b261b9488eaf12`. Other component versions
+Integrated develop: `159d98890602179838fe196d1d3c75aaaf8502c4`. Other component versions
 are unchanged. The two-column list reads alphabetically left to right, then top
 to bottom, using case-insensitive protocol labels. Selected and unselected rows
 stay in the same positions. Both explanatory captions are removed in six locales.
