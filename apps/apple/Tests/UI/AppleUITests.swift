@@ -59,7 +59,13 @@ final class AppleUITests: XCTestCase {
             for button in revokeButtons.allElementsBoundByIndex { XCTAssertFalse(button.isEnabled) }
             app.buttons["nav-back"].tap()
             app.buttons["settings-advanced"].tap()
-            XCTAssertTrue(app.switches["WireGuard"].waitForExistence(timeout: 5))
+            let randomize = app.buttons["randomize-methods"]
+            XCTAssertTrue(randomize.waitForExistence(timeout: 5))
+            randomize.tap()
+            let selection = app.switches.allElementsBoundByIndex.map { $0.label + ":" + String(describing: $0.value) }
+            randomize.tap()
+            XCTAssertNotEqual(app.switches.allElementsBoundByIndex.map { $0.label + ":" + String(describing: $0.value) }, selection)
+            capture(app, "reference-random-methods-\(theme)")
             app.buttons["nav-back"].tap()
             app.buttons["nav-about"].tap()
             XCTAssertTrue(app.buttons["about-support"].waitForExistence(timeout: 5))

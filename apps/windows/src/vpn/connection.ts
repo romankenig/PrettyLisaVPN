@@ -230,6 +230,8 @@ export function createVpnConnectionManager(
         const allowed = adapters.filter(
           (adapter) => enabled === null || enabled.includes(adapter.id),
         );
+        if (enabled)
+          allowed.sort((a, b) => enabled.indexOf(a.id) - enabled.indexOf(b.id));
         const ordered = [
           ...allowed.filter((adapter) => adapter.id === preferred),
           ...allowed.filter((adapter) => adapter.id !== preferred),

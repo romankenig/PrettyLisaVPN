@@ -18,6 +18,10 @@ for variant in ("debug", "release"):
         path = directory / element["outputFile"]
         assert path.stat().st_size <= 40_000_000, (variant, abi, "APK exceeds 40 MB")
         with ZipFile(path) as apk:
+            # Android Studio preview/inspection tools are unused by the app.
+            dex = b"".join(apk.read(name) for name in apk.namelist() if name.endswith(".dex"))
+            assert b"Landroidx/compose/ui/tooling/ComposeViewAdapter;" not in dex
+            assert b"Landroidx/compose/ui/tooling/preview/Preview;" not in dex
             assert len(apk.read("assets/licenses/Rubik-OFL.txt")) > 1000
             natives = [name for name in apk.namelist() if name.startswith("lib/") and name.endswith(".so")]
             assert {name.split("/")[1] for name in natives} == {abi}

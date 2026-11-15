@@ -7,14 +7,14 @@ import org.junit.Test
 
 class MethodSelectionTest {
     @Test fun subsetSurvivesRestartAndCannotBecomeEmpty() {
-        var saved: Set<String>? = null
+        var saved: List<String>? = null
         val selection = MethodSelection({ saved }, { saved = it })
         assertNull(selection.current())
         connectionMethods.filter { it.id != "wireguard" }.forEach { selection.toggle(it.id) }
         selection.toggle("unknown"); selection.toggle("wireguard")
-        assertEquals(setOf("wireguard"), selection.current())
+        assertEquals(listOf("wireguard"), selection.current())
         val restored = MethodSelection({ saved }, { saved = it })
-        assertEquals(setOf("wireguard"), restored.current())
+        assertEquals(listOf("wireguard"), restored.current())
         restored.all(); assertNull(MethodSelection({ saved }).current())
     }
     @Test fun invalidAndUnavailableStorageUseAllMethods() {

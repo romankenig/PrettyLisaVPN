@@ -191,6 +191,19 @@ public enum Methods {
     public static let families = ["wireguard", "amneziawg", "sstp", "softether", "shadowsocks2022",
                                   "vmess", "vless", "vless_reality", "hysteria", "hysteria2", "hysteria2_salamander"]
     public static let all = families.flatMap { [$0, $0 + "_relay"] }
+    public static func randomSelection(current: [String]) -> [String] {
+        var generator = SystemRandomNumberGenerator()
+        return randomSelection(current: current, using: &generator)
+    }
+    public static func randomSelection<R: RandomNumberGenerator>(current: [String], using generator: inout R) -> [String] {
+        let shuffled = all.shuffled(using: &generator)
+        var next = Array(shuffled.prefix(Int.random(in: 1...all.count, using: &generator)))
+        if next == current {
+            if next.count > 1 { next.append(next.removeFirst()) }
+            else { next[0] = all[(all.firstIndex(of: next[0])! + 1) % all.count] }
+        }
+        return next
+    }
     public static func label(_ method: String) -> String {
         let relay = method.hasSuffix("_relay")
         let base = relay ? String(method.dropLast(6)) : method

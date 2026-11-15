@@ -346,13 +346,24 @@ struct SettingsView: View {
                 }
             }
             Section(L("apple_methods")) {
-                Text(L("apple_methods_detail")).font(.footnote).foregroundStyle(.secondary)
-                ForEach(Methods.all, id: \.self) { method in
+                HStack {
+                    Text(L("apple_methods_detail")).font(.footnote).foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Button {
+                        model.saveMethods(Methods.randomSelection(current: model.methods))
+                    } label: {
+                        Image(systemName: "arrow.clockwise").frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(L("randomize_methods"))
+                    .accessibilityIdentifier("randomize-methods")
+                    .help(L("randomize_methods"))
+                }
+                ForEach(model.methods + Methods.all.filter { !model.methods.contains($0) }, id: \.self) { method in
                     Toggle(Methods.label(method), isOn: Binding(get: { model.methods.contains(method) }, set: { enabled in
-                        var selected = Set(model.methods)
-                        if enabled { selected.insert(method) } else if selected.count > 1 { selected.remove(method) }
-                        model.methods = Methods.all.filter(selected.contains)
-                        UserDefaults.standard.set(model.methods, forKey: "methods")
+                        var selected = model.methods
+                        if enabled { selected.append(method) } else if selected.count > 1 { selected.removeAll { $0 == method } }
+                        model.saveMethods(selected)
                     }))
                 }
             }.disabled(model.connection != .disconnected)
