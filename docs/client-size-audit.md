@@ -46,10 +46,12 @@ connection, like the former GZip decompression.
 
 Apple's ordinary Release `xcodebuild build` previously left local symbol names
 in the distributed app and tunnel binaries. Enable deployment postprocessing
-with `STRIP_STYLE=non-global`: retain external symbols and executable code.
+with `STRIP_STYLE=non-global` and Swift export stripping disabled: retain external
+symbols and executable code.
 Debug/Simulator builds retain diagnostic symbols. Packaging inspects the actual
-Release binaries with `nm`, rejects local symbols, checks all three exported
-engine C entry points and records installed bundle bytes. The source/license
+Release Mach-O symbol tables directly (nm also synthesizes dyld records), rejects
+local/debug symbols, checks all three exported engine C entry points in every
+architecture and records installed bundle bytes. The source/license
 archives remain separate downloads. Unsigned device/Mac labels remain unchanged.
 
 ## Measurement and verification

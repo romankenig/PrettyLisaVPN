@@ -1,18 +1,12 @@
 """Check actual Release binaries, including both slices of the macOS download."""
 import json
 import plistlib
-import subprocess
 from pathlib import Path
+
+from macho_symbols import symbol_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 report = {}
-
-
-def symbols(binary, *flags):
-    output = subprocess.check_output(
-        ["xcrun", "nm", "-U", "-j", *flags, str(binary)], text=True
-    )
-    return {line.strip() for line in output.splitlines() if line.strip()}
 
 
 for platform, directory in (("iOS", "Release-iphoneos"), ("macOS", "Release")):
@@ -22,11 +16,14 @@ for platform, directory in (("iOS", "Release-iphoneos"), ("macOS", "Release")):
         content = bundle / "Contents" if platform == "macOS" else bundle
         info = plistlib.loads((content / "Info.plist").read_bytes())
         binary = (content / "MacOS" if platform == "macOS" else content) / info["CFBundleExecutable"]
-        defined, external = symbols(binary), symbols(binary, "-g")
-        assert defined, (platform, "Empty symbol inspection")
-        assert not defined - external, (platform, binary.name, "Local symbols remain")
-        if bundle.suffix == ".appex":
-            assert {"_PLStart", "_PLStop", "_PLRunning"} <= external, "Engine C exports missing"
+        tables = symbol_tables(binary.read_bytes())
+        expected_cpus = {0x100000c} if platform == "iOS" else {0x100000c, 0x1000007}
+        assert {table["cpu"] for table in tables} == expected_cpus, "Missing native architecture"
+        for table in tables:
+            assert not table["debug"], (platform, binary.name, "Debugger records remain")
+            assert not table["local"], (platform, binary.name, "Local symbols remain", table["local"][:10])
+            if bundle.suffix == ".appex":
+                assert {"_PLStart", "_PLStop", "_PLRunning"} <= table["external"], "Engine C exports missing"
         binaries.append({"path": str(binary.relative_to(app)), "bytes": binary.stat().st_size})
     assert len(binaries) == 2, (platform, "Expected app and tunnel binaries")
     report[platform] = {
