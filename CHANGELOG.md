@@ -6,6 +6,34 @@
 
 ## Unreleased
 
+### Chrome — 0.4.0 / public website — 0.6.1
+
+- Show bundled country flags and localized full names in the destination picker
+  and active connection. Keep availability owned by the backend; add keyboard
+  navigation and a menu that fits inside the popup.
+- Add Android-style Advanced Settings with the extension's supported HTTPS proxy
+  method. Remove the redundant transport caption from Home and the separate
+  privacy accordion from About. Show DEMO ⏳, FREE 🕊️, PREMIUM ⭐ and PLATINUM 💎
+  consistently, preserving uppercase plan names.
+- Website privacy clause 2.6 now covers Chrome permissions, WebRTC and restored
+  settings in all six languages. Backend source/version is unchanged.
+- See [handoff](docs/chrome-country-settings.md) for live US capability findings,
+  the separately authorized legacy-alias reconciliation and delivery evidence.
+
+### Chrome — 0.3.2
+
+- Fix Devices crashing for DEMO and registered accounts: consume the backend's
+  top-level list on entry and after revocation, and validate it before rendering.
+- Keep the screen usable on malformed/unavailable responses. Skip list refresh
+  after current-device sign-out. Correct the browser fixture and cover guest
+  devices, error recovery and revocation.
+- Recheck browser ownership and verified exit IP after Chrome proxy-error events
+  instead of treating every failed transaction as a failed VPN connection. Keep
+  real verification failures visible; coalesce events to avoid recursive probes.
+- Clarify in all six languages that registration unlocks location selection;
+  DEMO can still connect with autopilot. Backend and website unchanged.
+  See [handoff](docs/chrome-devices-fix.md).
+
 ### Daily device distribution — backend 0.44.0 / dashboard 0.11.0
 
 - Replace the period-wide device histogram with stacked daily platform bars.

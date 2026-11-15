@@ -63,6 +63,102 @@ function fixture() {
   return { controller, io, calls, saved: () => saved };
 }
 describe("browser lease lifecycle", () => {
+  it("rechecks transaction errors with real egress proof without restarting a healthy proxy", async () => {
+    const { controller, io, calls } = fixture();
+    await controller.connect("AUTO");
+    await controller.fail(new Error("PROXY_NETWORK_ERROR"));
+    const previous = calls.length;
+    await controller.checkProxy();
+    expect(controller.snapshot()).toMatchObject({
+      phase: "CONNECTED",
+      error: null,
+      ip: "81.31.245.143",
+    });
+    expect(calls.slice(previous).map((call) => call.path)).toEqual([
+      "/vpn/sessions/" + id + "/probe",
+    ]);
+    expect(io.apply).toHaveBeenCalledOnce();
+    expect(io.clear).not.toHaveBeenCalled();
+  });
+  it.each([
+    "NETWORK_ERROR",
+    "EGRESS_MISMATCH",
+    "PROXY_CONTROL_LOST",
+    "VPN_SESSION_EXPIRED",
+  ])(
+    "keeps a genuine %s visible after a proxy error and recovers on the next successful check",
+    async (code) => {
+      const { controller, io } = fixture();
+      await controller.connect("AUTO");
+      const fetch = io.fetch;
+      if (code === "NETWORK_ERROR")
+        io.fetch = async () => {
+          throw new Error("offline");
+        };
+      if (code === "EGRESS_MISMATCH")
+        io.fetch = async () =>
+          Response.json({ verified: true, ip: "5.181.49.183" });
+      if (code === "PROXY_CONTROL_LOST")
+        vi.mocked(io.verify).mockRejectedValueOnce(new Error(code));
+      if (code === "VPN_SESSION_EXPIRED")
+        controller.state.lease!.expires_at = new Date(0).toISOString();
+      await controller.checkProxy();
+      expect(controller.snapshot()).toMatchObject({
+        phase: "FAILED",
+        error: code,
+        ip: null,
+      });
+      // Preserve the existing proxy policy; never fall back to DIRECT on error.
+      expect(io.clear).not.toHaveBeenCalled();
+      io.fetch = fetch;
+      controller.state.lease!.expires_at = ready().expires_at;
+      await controller.tick();
+      expect(controller.snapshot()).toMatchObject({
+        phase: "CONNECTED",
+        error: null,
+      });
+    },
+  );
+  it("ignores queued proxy errors after disconnect and before a lease is ready", async () => {
+    const { controller, io } = fixture();
+    await controller.checkProxy();
+    controller.state.wanted = true;
+    await controller.checkProxy();
+    expect(io.fetch).not.toHaveBeenCalled();
+    await controller.connect("AUTO");
+    await controller.disconnect();
+    vi.mocked(io.fetch).mockClear();
+    await controller.checkProxy();
+    expect(io.fetch).not.toHaveBeenCalled();
+    expect(controller.snapshot()).toMatchObject({
+      phase: "DISCONNECTED",
+      error: null,
+    });
+  });
+  it("does not report an in-flight probe error after the user cancels", async () => {
+    const { controller, io } = fixture();
+    await controller.connect("AUTO");
+    io.fetch = async () => {
+      controller.cancel();
+      throw new Error("offline");
+    };
+    await controller.checkProxy();
+    expect(controller.snapshot().error).toBeNull();
+  });
+  it("validates device responses and can recover after a malformed list", async () => {
+    const { controller, io } = fixture();
+    io.fetch = async () => Response.json({ devices: [] });
+    await expect(controller.devices()).rejects.toThrow("INVALID_RESPONSE");
+    expect(controller.snapshot().signedIn).toBe(true);
+    io.fetch = async (url, options) => {
+      expect(new URL(String(url)).pathname).toBe("/devices");
+      expect(new Headers(options?.headers).get("Authorization")).toBe(
+        "Bearer test-access",
+      );
+      return Response.json([]);
+    };
+    await expect(controller.devices()).resolves.toEqual([]);
+  });
   it("admits a real DEMO account using a stable hashed profile identity without email", async () => {
     const { controller, io, saved } = fixture();
     delete controller.state.session;

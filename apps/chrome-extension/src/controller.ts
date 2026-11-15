@@ -1,4 +1,5 @@
 import { parseBilling, portalURL } from "./billing";
+import { parseDevices } from "./devices";
 import {
   API,
   PROBE,
@@ -394,6 +395,19 @@ export class Controller {
     this.state.error = null;
     await this.persist();
   }
+  async checkProxy() {
+    const lease = this.state.lease;
+    if (!this.state.wanted || lease?.status !== "READY" || !lease.configuration)
+      return;
+    try {
+      if (Date.parse(lease.expires_at) <= Date.now())
+        throw new Error("VPN_SESSION_EXPIRED");
+      await this.verifyTraffic();
+    } catch (error) {
+      // Disconnect can cancel an in-flight probe before its queued cleanup.
+      if (this.state.wanted) await this.fail(error);
+    }
+  }
   async disconnect() {
     this.cancel();
     this.state.phase = "DISCONNECTING";
@@ -478,7 +492,7 @@ export class Controller {
     await this.persist();
   }
   async devices() {
-    return this.request("/devices");
+    return parseDevices(await this.request("/devices"));
   }
   async revokeDevice(id: string) {
     if (!UUID.test(id)) throw new Error("INVALID_REQUEST");

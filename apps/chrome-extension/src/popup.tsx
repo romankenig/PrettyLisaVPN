@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { NavigationIcon } from "./NavigationIcon";
+import { CountryLabel, CountryPicker } from "./CountryPicker";
+import { PlanName } from "./PlanName";
 import type { Device, Snapshot } from "./model";
 import type { Billing, Money } from "./billing";
 import "./style.css";
@@ -16,7 +18,13 @@ import {
 } from "./i18n";
 import { LanguagePicker } from "./LanguagePicker";
 type Page =
-  "home" | "settings" | "about" | "devices" | "subscription" | "support";
+  | "home"
+  | "settings"
+  | "about"
+  | "devices"
+  | "subscription"
+  | "support"
+  | "advanced";
 
 async function send<T>(
   type: string,
@@ -84,8 +92,8 @@ function App() {
     setError(null);
     if (next === "devices")
       void action(async () => {
-        const value = await send<{ devices: Device[] }>("devices");
-        setDevices(value.devices);
+        setDevices([]);
+        setDevices(await send<Device[]>("devices"));
       });
     if (next === "subscription")
       void action(async () => setBilling(await send<Billing>("billing")));
@@ -109,7 +117,7 @@ function App() {
     state?.account?.entitlements?.free_seconds_usable ??
     state?.account?.entitlements?.free_seconds_remaining;
   const mainTab =
-    page === "devices" || page === "subscription"
+    page === "devices" || page === "subscription" || page === "advanced"
       ? "settings"
       : page === "support"
         ? "about"
@@ -283,13 +291,11 @@ function App() {
                     <div>
                       <label>{t("plan")}</label>
                       <strong>
-                        {demo
-                          ? "demo 🌱"
-                          : state.account?.plan === "PLATINUM"
-                            ? "Platinum 💎"
-                            : state.account?.plan === "PREMIUM"
-                              ? "Premium"
-                              : "Free"}
+                        {state.account ? (
+                          <PlanName plan={state.account.plan} />
+                        ) : (
+                          "…"
+                        )}
                       </strong>
                       {state.account?.plan === "FREE" && (
                         <button
@@ -320,29 +326,16 @@ function App() {
                 </section>
                 <section className="card">
                   <h2>{t("destination")}</h2>
-                  <select
-                    className="country"
-                    aria-label={t("destination")}
+                  <CountryPicker
                     value={demo ? "AUTO" : country}
+                    countries={state.countries}
+                    language={language}
                     disabled={!!active || busy || demo}
-                    onChange={(e) => setCountry(e.target.value)}
-                  >
-                    <option value="AUTO">{t("auto")}</option>
-                    {state.countries.map((item) => (
-                      <option
-                        key={item.country_code}
-                        value={item.country_code}
-                        disabled={!item.available}
-                      >
-                        {new Intl.DisplayNames([language], {
-                          type: "region",
-                        }).of(item.country_code)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setCountry}
+                  />
                   {demo && (
                     <button className="text" disabled={busy} onClick={register}>
-                      {t("registrationRequired")}
+                      {t("locationRegistration")}
                     </button>
                   )}
                   <button
@@ -366,10 +359,9 @@ function App() {
                   <h2 className="status" role="status">
                     {t(state.phase)}
                   </h2>
-                  <p>HTTPS proxy · {t("browser")}</p>
                   {connected && (
                     <div className="connection">
-                      <span>{state.country}</span>
+                      <CountryLabel code={state.country} language={language} />
                       <span>IP: {state.ip}</span>
                     </div>
                   )}
@@ -388,6 +380,7 @@ function App() {
                   [
                     ["subscription", "subscriptionDetail"],
                     ["devices", "devicesDetail"],
+                    ["advanced", "connectionMethods"],
                   ] as const
                 ).map(([next, detail]) => (
                   <button
@@ -395,7 +388,9 @@ function App() {
                     key={next}
                     onClick={() => navigate(next)}
                   >
-                    <NavigationIcon name={next} />
+                    <NavigationIcon
+                      name={next === "advanced" ? "settings" : next}
+                    />
                     <span>
                       <strong>{t(next)}</strong>
                       <small>{t(detail)}</small>
@@ -417,6 +412,24 @@ function App() {
                     <small>{t("logoutDetail")}</small>
                   </span>
                 </button>
+              </>
+            )}
+            {page === "advanced" && (
+              <>
+                <h1 className="white">{t("advanced")}</h1>
+                <section className="card">
+                  <h2>{t("connectionMethods")}</h2>
+                  <div className="connection-method">
+                    <input
+                      type="checkbox"
+                      checked
+                      disabled
+                      aria-label="HTTPS proxy"
+                    />
+                    <strong>HTTPS proxy</strong>
+                  </div>
+                  <p className="muted product-name">{t("browserMethodHint")}</p>
+                </section>
               </>
             )}
             {page === "devices" && (
@@ -446,10 +459,9 @@ function App() {
                         if (confirm(t("revokeConfirm")))
                           void action(async () => {
                             await send("revokeDevice", { id: device.id });
-                            const next = await send<{ devices: Device[] }>(
-                              "devices",
-                            ).catch(() => ({ devices: [] }));
-                            setDevices(next.devices);
+                            setDevices([]);
+                            if (!device.is_current)
+                              setDevices(await send<Device[]>("devices"));
                           });
                       }}
                     >
@@ -466,7 +478,9 @@ function App() {
                   {billing && (
                     <>
                       <label>{t("plan")}</label>
-                      <h2>{billing?.plan ?? "…"}</h2>
+                      <h2>
+                        <PlanName plan={billing.plan} />
+                      </h2>
                       <label>{t("paidUntil")}</label>
                       <strong>{date(billing?.paid_until ?? null)}</strong>
                       {billing?.current_price && (
@@ -505,7 +519,9 @@ function App() {
                   )}
                   {!billing && (
                     <div data-testid="billing-reference-prices">
-                      <h2>Premium</h2>
+                      <h2>
+                        <PlanName plan="PREMIUM" />
+                      </h2>
                       <p className="reference-price">
                         <s>499 ₽</s> <strong>399 ₽</strong> · <s>$7</s>{" "}
                         <strong>$5</strong> / {t("monthly")}
@@ -515,7 +531,9 @@ function App() {
                   )}
                   {billing?.offers.map((offer) => (
                     <div key={offer.id}>
-                      <h2>Premium</h2>
+                      <h2>
+                        <PlanName plan="PREMIUM" />
+                      </h2>
                       <p>
                         {priceLabel(offer.prices.RUB, language)} ·{" "}
                         {priceLabel(offer.prices.USD, language)} /{" "}
@@ -573,10 +591,6 @@ function App() {
                     {t("writeSupport")}
                   </button>
                 </section>
-                <details className="card">
-                  <summary>{t("privacy")}</summary>
-                  <p>{t("privacyText")}</p>
-                </details>
                 <section className="card">
                   <h2>{t("documents")}</h2>
                   <PublicLinks language={language} />

@@ -27,8 +27,15 @@ const device = "22222222-2222-4222-8222-222222222222";
 const errors = [];
 let billingAvailable = true;
 let guest = false;
+let deviceResponse = "valid";
+let otherDeviceRevoked = false;
+let deviceReads = 0;
+const otherDevice = "33333333-3333-4333-8333-333333333333";
 const demoKeys = [];
 async function mockAPI() {
+  context.on("page", (page) =>
+    page.on("pageerror", (e) => errors.push(e.message)),
+  );
   await context.route("https://prettylisavpn.com/account/**", (route) =>
     route.fulfill({
       contentType: "text/html",
@@ -77,22 +84,56 @@ async function mockAPI() {
         countries: [
           { country_code: "NL", available: true, quality: 98 },
           { country_code: "DE", available: false, quality: 0 },
+          // US is an advertised fixture capability, not a claim about live fleet readiness.
+          { country_code: "US", available: true, quality: 90 },
         ],
       };
-    else if (p === "/devices")
-      value = {
-        devices: [
-          {
-            id: device,
-            device_name: "Chrome Preview",
-            is_current: true,
-            status: "ACTIVE",
-            created_at: "2026-11-04T10:00:00Z",
-            last_login_at: "2026-11-04T12:00:00Z",
-          },
-        ],
+    else if (p === "/devices") {
+      deviceReads++;
+      // GET /devices is a top-level list for every plan (devices/router.py).
+      const current = {
+        id: device,
+        installation_id: id,
+        device_name: guest ? "Chrome DEMO" : "Chrome Preview",
+        platform: "CHROME_EXTENSION",
+        is_current: true,
+        status: "ACTIVE",
+        created_at: "2026-11-04T10:00:00Z",
+        updated_at: "2026-11-04T12:00:00Z",
+        revoked_at: null,
+        last_login_at: guest ? null : "2026-11-04T12:00:00Z",
       };
-    else if (p === "/billing/overview")
+      value = guest
+        ? [current]
+        : [
+            current,
+            {
+              ...current,
+              id: otherDevice,
+              installation_id: otherDevice,
+              device_name: "Other device",
+              is_current: false,
+              status: otherDeviceRevoked ? "REVOKED" : "ACTIVE",
+            },
+          ];
+      if (deviceResponse === "invalid") value = { devices: value };
+      if (deviceResponse === "empty") value = [];
+      if (deviceResponse === "unavailable") {
+        status = 503;
+        value = { error: { code: "device_service_unavailable" } };
+      }
+    } else if (
+      p === "/devices/" + otherDevice &&
+      route.request().method() === "DELETE"
+    ) {
+      otherDeviceRevoked = true;
+      value = { status: "revoked", device: { id: otherDevice } };
+    } else if (
+      p === "/devices/" + device &&
+      route.request().method() === "DELETE"
+    ) {
+      value = { status: "revoked", device: { id: device } };
+    } else if (p === "/billing/overview")
       value = {
         plan: "FREE",
         status: "FREE",
@@ -140,7 +181,6 @@ try {
     (await context.waitForEvent("serviceworker"));
   const extensionId = new URL(worker.url()).host;
   let page = await context.newPage();
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
   assert.equal(
     await page.evaluate(async () => {
@@ -195,7 +235,91 @@ try {
     .click();
   await page.getByText("гость", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
+  assert.match(await page.getByRole("combobox").textContent(), /автопилот/);
+  await page.getByText("DEMO ⏳", { exact: true }).waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "подключить", exact: true })
+      .isEnabled(),
+    true,
+  );
+  await page
+    .getByRole("button", {
+      name: "выбор локации — после регистрации",
+      exact: true,
+    })
+    .waitFor();
+  assert.equal(
+    await page.getByText("доступно после регистрации", { exact: true }).count(),
+    0,
+  );
   await page.screenshot({ path: path.join(output, "demo-home.png") });
+  await page.getByRole("button", { name: "настройки", exact: true }).click();
+  await page
+    .getByRole("button", { name: "расширенные настройки способы подключения" })
+    .click();
+  await page.getByRole("checkbox", { name: "HTTPS proxy" }).waitFor();
+  assert.equal(
+    (
+      await page.evaluate(() =>
+        chrome.runtime.sendMessage({ type: "snapshot" }),
+      )
+    ).value.account.plan,
+    "DEMO",
+  );
+  const openDevices = async () => {
+    await page.getByRole("button", { name: "настройки", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "устройства управление доступом к аккаунту",
+      })
+      .click();
+  };
+  await openDevices();
+  await page
+    .getByRole("heading", { name: "Chrome DEMO", exact: true })
+    .waitFor({ timeout: 5000 })
+    .catch((error) => {
+      assert.deepEqual(errors, []);
+      throw error;
+    });
+  assert.equal(
+    await page.getByText("это устройство", { exact: true }).count(),
+    1,
+  );
+  assert.equal(await page.getByText("—", { exact: true }).count(), 1);
+  await page.screenshot({ path: path.join(output, "demo-devices.png") });
+  for (const mode of ["invalid", "unavailable", "empty"]) {
+    deviceResponse = mode;
+    await openDevices();
+    if (mode === "empty") {
+      await page.waitForFunction(
+        () => !globalThis.document.querySelector("nav button:disabled"),
+      );
+      assert.equal(await page.locator("[role=alert]").count(), 0);
+    } else {
+      await page.locator("[role=alert]").waitFor();
+    }
+    assert.equal(
+      await page
+        .getByRole("heading", { name: "Chrome DEMO", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await page
+        .getByRole("heading", { name: "устройства", exact: true })
+        .count(),
+      1,
+    );
+    assert.deepEqual(errors, []);
+  }
+  deviceResponse = "valid";
+  await openDevices();
+  await page
+    .getByRole("heading", { name: "Chrome DEMO", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.close();
   page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -253,7 +377,6 @@ try {
   await mockAPI();
   await context.setOffline(false);
   page = await context.newPage();
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`chrome-extension://${extensionId}/popup.html`);
   await page.getByText("preview@example.com", { exact: true }).waitFor();
   assert.equal(await page.getByLabel("код из письма").count(), 0);
@@ -262,6 +385,141 @@ try {
       .refresh_token,
     "fixture-refresh",
   );
+  const picker = page.getByRole("combobox");
+  await picker.click();
+  await page.getByRole("option", { name: "Нидерланды", exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole("option", { name: /Германия/ }).isDisabled(),
+    true,
+  );
+  for (const code of ["nl", "de", "us"])
+    assert.equal(
+      await page
+        .locator(`.country-options use[href="flags/countries.svg#${code}"]`)
+        .count(),
+      1,
+    );
+  await page.screenshot({
+    path: path.join(output, "country-flags-fixture.png"),
+  });
+  await page.getByRole("option", { name: "Нидерланды", exact: true }).click();
+  assert.match(await picker.textContent(), /Нидерланды/);
+  await picker.press("ArrowDown"); // Skip unavailable DE.
+  await picker.press("Enter");
+  assert.match(await picker.textContent(), /Соединенные Штаты/);
+  await picker.press("Home");
+  await picker.press("Enter");
+  assert.match(await picker.textContent(), /автопилот/);
+  await picker.click();
+  await picker.press("Escape");
+  assert.equal(await page.getByRole("listbox").count(), 0);
+  await picker.click();
+  await page.getByText("preview@example.com", { exact: true }).click();
+  assert.equal(await page.getByRole("listbox").count(), 0);
+
+  // Presentation-only snapshots exercise the connected row and every plan.
+  // They never claim a real proxy route or change the worker's lease state.
+  await page.evaluate(() => {
+    globalThis.presentationSend = chrome.runtime.sendMessage.bind(
+      chrome.runtime,
+    );
+    globalThis.presentationOverride = {};
+    chrome.runtime.sendMessage = async (message, ...args) => {
+      const result = await globalThis.presentationSend(message, ...args);
+      if (message.type === "snapshot" && result.ok)
+        return {
+          ...result,
+          value: { ...result.value, ...globalThis.presentationOverride },
+        };
+      return result;
+    };
+  });
+  const account = (
+    await page.evaluate(() => chrome.runtime.sendMessage({ type: "snapshot" }))
+  ).value.account;
+  for (const [plan, emoji] of [
+    ["PREMIUM", "⭐"],
+    ["PLATINUM", "💎"],
+    ["FREE", "🕊️"],
+  ]) {
+    await page.evaluate(
+      (account) => {
+        globalThis.presentationOverride = { account };
+      },
+      { ...account, plan },
+    );
+    await page.getByText(`${plan} ${emoji}`, { exact: true }).waitFor();
+    assert.equal(
+      await page
+        .locator(".plan-name")
+        .evaluate((el) => globalThis.getComputedStyle(el).textTransform),
+      "none",
+    );
+  }
+  await page.evaluate(() => {
+    globalThis.presentationOverride = {
+      phase: "CONNECTED",
+      country: "NL",
+      ip: "81.31.245.143",
+    };
+  });
+  await page.locator(".connection").waitFor();
+  await page.locator(".connection").scrollIntoViewIfNeeded();
+  for (const [lang, name, pickerLabel] of [
+    ["en", "english", "язык"],
+    ["de", "deutsch", "language"],
+    ["fr", "français", "sprache"],
+    ["es", "español", "langue"],
+    ["zh", "中文", "idioma"],
+    ["ru", "русский", "语言"],
+  ]) {
+    await page.getByRole("button", { name: pickerLabel, exact: true }).click();
+    await page.getByRole("button", { name, exact: true }).click();
+    const countryName = new Intl.DisplayNames([lang], { type: "region" }).of(
+      "NL",
+    );
+    await page
+      .locator(".connection")
+      .getByText(countryName, { exact: true })
+      .waitFor();
+    assert.equal(
+      await page
+        .locator('.connection use[href="flags/countries.svg#nl"]')
+        .count(),
+      1,
+    );
+    assert.equal(await picker.isDisabled(), true);
+    assert.equal(await page.getByText(/https proxy ·/i).count(), 0);
+    await page.screenshot({
+      path: path.join(output, `connected-country-${lang}-fixture.png`),
+    });
+  }
+  await page.evaluate(() => {
+    chrome.runtime.sendMessage = globalThis.presentationSend;
+  });
+  await picker.waitFor();
+  await page.waitForFunction(
+    () => !globalThis.document.querySelector('[role="combobox"]').disabled,
+  );
+  await page.getByRole("button", { name: "настройки", exact: true }).click();
+  await page
+    .getByRole("button", { name: "расширенные настройки способы подключения" })
+    .click();
+  await page
+    .getByRole("heading", { name: "расширенные настройки", exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByRole("checkbox", { name: "HTTPS proxy" }).isChecked(),
+    true,
+  );
+  assert.equal(
+    await page.getByRole("checkbox", { name: "HTTPS proxy" }).isDisabled(),
+    true,
+  );
+  assert.equal(await page.getByText("WireGuard", { exact: true }).count(), 0);
+  await page.screenshot({ path: path.join(output, "advanced-fixture.png") });
+  await page.getByRole("button", { name: "← назад", exact: true }).click();
+  await page.getByRole("heading", { name: "настройки", exact: true }).waitFor();
   for (const [screen, label] of [
     ["home", "главная"],
     ["settings", "настройки"],
@@ -270,15 +528,32 @@ try {
     await page.getByRole("button", { name: label, exact: true }).click();
     await page.screenshot({ path: path.join(output, `${screen}-fixture.png`) });
   }
+  assert.equal(await page.locator("details.card").count(), 0);
+  assert.equal(
+    await page
+      .locator('a[href="https://prettylisavpn.com/legal/privacy/"]')
+      .count(),
+    1,
+  );
   await page.getByRole("button", { name: "настройки", exact: true }).click();
   await page
     .getByRole("button", { name: "устройства управление доступом к аккаунту" })
     .click();
   await page.getByText("Chrome Preview", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "devices-fixture.png") });
+  page.once("dialog", (dialog) => dialog.accept());
+  const otherCard = page.locator("section.card").filter({
+    has: page.getByRole("heading", { name: "Other device", exact: true }),
+  });
+  await otherCard.getByRole("button").click();
+  await otherCard.getByText("доступ отозван", { exact: true }).waitFor();
+  assert.equal(await otherCard.getByRole("button").isDisabled(), true);
   await page.getByRole("button", { name: "главная", exact: true }).click();
   await page.getByRole("button", { name: "улучшить", exact: true }).click();
-  await page.getByRole("heading", { name: "Premium", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "FREE 🕊️", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "PREMIUM ⭐", exact: true })
+    .waitFor();
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
     .waitFor();
@@ -362,6 +637,23 @@ try {
   await page.getByRole("button", { name: "english", exact: true }).click();
   await page.getByRole("button", { name: "settings", exact: true }).click();
   await page.getByText("manage account access").waitFor();
+  await page.getByRole("button", { name: "language", exact: true }).click();
+  await page.getByRole("button", { name: "русский", exact: true }).click();
+  await openDevices();
+  const currentCard = page.locator("section.card").filter({
+    has: page.getByRole("heading", { name: "Chrome Preview", exact: true }),
+  });
+  await currentCard.waitFor();
+  const readsBeforeRevoke = deviceReads;
+  page.once("dialog", (dialog) => dialog.accept());
+  await currentCard.getByRole("button").click();
+  await page.getByLabel("ваша почта").waitFor();
+  assert.equal(
+    deviceReads,
+    readsBeforeRevoke,
+    "revoked current device must not refetch an authenticated list",
+  );
+  assert.equal(await page.locator("[role=alert]").count(), 0);
   assert.deepEqual(errors, []);
   console.log(
     "Installed MV3 artifact: reopened OTP, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",

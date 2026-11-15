@@ -1018,3 +1018,40 @@ publisher version and unpacked-install instructions. Store installation is pendi
 Implementation is complete; production backend rollout and live guest traffic
 acceptance remain separate. See [handoff](chrome-ui-demo.md) and its explicitly
 deferred investigation of Chrome disabling the extension after closing the popup.
+
+## Chrome 0.4.0 — countries, plans and advanced settings
+
+Home → destination picker uses bundled flag images and localized country names,
+including the active connection row. Click/Enter selects an available API country;
+arrow keys/Home/End move through available options; Escape, Tab or an outside
+click dismisses the list. The popup chooses above/below placement to keep options
+visible. DEMO remains AUTO-only; selection is locked while connecting/connected.
+
+Settings → Advanced Settings → Back returns to Settings and keeps its sidebar
+selection. Like Android, this screen groups connection methods; Chrome currently
+has only HTTPS proxy, shown selected/read-only. It does not introduce native
+tunnels or a nonfunctional method selector. DEMO may open this screen too.
+
+About's separate privacy accordion is removed. Documents → Privacy Policy keeps
+the existing localized website link; website 0.6.1 adds the moved browser-specific
+disclosure in clause 2.6. Home's redundant transport caption is removed; the scope
+card and FAQ remain. Plan names retain uppercase and the shared Android emojis.
+See [handoff](chrome-country-settings.md); no pending backend endpoint integration.
+
+## Chrome 0.3.2 — device-list crash recovery and connection feedback
+
+DEMO or registered account → Settings → Devices consumes the existing API's
+top-level device list and marks the current device. Malformed/unavailable data
+shows the existing error message while navigation remains usable; re-entering
+Devices retries the request without stale cards. A successful other-device revoke
+refreshes that same list. Current-device revoke finishes cleanup/sign-out and
+returns to Login without fetching devices with a removed session.
+
+Home's DEMO hint explicitly says location selection requires registration;
+autopilot and Connect stay available. A Chrome proxy-error event now rechecks
+ownership and verified egress before showing failure. Healthy checks preserve
+CONNECTED; actual failures remain visible, with recovery on a successful check.
+The existing registration transition and proxy settings are unchanged.
+
+No new screen, route, entitlement or backend integration is introduced. Windows
+and backend versions are unchanged. See [handoff](chrome-devices-fix.md).
