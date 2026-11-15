@@ -40,6 +40,9 @@ async def test_historical_late_heartbeat_does_not_invent_activity_at_expiry():
         SimpleNamespace(
             all=lambda: [
                 SimpleNamespace(
+                    id=uuid4(),
+                    device_id=uuid4(),
+                    disconnected_at=None,
                     user_id=user,
                     created_at=created,
                     is_free=True,
@@ -52,6 +55,7 @@ async def test_historical_late_heartbeat_does_not_invent_activity_at_expiry():
             ]
         ),
     ]
+    session.scalars.side_effect = [*session.scalars.side_effect, [], []]
     session.scalar.side_effect = [START, START]
     result = await ProductAnalyticsService(AsyncMock()).build(session, NOW)
     point = next(p for p in result["points"] if p["date"] == "2026-10-31")

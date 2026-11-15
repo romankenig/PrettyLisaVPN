@@ -24,11 +24,13 @@ import (
 )
 
 type ProbeInput struct {
-	Profile      json.RawMessage `json:"profile"`
-	MeasureHost  string          `json:"measure_host"`
-	MeasureCA    string          `json:"measure_ca"`
-	MeasureToken string          `json:"measure_token"`
-	Expected     []string        `json:"expected_egress_ips"`
+	Profile        json.RawMessage `json:"profile"`
+	MeasureHost    string          `json:"measure_host"`
+	MeasureCA      string          `json:"measure_ca"`
+	MeasureToken   string          `json:"measure_token"`
+	Expected       []string        `json:"expected_egress_ips"`
+	ServiceURL     string          `json:"service_url,omitempty"`
+	ServiceDomains []string        `json:"service_domains,omitempty"`
 }
 
 type ProbeResult struct {
@@ -191,6 +193,14 @@ func Probe(raw []byte) ProbeResult {
 		return result
 	}
 	result.HTTPS = true
+	if input.ServiceURL != "" {
+		if probeService(ctx, dial, input.ServiceURL, input.ServiceDomains) {
+			result.Status, result.Code = "HEALTHY", "SERVICE_CHECK_PASSED"
+		} else {
+			result.Code = "SERVICE_HTTP_FAILED"
+		}
+		return result
+	}
 	data, elapsed, err = measure("/download", false)
 	if err == nil && len(data) == size {
 		speed := size * 8 / math.Max(elapsed.Seconds(), 0.001) / 1000000
@@ -213,6 +223,10 @@ func Probe(raw []byte) ProbeResult {
 // A core UDP connection does not implement net.PacketConn. net.Resolver would
 // treat it as a DNS-over-TCP stream and add an invalid length prefix to UDP.
 func probeDNS(ctx context.Context, dial func(context.Context, string, string) (net.Conn, error)) ([]net.IP, error) {
+	return probeDNSName(ctx, dial, "api.prettylisavpn.com")
+}
+
+func probeDNSName(ctx context.Context, dial func(context.Context, string, string) (net.Conn, error), host string) ([]net.IP, error) {
 	connection, err := dial(ctx, "udp", "1.1.1.1:53")
 	if err != nil {
 		return nil, err
@@ -228,7 +242,7 @@ func probeDNS(ctx context.Context, dial func(context.Context, string, string) (n
 		}
 	}()
 	query := new(dns.Msg)
-	query.SetQuestion("api.prettylisavpn.com.", dns.TypeA)
+	query.SetQuestion(dns.Fqdn(host), dns.TypeA)
 	packet, err := query.Pack()
 	if err != nil {
 		return nil, err

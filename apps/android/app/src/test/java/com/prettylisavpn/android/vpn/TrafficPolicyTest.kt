@@ -8,6 +8,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TrafficPolicyTest {
+    @Test fun selectionAnalyticsContainsConfiguredRulesOnly() {
+        val selection = TrafficSelection("include", TrafficList(masks = listOf("*.Example.com", "*.example.com")), TrafficList(masks = listOf("private.example.org")))
+        assertEquals(mapOf("service_ids" to emptyList<String>(), "custom_rules" to listOf("*.example.com")), selection.analytics("include"))
+        assertEquals(emptyMap<String, Any>(), selection.analytics("all"))
+        assertEquals(emptyMap<String, Any>(), selection.analytics("exclude"))
+    }
+
     @Test fun newDeviceDefaultsWaitForCatalogAndNeverReplaceSavedChoices() {
         var disk: String? = null
         val store = TrafficPreference({ disk }, { disk = it })

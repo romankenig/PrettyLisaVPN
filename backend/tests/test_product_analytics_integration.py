@@ -136,7 +136,13 @@ async def test_daily_snapshot_survives_failure_and_restart_without_relabelling(
         stored = await service.latest()
         point = stored["points"][-1]
         assert point["date"] == yesterday.isoformat()
-        assert point["dau"]["plans"] == {"FREE": 1, "PREMIUM": 0, "PLATINUM": 0, "UNKNOWN": 0}
+        assert point["dau"]["plans"] == {
+            "DEMO": 0,
+            "FREE": 1,
+            "PREMIUM": 0,
+            "PLATINUM": 0,
+            "UNKNOWN": 0,
+        }
         assert not await ProductAnalyticsService(postgres).refresh(now + timedelta(hours=1))
         assert await service.latest() == stored
         assert str(user.id) not in str(stored) and user.email not in str(stored)

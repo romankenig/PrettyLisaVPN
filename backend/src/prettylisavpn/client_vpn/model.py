@@ -15,6 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prettylisavpn.database import Base
@@ -113,6 +114,10 @@ class ClientLeaseRecord(Base):
     heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    disconnected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    traffic_mode: Mapped[str | None] = mapped_column(String(8))
+    service_ids: Mapped[list[str] | None] = mapped_column(JSONB)
+    custom_rules: Mapped[list[str] | None] = mapped_column(JSONB)
     next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     claim_token: Mapped[UUID | None]
     claim_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

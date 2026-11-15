@@ -1,4 +1,4 @@
-export const plans = ["FREE", "PREMIUM", "PLATINUM", "UNKNOWN"] as const;
+export const plans = ["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"] as const;
 export type Plan = typeof plans[number];
 export type ActiveMetric = "dau" | "wau" | "mau";
 export type Count = { total: number | null; plans: Record<Plan, number | null>; complete: boolean };
@@ -7,11 +7,15 @@ export type AnalyticsPoint = {
   new_accounts: number; verified_sessions: number | null; connection_success_percent: number | null;
   settled_attempts: number | null; pending_attempts: number | null;
   median_connection_seconds: number | null; engagement_percent: number | null;
+  mean_session_seconds?: number | null; completed_sessions?: number;
 };
+export type Distribution = { bounds_seconds: number[]; counts: number[]; shares: (number | null)[]; samples: number };
 export type Analytics = {
   schema: 1; generated_at: string; next_update_at: string; from_date: string; through_date: string;
   timezone: string; observed_from: string | null; full_collection_from: string; history_partial: boolean;
   attempts_from: string | null; points: AnalyticsPoint[]; methods: Record<string, number>;
+  devices?: Record<string, number>; session_duration?: Distribution; time_to_silence?: Distribution;
+  mean_session_seconds?: number | null; duration_unobserved_sessions?: number; silence_unobserved_sessions?: number;
 };
 export function readAnalytics(value: unknown): Analytics {
   if (!value || typeof value !== "object") throw new Error("Invalid analytics");
@@ -24,6 +28,7 @@ export function readAnalytics(value: unknown): Analytics {
     previous = point.date;
     for (const metric of ["mau", "wau", "dau"] as const) {
       const count = point[metric];
+      if (count?.plans && count.plans.DEMO === undefined) count.plans.DEMO = count.total === null ? null : 0;
       if (!count || !number(count.total) || !count.plans || !plans.every(plan => number(count.plans[plan]))) throw new Error("Invalid count");
       if (count.total !== null && plans.reduce((sum, plan) => sum + (count.plans[plan] ?? 0), 0) !== count.total) throw new Error("Invalid cohorts");
     }
@@ -34,6 +39,10 @@ export function readAnalytics(value: unknown): Analytics {
 }
 export const formatNumber = (value: number | null | undefined) => value == null ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value);
 export const formatDay = (value: string) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(value + "T00:00:00Z"));
+export function planShare(count: Count, plan: Plan): number | null {
+  const value = count.plans[plan];
+  return count.total && value !== null ? 100 * value / count.total : null;
+}
 export type Series = { name: string; color: string; values: (number | null)[]; dashed?: boolean };
 export function segments(values: (number | null)[]): { index: number; value: number }[][] {
   const result: { index: number; value: number }[][] = [];

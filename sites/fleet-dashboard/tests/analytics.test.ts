@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatDay, readAnalytics, segments } from "../src/analytics.ts";
+import { formatDay, readAnalytics, segments, planShare } from "../src/analytics.ts";
 
 test("chart gaps remain gaps; zero remains a real observation", () => {
   assert.deepEqual(segments([null, 0, 2, null, 1]), [[{index: 1, value: 0}, {index: 2, value: 2}], [{index: 4, value: 1}]]);
@@ -13,4 +13,11 @@ test("aggregate parser requires ordered completed dates and cohorts that add to 
   assert.throws(() => readAnalytics({...fixture, points:[{...fixture.points[0], date:"2026-11-02"}]}));
   assert.throws(() => readAnalytics({...fixture, points:[{...fixture.points[0], dau:{...count, total: 3}}]}));
   assert.throws(() => readAnalytics({...fixture, points:[{...fixture.points[0], engagement_percent: NaN}]}));
+});
+
+test("DEMO belongs to tariff shares and a zero audience has no percentages", () => {
+ const count = {total: 4, complete: true, plans: {DEMO: 1, FREE: 1, PREMIUM: 1, PLATINUM: 0, UNKNOWN: 1}};
+ assert.equal(planShare(count, "DEMO"), 25);
+ assert.equal(Object.keys(count.plans).reduce((sum, plan) => sum + (planShare(count, plan as keyof typeof count.plans) ?? 0), 0), 100);
+ assert.equal(planShare({...count, total: 0}, "FREE"), null);
 });

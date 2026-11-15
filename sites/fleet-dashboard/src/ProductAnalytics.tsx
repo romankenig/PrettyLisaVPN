@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Clock3, LockKeyhole, RefreshCw } from "lucide-react";
 import AnalyticsChart from "./AnalyticsChart";
-import { formatDay, formatNumber, plans, readAnalytics, type ActiveMetric, type Analytics } from "./analytics";
+import BarDistribution from "./BarDistribution";
+import { formatDay, formatNumber, plans, planShare, readAnalytics, type ActiveMetric, type Analytics } from "./analytics";
 import { date } from "./time";
 
-const planNames = { FREE: "Free", PREMIUM: "Premium", PLATINUM: "Platinum", UNKNOWN: "Тариф неизвестен" };
-const planColors = { FREE: "#17655c", PREMIUM: "#5f22d9", PLATINUM: "#b28a09", UNKNOWN: "#9c9c9c" };
+const planNames = { DEMO: "DEMO", FREE: "Free", PREMIUM: "Premium", PLATINUM: "Platinum", UNKNOWN: "Тариф неизвестен" };
+const planColors = { DEMO: "#d3618e", FREE: "#17655c", PREMIUM: "#5f22d9", PLATINUM: "#b28a09", UNKNOWN: "#9c9c9c" };
+const durationLabels = ["≤10 с", "10–60 с", "1–3 мин", "3–5 мин", "5–15 мин", ">15 мин"];
+const deviceNames: Record<string, string> = { WINDOWS: "Windows", ANDROID: "Android", IOS: "iOS", MACOS: "macOS", LINUX: "Linux", ANDROID_TV: "Android TV", CHROME_EXTENSION: "Chrome", UNKNOWN: "Неизвестно" };
 const colors = { mau: "#5f22d9", wau: "#17655c", dau: "#d7ad0d" };
 const widths = { dau: 1, wau: 7, mau: 30 };
 const definition = (metric: ActiveMetric) => `${metric.toUpperCase()} — уникальные аккаунты с успешным авторизованным обращением за ${widths[metric]} ${metric === "dau" ? "день" : "дней"}, включая дату точки. Обновление токена и VPN heartbeat также считаются активностью. Несколько устройств одного аккаунта считаются один раз.`;
@@ -16,6 +19,7 @@ export default function ProductAnalytics() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
+  const [planShares, setPlanShares] = useState(true);
   useEffect(() => {
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
     void (async () => {
@@ -49,7 +53,14 @@ export default function ProductAnalytics() {
       </section>
       {data && <>
         <AnalyticsChart title="Динамика активной аудитории" dates={dates} series={(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => ({ name: metric.toUpperCase(), color: colors[metric], values: points.map(p => p[metric].total) }))} explanation="Каждая точка — завершённый день. DAU: 1 день, WAU: 7 дней, MAU: 30 дней до точки включительно. Это уникальные аккаунты, не сумма устройств и не сумма ежедневных значений." />
-        <div className="analytics-cohorts">{(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => <AnalyticsChart key={metric} title={`${metric.toUpperCase()} по тарифам`} dates={dates} series={plans.map(plan => ({ name: planNames[plan], color: planColors[plan], values: points.map(p => p[metric].plans[plan]), dashed: plan === "UNKNOWN" }))} explanation={`${definition(metric)} Тариф берётся на момент последней активности пользователя внутри окна; неизвестные исторические тарифы не заменяются текущими.`} />)}</div>
+        <div className="chart-switch" role="group" aria-label="Распределение тарифов"><button aria-pressed={planShares} onClick={() => setPlanShares(true)}>Доли тарифов, %</button><button aria-pressed={!planShares} onClick={() => setPlanShares(false)}>Количество</button></div>
+        <div className="analytics-cohorts">{(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => <AnalyticsChart key={metric} title={`${metric.toUpperCase()} по тарифам`} dates={dates} unit={planShares ? "%" : ""} series={plans.map(plan => ({ name: planNames[plan], color: planColors[plan], values: points.map(p => planShares ? planShare(p[metric], plan) : p[metric].plans[plan]), dashed: plan === "UNKNOWN" }))} explanation={`${definition(metric)} DEMO — гостевые аккаунты. Доля — категория / вся активная аудитория окна × 100%. Тариф берётся на момент последней активности; неизвестные исторические тарифы не заменяются текущими.`} />)}</div>
+        <BarDistribution title="С каких устройств подключались" items={Object.entries(data.devices ?? {}).map(([name, count]) => ({ name: deviceNames[name] ?? name, count }))} explanation="Распределение подтверждённых VPN-сессий за период по платформе устройства. Повторные подключения считаются отдельными сессиями; это не распределение уникальных пользователей." />
+        <AnalyticsChart title="Средняя длительность подключения" dates={dates} unit=" с" series={[{ name: "От подключения до отключения", color: "#5f22d9", values: points.map(point => point.mean_session_seconds ?? null) }]} explanation={`Среднее по завершённым сессиям, по дате отключения. Начало — подтверждение VPN; конец — запрос отключения или прекращение доступа сервером. Открытые сессии и старая история без времени отключения исключены. Среднее по сессиям, начавшимся за период: ${formatNumber(data.mean_session_seconds)} с.`} />
+        <div className="analytics-extras">
+          <BarDistribution title="Длительность подключения" items={(data.session_duration?.counts ?? []).map((count, i) => ({ name: durationLabels[i], count }))} explanation={`От подключения до отключения для сессий, начавшихся за период. Верхняя граница интервала включена. Без конечного наблюдения: ${formatNumber(data.duration_unobserved_sessions)}.`} />
+          <BarDistribution title="Время до первой тишины" items={(data.time_to_silence?.counts ?? []).map((count, i) => ({ name: durationLabels[i], count }))} explanation={`От подключения до начала первых 10 секунд без изменения счётчиков байтов. Измерения примерно каждые 5 секунд; пропуски не считаются тишиной. Без подтверждённого первого периода тишины: ${formatNumber(data.silence_unobserved_sessions)}.`} />
+        </div>
         <div className="analytics-extras">
           <AnalyticsChart title="Новые аккаунты" dates={dates} series={[{ name: "Регистрации", color: "#5f22d9", values: points.map(p => p.new_accounts) }]} explanation="Число аккаунтов по дате создания (GMT+3), без зарезервированных тестовых доменов. Повторный вход не является новой регистрацией." />
           <AnalyticsChart title="Подтверждённые подключения VPN" dates={dates} series={[{ name: "Подключения", color: "#17655c", values: points.map(p => p.verified_sessions) }]} explanation="Количество клиентских VPN-сессий по дате подтверждения доступа в Интернет. Установка peer и старый статус ACTIVE не считаются подтверждением. Автоматические проверки серверов исключены." />

@@ -107,13 +107,25 @@ class ManagedVpnMethod(VpnMethod):
         # Never tear down another lease or WireGuard during a configure retry.
         return None
 
-    async def probe(self, source: Node, target: Node, check_id: UUID) -> Observation:
+    async def probe(
+        self,
+        source: Node,
+        target: Node,
+        check_id: UUID,
+        service_url: str | None = None,
+        service_domains: list[str] | None = None,
+        selected_method: str | None = None,
+    ) -> Observation:
         state = await self.inspect(target)
         if not state.installed or not state.public_key:
             raise FleetError("TARGET_CONFIGURATION_MISSING")
         now = datetime.now(UTC)
         names = tuple(MANAGED_METHODS)
-        method = names[(int(now.timestamp()) // 3600 + target.id.int) % len(names)]
+        method = (
+            selected_method or names[(int(now.timestamp()) // 3600 + target.id.int) % len(names)]
+        )
+        if method not in names:
+            raise FleetError("VPN_METHOD_UNSUPPORTED")
         access = ManagedAccess(
             purpose="monitor",
             id=check_id,
@@ -143,6 +155,11 @@ class ManagedVpnMethod(VpnMethod):
                         configuration=state.configuration,
                     ),
                     "expected_egress_ips": target.expected_egress_ips,
+                    **(
+                        {"service_url": service_url, "service_domains": service_domains}
+                        if service_url
+                        else {}
+                    ),
                 },
                 command_timeout=90,
             )

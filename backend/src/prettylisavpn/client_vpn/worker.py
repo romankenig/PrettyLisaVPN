@@ -26,6 +26,7 @@ from prettylisavpn.fleet.domain import (
 )
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.service import node_value
+from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
@@ -117,6 +118,14 @@ class ClientVpnWorker:
                                 ),
                             )
                         )
+                    ) or bool(
+                        await session.scalar(
+                            select(ServiceCheckRecord.service_id).where(
+                                ServiceCheckRecord.claim_token == locked_node.lock_owner,
+                                ServiceCheckRecord.claim_until > now,
+                                ServiceCheckRecord.finished_at.is_(None),
+                            )
+                        )
                     ):
                         shared_checks.add(locked_node.id)
                     else:
@@ -192,6 +201,8 @@ class ClientVpnWorker:
                             ),
                         )
                 revoke = row.status == "REVOKING"
+                if revoke and row.disconnected_at is None:
+                    row.disconnected_at = min(now, row.expires_at)
                 grant_until = min(row.expires_at, now + timedelta(seconds=NODE_TTL_SECONDS))
                 if row.is_free and row.quota_reserved_until:
                     grant_until = min(grant_until, row.quota_reserved_until)

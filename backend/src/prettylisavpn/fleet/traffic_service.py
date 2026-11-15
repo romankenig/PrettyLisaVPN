@@ -38,6 +38,9 @@ class TrafficService:
             if previous is not None and sample.at <= previous.at:
                 return False
             data, complete = intervals(previous, sample, owners)
+            from prettylisavpn.product_analytics.silence import capture_silence
+
+            await capture_silence(session, previous, sample)
             session.add(
                 TrafficIntervalRecord(
                     node_id=node_id,
@@ -78,6 +81,10 @@ class TrafficService:
         # Completed minutes only, including the current partial five-minute/hour
         # block. Allow both counter age and collection interval before finalizing.
         end = int((now.timestamp() - 2 * MAX_GAP) // 60) * 60
+        offset = 3 * 3600 if period == "7d" else 0
+        if period == "7d":
+            # Seven completed calendar days in the report's GMT+3 timezone.
+            end = (int(now.timestamp()) + offset) // step * step - offset
         start = end - duration
         async with self.postgres.session() as session, session.begin():
             await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -99,6 +106,7 @@ class TrafficService:
                 step,
                 [str(node) for node in ids],
                 self.settings.fleet_activity_threshold_bps,
+                offset=offset,
             )
             rows = await session.stream_scalars(
                 select(TrafficIntervalRecord)
@@ -132,21 +140,33 @@ class TrafficService:
                     .order_by(FleetObservationRecord.observed_at)
                 )
             ).all()
-            references: dict[int, dict[UUID, dict[str, object]]] = {}
+            references: dict[int, dict[UUID, list[dict[str, object]]]] = {}
             for observation in observations:
                 if observation.data.get("mode") == "SYNTHETIC":
-                    bucket = int(observation.observed_at.timestamp() // step) * step
-                    references.setdefault(bucket, {})[observation.node_id] = observation.data
+                    bucket = (
+                        int((observation.observed_at.timestamp() + offset) // step) * step - offset
+                    )
+                    references.setdefault(bucket, {}).setdefault(observation.node_id, []).append(
+                        observation.data
+                    )
             for point in points:
-                bucket = int(datetime.fromisoformat(point["at"]).timestamp() // step) * step
+                bucket = (
+                    int((datetime.fromisoformat(point["at"]).timestamp() + offset) // step) * step
+                    - offset
+                )
                 reference = references.get(bucket, {})
                 for direction in ("download", "upload"):
-                    values = [
-                        float(value)
-                        for row in reference.values()
-                        if isinstance(value := row.get(direction + "_mbps"), (float, int))
-                        and value >= 0
+                    # Equal weight per server; all its measurements contribute.
+                    per_server = [
+                        [
+                            float(value)
+                            for row in rows
+                            if isinstance(value := row.get(direction + "_mbps"), (float, int))
+                            and value >= 0
+                        ]
+                        for rows in reference.values()
                     ]
+                    values = [median(samples) for samples in per_server if samples]
                     measured = median(values) if values else None
                     point[direction].update(reference_mbps=measured, reference_servers=len(values))
                     # Do not compare partial and full populations or divide by zero.
