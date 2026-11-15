@@ -1,7 +1,10 @@
 from datetime import UTC, date, datetime, timedelta
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
+from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.product_analytics.domain import Attempt, boundary, device_platforms, snapshot
+from prettylisavpn.product_analytics.service import ProductAnalyticsService
 
 
 def test_daily_platforms_deduplicate_accounts_per_platform_and_verification_day():
@@ -45,3 +48,27 @@ def test_daily_platforms_distinguish_empty_day_missing_history_and_missing_ident
     now = datetime(2026, 11, 14, tzinfo=UTC)
     old = Attempt(now, now, None, "wireguard", "WINDOWS")
     assert device_platforms([old], True) == {"connections": {"WINDOWS": 1}, "users": None}
+
+
+async def test_current_devices_keep_chrome_separate_and_exclude_reserved_accounts():
+    account = uuid4()
+    session = AsyncMock()
+    session.execute.return_value = [
+        (account, "member@gmail.com", DevicePlatform.WINDOWS, 2),
+        (account, "member@gmail.com", DevicePlatform.CHROME_EXTENSION, 3),
+        (uuid4(), "guest@demo.prettylisavpn.com", DevicePlatform.CHROME_EXTENSION, 1),
+        (uuid4(), "member@outlook.com", None, 1),
+        (uuid4(), "excluded@EXAMPLE.COM", DevicePlatform.CHROME_EXTENSION, 7),
+    ]
+    now = datetime(2026, 11, 14, 21, tzinfo=UTC)
+    result = await ProductAnalyticsService(AsyncMock()).current_devices(session, now)
+    assert result == {
+        "date": "2026-11-15",
+        "partial": True,
+        "updated_at": now.isoformat(),
+        "device_platforms": {
+            "connections": {"CHROME_EXTENSION": 4, "UNKNOWN": 1, "WINDOWS": 2},
+            "users": {"CHROME_EXTENSION": 2, "UNKNOWN": 1, "WINDOWS": 1},
+        },
+    }
+    assert str(account) not in str(result) and "@" not in str(result)

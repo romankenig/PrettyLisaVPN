@@ -3,6 +3,8 @@ export type Plan = typeof plans[number];
 export type ActiveMetric = "dau" | "wau" | "mau";
 export type Count = { total: number | null; plans: Record<Plan, number | null>; complete: boolean };
 export type DevicePlatforms = { connections: Record<string, number> | null; users: Record<string, number> | null };
+export type DevicePoint = { date: string; device_platforms?: DevicePlatforms; partial?: boolean };
+export type CurrentDevicePoint = DevicePoint & { partial: true; updated_at: string; device_platforms: { connections: Record<string, number>; users: Record<string, number> } };
 export type AnalyticsPoint = {
   date: string; complete: boolean; dau: Count; wau: Count; mau: Count;
   new_accounts: number; verified_sessions: number | null; connection_success_percent: number | null;
@@ -18,7 +20,16 @@ export type Analytics = {
   attempts_from: string | null; points: AnalyticsPoint[]; methods: Record<string, number>;
   devices?: Record<string, number>; session_duration?: Distribution; time_to_silence?: Distribution;
   mean_session_seconds?: number | null; duration_unobserved_sessions?: number; silence_unobserved_sessions?: number;
+  device_today?: CurrentDevicePoint;
 };
+function validateDevices(devices: DevicePlatforms) {
+  if (!devices || typeof devices !== "object") throw new Error("Invalid device distribution");
+  for (const metric of ["connections", "users"] as const) {
+    const counts = devices[metric];
+    if (counts !== null && (!counts || typeof counts !== "object" || Array.isArray(counts) || !Object.values(counts).every(v => Number.isSafeInteger(v) && v >= 0))) throw new Error("Invalid device counts");
+  }
+  if (devices.connections === null ? devices.users !== null : Object.entries(devices.users ?? {}).some(([platform, count]) => count > (devices.connections?.[platform] ?? 0))) throw new Error("Invalid device users");
+}
 export function readAnalytics(value: unknown): Analytics {
   if (!value || typeof value !== "object") throw new Error("Invalid analytics");
   const data = value as Analytics;
@@ -37,16 +48,17 @@ export function readAnalytics(value: unknown): Analytics {
     for (const metric of ["new_accounts", "verified_sessions", "connection_success_percent", "settled_attempts", "pending_attempts", "median_connection_seconds", "engagement_percent"] as const) if (!number(point[metric])) throw new Error("Invalid metric");
     if (point.device_platforms !== undefined) {
       const devices = point.device_platforms;
-      if (!devices || typeof devices !== "object") throw new Error("Invalid device distribution");
-      for (const metric of ["connections", "users"] as const) {
-        const counts = devices[metric];
-        if (counts !== null && (!counts || typeof counts !== "object" || Array.isArray(counts) || !Object.values(counts).every(v => Number.isSafeInteger(v) && v >= 0))) throw new Error("Invalid device counts");
-      }
-      if (devices.connections === null ? devices.users !== null : Object.entries(devices.users ?? {}).some(([platform, count]) => count > (devices.connections?.[platform] ?? 0))) throw new Error("Invalid device users");
+      validateDevices(devices);
       if (devices.connections !== null && Object.values(devices.connections).reduce((sum, count) => sum + count, 0) !== point.verified_sessions) throw new Error("Invalid device connections");
     }
   }
   if (data.points[0].date !== data.from_date || previous !== data.through_date) throw new Error("Invalid period");
+  if (data.device_today !== undefined) {
+    const today = data.device_today;
+    if (!today || today.partial !== true || !/^\d{4}-\d{2}-\d{2}$/.test(today.date) || today.date <= data.through_date || !Number.isFinite(Date.parse(today.updated_at)) || new Date(Date.parse(today.updated_at) + 3 * 3600_000).toISOString().slice(0, 10) !== today.date) throw new Error("Invalid current device day");
+    validateDevices(today.device_platforms);
+    if (today.device_platforms.connections === null || today.device_platforms.users === null) throw new Error("Invalid current device counts");
+  }
   return data;
 }
 export const formatNumber = (value: number | null | undefined) => value == null ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value);
