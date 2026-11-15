@@ -163,6 +163,7 @@
 "plan_split" = "весь или выбранный трафик";
 "plan_unlimited" = "VPN без ограничения времени";
 "processing" = "обработка…";
+"randomize_methods" = "случайный набор и порядок способов";
 "reply_email" = "email для ответа";
 "server_connection_lost" = "нет связи с сервером, проверьте подключение к интернету";
 "settings" = "настройки";

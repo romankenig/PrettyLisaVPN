@@ -163,6 +163,7 @@
 "plan_split" = "todo el tráfico o solo el elegido";
 "plan_unlimited" = "VPN sin límite de tiempo";
 "processing" = "procesando…";
+"randomize_methods" = "selección y orden aleatorios de métodos";
 "reply_email" = "correo de respuesta";
 "server_connection_lost" = "sin conexión con el servidor, comprueba tu conexión a internet";
 "settings" = "ajustes";

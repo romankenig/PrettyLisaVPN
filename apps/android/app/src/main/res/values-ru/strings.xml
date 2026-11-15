@@ -366,4 +366,6 @@
     <string name="vpn_reset_confirm">да, переподключиться</string>
     <string name="vpn_location_expected">ожидаемая локация VPN:</string>
     <string name="direct_location_expected">ожидаемая локация без VPN:</string>
+    <string name="randomize_methods">случайный набор и порядок способов</string>
+    <string name="method_order_hint">выбранные способы показаны в порядке попыток. последний успешный может проверяться первым.</string>
 </resources>

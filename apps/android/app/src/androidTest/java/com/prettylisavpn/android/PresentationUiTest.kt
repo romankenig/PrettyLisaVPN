@@ -40,6 +40,29 @@ class PresentationUiTest {
     }
     private lateinit var model: ScreenModel
     private fun waitFor(tag: String) = compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    @Test fun randomMethodsPersistTheirOrderAndMigrateLegacyChoices() {
+        val storage = compose.activity.getSharedPreferences("random-method-selection-test", 0)
+        storage.edit(commit = true) { clear(); putStringSet("enabled-methods-v1", setOf("vmess", "wireguard")) }
+        val selection = DeviceMethodSelection.fromStorage(storage)
+        assertEquals(listOf("wireguard", "vmess"), selection.current())
+        compose.runOnUiThread { compose.activity.setContent {
+            PrettyLisaTheme { LocalizedApp { AdvancedSettings(selection) {} } }
+        } }
+        compose.onNodeWithTag("randomize-methods").assertContentDescriptionEquals("random method selection and order").performClick()
+        val first = requireNotNull(selection.current())
+        assertTrue(first.isNotEmpty())
+        assertEquals(first, DeviceMethodSelection.fromStorage(storage).current())
+        compose.onNodeWithTag("randomize-methods").performClick()
+        val second = requireNotNull(selection.current())
+        assertNotEquals(first, second)
+        assertEquals(second, DeviceMethodSelection.fromStorage(storage).current())
+        screenshot("advanced-random-methods")
+        compose.onNodeWithTag("all-methods").performClick()
+        assertNull(DeviceMethodSelection.fromStorage(storage).current())
+        storage.edit(commit = true) { putStringSet("enabled-methods-v1", setOf("sstp")); putString("ordered-methods-v2", "invalid") }
+        assertEquals(listOf("sstp"), DeviceMethodSelection.fromStorage(storage).current())
+        storage.edit(commit = true) { clear() }
+    }
     @Test fun connectionNoticeIsVisibleOfflineAndDisappearsOnRecovery() {
         val connected=androidx.compose.runtime.mutableStateOf<Boolean?>(null)
         compose.runOnUiThread { compose.activity.setContent {

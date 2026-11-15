@@ -366,4 +366,6 @@
     <string name="vpn_reset_confirm">ja, neu verbinden</string>
     <string name="vpn_location_expected">erwarteter VPN-standort:</string>
     <string name="direct_location_expected">erwarteter standort ohne VPN:</string>
+    <string name="randomize_methods">zufällige Methoden und Reihenfolge</string>
+    <string name="method_order_hint">ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.</string>
 </resources>

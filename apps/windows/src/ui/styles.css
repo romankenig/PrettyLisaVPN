@@ -1037,6 +1037,39 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
 }
+.method-options-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.method-options-heading h2 {
+  margin: 0;
+}
+.method-options .method-randomize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #2c016d;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.method-options .method-randomize:hover,
+.method-options .method-randomize:focus-visible {
+  opacity: 1;
+  background: #d7c9ef;
+}
+.method-options .method-order-hint {
+  font-size: 0.8rem;
+}
 .method-options p {
   color: #5b5b5b;
   flex-shrink: 0;

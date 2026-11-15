@@ -366,4 +366,6 @@
     <string name="vpn_reset_confirm">sí, reconectar</string>
     <string name="vpn_location_expected">ubicación VPN esperada:</string>
     <string name="direct_location_expected">ubicación esperada sin VPN:</string>
+    <string name="randomize_methods">selección y orden aleatorios de métodos</string>
+    <string name="method_order_hint">los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero.</string>
 </resources>
