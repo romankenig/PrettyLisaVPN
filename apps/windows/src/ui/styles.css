@@ -2804,7 +2804,34 @@ input,
 .legal-documents .legal-links button {
   margin: 0;
 }
+.device-limit-cabinet {
+  width: min(100%, 760px);
+}
+.device-limit-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 20px;
+}
+.device-limit-cabinet .account-card {
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--color-mercury);
+  color: var(--color-black);
+}
+.device-limit-cabinet .account-card h1,
+.device-limit-features h2 {
+  margin: 0 0 16px;
+  font-size: 22px;
+  color: inherit;
+}
+.device-limit-cabinet a {
+  color: var(--color-purple-heart);
+}
+.device-limit-cabinet .verified-email {
+  overflow-wrap: anywhere;
+}
 .device-limit-banner {
+  max-width: none;
   border: 1px solid #c82b28;
   background: #fff2ef;
   color: #b81820;
@@ -2818,9 +2845,16 @@ input,
   opacity: 0.45;
   border: 0;
   padding: 20px;
-  margin: 20px 0;
+  margin: 0;
+  min-width: 0;
+  color: var(--color-black);
   border-radius: 18px;
   background: var(--color-mercury);
+}
+@media (max-width: 760px) {
+  .device-limit-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .device-limit-actions {
   display: flex;

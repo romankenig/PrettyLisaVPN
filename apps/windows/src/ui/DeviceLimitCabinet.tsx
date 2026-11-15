@@ -63,7 +63,7 @@ export function DeviceLimitCabinet() {
       {pathname.endsWith("/devices") ? (
         <Devices />
       ) : (
-        <>
+        <div className="device-limit-overview">
           <div className="account-card">
             <h1>{t(pathname === "/settings" ? "настройки" : "аккаунт")}</h1>
             <strong className="verified-email">
@@ -84,14 +84,18 @@ export function DeviceLimitCabinet() {
               </Link>
             </p>
           </div>
-          <fieldset disabled className="device-limit-features">
-            <legend>{t("куда подключаемся")}</legend>
+          <fieldset
+            disabled
+            className="device-limit-features"
+            aria-label={t("куда подключаемся")}
+          >
+            <h2>{t("куда подключаемся")}</h2>
             <button>{t("автопилот")}</button>
             <button>{t("подключиться")}</button>
             <button>{t("подписка")}</button>
             <button>{t("Расширенные настройки")}</button>
           </fieldset>
-        </>
+        </div>
       )}
       <div className="device-limit-actions">
         <button disabled={busy} onClick={() => void logout(false)}>
