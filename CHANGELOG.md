@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Android — 0.28.2 / code 57
+
+- Keep connection methods in alphabetical display order after random selection,
+  manual checkbox changes and restoring all methods. Preserve saved attempt order.
+- Animate the refresh icon and briefly highlight changed choices without moving
+  rows. Remove both explanatory captions in all six languages.
+- See [method-selection handoff](docs/random-method-selection.md). Other clients,
+  backend contracts, successful-method priority and live connections are unchanged.
+
 ### Current device day — backend 0.45.0 / dashboard 0.12.0
 
 - Show today's verified device connections and unique accounts as a separate

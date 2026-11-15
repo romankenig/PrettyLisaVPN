@@ -266,7 +266,6 @@
     <string name="vpn_first_connection_hint">the first connection may take a couple of minutes.</string>
     <string name="advanced_settings">advanced settings</string>
     <string name="connection_methods">connection methods</string>
-    <string name="connection_methods_hint">changes apply to the next connection. select at least one method.</string>
     <string name="all_methods">all methods</string>
     <string name="traffic_services">choose services</string>
     <string name="traffic_catalog_unavailable">catalog unavailable. saved services and your masks remain available.</string>
@@ -374,5 +373,4 @@
     <string name="vpn_location_expected">expected VPN location:</string>
     <string name="direct_location_expected">expected location without VPN:</string>
     <string name="randomize_methods">random method selection and order</string>
-    <string name="method_order_hint">selected methods are shown in attempt order. the last successful method may be tried first.</string>
 </resources>

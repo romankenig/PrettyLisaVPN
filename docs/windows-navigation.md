@@ -1002,6 +1002,15 @@ Apple's shared Settings method editor keeps its disconnected-only guard. No new
 routes or external transitions, and no backend integration is pending. See
 [handoff](random-method-selection.md) for persistence compatibility and evidence.
 
+### Android 0.28.2 — stable method list and refresh feedback
+
+Android Settings → Advanced settings keeps every method in alphabetical display
+order, independently of the saved connection attempt order. Refresh rotates the
+icon and briefly highlights changed choices; neither it nor checkbox editing moves
+rows. Both explanatory captions are removed. Routes, backend integration and VPN
+behavior are unchanged; Windows/Apple screens retain their existing behavior.
+See the [Android correction handoff](random-method-selection.md#android-display-correction--2026-11-15).
+
 ## Chrome 0.3.0 — guest entry, languages and public links
 
 Windows navigation/version are unchanged. Chrome Login → DEMO calls real guest

@@ -259,7 +259,6 @@
     <string name="vpn_first_connection_hint">первое подключение может занять пару минут.</string>
     <string name="advanced_settings">расширенные настройки</string>
     <string name="connection_methods">способы подключения</string>
-    <string name="connection_methods_hint">изменения применятся при следующем подключении. выберите хотя бы один способ.</string>
     <string name="all_methods">все способы</string>
     <string name="traffic_services">выбрать сервисы</string>
     <string name="traffic_catalog_unavailable">каталог недоступен. сохранённые сервисы и ваши маски доступны.</string>
@@ -367,5 +366,4 @@
     <string name="vpn_location_expected">ожидаемая локация VPN:</string>
     <string name="direct_location_expected">ожидаемая локация без VPN:</string>
     <string name="randomize_methods">случайный набор и порядок способов</string>
-    <string name="method_order_hint">выбранные способы показаны в порядке попыток. последний успешный может проверяться первым.</string>
 </resources>

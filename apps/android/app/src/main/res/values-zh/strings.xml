@@ -259,7 +259,6 @@
     <string name="vpn_first_connection_hint">首次连接可能需要几分钟。</string>
     <string name="advanced_settings">高级设置</string>
     <string name="connection_methods">连接方式</string>
-    <string name="connection_methods_hint">更改将在下次连接时生效。请至少选择一种方式。</string>
     <string name="all_methods">所有方式</string>
     <string name="traffic_services">选择服务</string>
     <string name="traffic_catalog_unavailable">目录暂不可用。仍可使用已保存的服务和域名规则。</string>
@@ -367,5 +366,4 @@
     <string name="vpn_location_expected">预计 VPN 位置：</string>
     <string name="direct_location_expected">预计非 VPN 位置：</string>
     <string name="randomize_methods">随机选择连接方式和顺序</string>
-    <string name="method_order_hint">所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。</string>
 </resources>
