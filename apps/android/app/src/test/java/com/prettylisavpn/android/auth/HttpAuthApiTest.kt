@@ -8,6 +8,16 @@ import org.junit.*
 import org.junit.Assert.*
 
 class HttpAuthApiTest {
+    @Test fun explicitDeviceLimitFlagDoesNotInferRestrictionFromFiveActiveDevices() = runBlocking {
+        val base="""{"id":"c21132ac-0d2e-4da7-96ac-8a6ceeb019ba","email":"person@example.com","plan":"PLATINUM","active_device_count":5"""
+        server.enqueue(MockResponse().setBody("$base}"))
+        server.enqueue(MockResponse().setBody("$base,\"device_limit_reached\":true}"))
+        server.enqueue(MockResponse().setBody("$base,\"device_limit_reached\":\"true\"}"))
+        assertFalse(api.me("private").deviceLimitReached)
+        assertTrue(api.me("private").deviceLimitReached)
+        try { api.me("private");fail("String flag must be rejected") }
+        catch(error:AuthFailure) { assertEquals("invalid_response",error.code) }
+    }
     @Test fun preservesAuthoritativeQuotaCodesForVpnUi() = runBlocking {
         for (code in listOf("FREE_QUOTA_EXHAUSTED", "FREE_QUOTA_RESERVED", "FREE_DAILY_LIMIT_REACHED")) {
             server.enqueue(MockResponse().setResponseCode(409).setBody("""{"error":{"code":"$code"}}"""))
@@ -41,6 +51,8 @@ class HttpAuthApiTest {
         val request = server.takeRequest(); assertEquals("/api/auth/request-otp", request.path); assertNull(request.getHeader("Authorization"))
         val verify = server.takeRequest(); val json = JsonParser.parseString(verify.body.readUtf8()).asJsonObject
         assertEquals("/api/auth/verify-otp", verify.path); assertEquals("ANDROID", json["platform"].asString)
+        assertTrue(json["allow_device_management"].asJsonPrimitive.isBoolean)
+        assertTrue(json["allow_device_management"].asBoolean)
         assertEquals("123456", json["code"].asString); assertEquals("a1d3475f-0155-49e9-88a9-27125a19b12d", json["installation_id"].asString)
     }
     @Test fun refreshContractAndBearerScope() = runBlocking {

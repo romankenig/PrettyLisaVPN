@@ -379,7 +379,12 @@
     "да, выйти": "да, выйти",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.",
     "Случайный набор и порядок способов": "случайный набор и порядок способов",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "выбранные способы показаны в порядке попыток. последний успешный может проверяться первым."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "выбранные способы показаны в порядке попыток. последний успешный может проверяться первым.",
+    "достигнут лимит устройств": "достигнут лимит устройств",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.",
+    "управлять устройствами": "управлять устройствами",
+    "удалить данные входа с этого устройства": "удалить данные входа с этого устройства",
+    "ожидает свободного места": "ожидает свободного места"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -761,7 +766,12 @@
     "да, выйти": "yes, sign out",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Device “{0}” will sign out and all its active sessions will end.",
     "Случайный набор и порядок способов": "random method selection and order",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "selected methods are shown in attempt order. the last successful method may be tried first."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "selected methods are shown in attempt order. the last successful method may be tried first.",
+    "достигнут лимит устройств": "device limit reached",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "remove a device to use the app on this device.",
+    "управлять устройствами": "manage devices",
+    "удалить данные входа с этого устройства": "remove sign-in data from this device",
+    "ожидает свободного места": "waiting for a free slot"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1143,7 +1153,12 @@
     "да, выйти": "是，退出",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "设备“{0}”将退出账户，其所有活动会话将结束。",
     "Случайный набор и порядок способов": "随机选择连接方式和顺序",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。"
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。",
+    "достигнут лимит устройств": "已达到设备数量上限",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "请移除一个设备，即可在此设备上使用应用。",
+    "управлять устройствами": "管理设备",
+    "удалить данные входа с этого устройства": "移除此设备上的登录数据",
+    "ожидает свободного места": "等待可用名额"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1525,7 +1540,12 @@
     "да, выйти": "sí, cerrar sesión",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "El dispositivo «{0}» cerrará sesión y se terminarán todas sus sesiones activas.",
     "Случайный набор и порядок способов": "selección y orden aleatorios de métodos",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero.",
+    "достигнут лимит устройств": "límite de dispositivos alcanzado",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "elimina un dispositivo para usar la aplicación en este dispositivo.",
+    "управлять устройствами": "gestionar dispositivos",
+    "удалить данные входа с этого устройства": "eliminar los datos de acceso de este dispositivo",
+    "ожидает свободного места": "esperando un espacio libre"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1907,7 +1927,12 @@
     "да, выйти": "ja, abmelden",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet.",
     "Случайный набор и порядок способов": "zufällige Methoden und Reihenfolge",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.",
+    "достигнут лимит устройств": "Gerätelimit erreicht",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "Entferne ein Gerät, um die App auf diesem Gerät zu verwenden.",
+    "управлять устройствами": "Geräte verwalten",
+    "удалить данные входа с этого устройства": "Anmeldedaten von diesem Gerät entfernen",
+    "ожидает свободного места": "wartet auf einen freien Platz"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2289,6 +2314,11 @@
     "да, выйти": "oui, se déconnecter",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "L’appareil « {0} » sera déconnecté du compte et toutes ses sessions actives seront fermées.",
     "Случайный набор и порядок способов": "sélection et ordre aléatoires des méthodes",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "les méthodes sélectionnées suivent l’ordre des essais. la dernière méthode réussie peut être essayée en premier."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "les méthodes sélectionnées suivent l’ordre des essais. la dernière méthode réussie peut être essayée en premier.",
+    "достигнут лимит устройств": "limite d’appareils atteinte",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "supprimez un appareil pour utiliser l’application sur cet appareil.",
+    "управлять устройствами": "gérer les appareils",
+    "удалить данные входа с этого устройства": "supprimer les données de connexion de cet appareil",
+    "ожидает свободного места": "en attente d’une place libre"
   }
 }

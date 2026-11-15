@@ -1,3 +1,21 @@
+# Device-limit cabinet — all implemented clients
+
+OTP with five occupied slots → signed-in restricted cabinet, not the login error
+screen. A red notice and account/settings links lead to Devices. All other
+product functions are disabled/dimmed; background VPN, billing, messages and
+support requests are suppressed. Devices → revoke another installation →
+activate current installation → refresh profile → ordinary account screens,
+without another OTP. Refresh Devices also handles a slot freed elsewhere.
+Logout → sign-in; revoke current pending device → clear credentials → sign-in;
+explicit local cleanup → sign-in even offline. Home/settings navigation may
+remain usable to reach Devices, while private destinations are guarded.
+
+Implemented for Windows 0.30.0, Android 0.29.0, iOS 0.5.0, macOS 0.4.0 and Chrome
+0.5.0, with backend 0.45.0 integration. This is implemented API integration,
+not evidence of production deployment. Linux/Android TV have no shipping account
+UI yet. The independent website payment portal is unchanged. See
+[contract, tests and rollout](device-limit-access.md).
+
 # Website 0.5.4 — placeholder success page
 
 Placeholder Pay → localized `/account/success/?preview=1&currency=RUB|USD`.

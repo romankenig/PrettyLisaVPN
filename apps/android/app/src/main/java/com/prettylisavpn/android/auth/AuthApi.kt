@@ -49,7 +49,7 @@ data class Credentials(val sessionId: String, val refreshToken: String, val expi
 data class Tokens(val access: String, val ttlSeconds: Long, val credentials: Credentials) {
     override fun toString() = "Tokens([redacted])"
 }
-data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "", val freeTime: FreeTime? = null) {
+data class Profile(val email: String, val plan: String, val activeDevices: Int, val id: String = "", val freeTime: FreeTime? = null, val deviceLimitReached: Boolean = false) {
     val isDemo get() = plan.equals("DEMO", ignoreCase = true)
 }
 interface AuthApi {
@@ -70,7 +70,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
         .retryOnConnectionFailure(false).connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS).build())
     private val gson = Gson()
-    private suspend fun call(path: String, body: Map<String, String>? = null, access: String? = null): JsonObject {
+    private suspend fun call(path: String, body: Map<String, Any>? = null, access: String? = null): JsonObject {
         val value = request(path, if (body == null) "GET" else "POST", body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, access)
         return try { value.asJsonObject } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
@@ -132,7 +132,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
     override suspend fun requestOtp(email: String) {
         if (call("auth/request-otp", mapOf("email" to email)).text("status") != "accepted") throw AuthFailure("invalid_response")
     }
-    override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens(call("auth/verify-otp", mapOf("email" to email, "code" to code, "installation_id" to installationId, "platform" to "ANDROID", "device_name" to deviceName)))
+    override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens(call("auth/verify-otp", mapOf("email" to email, "code" to code, "installation_id" to installationId, "platform" to "ANDROID", "device_name" to deviceName, "allow_device_management" to true)))
     override suspend fun refresh(credentials: Credentials) = tokens(call("auth/refresh", mapOf("session_id" to credentials.sessionId, "refresh_token" to credentials.refreshToken)))
     override suspend fun demo(deviceKey: String) = tokens(call("auth/demo", mapOf("device_key" to deviceKey)))
     override suspend fun me(access: String): Profile {
@@ -140,8 +140,9 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
         return try {
             val count = json.get("active_device_count").asInt; require(count in 0..5)
             val plan = json.text("plan"); require(plan in setOf("DEMO", "FREE", "PREMIUM", "PLATINUM"))
+            val limited = json.get("device_limit_reached")?.let { require(it.isJsonPrimitive && it.asJsonPrimitive.isBoolean); it.asBoolean } ?: false
             Profile(if (plan == "DEMO") "" else json.text("email"), plan.lowercase().replaceFirstChar { it.uppercase() }, count, json.text("id").also { UUID.fromString(it) },
-                if (plan in setOf("DEMO", "FREE")) readFreeTime(json) else null)
+                if (plan in setOf("DEMO", "FREE")) readFreeTime(json) else null, limited)
         } catch (_: Exception) { throw AuthFailure("invalid_response") }
     }
     override suspend fun logout(access: String) {

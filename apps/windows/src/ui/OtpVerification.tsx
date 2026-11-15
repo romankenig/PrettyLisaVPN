@@ -88,6 +88,7 @@ function OtpForm({ email }: { readonly email: string }) {
           installation_id: currentInstallationId,
           platform: "WINDOWS",
           device_name: WINDOWS_DEVICE_NAME,
+          allow_device_management: true,
         },
         controller.signal,
       );
@@ -247,6 +248,7 @@ export function toCredentials(result: VerifyOtpResponse) {
     userId: result.user.id,
     deviceId: result.device.id,
     plan: result.subscription.plan,
+    deviceLimitReached: result.device.status === "PENDING",
   } as const;
 }
 

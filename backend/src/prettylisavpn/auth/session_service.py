@@ -21,7 +21,7 @@ from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.demo.domain import RegistrationRequiredError, is_demo_email
-from prettylisavpn.devices.domain import Device, DeviceStatus
+from prettylisavpn.devices.domain import Device, DeviceAccessLimitedError, DeviceStatus
 from prettylisavpn.devices.repository import DeviceRepository
 from prettylisavpn.product_analytics.activity import ActivitySink, record_activity
 from prettylisavpn.product_events.domain import ProductEventName
@@ -79,10 +79,13 @@ class MeSummary:
     free_running_sessions: int | None = None
     quota_observed_at: datetime | None = None
     daily_vpn_limit_seconds: int | None = None
+    device_limit_reached: bool = False
 
 
 class AuthenticatedSessionHandler(Protocol):
-    async def authenticate(self, access_token: str) -> AccessIdentity: ...
+    async def authenticate(
+        self, access_token: str, *, allow_device_management: bool = False
+    ) -> AccessIdentity: ...
 
     async def refresh(
         self, session_id: UUID, refresh_token: str, rotation_id: UUID | None = None
@@ -109,13 +112,17 @@ class AuthenticatedSessionService:
         self._refresh_token_ttl = timedelta(seconds=settings.refresh_token_ttl_seconds)
         self._rotation_secret = settings.otp_hmac_secret.get_secret_value().encode()
 
-    async def authenticate(self, access_token: str) -> AccessIdentity:
+    async def authenticate(
+        self, access_token: str, *, allow_device_management: bool = False
+    ) -> AccessIdentity:
         identity = self._decode_identity(access_token)
         try:
             async with self._postgres.session() as session:
                 auth_session = await AuthSessionRepository(session).get(identity.session_id)
                 auth_session = self._require_session(auth_session, identity)
-                user, _ = await self._load_principals(session, auth_session)
+                user, device = await self._load_principals(session, auth_session)
+                if device.status is DeviceStatus.PENDING and not allow_device_management:
+                    raise DeviceAccessLimitedError
         except (InvalidSessionError, BlockedUserError, RevokedDeviceError):
             raise
         except SQLAlchemyError:
@@ -205,7 +212,7 @@ class AuthenticatedSessionService:
                 repository = AuthSessionRepository(session)
                 auth_session = await repository.get(identity.session_id)
                 auth_session = self._require_session(auth_session, identity)
-                user, _ = await self._load_principals(session, auth_session)
+                user, device = await self._load_principals(session, auth_session)
                 subscription = await SubscriptionRepository(session).get_by_user_id(user.id)
                 if subscription is None:
                     raise AuthServiceUnavailableError("Subscription state is unavailable")
@@ -243,6 +250,7 @@ class AuthenticatedSessionService:
             free_running_sessions=quota.running_sessions if quota else None,
             quota_observed_at=now if quota else None,
             daily_vpn_limit_seconds=quota.daily_limit_seconds if quota else None,
+            device_limit_reached=device.status is DeviceStatus.PENDING,
         )
 
     def _decode_identity(self, access_token: str) -> AccessIdentity:

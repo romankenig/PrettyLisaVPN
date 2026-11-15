@@ -55,6 +55,7 @@ from prettylisavpn.connections import Postgres, Valkey
 from prettylisavpn.demo.domain import RegistrationRequiredError
 from prettylisavpn.demo.router import router as demo_router
 from prettylisavpn.demo.service import DemoService, RedisAdmissionLimit
+from prettylisavpn.devices.domain import DeviceAccessLimitedError
 from prettylisavpn.devices.management import DeviceManagementHandler, DeviceManagementService
 from prettylisavpn.devices.router import router as devices_router
 from prettylisavpn.emailing.domain import EmailProvider, EmailProviderConfigurationError
@@ -343,6 +344,15 @@ def create_app(
     app.include_router(fleet_router)
     app.include_router(analytics_router)
     app.include_router(traffic_router)
+
+    @app.exception_handler(DeviceAccessLimitedError)
+    async def device_access_limited(
+        request: Request, exc: DeviceAccessLimitedError
+    ) -> JSONResponse:
+        response = error_response("device_limit_reached", 403)
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Vary"] = "Authorization"
+        return response
 
     @app.exception_handler(RegistrationRequiredError)
     async def registration_required(

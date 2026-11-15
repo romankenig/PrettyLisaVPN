@@ -7,6 +7,7 @@ export interface Account {
   email: string | null;
   plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   active_device_count: number;
+  device_limit_reached?: boolean;
   entitlements?: {
     free_seconds_remaining?: number | null;
     free_seconds_usable?: number | null;
@@ -51,7 +52,7 @@ export interface Session {
   access_token: string;
   refresh_token: string;
   session_id: string;
-  device?: { id: string };
+  device?: { id: string; status?: string };
   user?: { id: string };
 }
 export type Phase =
@@ -65,6 +66,7 @@ export interface Snapshot {
   phase: Phase;
   error: string | null;
   signedIn: boolean;
+  deviceLimitReached?: boolean;
   otpEmail: string | null;
   account: Account | null;
   countries: Country[];

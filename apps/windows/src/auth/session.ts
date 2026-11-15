@@ -3,6 +3,7 @@ import { ApiError, type ApiClient, type MeResponse } from "../api/client";
 import { refreshStoredSession } from "./refresh";
 
 export interface SessionCredentials {
+  readonly deviceLimitReached?: boolean;
   readonly accessToken: string;
   readonly accessTokenExpiresIn: number;
   readonly refreshToken: string;
@@ -14,6 +15,7 @@ export interface SessionCredentials {
 }
 
 export interface ActiveSession {
+  readonly deviceLimitReached?: boolean;
   readonly accessToken: string;
   readonly accessTokenExpiresIn: number;
   readonly sessionId: string;
@@ -34,6 +36,12 @@ export interface AuthenticationSession {
     api: Pick<ApiClient, "refresh" | "me">,
     rejectedToken?: string,
   ): Promise<string>;
+}
+
+export function deviceLimited(active: ActiveSession | null): boolean {
+  return (
+    active?.profile?.device_limit_reached ?? active?.deviceLimitReached ?? false
+  );
 }
 
 export interface RestoredSessionCredentials {
@@ -79,6 +87,7 @@ export function createAuthenticationSession(
           userId: credentials.userId,
           deviceId: credentials.deviceId,
           plan: credentials.plan,
+          deviceLimitReached: credentials.deviceLimitReached,
           profile: null,
         });
         expiresAt = Date.now() + credentials.accessTokenExpiresIn * 1000;

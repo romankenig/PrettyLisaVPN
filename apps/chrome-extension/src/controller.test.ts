@@ -63,6 +63,97 @@ function fixture() {
   return { controller, io, calls, saved: () => saved };
 }
 describe("browser lease lifecycle", () => {
+  it("admits a pending device, blocks private features and activates a freed slot without OTP", async () => {
+    const { controller, io } = fixture();
+    delete controller.state.session;
+    let pending = true;
+    let full = true;
+    let logins = 0;
+    const paths: string[] = [];
+    io.fetch = async (input, options = {}) => {
+      const path = new URL(String(input)).pathname;
+      paths.push(path);
+      if (path === "/auth/verify-otp") {
+        logins++;
+        expect(JSON.parse(String(options.body)).allow_device_management).toBe(
+          true,
+        );
+        return Response.json({
+          session_id: id,
+          access_token: "access",
+          refresh_token: "refresh",
+          device: { id, status: "PENDING" },
+        });
+      }
+      if (path === "/version")
+        return Response.json({ application_version: "0.45.0" });
+      if (path === "/me")
+        return Response.json({
+          id,
+          email: "test@example.com",
+          plan: "PLATINUM",
+          active_device_count: 5,
+          device_limit_reached: pending,
+        });
+      if (path === "/devices/activate") {
+        if (full)
+          return Response.json(
+            { error: { code: "device_limit_reached" } },
+            { status: 409 },
+          );
+        pending = false;
+        return Response.json({ id, status: "ACTIVE" });
+      }
+      if (path === "/devices") return Response.json([]);
+      if (options.method === "DELETE") {
+        full = false;
+        return Response.json({ status: "revoked" });
+      }
+      if (path === "/vpn/countries") return Response.json({ countries: [] });
+      throw new Error("Unexpected request " + path);
+    };
+    await controller.login("test@example.com", "123456");
+    expect(controller.snapshot()).toMatchObject({
+      signedIn: true,
+      deviceLimitReached: true,
+    });
+    expect(paths).not.toContain("/vpn/countries");
+    await expect(controller.connect("AUTO")).rejects.toThrow(
+      "DEVICE_LIMIT_REACHED",
+    );
+    await expect(controller.billingPortal()).rejects.toThrow(
+      "DEVICE_LIMIT_REACHED",
+    );
+    await expect(controller.billing()).rejects.toThrow("DEVICE_LIMIT_REACHED");
+    await expect(
+      controller.support({
+        request_id: id,
+        subject: "test",
+        description: "test",
+      }),
+    ).rejects.toThrow("DEVICE_LIMIT_REACHED");
+    await expect(controller.devices()).resolves.toEqual([]);
+    expect(controller.snapshot().deviceLimitReached).toBe(true);
+    await controller.revokeDevice("22222222-2222-4222-8222-222222222222");
+    expect(controller.snapshot().deviceLimitReached).toBe(false);
+    expect(paths).toContain("/vpn/countries");
+    expect(logins).toBe(1);
+  });
+  it("retains the pending gate when profile loading fails and allows local cleanup offline", async () => {
+    const { controller, io } = fixture();
+    controller.state.session!.device = { id, status: "PENDING" };
+    io.fetch = async () => {
+      throw new Error("offline");
+    };
+    await expect(controller.refreshAccount()).rejects.toThrow("NETWORK_ERROR");
+    expect(controller.snapshot().deviceLimitReached).toBe(true);
+    await expect(controller.connect("AUTO")).rejects.toThrow(
+      "DEVICE_LIMIT_REACHED",
+    );
+    await controller.forgetLocalSession();
+    expect(controller.snapshot().signedIn).toBe(false);
+    expect(io.clear).toHaveBeenCalledOnce();
+  });
   it("rechecks transaction errors with real egress proof without restarting a healthy proxy", async () => {
     const { controller, io, calls } = fixture();
     await controller.connect("AUTO");

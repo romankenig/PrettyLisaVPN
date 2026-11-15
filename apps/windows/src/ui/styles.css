@@ -2804,3 +2804,27 @@ input,
 .legal-documents .legal-links button {
   margin: 0;
 }
+.device-limit-banner {
+  border: 1px solid #c82b28;
+  background: #fff2ef;
+  color: #b81820;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.device-limit-features {
+  display: grid;
+  gap: 16px;
+  opacity: 0.45;
+  border: 0;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 18px;
+  background: var(--color-mercury);
+}
+.device-limit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}

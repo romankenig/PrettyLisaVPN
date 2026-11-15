@@ -20,6 +20,14 @@ actor SerialGate {
 }
 
 public actor Session {
+    private struct LoginRequest: Encodable {
+        let email: String
+        let code: String
+        let installation_id: String
+        let platform: String
+        let device_name: String
+        let allow_device_management = true
+    }
     public let api: API
     private let store: any CredentialStore
     private let gate = SerialGate()
@@ -30,9 +38,9 @@ public actor Session {
     }
     public func login(email: String, code: String, installation: UUID, platform: String, name: String) async throws {
         try await gate.run {
-            let data = try await self.api.data("auth/verify-otp", method: "POST", body: WireJSON.encode([
-                "email": email, "code": code, "installation_id": installation.uuidString.lowercased(),
-                "platform": platform, "device_name": name]))
+            let data = try await self.api.data("auth/verify-otp", method: "POST", body: WireJSON.encode(LoginRequest(
+                email: email, code: code, installation_id: installation.uuidString.lowercased(),
+                platform: platform, device_name: name)))
             try self.accept(WireJSON.decode(Tokens.self, from: data))
         }
     }

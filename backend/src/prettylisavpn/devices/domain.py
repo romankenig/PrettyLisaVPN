@@ -18,6 +18,7 @@ class DevicePlatform(StrEnum):
 
 class DeviceStatus(StrEnum):
     ACTIVE = "ACTIVE"
+    PENDING = "PENDING"
     REVOKED = "REVOKED"
 
 
@@ -52,7 +53,7 @@ class Device:
             if value.tzinfo is None or value.utcoffset() is None:
                 raise ValueError(f"{field_name} must be timezone-aware")
             object.__setattr__(self, field_name, value.astimezone(UTC))
-        if (self.status is DeviceStatus.ACTIVE) != (self.revoked_at is None):
+        if (self.status is not DeviceStatus.REVOKED) != (self.revoked_at is None):
             raise ValueError("status and revoked_at are inconsistent")
 
     def is_active(self) -> bool:
@@ -61,6 +62,10 @@ class Device:
 
 class DeviceLimitReachedError(Exception):
     """The account already has the maximum number of active devices."""
+
+
+class DeviceAccessLimitedError(Exception):
+    """This authenticated installation may only manage devices until it has a slot."""
 
 
 class DeviceUserNotFoundError(Exception):

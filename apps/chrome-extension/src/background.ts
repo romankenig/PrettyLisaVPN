@@ -172,6 +172,9 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, respond) => {
             case "logout":
               await controller.logout();
               break;
+            case "forgetLocalSession":
+              await controller.forgetLocalSession();
+              break;
             case "devices":
               return controller.devices();
             case "revokeDevice":

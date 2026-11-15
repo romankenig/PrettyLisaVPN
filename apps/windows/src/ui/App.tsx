@@ -1,4 +1,8 @@
 import { LanguageSelector } from "./LanguageSelector";
+import { useSyncExternalStore } from "react";
+import { useApplication } from "../state/application";
+import { DeviceLimitCabinet } from "./DeviceLimitCabinet";
+import { deviceLimited } from "../auth/session";
 import { t, useLanguage } from "../i18n";
 import {
   NavLink,
@@ -19,6 +23,12 @@ import { useVersions } from "./useVersions";
 
 export function App() {
   useLanguage();
+  const { session } = useApplication();
+  const activeSession = useSyncExternalStore(
+    session.subscribe,
+    session.current,
+  );
+  const limited = deviceLimited(activeSession);
   const versions = useVersions();
   const { pathname } = useLocation();
   const authenticating =
@@ -30,12 +40,12 @@ export function App() {
   ] as const;
   return (
     <div className="shell">
-      <HomeCountryObserver />
-      <AccountMessages version={versions.frontend} />
+      {!limited && <HomeCountryObserver />}
+      {!limited && <AccountMessages version={versions.frontend} />}
       <aside className="sidebar">
         <nav aria-label={t("основная навигация")}>
           {items.map((item) =>
-            authenticating ? (
+            authenticating || (limited && item.to === "/about") ? (
               <span
                 key={item.to}
                 className="nav-disabled"
@@ -74,23 +84,30 @@ export function App() {
         </div>
       </aside>
       <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route
-            path="/about"
-            element={
-              <About frontend={versions.frontend} backend={versions.backend} />
-            }
-          />
-          <Route path="/settings/*" element={<Settings />} />
-          <Route
-            path="/devices"
-            element={<Navigate to="/settings/devices" replace />}
-          />
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth/verify-otp" element={<OtpVerification />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        {limited ? (
+          <DeviceLimitCabinet />
+        ) : (
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/about"
+              element={
+                <About
+                  frontend={versions.frontend}
+                  backend={versions.backend}
+                />
+              }
+            />
+            <Route path="/settings/*" element={<Settings />} />
+            <Route
+              path="/devices"
+              element={<Navigate to="/settings/devices" replace />}
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/auth/verify-otp" element={<OtpVerification />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
       </main>
     </div>
   );

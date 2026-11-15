@@ -1,6 +1,19 @@
 import XCTest
 
 final class MacUITests: XCTestCase {
+    func testPendingCabinetInNativeWindow() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-fixtures", "YES", "-device-limit-fixture", "YES", "-language", "ru"]
+        app.launch()
+        XCTAssertTrue(app.buttons["limit-manage-devices"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["limit-connect"].isEnabled)
+        XCTAssertTrue(app.buttons["limit-forget"].exists)
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        shot.name = "macOS-device-limit-cabinet"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["limit-manage-devices"].tap()
+        XCTAssertTrue(app.staticTexts["iPhone Preview"].waitForExistence(timeout: 10))
+        app.terminate()
+    }
     func testDefaultLaunchShowsRealOTPForm() {
         let app = XCUIApplication()
         app.launch()

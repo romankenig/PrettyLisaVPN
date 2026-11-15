@@ -20,6 +20,7 @@ export interface VerifyOtpRequest {
   readonly installation_id: string;
   readonly platform: "WINDOWS";
   readonly device_name: string;
+  readonly allow_device_management?: boolean;
 }
 
 export interface VerifyOtpResponse {
@@ -33,7 +34,7 @@ export interface VerifyOtpResponse {
   readonly device: {
     readonly id: string;
     readonly installation_id: string;
-    readonly status: "ACTIVE" | "REVOKED";
+    readonly status: "ACTIVE" | "PENDING" | "REVOKED";
   };
   readonly subscription: {
     readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
@@ -61,6 +62,7 @@ export interface MeResponse {
   readonly email: string | null;
   readonly plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM";
   readonly active_device_count: number;
+  readonly device_limit_reached?: boolean;
   readonly entitlements?: {
     readonly daily_vpn_limit_seconds?: number | null;
     readonly free_seconds_remaining?: number | null;
@@ -90,7 +92,7 @@ export interface DeviceResponse {
   readonly installation_id: string;
   readonly device_name: string;
   readonly platform: DevicePlatform;
-  readonly status: "ACTIVE" | "REVOKED";
+  readonly status: "ACTIVE" | "PENDING" | "REVOKED";
   readonly created_at: string;
   // Optional until the backend provides the last successful sign-in timestamp.
   readonly last_login_at?: string | null;
@@ -151,6 +153,10 @@ export interface ApiClient {
   refresh(body: RefreshRequest, signal?: AbortSignal): Promise<RefreshResponse>;
   me(accessToken: string, signal?: AbortSignal): Promise<MeResponse>;
   logout(accessToken: string, signal?: AbortSignal): Promise<LogoutResponse>;
+  activateDevice(
+    accessToken: string,
+    signal?: AbortSignal,
+  ): Promise<DeviceResponse>;
   listDevices(
     accessToken: string,
     signal?: AbortSignal,
@@ -224,7 +230,10 @@ export function createApiClient(
         if (response.status === 401 && errorCode === "otp_invalid_or_expired") {
           throw new ApiError("OTP_INVALID");
         }
-        if (response.status === 409 && errorCode === "device_limit_reached") {
+        if (
+          [403, 409].includes(response.status) &&
+          errorCode === "device_limit_reached"
+        ) {
           throw new ApiError("DEVICE_LIMIT");
         }
         if (response.status === 409 && errorCode === "COUNTRY_UNAVAILABLE") {
@@ -393,6 +402,23 @@ export function createApiClient(
       }
       return { status: "logged_out" };
     },
+    async activateDevice(accessToken, signal) {
+      const value = await requestJson(
+        "/devices/activate",
+        {
+          method: "POST",
+          headers: { authorization: `Bearer ${accessToken}` },
+        },
+        signal,
+      );
+      if (
+        !isDeviceResponse(value) ||
+        value.status !== "ACTIVE" ||
+        !value.is_current
+      )
+        throw new ApiError("INVALID_RESPONSE");
+      return value;
+    },
     async listDevices(accessToken, signal) {
       const value = await requestJson(
         "/devices",
@@ -498,7 +524,7 @@ function isDeviceResponse(value: unknown): value is DeviceResponse {
       "ANDROID_TV",
       "CHROME_EXTENSION",
     ].includes(String(value.platform)) &&
-    ["ACTIVE", "REVOKED"].includes(String(value.status)) &&
+    ["ACTIVE", "PENDING", "REVOKED"].includes(String(value.status)) &&
     isIsoDate(value.created_at) &&
     isIsoDate(value.updated_at) &&
     (value.last_login_at === undefined ||
@@ -531,7 +557,9 @@ function isMeResponse(value: unknown): value is MeResponse {
     ["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(String(value.plan)) &&
     typeof value.active_device_count === "number" &&
     Number.isInteger(value.active_device_count) &&
-    value.active_device_count >= 0
+    value.active_device_count >= 0 &&
+    (value.device_limit_reached === undefined ||
+      typeof value.device_limit_reached === "boolean")
   );
 }
 
@@ -549,7 +577,7 @@ function isVerifyOtpResponse(value: unknown): value is VerifyOtpResponse {
     !isRecord(value.device) ||
     !isUuid(value.device.id) ||
     !isUuid(value.device.installation_id) ||
-    !["ACTIVE", "REVOKED"].includes(String(value.device.status)) ||
+    !["ACTIVE", "PENDING", "REVOKED"].includes(String(value.device.status)) ||
     !isRecord(value.subscription) ||
     !["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(
       String(value.subscription.plan),

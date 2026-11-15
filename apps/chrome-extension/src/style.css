@@ -475,3 +475,10 @@ code,
 .language-options button:hover {
   background: #51d6ca;
 }
+.feature-disabled {
+  opacity: 0.45;
+}
+.device-limit {
+  border: 1px solid #ce2026;
+  color: #b81820;
+}

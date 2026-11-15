@@ -48,7 +48,7 @@ internal fun SessionApp(model: ScreenModel) {
                         }
                     }
                     !state.data.signedIn -> AuthScreen(model, otp, { otp = true }, { otp = false; model.clearError() })
-                    else -> LiveAccountScreens(model, messageBlocked = logout || forget) { logout = true }
+                    else -> LiveAccountScreens(model, messageBlocked = logout || forget, forget = { forget = true }) { logout = true }
                 }
             }
         }

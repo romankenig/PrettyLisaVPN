@@ -60,6 +60,8 @@ public struct Profile: Codable, Sendable {
     public let plan: String
     public let active_device_count: Int
     public let entitlements: Entitlements?
+    public let device_limit_reached: Bool?
+    public var deviceLimited: Bool { device_limit_reached == true }
 }
 public struct Entitlements: Codable, Sendable {
     public let free_seconds_usable: Int?
