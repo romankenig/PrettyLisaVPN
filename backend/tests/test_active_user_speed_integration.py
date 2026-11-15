@@ -99,7 +99,7 @@ async def test_filters_reject_unknown_nodes_and_exclude_transit_without_zero(fle
     assert response["nodes"] == []
     assert response["excluded_transit_nodes"] == [str(ids[2])]
     assert all(point["download"]["mean_mbps"] is None for point in response["points"])
-    assert 168 <= len(response["points"]) <= 169
+    assert len(response["points"]) == 7
     with pytest.raises(FleetError, match="traffic_node_not_found"):
         await service.history("1h", [uuid4()])
 

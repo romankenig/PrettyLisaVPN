@@ -1,8 +1,8 @@
-# PrettyLisaVPN monitoring dashboard — 0.8.0
+# PrettyLisaVPN monitoring dashboard — 0.9.0
 
 Active-account throughput is available at `/dashboard/#active-user-speed`:
 directional means/medians, account deduplication across selected exits, 24-hour
-monitoring (default), seven-day analytics and explicit sample completeness.
+monitoring, seven completed daily analytics (default) and explicit sample completeness.
 Each direction has automatic, actual-speed and manual upper-limit Y scales;
 the lower bound is zero. Known points are connected across gaps, but missing
 values remain absent in tooltips. This is actual traffic while active;
@@ -70,3 +70,7 @@ at `/dashboard/downloads/index.json` identifies the latest successfully publishe
 development build of each platform. These files are stored on the main server;
 GitHub login and artifact retention do not affect downloads. See
 [publication, validation and rollback](../../docs/dashboard-client-downloads.md).
+
+Service availability and selection histograms are available under selected-traffic mode.
+Product reports include DEMO shares, device platforms, session lengths and first silence.
+See [report definitions and rollout](../../docs/report-analytics.md).

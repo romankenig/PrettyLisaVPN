@@ -15,7 +15,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_GAP = 7.5
-PERIODS = {"1h": (3600, 60), "24h": (86400, 300), "7d": (604800, 3600)}
+PERIODS = {"1h": (3600, 60), "24h": (86400, 300), "7d": (604800, 86400)}
 
 
 class Counter(BaseModel):
@@ -110,9 +110,18 @@ class TrafficRollup:
     servers. No ready-made server means or medians enter these calculations.
     """
 
-    def __init__(self, start: int, end: int, step: int, nodes: list[str], threshold: float):
+    def __init__(
+        self,
+        start: int,
+        end: int,
+        step: int,
+        nodes: list[str],
+        threshold: float,
+        offset: int = 0,
+    ):
         self.start, self.end, self.step = start, end, step
         self.nodes, self.threshold = nodes, threshold
+        self.offset = offset
         self.windows: dict[int, dict[str, Window]] = defaultdict(dict)
         self.users: dict[int, dict[str, list[float]]] = defaultdict(dict)
         self.coverage: dict[int, dict[str, list[tuple[float, float]]]] = defaultdict(dict)
@@ -136,7 +145,8 @@ class TrafficRollup:
     def parts(self, start: float, end: float, step: int) -> list[tuple[int, float, float]]:
         start, end = max(self.start, start), min(self.end, end)
         result = []
-        slot = int(start // step) * step
+        offset = self.offset if step == self.step else 0
+        slot = int((start + offset) // step) * step - offset
         while slot < end:
             result.append((slot, max(slot, start), min(slot + step, end)))
             slot += step
@@ -146,7 +156,7 @@ class TrafficRollup:
         for slot in sorted(list(self.windows)):
             if slot + 5 > before:
                 break
-            bucket = slot // self.step * self.step
+            bucket = (slot + self.offset) // self.step * self.step - self.offset
             for user, window in self.windows.pop(slot).items():
                 seconds = union_seconds(window.spans)
                 for offset, traffic in ((0, window.download), (2, window.upload)):
@@ -158,7 +168,8 @@ class TrafficRollup:
     def points(self) -> list[dict[str, Any]]:
         self.flush(float("inf"))
         points = []
-        for bucket in range(self.start // self.step * self.step, self.end, self.step):
+        first = (self.start + self.offset) // self.step * self.step - self.offset
+        for bucket in range(first, self.end, self.step):
             duration = min(self.end, bucket + self.step) - max(self.start, bucket)
             directions: dict[str, Any] = {}
             for direction, offset in (("download", 0), ("upload", 2)):

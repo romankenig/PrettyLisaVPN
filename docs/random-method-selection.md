@@ -2,9 +2,11 @@
 
 ## Scope and versions
 
-Windows **0.28.1 → 0.29.0**, Android **0.27.3/code 53 → 0.28.0/code 54**,
+Windows **0.28.2 → 0.29.0**, Android **0.27.4/code 54 → 0.28.0/code 55**,
 iOS **0.3.0 → 0.4.0**, macOS **0.2.2 → 0.3.0**. MINOR for a new client feature.
-Base develop: `6868e4849ee1795863e3d6ff1a3caca1c054eb01`.
+Integrated develop: `6177e2e53da41413f60385686d9f1f8e425b0492`.
+Android code 55 follows the independently released analytics client (code 54);
+the feature's target SemVer versions remain unchanged after synchronization.
 Backend/API/schema, managed engines, website and Chrome Extension unchanged.
 Linux/Android TV have no implemented method-selection screen in this repository;
 Chrome remains a browser proxy client without this VPN-protocol selector.

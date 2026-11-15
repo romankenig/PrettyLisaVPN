@@ -24,6 +24,21 @@ export interface RoutingPolicy {
   domains: string[];
   ipv4_cidrs?: string[];
 }
+
+export function selectionAnalytics(
+  selection: TrafficSelection,
+  fullTrafficOnly = false,
+) {
+  if (fullTrafficOnly || selection.mode !== "include")
+    return { traffic_mode: fullTrafficOnly ? "all" : selection.mode };
+  return {
+    traffic_mode: selection.mode,
+    service_ids: [
+      ...new Set(selection.include.services.map((service) => service.id)),
+    ],
+    custom_rules: [...new Set(selection.include.masks.map(normalizeMask))],
+  };
+}
 // Service-owned public networks only; manual input remains domain masks.
 export function normalizeServiceNetwork(value: string): string {
   const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/.exec(

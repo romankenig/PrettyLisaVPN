@@ -23,6 +23,7 @@
 
 ### Windows — 0.29.0 / Android — 0.28.0 / iOS — 0.4.0 / macOS — 0.3.0
 
+- Android uses code 55, following the independently released 0.27.4/code 54.
 - Add a refresh icon to connection-method settings: each click selects a random
   nonempty subset and shuffles its base attempt order. Selected methods appear
   first in that order and persist across restarts. Manual changes preserve it.
@@ -44,6 +45,19 @@
   and decorative subtitles, and apply lowercase interface copy across six languages.
 - Keep existing prices, authentication, recurring consent and payment authority
   unchanged. See the [website copy and devices handoff](docs/website-copy-devices.md).
+
+### Reports — backend 0.42.0 / dashboard 0.9.0 / managed engine 0.7.0
+
+- Default seven-day speed analytics now aggregate seven completed GMT+3 days
+  from original counters. Add per-service daily availability, random public
+  samples and VPN routes, minute retries and recovery-time scores, plus selected
+  service counts/shares in open sessions and private UNKNOWN rule evidence.
+- Product analytics include DEMO, tariff shares over time, device platforms,
+  average connected-session duration and histograms to disconnect/first silence.
+  Missing or incomplete observations remain explicitly unobserved.
+- Windows 0.28.2 and Android 0.27.4 transmit configured selection metadata.
+  Migration 0049; backend and node helpers must precede client rollout. No client
+  screen changes. See [report definitions and handoff](docs/report-analytics.md).
 
 ### Public website — 0.5.4
 

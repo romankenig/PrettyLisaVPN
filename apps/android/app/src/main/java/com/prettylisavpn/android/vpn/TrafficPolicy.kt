@@ -13,6 +13,11 @@ data class TrafficList(val services: List<TrafficService> = emptyList(), val mas
 data class TrafficSelection(val mode: String = "all", val include: TrafficList = TrafficList(), val exclude: TrafficList = TrafficList(), val preset_defaults: Boolean = false)
 data class RoutingPolicy(val mode: String, val domains: List<String>, val ipv4_cidrs: List<String> = emptyList())
 
+fun TrafficSelection.analytics(mode: String): Map<String, Any> = if (mode == "include") mapOf(
+    "service_ids" to include.services.map { it.id }.distinct(),
+    "custom_rules" to include.masks.map(::normalizeTrafficMask).distinct(),
+) else emptyMap()
+
 fun normalizeServiceNetwork(value: String): String {
     val match = Regex("([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})/([0-9]{1,2})").matchEntire(value)
     require(match != null)
