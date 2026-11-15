@@ -368,9 +368,9 @@
     <string name="direct_location_expected">erwarteter standort ohne VPN:</string>
     <string name="randomize_methods">zufällige Methoden und Reihenfolge</string>
     <string name="method_order_hint">ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.</string>
-    <string name="device_limit">Gerätelimit erreicht</string>
-    <string name="device_limit_help">Entferne ein Gerät, um die App auf diesem Gerät zu verwenden.</string>
-    <string name="manage_devices">Geräte verwalten</string>
-    <string name="forget_local">Anmeldedaten von diesem Gerät entfernen</string>
+    <string name="device_limit">gerätelimit erreicht</string>
+    <string name="device_limit_help">entferne ein Gerät, um die App auf diesem Gerät zu verwenden.</string>
+    <string name="manage_devices">geräte verwalten</string>
+    <string name="forget_local">anmeldedaten von diesem Gerät entfernen</string>
     <string name="device_pending">wartet auf einen freien Platz</string>
 </resources>

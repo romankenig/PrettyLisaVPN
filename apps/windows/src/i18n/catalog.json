@@ -1928,10 +1928,10 @@
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet.",
     "Случайный набор и порядок способов": "zufällige Methoden und Reihenfolge",
     "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.",
-    "достигнут лимит устройств": "Gerätelimit erreicht",
-    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "Entferne ein Gerät, um die App auf diesem Gerät zu verwenden.",
-    "управлять устройствами": "Geräte verwalten",
-    "удалить данные входа с этого устройства": "Anmeldedaten von diesem Gerät entfernen",
+    "достигнут лимит устройств": "gerätelimit erreicht",
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "entferne ein Gerät, um die App auf diesem Gerät zu verwenden.",
+    "управлять устройствами": "geräte verwalten",
+    "удалить данные входа с этого устройства": "anmeldedaten von diesem Gerät entfernen",
     "ожидает свободного места": "wartet auf einen freien Platz"
   },
   "fr": {
