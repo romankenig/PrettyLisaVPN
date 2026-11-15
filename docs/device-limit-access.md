@@ -4,7 +4,7 @@
 
 | Component | Before | After |
 | --- | --- | --- |
-| Backend | 0.44.0 | 0.45.0 |
+| Backend | 0.45.0 | 0.46.0 |
 | Windows | 0.29.1 | 0.30.0 |
 | Android | 0.28.1 (56) | 0.29.0 (57) |
 | iOS | 0.4.1 | 0.5.0 |
@@ -67,9 +67,10 @@ refuses while any pending row exists; revoke/resolve those rows explicitly or
 roll back only to a backend that understands them. The unused enum value is
 retained on schema downgrade, matching PostgreSQL enum migration conventions.
 
-Base product SHA: `df475bbca8bf84ec770b4072c61e42d0a019674f` (PR #88).
+Base product SHA after synchronizing PR #89: `29dd77c2` (develop).
+The analytics task already uses backend 0.45.0; this task uses 0.46.0.
 This task does not merge, tag, publish downloads or deploy production. Backend
-follow-up is a separately authorized 0.45.0 rollout, then client publication.
+follow-up is a separately authorized 0.46.0 rollout, then client publication.
 The PR records the verified product HEAD, actual build SHA/run/attempt, native
 screenshots, artifacts and every completed Actions workflow. Local fixtures are
 synthetic and do not claim real VPN traffic or changes to a production account.

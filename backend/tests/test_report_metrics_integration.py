@@ -22,8 +22,12 @@ from prettylisavpn.fleet.service_checks import ServiceAnalytics
 from prettylisavpn.fleet.traffic import Snapshot
 from prettylisavpn.fleet.traffic_service import TrafficService
 from prettylisavpn.product_analytics.activity import DatabaseActivitySink
-from prettylisavpn.product_analytics.domain import day
-from prettylisavpn.product_analytics.model import ActivityRecord, SessionSilenceRecord
+from prettylisavpn.product_analytics.domain import boundary, day
+from prettylisavpn.product_analytics.model import (
+    ActivityRecord,
+    AnalyticsSnapshotRecord,
+    SessionSilenceRecord,
+)
 from prettylisavpn.product_analytics.service import ProductAnalyticsService
 from prettylisavpn.traffic.model import TrafficServiceRecord
 from prettylisavpn.users.model import UserRecord
@@ -87,6 +91,124 @@ async def test_daily_device_report_uses_accounts_without_exposing_identity(vpn_s
     async with postgres.session() as session:
         excluded = await analytics.build(session, at + timedelta(days=1))
     assert excluded["points"][-1]["device_platforms"] == {"connections": {}, "users": {}}
+
+
+async def test_live_device_day_is_fresh_separate_and_rolls_over_without_mutating_history(
+    vpn_state,  # noqa: F811
+):
+    postgres, service, worker, _, identity = vpn_state
+    lease_id = UUID((await connect(service))["id"])
+    await worker.tick()
+    now = datetime(2099, 8, 3, 12, tzinfo=UTC)
+    midnight = boundary(day(now))
+    yesterday = day(now) - timedelta(days=1)
+    analytics = ProductAnalyticsService(postgres)
+    email = f"today-platforms-{uuid4()}@gmail.com"
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(UserRecord).where(UserRecord.id == identity.user_id).values(email=email)
+        )
+        await session.execute(
+            update(DeviceRecord)
+            .where(DeviceRecord.id == identity.device_id)
+            .values(platform=DevicePlatform.WINDOWS)
+        )
+        chrome_ids = [uuid4(), uuid4()]
+        session.add_all(
+            DeviceRecord(
+                id=device_id,
+                user_id=identity.user_id,
+                installation_id=uuid4(),
+                platform=DevicePlatform.CHROME_EXTENSION,
+                device_name="Chrome",
+            )
+            for device_id in chrome_ids
+        )
+        lease = await session.get(ClientLeaseRecord, lease_id)
+        lease.created_at = midnight - timedelta(hours=1)
+        lease.verified_at = midnight - timedelta(seconds=1)
+        lease.removed_at = lease.disconnected_at = now + timedelta(hours=1)
+        lease.expires_at, lease.heartbeat_at = now + timedelta(hours=2), now
+        lease.status = "CLOSED"
+        await session.flush()
+        fields = {
+            column.key: getattr(lease, column.key) for column in ClientLeaseRecord.__table__.columns
+        }
+        for device_id, verified in [
+            (identity.device_id, midnight),
+            (identity.device_id, now),
+            (chrome_ids[0], midnight + timedelta(seconds=1)),
+            (chrome_ids[0], midnight + timedelta(seconds=5)),
+            (chrome_ids[1], midnight + timedelta(seconds=8)),
+            (chrome_ids[0], None),
+            (chrome_ids[0], now + timedelta(seconds=1)),
+        ]:
+            session.add(
+                ClientLeaseRecord(
+                    **{
+                        **fields,
+                        "id": uuid4(),
+                        "request_id": uuid4(),
+                        "device_id": device_id,
+                        "method": "https_proxy" if device_id in chrome_ids else "wireguard",
+                        "address": None if device_id in chrome_ids else fields["address"],
+                        "engine_port": 41000 if device_id in chrome_ids else None,
+                        "verified_at": verified,
+                    }
+                )
+            )
+    try:
+        assert await analytics.refresh(now)
+        first = await analytics.latest(now)
+        assert first["through_date"] == yesterday.isoformat()
+        assert first["points"][-1]["device_platforms"]["connections"] == {"WINDOWS": 1}
+        assert first["device_today"] == {
+            "date": day(now).isoformat(),
+            "partial": True,
+            "updated_at": now.isoformat(),
+            "device_platforms": {
+                "connections": {"CHROME_EXTENSION": 3, "WINDOWS": 2},
+                "users": {"CHROME_EXTENSION": 1, "WINDOWS": 1},
+            },
+        }
+        later = await analytics.latest(now + timedelta(minutes=1))
+        assert later["device_today"]["device_platforms"]["connections"]["CHROME_EXTENSION"] == 4
+        assert later["device_today"]["device_platforms"]["users"]["CHROME_EXTENSION"] == 1
+        assert later["points"] == first["points"]
+        async with postgres.session() as session:
+            saved = (await session.get(AnalyticsSnapshotRecord, yesterday)).data
+            assert "device_today" not in saved
+            assert saved == {key: value for key, value in first.items() if key != "device_today"}
+        assert email not in str(later) and str(identity.user_id) not in str(later)
+        next_midnight = midnight + timedelta(days=1)
+        rolled = await analytics.latest(next_midnight)
+        assert rolled["device_today"]["date"] == day(next_midnight).isoformat()
+        assert rolled["device_today"]["device_platforms"] == {"connections": {}, "users": {}}
+        assert await analytics.refresh(next_midnight)
+        finalized = await analytics.latest(next_midnight)
+        assert (
+            finalized["points"][-1]["device_platforms"] == later["device_today"]["device_platforms"]
+        )
+        async with postgres.session() as session, session.begin():
+            await session.execute(
+                update(UserRecord)
+                .where(UserRecord.id == identity.user_id)
+                .values(email=f"excluded-{uuid4()}@example.com")
+            )
+        # A midnight publication racing a read cannot turn its current day into history.
+        before_midnight = await analytics.latest(now)
+        assert before_midnight["through_date"] == yesterday.isoformat()
+        assert before_midnight["device_today"]["device_platforms"] == {
+            "connections": {},
+            "users": {},
+        }
+    finally:
+        async with postgres.session() as session, session.begin():
+            await session.execute(
+                delete(AnalyticsSnapshotRecord).where(
+                    AnalyticsSnapshotRecord.through_date.in_([yesterday, day(now)])
+                )
+            )
 
 
 async def test_legacy_client_mode_is_unknown_and_service_checks_allow_renewal(vpn_state):  # noqa: F811

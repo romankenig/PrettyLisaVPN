@@ -133,7 +133,7 @@ async def test_daily_snapshot_survives_failure_and_restart_without_relabelling(
         monkeypatch.setattr(service, "build", original)
         results = await asyncio.gather(service.refresh(now), service.refresh(now))
         assert sum(results) == 1
-        stored = await service.latest()
+        stored = await service.latest(now)
         point = stored["points"][-1]
         assert point["date"] == yesterday.isoformat()
         assert point["dau"]["plans"] == {
@@ -144,14 +144,14 @@ async def test_daily_snapshot_survives_failure_and_restart_without_relabelling(
             "UNKNOWN": 0,
         }
         assert not await ProductAnalyticsService(postgres).refresh(now + timedelta(hours=1))
-        assert await service.latest() == stored
+        assert await service.latest(now) == stored
         assert str(user.id) not in str(stored) and user.email not in str(stored)
         # Existing daily snapshots are rebuilt once when new metrics become available.
         async with postgres.session() as session, session.begin():
             row = await session.get(AnalyticsSnapshotRecord, yesterday)
             row.data = {**row.data, "metrics_revision": 2}
         assert await ProductAnalyticsService(postgres).refresh(now + timedelta(hours=2))
-        revised = await service.latest()
+        revised = await service.latest(now)
         assert revised["metrics_revision"] == 3
         assert "device_platforms" in revised["points"][-1]
         assert not await service.refresh(now + timedelta(hours=3))

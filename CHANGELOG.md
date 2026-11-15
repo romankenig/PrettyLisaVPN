@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Device-limit cabinet — backend 0.45.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
+### Device-limit cabinet — backend 0.46.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 
 - Allow OTP sign-in when all five device slots are occupied. New installations
   enter a restricted cabinet with a red notice, dimmed features and links to
@@ -19,6 +19,17 @@
   [migration/rollback and validation handoff](docs/device-limit-access.md).
 - Website 0.6.1 unchanged; Linux/Android TV scaffolds share the tested backend
   contract and still require their own future client UI.
+
+### Current device day — backend 0.45.0 / dashboard 0.12.0
+
+- Show today's verified device connections and unique accounts as a separate
+  stacked bar marked «неполный день», refreshed every minute. Chrome Extension
+  remains separate from Windows, including when one account uses both.
+- Keep completed-day snapshots and other product metrics unchanged. The private
+  report adds live `device_today` aggregates; no schema changes or client updates.
+  Test accounts, unverified requests and future timestamps remain excluded.
+- See [daily device handoff](docs/daily-device-distribution.md) for midnight,
+  compatibility and release evidence requirements.
 
 ### Chrome — 0.4.0 / public website — 0.6.1
 

@@ -29,10 +29,8 @@ export default function ProductAnalytics() {
         const value = readAnalytics(await response.json());
         if (controller.signal.aborted) return;
         setData(value); setError(false);
-        // Data is computed once per day on the main server, not in this page.
-        timer = setTimeout(() => setRetry(v => v + 1), Math.max(300_000, Date.parse(value.next_update_at) + 90_000 - Date.now()));
       } catch { if (!controller.signal.aborted) setError(true); }
-      finally { if (!controller.signal.aborted) setLoading(false); }
+      finally { if (!controller.signal.aborted) { setLoading(false); timer = setTimeout(() => setRetry(v => v + 1), 60_000); } }
     })();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [retry]);
@@ -42,9 +40,9 @@ export default function ProductAnalytics() {
     <header className="topbar"><a href="/dashboard/"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /></a><div className="private"><LockKeyhole size={14} />Приватная аналитика</div></header>
     <main className="workspace product-analytics">
       <a className="analytics-back" href="/dashboard/"><ArrowLeft size={16} />Доступность серверов</a>
-      <div className="heading"><div><div className="eyebrow">Продукт / Аудитория</div><h1>Как используют PrettyLisaVPN</h1><p>Два месяца · по дням · время GMT+3{data && <> · по {formatDay(data.through_date)} включительно</>}</p></div><button className="refresh" disabled={loading} aria-label="Получить сохранённые данные" onClick={() => { setLoading(true); setRetry(v => v + 1); }}><RefreshCw size={18} className={loading ? "spin" : ""} /></button></div>
+      <div className="heading"><div><div className="eyebrow">Продукт / Аудитория</div><h1>Как используют PrettyLisaVPN</h1><p>Два месяца · по дням · время GMT+3{data && <> · завершённые дни по {formatDay(data.through_date)} включительно</>}</p></div><button className="refresh" disabled={loading} aria-label="Обновить данные отчёта" onClick={() => { setLoading(true); setRetry(v => v + 1); }}><RefreshCw size={18} className={loading ? "spin" : ""} /></button></div>
       <div className="analytics-updated"><Clock3 size={15} />{data ? <>Обновлено {date(data.generated_at)} GMT+3 · следующее обновление {date(data.next_update_at)} GMT+3</> : "Ожидаем первый ежедневный расчёт"}</div>
-      {error && <div role="alert" className="notice">Не удалось получить сохранённые метрики. {data ? "Показан предыдущий результат." : "Повторите загрузку позже."}</div>}
+      {error && <div role="alert" className="notice">Не удалось обновить отчёт. {data ? "Показан предыдущий результат." : "Повторите загрузку позже."}</div>}
       {stale && <div role="status" className="notice">Ежедневное обновление задерживается. Последняя рассчитанная дата: {formatDay(data.through_date)}.</div>}
       {data?.history_partial && <div className="analytics-coverage">Исторические данные неполные: раньше сохранялись только входы, обновления токенов и отдельные события VPN. Полный сбор авторизованной активности — с {formatDay(data.full_collection_from)}. Неизвестные тарифы показаны отдельно; разрывы на графике означают отсутствие истории, а не ноль.</div>}
       <section className="metrics analytics-cards" aria-label="Последний завершённый день">
@@ -55,7 +53,7 @@ export default function ProductAnalytics() {
         <AnalyticsChart title="Динамика активной аудитории" dates={dates} series={(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => ({ name: metric.toUpperCase(), color: colors[metric], values: points.map(p => p[metric].total) }))} explanation="Каждая точка — завершённый день. DAU: 1 день, WAU: 7 дней, MAU: 30 дней до точки включительно. Это уникальные аккаунты, не сумма устройств и не сумма ежедневных значений." />
         <div className="chart-switch" role="group" aria-label="Распределение тарифов"><button aria-pressed={planShares} onClick={() => setPlanShares(true)}>Доли тарифов, %</button><button aria-pressed={!planShares} onClick={() => setPlanShares(false)}>Количество</button></div>
         <div className="analytics-cohorts">{(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => <AnalyticsChart key={metric} title={`${metric.toUpperCase()} по тарифам`} dates={dates} unit={planShares ? "%" : ""} series={plans.map(plan => ({ name: planNames[plan], color: planColors[plan], values: points.map(p => planShares ? planShare(p[metric], plan) : p[metric].plans[plan]), dashed: plan === "UNKNOWN" }))} explanation={`${definition(metric)} DEMO — гостевые аккаунты. Доля — категория / вся активная аудитория окна × 100%. Тариф берётся на момент последней активности; неизвестные исторические тарифы не заменяются текущими.`} />)}</div>
-        <DailyDeviceDistribution points={points} />
+        <DailyDeviceDistribution points={points} today={data.device_today} />
         <AnalyticsChart title="Средняя длительность подключения" dates={dates} unit=" с" series={[{ name: "От подключения до отключения", color: "#5f22d9", values: points.map(point => point.mean_session_seconds ?? null) }]} explanation={`Среднее по завершённым сессиям, по дате отключения. Начало — подтверждение VPN; конец — запрос отключения или прекращение доступа сервером. Открытые сессии и старая история без времени отключения исключены. Среднее по сессиям, начавшимся за период: ${formatNumber(data.mean_session_seconds)} с.`} />
         <div className="analytics-extras">
           <BarDistribution title="Длительность подключения" items={(data.session_duration?.counts ?? []).map((count, i) => ({ name: durationLabels[i], count }))} explanation={`От подключения до отключения для сессий, начавшихся за период. Верхняя граница интервала включена. Без конечного наблюдения: ${formatNumber(data.duration_unobserved_sessions)}.`} />
@@ -67,7 +65,7 @@ export default function ProductAnalytics() {
           <AnalyticsChart title="Успешность подключения" dates={dates} unit="%" series={[{ name: "Успешность", color: "#5f22d9", values: points.map(p => p.connection_success_percent) }]} explanation="Подтверждённые / завершённые попытки × 100%, сгруппированные по дате начала. Каждый кандидат автоматического перебора — отдельная попытка. Незавершённые попытки исключены; при отсутствии попыток — нет значения." />
           <AnalyticsChart title="Регулярность использования · DAU/MAU" dates={dates} unit="%" series={[{ name: "DAU/MAU", color: "#17655c", values: points.map(p => p.engagement_percent) }]} explanation="Доля месячной активной аудитории, активная в день точки: DAU / MAU × 100%. Это показатель регулярности использования, а не удержания когорты. При MAU = 0 значения нет." />
         </div>
-        <p className="analytics-footnote">Все показатели исключают тестовые аккаунты. История посещений, адреса сайтов, DNS-запросы и содержимое трафика не собираются. Расчёт выполняется ежедневно на основном сервере; текущий незавершённый день не отображается.</p>
+        <p className="analytics-footnote">Все показатели исключают тестовые аккаунты. История посещений, адреса сайтов, DNS-запросы и содержимое трафика не собираются. Завершённые дни обновляются ежедневно. В графике устройств дополнительно показан текущий неполный день с обновлением раз в минуту.</p>
       </>}
     </main>
   </>;
