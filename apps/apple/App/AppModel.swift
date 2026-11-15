@@ -112,7 +112,7 @@ import PrettyLisaCore
             do {
                 profile = try fixture(ProcessInfo.processInfo.arguments.contains("-device-limit-fixture") ? "profile-pending" : "profile", Profile.self)
                 countries = try fixture("countries", Countries.self)
-                devices = try fixture("devices", [Device].self)
+                devices = try fixture(deviceLimited ? "devices-pending" : "devices", [Device].self)
                 billing = try fixture("billing", BillingOverview.self)
             } catch { self.error = "INVALID_FIXTURE" }
             return

@@ -9,12 +9,12 @@ struct DeviceLimitView: View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(L("device_limit")).font(.headline).foregroundStyle(Color(red: 0.78, green: 0.17, blue: 0.16))
+                    .accessibilityIdentifier("device-limit-banner")
                 Text(L("device_limit_help")).foregroundStyle(Color(red: 0.78, green: 0.17, blue: 0.16))
                 Button(L("manage_devices")) { model.page = .devices }.buttonStyle(.borderedProminent)
                     .disabled(model.busy).accessibilityIdentifier("limit-manage-devices")
             }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(red: 1, green: 0.95, blue: 0.94), in: RoundedRectangle(cornerRadius: 18))
-                .accessibilityIdentifier("device-limit-banner")
             if model.page == .devices {
                 #if os(iOS)
                 IOSDevicesView(model: model)
@@ -44,6 +44,9 @@ struct DeviceLimitView: View {
                 Button(L("ui_sign_out")) { logout = true }.accessibilityIdentifier("limit-logout")
                 Button(L("forget_local")) { forget = true }.accessibilityIdentifier("limit-forget")
             }.buttonStyle(.bordered).disabled(model.busy)
+                #if os(iOS)
+                .tint(Color(red: 0.894, green: 0.894, blue: 0.894))
+                #endif
         }.padding(16)
             .confirmationDialog(L("ui_sign_out_54"), isPresented: $logout, titleVisibility: .visible) {
                 Button(L("ui_sign_out"), role: .destructive) { model.logout() }

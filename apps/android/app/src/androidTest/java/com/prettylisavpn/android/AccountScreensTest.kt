@@ -29,6 +29,7 @@ class AccountScreensTest {
     private var revision="r1"
     private var active=true
     private var limited=false
+    private var limitReview=false
     private var billingFail=false
     private var ackFail=false
     private var messages=false
@@ -51,7 +52,7 @@ class AccountScreensTest {
         override suspend fun verifyOtp(email:String,code:String,installationId:String,deviceName:String)=tokens()
         fun tokens()=Tokens("fake",900,Credentials(device,"fake","2030-01-01T00:00:00Z"))
         override suspend fun refresh(credentials:Credentials)=tokens()
-        override suspend fun me(access:String):Profile { profileReads++; return Profile(if(plan=="Demo")"" else "screens@example.com",plan,if(plan=="Demo")1 else if(active)2 else 1,owner,
+        override suspend fun me(access:String):Profile { profileReads++; return Profile(if(plan=="Demo")"" else "screens@example.com",plan,if(limitReview)5 else if(plan=="Demo")1 else if(active)2 else 1,owner,
             if(plan in setOf("Free","Demo")) FreeTime(if(plan=="Demo")900 else freeSeconds,0,"2030-01-01T00:00:00Z",System.currentTimeMillis(),if(plan=="Demo")900 else 3600) else null, deviceLimitReached=limited) }
         override suspend fun logout(access:String)=Unit
     }
@@ -59,7 +60,8 @@ class AccountScreensTest {
         override suspend fun trafficServices(token:String) = listOf(
             com.prettylisavpn.android.vpn.TrafficService("0bd811da-f080-4f25-887a-67bf534ac2c6", "youtube", "YouTube", "youtube", listOf("youtube.com", "*.youtube.com")),
             com.prettylisavpn.android.vpn.TrafficService("4e2b8d7c-289f-4c57-8f26-aeb680408cda", "instagram", "Instagram", "instagram", listOf("instagram.com", "*.instagram.com")))
-        override suspend fun devices(token:String): List<Device> { deviceReads++; return (if(plan=="Demo")emptyList() else listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active))) + listOf(Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)) }
+        override suspend fun devices(token:String): List<Device> { deviceReads++; return (if(plan=="Demo")emptyList() else listOf(Device(device,"Other phone",false,"2026-10-20T00:00:00Z",null,active))) + listOf(Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null,active=!limited,pending=limited)) +
+            (if(limitReview)(5..8).map { Device("30000000-0000-0000-0000-00000000000$it","Existing phone $it",false,"2026-10-21T00:00:00Z",null) } else emptyList()) }
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
         override suspend fun activateDevice(token:String):Device {
             if(active)throw AuthFailure("device_limit_reached")
@@ -143,7 +145,7 @@ class AccountScreensTest {
         check(header.contentEquals(byteArrayOf(0x89.toByte(),0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)))
     }
     @Test fun pendingDeviceCabinetDisablesFeaturesAndUnlocksAfterRevocation() {
-        limited=true
+        limitReview=true;limited=true
         compose.runOnUiThread { model.load(Area.HOME) }
         waitFor("device-limit-banner")
         compose.onNodeWithTag("limit-connect").assertIsNotEnabled()
