@@ -1,10 +1,15 @@
 import SwiftUI
 import PrettyLisaCore
+#if os(macOS)
+import AppKit
+#endif
 
 struct AccountMessagePopup: View {
     @ObservedObject var model: AppModel
     let message: AccountMessage
+    #if os(iOS)
     @Environment(\.openURL) private var openURL
+    #endif
     @Environment(\.colorScheme) private var colors
     @State private var linkError = false
     private let danger = Color(red: 200 / 255, green: 43 / 255, blue: 40 / 255)
@@ -19,11 +24,21 @@ struct AccountMessagePopup: View {
                             linkError = false
                             do {
                                 let url = try link.validatedURL()
+                                #if os(macOS)
+                                // AppKit returns the browser handoff result synchronously,
+                                // before changing application focus can suspend the sheet.
+                                let accepted = NSWorkspace.shared.open(url)
+                                linkError = !accepted
+                                if accepted { model.messageVisit.linkOpened(message) }
+                                #else
                                 let visitID = model.messageVisit.id
                                 openURL(url) { accepted in
-                                    linkError = !accepted
-                                    if accepted && model.messageVisit.id == visitID { model.messageVisit.linkOpened(message) }
+                                    Task { @MainActor in
+                                        linkError = !accepted
+                                        if accepted && model.messageVisit.id == visitID { model.messageVisit.linkOpened(message) }
+                                    }
                                 }
+                                #endif
                             } catch { linkError = true }
                         }.accessibilityIdentifier("message-link-\(index)")
                     }
