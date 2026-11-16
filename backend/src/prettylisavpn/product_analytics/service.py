@@ -27,6 +27,7 @@ from prettylisavpn.product_analytics.model import (
     ActivityRecord,
     AnalyticsCollectionRecord,
     AnalyticsSnapshotRecord,
+    AppActivityRecord,
     SessionSilenceRecord,
 )
 from prettylisavpn.product_events.domain import ProductEventName
@@ -108,6 +109,11 @@ class ProductAnalyticsService:
             # 180 days exceeds two calendar months plus the MAU lookback.
             await session.execute(
                 delete(ActivityRecord).where(ActivityRecord.day < day(now) - timedelta(days=180))
+            )
+            await session.execute(
+                delete(AppActivityRecord).where(
+                    AppActivityRecord.day < day(now) - timedelta(days=180)
+                )
             )
             await session.execute(
                 delete(AnalyticsSnapshotRecord).where(

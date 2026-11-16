@@ -66,6 +66,10 @@ from prettylisavpn.locations import router as locations_router
 from prettylisavpn.logging import configure_logging
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.product_analytics.activity import DatabaseActivitySink
+from prettylisavpn.product_analytics.app_versions import (
+    AppVersionAnalytics,
+    AppVersionContextMiddleware,
+)
 from prettylisavpn.product_analytics.router import router as analytics_router
 from prettylisavpn.product_analytics.service import ProductAnalyticsService
 from prettylisavpn.readiness import Dependency, Readiness
@@ -187,6 +191,7 @@ def create_app(
                     )
                 app.state.product_analytics = ProductAnalyticsService(cast(Postgres, pg))
                 activity_sink = DatabaseActivitySink(cast(Postgres, pg))
+                app.state.app_versions = AppVersionAnalytics(cast(Postgres, pg))
                 app.state.fleet_settings = config
                 app.state.fleet = fleet or FleetService(cast(Postgres, pg), config)
                 app.state.valkey = cache
@@ -230,11 +235,13 @@ def create_app(
                         cast(ProductEventSink, app.state.product_events),
                         config,
                         activity=activity_sink,
+                        app_activity=app.state.app_versions,
                     )
                 )
                 app.state.account_messages = AccountMessagesService(
                     cast(Postgres, pg),
                     cast(AuthenticatedSessionHandler, app.state.authenticated_sessions),
+                    app_activity=app.state.app_versions,
                 )
                 app.state.client_vpn = client_vpn or ClientVpnService(
                     cast(Postgres, pg),
@@ -323,6 +330,7 @@ def create_app(
         title=config.application_name, version=config.application_version, lifespan=lifespan
     )
     app.add_middleware(SafeExceptionMiddleware)
+    app.add_middleware(AppVersionContextMiddleware)
     app.state.cardlink_callbacks = cardlink_callbacks
     app.include_router(auth_router)
     app.include_router(demo_router)

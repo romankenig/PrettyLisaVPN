@@ -41,6 +41,23 @@ class AnalyticsCollectionRecord(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()")
     )
+    app_versions_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AppActivityRecord(Base):
+    """Latest reported app version per active device/day, without request details."""
+
+    __tablename__ = "product_app_activity_days"
+    __table_args__ = (Index("ix_app_activity_day", "day"),)
+    device_id: Mapped[UUID] = mapped_column(
+        ForeignKey("devices.id", ondelete="CASCADE"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    platform: Mapped[str] = mapped_column(String(32))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    app_version: Mapped[str | None] = mapped_column(String(100))
+    version_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SessionSilenceRecord(Base):

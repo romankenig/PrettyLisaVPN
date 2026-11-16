@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 
 from prettylisavpn.auth.router import bearer_token
 from prettylisavpn.fleet.router import authorize
+from prettylisavpn.product_analytics.app_versions import AppVersionAnalytics
 from prettylisavpn.product_analytics.service import ProductAnalyticsService
 
 router = APIRouter(prefix="/admin/monitoring", tags=["product-analytics"])
@@ -21,3 +22,11 @@ def reader(
 @router.get("/product-analytics")
 async def analytics(service: Annotated[ProductAnalyticsService, Depends(reader)]) -> dict[str, Any]:
     return await service.latest()
+
+
+@router.get("/app-versions")
+async def app_versions(
+    request: Request, token: Annotated[str | None, Depends(bearer_token)]
+) -> dict[str, Any]:
+    authorize(request, token, write=False)
+    return await cast(AppVersionAnalytics, request.app.state.app_versions).latest()

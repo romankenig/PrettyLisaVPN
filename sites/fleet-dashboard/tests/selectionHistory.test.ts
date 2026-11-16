@@ -52,7 +52,7 @@ test("colliding method colors stay distinct, reserve UNKNOWN gray and survive un
 });
 
 test("three stability pages and product analytics retain direct URLs and trailing slashes", () => {
-  assert.equal(reports.length, 4);
+  assert.equal(reports.length, 5);
   for (const report of reports) {
     assert.equal(reportPage(report.path), report.id);
     assert.equal(reportPage(report.path.replace(/\/$/, "") + "/"), report.id);
