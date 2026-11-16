@@ -16,17 +16,34 @@ from prettylisavpn.traffic.model import TrafficServiceRecord
 from prettylisavpn.users.model import UserRecord
 
 Kind = Literal["methods", "services"]
+Outcome = Literal["successful", "unsuccessful", "all"]
+OUTCOMES: tuple[Outcome, ...] = ("successful", "unsuccessful", "all")
+
+
+def connection_outcome(row: ClientLeaseRecord, now: datetime) -> Outcome | None:
+    """A transient node error is pending; once verified, later cleanup is not failure."""
+    if row.created_at > now:
+        return None
+    if row.verified_at is not None:
+        return "successful" if row.created_at <= row.verified_at <= now else None
+    terminal = row.status in ("REVOKING", "CLOSED") or any(
+        at is not None and row.created_at <= at <= now
+        for at in (row.disconnected_at, row.removed_at, row.expires_at)
+    )
+    return "unsuccessful" if terminal else None
 
 
 @dataclass(frozen=True)
 class SessionInterval:
-    verified_at: datetime
+    # Verification for successful sessions; creation for unsuccessful attempts.
+    started_at: datetime
     expires_at: datetime
     ended_at: datetime | None
     method: str
     traffic_mode: str | None
     service_ids: tuple[str, ...] | None
     custom_rules: bool | None
+    outcome: Outcome = "successful"
 
 
 def selection_history(
@@ -35,6 +52,7 @@ def selection_history(
     observed_from: datetime | None,
     kind: Kind,
     services: dict[str, tuple[str, str]],
+    outcome: Outcome = "successful",
 ) -> dict[str, Any]:
     today = day(now)
     dates = [today - timedelta(days=offset) for offset in range(7, -1, -1)]
@@ -46,16 +64,18 @@ def selection_history(
         active: list[SessionInterval] = []
         uncertain = 0
         for row in sessions:
-            if row.verified_at >= until or row.expires_at <= row.verified_at:
+            if outcome != "all" and row.outcome != outcome:
+                continue
+            if row.started_at >= until or row.expires_at <= row.started_at:
                 continue
             end = min(row.expires_at, row.ended_at or row.expires_at)
-            if end < row.verified_at:
+            if end < row.started_at:
                 continue
             # An instantaneous confirmed session still belongs to its verification day.
-            end = max(end, row.verified_at + timedelta(microseconds=1))
+            end = max(end, row.started_at + timedelta(microseconds=1))
             if end <= start:
                 continue
-            if row.ended_at is None and row.verified_at < start:
+            if row.ended_at is None and row.started_at < start:
                 # A terminal legacy row without an end cannot prove later open days.
                 if kind == "methods" or row.traffic_mode in (None, "include"):
                     uncertain += 1
@@ -121,9 +141,12 @@ async def load_selection_history(
         for user_id, email in await session.execute(select(UserRecord.id, UserRecord.email))
         if not is_test_account(email)
     ]
-    first = select(func.min(ClientLeaseRecord.verified_at)).where(
+    first = select(
+        func.min(ClientLeaseRecord.verified_at).filter(ClientLeaseRecord.verified_at <= now),
+        func.min(ClientLeaseRecord.created_at),
+    ).where(
         ClientLeaseRecord.user_id.in_(ids),
-        ClientLeaseRecord.verified_at <= now,
+        ClientLeaseRecord.created_at <= now,
     )
     if kind == "services":
         first = first.where(
@@ -131,7 +154,7 @@ async def load_selection_history(
             func.jsonb_typeof(ClientLeaseRecord.service_ids) == "array",
             func.jsonb_typeof(ClientLeaseRecord.custom_rules) == "array",
         )
-    observed_from = await session.scalar(first)
+    verified_from, attempts_from = (await session.execute(first)).one()
     catalog = (
         {
             str(row.id): (row.slug, row.name)
@@ -144,27 +167,61 @@ async def load_selection_history(
     for row in await session.scalars(
         select(ClientLeaseRecord).where(
             ClientLeaseRecord.user_id.in_(ids),
-            ClientLeaseRecord.verified_at <= now,
-            ClientLeaseRecord.expires_at >= start,
-            (ClientLeaseRecord.disconnected_at.is_(None))
-            | (ClientLeaseRecord.disconnected_at >= start),
-            (ClientLeaseRecord.removed_at.is_(None)) | (ClientLeaseRecord.removed_at >= start),
+            ClientLeaseRecord.created_at <= now,
+            (
+                (ClientLeaseRecord.verified_at <= now)
+                & (ClientLeaseRecord.expires_at >= start)
+                & (
+                    ClientLeaseRecord.disconnected_at.is_(None)
+                    | (ClientLeaseRecord.disconnected_at >= start)
+                )
+                & (ClientLeaseRecord.removed_at.is_(None) | (ClientLeaseRecord.removed_at >= start))
+            )
+            | (ClientLeaseRecord.verified_at.is_(None) & (ClientLeaseRecord.created_at >= start)),
         )
     ):
-        if row.verified_at is None:
+        outcome = connection_outcome(row, now)
+        if outcome is None:
             continue
-        ends = [at for at in (row.disconnected_at, row.removed_at) if at is not None]
-        if row.status == "READY":
-            ends.append(row.expires_at)
+        if outcome == "unsuccessful":
+            # Provisioning/READY without Internet confirmation is still pending.
+            # A recorded stop, removal or expiry settles it without success. A
+            # transient worker error alone must never turn a retry into failure.
+            started = row.created_at
+            expires = started + timedelta(microseconds=1)
+            ended: datetime | None = started
+        else:
+            assert row.verified_at is not None
+            started, expires = row.verified_at, row.expires_at
+            ends = [at for at in (row.disconnected_at, row.removed_at) if at is not None]
+            if row.status == "READY":
+                ends.append(row.expires_at)
+            ended = min(ends) if ends else None
         intervals.append(
             SessionInterval(
-                row.verified_at,
-                row.expires_at,
-                min(ends) if ends else None,
+                started,
+                expires,
+                ended,
                 row.method,
                 row.traffic_mode,
                 tuple(row.service_ids) if row.service_ids is not None else None,
                 bool(row.custom_rules) if row.custom_rules is not None else None,
+                outcome,
             )
         )
-    return selection_history(now, intervals, observed_from, kind, catalog)
+    outcomes = {
+        outcome: selection_history(
+            now,
+            intervals,
+            verified_from if outcome == "successful" else attempts_from,
+            kind,
+            catalog,
+            outcome,
+        )
+        for outcome in OUTCOMES
+    }
+    # Shared categories keep colors fixed when changing outcome. The legacy
+    # selection_history contract still contains only successful sessions.
+    for history in outcomes.values():
+        history["categories"] = outcomes["all"]["categories"]
+    return {**outcomes["successful"], "outcomes": outcomes}

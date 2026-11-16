@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Connection outcome distributions — backend 0.50.0 / dashboard 0.16.0
+
+- Add All / Successful / Unsuccessful filters to daily connection-method and
+  selected-service distributions, defaulting to Successful. Preserve daily
+  counts/shares, incomplete today and minute refresh.
+- Use durable completed attempts for unsuccessful outcomes; keep pending attempts
+  separate from failures and preserve historical service coverage. Existing
+  successful histories and client APIs remain compatible; no migration or engine
+  update. See [handoff](docs/connection-outcome-distributions.md).
+
 ### Device-limit cabinet — backend 0.49.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 
 - Allow OTP sign-in when all five device slots are occupied. New installations
