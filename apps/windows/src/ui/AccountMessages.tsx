@@ -65,6 +65,7 @@ function MessageVisit({
     let disposed = false;
     let loading = false;
     let retry = true;
+    let requiredKnown = false;
     let lastAttempt = -Infinity;
     let controller: AbortController | null = null;
     const load = async () => {
@@ -99,7 +100,10 @@ function MessageVisit({
           session.current()?.sessionId !== active.sessionId
         )
           return;
-        retry = next.some((item) => !item.dismissible && !messageExpired(item));
+        requiredKnown = next.some(
+          (item) => !item.dismissible && !messageExpired(item),
+        );
+        retry = requiredKnown;
         setQueue(
           next.filter(
             (item) =>
@@ -108,6 +112,7 @@ function MessageVisit({
         );
       } catch (cause) {
         if (
+          !requiredKnown &&
           cause instanceof MessagesError &&
           (cause.code === "UNSUPPORTED" ||
             cause.code === "AUTH_INVALID" ||
