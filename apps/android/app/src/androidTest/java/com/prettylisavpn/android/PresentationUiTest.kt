@@ -7,6 +7,8 @@ import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.os.SystemClock
+import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,8 +24,11 @@ import java.io.File
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalTestApi::class)
 class PresentationUiTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>(effectContext = object : MotionDurationScale {
+        override val scaleFactor = 1f
+    })
     private val api = object : AuthApi {
         var requests = 0
         override suspend fun requestOtp(email: String) { requests++ }
@@ -48,17 +53,62 @@ class PresentationUiTest {
         compose.runOnUiThread { compose.activity.setContent {
             PrettyLisaTheme { LocalizedApp { AdvancedSettings(selection) {} } }
         } }
+        val alphabetical = listOf("amneziawg", "amneziawg_relay", "hysteria", "hysteria2",
+            "hysteria2_relay", "hysteria_relay", "vless_reality", "vless_reality_relay",
+            "hysteria2_salamander", "hysteria2_salamander_relay", "softether", "softether_relay",
+            "shadowsocks2022", "shadowsocks2022_relay", "sstp", "sstp_relay",
+            "vless", "vless_relay", "vmess", "vmess_relay", "wireguard", "wireguard_relay")
+        fun assertAlphabetical() {
+            val positions = alphabetical.map { compose.onNodeWithTag("method-$it").getUnclippedBoundsInRoot() }
+            positions.zipWithNext().forEach { (first, next) ->
+                assertTrue("Methods must remain alphabetical, left to right then top to bottom",
+                    next.top > first.top || (next.top == first.top && next.left > first.left))
+            }
+            val active = selection.current() ?: connectionMethods.map { it.id }
+            alphabetical.forEach { id ->
+                val node = compose.onNodeWithTag("method-$id")
+                if (id in active) node.assertIsOn() else node.assertIsOff()
+            }
+        }
+        assertAlphabetical()
+        assertEquals(listOf("wireguard", "vmess"), selection.current())
+        compose.onNodeWithText("selected methods are shown in attempt order. the last successful method may be tried first.").assertDoesNotExist()
+        compose.onNodeWithText("changes apply to the next connection. select at least one method.").assertDoesNotExist()
+        compose.onNodeWithTag("method-amneziawg").performClick()
+        assertEquals(listOf("wireguard", "vmess", "amneziawg"), selection.current())
+        assertAlphabetical()
+        val before = requireNotNull(selection.current()).toSet()
+        compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("randomize-methods").assertContentDescriptionEquals("random method selection and order").performClick()
+        compose.mainClock.advanceTimeBy(64)
         val first = requireNotNull(selection.current())
         assertTrue(first.isNotEmpty())
         assertEquals(first, DeviceMethodSelection.fromStorage(storage).current())
+        assertAlphabetical()
+        val changed = ((before - first.toSet()) + (first.toSet() - before)).ifEmpty { first.toSet() }
+        val flashed = compose.onNodeWithTag("method-${alphabetical.first { it in changed }}").performScrollTo()
+        compose.mainClock.advanceTimeByFrame()
+        fun background() = flashed.captureToImage().toPixelMap().let { it[it.width / 2, it.height - 2] }
+        val highlighted = background()
+        screenshot("advanced-random-methods-feedback")
+        compose.mainClock.advanceTimeBy(800)
+        assertNotEquals("Changed methods must briefly highlight and then settle", highlighted, background())
+        compose.onNodeWithTag("randomize-methods").performScrollTo().performClick()
+        compose.mainClock.advanceTimeBy(64)
+        val intermediate = requireNotNull(selection.current())
+        assertNotEquals(first, intermediate)
+        // A second press during the animation must apply immediately and settle normally.
         compose.onNodeWithTag("randomize-methods").performClick()
+        compose.mainClock.advanceTimeBy(800)
+        compose.mainClock.autoAdvance = true
         val second = requireNotNull(selection.current())
-        assertNotEquals(first, second)
+        assertNotEquals(intermediate, second)
         assertEquals(second, DeviceMethodSelection.fromStorage(storage).current())
+        assertAlphabetical()
         screenshot("advanced-random-methods")
         compose.onNodeWithTag("all-methods").performClick()
         assertNull(DeviceMethodSelection.fromStorage(storage).current())
+        assertAlphabetical()
         storage.edit(commit = true) { putStringSet("enabled-methods-v1", setOf("sstp")); putString("ordered-methods-v2", "invalid") }
         assertEquals(listOf("sstp"), DeviceMethodSelection.fromStorage(storage).current())
         storage.edit(commit = true) { clear() }

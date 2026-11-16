@@ -259,7 +259,6 @@
     <string name="vpn_first_connection_hint">die erste Verbindung kann ein paar Minuten dauern.</string>
     <string name="advanced_settings">erweiterte Einstellungen</string>
     <string name="connection_methods">verbindungsmethoden</string>
-    <string name="connection_methods_hint">änderungen gelten für die nächste Verbindung. wählen Sie mindestens eine Methode.</string>
     <string name="all_methods">alle Methoden</string>
     <string name="traffic_services">dienste auswählen</string>
     <string name="traffic_catalog_unavailable">katalog nicht verfügbar. gespeicherte Dienste und Domainmuster bleiben verfügbar.</string>
@@ -367,7 +366,6 @@
     <string name="vpn_location_expected">erwarteter VPN-standort:</string>
     <string name="direct_location_expected">erwarteter standort ohne VPN:</string>
     <string name="randomize_methods">zufällige Methoden und Reihenfolge</string>
-    <string name="method_order_hint">ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.</string>
     <string name="device_limit">gerätelimit erreicht</string>
     <string name="device_limit_help">entferne ein Gerät, um die App auf diesem Gerät zu verwenden.</string>
     <string name="manage_devices">geräte verwalten</string>

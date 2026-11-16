@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Backend | 0.46.0 | 0.47.0 |
 | Windows | 0.29.1 | 0.30.0 |
-| Android | 0.28.1 (56) | 0.29.0 (57) |
+| Android | 0.28.2 (57) | 0.29.0 (58) |
 | iOS | 0.4.1 | 0.5.0 |
 | macOS | 0.3.1 | 0.4.0 |
 | Chrome Extension | 0.4.0 | 0.5.0 |
@@ -67,10 +67,15 @@ refuses while any pending row exists; revoke/resolve those rows explicitly or
 roll back only to a backend that understands them. The unused enum value is
 retained on schema downgrade, matching PostgreSQL enum migration conventions.
 
-Base product SHA after synchronizing PR #91: `159d9889` (develop).
+Base product SHA after synchronizing PR #92: `4583dbed` (develop).
 The analytics task already uses backend 0.46.0; this task uses 0.47.0.
-This task does not merge, tag, publish downloads or deploy production. Backend
-follow-up is a separately authorized 0.47.0 rollout, then client publication.
+On 2026-11-16 the owner authorized merging PR #90, deploying backend 0.47.0 with
+migration 0051 first, then publishing clients. Android retains PR #92's method
+list fixes; its new code 58 permits upgrading the already released code 57.
+Android, Windows and Chrome use the public website; iOS/macOS remain exclusively
+in the authenticated downloads section, as explicitly requested by the owner.
+Website 0.6.1 and Apple signing requirements are unchanged. This instruction is
+not evidence that deployment or publication has completed.
 The PR records the verified product HEAD, actual build SHA/run/attempt, native
 screenshots, artifacts and every completed Actions workflow. Local fixtures are
 synthetic and do not claim real VPN traffic or changes to a production account.
