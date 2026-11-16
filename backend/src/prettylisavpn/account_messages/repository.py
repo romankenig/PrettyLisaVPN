@@ -116,7 +116,7 @@ class MessageRepository:
                 platforms={
                     key.value: value.model_dump() for key, value in payload.platforms.items()
                 },
-                payload=payload.model_dump(mode="json"),
+                payload=payload.storage_payload(),
                 publisher=publisher,
             )
         )

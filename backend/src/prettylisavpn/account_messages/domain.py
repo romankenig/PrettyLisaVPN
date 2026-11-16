@@ -250,6 +250,16 @@ class Publication(StrictModel):
             dismissible=self.dismissible,
         )
 
+    def storage_payload(self) -> dict[str, Any]:
+        payload = self.model_dump(mode="json")
+        if self.schema_version == 1:
+            # Older deployments validate stored v1 JSON with extra="forbid".
+            # Preserve its exact field vocabulary for rolling deploy/rollback.
+            payload.pop("dismissible")
+            for content in payload["localizations"].values():
+                content.pop("links")
+        return payload
+
     def localized(self, locale: str) -> MessageResponse:
         key = next(
             (

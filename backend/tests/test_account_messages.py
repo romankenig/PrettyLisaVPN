@@ -147,6 +147,12 @@ def test_v2_mandatory_contract_and_v1_compatibility():
     assert len(publication.localized("ru").links) == 1
     assert Publication.model_validate(document()).dismissible is True
     assert MessageContext(platform="IOS", app_version="1.0.0", schema_version=2)
+    legacy = Publication.model_validate(document())
+    stored = legacy.storage_payload()
+    assert "dismissible" not in stored
+    assert "links" not in stored["localizations"]["ru"]
+    assert Publication.model_validate(stored) == legacy
+    assert publication.storage_payload()["dismissible"] is False
 
 
 @pytest.mark.parametrize("change", ["v1", "no_link", "internal_action", "not_boolean"])
