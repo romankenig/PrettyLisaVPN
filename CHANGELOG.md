@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Account message popups — backend 0.48.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0
+### Account message popups — backend 0.49.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0
 
 - Added shared JSON v2 with operator-authored HTTPS links and mandatory messages;
   personal audiences and version ranges remain owned by PostgreSQL.
@@ -17,6 +17,17 @@
   mandatory message rechecks for withdrawal/expiry; no server-side VPN ban is added.
 - See [contract and publication examples](docs/account-messages.md) and
   [validation handoff](docs/account-messages-v2-handoff.md).
+
+### App version usage — backend 0.48.0 / dashboard 0.15.0 / Chrome 0.4.1
+
+- Add a private app-version report by platform, with daily active users, counts or
+  shares, current partial day, minute refresh and a current-day device breakdown.
+- Persist the last reported version of each active device/day in migration 0051.
+  Existing message requests supply Windows/Android/Apple versions; Chrome sends
+  its manifest version on authenticated API requests. Unknown versions remain
+  UNKNOWN and pre-collection history remains absent.
+- Deduplicate accounts per platform/version/day; retain 180 days without request
+  destinations or browsing history. See [handoff](docs/app-version-analytics.md).
 
 ### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
 

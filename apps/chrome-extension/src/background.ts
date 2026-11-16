@@ -6,6 +6,7 @@ import { stateStorage } from "./storage";
 const storage = stateStorage(chrome.storage.local, chrome.storage.session);
 
 const controller = new Controller({
+  appVersion: chrome.runtime.getManifest().version,
   load: storage.load,
   save: async (value) => {
     await storage.save(value);

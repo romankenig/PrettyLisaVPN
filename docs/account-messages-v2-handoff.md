@@ -1,7 +1,7 @@
 # Account message popup v2 — handoff
 
-Source base: `61d03c42` (`origin/develop`). Independent task versions:
-backend 0.47.0 → 0.48.0; Windows 0.29.1 → 0.30.0; Android 0.28.2/code57 →
+Source base: `2ded0291` (`origin/develop`, including app-version analytics).
+Independent task versions: backend 0.48.0 → 0.49.0; Windows 0.29.1 → 0.30.0; Android 0.28.2/code57 →
 0.29.0/code58; iOS 0.4.1 → 0.5.0; macOS 0.3.1 → 0.4.0. Other components unchanged.
 No database migration: existing immutable JSONB publications hold the v2 fields.
 
@@ -17,6 +17,10 @@ The broad backend suite on this Windows host reached 793 passing tests but its
 Linux shell cases and 40 tmp_path fixtures failed on host tooling/permissions;
 the full Linux workflow is required before acceptance. Message-specific tests
 passed (43 unit, 15 PostgreSQL integration at the initial validation).
+After incorporating app-version analytics from develop, the combined local
+message/analytics suites passed 59 unit and 17 PostgreSQL integration tests;
+Ruff and mypy also passed. The Android acceptance runner now expects all 27
+account-screen tests, including the new mandatory-message scenario.
 Full native Windows/Android/Apple builds and screenshots use this task's Actions
 runs. The local Windows native test initially could not compile because the
 workspace lacks the generated managed-engine embedding; no historical executable

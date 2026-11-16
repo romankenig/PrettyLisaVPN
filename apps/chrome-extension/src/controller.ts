@@ -29,6 +29,7 @@ export interface PrivateState {
   ip: string | null;
 }
 export interface Ports {
+  appVersion?: string;
   load(): Promise<Partial<PrivateState> | undefined>;
   save(value: PrivateState): Promise<void>;
   installation(): Promise<string>;
@@ -103,6 +104,8 @@ export class Controller {
     if (authenticated) {
       if (!this.state.session) throw new Error("SIGN_IN_REQUIRED");
       headers.set("Authorization", "Bearer " + this.state.session.access_token);
+      if (this.io.appVersion && origin === API)
+        headers.set("X-PrettyLisaVPN-App-Version", this.io.appVersion);
       if (path.startsWith("/vpn/"))
         headers.set("X-PrettyLisaVPN-Proxy-IP", "1");
     }
