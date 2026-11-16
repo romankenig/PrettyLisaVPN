@@ -38,6 +38,8 @@ class DeviceService:
         installation_id: UUID,
         platform: DevicePlatform,
         device_name: str,
+        *,
+        allow_device_management: bool = False,
     ) -> tuple[Device, bool]:
         if not await self._repository.lock_user(user_id):
             raise DeviceUserNotFoundError
@@ -54,15 +56,20 @@ class DeviceService:
                 False,
             )
 
-        if await self._repository.count_active(user_id) >= MAX_ACTIVE_DEVICES:
+        at_limit = await self._repository.count_active(user_id) >= MAX_ACTIVE_DEVICES
+        if at_limit and not allow_device_management:
             raise DeviceLimitReachedError
+        status = DeviceStatus.PENDING if at_limit else DeviceStatus.ACTIVE
 
         if existing is not None:
             return (
                 await self._repository.update(
-                    self._with_active_metadata(existing, platform, normalized_name)
+                    replace(
+                        self._with_active_metadata(existing, platform, normalized_name),
+                        status=status,
+                    )
                 ),
-                True,
+                not at_limit,
             )
 
         now = datetime.now(UTC)
@@ -74,18 +81,18 @@ class DeviceService:
                     installation_id=installation_id,
                     platform=platform,
                     device_name=normalized_name,
-                    status=DeviceStatus.ACTIVE,
+                    status=status,
                     created_at=now,
                     updated_at=now,
                     revoked_at=None,
                 )
             ),
-            True,
+            not at_limit,
         )
 
     async def revoke(self, device_id: UUID) -> bool:
         device = await self._repository.get_for_update(device_id)
-        if device is None or not device.is_active():
+        if device is None or device.status is DeviceStatus.REVOKED:
             return False
         now = datetime.now(UTC)
         await self._repository.update(

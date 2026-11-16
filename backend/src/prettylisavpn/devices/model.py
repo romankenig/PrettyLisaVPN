@@ -28,7 +28,7 @@ class DeviceRecord(Base):
     __tablename__ = "devices"
     __table_args__ = (
         CheckConstraint(
-            "(status = 'ACTIVE' AND revoked_at IS NULL) OR "
+            "(status IN ('ACTIVE', 'PENDING') AND revoked_at IS NULL) OR "
             "(status = 'REVOKED' AND revoked_at IS NOT NULL)",
             name="ck_devices_status_revoked_at",
         ),

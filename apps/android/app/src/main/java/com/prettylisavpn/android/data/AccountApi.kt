@@ -45,6 +45,7 @@ interface AccountApi {
     suspend fun locations(token: String): LocationOptions = LocationOptions(countries(token))
     suspend fun supportSubmit(token: String, report: SupportSubmission, progress: (Long, Long) -> Unit): SupportReceipt = supportSubmit(token, report)
     suspend fun devices(token: String): List<Device>
+    suspend fun activateDevice(token: String): Device = throw AuthFailure("service_unavailable")
     suspend fun revoke(token: String, id: String): Device
     suspend fun messages(token: String): List<AccountMessage>
     suspend fun acknowledge(token: String, id: String, revision: Int)
@@ -96,7 +97,11 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     private fun <T> parse(block: () -> T): T = try { block() } catch (_: Exception) { throw AuthFailure("invalid_response") }
     private suspend fun json(path: String, token: String, body: Any? = null, method: String = if (body == null) "GET" else "POST", query: Map<String,String> = emptyMap()) =
         http.request(path, method, body?.let { gson.toJson(it).toRequestBody("application/json".toMediaType()) }, token, query)
-    private fun device(v: JsonObject) = Device(uuid(v.text("id")), v.text("device_name"), v.flag("is_current"), date(v.text("created_at"))!!, date(v.optional("last_login_at")), v.text("status").also { require(it in setOf("ACTIVE", "REVOKED")) } == "ACTIVE")
+    private fun device(v: JsonObject) = Device(uuid(v.text("id")), v.text("device_name"), v.flag("is_current"), date(v.text("created_at"))!!, date(v.optional("last_login_at")), v.text("status").also { require(it in setOf("ACTIVE", "PENDING", "REVOKED")) } == "ACTIVE", v.text("status") == "PENDING")
+    override suspend fun activateDevice(token: String): Device {
+        val raw = json("devices/activate", token, emptyMap<String, String>())
+        return parse { device(raw.asJsonObject).also { require(it.active && it.current) } }
+    }
     override suspend fun countries(token: String): List<Country> = locations(token).countries
     override suspend fun locations(token: String): LocationOptions {
         val raw = json("vpn/countries", token)

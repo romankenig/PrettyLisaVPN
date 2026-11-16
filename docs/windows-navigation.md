@@ -1,4 +1,4 @@
-# Account popup v2 — Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0
+# Account popup v2 — Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
 
 After OTP login or saved-session restoration, authenticated account → GET /messages
 schema v2 → no popup for an empty response; optional or mandatory native modal otherwise.
@@ -9,8 +9,28 @@ open and no ACK is sent. A known mandatory message is rechecked in foreground;
 withdrawal, expiry or updated app version leaving the target range removes it.
 API failures do not invalidate login; a known required popup stays on transport failure.
 Apple now presents automatically rather than requiring entry into its message list.
+Pending-device cabinet → free/activate a slot → ordinary account → message popup;
+the restricted cabinet continues to suppress messages and other private features.
 DEMO remains outside registered-account messages. This is implemented UI plus API;
 deployment/distribution evidence is separate, see [handoff](account-messages-v2-handoff.md).
+
+# Device-limit cabinet — all implemented clients
+
+OTP with five occupied slots → signed-in restricted cabinet, not the login error
+screen. A red notice and account/settings links lead to Devices. All other
+product functions are disabled/dimmed; background VPN, billing, messages and
+support requests are suppressed. Devices → revoke another installation →
+activate current installation → refresh profile → ordinary account screens,
+without another OTP. Refresh Devices also handles a slot freed elsewhere.
+Logout → sign-in; revoke current pending device → clear credentials → sign-in;
+explicit local cleanup → sign-in even offline. Home/settings navigation may
+remain usable to reach Devices, while private destinations are guarded.
+
+Implemented for Windows 0.30.0, Android 0.29.0, iOS 0.5.0, macOS 0.4.0 and Chrome
+0.5.0, with backend 0.49.0 integration. This is implemented API integration,
+not evidence of production deployment. Linux/Android TV have no shipping account
+UI yet. The independent website payment portal is unchanged. See
+[contract, tests and rollout](device-limit-access.md).
 
 # Dashboard 0.15.0 — application versions
 

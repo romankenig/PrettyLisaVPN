@@ -66,6 +66,7 @@ function mockApi(): ApiClient {
     me: vi.fn(),
     logout: vi.fn(),
     listDevices: vi.fn(),
+    activateDevice: vi.fn(),
     revokeDevice: vi.fn(),
     listVpnCountries: vi.fn().mockResolvedValue({
       autopilot: { quality: 90, available: true },
@@ -304,6 +305,7 @@ describe("OTP login integration", () => {
       ),
     );
     expect(request).toEqual({
+      allow_device_management: true,
       email,
       code: "012345",
       installation_id: installationId,
@@ -316,6 +318,7 @@ describe("OTP login integration", () => {
       sessionId: "123e4567-e89b-42d3-a456-426614174001",
       userId: "123e4567-e89b-42d3-a456-426614174002",
       deviceId: "123e4567-e89b-42d3-a456-426614174003",
+      deviceLimitReached: false,
       plan: "FREE",
       profile: null,
     });

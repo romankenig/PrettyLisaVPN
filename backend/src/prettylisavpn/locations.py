@@ -16,6 +16,7 @@ from prettylisavpn.auth.session_service import (
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
 from prettylisavpn.config import Settings
+from prettylisavpn.devices.domain import DeviceAccessLimitedError
 from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.subscriptions.entitlements import entitlements_for_plan
@@ -50,6 +51,8 @@ async def countries(
     try:
         if cast(Settings, request.app.state.fleet_settings).fleet_enabled:
             account = await auth.me(token)
+            if account.device_limit_reached:
+                raise DeviceAccessLimitedError
             fleet = cast(FleetService, request.app.state.fleet)
             free_only = entitlements_for_plan(account.plan).free_nodes_only
             snapshot = (

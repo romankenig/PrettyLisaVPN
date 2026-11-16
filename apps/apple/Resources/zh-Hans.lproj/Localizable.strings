@@ -92,6 +92,9 @@
 "detail_7" = "价格或订阅已变更，请核对最新详情后再确认。";
 "detail_8" = "此货币不可用。";
 "detail_9" = "此功能尚未接入。";
+"device_limit" = "已达到设备数量上限";
+"device_limit_help" = "请移除一个设备，即可在此设备上使用应用。";
+"device_pending" = "等待可用名额";
 "direct_location" = "非 VPN 位置：";
 "error_0" = "无网络连接。请检查网络后重试。";
 "error_1" = "验证码无效或已过期，请获取新验证码。";
@@ -129,6 +132,7 @@
 "faq_split_q" = "如何选择使用 VPN 的网站？";
 "faq_support_a" = "打开应用内的[支持表单]，或发送邮件至 help@prettylisavpn.com。请说明问题及发生时间。";
 "faq_support_q" = "如何联系支持？";
+"forget_local" = "移除此设备上的登录数据";
 "free_time_remaining" = "今日剩余时间";
 "free_time_resets" = "重置时间：%1$@";
 "home" = "首页";
@@ -143,6 +147,7 @@
 "legal_refunds" = "退款与申诉";
 "legal_terms" = "用户协议";
 "location_quality" = "可用性 %1$@ / 100";
+"manage_devices" = "管理设备";
 "notification_disconnect" = "断开 VPN";
 "notification_open" = "打开应用";
 "notification_vpn_connected" = "VPN 已开启";

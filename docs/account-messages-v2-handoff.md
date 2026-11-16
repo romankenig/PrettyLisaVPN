@@ -1,8 +1,9 @@
 # Account message popup v2 — handoff
 
-Source base: `2ded0291` (`origin/develop`, including app-version analytics).
-Independent task versions: backend 0.48.0 → 0.49.0; Windows 0.29.1 → 0.30.0; Android 0.28.2/code57 →
-0.29.0/code58; iOS 0.4.1 → 0.5.0; macOS 0.3.1 → 0.4.0. Other components unchanged.
+Source base: `4a82a672` (`origin/develop`, including app-version analytics and
+pending-device access). Independent task versions: backend 0.49.0 → 0.50.0;
+Windows 0.30.0 → 0.31.0; Android 0.29.0/code58 → 0.30.0/code59;
+iOS 0.5.0 → 0.6.0; macOS 0.4.0 → 0.5.0. Other components unchanged.
 No database migration: existing immutable JSONB publications hold the v2 fields.
 
 Implementation and operator examples: [account-messages.md](account-messages.md).
@@ -19,10 +20,17 @@ the full Linux workflow is required before acceptance. Message-specific tests
 passed (43 unit, 15 PostgreSQL integration at the initial validation).
 After incorporating app-version analytics from develop, the combined local
 message/analytics suites passed 59 unit and 17 PostgreSQL integration tests;
-Ruff and mypy also passed. The Android acceptance runner now expects all 27
+Ruff and mypy also passed. The Android acceptance runner now expects all 28
 account-screen tests, including the new mandatory-message scenario.
 Native screenshot review also applies the shared action/error palette directly
 inside the Apple sheet: presented sheets do not inherit the root view's tint.
+The device-limit cabinet from develop retains its private-API boundary. Message
+loading/presentation resumes after activation; Apple reacts to that profile change
+without waiting for another OTP. Both native cabinet and popup tests are retained.
+After merging device-limit access: 73 backend unit tests and 28 PostgreSQL
+integration tests passed; Alembic upgrade/check, Ruff and mypy passed. Windows
+passed all 401 Vitest tests, ESLint, TypeScript and Vite build. Apple structural
+checks and five packaging unit tests passed; native evidence comes from CI.
 Full native Windows/Android/Apple builds and screenshots use this task's Actions
 runs. The local Windows native test initially could not compile because the
 workspace lacks the generated managed-engine embedding; no historical executable

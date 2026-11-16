@@ -52,6 +52,10 @@ function App() {
     [requestId, setRequestId] = useState(() => crypto.randomUUID()),
     [sent, setSent] = useState(false);
   const t = (key: Label) => translate(key, language);
+  const limited = state?.deviceLimitReached === true;
+  useEffect(() => {
+    document.querySelector("main")?.scrollTo(0, 0);
+  }, [page, state?.signedIn]);
   const refresh = useCallback(async () => {
     setState(await send<Snapshot>("snapshot"));
   }, []);
@@ -81,6 +85,7 @@ function App() {
     }
   };
   const navigate = (next: Page) => {
+    if (limited && !["home", "settings", "devices"].includes(next)) return;
     if (
       state?.account?.plan === "DEMO" &&
       (next === "subscription" || next === "support")
@@ -130,7 +135,9 @@ function App() {
           {(["home", "settings", "about"] as const).map((tab) => (
             <button
               key={tab}
-              disabled={!state?.signedIn || busy}
+              disabled={
+                !state?.signedIn || busy || (limited && tab === "about")
+              }
               title={t(tab)}
               aria-label={t(tab)}
               aria-current={mainTab === tab ? "page" : undefined}
@@ -177,6 +184,21 @@ function App() {
           <p className="notice" role="status">
             {t("cleanup")}
           </p>
+        )}
+        {limited && (
+          <section className="error device-limit" role="alert">
+            <strong>{t("deviceLimit")}</strong>
+            <p>{t("deviceLimitHelp")}</p>
+            {page !== "devices" && (
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => navigate("devices")}
+              >
+                {t("manageDevices")}
+              </button>
+            )}
+          </section>
         )}
         {!state ? (
           <p className="white" role="status">
@@ -300,6 +322,7 @@ function App() {
                       {state.account?.plan === "FREE" && (
                         <button
                           className="text"
+                          disabled={limited}
                           onClick={() => navigate("subscription")}
                         >
                           {t("upgrade")}
@@ -312,6 +335,15 @@ function App() {
                         {state.account?.active_device_count ?? "…"} /{" "}
                         {demo ? 1 : 5}
                       </strong>
+                      {limited && (
+                        <button
+                          className="text"
+                          disabled={busy}
+                          onClick={() => navigate("devices")}
+                        >
+                          {t("manageDevices")}
+                        </button>
+                      )}
                     </div>
                   </div>
                   {typeof seconds === "number" && (
@@ -324,13 +356,15 @@ function App() {
                     </div>
                   )}
                 </section>
-                <section className="card">
+                <section
+                  className={`card ${limited ? "feature-disabled" : ""}`}
+                >
                   <h2>{t("destination")}</h2>
                   <CountryPicker
                     value={demo ? "AUTO" : country}
                     countries={state.countries}
                     language={language}
-                    disabled={!!active || busy || demo}
+                    disabled={!!active || busy || demo || limited}
                     onChange={setCountry}
                   />
                   {demo && (
@@ -341,6 +375,7 @@ function App() {
                   <button
                     className="primary"
                     disabled={
+                      limited ||
                       (!active && demo && seconds === 0) ||
                       busy ||
                       state.phase === "DISCONNECTING" ||
@@ -386,6 +421,7 @@ function App() {
                   <button
                     className="setting card"
                     key={next}
+                    disabled={busy || (limited && next !== "devices")}
                     onClick={() => navigate(next)}
                   >
                     <NavigationIcon
@@ -435,6 +471,13 @@ function App() {
             {page === "devices" && (
               <>
                 <h1 className="white">{t("devices")}</h1>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => navigate("devices")}
+                >
+                  {t("refresh")}
+                </button>
                 {devices.map((device) => (
                   <section className="card" key={device.id}>
                     <h2>{device.device_name}</h2>
@@ -442,7 +485,9 @@ function App() {
                       <span className="tag">{t("current")}</span>
                     )}
                     <p>
-                      {device.status === "ACTIVE" || device.status === "REVOKED"
+                      {device.status === "ACTIVE" ||
+                      device.status === "REVOKED" ||
+                      device.status === "PENDING"
                         ? t(device.status)
                         : device.status}
                     </p>
@@ -454,7 +499,7 @@ function App() {
                     <strong>{date(device.last_login_at)}</strong>
                     <button
                       className="primary"
-                      disabled={busy || device.status !== "ACTIVE"}
+                      disabled={busy || device.status === "REVOKED"}
                       onClick={() => {
                         if (confirm(t("revokeConfirm")))
                           void action(async () => {
@@ -661,6 +706,27 @@ function App() {
               </>
             )}
           </>
+        )}
+        {limited && (
+          <section className="card">
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void action(() => send("logout"))}
+            >
+              {t("logout")}
+            </button>
+            <button
+              className="text"
+              disabled={busy}
+              onClick={() => {
+                if (confirm(t("forgetLocal")))
+                  void action(() => send("forgetLocalSession"));
+              }}
+            >
+              {t("forgetLocal")}
+            </button>
+          </section>
         )}
       </main>
     </div>

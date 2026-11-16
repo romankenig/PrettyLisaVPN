@@ -15,11 +15,12 @@ class AccountAuth : AuthApi {
     var plan = "Premium"
     var count = 2
     var revoked = false
+    var limited = false
     override suspend fun requestOtp(email: String) = Unit
     override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens()
     private fun tokens() = Tokens("synthetic", 900, Credentials(DEVICE,"synthetic-refresh","2030-01-01T00:00:00Z"))
     override suspend fun refresh(credentials: Credentials) = tokens()
-    override suspend fun me(access: String): Profile { if (revoked) throw AuthFailure("device_revoked"); return Profile(if(plan=="Demo")"" else "account@example.com",plan,count,id) }
+    override suspend fun me(access: String): Profile { if (revoked) throw AuthFailure("device_revoked"); return Profile(if(plan=="Demo")"" else "account@example.com",plan,count,id,deviceLimitReached=limited) }
     override suspend fun logout(access: String) = Unit
 }
 class AccountPort(private val auth: AccountAuth) : AccountApi {
@@ -46,6 +47,38 @@ class AccountPort(private val auth: AccountAuth) : AccountApi {
     override suspend fun supportSubmit(token: String,report: SupportSubmission): SupportReceipt { submissions+=report;if(supportError) throw AuthFailure("network_uncertain");return SupportReceipt(report.requestId,"ACCEPTED").also { receipt=it } }
 }
 class AccountIntegrationTest {
+    @Test fun pendingCabinetOnlyAllowsDevicesUntilASlotIsFreed()=runBlocking {
+        auth.limited=true;auth.count=5
+        var room=false
+        var activations=0
+        val pendingPort=object:AccountApi by port {
+            override suspend fun activateDevice(token:String):Device {
+                activations++
+                if(!room)throw AuthFailure("device_limit_reached")
+                auth.limited=false
+                return port.device.copy(current=true)
+            }
+            override suspend fun revoke(token:String,id:String):Device { room=true;return port.device.copy(active=false) }
+            override suspend fun messages(token:String):List<AccountMessage> = error("Restricted messages request")
+            override suspend fun overview(token:String):BillingOverview = error("Restricted billing request")
+            override suspend fun locations(token:String):LocationOptions = error("Restricted countries request")
+        }
+        val s=LiveSessionSource(SessionCoordinator(auth,vault,"Test"),pendingPort,journal)
+        assertTrue(s.read(Area.SESSION).deviceLimitReached)
+        for(area in listOf(Area.BILLING,Area.MESSAGES,Area.COUNTRIES))assertTrue(s.read(area).deviceLimitReached)
+        assertTrue(s.read(Area.DEVICES).deviceLimitReached)
+        try { s.execute(Command.Acknowledge(MESSAGE,3));fail("Restricted command") }
+        catch(e:AuthFailure) { assertEquals("device_limit_reached",e.code) }
+        assertFalse(s.execute(Command.Revoke(DEVICE)).deviceLimitReached)
+        assertEquals(2,activations)
+        assertNotNull(vault.value)
+    }
+    @Test fun pendingCabinetCanForgetCredentialsWithoutActivation()=runBlocking {
+        auth.limited=true;auth.count=5
+        val s=source();s.read(Area.SESSION)
+        assertFalse(s.execute(Command.ForgetLocalSession).signedIn)
+        assertNull(vault.value)
+    }
     private val auth=AccountAuth()
     private val port=AccountPort(auth)
     private val vault=MemoryVault().apply { value=Credentials(DEVICE,"fake","2030-01-01T00:00:00Z") }

@@ -367,4 +367,9 @@
     <string name="direct_location_expected">预计非 VPN 位置：</string>
     <string name="randomize_methods">随机选择连接方式和顺序</string>
     <string name="message_link_error">无法打开链接。请重试。</string>
+    <string name="device_limit">已达到设备数量上限</string>
+    <string name="device_limit_help">请移除一个设备，即可在此设备上使用应用。</string>
+    <string name="manage_devices">管理设备</string>
+    <string name="forget_local">移除此设备上的登录数据</string>
+    <string name="device_pending">等待可用名额</string>
 </resources>

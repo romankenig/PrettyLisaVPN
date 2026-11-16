@@ -4,6 +4,7 @@ import { ApiError, type DeviceResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import { ActionConfirmation } from "./ActionConfirmation";
 import { useNavigate } from "react-router-dom";
+import { deviceLimited } from "../auth/session";
 
 type ListState =
   | { readonly phase: "loading" }
@@ -26,18 +27,32 @@ export function Devices() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const revokeInFlight = useRef(false);
+  const accessToken = activeSession?.accessToken;
+  const sessionId = activeSession?.sessionId;
 
   useEffect(() => {
-    if (activeSession === null) return;
+    if (!accessToken) return;
     const controller = new AbortController();
     setListState({ phase: "loading" });
-    void api
-      .listDevices(activeSession.accessToken, controller.signal)
+    void (async () => {
+      if (deviceLimited(session.current())) {
+        try {
+          await api.activateDevice(accessToken, controller.signal);
+        } catch (error) {
+          if (!(error instanceof ApiError && error.code === "DEVICE_LIMIT"))
+            throw error;
+        }
+        const profile = await api.me(accessToken, controller.signal);
+        if (!controller.signal.aborted)
+          session.updateProfile(accessToken, profile);
+      }
+      return api.listDevices(accessToken, controller.signal);
+    })()
       .then((devices) => {
         if (!controller.signal.aborted)
           setListState({
             phase: "ready",
-            devices: devices.filter((device) => device.status === "ACTIVE"),
+            devices: devices.filter((device) => device.status !== "REVOKED"),
           });
       })
       .catch((error: unknown) => {
@@ -49,15 +64,14 @@ export function Devices() {
         setListState({ phase: "error", message: listError(error) });
       });
     return () => controller.abort();
-  }, [activeSession, api, listAttempt, session]);
+  }, [accessToken, sessionId, api, listAttempt, session]);
 
-  if (activeSession === null) return null;
-  const accessToken = activeSession.accessToken;
+  if (activeSession === null || !accessToken) return null;
 
   async function revokeDevice() {
     if (
       confirmation === null ||
-      confirmation.status !== "ACTIVE" ||
+      confirmation.status === "REVOKED" ||
       revokeInFlight.current
     ) {
       return;
@@ -70,7 +84,8 @@ export function Devices() {
     try {
       // Stop this computer's tunnel before invalidating the credentials it uses
       // for cleanup. Other devices keep their own connection/session lifecycle.
-      if (confirmation.is_current) await vpnConnection.disconnect(accessToken);
+      if (confirmation.is_current && !deviceLimited(activeSession))
+        await vpnConnection.disconnect(accessToken!);
       localCleanupConfirmed = true;
       if (session.current()?.sessionId !== activeSession?.sessionId) return;
       const token = await session.bearer(api);
@@ -120,6 +135,14 @@ export function Devices() {
         )}
       </p>
 
+      {deviceLimited(activeSession) && (
+        <button
+          disabled={revokingId !== null}
+          onClick={() => setListAttempt((value) => value + 1)}
+        >
+          {t("обновить")}
+        </button>
+      )}
       {listState.phase === "loading" ? (
         <p role="status">{t("загружаем устройства…")}</p>
       ) : null}
@@ -166,9 +189,13 @@ export function Devices() {
                   <span
                     className={`device-status device-status--${device.status.toLowerCase()}`}
                   >
-                    {t(device.status === "ACTIVE" ? "активно" : "отозвано")}
+                    {t(
+                      device.status === "ACTIVE"
+                        ? "активно"
+                        : "ожидает свободного места",
+                    )}
                   </span>
-                  {device.status === "ACTIVE" ? (
+                  {device.status !== "REVOKED" ? (
                     <button
                       className="revoke-button"
                       type="button"

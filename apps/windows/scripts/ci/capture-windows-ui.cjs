@@ -1484,6 +1484,54 @@ async function main() {
   )
     throw Error("Current device was not revoked through the API");
   await screenshot("21-current-device-signed-out");
+  await fetch("http://127.0.0.1:8000/ui-review/device-limit", {
+    method: "POST",
+    body: JSON.stringify({ enabled: true }),
+  });
+  await page.getByLabel("Email", { exact: true }).fill(accountEmail);
+  await page.getByRole("button", { name: "продолжить", exact: true }).click();
+  await page.getByLabel("Шестизначный код", { exact: true }).fill("123456");
+  await page.getByRole("button", { name: "подтвердить", exact: true }).click();
+  await page.getByText("достигнут лимит устройств", { exact: true }).waitFor();
+  if (await page.locator(".device-limit-features button").first().isEnabled())
+    throw Error("Pending VPN control enabled");
+  await screenshot("22-device-limit-cabinet");
+  await page
+    .getByRole("link", { name: "управлять устройствами", exact: true })
+    .click();
+  await page.getByText("ожидает свободного места", { exact: true }).waitFor();
+  await screenshot("23-device-limit-devices");
+  const restricted = await (
+    await fetch("http://127.0.0.1:8000/ui-review/device-limit")
+  ).json();
+  if (restricted.private_attempts.length)
+    throw Error("Pending cabinet requested private features");
+  await page
+    .locator(".device-card")
+    .filter({
+      has: page.getByRole("heading", { name: "Limit device 1", exact: true }),
+    })
+    .getByRole("button")
+    .click();
+  await page.getByRole("button", { name: "да, отозвать", exact: true }).click();
+  await page.locator(".device-limit-banner").waitFor({ state: "hidden" });
+  await screenshot("24-device-limit-unlocked");
+  if (
+    !(
+      await (await fetch("http://127.0.0.1:8000/ui-review/device-limit")).json()
+    ).activated
+  )
+    throw Error("Pending device was not activated");
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "настройки", exact: true })
+    .click();
+  await page.getByRole("button", { name: /выйти/ }).click();
+  await page.getByRole("heading", { name: "вход по email" }).waitFor();
+  await fetch("http://127.0.0.1:8000/ui-review/device-limit", {
+    method: "POST",
+    body: JSON.stringify({ enabled: false }),
+  });
   nativeWindow("VerifyFixed", "10-login-fixed");
   await page.getByRole("button", { name: "Свернуть", exact: true }).click();
   await delay(300);

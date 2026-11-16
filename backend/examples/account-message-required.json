@@ -8,10 +8,10 @@
   "priority": 100,
   "user_ids": ["11111111-1111-4111-8111-111111111111"],
   "platforms": {
-    "WINDOWS": {"min_version": "0.30.0", "max_version_exclusive": "0.30.1"},
-    "ANDROID": {"min_version": "0.29.0", "max_version_exclusive": "0.29.1"},
-    "IOS": {"min_version": "0.5.0", "max_version_exclusive": "0.5.1"},
-    "MACOS": {"min_version": "0.4.0", "max_version_exclusive": "0.4.1"}
+    "WINDOWS": {"min_version": "0.31.0", "max_version_exclusive": "0.31.1"},
+    "ANDROID": {"min_version": "0.30.0", "max_version_exclusive": "0.30.1"},
+    "IOS": {"min_version": "0.6.0", "max_version_exclusive": "0.6.1"},
+    "MACOS": {"min_version": "0.5.0", "max_version_exclusive": "0.5.1"}
   },
   "default_locale": "ru",
   "localizations": {

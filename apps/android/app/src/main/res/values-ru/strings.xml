@@ -367,4 +367,9 @@
     <string name="direct_location_expected">ожидаемая локация без VPN:</string>
     <string name="randomize_methods">случайный набор и порядок способов</string>
     <string name="message_link_error">не удалось открыть ссылку. попробуйте ещё раз</string>
+    <string name="device_limit">достигнут лимит устройств</string>
+    <string name="device_limit_help">удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.</string>
+    <string name="manage_devices">управлять устройствами</string>
+    <string name="forget_local">удалить данные входа с этого устройства</string>
+    <string name="device_pending">ожидает свободного места</string>
 </resources>

@@ -20,7 +20,7 @@ class LiveSessionSource(
     override val vpn: com.prettylisavpn.android.vpn.AndroidVpnHost? = null,
     private val diagnostics: com.prettylisavpn.android.diagnostics.AppDiagnostics? = null,
 ) : ScreenSource {
-    override suspend fun billingPortal(): String = mutex.withLock { sessions.request { api().billingPortal(it) } }
+    override suspend fun billingPortal(): String = mutex.withLock { requireActiveDevice(); sessions.request { api().billingPortal(it) } }
     private val transfer = kotlinx.coroutines.flow.MutableStateFlow(SupportTransfer())
     override val supportTransfer: kotlinx.coroutines.flow.Flow<SupportTransfer> = transfer
     override val recoveryRequired get() = sessions.needsRecovery
@@ -35,7 +35,7 @@ class LiveSessionSource(
     override val initial: Snapshot get() {
         val p = sessions.profile ?: return Snapshot().also { vpn?.serviceLost(); snapshot = it; owner = "" }
         if (owner != p.id && p.id.isNotEmpty()) { snapshot = Snapshot(); owner = p.id }
-        return snapshot.copy(operationsReady = journalReady, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices, freeTime = p.freeTime)
+        return snapshot.copy(operationsReady = journalReady && !p.deviceLimitReached, signedIn = true, email = p.email, plan = p.plan, activeDeviceCount = p.activeDevices, freeTime = p.freeTime, deviceLimitReached = p.deviceLimitReached)
     }
     private fun api() = accounts ?: throw SourceFailure("This feature is not connected yet.")
     private suspend fun disk(block: () -> Unit) {
@@ -60,12 +60,13 @@ class LiveSessionSource(
             billingRetryAvailable = journal.billing != null && journal.operation == null, billingOperation = journal.operation, paymentPending = journal.billing != null || journal.operation?.status == "PENDING")
     }
     override suspend fun read(area: Area): Snapshot = mutex.withLock {
+        if (sessions.profile?.deviceLimitReached == true && area !in setOf(Area.SESSION, Area.HOME, Area.DEVICES)) return@withLock initial
         if (sessions.profile?.isDemo == true && area in setOf(Area.TRAFFIC, Area.MESSAGES)) return@withLock initial
-        if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
+        if (area == Area.SESSION) { sessions.restore(); snapshot = initial; restoreJournal(); if (!initial.deviceLimitReached) vpn?.controller?.recover() }
         else when (area) {
             Area.HOME -> { sessions.refreshProfile(); snapshot = initial }
             Area.TRAFFIC -> snapshot = initial.copy(trafficServices = sessions.request { api().trafficServices(it) })
-            Area.DEVICES -> snapshot = initial.copy(devices = sessions.request { api().devices(it) })
+            Area.DEVICES -> { activateDevice(); snapshot = initial.copy(devices = sessions.request { api().devices(it) }) }
             Area.COUNTRIES -> {
                 val options = sessions.request { api().locations(it) }
                 snapshot = initial.copy(countries = options.countries, autopilotQuality = options.autopilotQuality)
@@ -100,6 +101,7 @@ class LiveSessionSource(
         }
     }
     override suspend fun execute(command: Command): Snapshot = mutex.withLock {
+        if (initial.deviceLimitReached && command !is Command.Revoke && command != Command.Logout && command != Command.ForgetLocalSession) throw AuthFailure("device_limit_reached")
         if (command is Command.Payment || command is Command.Support || command == Command.NewSupport || command == Command.SupportStatus || command == Command.ConfirmPayment) {
             if (!journalReady) restoreJournal()
             if (!journalReady) throw SourceFailure("Saved operations are unavailable. Restore secure storage before starting a new request.")
@@ -107,9 +109,9 @@ class LiveSessionSource(
         when (command) {
             Command.TryDemo -> { sessions.demo(); requestedEmail = null; snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
             is Command.RequestOtp -> { sessions.requestOtp(command.email); requestedEmail = command.email }
-            is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal(); vpn?.controller?.recover() }
+            is Command.VerifyOtp -> { sessions.login(requestedEmail ?: throw AuthFailure("reauth_required"), command.code); snapshot = initial; restoreJournal(); if (!initial.deviceLimitReached) vpn?.controller?.recover() }
             Command.Logout, Command.ForgetLocalSession -> {
-                if (command == Command.Logout) vpn?.controller?.beforeLogout() else vpn?.controller?.beforeForget()
+                if (command == Command.Logout && !initial.deviceLimitReached) vpn?.controller?.beforeLogout() else vpn?.controller?.beforeForget()
                 if (command == Command.Logout) sessions.logout() else sessions.forgetLocalSession()
                 requestedEmail = null; snapshot = Snapshot(); owner = ""; journal = AccountJournal("")
                 disk { journalStore.clear() }
@@ -125,7 +127,7 @@ class LiveSessionSource(
                     diagnostics?.account(null)
                 } else {
                     snapshot = initial.copy(devices = snapshot.devices.map { if (it.id == result.id) result else it })
-                    refreshAfterAction { sessions.refreshProfile(); snapshot = initial.copy(devices = sessions.request { api().devices(it) }) }
+                    refreshAfterAction { activateDevice(); sessions.refreshProfile(); snapshot = initial.copy(devices = sessions.request { api().devices(it) }) }
                 }
             }
             is Command.Acknowledge -> {
@@ -157,6 +159,15 @@ class LiveSessionSource(
             else -> throw SourceFailure("This feature is not connected yet.")
         }
         initial
+    }
+    private fun requireActiveDevice() {
+        if (initial.deviceLimitReached) throw AuthFailure("device_limit_reached")
+    }
+    private suspend fun activateDevice() {
+        if (!initial.deviceLimitReached) return
+        try { sessions.request { api().activateDevice(it) } }
+        catch (error: AuthFailure) { if (error.code != "device_limit_reached") throw error }
+        sessions.refreshProfile()
     }
     private suspend fun recoverSupport(allowSubmit: Boolean) {
         val pending = journal.support

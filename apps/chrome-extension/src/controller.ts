@@ -72,6 +72,7 @@ export class Controller {
       phase: this.state.phase,
       error: this.state.error,
       signedIn: Boolean(this.state.session),
+      deviceLimitReached: this.deviceLimited,
       otpEmail: this.state.session ? null : (this.state.otpEmail ?? null),
       account: this.state.account,
       countries: this.state.countries,
@@ -231,12 +232,14 @@ export class Controller {
           installation_id: await this.io.installation(),
           platform: "CHROME_EXTENSION",
           device_name: "Chrome",
+          allow_device_management: true,
         }),
         false,
       ),
     );
     this.state.error = null;
     delete this.state.otpEmail;
+    if (this.deviceLimited) await this.clearLocalConnection();
     await this.persist();
     await this.refreshAccount();
   }
@@ -284,10 +287,21 @@ export class Controller {
         (account.plan === "DEMO"
           ? account.email !== null
           : typeof account.email !== "string") ||
-        !["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(account.plan)
+        !["DEMO", "FREE", "PREMIUM", "PLATINUM"].includes(account.plan) ||
+        (account.device_limit_reached !== undefined &&
+          typeof account.device_limit_reached !== "boolean")
       )
         throw new Error("INVALID_RESPONSE");
       this.state.account = account;
+      if (this.state.session.device)
+        this.state.session.device.status = account.device_limit_reached
+          ? "PENDING"
+          : "ACTIVE";
+      if (account.device_limit_reached) {
+        this.state.countries = [];
+        await this.persist();
+        return;
+      }
       const countries = (await this.request(
         "/vpn/countries?method=https_proxy",
       )) as { countries: Country[] };
@@ -326,6 +340,7 @@ export class Controller {
     }
   }
   async connect(country: string) {
+    this.requireActiveDevice();
     if (!/^(AUTO|[A-Z]{2})$/.test(country)) throw new Error("INVALID_COUNTRY");
     if (!this.state.session) throw new Error("SIGN_IN_REQUIRED");
     if (!this.state.lease && !this.state.pending) {
@@ -443,6 +458,7 @@ export class Controller {
   }
   async tick() {
     if (!this.state.session) return;
+    if (this.deviceLimited) return;
     if (!this.state.wanted) {
       if (this.state.lease || this.state.pending) await this.disconnect();
       return;
@@ -484,7 +500,8 @@ export class Controller {
     else await this.activate();
   }
   async logout() {
-    await this.disconnect();
+    if (this.deviceLimited) await this.clearLocalConnection();
+    else await this.disconnect();
     if (this.state.lease || this.state.pending)
       throw new Error("VPN_CLEANUP_PENDING");
     if (this.state.session)
@@ -495,23 +512,70 @@ export class Controller {
     await this.persist();
   }
   async devices() {
+    await this.activateDevice();
     return parseDevices(await this.request("/devices"));
+  }
+  async activateDevice() {
+    if (!this.deviceLimited) return;
+    try {
+      await this.request("/devices/activate", { method: "POST" });
+    } catch (error) {
+      if (errorCode(error) !== "DEVICE_LIMIT_REACHED") throw error;
+    }
+    await this.refreshAccount();
+  }
+  private get deviceLimited() {
+    return (
+      this.state.account?.device_limit_reached ??
+      this.state.session?.device?.status === "PENDING"
+    );
+  }
+  private requireActiveDevice() {
+    if (this.deviceLimited) throw new Error("DEVICE_LIMIT_REACHED");
+  }
+  async forgetLocalSession() {
+    // Local cleanup is available even if the server cannot be reached. A pending
+    // device has no VPN lease and does not occupy an active slot.
+    if (!this.deviceLimited) throw new Error("INVALID_REQUEST");
+    await this.clearLocalConnection();
+    delete this.state.session;
+    this.state.account = null;
+    this.state.countries = [];
+    this.state.error = null;
+    await this.persist();
   }
   async revokeDevice(id: string) {
     if (!UUID.test(id)) throw new Error("INVALID_REQUEST");
-    if (id === this.state.session?.device?.id) await this.disconnect();
+    if (id === this.state.session?.device?.id && !this.deviceLimited)
+      await this.disconnect();
     const result = await this.request("/devices/" + id, { method: "DELETE" });
     if (id === this.state.session?.device?.id) {
+      // Confirmed revocation transfers durable cleanup to the backend. Never
+      // replay this installation's old VPN journal with a new account bearer.
+      await this.clearLocalConnection();
       delete this.state.session;
       this.state.account = null;
       await this.persist();
+    } else {
+      await this.activateDevice();
     }
     return result;
   }
+  private async clearLocalConnection() {
+    await this.io.clear();
+    delete this.state.lease;
+    delete this.state.pending;
+    this.state.wanted = false;
+    this.state.phase = "DISCONNECTED";
+    this.state.ip = null;
+    this.state.error = null;
+  }
   async billingPortal() {
+    this.requireActiveDevice();
     return portalURL(await this.request("/billing/portal", { method: "POST" }));
   }
   async billing() {
+    this.requireActiveDevice();
     return parseBilling(await this.request("/billing/overview"));
   }
   async support(input: {
@@ -519,6 +583,7 @@ export class Controller {
     subject: string;
     description: string;
   }) {
+    this.requireActiveDevice();
     if (
       !UUID.test(input.request_id) ||
       input.subject.length > 120 ||

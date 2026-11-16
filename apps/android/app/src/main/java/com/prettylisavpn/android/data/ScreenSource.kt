@@ -3,7 +3,7 @@ package com.prettylisavpn.android.data
 /** UI boundary. Credentials stay inside the auth coordinator, never in a Snapshot. */
 enum class Area { SESSION, HOME, COUNTRIES, LOCATION, DEVICES, BILLING, MESSAGES, SUPPORT, TRAFFIC }
 enum class Scenario { STANDARD, SLOW, FREE, EXPIRED, PLATINUM, EMPTY, DEVICE_LIMIT, STALE, OFFLINE, FAIL_NEXT, PAYMENT_PENDING }
-data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true)
+data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true, val pending: Boolean = false)
 data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
 data class LocationOptions(val countries: List<Country>, val autopilotQuality: Int? = null)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
@@ -20,6 +20,7 @@ data class Snapshot(
     val supportAwaiting: Boolean = false,
     val refreshWarning: String? = null,
     val activeDeviceCount: Int = 0,
+    val deviceLimitReached: Boolean = false,
     val freeTime: com.prettylisavpn.android.auth.FreeTime? = null,
     val signedIn: Boolean = false,
     val email: String = "",
