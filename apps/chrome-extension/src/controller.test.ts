@@ -63,6 +63,21 @@ function fixture() {
   return { controller, io, calls, saved: () => saved };
 }
 describe("browser lease lifecycle", () => {
+  it("reports the product version only on authenticated API requests, never tunnel probes", async () => {
+    const { controller, io, calls } = fixture();
+    io.appVersion = "0.4.1";
+    await controller.connect("AUTO");
+    const apiCalls = calls.filter((call) => !call.path.endsWith("/probe"));
+    expect(apiCalls.length).toBeGreaterThan(0);
+    for (const call of apiCalls)
+      expect(
+        new Headers(call.options.headers).get("X-PrettyLisaVPN-App-Version"),
+      ).toBe("0.4.1");
+    for (const call of calls.filter((call) => call.path.endsWith("/probe")))
+      expect(
+        new Headers(call.options.headers).has("X-PrettyLisaVPN-App-Version"),
+      ).toBe(false);
+  });
   it("rechecks transaction errors with real egress proof without restarting a healthy proxy", async () => {
     const { controller, io, calls } = fixture();
     await controller.connect("AUTO");

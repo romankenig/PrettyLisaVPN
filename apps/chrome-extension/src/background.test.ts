@@ -31,7 +31,12 @@ beforeEach(async () => {
     },
     webRequest: { onAuthRequired: event() },
     alarms: { create: async () => {}, onAlarm: event() },
-    runtime: { onStartup: event(), onInstalled: event(), onMessage: event() },
+    runtime: {
+      getManifest: () => ({ version: "0.4.1" }),
+      onStartup: event(),
+      onInstalled: event(),
+      onMessage: event(),
+    },
     proxy: { settings: { onChange: event() }, onProxyError: proxyError },
   });
   await import("./background");

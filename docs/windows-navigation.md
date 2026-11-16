@@ -1,3 +1,11 @@
+# Dashboard 0.15.0 — application versions
+
+Shared report navigation adds `/dashboard/app-versions` and its trailing-slash
+variant under existing private authentication. The implemented backend 0.48.0
+integration shows daily active users by app version/platform and today's devices,
+with counts/shares and minute refresh. Chrome 0.4.1 adds API metadata only; no
+popup or native navigation changes. See [handoff](app-version-analytics.md).
+
 # Dashboard 0.14.0 — separate stability reports
 
 Private report navigation now links Servers (`/dashboard/`), Connection methods

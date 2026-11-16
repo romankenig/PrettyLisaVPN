@@ -60,7 +60,17 @@ handle /dashboard/* {
                 header_up Authorization "Bearer @@MONITOR_TOKEN@@"
             }
         }
-        @analytics_page path /dashboard/product-analytics /dashboard/product-analytics/ /dashboard/connection-methods /dashboard/connection-methods/ /dashboard/services /dashboard/services/
+        @app_versions {
+            path /dashboard/api/app-versions
+            method GET
+        }
+        handle @app_versions {
+            rewrite * /admin/monitoring/app-versions
+            reverse_proxy backend:8000 {
+                header_up Authorization "Bearer @@MONITOR_TOKEN@@"
+            }
+        }
+        @analytics_page path /dashboard/product-analytics /dashboard/product-analytics/ /dashboard/connection-methods /dashboard/connection-methods/ /dashboard/services /dashboard/services/ /dashboard/app-versions /dashboard/app-versions/
         handle @analytics_page {
             rewrite * /index.html
             root * /etc/caddy/dashboard/site

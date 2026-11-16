@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### App version usage — backend 0.48.0 / dashboard 0.15.0 / Chrome 0.4.1
+
+- Add a private app-version report by platform, with daily active users, counts or
+  shares, current partial day, minute refresh and a current-day device breakdown.
+- Persist the last reported version of each active device/day in migration 0051.
+  Existing message requests supply Windows/Android/Apple versions; Chrome sends
+  its manifest version on authenticated API requests. Unknown versions remain
+  UNKNOWN and pre-collection history remains absent.
+- Deduplicate accounts per platform/version/day; retain 180 days without request
+  destinations or browsing history. See [handoff](docs/app-version-analytics.md).
+
 ### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
 
 - Separate server, connection-method and service stability into three private
