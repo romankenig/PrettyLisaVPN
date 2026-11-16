@@ -47,6 +47,14 @@ days are uncertain and never invented as open sessions. A partial known subset
 is graphed with dashed coverage outlines; entirely unobserved data stays a gap.
 The current partial day has a separate purple outline and label.
 
+Live review found hash collisions in category colors. The completion follow-up
+resolves collisions within each chart, reserves gray for UNKNOWN and keeps colors
+consistent across units, day values and category ordering. This is a correction
+within the same task; backend 0.47.0 and dashboard 0.14.0 remain unchanged. PR #93
+released source `3c128c448a121674ed8a007dad7b2730a718be2c` as develop
+`db678d91a2fab0957c5412dc649a947f1458a4e7`; the follow-up PR records the final
+build, artifact and live verification.
+
 Both private report endpoints add `selection_history` with ordered daily counts,
 categories, totals and coverage. Existing instantaneous `selection` fields remain
 for compatibility. The frontend accepts older responses without fabricating a
