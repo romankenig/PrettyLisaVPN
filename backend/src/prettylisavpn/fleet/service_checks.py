@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.connections import Postgres
+from prettylisavpn.fleet.selection_history import load_selection_history
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
 from prettylisavpn.product_analytics.activity import is_test_account
 from prettylisavpn.product_analytics.domain import boundary, day
@@ -141,6 +142,7 @@ class ServiceAnalytics:
                 "generated_at": now.isoformat(),
                 "timezone": "GMT+3",
                 "services": result,
+                "selection_history": await load_selection_history(session, now, "services"),
                 "selection": {
                     "active_sessions": selected_sessions,
                     "observed_sessions": observed_sessions,

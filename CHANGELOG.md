@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Device-limit cabinet — backend 0.47.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
+### Device-limit cabinet — backend 0.48.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 
 - Allow OTP sign-in when all five device slots are occupied. New installations
   enter a restricted cabinet with a red notice, dimmed features and links to
@@ -19,6 +19,16 @@
   [migration/rollback and validation handoff](docs/device-limit-access.md).
 - Website 0.6.1 unchanged; Linux/Android TV scaffolds share the tested backend
   contract and still require their own future client UI.
+
+### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
+
+- Separate server, connection-method and service stability into three private
+  pages with shared navigation and direct URLs.
+- Replace instantaneous method/service histograms with daily stacked distributions:
+  one session per day it was confirmed and open, counts or within-day shares,
+  today's partial day and minute refresh. Expose missing historical coverage.
+- Reuse durable session records; preserve existing API fields, UNKNOWN privacy and
+  product analytics. See [report handoff](docs/availability-pages.md).
 
 ### Current product day — backend 0.46.0 / dashboard 0.13.0
 

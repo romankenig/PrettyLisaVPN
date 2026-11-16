@@ -11,10 +11,19 @@ explicit local cleanup → sign-in even offline. Home/settings navigation may
 remain usable to reach Devices, while private destinations are guarded.
 
 Implemented for Windows 0.30.0, Android 0.29.0, iOS 0.5.0, macOS 0.4.0 and Chrome
-0.5.0, with backend 0.47.0 integration. This is implemented API integration,
+0.5.0, with backend 0.48.0 integration. This is implemented API integration,
 not evidence of production deployment. Linux/Android TV have no shipping account
 UI yet. The independent website payment portal is unchanged. See
 [contract, tests and rollout](device-limit-access.md).
+
+# Dashboard 0.14.0 — separate stability reports
+
+Private report navigation now links Servers (`/dashboard/`), Connection methods
+(`/dashboard/connection-methods`), Services (`/dashboard/services`) and Product
+analytics (`/dashboard/product-analytics`). All direct URLs and trailing-slash
+variants are implemented under existing Caddy authentication. The new daily
+distributions use backend 0.47.0; no client navigation or pending backend integration
+is introduced. See [report handoff](availability-pages.md).
 
 # Website 0.5.4 — placeholder success page
 

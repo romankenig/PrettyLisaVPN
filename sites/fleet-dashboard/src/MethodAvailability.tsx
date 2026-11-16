@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AnalyticsChart from "./AnalyticsChart";
-import BarDistribution from "./BarDistribution";
+import DailySelectionDistribution from "./DailySelectionDistribution";
 import { formatNumber } from "./analytics";
 import { methodName, readMethodReport, type MethodReport } from "./connectionMethods";
 import { date } from "./time";
@@ -31,6 +31,6 @@ export default function MethodAvailability() {
       <p className="metric-definition">Способ фиксирован, сервер и существующая публичная ссылка из каталога выбираются случайно; «+» проверяется через промежуточный сервер. При неудаче — новый маршрут не чаще раза в минуту. Сразу успешно — 100%; далее оценка = 100 × (1 − минуты до успешной попытки / 30). Без успеха за 30 минут или после перебора маршрутов — 0%; без измерений — пропуск. Проверки распределены по дню, первая серия — после запуска. Это оценка времени до успеха из VPN-узлов, а не доля успешных пользовательских подключений.</p>
     </section>
     {active && <AnalyticsChart title={`Доступность · ${methodName(active.id)}`} dates={active.points.map(point => point.date)} unit="%" series={[{ name: methodName(active.id), color: "#5f22d9", values: active.points.map(point => point.score) }]} explanation={`Среднее по дням с результатом: ${active.observed_days} из 7. Сегодня показано отдельно; прошлые пропуски не восстанавливаются.`} />}
-    <BarDistribution title="Способы подключения в открытых сессиях" items={(data?.selection.items ?? []).map(row => ({ name: methodName(row.method), count: row.count }))} explanation={`Одна подтверждённая открытая сессия — одна отметка. Доля — сессии способа / все открытые сессии; все режимы трафика. Всего: ${data?.selection.active_sessions ?? 0}. Обычные и «+» способы учитываются отдельно. Тестовые аккаунты исключены.`} />
+    <DailySelectionDistribution title="Способы подключения по дням" history={data?.selection_history} name={methodName} explanation="Одна сессия — одна отметка способа; учитываются все режимы трафика. Доля — сессии способа / все известные сессии за день. Обычные и «+» способы учитываются отдельно." />
   </div>;
 }

@@ -4,7 +4,7 @@
 
 | Component | Before | After |
 | --- | --- | --- |
-| Backend | 0.46.0 | 0.47.0 |
+| Backend | 0.47.0 | 0.48.0 |
 | Windows | 0.29.1 | 0.30.0 |
 | Android | 0.28.2 (57) | 0.29.0 (58) |
 | iOS | 0.4.1 | 0.5.0 |
@@ -67,10 +67,10 @@ refuses while any pending row exists; revoke/resolve those rows explicitly or
 roll back only to a backend that understands them. The unused enum value is
 retained on schema downgrade, matching PostgreSQL enum migration conventions.
 
-Base product SHA after synchronizing PR #92: `4583dbed` (develop).
-The analytics task already uses backend 0.46.0; this task uses 0.47.0.
-On 2026-11-16 the owner authorized merging PR #90, deploying backend 0.47.0 with
-migration 0051 first, then publishing clients. Android retains PR #92's method
+Base product SHA after synchronizing PRs #93/#94: `61d03c42` (develop).
+PR #93 already published backend 0.47.0. On 2026-11-16 the owner explicitly
+approved backend 0.48.0 for PR #90, preserving those report changes, and authorized
+migration 0051 before client publication. Android retains PR #92's method
 list fixes; its new code 58 permits upgrading the already released code 57.
 Android, Windows and Chrome use the public website; iOS/macOS remain exclusively
 in the authenticated downloads section, as explicitly requested by the owner.

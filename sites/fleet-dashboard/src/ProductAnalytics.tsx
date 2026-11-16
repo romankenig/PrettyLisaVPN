@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Clock3, LockKeyhole, RefreshCw } from "lucide-react";
+import { Clock3, LockKeyhole, RefreshCw } from "lucide-react";
 import AnalyticsChart from "./AnalyticsChart";
+import ReportNavigation from "./ReportNavigation";
 import BarDistribution from "./BarDistribution";
 import DailyDeviceDistribution from "./DailyDeviceDistribution";
 import { analyticsChartPoints, formatDay, formatNumber, plans, planShare, readAnalytics, type ActiveMetric, type Analytics } from "./analytics";
@@ -40,7 +41,7 @@ export default function ProductAnalytics() {
   return <>
     <header className="topbar"><a href="/dashboard/"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /></a><div className="private"><LockKeyhole size={14} />Приватная аналитика</div></header>
     <main className="workspace product-analytics">
-      <a className="analytics-back" href="/dashboard/"><ArrowLeft size={16} />Доступность серверов</a>
+      <ReportNavigation current="product" />
       <div className="heading"><div><div className="eyebrow">Продукт / Аудитория</div><h1>Как используют PrettyLisaVPN</h1><p>Два месяца · по дням · время GMT+3{data && <> · по {formatDay(partialDate ?? data.through_date)}{partialDate ? " · неполный день" : " включительно"}</>}</p></div><button className="refresh" disabled={loading} aria-label="Обновить данные отчёта" onClick={() => { setLoading(true); setRetry(v => v + 1); }}><RefreshCw size={18} className={loading ? "spin" : ""} /></button></div>
       <div className="analytics-updated"><Clock3 size={15} />{data ? <>Обновлено {date(data.live?.updated_at ?? data.generated_at)} GMT+3 · {data.live ? "обновление раз в минуту" : `следующее обновление ${date(data.next_update_at)} GMT+3`}</> : "Ожидаем первый ежедневный расчёт"}</div>
       {error && <div role="alert" className="notice">Не удалось обновить отчёт. {data ? "Показан предыдущий результат." : "Повторите загрузку позже."}</div>}
