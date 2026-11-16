@@ -8,6 +8,21 @@ import org.junit.*
 import org.junit.Assert.*
 
 class AccountHttpTest {
+    @Test fun v2LinksRequiredAndLegacyNegotiation()=runBlocking {
+        val id="20000000-0000-0000-0000-000000000003"
+        val message="""{"id":"$id","revision":1,"title":"Update","blocks":[{"type":"paragraph","text":"Install update"}],"fallback_text":"Install update","dismiss_label":"OK","expires_at":null,"primary_action":null,"dismissible":false,"links":[{"label":"Download","url":"https://prettylisavpn.com/#latest"}]}"""
+        server.enqueue(MockResponse().setBody("""{"schema_version":2,"messages":[$message]}"""))
+        val parsed=api.messages("synthetic").single()
+        assertFalse(parsed.dismissible);assertEquals("Download",parsed.links.single().label)
+        assertEquals("2",server.takeRequest().requestUrl!!.queryParameter("schema_version"))
+        server.enqueue(MockResponse().setResponseCode(422))
+        server.enqueue(MockResponse().setBody("""{"schema_version":1,"messages":[]}"""))
+        assertTrue(api.messages("synthetic").isEmpty())
+        assertEquals("2",server.takeRequest().requestUrl!!.queryParameter("schema_version"))
+        assertEquals("1",server.takeRequest().requestUrl!!.queryParameter("schema_version"))
+        server.enqueue(MockResponse().setBody("""{"schema_version":2,"messages":[${message.replace("https://prettylisavpn.com/#latest","javascript:alert(1)")}]}"""))
+        try { api.messages("synthetic");fail() } catch(e:AuthFailure) { assertEquals("invalid_response",e.code) }
+    }
     private val server=MockWebServer()
     private lateinit var api: HttpAccountApi
     @Before fun start() { server.start();api=HttpAccountApi(HttpAuthApi(server.url("/").toString(),true),"0.5.0") }
@@ -54,7 +69,8 @@ class AccountHttpTest {
         server.enqueue(MockResponse().setBody("""{"schema_version":1,"messages":[{"id":"$id","revision":3,"title":"Title","blocks":[{"type":"paragraph","text":"Body"},{"type":"list","items":["One"]}],"fallback_text":"Fallback","primary_action":{"type":"OPEN_SUBSCRIPTION","label":"Details"},"dismiss_label":"OK","expires_at":"2030-01-01T00:00:00Z"}]}"""))
         server.enqueue(MockResponse().setBody("""{"id":"$id","revision":3,"acknowledged":true}"""))
         val m=api.messages("synthetic").single();assertEquals("2030-01-01T00:00:00Z",m.expiresAt);assertEquals("SUBSCRIPTION",m.destination);assertTrue(m.body.contains("• One"));api.acknowledge("synthetic",id,3)
-        assertTrue(server.takeRequest().path!!.contains("platform=ANDROID&app_version=0.5.0&locale=en&schema_version=1"));assertTrue(server.takeRequest().body.readUtf8().contains("\"revision\":3"))
+        val request=server.takeRequest().requestUrl!!
+        assertEquals("ANDROID",request.queryParameter("platform"));assertEquals("0.5.0",request.queryParameter("app_version"));assertEquals("2",request.queryParameter("schema_version"));assertTrue(server.takeRequest().body.readUtf8().contains("\"revision\":3"))
     }
     @Test fun supportMultipartOmitsUnsupportedDiagnosticsAndLooksUpStatus()=runBlocking {
         val id="20000000-0000-0000-0000-000000000005"

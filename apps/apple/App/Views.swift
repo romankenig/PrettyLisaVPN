@@ -38,13 +38,21 @@ struct RootView: View {
         .environment(\.locale, language == "system" ? .current : Locale(identifier: language))
         .task { await model.restore() }
         .task(id: model.page) { await model.loadPage() }
+        .task(id: model.profile?.id) { await model.loadMessages() }
         .task(id: phase) {
             guard phase == .active else { return }
             if model.profile != nil { await model.loadPage() }
+            await model.loadMessages()
             while !Task.isCancelled {
                 do { try await Task.sleep(nanoseconds: 20_000_000_000) } catch { return }
+                await model.loadMessages()
                 if model.profile != nil && !model.fixtures && !model.simulation { await model.vpn.reconcile() }
             }
+        }
+        .sheet(item: Binding(get: { model.popupMessage }, set: { _ in })) { message in
+            AccountMessagePopup(model: model, message: message)
+                .id(message.key)
+                .interactiveDismissDisabled(true)
         }
         .confirmationDialog(L("ui_sign_out_54"), isPresented: $logout, titleVisibility: .visible) {
             Button(L("ui_sign_out"), role: .destructive) { model.logout() }
@@ -264,8 +272,10 @@ struct MessagesView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(message.title).font(.headline)
                     Text(message.body).textSelection(.enabled)
-                    if let action = message.primary_action { Button(action.label) { model.acknowledge(message, navigate: true) } }
-                    Button(message.dismiss_label) { model.acknowledge(message) }
+                    if message.canDismiss {
+                        if let action = message.primary_action { Button(action.label) { model.acknowledge(message, navigate: true) } }
+                        Button(message.dismiss_label) { model.acknowledge(message) }
+                    }
                 }.padding(.vertical, 12).disabled(model.busy)
             }
         }

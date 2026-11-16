@@ -366,4 +366,5 @@
     <string name="vpn_location_expected">erwarteter VPN-standort:</string>
     <string name="direct_location_expected">erwarteter standort ohne VPN:</string>
     <string name="randomize_methods">zufällige Methoden und Reihenfolge</string>
+    <string name="message_link_error">Link konnte nicht geöffnet werden. Bitte erneut versuchen.</string>
 </resources>

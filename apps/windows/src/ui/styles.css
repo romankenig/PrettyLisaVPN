@@ -2268,6 +2268,18 @@ input,
   font-size: 12px;
   line-height: 1.5;
 }
+.account-message-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.account-message-links button {
+  color: white;
+  background: var(--color-purple-heart);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
 .account-message-actions {
   display: flex;
   flex-wrap: wrap;

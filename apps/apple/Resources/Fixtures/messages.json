@@ -1,0 +1,25 @@
+{
+  "schema_version": 2,
+  "messages": [
+    {
+      "id": "88888888-8888-4888-8888-888888888888",
+      "revision": 1,
+      "title": "новости PrettyLisaVPN",
+      "blocks": [{"type": "paragraph", "text": "Сообщение для вашего аккаунта. Ссылки открываются в браузере; окно можно закрыть и продолжить работу."}],
+      "fallback_text": "Сообщение для вашего аккаунта.",
+      "dismiss_label": "понятно",
+      "dismissible": true,
+      "links": [{"label": "сайт PrettyLisaVPN", "url": "https://prettylisavpn.com/"}]
+    },
+    {
+      "id": "99999999-9999-4999-8999-999999999999",
+      "revision": 1,
+      "title": "обновите PrettyLisaVPN",
+      "blocks": [{"type": "paragraph", "text": "Установите актуальную версию приложения. Это обязательное сообщение нельзя закрыть."}],
+      "fallback_text": "Установите актуальную версию приложения.",
+      "dismiss_label": "понятно",
+      "dismissible": false,
+      "links": [{"label": "скачать обновление", "url": "https://prettylisavpn.com/"}]
+    }
+  ]
+}

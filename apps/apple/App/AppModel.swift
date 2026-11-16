@@ -14,6 +14,18 @@ import PrettyLisaCore
     @Published var countries: Countries?
     @Published var devices: [Device] = []
     @Published var messages: [AccountMessage] = []
+    @Published var messageVisit = MessageVisit()
+    @Published var messageError = false
+    @Published var messageBusy = false
+    @Published var messageNow = Date()
+    private var messagesLoaded = false
+    private var messagesLoading = false
+    private var messageEpoch = 0
+    private var messageAttempt = Date.distantPast
+    var popupMessage: AccountMessage? {
+        guard profile != nil, !needsSignIn else { return nil }
+        return messageVisit.next(messages, now: messageNow)
+    }
     @Published var billing: BillingOverview?
     @Published var backendVersion: String?
     @Published var error: String?
@@ -109,6 +121,11 @@ import PrettyLisaCore
                 countries = try fixture("countries", Countries.self)
                 devices = try fixture("devices", [Device].self)
                 billing = try fixture("billing", BillingOverview.self)
+                if ProcessInfo.processInfo.arguments.contains("-message-fixture") {
+                    let inbox = try fixture("messages", Messages.self)
+                    try inbox.validate()
+                    messages = inbox.messages.filter { ProcessInfo.processInfo.arguments.contains("-mandatory-message") ? !$0.canDismiss : $0.canDismiss }
+                }
             } catch { self.error = "INVALID_FIXTURE" }
             return
         }
@@ -140,11 +157,34 @@ import PrettyLisaCore
         guard ["FREE", "PREMIUM", "PLATINUM"].contains(current.plan), (0...5).contains(current.active_device_count) else { throw ClientError("INVALID_RESPONSE") }
         profile = current
         countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries"))
-        let context = [URLQueryItem(name: "platform", value: platform), .init(name: "app_version", value: version),
-                       .init(name: "locale", value: Locale.current.identifier.replacingOccurrences(of: "_", with: "-")), .init(name: "schema_version", value: "1")]
-        let inbox = try WireJSON.decode(Messages.self, from: await session.request("messages", query: context))
-        guard inbox.schema_version == 1 else { throw ClientError("INVALID_RESPONSE") }
-        messages = inbox.messages.filter { $0.expires_at.flatMap(WireJSON.date).map { $0 > Date() } ?? true }
+    }
+    func loadMessages() async {
+        messageNow = Date()
+        guard profile != nil, !needsSignIn, !fixtures, !messagesLoading,
+              !messagesLoaded || messages.contains(where: { !$0.canDismiss }),
+              Date().timeIntervalSince(messageAttempt) >= 10 else { return }
+        messagesLoading = true; messageAttempt = Date()
+        let epoch = messageEpoch
+        defer { if epoch == messageEpoch { messagesLoading = false } }
+        var context = [URLQueryItem(name: "platform", value: platform), .init(name: "app_version", value: version),
+                       .init(name: "locale", value: Locale.current.identifier.replacingOccurrences(of: "_", with: "-")), .init(name: "schema_version", value: "2")]
+        do {
+            let data: Data
+            do { data = try await session.request("messages", query: context) }
+            catch let failure as ClientError where failure.status == 422 {
+                context[3] = .init(name: "schema_version", value: "1")
+                data = try await session.request("messages", query: context)
+            }
+            let inbox = try WireJSON.decode(Messages.self, from: data); try inbox.validate()
+            guard epoch == messageEpoch, !Task.isCancelled else { return }
+            messages = inbox.messages.filter { $0.fresh() }; messagesLoaded = true
+        } catch {
+            // Optional delivery never breaks profile/login; retain a known mandatory popup on outages.
+        }
+    }
+    func deferMessage(_ message: AccountMessage) {
+        guard message.canDismiss else { return }
+        messageVisit.deferMessage(message); messageError = false
     }
     func loadPage() async {
         guard profile != nil, !fixtures else { return }
@@ -202,6 +242,8 @@ import PrettyLisaCore
         }
     }
     private func resetAccount() {
+        messageEpoch += 1; messageVisit = MessageVisit(); messagesLoaded = false
+        messagesLoading = false; messageAttempt = .distantPast; messageError = false; messageBusy = false
         profile = nil; billing = nil; devices = []; messages = []; countries = nil
         supportRequest = nil; supportImages = []; supportReceipt = nil; supportFrozen = false
         otpSent = false; needsSignIn = false; page = .home
@@ -215,11 +257,21 @@ import PrettyLisaCore
         }
     }
     func acknowledge(_ message: AccountMessage, navigate: Bool = false) {
-        perform {
-            _ = try await self.session.request("messages/\(message.id.uuidString.lowercased())/acknowledgements", method: "POST", body: WireJSON.encode(["revision": message.revision]))
-            self.messages.removeAll { $0.id == message.id }
-            if navigate {
-                self.page = ["OPEN_SUBSCRIPTION": Page.subscription, "OPEN_SETTINGS": .settings, "OPEN_ABOUT": .about][message.primary_action?.type ?? ""] ?? .messages
+        guard message.canDismiss, message.fresh(), !messageBusy else { return }
+        let epoch = messageEpoch
+        messageBusy = true; messageError = false
+        Task {
+            defer { if epoch == messageEpoch { messageBusy = false } }
+            do {
+                if !fixtures {
+                    let data = try await session.request("messages/\(message.id.uuidString.lowercased())/acknowledgements", method: "POST", body: WireJSON.encode(["revision": message.revision]))
+                    try WireJSON.decode(MessageReceipt.self, from: data).validate(for: message)
+                }
+                guard epoch == messageEpoch, message.fresh() else { return }
+                messages.removeAll { $0.key == message.key }
+                if navigate { page = ["OPEN_SUBSCRIPTION": Page.subscription, "OPEN_SETTINGS": .settings, "OPEN_ABOUT": .about][message.primary_action?.type ?? ""] ?? page }
+            } catch {
+                if epoch == messageEpoch { messageError = true }
             }
         }
     }

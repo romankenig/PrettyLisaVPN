@@ -32,6 +32,7 @@ class AccountScreensTest {
     private var ackFail=false
     private var messages=false
     private var messageExpiry:String?=null
+    private var mandatoryMessage=false
     private var starts=0
     private var billingReads=0
     private var offerRub=39900L
@@ -62,7 +63,7 @@ class AccountScreensTest {
         override suspend fun revoke(token:String,id:String):Device { active=false;return devices(token).first() }
         override suspend fun locations(token:String):LocationOptions { countryReads++; return LocationOptions(countries(token),80) }
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
-        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message","SUBSCRIPTION",expiresAt=messageExpiry))else emptyList()
+        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message",if(mandatoryMessage)null else "SUBSCRIPTION",expiresAt=messageExpiry,dismissible=!mandatoryMessage,links=listOf(MessageLink("Download update","https://prettylisavpn.com/"))))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
         override suspend fun overview(token:String): BillingOverview {
             billingReads++
@@ -411,6 +412,20 @@ class AccountScreensTest {
         click("traffic-services"); waitFor("traffic-service-youtube")
         compose.onNodeWithTag("traffic-service-youtube").assertIsOn()
         compose.onNodeWithTag("traffic-service-instagram").assertIsOff()
+    }
+    @Test fun mandatoryMessageCannotCloseOnBackAndSurvivesRecreation() {
+        messages=true;mandatoryMessage=true
+        compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
+        compose.onNodeWithTag("messages-later").assertDoesNotExist()
+        compose.onNodeWithTag("live-ack-$message").assertDoesNotExist()
+        compose.onNodeWithTag("message-link-0").assertExists()
+        screenshot("message-mandatory")
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        compose.onNodeWithTag("account-message-popup").assertExists();assertTrue(messages)
+        compose.activityRule.scenario.recreate();waitFor("account-message-popup")
+        assertTrue(messages)
+        messages=false;compose.runOnUiThread { model.load(Area.MESSAGES) }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("account-message-popup").fetchSemanticsNodes().isEmpty() }
     }
     @Test fun messagesPopupOnlyNavigatesAfterSuccessfulAck() {
         messages=true;ackFail=true

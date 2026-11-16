@@ -13,10 +13,12 @@ import { createMessagesClient } from "../messages/client";
 import {
   MessagesError,
   parseMessages,
+  validateMessageUrl,
   type AccountMessage,
   type MessagesClient,
 } from "../messages/model";
 import type { HttpTransport } from "../native/http";
+import type { MessageBrowser } from "../native/messageBrowser";
 import { ApplicationProvider } from "../state/application";
 import { AccountMessages } from "../ui/AccountMessages";
 import {
@@ -100,6 +102,7 @@ function setup(
     client?: MessagesClient;
     authenticated?: boolean;
     route?: string;
+    browser?: MessageBrowser;
   } = {},
 ) {
   const client = options.client ?? {
@@ -119,6 +122,7 @@ function setup(
         sessionRestoration: createTestSessionRestoration(),
         vpnConnection: createTestVpnConnection(),
         messages: client,
+        messageBrowser: options.browser,
       }}
     >
       <MemoryRouter initialEntries={[options.route ?? "/"]}>
@@ -289,7 +293,7 @@ describe("post-authentication messages", () => {
       expect.objectContaining({
         platform: "WINDOWS",
         app_version: "0.8.0",
-        schema_version: 1,
+        schema_version: 2,
       }),
       expect.any(AbortSignal),
     );
@@ -468,4 +472,135 @@ describe("post-authentication messages", () => {
     await waitFor(() => expect(client.list).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+});
+
+const v2Message = (dismissible = false) =>
+  parseMessages({
+    schema_version: 2,
+    messages: [
+      {
+        ...rawMessage,
+        dismissible,
+        primary_action: null,
+        links: [
+          {
+            label: "скачать обновление",
+            url: "https://prettylisavpn.com/download#latest",
+          },
+        ],
+      },
+    ],
+  })[0];
+
+it("mandatory popup survives Escape, backdrop and link clicks without ACK", async () => {
+  const browser = { open: vi.fn().mockResolvedValue(undefined) };
+  const client = {
+    list: vi.fn().mockResolvedValue([v2Message()]),
+    acknowledge: vi.fn(),
+  };
+  setup({ client, browser });
+  const dialog = await screen.findByRole("dialog");
+  expect(
+    screen.queryByRole("button", { name: "позже" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "понятно" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "показать сообщение позже" }),
+  ).not.toBeInTheDocument();
+  fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+  fireEvent.click(dialog);
+  fireEvent.click(screen.getByRole("button", { name: "скачать обновление" }));
+  await waitFor(() =>
+    expect(browser.open).toHaveBeenCalledWith(
+      "https://prettylisavpn.com/download#latest",
+    ),
+  );
+  expect(dialog).toBeInTheDocument();
+  expect(client.acknowledge).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("route")).toHaveTextContent("/");
+});
+
+it("optional external links keep the popup open and closing needs no network", async () => {
+  const browser = {
+    open: vi.fn().mockRejectedValue(new Error("private browser detail")),
+  };
+  const client = {
+    list: vi.fn().mockResolvedValue([v2Message(true)]),
+    acknowledge: vi.fn(),
+  };
+  setup({ client, browser });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "скачать обновление" }),
+  );
+  expect(await screen.findByRole("alert")).not.toHaveTextContent(
+    "private browser detail",
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "показать сообщение позже" }),
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(client.acknowledge).not.toHaveBeenCalled();
+});
+
+it.each([
+  "javascript:alert(1)",
+  "http://example.com",
+  "file:///tmp/a",
+  "https://user@example.com",
+  "https://@example.com",
+  "https://example.com:8443",
+  "https://example.com/\n",
+])("rejects unsafe message link %s", (url) => {
+  expect(() => validateMessageUrl(url)).toThrow();
+});
+
+it("negotiates legacy v1 only when the old backend rejects schema 2", async () => {
+  const transport = vi
+    .fn<HttpTransport>()
+    .mockResolvedValueOnce(response({}, 422))
+    .mockResolvedValueOnce(response(envelope()));
+  const client = createMessagesClient("https://api.example.com", transport);
+  const items = await client.list(
+    "private",
+    {
+      platform: "WINDOWS",
+      app_version: "0.30.0",
+      locale: "ru-RU",
+      schema_version: 2,
+    },
+    new AbortController().signal,
+  );
+  expect(String(transport.mock.calls[0][0])).toContain("schema_version=2");
+  expect(String(transport.mock.calls[1][0])).toContain("schema_version=1");
+  expect(items[0].dismissible).toBe(true);
+});
+
+it("refreshes a known mandatory message after returning online and retains it on failures", async () => {
+  let now = 100000;
+  const date = vi.spyOn(Date, "now").mockImplementation(() => now);
+  try {
+    const client = {
+      list: vi
+        .fn()
+        .mockResolvedValueOnce([v2Message()])
+        .mockRejectedValueOnce(new MessagesError("UNAVAILABLE"))
+        .mockResolvedValueOnce([]),
+      acknowledge: vi.fn(),
+    };
+    setup({ client });
+    await screen.findByRole("dialog");
+    now += 11000;
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(client.list).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    now += 11000;
+    fireEvent(window, new Event("online"));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  } finally {
+    date.mockRestore();
+  }
 });

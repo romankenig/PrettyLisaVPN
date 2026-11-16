@@ -1,0 +1,25 @@
+{
+  "id": "88888888-8888-4888-8888-888888888888",
+  "revision": 1,
+  "schema_version": 2,
+  "kind": "update",
+  "dismissible": false,
+  "redisplay_after_ack": true,
+  "priority": 100,
+  "user_ids": ["11111111-1111-4111-8111-111111111111"],
+  "platforms": {
+    "WINDOWS": {"min_version": "0.30.0", "max_version_exclusive": "0.30.1"},
+    "ANDROID": {"min_version": "0.29.0", "max_version_exclusive": "0.29.1"},
+    "IOS": {"min_version": "0.5.0", "max_version_exclusive": "0.5.1"},
+    "MACOS": {"min_version": "0.4.0", "max_version_exclusive": "0.4.1"}
+  },
+  "default_locale": "ru",
+  "localizations": {
+    "ru": {
+      "title": "обновите PrettyLisaVPN",
+      "blocks": [{"type": "paragraph", "text": "Для продолжения установите актуальную версию PrettyLisaVPN."}],
+      "fallback_text": "Для продолжения установите актуальную версию PrettyLisaVPN.",
+      "links": [{"label": "скачать обновление", "url": "https://prettylisavpn.com/"}]
+    }
+  }
+}

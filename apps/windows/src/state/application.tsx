@@ -11,9 +11,11 @@ import type { BillingClient } from "../billing/model";
 import type { PaymentBrowser } from "../native/paymentBrowser";
 import type { SupportSender } from "../support/model";
 import type { MessagesClient } from "../messages/model";
+import type { MessageBrowser } from "../native/messageBrowser";
 export interface ApplicationState {
   demoDeviceKey?: () => Promise<string>;
   messages?: MessagesClient;
+  messageBrowser?: MessageBrowser;
   support?: SupportSender;
   billing?: BillingClient;
   paymentBrowser?: PaymentBrowser;

@@ -5,6 +5,10 @@ export type MessageAction = {
 export type MessageBlock =
   | { readonly type: "paragraph"; readonly text: string }
   | { readonly type: "list"; readonly items: readonly string[] };
+export interface MessageLink {
+  readonly label: string;
+  readonly url: string;
+}
 export interface AccountMessage {
   readonly id: string;
   readonly revision: number;
@@ -14,12 +18,14 @@ export interface AccountMessage {
   readonly primary_action: MessageAction | null;
   readonly dismiss_label: string;
   readonly expires_at: string | null;
+  readonly dismissible: boolean;
+  readonly links: readonly MessageLink[];
 }
 export interface MessageContext {
   readonly platform: "WINDOWS";
   readonly app_version: string;
   readonly locale: string;
-  readonly schema_version: 1;
+  readonly schema_version: 1 | 2;
 }
 export interface MessagesClient {
   list(
@@ -36,7 +42,11 @@ export interface MessagesClient {
 export class MessagesError extends Error {
   constructor(
     readonly code:
-      "UNSUPPORTED" | "AUTH_INVALID" | "UNAVAILABLE" | "INVALID_RESPONSE",
+      | "UNSUPPORTED"
+      | "AUTH_INVALID"
+      | "UNAVAILABLE"
+      | "INVALID_RESPONSE"
+      | "SCHEMA_UNSUPPORTED",
   ) {
     super(code);
     this.name = "MessagesError";
@@ -54,13 +64,35 @@ export const messageKey = (message: AccountMessage) =>
 export const messageExpired = (message: AccountMessage) =>
   message.expires_at !== null && Date.parse(message.expires_at) <= Date.now();
 
+export function validateMessageUrl(raw: string): string {
+  if (
+    raw.length > 2048 ||
+    !raw.startsWith("https://") ||
+    /[\s\\]/.test(raw) ||
+    [...raw].some(
+      (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+    )
+  )
+    throw new MessagesError("INVALID_RESPONSE");
+  const url = new URL(raw);
+  if (
+    !url.hostname ||
+    url.username ||
+    url.password ||
+    (url.port && url.port !== "443") ||
+    raw.slice(8).split(/[/?#]/, 1)[0].includes("@")
+  )
+    throw new MessagesError("INVALID_RESPONSE");
+  return url.href;
+}
+
 export function parseMessages(value: unknown): readonly AccountMessage[] {
   const invalid = () => {
     throw new MessagesError("INVALID_RESPONSE");
   };
   if (
     !record(value) ||
-    value.schema_version !== 1 ||
+    (value.schema_version !== 1 && value.schema_version !== 2) ||
     !Array.isArray(value.messages) ||
     value.messages.length > 10
   )
@@ -121,6 +153,19 @@ export function parseMessages(value: unknown): readonly AccountMessage[] {
         action = { type: candidate.type, label: candidate.label };
       }
     }
+    const dismissible = value.schema_version === 2 ? raw.dismissible : true;
+    if (typeof dismissible !== "boolean") return invalid();
+    const links: MessageLink[] = [];
+    if (value.schema_version === 2) {
+      if (!Array.isArray(raw.links) || raw.links.length > 4) return invalid();
+      for (const link of raw.links) {
+        if (!record(link) || !text(link.label, 60) || !text(link.url, 2048))
+          return invalid();
+        links.push({ label: link.label, url: validateMessageUrl(link.url) });
+      }
+    }
+    if (!dismissible && (links.length === 0 || raw.primary_action != null))
+      return invalid();
     const message: AccountMessage = {
       id: raw.id.toLowerCase(),
       revision: Number(raw.revision),
@@ -135,6 +180,8 @@ export function parseMessages(value: unknown): readonly AccountMessage[] {
       primary_action: action,
       dismiss_label: raw.dismiss_label,
       expires_at: raw.expires_at as string | null,
+      dismissible,
+      links,
     };
     const key = messageKey(message);
     if (keys.has(key)) return invalid();

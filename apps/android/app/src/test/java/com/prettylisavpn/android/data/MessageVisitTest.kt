@@ -5,6 +5,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MessageVisitTest {
+    @Test fun mandatoryCannotBeDeferredAndLinksRejectExecutableSchemes() {
+        val message=first.copy(dismissible=false,links=listOf(MessageLink("Update","https://prettylisavpn.com/#latest")))
+        val visit=MessageVisit();visit.defer(message)
+        assertEquals(message,visit.next(listOf(message),now))
+        assertTrue(validMessageUrl(message.links.single().url))
+        for(url in listOf("http://example.com","javascript:alert(1)","file:///tmp/x","https://user@example.com","https://@example.com","https://example.com:8443","https://example.com\\@evil.com","https://example.com/\n")) assertFalse(validMessageUrl(url))
+    }
     private val now=Instant.parse("2026-10-22T00:00:00Z")
     private val first=AccountMessage("id",1,"title","body",null)
     @Test fun laterIsEphemeralAndRevisionSpecific() {

@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,15 +80,19 @@ class MessageRepository:
             .where(
                 MessageRecord.active.is_(True),
                 MessageRecord.current_revision == rev.revision,
-                rev.schema_version == context.schema_version,
+                rev.schema_version <= context.schema_version,
                 or_(rev.starts_at.is_(None), rev.starts_at <= now),
                 or_(rev.expires_at.is_(None), rev.expires_at > now),
                 or_(rev.user_ids.is_(None), rev.user_ids.contains([str(user_id)])),
                 or_(rev.plans.is_(None), rev.plans.contains([plan.value])),
                 rev.platforms.op("?")(context.platform.value),
-                ~read,
+                or_(rev.payload["dismissible"].as_boolean().is_(False), ~read),
             )
-            .order_by(rev.priority.desc(), rev.message_id)
+            .order_by(
+                func.coalesce(rev.payload["dismissible"].as_boolean(), True).asc(),
+                rev.priority.desc(),
+                rev.message_id,
+            )
         )
         stream = await self.session.stream_scalars(statement.execution_options(yield_per=100))
         try:

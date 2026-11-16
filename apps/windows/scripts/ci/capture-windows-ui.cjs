@@ -392,6 +392,35 @@ async function main() {
     throw new Error(
       "Message acknowledgements must be confirmed before navigation",
     );
+  await fetch("http://127.0.0.1:8000/ui-review/messages-scenario", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenario: "mandatory" }),
+  });
+  await page.reload();
+  const mandatory = page.getByRole("dialog", {
+    name: "обновите PrettyLisaVPN",
+    exact: true,
+  });
+  await mandatory.waitFor();
+  for (const name of ["позже", "понятно", "показать сообщение позже"]) {
+    if (await mandatory.getByRole("button", { name, exact: true }).count())
+      throw new Error("Mandatory message has a dismissal action");
+  }
+  await page.keyboard.press("Escape");
+  await mandatory.waitFor();
+  await mandatory
+    .getByRole("button", { name: "скачать обновление", exact: true })
+    .waitFor();
+  await screenshot("03d-mandatory-message");
+  await fetch("http://127.0.0.1:8000/ui-review/messages-scenario", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenario: "none" }),
+  });
+  // Known mandatory popups revalidate without another login or local dismissal.
+  await mandatory.waitFor({ state: "detached", timeout: 45000 });
+  await screenshot("03e-message-withdrawn");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "главная", exact: true })

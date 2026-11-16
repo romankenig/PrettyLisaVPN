@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class MessageVisit {
     private val mutable = MutableStateFlow<Set<String>>(emptySet())
     val seen = mutable.asStateFlow()
-    fun defer(message: AccountMessage) { mutable.value += key(message) }
+    fun defer(message: AccountMessage) { if (message.dismissible) mutable.value += key(message) }
     fun reset() { mutable.value = emptySet() }
     fun next(messages: List<AccountMessage>, now: Instant): AccountMessage? = messages.firstOrNull {
         key(it) !in mutable.value && fresh(it, now)

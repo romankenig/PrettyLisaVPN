@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Account message popups — backend 0.48.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0
+
+- Added shared JSON v2 with operator-authored HTTPS links and mandatory messages;
+  personal audiences and version ranges remain owned by PostgreSQL.
+- All four clients show messages after login/restoration. Optional messages close
+  normally; mandatory messages block dismissal and cannot be acknowledged away
+  on another device. Links open in the system browser without closing the popup.
+- Keep v1 for old clients; v2 requires the client versions above. An already known
+  mandatory message rechecks for withdrawal/expiry; no server-side VPN ban is added.
+- See [contract and publication examples](docs/account-messages.md) and
+  [validation handoff](docs/account-messages-v2-handoff.md).
+
 ### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
 
 - Separate server, connection-method and service stability into three private

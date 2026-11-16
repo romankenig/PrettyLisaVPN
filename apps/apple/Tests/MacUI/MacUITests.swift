@@ -1,6 +1,27 @@
 import XCTest
 
 final class MacUITests: XCTestCase {
+    func testAccountMessagePopups() {
+        for mandatory in [false, true] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES"]
+            if mandatory { app.launchArguments += ["-mandatory-message", "YES"] }
+            app.launch()
+            XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 20))
+            XCTAssertTrue(app.buttons["message-link-0"].exists)
+            let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+            shot.name = mandatory ? "macOS-message-mandatory" : "macOS-message-optional"; shot.lifetime = .keepAlways; add(shot)
+            if mandatory {
+                XCTAssertFalse(app.buttons["message-later"].exists); XCTAssertFalse(app.buttons["message-ack"].exists)
+                app.typeKey(.escape, modifierFlags: [])
+                XCTAssertTrue(app.staticTexts["message-title"].exists)
+            } else {
+                app.buttons["message-later"].click()
+                XCTAssertTrue(app.staticTexts["message-title"].waitForNonExistence(timeout: 5))
+            }
+            app.terminate()
+        }
+    }
     func testDefaultLaunchShowsRealOTPForm() {
         let app = XCUIApplication()
         app.launch()

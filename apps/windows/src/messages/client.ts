@@ -40,6 +40,8 @@ export function createMessagesClient(
         throw new MessagesError("UNSUPPORTED");
       if (response.status === 401 || response.status === 403)
         throw new MessagesError("AUTH_INVALID");
+      if (response.status === 422)
+        throw new MessagesError("SCHEMA_UNSUPPORTED");
       if (!response.ok) throw new MessagesError("UNAVAILABLE");
       const raw = await response.text();
       if (raw.length > 65536) throw new MessagesError("INVALID_RESPONSE");
@@ -60,7 +62,23 @@ export function createMessagesClient(
         locale: context.locale,
         schema_version: String(context.schema_version),
       });
-      return parseMessages(await request(`/messages?${query}`, token, signal));
+      try {
+        return parseMessages(
+          await request(`/messages?${query}`, token, signal),
+        );
+      } catch (error) {
+        if (
+          !(error instanceof MessagesError) ||
+          error.code !== "SCHEMA_UNSUPPORTED" ||
+          context.schema_version !== 2 ||
+          signal.aborted
+        )
+          throw error;
+        query.set("schema_version", "1");
+        return parseMessages(
+          await request(`/messages?${query}`, token, signal),
+        );
+      }
     },
     async acknowledge(token, message, signal) {
       validateAcknowledgement(

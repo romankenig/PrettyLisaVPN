@@ -1,6 +1,29 @@
 import XCTest
 
 final class AppleUITests: XCTestCase {
+    func testAccountMessagePopups() {
+        for mandatory in [false, true] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES", "-language", "ru"]
+            if mandatory { app.launchArguments += ["-mandatory-message", "YES"] }
+            app.launch()
+            XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
+            XCTAssertTrue(app.buttons["message-link-0"].exists)
+            let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            shot.name = mandatory ? "message-mandatory" : "message-optional"; shot.lifetime = .keepAlways; add(shot)
+            if mandatory {
+                XCTAssertFalse(app.buttons["message-later"].exists); XCTAssertFalse(app.buttons["message-ack"].exists)
+                app.swipeDown(); XCTAssertTrue(app.staticTexts["message-title"].exists)
+                app.terminate(); app.launch()
+                XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
+            } else {
+                app.buttons["message-later"].tap()
+                XCTAssertTrue(app.buttons["connect"].waitForExistence(timeout: 5))
+                XCTAssertFalse(app.staticTexts["message-title"].exists)
+            }
+            app.terminate()
+        }
+    }
     func testSimulatorClearlyLabelsSimulation() {
         for theme in ["light", "dark"] { reviewSimulation(theme: theme) }
     }

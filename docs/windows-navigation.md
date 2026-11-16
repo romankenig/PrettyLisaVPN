@@ -1,3 +1,17 @@
+# Account popup v2 — Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0
+
+After OTP login or saved-session restoration, authenticated account → GET /messages
+schema v2 → no popup for an empty response; optional or mandatory native modal otherwise.
+Optional X/later/Back (where available) closes without ACK; confirm/internal action
+waits for account-wide ACK. Mandatory has no close/confirm/internal route; Escape,
+Back and swipe do not dismiss it. Explicit HTTPS link → system browser, popup stays
+open and no ACK is sent. A known mandatory message is rechecked in foreground;
+withdrawal, expiry or updated app version leaving the target range removes it.
+API failures do not invalidate login; a known required popup stays on transport failure.
+Apple now presents automatically rather than requiring entry into its message list.
+DEMO remains outside registered-account messages. This is implemented UI plus API;
+deployment/distribution evidence is separate, see [handoff](account-messages-v2-handoff.md).
+
 # Dashboard 0.14.0 — separate stability reports
 
 Private report navigation now links Servers (`/dashboard/`), Connection methods

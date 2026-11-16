@@ -379,7 +379,8 @@
     "да, выйти": "да, выйти",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.",
     "Случайный набор и порядок способов": "случайный набор и порядок способов",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "выбранные способы показаны в порядке попыток. последний успешный может проверяться первым."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "выбранные способы показаны в порядке попыток. последний успешный может проверяться первым.",
+    "не удалось открыть ссылку. попробуйте ещё раз": "не удалось открыть ссылку. попробуйте ещё раз"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -761,7 +762,8 @@
     "да, выйти": "yes, sign out",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Device “{0}” will sign out and all its active sessions will end.",
     "Случайный набор и порядок способов": "random method selection and order",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "selected methods are shown in attempt order. the last successful method may be tried first."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "selected methods are shown in attempt order. the last successful method may be tried first.",
+    "не удалось открыть ссылку. попробуйте ещё раз": "Unable to open the link. Please retry."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1143,7 +1145,8 @@
     "да, выйти": "是，退出",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "设备“{0}”将退出账户，其所有活动会话将结束。",
     "Случайный набор и порядок способов": "随机选择连接方式和顺序",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。"
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "所选方式按尝试顺序显示。上次成功的方式可能会优先尝试。",
+    "не удалось открыть ссылку. попробуйте ещё раз": "无法打开链接。请重试。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1525,7 +1528,8 @@
     "да, выйти": "sí, cerrar sesión",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "El dispositivo «{0}» cerrará sesión y se terminarán todas sus sesiones activas.",
     "Случайный набор и порядок способов": "selección y orden aleatorios de métodos",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "los métodos seleccionados aparecen en el orden de los intentos. el último método exitoso puede probarse primero.",
+    "не удалось открыть ссылку. попробуйте ещё раз": "No se pudo abrir el enlace. Inténtalo de nuevo."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1907,7 +1911,8 @@
     "да, выйти": "ja, abmelden",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "Das Gerät „{0}“ wird abgemeldet und alle aktiven Sitzungen werden beendet.",
     "Случайный набор и порядок способов": "zufällige Methoden und Reihenfolge",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "ausgewählte Methoden werden in Versuchsreihenfolge angezeigt. die zuletzt erfolgreiche Methode kann zuerst versucht werden.",
+    "не удалось открыть ссылку. попробуйте ещё раз": "Link konnte nicht geöffnet werden. Bitte erneut versuchen."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2289,6 +2294,7 @@
     "да, выйти": "oui, se déconnecter",
     "Устройство «{0}» выйдет из аккаунта, а все его активные сессии будут завершены.": "L’appareil « {0} » sera déconnecté du compte et toutes ses sessions actives seront fermées.",
     "Случайный набор и порядок способов": "sélection et ordre aléatoires des méthodes",
-    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "les méthodes sélectionnées suivent l’ordre des essais. la dernière méthode réussie peut être essayée en premier."
+    "Выбранные способы показаны в порядке попыток. Последний успешный может проверяться первым.": "les méthodes sélectionnées suivent l’ordre des essais. la dernière méthode réussie peut être essayée en premier.",
+    "не удалось открыть ссылку. попробуйте ещё раз": "Impossible d’ouvrir le lien. Réessayez."
   }
 }

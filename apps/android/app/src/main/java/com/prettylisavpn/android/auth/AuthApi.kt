@@ -97,6 +97,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
                 if (!response.isSuccessful) {
                     val code = runCatching { json?.asJsonObject?.getAsJsonObject("error")?.get("code")?.asString }.getOrNull()
                     throw AuthFailure(when {
+                        path == "messages" && response.code == 422 -> "MESSAGE_SCHEMA_UNSUPPORTED"
                         path !in setOf("auth/request-otp", "auth/verify-otp", "auth/refresh", "auth/logout", "me") && response.code == 401 -> "invalid_access_token"
                         code == "AUTH_INVALID" || code == "account_unavailable" -> "invalid_session"
                         code in setOf("VPN_SESSION_NOT_FOUND", "VPN_SESSION_ALREADY_ACTIVE", "VPN_UNAVAILABLE", "COUNTRY_UNAVAILABLE", "FREE_DAILY_LIMIT_REACHED", "FREE_QUOTA_EXHAUSTED", "FREE_QUOTA_RESERVED", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "VPN_TERMINATION_UNAVAILABLE", "VPN_SESSION_STATUS_UNAVAILABLE") -> code!!

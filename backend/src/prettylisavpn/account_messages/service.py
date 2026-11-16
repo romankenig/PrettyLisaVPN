@@ -34,6 +34,10 @@ class MessagesUnavailableError(RuntimeError):
     pass
 
 
+class MessageRequiredError(ValueError):
+    pass
+
+
 class PublicationConflictError(ValueError):
     pass
 
@@ -45,7 +49,7 @@ class AccountMessagesService:
     async def list_messages(self, token: str, context: MessageContext) -> MessagesResponse:
         identity = await self.auth.authenticate(token)
         identity.require_registered()
-        result = MessagesResponse(messages=[])
+        result = MessagesResponse(schema_version=context.schema_version, messages=[])
         if context.platform is DevicePlatform.WINDOWS:
             if Version.parse(context.app_version) < Version.parse("0.8.0"):
                 return result
@@ -70,7 +74,10 @@ class AccountMessagesService:
                         ):
                             continue
                         message = publication.localized(context.locale)
-                        candidate = MessagesResponse(messages=[*result.messages, message])
+                        candidate = MessagesResponse(
+                            schema_version=context.schema_version,
+                            messages=[*result.messages, message],
+                        )
                         if encoded_size(candidate) > MAX_RESPONSE_BYTES:
                             break
                         result = candidate
@@ -105,6 +112,8 @@ class AccountMessagesService:
                     raise MessageNotFoundError
                 if row.user_ids is not None and str(identity.user_id) not in row.user_ids:
                     raise MessageNotFoundError
+                if row.payload.get("dismissible", True) is False:
+                    raise MessageRequiredError
                 offered.acknowledged_at = now
         except SQLAlchemyError:
             raise MessagesUnavailableError from None
@@ -126,7 +135,7 @@ class MessagePublicationService:
             assert message is not None
             existing = await repository.revision(payload.id, payload.revision)
             if existing is not None:
-                if existing.payload != payload.model_dump(mode="json"):
+                if Publication.model_validate(existing.payload) != payload:
                     raise PublicationConflictError("Published revisions are immutable")
                 # A retry must not reactivate a withdrawn message or replace a newer revision.
                 return PublicationReceipt(id=payload.id, revision=payload.revision)

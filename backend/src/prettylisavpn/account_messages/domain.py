@@ -4,6 +4,7 @@ import json
 import re
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, Self
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import (
@@ -73,6 +74,30 @@ class PrimaryAction(StrictModel):
         return visible_text(value, 60)
 
 
+class MessageLink(StrictModel):
+    label: str = Field(min_length=1, max_length=60)
+    url: str = Field(min_length=1, max_length=2048)
+
+    @field_validator("label")
+    @classmethod
+    def display_label(cls, value: str) -> str:
+        return visible_text(value, 60)
+
+    @field_validator("url")
+    @classmethod
+    def https_link(cls, value: str) -> str:
+        # Operator-authored links open only after a click, in the external browser.
+        # Reject ambiguous parser inputs, credentials and custom/local URI schemes.
+        if not value.startswith("https://") or re.search(r"[\s\\\x00-\x1f\x7f]", value):
+            raise ValueError("Expected an unambiguous HTTPS URL")
+        parsed = urlsplit(value)
+        if not parsed.hostname or parsed.username is not None or parsed.password is not None:
+            raise ValueError("URL host required; credentials forbidden")
+        if parsed.port not in (None, 443):
+            raise ValueError("Only HTTPS port 443 is supported")
+        return value
+
+
 class Content(StrictModel):
     title: str = Field(min_length=1, max_length=120)
     blocks: list[Annotated[Paragraph | TextList, Field(discriminator="type")]] = Field(
@@ -81,6 +106,7 @@ class Content(StrictModel):
     fallback_text: str = Field(min_length=1, max_length=4000)
     primary_action: PrimaryAction | None = None
     dismiss_label: str = Field(default="понятно", min_length=1, max_length=60)
+    links: list[MessageLink] = Field(default_factory=list, max_length=4)
 
     @field_validator("title", "fallback_text", "dismiss_label")
     @classmethod
@@ -94,10 +120,11 @@ class MessageResponse(Content):
     revision: int = Field(strict=True, gt=0, le=2147483647)
     kind: Literal["announcement", "update", "promotion"]
     expires_at: datetime | None
+    dismissible: StrictBool = True
 
 
 class MessagesResponse(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: int = Field(default=1, ge=1, le=2)
     messages: list[MessageResponse]
 
 
@@ -139,7 +166,7 @@ class MessageContext(StrictModel):
     platform: DevicePlatform
     app_version: str = Field(max_length=100)
     locale: str = Field(default="ru-RU", max_length=63)
-    schema_version: int = Field(default=1, ge=1, le=1)
+    schema_version: int = Field(default=1, ge=1, le=2)
 
     @field_validator("app_version")
     @classmethod
@@ -156,7 +183,8 @@ class MessageContext(StrictModel):
 class Publication(StrictModel):
     id: UUID
     revision: int = Field(strict=True, gt=0, le=2147483647)
-    schema_version: int = Field(default=1, strict=True, ge=1, le=1)
+    schema_version: int = Field(default=1, strict=True, ge=1, le=2)
+    dismissible: StrictBool = True
     kind: Literal["announcement", "update", "promotion"] = "announcement"
     redisplay_after_ack: StrictBool
     priority: int = Field(default=0, strict=True, ge=-10000, le=10000)
@@ -194,6 +222,15 @@ class Publication(StrictModel):
 
     @model_validator(mode="after")
     def consistent(self) -> Self:
+        if self.schema_version == 1 and (
+            not self.dismissible or any(content.links for content in self.localizations.values())
+        ):
+            raise ValueError("Links and mandatory messages require schema_version=2")
+        if not self.dismissible and any(
+            not content.links or content.primary_action is not None
+            for content in self.localizations.values()
+        ):
+            raise ValueError("Mandatory messages require links and cannot navigate inside the app")
         if self.default_locale not in self.localizations:
             raise ValueError("Missing default localization")
         if self.starts_at and self.expires_at and self.starts_at >= self.expires_at:
@@ -210,6 +247,7 @@ class Publication(StrictModel):
             revision=self.revision,
             kind=self.kind,
             expires_at=self.expires_at,
+            dismissible=self.dismissible,
         )
 
     def localized(self, locale: str) -> MessageResponse:
