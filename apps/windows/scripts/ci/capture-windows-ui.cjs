@@ -413,6 +413,24 @@ async function main() {
     .getByRole("button", { name: "скачать обновление", exact: true })
     .waitFor();
   await screenshot("03d-mandatory-message");
+  await mandatory
+    .getByRole("button", { name: "скачать обновление", exact: true })
+    .click();
+  await mandatory
+    .getByRole("button", { name: "закрыть", exact: true })
+    .waitFor();
+  await page.bringToFront();
+  await screenshot("03d2-message-link-opened");
+  await mandatory.getByRole("button", { name: "закрыть", exact: true }).click();
+  await mandatory.waitFor({ state: "detached" });
+  await page.reload();
+  await mandatory.waitFor();
+  if (
+    await mandatory
+      .getByRole("button", { name: "закрыть", exact: true })
+      .count()
+  )
+    throw new Error("Required link must lock again on a new launch");
   await fetch("http://127.0.0.1:8000/ui-review/messages-scenario", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -421,6 +439,29 @@ async function main() {
   // Known mandatory popups revalidate without another login or local dismissal.
   await mandatory.waitFor({ state: "detached", timeout: 45000 });
   await screenshot("03e-message-withdrawn");
+  await fetch("http://127.0.0.1:8000/ui-review/messages-scenario", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenario: "repeat" }),
+  });
+  await page.reload();
+  const repeating = page.getByRole("dialog", {
+    name: "напоминание PrettyLisaVPN",
+    exact: true,
+  });
+  await repeating.waitFor();
+  await screenshot("03f-repeating-message");
+  await page.keyboard.press("Escape");
+  await repeating.waitFor({ state: "detached" });
+  await page.reload();
+  await repeating.waitFor();
+  await repeating.getByRole("button", { name: "закрыть", exact: true }).click();
+  await repeating.waitFor({ state: "detached" });
+  const afterRepeat = await (
+    await fetch("http://127.0.0.1:8000/ui-review/message-receipts")
+  ).json();
+  if (afterRepeat.attempts !== afterRead.attempts)
+    throw new Error("Repeating modes must never ACK");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "главная", exact: true })

@@ -1,12 +1,15 @@
 # Account popup v2 — Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
 
 After OTP login or saved-session restoration, authenticated account → GET /messages
-schema v2 → no popup for an empty response; optional or mandatory native modal otherwise.
-Optional X/later/Back (where available) closes without ACK; confirm/internal action
-waits for account-wide ACK. Mandatory has no close/confirm/internal route; Escape,
-Back and swipe do not dismiss it. Explicit HTTPS link → system browser, popup stays
-open and no ACK is sent. A known mandatory message is rechecked in foreground;
-withdrawal, expiry or updated app version leaving the target range removes it.
+schema v2 → no popup for an empty response; an operator-selected close policy otherwise.
+REQUIRE_LINK → no close/Escape/Back → successful HTTPS browser launch → close becomes
+available locally for this visit; next launch requires the link again. NEXT_VISIT →
+close locally without ACK → repeat next launch. ONCE → every close path saves an
+account-wide ACK → hide only after success; a new revision appears again. Failed
+browser launch never unlocks REQUIRE_LINK. Failed ACK keeps ONCE open for retry.
+A link itself never closes or acknowledges a popup. Legacy v1 retains later/ACK.
+A known, unclosed REQUIRE_LINK is rechecked in foreground; withdrawal, expiry or
+updated app version leaving the target range removes it.
 API failures do not invalidate login; a known required popup stays on transport failure.
 Apple now presents automatically rather than requiring entry into its message list.
 Pending-device cabinet → free/activate a slot → ordinary account → message popup;

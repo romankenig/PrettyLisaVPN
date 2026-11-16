@@ -7,7 +7,8 @@ data class Device(val id: String, val name: String, val current: Boolean, val ad
 data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
 data class LocationOptions(val countries: List<Country>, val autopilotQuality: Int? = null)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
-data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood", val expiresAt: String? = null, val dismissible: Boolean = true, val links: List<MessageLink> = emptyList())
+enum class MessageDismissalMode { REQUIRE_LINK, NEXT_VISIT, ONCE, LEGACY }
+data class AccountMessage(val id: String, val revision: Int, val title: String, val body: String, val destination: String?, val actionLabel: String? = null, val dismissLabel: String = "understood", val expiresAt: String? = null, val dismissalMode: MessageDismissalMode = MessageDismissalMode.LEGACY, val links: List<MessageLink> = emptyList())
 data class MessageLink(val label: String, val url: String)
 data class Snapshot(
     val trafficServices: List<com.prettylisavpn.android.vpn.TrafficService> = emptyList(),

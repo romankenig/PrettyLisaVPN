@@ -419,7 +419,7 @@ async def test_v2_required_is_private_not_acknowledgeable_and_survives_another_d
     assert await listing(windows, other.access_token, v2) == []
     offered = await listing(windows, own.access_token, v2)
     assert [item["id"] for item in offered] == [str(required.id), str(optional.id)]
-    assert offered[0]["dismissible"] is False
+    assert offered[0]["dismissal_mode"] == "REQUIRE_LINK"
     for client, access, context in [
         (windows, own.access_token, v2),
         (android, token, {**ANDROID, "schema_version": "2"}),
@@ -429,7 +429,7 @@ async def test_v2_required_is_private_not_acknowledgeable_and_survives_another_d
             ack_url(required), json={"revision": 1}, headers=headers(access)
         )
         assert response.status_code == 409
-        assert response.json() == {"error": {"code": "MESSAGE_REQUIRED"}}
+        assert response.json() == {"error": {"code": "MESSAGE_ACK_NOT_ALLOWED"}}
         assert response.headers["cache-control"] == "no-store"
         assert (await listing(client, access, context))[0]["id"] == str(required.id)
     await publisher.withdraw(required.id)
@@ -457,3 +457,35 @@ async def test_required_update_stops_after_target_version_and_ignores_prior_ack(
     # Publishing the identical legacy document remains idempotent after adding v2 defaults.
     await publisher.publish(first, "retry")
     assert (await listing(windows, own.access_token, v2))[0]["id"] == str(required.id)
+
+
+async def test_v2_repeat_and_once_closure_rules_across_devices_and_revisions(state):
+    _, own, _, token, publish, _, windows, android = state
+    v2 = {**WINDOWS, "schema_version": "2"}
+    android_v2 = {**ANDROID, "schema_version": "2"}
+    value = mandatory_document()
+    value["dismissal_mode"] = "NEXT_VISIT"
+    repeating = await publish(**value)
+    for client, access, context in [(windows, own.access_token, v2), (android, token, android_v2)]:
+        assert len(await listing(client, access, context)) == 1
+        result = await client.post(
+            ack_url(repeating), json={"revision": 1}, headers=headers(access)
+        )
+        assert result.status_code == 409
+        assert result.json()["error"]["code"] == "MESSAGE_ACK_NOT_ALLOWED"
+        assert len(await listing(client, access, context)) == 1
+
+    once = await publish(schema_version=2, dismissal_mode="ONCE")
+    await listing(windows, own.access_token, v2)
+    assert (
+        await windows.post(ack_url(once), json={"revision": 1}, headers=headers(own.access_token))
+    ).status_code == 200
+    assert str(once.id) not in [item["id"] for item in await listing(android, token, android_v2)]
+    changed = await publish(
+        id=str(once.id),
+        revision=2,
+        schema_version=2,
+        dismissal_mode="ONCE",
+        redisplay_after_ack=False,
+    )
+    assert str(changed.id) in [item["id"] for item in await listing(android, token, android_v2)]

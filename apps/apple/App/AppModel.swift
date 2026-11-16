@@ -129,7 +129,8 @@ import PrettyLisaCore
                 if ProcessInfo.processInfo.arguments.contains("-message-fixture") {
                     let inbox = try fixture("messages", Messages.self)
                     try inbox.validate()
-                    messages = inbox.messages.filter { ProcessInfo.processInfo.arguments.contains("-mandatory-message") ? !$0.canDismiss : $0.canDismiss }
+                    let mode: MessageDismissalMode = ProcessInfo.processInfo.arguments.contains("-mandatory-message") ? .requireLink : (ProcessInfo.processInfo.arguments.contains("-repeat-message") ? .nextVisit : .once)
+                    messages = inbox.messages.filter { $0.dismissal_mode == mode }
                 }
             } catch { self.error = "INVALID_FIXTURE" }
             return
@@ -167,7 +168,7 @@ import PrettyLisaCore
     func loadMessages() async {
         messageNow = Date()
         guard profile != nil, !needsSignIn, !deviceLimited, !fixtures, !messagesLoading,
-              !messagesLoaded || messages.contains(where: { !$0.canDismiss }),
+              !messagesLoaded || popupMessage?.requiresLink == true,
               Date().timeIntervalSince(messageAttempt) >= 10 else { return }
         messagesLoading = true; messageAttempt = Date()
         let epoch = messageEpoch
@@ -189,8 +190,12 @@ import PrettyLisaCore
         }
     }
     func deferMessage(_ message: AccountMessage) {
-        guard message.canDismiss else { return }
+        guard !deviceLimited, !messageBusy, messageVisit.canClose(message), message.dismissal_mode != .once else { return }
         messageVisit.deferMessage(message); messageError = false
+    }
+    func closeMessage(_ message: AccountMessage) {
+        guard messageVisit.canClose(message) else { return }
+        if message.dismissal_mode == .once { acknowledge(message) } else { deferMessage(message) }
     }
     func loadPage() async {
         guard profile != nil, !fixtures else { return }
@@ -277,7 +282,7 @@ import PrettyLisaCore
         }
     }
     func acknowledge(_ message: AccountMessage, navigate: Bool = false) {
-        guard !deviceLimited, message.canDismiss, message.fresh(), !messageBusy else { return }
+        guard !deviceLimited, message.canAcknowledge, message.fresh(), !messageBusy else { return }
         let epoch = messageEpoch
         messageBusy = true; messageError = false
         Task {

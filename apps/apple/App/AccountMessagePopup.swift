@@ -19,7 +19,11 @@ struct AccountMessagePopup: View {
                             linkError = false
                             do {
                                 let url = try link.validatedURL()
-                                openURL(url) { accepted in linkError = !accepted }
+                                let visitID = model.messageVisit.id
+                                openURL(url) { accepted in
+                                    linkError = !accepted
+                                    if accepted && model.messageVisit.id == visitID { model.messageVisit.linkOpened(message) }
+                                }
                             } catch { linkError = true }
                         }.accessibilityIdentifier("message-link-\(index)")
                     }
@@ -27,11 +31,15 @@ struct AccountMessagePopup: View {
                     if model.messageError { Text(L("message_ack_error")).foregroundStyle(danger) }
                 }
             }
-            if message.canDismiss {
+            if model.messageVisit.canClose(message) {
                 HStack {
-                    Button(L("ui_later")) { model.deferMessage(message) }.accessibilityIdentifier("message-later")
+                    if message.dismissal_mode == nil {
+                        Button(L("ui_later")) { model.deferMessage(message) }.disabled(model.messageBusy).accessibilityIdentifier("message-later")
+                    }
                     Spacer()
-                    Button(message.dismiss_label) { model.acknowledge(message) }
+                    Button(message.dismiss_label) {
+                        if message.dismissal_mode == nil { model.acknowledge(message) } else { model.closeMessage(message) }
+                    }
                         .disabled(model.messageBusy).accessibilityIdentifier("message-ack")
                 }
                 if let action = message.primary_action, ["OPEN_SUBSCRIPTION", "OPEN_SETTINGS", "OPEN_ABOUT"].contains(action.type) {
@@ -50,7 +58,7 @@ struct AccountMessagePopup: View {
             model.messageNow = Date()
         }
         #if os(macOS)
-        .onExitCommand { if message.canDismiss { model.deferMessage(message) } }
+        .onExitCommand { model.closeMessage(message) }
         #endif
     }
 }

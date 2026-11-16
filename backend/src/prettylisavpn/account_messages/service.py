@@ -35,7 +35,7 @@ class MessagesUnavailableError(RuntimeError):
     pass
 
 
-class MessageRequiredError(ValueError):
+class MessageAcknowledgementNotAllowedError(ValueError):
     pass
 
 
@@ -110,11 +110,16 @@ class AccountMessagesService:
                 repository = MessageRepository(session)
                 message = await repository.lock_message(message_id)
                 offered = await repository.receipt(identity.user_id, message_id, revision)
-                if offered is not None and offered.acknowledged_at is not None:
+                row = await repository.revision(message_id, revision)
+                if (
+                    offered is not None
+                    and offered.acknowledged_at is not None
+                    and row is not None
+                    and row.payload.get("dismissal_mode", "ONCE") == "ONCE"
+                ):
                     return Receipt(id=message_id, revision=revision)
                 if message is None or not message.active or message.current_revision != revision:
                     raise MessageNotFoundError
-                row = await repository.revision(message_id, revision)
                 if offered is None or row is None:
                     raise MessageNotFoundError
                 if (row.starts_at is not None and row.starts_at > now) or (
@@ -123,8 +128,8 @@ class AccountMessagesService:
                     raise MessageNotFoundError
                 if row.user_ids is not None and str(identity.user_id) not in row.user_ids:
                     raise MessageNotFoundError
-                if row.payload.get("dismissible", True) is False:
-                    raise MessageRequiredError
+                if row.payload.get("dismissal_mode", "ONCE") != "ONCE":
+                    raise MessageAcknowledgementNotAllowedError
                 offered.acknowledged_at = now
         except SQLAlchemyError:
             raise MessagesUnavailableError from None
@@ -155,7 +160,7 @@ class MessagePublicationService:
             previous = await repository.revision(payload.id, message.current_revision)
             floor = (
                 payload.revision
-                if payload.redisplay_after_ack or previous is None
+                if payload.schema_version == 2 or payload.redisplay_after_ack or previous is None
                 else previous.acknowledgement_floor
             )
             await repository.store_revision(payload, floor, publisher)

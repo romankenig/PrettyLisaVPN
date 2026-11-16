@@ -35,6 +35,7 @@ class AccountScreensTest {
     private var messages=false
     private var messageExpiry:String?=null
     private var mandatoryMessage=false
+    private var messageMode=MessageDismissalMode.LEGACY
     private var starts=0
     private var billingReads=0
     private var offerRub=39900L
@@ -71,7 +72,7 @@ class AccountScreensTest {
         }
         override suspend fun locations(token:String):LocationOptions { countryReads++; return LocationOptions(countries(token),80) }
         override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
-        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message",if(mandatoryMessage)null else "SUBSCRIPTION",expiresAt=messageExpiry,dismissible=!mandatoryMessage,links=listOf(MessageLink("Download update","https://prettylisavpn.com/"))))else emptyList()
+        override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message",if(mandatoryMessage || messageMode == MessageDismissalMode.NEXT_VISIT)null else "SUBSCRIPTION",expiresAt=messageExpiry,dismissalMode=if(mandatoryMessage)MessageDismissalMode.REQUIRE_LINK else messageMode,links=listOf(MessageLink("Download update","https://prettylisavpn.com/"))))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
         override suspend fun overview(token:String): BillingOverview {
             billingReads++
@@ -450,13 +451,26 @@ class AccountScreensTest {
         compose.onNodeWithTag("account-message-popup").assertExists();assertTrue(messages)
         compose.activityRule.scenario.recreate();waitFor("account-message-popup")
         assertTrue(messages)
+        // Intercept ACTION_VIEW at the instrumentation boundary, without relying on an installed browser.
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val filter=android.content.IntentFilter(android.content.Intent.ACTION_VIEW).apply { addCategory(android.content.Intent.CATEGORY_BROWSABLE);addDataScheme("https") }
+        val monitor=instrumentation.addMonitor(filter,null,true)
+        try { click("message-link-0");waitFor("live-ack-$message");assertEquals(1,monitor.hits) }
+        finally { instrumentation.removeMonitor(monitor) }
+        screenshot("message-link-opened")
+        click("live-ack-$message");assertTrue("repeat mode must not ACK",messages)
+        compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
+        compose.runOnUiThread { model.messageVisit.reset() };waitFor("account-message-popup")
+        compose.onNodeWithTag("live-ack-$message").assertDoesNotExist()
         messages=false;compose.runOnUiThread { model.load(Area.MESSAGES) }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("account-message-popup").fetchSemanticsNodes().isEmpty() }
     }
     @Test fun messagesPopupOnlyNavigatesAfterSuccessfulAck() {
-        messages=true;ackFail=true
+        messages=true;messageMode=MessageDismissalMode.ONCE;ackFail=true
         compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
         screenshot("message-popup")
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        idle();compose.onNodeWithTag("account-message-popup").assertExists();assertTrue(messages)
         click("message-action-$message");idle()
         compose.onNodeWithTag("account-message-popup").assertExists();assertTrue(messages)
         compose.onNodeWithTag("provider-mode").assertDoesNotExist()
@@ -465,13 +479,16 @@ class AccountScreensTest {
     }
     @Test fun messageLaterDoesNotAckOrCreateAnInboxAndSurvivesRotation() {
         click("tab_SETTINGS");compose.onNodeWithTag("settings-messages").assertDoesNotExist()
-        messages=true;compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
-        click("messages-later");assertTrue(messages)
+        messages=true;messageMode=MessageDismissalMode.NEXT_VISIT;compose.runOnUiThread { model.load(Area.MESSAGES) };waitFor("account-message-popup")
+        click("live-ack-$message");assertTrue(messages)
         compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
         compose.activityRule.scenario.recreate();waitFor("live-settings")
         compose.onNodeWithTag("account-message-popup").assertDoesNotExist()
         click("tab_SETTINGS");compose.onNodeWithTag("settings-messages").assertDoesNotExist()
         screenshot("settings-without-inbox")
+        compose.runOnUiThread { model.messageVisit.reset() };waitFor("account-message-popup")
+        screenshot("message-repeating")
+        click("live-ack-$message");assertTrue(messages)
     }
     @Test fun popupWaitsForAnotherConfirmationDialog() {
         click("tab_SETTINGS");click("settings-logout");waitFor("confirmation-dialog")

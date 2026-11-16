@@ -2,24 +2,30 @@ import XCTest
 
 final class AppleUITests: XCTestCase {
     func testAccountMessagePopups() {
-        for mandatory in [false, true] {
+        for mode in ["once", "repeat", "mandatory"] {
             let app = XCUIApplication()
             app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES", "-language", "ru"]
-            if mandatory { app.launchArguments += ["-mandatory-message", "YES"] }
+            if mode != "once" { app.launchArguments += ["-\(mode)-message", "YES"] }
             app.launch()
             XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
             XCTAssertTrue(app.buttons["message-link-0"].exists)
-            let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-            shot.name = mandatory ? "message-mandatory" : "message-optional"; shot.lifetime = .keepAlways; add(shot)
-            if mandatory {
-                XCTAssertFalse(app.buttons["message-later"].exists); XCTAssertFalse(app.buttons["message-ack"].exists)
+            capture(app, "message-\(mode)")
+            XCTAssertFalse(app.buttons["message-later"].exists)
+            if mode == "mandatory" {
+                XCTAssertFalse(app.buttons["message-ack"].exists)
                 app.swipeDown(); XCTAssertTrue(app.staticTexts["message-title"].exists)
+                app.buttons["message-link-0"].tap()
+                app.activate()
+                XCTAssertTrue(app.buttons["message-ack"].waitForExistence(timeout: 10))
+                capture(app, "message-link-opened")
+            }
+            app.buttons["message-ack"].tap()
+            XCTAssertTrue(app.buttons["connect"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.staticTexts["message-title"].exists)
+            if mode != "once" {
                 app.terminate(); app.launch()
                 XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
-            } else {
-                app.buttons["message-later"].tap()
-                XCTAssertTrue(app.buttons["connect"].waitForExistence(timeout: 5))
-                XCTAssertFalse(app.staticTexts["message-title"].exists)
+                XCTAssertEqual(app.buttons["message-ack"].exists, mode == "repeat")
             }
             app.terminate()
         }

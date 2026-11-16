@@ -134,12 +134,13 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
             val o = v.asJsonObject; val schema = o.get("schema_version").asInt; require(schema in 1..2)
             o.getAsJsonArray("messages").also { require(it.size() <= 10) }.map { raw ->
                 val m = raw.asJsonObject; val action = m.get("primary_action")?.takeUnless { it.isJsonNull }?.asJsonObject
-                val dismissible = if (schema == 2) m.flag("dismissible") else true
+                val mode = if (schema == 2) MessageDismissalMode.valueOf(m.text("dismissal_mode")).also { require(it != MessageDismissalMode.LEGACY) } else MessageDismissalMode.LEGACY
                 val links = if (schema == 2) m.getAsJsonArray("links").also { require(it.size() <= 4) }.map { link ->
                     val item = link.asJsonObject
                     MessageLink(item.text("label").also { require(it.length <= 60) }, item.text("url").also { require(validMessageUrl(it)) })
                 } else emptyList()
-                require(dismissible || (links.isNotEmpty() && action == null))
+                require(mode != MessageDismissalMode.REQUIRE_LINK || links.isNotEmpty())
+                require(mode in listOf(MessageDismissalMode.ONCE, MessageDismissalMode.LEGACY) || action == null)
                 val blocks = m.getAsJsonArray("blocks").map { b ->
                     val block = b.asJsonObject
                     when (block.text("type")) {
@@ -150,7 +151,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
                 }.joinToString("\n\n")
                 AccountMessage(uuid(m.text("id")), m.get("revision").asBigDecimal.intValueExact().also { require(it > 0) }, m.text("title"), blocks,
                     when (action?.optional("type")) { "OPEN_SUBSCRIPTION" -> "SUBSCRIPTION"; "OPEN_SETTINGS" -> "SETTINGS"; "OPEN_ABOUT" -> "ABOUT"; else -> null },
-                    action?.optional("label"), m.optional("dismiss_label") ?: "understood", date(m.optional("expires_at")), dismissible, links)
+                    action?.optional("label"), m.optional("dismiss_label") ?: "understood", date(m.optional("expires_at")), mode, links)
             }.also { require(it.map { m -> m.id }.distinct().size == it.size) }
         }
     }

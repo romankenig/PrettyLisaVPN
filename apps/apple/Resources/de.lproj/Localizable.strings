@@ -393,4 +393,4 @@
 "vpn_wireguard_relay" = "WireGuard+";
 
 "message_link_error" = "Link konnte nicht geöffnet werden. Bitte erneut versuchen.";
-"message_ack_error" = "Bestätigung konnte nicht gespeichert werden. Erneut versuchen oder schließen.";
+"message_ack_error" = "Bestätigung konnte nicht gespeichert werden. Erneut versuchen.";

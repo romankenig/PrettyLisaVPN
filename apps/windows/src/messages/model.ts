@@ -9,6 +9,8 @@ export interface MessageLink {
   readonly label: string;
   readonly url: string;
 }
+export type MessageDismissalMode =
+  "REQUIRE_LINK" | "NEXT_VISIT" | "ONCE" | "LEGACY";
 export interface AccountMessage {
   readonly id: string;
   readonly revision: number;
@@ -18,7 +20,7 @@ export interface AccountMessage {
   readonly primary_action: MessageAction | null;
   readonly dismiss_label: string;
   readonly expires_at: string | null;
-  readonly dismissible: boolean;
+  readonly dismissal_mode: MessageDismissalMode;
   readonly links: readonly MessageLink[];
 }
 export interface MessageContext {
@@ -153,8 +155,16 @@ export function parseMessages(value: unknown): readonly AccountMessage[] {
         action = { type: candidate.type, label: candidate.label };
       }
     }
-    const dismissible = value.schema_version === 2 ? raw.dismissible : true;
-    if (typeof dismissible !== "boolean") return invalid();
+    const mode = value.schema_version === 2 ? raw.dismissal_mode : "LEGACY";
+    if (
+      typeof mode !== "string" ||
+      !(
+        value.schema_version === 1
+          ? ["LEGACY"]
+          : ["REQUIRE_LINK", "NEXT_VISIT", "ONCE"]
+      ).includes(mode)
+    )
+      return invalid();
     const links: MessageLink[] = [];
     if (value.schema_version === 2) {
       if (!Array.isArray(raw.links) || raw.links.length > 4) return invalid();
@@ -164,7 +174,11 @@ export function parseMessages(value: unknown): readonly AccountMessage[] {
         links.push({ label: link.label, url: validateMessageUrl(link.url) });
       }
     }
-    if (!dismissible && (links.length === 0 || raw.primary_action != null))
+    if (
+      (mode === "REQUIRE_LINK" && links.length === 0) ||
+      ((mode === "REQUIRE_LINK" || mode === "NEXT_VISIT") &&
+        raw.primary_action != null)
+    )
       return invalid();
     const message: AccountMessage = {
       id: raw.id.toLowerCase(),
@@ -180,7 +194,7 @@ export function parseMessages(value: unknown): readonly AccountMessage[] {
       primary_action: action,
       dismiss_label: raw.dismiss_label,
       expires_at: raw.expires_at as string | null,
-      dismissible,
+      dismissal_mode: mode as MessageDismissalMode,
       links,
     };
     const key = messageKey(message);

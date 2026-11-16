@@ -10,6 +10,9 @@ Implementation and operator examples: [account-messages.md](account-messages.md)
 v1 remains readable/writable; new clients negotiate v2 and fall back on old-server
 422 only. Required publications are never silently downgraded to dismissible v1.
 Operators publish through the existing server-only CLI; no public write API added.
+The operator explicitly selects REQUIRE_LINK, NEXT_VISIT or ONCE. Link-gated
+closing repeats on every launch, as requested; only ONCE persists account-wide
+ACK. Every v2 revision reappears, even with the legacy redisplay flag false.
 HTTPS opening is separate from billing URL validation and never attaches credentials.
 
 Local validation: backend contract and PostgreSQL integration tests, Ruff and mypy;
@@ -39,8 +42,8 @@ or placeholder engine is substituted. CI builds the engine from the checked-out 
 The task PR records the **final verified product HEAD**, each actual checkout/build
 SHA (PR merge SHA may differ), run ID/attempt, every workflow/job conclusion and
 artifact names/links. These are live validation evidence, not release labels.
-Native UI artifacts cover empty, optional and mandatory popup states, dismiss/back
-handling and server withdrawal; API integration tests use real disposable PostgreSQL
+Native UI artifacts cover empty and all three popup modes, link unlocking,
+dismiss/back handling, next-launch repeat and server withdrawal; API integration tests use real disposable PostgreSQL
 and authenticated account/device sessions. Fixture screenshots do not prove a live
 production account received a publication.
 
@@ -50,3 +53,13 @@ No merge, release tag, production deploy or actual user message is authorized by
 this source change. Existing development deployment remains branch-dependent.
 Known scope: UI blocking after delivery, no server-side VPN version enforcement,
 no message push to clients whose successful startup list contained no required notice.
+
+Final three-mode clarification is part of the same version bump. Local checks and
+all native workflows are rerun after this change; older screenshots do not verify
+these final semantics. Final run/attempt, checkout SHA, artifacts and results are
+recorded in PR #96 without another documentation-only push.
+
+After the three-mode change, local validation passed 47 backend contract tests,
+16 real-PostgreSQL message integration tests, Alembic upgrade/check, Ruff and mypy;
+408 Windows tests, ESLint, TypeScript and production Vite build; Apple project
+checks and five packaging tests; Android six-language catalog checks.

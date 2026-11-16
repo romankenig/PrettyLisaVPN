@@ -10,11 +10,21 @@ import org.junit.Assert.*
 class AccountHttpTest {
     @Test fun v2LinksRequiredAndLegacyNegotiation()=runBlocking {
         val id="20000000-0000-0000-0000-000000000003"
-        val message="""{"id":"$id","revision":1,"title":"Update","blocks":[{"type":"paragraph","text":"Install update"}],"fallback_text":"Install update","dismiss_label":"OK","expires_at":null,"primary_action":null,"dismissible":false,"links":[{"label":"Download","url":"https://prettylisavpn.com/#latest"}]}"""
+        val message="""{"id":"$id","revision":1,"title":"Update","blocks":[{"type":"paragraph","text":"Install update"}],"fallback_text":"Install update","dismiss_label":"OK","expires_at":null,"primary_action":null,"dismissal_mode":"REQUIRE_LINK","links":[{"label":"Download","url":"https://prettylisavpn.com/#latest"}]}"""
         server.enqueue(MockResponse().setBody("""{"schema_version":2,"messages":[$message]}"""))
         val parsed=api.messages("synthetic").single()
-        assertFalse(parsed.dismissible);assertEquals("Download",parsed.links.single().label)
+        assertEquals(com.prettylisavpn.android.data.MessageDismissalMode.REQUIRE_LINK,parsed.dismissalMode);assertEquals("Download",parsed.links.single().label)
         assertEquals("2",server.takeRequest().requestUrl!!.queryParameter("schema_version"))
+        for(mode in listOf("NEXT_VISIT","ONCE")) {
+            server.enqueue(MockResponse().setBody("""{"schema_version":2,"messages":[${message.replace("REQUIRE_LINK",mode)}]}"""))
+            assertEquals(MessageDismissalMode.valueOf(mode),api.messages("synthetic").single().dismissalMode)
+            server.takeRequest()
+        }
+        for(mode in listOf("UNKNOWN","LEGACY")) {
+            server.enqueue(MockResponse().setBody("""{"schema_version":2,"messages":[${message.replace("REQUIRE_LINK",mode)}]}"""))
+            try { api.messages("synthetic");fail() } catch(e:AuthFailure) { assertEquals("invalid_response",e.code) }
+            server.takeRequest()
+        }
         server.enqueue(MockResponse().setResponseCode(422))
         server.enqueue(MockResponse().setBody("""{"schema_version":1,"messages":[]}"""))
         assertTrue(api.messages("synthetic").isEmpty())

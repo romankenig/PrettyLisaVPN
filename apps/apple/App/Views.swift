@@ -278,7 +278,7 @@ struct MessagesView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(message.title).font(.headline)
                     Text(message.body).textSelection(.enabled)
-                    if message.canDismiss {
+                    if message.canAcknowledge {
                         if let action = message.primary_action { Button(action.label) { model.acknowledge(message, navigate: true) } }
                         Button(message.dismiss_label) { model.acknowledge(message) }
                     }

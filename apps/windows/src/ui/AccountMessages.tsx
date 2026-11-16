@@ -55,10 +55,16 @@ function MessageVisit({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const seen = useRef(new Set<string>());
+  const [openedLinks, setOpenedLinks] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const confirming = useRef(false);
   const alive = useRef(true);
   const confirmation = useRef<AbortController | null>(null);
   const message = queue[0];
+  const canClose =
+    message?.dismissal_mode !== "REQUIRE_LINK" ||
+    openedLinks.has(messageKey(message));
 
   useEffect(() => {
     alive.current = true;
@@ -101,7 +107,10 @@ function MessageVisit({
         )
           return;
         requiredKnown = next.some(
-          (item) => !item.dismissible && !messageExpired(item),
+          (item) =>
+            item.dismissal_mode === "REQUIRE_LINK" &&
+            !messageExpired(item) &&
+            !seen.current.has(messageKey(item)),
         );
         retry = requiredKnown;
         setQueue(
@@ -177,7 +186,7 @@ function MessageVisit({
   }, [message, queue]);
 
   function later() {
-    if (!message?.dismissible) return;
+    if (!message || !canClose || message.dismissal_mode === "ONCE") return;
     confirmation.current?.abort();
     confirming.current = false;
     setPending(false);
@@ -187,7 +196,12 @@ function MessageVisit({
   }
 
   async function acknowledge(action?: MessageAction) {
-    if (!message?.dismissible || confirming.current || messageExpired(message))
+    if (
+      !message ||
+      !["ONCE", "LEGACY"].includes(message.dismissal_mode) ||
+      confirming.current ||
+      messageExpired(message)
+    )
       return;
     const active = session.current();
     if (!active) return;
@@ -226,7 +240,11 @@ function MessageVisit({
     }
   }
 
-  if (!message || (blocked && message.dismissible) || messageExpired(message))
+  if (
+    !message ||
+    (blocked && message.dismissal_mode !== "REQUIRE_LINK") ||
+    messageExpired(message)
+  )
     return null;
   return (
     <MessageDialog
@@ -234,7 +252,16 @@ function MessageVisit({
       message={t(message)}
       pending={pending}
       error={error}
-      onLater={later}
+      canClose={canClose}
+      onClose={() => {
+        if (canClose) {
+          if (message.dismissal_mode === "ONCE") void acknowledge();
+          else later();
+        }
+      }}
+      onLinkOpened={() =>
+        setOpenedLinks((keys) => new Set(keys).add(messageKey(message)))
+      }
       onAcknowledge={(action) => void acknowledge(action)}
     />
   );
@@ -244,13 +271,17 @@ function MessageDialog({
   message,
   pending,
   error,
-  onLater,
+  canClose,
+  onClose,
+  onLinkOpened,
   onAcknowledge,
 }: {
   readonly message: AccountMessage;
   readonly pending: boolean;
   readonly error: boolean;
-  readonly onLater: () => void;
+  readonly canClose: boolean;
+  readonly onClose: () => void;
+  readonly onLinkOpened: () => void;
   readonly onAcknowledge: (action?: MessageAction) => void;
 }) {
   useLanguage();
@@ -270,7 +301,7 @@ function MessageDialog({
       aria-labelledby="account-message-title"
       onCancel={(event) => {
         event.preventDefault();
-        if (message.dismissible) onLater();
+        if (canClose && !pending) onClose();
       }}
     >
       <div className="account-message-heading">
@@ -283,12 +314,17 @@ function MessageDialog({
                 : "сообщение",
           )}
         </span>
-        {message.dismissible ? (
+        {canClose ? (
           <button
             type="button"
             className="account-message-close"
-            aria-label={t("показать сообщение позже")}
-            onClick={onLater}
+            aria-label={t(
+              message.dismissal_mode === "LEGACY"
+                ? "показать сообщение позже"
+                : "закрыть",
+            )}
+            disabled={pending}
+            onClick={onClose}
           >
             ×
           </button>
@@ -324,6 +360,7 @@ function MessageDialog({
                 setLinkError(false);
                 void messageBrowser
                   .open(link.url)
+                  .then(onLinkOpened)
                   .catch(() => setLinkError(true));
               }}
             >
@@ -337,24 +374,26 @@ function MessageDialog({
       ) : null}
       {error ? (
         <p className="account-message-error" role="alert">
-          {t(
-            "не удалось сохранить подтверждение. попробуйте ещё раз или закройте окно",
-          )}
+          {t("не удалось сохранить подтверждение. попробуйте ещё раз")}
         </p>
       ) : null}
-      {message.dismissible ? (
+      {canClose ? (
         <div className="account-message-actions">
-          <button
-            type="button"
-            className="account-message-later"
-            onClick={onLater}
-          >
-            {t("позже")}
-          </button>
+          {message.dismissal_mode === "LEGACY" ? (
+            <button
+              type="button"
+              className="account-message-later"
+              onClick={onClose}
+            >
+              {t("позже")}
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={pending}
-            onClick={() => onAcknowledge()}
+            onClick={() =>
+              message.dismissal_mode === "LEGACY" ? onAcknowledge() : onClose()
+            }
           >
             <MessageLabel
               text={pending ? t("сохраняем…") : message.dismiss_label}

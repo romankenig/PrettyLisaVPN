@@ -393,4 +393,4 @@
 "vpn_wireguard_relay" = "WireGuard+";
 
 "message_link_error" = "无法打开链接。请重试。";
-"message_ack_error" = "无法保存确认。请重试或关闭消息。";
+"message_ack_error" = "无法保存确认。请重试。";

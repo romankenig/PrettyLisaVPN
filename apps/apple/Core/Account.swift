@@ -46,6 +46,9 @@ public struct BillingOverview: Codable, Sendable {
         }
     }
 }
+public enum MessageDismissalMode: String, Codable, Sendable {
+    case requireLink = "REQUIRE_LINK", nextVisit = "NEXT_VISIT", once = "ONCE"
+}
 public struct AccountMessage: Codable, Identifiable, Sendable {
     public struct Action: Codable, Sendable { public let type: String; public let label: String }
     public struct Block: Codable, Sendable { public let type: String; public let text: String?; public let items: [String]? }
@@ -57,9 +60,10 @@ public struct AccountMessage: Codable, Identifiable, Sendable {
     public let primary_action: Action?
     public let dismiss_label: String
     public let expires_at: String?
-    public let dismissible: Bool?
+    public let dismissal_mode: MessageDismissalMode?
     public let links: [MessageLink]?
-    public var canDismiss: Bool { dismissible ?? true }
+    public var requiresLink: Bool { dismissal_mode == .requireLink }
+    public var canAcknowledge: Bool { dismissal_mode == nil || dismissal_mode == .once }
     public var key: String { "\(id):\(revision)" }
     public func fresh(at now: Date = Date()) -> Bool {
         guard let expiry = expires_at else { return true }
@@ -99,9 +103,10 @@ public struct Messages: Codable, Sendable {
                   (1...12).contains(message.blocks.count), (1...4000).contains(message.fallback_text.utf16.count),
                   (1...60).contains(message.dismiss_label.utf16.count),
                   message.expires_at == nil || WireJSON.date(message.expires_at!) != nil,
-                  schema_version == 1 || (message.dismissible != nil && message.links != nil),
+                  schema_version == 1 || (message.dismissal_mode != nil && message.links != nil),
                   (message.links?.count ?? 0) <= 4,
-                  message.canDismiss || (message.primary_action == nil && !(message.links ?? []).isEmpty)
+                  !message.requiresLink || !(message.links ?? []).isEmpty,
+                  message.canAcknowledge || message.primary_action == nil
             else { throw ClientError("INVALID_RESPONSE") }
             for link in message.links ?? [] {
                 guard (1...60).contains(link.label.utf16.count) else { throw ClientError("INVALID_RESPONSE") }
@@ -112,13 +117,19 @@ public struct Messages: Codable, Sendable {
 }
 
 public struct MessageVisit: Sendable {
+    public let id = UUID()
     private var deferred = Set<String>()
+    private var openedLinks = Set<String>()
     public init() {}
+    public func canClose(_ message: AccountMessage) -> Bool {
+        !message.requiresLink || openedLinks.contains(message.key)
+    }
+    public mutating func linkOpened(_ message: AccountMessage) { openedLinks.insert(message.key) }
     public mutating func deferMessage(_ message: AccountMessage) {
-        if message.canDismiss { deferred.insert(message.key) }
+        if canClose(message) && message.dismissal_mode != .once { deferred.insert(message.key) }
     }
     public func next(_ messages: [AccountMessage], now: Date = Date()) -> AccountMessage? {
-        messages.first { $0.fresh(at: now) && (!deferred.contains($0.key) || !$0.canDismiss) }
+        messages.first { $0.fresh(at: now) && !deferred.contains($0.key) }
     }
 }
 

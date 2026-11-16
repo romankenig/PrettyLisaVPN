@@ -398,4 +398,4 @@
 "vpn_wireguard_relay" = "WireGuard+";
 
 "message_link_error" = "Unable to open the link. Please retry.";
-"message_ack_error" = "Unable to save confirmation. Retry or close the message.";
+"message_ack_error" = "Unable to save confirmation. Please retry.";

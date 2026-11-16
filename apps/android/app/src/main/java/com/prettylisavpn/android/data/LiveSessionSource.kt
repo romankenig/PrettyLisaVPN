@@ -132,6 +132,7 @@ class LiveSessionSource(
             }
             is Command.Acknowledge -> {
                 val message = snapshot.messages.find { it.id == command.id && it.revision == command.revision } ?: throw SourceFailure("This message changed. Refresh messages before confirming.")
+                if (message.dismissalMode !in listOf(MessageDismissalMode.ONCE, MessageDismissalMode.LEGACY)) throw SourceFailure("MESSAGE_ACK_NOT_ALLOWED")
                 sessions.request { api().acknowledge(it, message.id, message.revision) }
                 snapshot = initial.copy(messages = snapshot.messages.filterNot { it.id == message.id && it.revision == message.revision })
                 refreshAfterAction { snapshot = initial.copy(messages = sessions.request { api().messages(it) }) }

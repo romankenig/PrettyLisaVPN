@@ -86,10 +86,15 @@ class MessageRepository:
                 or_(rev.user_ids.is_(None), rev.user_ids.contains([str(user_id)])),
                 or_(rev.plans.is_(None), rev.plans.contains([plan.value])),
                 rev.platforms.op("?")(context.platform.value),
-                or_(rev.payload["dismissible"].as_boolean().is_(False), ~read),
+                or_(
+                    rev.payload["dismissal_mode"].as_string().in_(["REQUIRE_LINK", "NEXT_VISIT"]),
+                    ~read,
+                ),
             )
             .order_by(
-                func.coalesce(rev.payload["dismissible"].as_boolean(), True).asc(),
+                func.coalesce(
+                    rev.payload["dismissal_mode"].as_string() == "REQUIRE_LINK", False
+                ).desc(),
                 rev.priority.desc(),
                 rev.message_id,
             )

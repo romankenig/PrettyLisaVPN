@@ -474,13 +474,13 @@ describe("post-authentication messages", () => {
   });
 });
 
-const v2Message = (dismissible = false) =>
+const v2Message = (dismissal_mode = "REQUIRE_LINK") =>
   parseMessages({
     schema_version: 2,
     messages: [
       {
         ...rawMessage,
-        dismissible,
+        dismissal_mode,
         primary_action: null,
         links: [
           {
@@ -492,13 +492,13 @@ const v2Message = (dismissible = false) =>
     ],
   })[0];
 
-it("mandatory popup survives Escape, backdrop and link clicks without ACK", async () => {
+it("required link unlocks close only for this visit without ACK", async () => {
   const browser = { open: vi.fn().mockResolvedValue(undefined) };
   const client = {
     list: vi.fn().mockResolvedValue([v2Message()]),
     acknowledge: vi.fn(),
   };
-  setup({ client, browser });
+  const mounted = setup({ client, browser });
   const dialog = await screen.findByRole("dialog");
   expect(
     screen.queryByRole("button", { name: "позже" }),
@@ -520,6 +520,15 @@ it("mandatory popup survives Escape, backdrop and link clicks without ACK", asyn
   expect(dialog).toBeInTheDocument();
   expect(client.acknowledge).not.toHaveBeenCalled();
   expect(screen.getByLabelText("route")).toHaveTextContent("/");
+  fireEvent.click(await screen.findByRole("button", { name: "закрыть" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(client.acknowledge).not.toHaveBeenCalled();
+  mounted.unmount();
+  setup({ client, browser });
+  await screen.findByRole("dialog");
+  expect(
+    screen.queryByRole("button", { name: "закрыть" }),
+  ).not.toBeInTheDocument();
 });
 
 it("optional external links keep the popup open and closing needs no network", async () => {
@@ -527,21 +536,22 @@ it("optional external links keep the popup open and closing needs no network", a
     open: vi.fn().mockRejectedValue(new Error("private browser detail")),
   };
   const client = {
-    list: vi.fn().mockResolvedValue([v2Message(true)]),
+    list: vi.fn().mockResolvedValue([v2Message("NEXT_VISIT")]),
     acknowledge: vi.fn(),
   };
-  setup({ client, browser });
+  const mounted = setup({ client, browser });
   fireEvent.click(
     await screen.findByRole("button", { name: "скачать обновление" }),
   );
   expect(await screen.findByRole("alert")).not.toHaveTextContent(
     "private browser detail",
   );
-  fireEvent.click(
-    screen.getByRole("button", { name: "показать сообщение позже" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "закрыть" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(client.acknowledge).not.toHaveBeenCalled();
+  mounted.unmount();
+  setup({ client, browser });
+  await screen.findByRole("dialog");
 });
 
 it.each([
@@ -574,7 +584,7 @@ it("negotiates legacy v1 only when the old backend rejects schema 2", async () =
   );
   expect(String(transport.mock.calls[0][0])).toContain("schema_version=2");
   expect(String(transport.mock.calls[1][0])).toContain("schema_version=1");
-  expect(items[0].dismissible).toBe(true);
+  expect(items[0].dismissal_mode).toBe("LEGACY");
 });
 
 it("refreshes a known mandatory message after returning online and retains it on failures", async () => {
@@ -604,3 +614,72 @@ it("refreshes a known mandatory message after returning online and retains it on
     date.mockRestore();
   }
 });
+
+it("failed external launch never unlocks required close", async () => {
+  const client = {
+    list: vi.fn().mockResolvedValue([v2Message()]),
+    acknowledge: vi.fn(),
+  };
+  setup({
+    client,
+    browser: { open: vi.fn().mockRejectedValue(new Error("unavailable")) },
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "скачать обновление" }),
+  );
+  await screen.findByRole("alert");
+  expect(
+    screen.queryByRole("button", { name: "закрыть" }),
+  ).not.toBeInTheDocument();
+  expect(client.acknowledge).not.toHaveBeenCalled();
+});
+
+it.each(["cross", "escape", "button"])(
+  "ONCE close via %s retries ACK without hiding on failure",
+  async (path) => {
+    const item = v2Message("ONCE");
+    const client = {
+      list: vi.fn().mockResolvedValue([item]),
+      acknowledge: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("offline"))
+        .mockResolvedValue(undefined),
+    };
+    setup({ client });
+    const dialog = await screen.findByRole("dialog");
+    const close = () =>
+      path === "escape"
+        ? fireEvent(
+            dialog,
+            new Event("cancel", { bubbles: true, cancelable: true }),
+          )
+        : fireEvent.click(
+            screen.getByRole("button", {
+              name: path === "cross" ? "закрыть" : "понятно",
+            }),
+          );
+    close();
+    await screen.findByRole("alert");
+    expect(dialog).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "позже" }),
+    ).not.toBeInTheDocument();
+    close();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(client.acknowledge).toHaveBeenCalledTimes(2);
+  },
+);
+
+it.each([undefined, "LEGACY", "UNKNOWN"])(
+  "rejects undefined or invalid v2 mode %s",
+  (mode) => {
+    expect(() =>
+      parseMessages({
+        schema_version: 2,
+        messages: [{ ...v2Message(), dismissal_mode: mode }],
+      }),
+    ).toThrow();
+  },
+);
