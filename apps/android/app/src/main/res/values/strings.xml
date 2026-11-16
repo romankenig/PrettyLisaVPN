@@ -373,5 +373,5 @@
     <string name="vpn_location_expected">expected VPN location:</string>
     <string name="direct_location_expected">expected location without VPN:</string>
     <string name="randomize_methods">random method selection and order</string>
-    <string name="message_link_error">Unable to open the link. Please retry.</string>
+    <string name="message_link_error">unable to open the link. please retry.</string>
 </resources>

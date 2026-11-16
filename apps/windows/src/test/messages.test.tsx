@@ -585,7 +585,7 @@ it("refreshes a known mandatory message after returning online and retains it on
       list: vi
         .fn()
         .mockResolvedValueOnce([v2Message()])
-      .mockRejectedValueOnce(new MessagesError("AUTH_INVALID"))
+        .mockRejectedValueOnce(new MessagesError("AUTH_INVALID"))
         .mockResolvedValueOnce([]),
       acknowledge: vi.fn(),
     };
