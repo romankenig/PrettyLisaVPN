@@ -38,7 +38,6 @@ struct AccountMessagePopup: View {
             }
         }
         .padding(24).frame(minWidth: 280, idealWidth: 480, maxWidth: 580, minHeight: 300, idealHeight: 480)
-        .accessibilityIdentifier("account-message-popup")
         .task(id: message.key) {
             guard let expiry = message.expires_at.flatMap(WireJSON.date) else { return }
             while expiry > Date() {
