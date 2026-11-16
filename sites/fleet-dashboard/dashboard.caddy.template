@@ -60,7 +60,7 @@ handle /dashboard/* {
                 header_up Authorization "Bearer @@MONITOR_TOKEN@@"
             }
         }
-        @analytics_page path /dashboard/product-analytics /dashboard/product-analytics/
+        @analytics_page path /dashboard/product-analytics /dashboard/product-analytics/ /dashboard/connection-methods /dashboard/connection-methods/ /dashboard/services /dashboard/services/
         handle @analytics_page {
             rewrite * /index.html
             root * /etc/caddy/dashboard/site
