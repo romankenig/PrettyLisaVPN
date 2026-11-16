@@ -1,5 +1,9 @@
 # Connection-method availability — 2026-11-15
 
+The [separate report pages follow-up](availability-pages.md) moves this report
+to `/dashboard/connection-methods` and replaces its instantaneous histogram with
+daily session distributions (backend 0.47.0 / dashboard 0.14.0).
+
 Backend 0.42.0 → 0.43.0; dashboard 0.9.0 → 0.10.0; managed engine 0.7.0 →
 0.8.0. These are new reporting/probe capabilities. Client versions and screens
 are unchanged; method IDs already accompany every lease. Migration

@@ -3,8 +3,7 @@ import { Check, ChevronDown, Clock3, LockKeyhole, RefreshCw, Server, ShieldCheck
 import { GROUPS, groupNames, groupSummaries, nodeGroup, type Group } from "./groups";
 import HistoryChart from "./HistoryChart";
 import ActiveUserSpeed from "./ActiveUserSpeed";
-import ServiceAvailability from "./ServiceAvailability";
-import MethodAvailability from "./MethodAvailability";
+import ReportNavigation from "./ReportNavigation";
 import HourDetails from "./HourDetails";
 import type { Measurement, FocusedHour } from "./history";
 import ClientDownloads from "./ClientDownloads";
@@ -27,10 +26,10 @@ function Proof({ label, value }: { label: string; value: boolean | null | undefi
   return <span className={`proof ${value === true ? "yes" : value === false ? "no" : "unknown"}`}>{value === true ? <Check size={14} /> : value === false ? <X size={14} /> : <span>—</span>}{label}</span>;
 }
 export default function Dashboard() {
+  useEffect(() => { document.title = "PrettyLisaVPN — Стабильность серверов"; }, []);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [selected, setSelected] = useState("all");
   const [group, setGroup] = useState<Group | "all">("all");
-  const [trafficView, setTrafficView] = useState("all");
   const [focused, setFocused] = useState<FocusedHour | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState(false);
@@ -61,9 +60,10 @@ export default function Dashboard() {
   const combined = combineAvailability(nodes);
   const newest = nodes.flatMap((node) => node.latest ? [node.latest] : []).sort((a, b) => b.observed_at.localeCompare(a.observed_at))[0];
   return <>
-    <header className="topbar"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /><div className="dashboard-navigation"><a href="/dashboard/product-analytics">Продуктовая аналитика</a><div className="private"><LockKeyhole size={14} />Приватный мониторинг</div></div></header>
+    <header className="topbar"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /><div className="dashboard-navigation"><div className="private"><LockKeyhole size={14} />Приватный мониторинг</div></div></header>
     <main className="workspace">
-      <div className="heading"><div><div className="eyebrow">Инфраструктура / WireGuard</div><h1>Доступность VPN</h1><p>Последние 7 дней · почасовые проверки · время {TIME_ZONE_LABEL}</p></div><div className="controls"><label className="select"><select aria-label="Выбрать группу" value={group} onChange={event => { setGroup(event.target.value as Group | "all"); setSelected("all"); setFocused(null); }}><option value="all">Все группы</option>{GROUPS.map(value => <option key={value} value={value}>{groupNames[value]}</option>)}</select><ChevronDown size={15} /></label><label className="select"><Server size={17} /><select aria-label="Выбрать сервер" value={selected} onChange={(event) => { setSelected(event.target.value); setFocused(null); }}><option value="all">Все серверы</option>{groupNodes.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.country_code}</option>)}</select><ChevronDown size={15} /></label><button className="refresh" onClick={() => { setBusy(true); void refresh(); }} disabled={busy} aria-label="Обновить"><RefreshCw size={18} className={busy ? "spin" : ""} /></button></div></div>
+      <ReportNavigation current="servers" />
+      <div className="heading"><div><div className="eyebrow">Инфраструктура / WireGuard</div><h1>Стабильность серверов</h1><p>Последние 7 дней · почасовые проверки · время {TIME_ZONE_LABEL}</p></div><div className="controls"><label className="select"><select aria-label="Выбрать группу" value={group} onChange={event => { setGroup(event.target.value as Group | "all"); setSelected("all"); setFocused(null); }}><option value="all">Все группы</option>{GROUPS.map(value => <option key={value} value={value}>{groupNames[value]}</option>)}</select><ChevronDown size={15} /></label><label className="select"><Server size={17} /><select aria-label="Выбрать сервер" value={selected} onChange={(event) => { setSelected(event.target.value); setFocused(null); }}><option value="all">Все серверы</option>{groupNodes.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.country_code}</option>)}</select><ChevronDown size={15} /></label><button className="refresh" onClick={() => { setBusy(true); void refresh(); }} disabled={busy} aria-label="Обновить"><RefreshCw size={18} className={busy ? "spin" : ""} /></button></div></div>
       {error && <div role="alert" className="notice">Не удалось получить свежие данные. {snapshot ? "Ниже показан последний полученный результат." : "Повторите обновление через минуту."}</div>}
       <section className="group-summaries" aria-label="Сводки по группам">{groupSummaries(snapshot?.nodes ?? []).map(summary => <button key={summary.group} className={`panel group-summary ${group === summary.group ? "selected" : ""}`} aria-pressed={group === summary.group} onClick={() => { setGroup(summary.group); setSelected("all"); setFocused(null); }}>
         <span>{groupNames[summary.group]}</span><strong>{summary.available} / {summary.servers} <small>доступно</small></strong><p>{summary.active != null && <>Активных: {summary.active} · </>}Успешность: {summary.availability == null ? "—" : number(summary.availability, 1) + "%"}</p>
@@ -84,9 +84,6 @@ export default function Dashboard() {
         {combined.length ? <><div className="days">{combined.filter((_, i) => i % 24 === 0).map((hour) => <span key={hour.at}>{date(hour.at, false)}</span>)}</div><Timeline history={combined} onSelect={hour => setFocused({ at: hour.at })} /><div className="legend">{availabilityStates.map((status) => <span key={status}><i className={status} />{names[status]}</span>)}</div></> : <div className="empty"><Clock3 size={25} /><h3>{busy ? "Получаем историю…" : "История ещё не накоплена"}</h3><p>Новые серверы появятся после регистрации и настройки. Прошедшие часы не заполняются искусственно.</p></div>}
       </section>
       <ActiveUserSpeed key={`active-${group}-${selected}`} nodes={nodes} refreshKey={snapshot?.generated_at ?? null} />
-      <div className="panel analytics-chart"><label>Режим защиты <select aria-label="Режим защиты для отчёта" value={trafficView} onChange={event => setTrafficView(event.target.value)}><option value="all">Защита всего трафика</option><option value="include">Защита выбранного трафика</option></select></label></div>
-      {trafficView === "include" && <ServiceAvailability />}
-      <MethodAvailability />
       <HistoryChart key={`${group}-${selected}`} aggregate nodes={nodes} roster={snapshot?.nodes ?? []} end={snapshot?.generated_at ?? null} onSelect={setFocused} />
       {focused && !focused.nodeId && <HourDetails focus={focused} nodes={nodes} />}
       <section className="nodes-section"><div className="section-title"><h2>Серверы <span className="count">{nodes.length}</span></h2><span className="muted">Автообновление каждую минуту</span></div>

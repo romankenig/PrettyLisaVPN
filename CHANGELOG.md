@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
+
+- Separate server, connection-method and service stability into three private
+  pages with shared navigation and direct URLs.
+- Replace instantaneous method/service histograms with daily stacked distributions:
+  one session per day it was confirmed and open, counts or within-day shares,
+  today's partial day and minute refresh. Expose missing historical coverage.
+- Reuse durable session records; preserve existing API fields, UNKNOWN privacy and
+  product analytics. See [report handoff](docs/availability-pages.md).
+
 ### Current product day — backend 0.46.0 / dashboard 0.13.0
 
 - Include today's partial data in every product analytics chart and summary card,

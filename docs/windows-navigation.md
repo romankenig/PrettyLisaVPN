@@ -1,3 +1,12 @@
+# Dashboard 0.14.0 — separate stability reports
+
+Private report navigation now links Servers (`/dashboard/`), Connection methods
+(`/dashboard/connection-methods`), Services (`/dashboard/services`) and Product
+analytics (`/dashboard/product-analytics`). All direct URLs and trailing-slash
+variants are implemented under existing Caddy authentication. The new daily
+distributions use backend 0.47.0; no client navigation or pending backend integration
+is introduced. See [report handoff](availability-pages.md).
+
 # Website 0.5.4 — placeholder success page
 
 Placeholder Pay → localized `/account/success/?preview=1&currency=RUB|USD`.

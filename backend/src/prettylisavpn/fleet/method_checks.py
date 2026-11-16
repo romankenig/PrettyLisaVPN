@@ -13,6 +13,7 @@ from prettylisavpn.client_vpn.methods import METHODS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.method_check_model import MethodCheckRecord
+from prettylisavpn.fleet.selection_history import load_selection_history
 from prettylisavpn.fleet.service_checks import daily_slot
 from prettylisavpn.product_analytics.activity import is_test_account
 from prettylisavpn.product_analytics.domain import day
@@ -90,6 +91,7 @@ class MethodAnalytics:
                 "generated_at": now.isoformat(),
                 "timezone": "GMT+3",
                 "methods": items,
+                "selection_history": await load_selection_history(session, now, "methods"),
                 "selection": {
                     "active_sessions": total,
                     "items": [

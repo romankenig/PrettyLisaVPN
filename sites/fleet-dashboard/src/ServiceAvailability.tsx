@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import AnalyticsChart from "./AnalyticsChart";
-import BarDistribution from "./BarDistribution";
+import DailySelectionDistribution from "./DailySelectionDistribution";
+import { readSelectionHistory, type SelectionHistory } from "./selectionHistory";
 import { formatNumber } from "./analytics";
 import { date } from "./time";
 
 type Service = { id: string; name: string; points: {date: string; score: number | null}[]; week_score: number | null; observed_days: number; today_score: number | null; today_code: string | null; next_check_at: string };
-type Report = { generated_at: string; services: Service[]; selection: { active_sessions: number; observed_sessions: number; unknown_mode_sessions: number; items: {name: string; count: number}[] } };
+type Report = { generated_at: string; services: Service[]; selection_history?: SelectionHistory; selection: { active_sessions: number; observed_sessions: number; unknown_mode_sessions: number; items: {name: string; count: number}[] } };
 
 export default function ServiceAvailability() {
   const [data, setData] = useState<Report | null>(null);
@@ -19,6 +20,7 @@ export default function ServiceAvailability() {
         if (!response.ok) throw new Error("Unavailable");
         const report = await response.json() as Report;
         if (!Array.isArray(report.services) || !report.selection) throw new Error("Invalid");
+        if (report.selection_history !== undefined) readSelectionHistory(report.selection_history);
         if (!controller.signal.aborted) { setData(report); setError(false); }
       } catch { if (!controller.signal.aborted) setError(true); }
     };
@@ -34,6 +36,6 @@ export default function ServiceAvailability() {
       <p className="metric-definition">Случайная существующая публичная ссылка, сервер и тип подключения. Сразу успешно — 100%; затем оценка уменьшается пропорционально минутам до первого успеха. Без успеха за 30 минут или после перебора вариантов — 0%. Отсутствие проверяемой ссылки или измерений — пропуск. Первая серия запускается после включения; прошедшие дни не заполняются искусственно.</p>
     </section>
     {active && <AnalyticsChart title={`Доступность · ${active.name}`} dates={active.points.map(point => point.date)} unit="%" series={[{ name: active.name, color: "#5f22d9", values: active.points.map(point => point.score) }]} explanation={`Среднее считается только по дням с результатом: ${active.observed_days} из 7. Текущий день показан отдельно в таблице.`} />}
-    <BarDistribution title="Выбранные сервисы в открытых подключениях" items={data?.selection.items ?? []} explanation={`Одна отметка на сервис в подтверждённой открытой сессии с режимом «защита выбранного трафика». Доля — отметки сервиса / все отметки. UNKNOWN объединяет ручные правила и неизвестные ID; конкретные правила доступны только в БД. Покрыто сессий: ${data?.selection.observed_sessions ?? 0} / ${data?.selection.active_sessions ?? 0}; с неизвестным режимом: ${data?.selection.unknown_mode_sessions ?? 0}. Это выбранные правила, а не история посещений.`} />
+    <DailySelectionDistribution title="Выбранные сервисы по дням" history={data?.selection_history} explanation="Одна отметка на выбранный сервис в сессии с режимом «защита выбранного трафика». Доля — отметки сервиса / все известные отметки за день. UNKNOWN объединяет ручные правила и неизвестные ID; конкретные правила остаются только в БД. Это выбранные правила, а не история посещений." />
   </div>;
 }

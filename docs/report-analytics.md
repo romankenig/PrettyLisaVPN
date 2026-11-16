@@ -1,5 +1,8 @@
 # Availability and product reports — 2026-11-14
 
+Server/method/service reports now have [separate pages and daily usage distributions](availability-pages.md)
+(backend 0.47.0 / dashboard 0.14.0).
+
 Current-day follow-up: [all product charts](current-product-analytics.md) include
 today's partial observations with minute refresh (backend 0.46.0/dashboard 0.13.0).
 
