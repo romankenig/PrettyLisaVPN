@@ -21,6 +21,8 @@ After incorporating app-version analytics from develop, the combined local
 message/analytics suites passed 59 unit and 17 PostgreSQL integration tests;
 Ruff and mypy also passed. The Android acceptance runner now expects all 27
 account-screen tests, including the new mandatory-message scenario.
+Native screenshot review also applies the shared action/error palette directly
+inside the Apple sheet: presented sheets do not inherit the root view's tint.
 Full native Windows/Android/Apple builds and screenshots use this task's Actions
 runs. The local Windows native test initially could not compile because the
 workspace lacks the generated managed-engine embedding; no historical executable

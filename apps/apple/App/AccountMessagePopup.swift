@@ -5,7 +5,9 @@ struct AccountMessagePopup: View {
     @ObservedObject var model: AppModel
     let message: AccountMessage
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colors
     @State private var linkError = false
+    private let danger = Color(red: 200 / 255, green: 43 / 255, blue: 40 / 255)
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text(message.title).font(.title2.bold()).accessibilityIdentifier("message-title")
@@ -21,8 +23,8 @@ struct AccountMessagePopup: View {
                             } catch { linkError = true }
                         }.accessibilityIdentifier("message-link-\(index)")
                     }
-                    if linkError { Text(L("message_link_error")).foregroundStyle(.red) }
-                    if model.messageError { Text(L("message_ack_error")).foregroundStyle(.red) }
+                    if linkError { Text(L("message_link_error")).foregroundStyle(danger) }
+                    if model.messageError { Text(L("message_ack_error")).foregroundStyle(danger) }
                 }
             }
             if message.canDismiss {
@@ -38,6 +40,7 @@ struct AccountMessagePopup: View {
             }
         }
         .padding(24).frame(minWidth: 280, idealWidth: 480, maxWidth: 580, minHeight: 300, idealHeight: 480)
+        .tint(colors == .dark ? Color(red: 172 / 255, green: 115 / 255, blue: 1) : Color(red: 95 / 255, green: 34 / 255, blue: 217 / 255))
         .task(id: message.key) {
             guard let expiry = message.expires_at.flatMap(WireJSON.date) else { return }
             while expiry > Date() {
