@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select, update
 from test_client_vpn_integration import connect, vpn_state  # noqa: F401
+from test_fleet_integration import fleet_state  # noqa: F401
 
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.fleet.method_checks import MethodAnalytics
