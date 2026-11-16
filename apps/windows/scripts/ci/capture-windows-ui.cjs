@@ -462,6 +462,11 @@ async function main() {
   ).json();
   if (afterRepeat.attempts !== afterRead.attempts)
     throw new Error("Repeating modes must never ACK");
+  await fetch("http://127.0.0.1:8000/ui-review/messages-scenario", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ scenario: "none" }),
+  });
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "главная", exact: true })

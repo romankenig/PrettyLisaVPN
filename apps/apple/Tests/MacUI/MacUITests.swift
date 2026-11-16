@@ -2,22 +2,31 @@ import XCTest
 
 final class MacUITests: XCTestCase {
     func testAccountMessagePopups() {
-        for mandatory in [false, true] {
+        for mode in ["once", "repeat", "mandatory"] {
             let app = XCUIApplication()
-            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES"]
-            if mandatory { app.launchArguments += ["-mandatory-message", "YES"] }
+            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES", "-language", "ru"]
+            if mode != "once" { app.launchArguments += ["-\(mode)-message", "YES"] }
             app.launch()
             XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 20))
             XCTAssertTrue(app.buttons["message-link-0"].exists)
             let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
-            shot.name = mandatory ? "macOS-message-mandatory" : "macOS-message-optional"; shot.lifetime = .keepAlways; add(shot)
-            if mandatory {
-                XCTAssertFalse(app.buttons["message-later"].exists); XCTAssertFalse(app.buttons["message-ack"].exists)
+            shot.name = "macOS-message-\(mode)"; shot.lifetime = .keepAlways; add(shot)
+            XCTAssertFalse(app.buttons["message-later"].exists)
+            if mode == "mandatory" {
+                XCTAssertFalse(app.buttons["message-ack"].exists)
                 app.typeKey(.escape, modifierFlags: [])
                 XCTAssertTrue(app.staticTexts["message-title"].exists)
-            } else {
-                app.buttons["message-later"].click()
-                XCTAssertTrue(app.staticTexts["message-title"].waitForNonExistence(timeout: 5))
+                app.buttons["message-link-0"].click(); app.activate()
+                XCTAssertTrue(app.buttons["message-ack"].waitForExistence(timeout: 10))
+                let unlocked = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+                unlocked.name = "macOS-message-link-opened"; unlocked.lifetime = .keepAlways; add(unlocked)
+            }
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertTrue(app.staticTexts["message-title"].waitForNonExistence(timeout: 5))
+            if mode != "once" {
+                app.terminate(); app.launch()
+                XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 20))
+                XCTAssertEqual(app.buttons["message-ack"].exists, mode == "repeat")
             }
             app.terminate()
         }

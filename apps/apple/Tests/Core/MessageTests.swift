@@ -26,6 +26,12 @@ final class MessageTests: XCTestCase {
         XCTAssertFalse(message.canAcknowledge); XCTAssertFalse(repeated.messages[0].canAcknowledge)
         XCTAssertThrowsError(try inbox(mode: "UNKNOWN").validate())
     }
+    func testBundledPopupPublicationsValidateBeforeFiltering() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let inbox = try WireJSON.decode(Messages.self, from: Data(contentsOf: root.appendingPathComponent("Resources/Fixtures/messages.json")))
+        try inbox.validate()
+        XCTAssertEqual(Set(inbox.messages.compactMap { $0.dismissal_mode?.rawValue }), ["REQUIRE_LINK", "NEXT_VISIT", "ONCE"])
+    }
     func testSafeLinksAndLegacyContract() throws {
         for url in ["http://example.com", "javascript:alert(1)", "file:///tmp/a", "https://user@example.com", "https://@example.com", "https://example.com:8443", "https://example.com\\@evil.com", "https://example.com/\n"] {
             XCTAssertThrowsError(try inbox(url: url).validate(), url)
