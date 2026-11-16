@@ -20,8 +20,10 @@ the catalog size. Fisher–Yates/platform shuffle chooses the ordering; an ident
 result is rotated (or replaced for a singleton), so every click visibly changes it.
 There are no new protocols, backend calls or network checks in this action.
 
-Selected methods appear first in their saved base attempt order; unselected
-methods follow in catalog order. Enabling another method appends it; disabling
+Windows and Apple show selected methods first in their saved base attempt order;
+unselected methods follow in catalog order. Android 0.28.2 always displays methods
+alphabetically by their labels, independently of selection or saved attempt order.
+Enabling another method appends it to the attempt order; disabling
 one retains the others' order and cannot remove the last method. “All methods”
 on Windows/Android restores the default catalog order and includes future entries.
 An explicitly randomized full catalog remains a fixed ordered selection.
@@ -59,3 +61,25 @@ artifacts are recorded in the task PR after the last push. Native fixture UI is
 not real VPN acceptance. No transport change requires a new real-tunnel claim.
 Backend follow-up: none. Merge and client publication are separate owner actions;
 the existing develop publisher will run after an approved merge.
+
+## Android display correction — 2026-11-15
+
+Android **0.28.1/code 56 → 0.28.2/code 57**, PATCH for selection-screen feedback.
+Integrated develop: `159d98890602179838fe196d1d3c75aaaf8502c4`. Other component versions
+are unchanged. The two-column list reads alphabetically left to right, then top
+to bottom, using case-insensitive protocol labels. Selected and unselected rows
+stay in the same positions. Both explanatory captions are removed in six locales.
+
+Each refresh press rotates the icon over 400 ms and fades a violet highlight on
+changed checkbox rows over 650 ms. If only saved attempt order changes, the selected
+rows receive the feedback. Rapid presses apply immediately and restart the feedback;
+manual editing clears it. Compose animations honor the system motion duration scale.
+No selection, persistence, attempt-order or last-success rule is changed.
+
+Native Android acceptance checks alphabetical coordinates and checkbox state after
+manual selection, repeated randomization and restoring all methods; it also checks
+the highlight fades with a controlled animation clock and saves native screenshots.
+Existing unit tests continue to cover preserved attempt order and recovery priority.
+Actual final source/build SHA, run/attempt and artifacts belong in the task PR after
+CI completes. No backend follow-up or data migration is needed. Publication follows
+a separately approved develop merge.
