@@ -1,7 +1,8 @@
 # Account message popup v2 — handoff
 
-Source base: `4a82a672` (`origin/develop`, including app-version analytics and
-pending-device access). Independent task versions: backend 0.49.0 → 0.50.0;
+Source base: `d67cde11` (`origin/develop`, including app-version analytics and
+pending-device access and connection-outcome reporting). Independent task versions:
+backend 0.50.0 → 0.51.0;
 Windows 0.30.0 → 0.31.0; Android 0.29.0/code58 → 0.30.0/code59;
 iOS 0.5.0 → 0.6.0; macOS 0.4.0 → 0.5.0. Other components unchanged.
 No database migration: existing immutable JSONB publications hold the v2 fields.
@@ -63,3 +64,9 @@ After the three-mode change, local validation passed 47 backend contract tests,
 16 real-PostgreSQL message integration tests, Alembic upgrade/check, Ruff and mypy;
 408 Windows tests, ESLint, TypeScript and production Vite build; Apple project
 checks and five packaging tests; Android six-language catalog checks.
+
+Native acceptance follow-up fixes duplicate IDs in the Apple example envelope,
+validates that entire envelope in Swift core tests, covers all modes in the
+separate macOS UI suite, and resets the Windows repeat fixture before unrelated
+relaunch/language tests. Concurrent develop reporting changes are merged intact;
+only the popup backend version advances to 0.51.0. Final evidence is in PR #96.

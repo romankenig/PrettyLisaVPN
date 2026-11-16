@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Account message popups — backend 0.50.0 / Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
+### Account message popups — backend 0.51.0 / Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
 
 - Added shared JSON v2 with operator-authored HTTPS links and three dismissal modes:
   REQUIRE_LINK unlocks closing after a browser launch and repeats next launch;
@@ -18,6 +18,16 @@
   REQUIRE_LINK rechecks for withdrawal/expiry; no server-side VPN ban is added.
 - See [contract and publication examples](docs/account-messages.md) and
   [validation handoff](docs/account-messages-v2-handoff.md).
+
+### Connection outcome distributions — backend 0.50.0 / dashboard 0.16.0
+
+- Add All / Successful / Unsuccessful filters to daily connection-method and
+  selected-service distributions, defaulting to Successful. Preserve daily
+  counts/shares, incomplete today and minute refresh.
+- Use durable completed attempts for unsuccessful outcomes; keep pending attempts
+  separate from failures and preserve historical service coverage. Existing
+  successful histories and client APIs remain compatible; no migration or engine
+  update. See [handoff](docs/connection-outcome-distributions.md).
 
 ### Device-limit cabinet — backend 0.49.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 

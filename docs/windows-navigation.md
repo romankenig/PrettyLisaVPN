@@ -35,6 +35,14 @@ not evidence of production deployment. Linux/Android TV have no shipping account
 UI yet. The independent website payment portal is unchanged. See
 [contract, tests and rollout](device-limit-access.md).
 
+# Dashboard 0.16.0 — connection outcome filters
+
+The existing method and service report pages add All / Successful / Unsuccessful
+controls to their daily distributions, defaulting to Successful. The count/share
+control remains independent; both selections survive minute refresh. This is
+implemented backend 0.50.0 integration, with no native or popup navigation changes.
+See [handoff](connection-outcome-distributions.md).
+
 # Dashboard 0.15.0 — application versions
 
 Shared report navigation adds `/dashboard/app-versions` and its trailing-slash

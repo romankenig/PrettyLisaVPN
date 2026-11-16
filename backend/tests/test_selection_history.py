@@ -1,7 +1,12 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
-from prettylisavpn.fleet.selection_history import SessionInterval, selection_history
+from prettylisavpn.client_vpn.model import ClientLeaseRecord
+from prettylisavpn.fleet.selection_history import (
+    SessionInterval,
+    connection_outcome,
+    selection_history,
+)
 from prettylisavpn.product_analytics.domain import boundary, day
 
 NOW = datetime(2026, 11, 16, 12, tzinfo=UTC)
@@ -28,10 +33,10 @@ def history(rows, kind="methods", observed=START - timedelta(days=7), now=NOW):
 
 def test_long_sessions_count_once_on_every_overlapping_day_and_midnight_is_exclusive():
     long = interval(
-        verified_at=START - timedelta(days=2, hours=-1), ended_at=START + timedelta(seconds=1)
+        started_at=START - timedelta(days=2, hours=-1), ended_at=START + timedelta(seconds=1)
     )
     midnight = interval(
-        verified_at=START - timedelta(hours=1), ended_at=START, method="wireguard_relay"
+        started_at=START - timedelta(hours=1), ended_at=START, method="wireguard_relay"
     )
     points = history([long, midnight])["points"]
     assert len(points) == 8
@@ -44,11 +49,11 @@ def test_long_sessions_count_once_on_every_overlapping_day_and_midnight_is_exclu
 
 def test_expiry_caps_overlap_future_verifications_are_excluded_and_zero_length_is_observed():
     rows = [
-        interval(verified_at=START - timedelta(hours=1), expires_at=START),
-        interval(verified_at=NOW + timedelta(microseconds=1)),
-        interval(verified_at=NOW, ended_at=NOW),
-        interval(verified_at=NOW, expires_at=START),
-        interval(verified_at=NOW, ended_at=START),
+        interval(started_at=START - timedelta(hours=1), expires_at=START),
+        interval(started_at=NOW + timedelta(microseconds=1)),
+        interval(started_at=NOW, ended_at=NOW),
+        interval(started_at=NOW, expires_at=START),
+        interval(started_at=NOW, ended_at=START),
     ]
     points = history(rows)["points"]
     assert points[-2]["total"] == 1
@@ -83,7 +88,7 @@ def test_missing_service_metadata_and_modes_remain_missing_or_partial_not_zero()
 
 
 def test_terminal_legacy_rows_without_end_never_invent_later_open_days():
-    old = interval(verified_at=START - timedelta(days=2), ended_at=None)
+    old = interval(started_at=START - timedelta(days=2), ended_at=None)
     points = history([old])["points"]
     assert points[-3]["total"] == 1
     assert points[-2]["total"] is None and points[-2]["uncertain_sessions"] == 1
@@ -101,3 +106,60 @@ def test_coverage_empty_day_unknown_method_and_midnight_rollover():
     result = history([interval(ended_at=NOW)], now=START + timedelta(days=1))
     assert result["through_date"] == "2026-11-17"
     assert result["points"][-1]["total"] == 0 and result["points"][-2]["total"] == 1
+
+
+def test_connection_outcomes_require_terminal_evidence_and_keep_verified_success():
+    values = dict(created_at=START, expires_at=NOW + timedelta(hours=1), status="READY")
+    for changes, expected in [
+        ({}, None),
+        ({"status": "PROVISIONING", "code": "VPN_NODE_UNAVAILABLE"}, None),
+        ({"status": "REVOKING"}, "unsuccessful"),
+        ({"status": "CLOSED"}, "unsuccessful"),
+        ({"removed_at": NOW}, "unsuccessful"),
+        ({"disconnected_at": NOW}, "unsuccessful"),
+        ({"expires_at": NOW}, "unsuccessful"),
+        ({"disconnected_at": NOW + timedelta(seconds=1)}, None),
+        ({"removed_at": START - timedelta(seconds=1)}, None),
+        ({"verified_at": START, "status": "CLOSED", "code": "VPN_NODE_UNAVAILABLE"}, "successful"),
+        ({"verified_at": NOW + timedelta(seconds=1), "status": "CLOSED"}, None),
+        ({"created_at": NOW + timedelta(seconds=1), "status": "CLOSED"}, None),
+    ]:
+        assert connection_outcome(ClientLeaseRecord(**{**values, **changes}), NOW) == expected
+
+
+def test_outcome_filters_keep_successful_overlap_and_failed_attempts_on_creation_day():
+    failed_at = START - timedelta(seconds=1)
+    failed = interval(
+        started_at=failed_at,
+        expires_at=failed_at + timedelta(microseconds=1),
+        ended_at=failed_at,
+        method="amneziawg",
+        outcome="unsuccessful",
+    )
+    rows = [interval(started_at=START - timedelta(days=1)), failed]
+    results = {
+        value: selection_history(NOW, rows, START - timedelta(days=7), "methods", {}, value)
+        for value in ("successful", "unsuccessful", "all")
+    }
+    assert results["successful"]["points"][-2]["counts"] == {"wireguard": 1}
+    assert results["unsuccessful"]["points"][-2]["counts"] == {"amneziawg": 1}
+    assert results["all"]["points"][-2]["counts"] == {"amneziawg": 1, "wireguard": 1}
+    assert results["unsuccessful"]["points"][-1]["counts"] == {}
+    assert results["all"]["points"][-1]["counts"] == {"wireguard": 1}
+
+
+def test_failed_service_selections_preserve_unknown_deduplication_and_missing_coverage():
+    failed = interval(
+        ended_at=START,
+        expires_at=START + timedelta(microseconds=1),
+        outcome="unsuccessful",
+        service_ids=("one", "one", "secret-id"),
+        custom_rules=True,
+    )
+    rows = [interval(service_ids=("two",)), failed, replace(failed, service_ids=None)]
+    report = selection_history(NOW, rows, START, "services", CATALOG, "unsuccessful")
+    point = report["points"][-1]
+    assert point["counts"] == {"youtube": 1, "UNKNOWN": 1}
+    assert point["active_sessions"] == 2 and point["observed_sessions"] == 1
+    assert not point["complete"] and report["points"][-2]["counts"] is None
+    assert "secret-id" not in str(report)

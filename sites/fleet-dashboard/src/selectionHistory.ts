@@ -1,7 +1,11 @@
 import type { Series } from "./analytics.ts";
 
 export type SelectionDay = { date: string; partial: boolean; complete: boolean; counts: Record<string, number> | null; total: number | null; active_sessions: number; observed_sessions: number; unknown_mode_sessions: number; uncertain_sessions: number };
-export type SelectionHistory = { timezone: "GMT+3"; generated_at: string; from_date: string; through_date: string; observed_from: string | null; categories: { id: string; name: string }[]; points: SelectionDay[] };
+export const connectionOutcomes = ["all", "successful", "unsuccessful"] as const;
+export type ConnectionOutcome = typeof connectionOutcomes[number];
+export const outcomeLabels: Record<ConnectionOutcome, string> = { all: "Все", successful: "Успешные", unsuccessful: "Неуспешные" };
+type SelectionData = { timezone: "GMT+3"; generated_at: string; from_date: string; through_date: string; observed_from: string | null; categories: { id: string; name: string }[]; points: SelectionDay[] };
+export type SelectionHistory = SelectionData & { outcomes?: Record<ConnectionOutcome, SelectionData> };
 export function readSelectionHistory(value: unknown): SelectionHistory {
   const data = value as SelectionHistory;
   if (!data || data.timezone !== "GMT+3" || !Number.isFinite(Date.parse(data.generated_at)) || !Array.isArray(data.categories) || !Array.isArray(data.points) || data.points.length !== 8) throw new Error("Invalid selection history");
@@ -23,7 +27,20 @@ export function readSelectionHistory(value: unknown): SelectionHistory {
     }
   }
   if (data.from_date !== data.points[0].date || data.through_date !== data.points[7].date || new Date(Date.parse(data.generated_at) + 3 * 3600_000).toISOString().slice(0, 10) !== data.through_date) throw new Error("Invalid period");
+  if (data.outcomes !== undefined) {
+    if (!data.outcomes || typeof data.outcomes !== "object") throw new Error("Invalid outcomes");
+    for (const outcome of connectionOutcomes) {
+      const history = data.outcomes[outcome];
+      if (!history || "outcomes" in history) throw new Error("Invalid outcome history");
+      readSelectionHistory(history);
+      if (history.generated_at !== data.generated_at || history.from_date !== data.from_date || history.through_date !== data.through_date || JSON.stringify(history.categories) !== JSON.stringify(data.categories)) throw new Error("Inconsistent outcome history");
+    }
+    if (JSON.stringify(data.outcomes.successful.points) !== JSON.stringify(data.points)) throw new Error("Inconsistent successful history");
+  }
   return data;
+}
+export function historyForOutcome(history: SelectionHistory | undefined, outcome: ConnectionOutcome): SelectionData | undefined {
+  return history?.outcomes?.[outcome] ?? (outcome === "successful" ? history : undefined);
 }
 const palette = ["#5f22d9", "#17655c", "#ac73ff", "#2c016d", "#51d6ca", "#377aa0", "#6877aa", "#5b5b5b"];
 export function categoryColors(ids: string[]): Map<string, string> {

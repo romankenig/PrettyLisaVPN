@@ -124,3 +124,104 @@ async def test_daily_method_and_service_history_include_closed_today_and_survive
     assert (await ServiceAnalytics(postgres).report(now))["selection_history"]["points"][-1][
         "counts"
     ] == {}
+
+
+async def test_daily_outcomes_classify_durable_attempts_and_service_choices(vpn_state):  # noqa: F811
+    postgres, service, worker, _, identity = vpn_state
+    lease_id = UUID((await connect(service))["id"])
+    await worker.tick()
+    now = datetime(2099, 10, 16, 12, tzinfo=UTC)
+    start = boundary(day(now))
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(UserRecord)
+            .where(UserRecord.id == identity.user_id)
+            .values(email=f"outcome-{uuid4()}@gmail.com")
+        )
+        catalog = await session.scalar(select(TrafficServiceRecord).limit(1))
+        selected_id, slug = str(catalog.id), catalog.slug
+        lease = await session.get(ClientLeaseRecord, lease_id)
+        lease.created_at = lease.verified_at = start - timedelta(hours=1)
+        lease.expires_at = now + timedelta(hours=1)
+        lease.disconnected_at = lease.removed_at = now
+        lease.status, lease.traffic_mode = "CLOSED", "include"
+        lease.service_ids, lease.custom_rules = [selected_id], []
+        await session.flush()
+        fields = {
+            column.key: getattr(lease, column.key) for column in ClientLeaseRecord.__table__.columns
+        }
+        pending_id = uuid4()
+        for changes in [
+            dict(
+                method="https_proxy",
+                address=None,
+                engine_port=41000,
+                service_ids=[selected_id, selected_id, str(uuid4())],
+                custom_rules=["*.private-rule.example.org"],
+            ),
+            dict(created_at=start - timedelta(seconds=1)),
+            dict(traffic_mode=None, service_ids=None, custom_rules=None),
+            dict(
+                id=pending_id,
+                status="PROVISIONING",
+                disconnected_at=None,
+                removed_at=None,
+                code="VPN_NODE_UNAVAILABLE",
+            ),
+        ]:
+            session.add(
+                ClientLeaseRecord(
+                    **{
+                        **fields,
+                        "id": uuid4(),
+                        "request_id": uuid4(),
+                        "created_at": start,
+                        "verified_at": None,
+                        **changes,
+                    }
+                )
+            )
+    for analytics, is_service in [
+        (MethodAnalytics(postgres), False),
+        (ServiceAnalytics(postgres), True),
+    ]:
+        history = (await analytics.report(now))["selection_history"]
+        outcomes = history["outcomes"]
+        assert outcomes["successful"]["points"] == history["points"]
+        assert all(value["categories"] == history["categories"] for value in outcomes.values())
+        success, failed, all_rows = (
+            outcomes[key]["points"][-1] for key in ("successful", "unsuccessful", "all")
+        )
+        assert success["counts"] == {slug if is_service else "wireguard": 1}
+        assert failed["counts"] == (
+            {slug: 1, "UNKNOWN": 1} if is_service else {"https_proxy": 1, "wireguard": 1}
+        )
+        assert all_rows["counts"] == (
+            {slug: 2, "UNKNOWN": 1} if is_service else {"https_proxy": 1, "wireguard": 2}
+        )
+        assert outcomes["unsuccessful"]["points"][-2]["counts"] == {
+            slug if is_service else "wireguard": 1
+        }
+        assert failed["complete"] is not is_service
+        assert "private-rule" not in str(history) and str(lease_id) not in str(history)
+    # A retry without verification enters the unsuccessful group only after it ends.
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(ClientLeaseRecord)
+            .where(ClientLeaseRecord.id == pending_id)
+            .values(status="REVOKING", disconnected_at=now)
+        )
+    fresh = (await MethodAnalytics(postgres).report(now))["selection_history"]["outcomes"]
+    assert fresh["unsuccessful"]["points"][-1]["counts"] == {"https_proxy": 1, "wireguard": 2}
+    assert fresh["successful"]["points"][-1]["total"] == 1
+    async with postgres.session() as session, session.begin():
+        await session.execute(
+            update(UserRecord)
+            .where(UserRecord.id == identity.user_id)
+            .values(email=f"excluded-{uuid4()}@example.com")
+        )
+    for analytics in (MethodAnalytics(postgres), ServiceAnalytics(postgres)):
+        assert all(
+            history["points"][-1]["counts"] == {}
+            for history in (await analytics.report(now))["selection_history"]["outcomes"].values()
+        )

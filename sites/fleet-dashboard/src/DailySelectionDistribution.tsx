@@ -1,10 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { formatDay, formatNumber } from "./analytics";
 import CurrentDayNote from "./CurrentDayNote";
-import { selectionSeries, type SelectionHistory } from "./selectionHistory";
+import { connectionOutcomes, historyForOutcome, outcomeLabels, selectionSeries, type ConnectionOutcome, type SelectionHistory } from "./selectionHistory";
 import { date } from "./time";
 
-export default function DailySelectionDistribution({ title, history, explanation, name = (_, label) => label }: { title: string; history?: SelectionHistory; explanation: string; name?: (id: string, label: string) => string }) {
+export default function DailySelectionDistribution({ title, history: source, explanation, name = (_, label) => label }: { title: string; history?: SelectionHistory; explanation: string; name?: (id: string, label: string) => string }) {
+  const [outcome, setOutcome] = useState<ConnectionOutcome>("successful");
+  const history = historyForOutcome(source, outcome);
   const [shares, setShares] = useState(false);
   const [active, setActive] = useState<number | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -21,9 +23,9 @@ export default function DailySelectionDistribution({ title, history, explanation
   useLayoutEffect(() => { if (scroll.current) scroll.current.scrollLeft = scroll.current.scrollWidth - scroll.current.clientWidth; }, [width, history?.through_date]);
   const focusDay = (i: number) => { setActive(i); if (scroll.current) scroll.current.scrollLeft = Math.max(0, x(i) - scroll.current.clientWidth / 2); };
   return <section className="panel analytics-chart daily-selection-chart">
-    <div className="section-title"><h2>{title}</h2><div className="chart-switch" role="group" aria-label={`${title}: единицы`}><button aria-pressed={!shares} onClick={() => setShares(false)}>Количество</button><button aria-pressed={shares} onClick={() => setShares(true)}>Доли, %</button></div></div>
-    <CurrentDayNote date={history?.through_date} />
-    {!history ? <p className="empty">Ежедневная история пока недоступна.</p> : <>
+    <div className="section-title"><h2>{title}</h2><div className="device-chart-controls"><div className="chart-switch" role="group" aria-label={`${title}: результат подключения`}>{connectionOutcomes.map(value => <button key={value} aria-pressed={outcome === value} onClick={() => { setOutcome(value); setActive(null); }}>{outcomeLabels[value]}</button>)}</div><div className="chart-switch" role="group" aria-label={`${title}: единицы`}><button aria-pressed={!shares} onClick={() => setShares(false)}>Количество</button><button aria-pressed={shares} onClick={() => setShares(true)}>Доли, %</button></div></div></div>
+    <CurrentDayNote date={source?.through_date} />
+    {!history ? <p className="empty">{source ? "История для выбранного результата пока недоступна." : "Ежедневная история пока недоступна."}</p> : <>
       <div className="analytics-legend">{series.map(row => <span key={row.name}><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" rx="2" fill={row.color} /></svg>{row.name}</span>)}</div>
       <div className="analytics-plot" tabIndex={0} role="group" aria-label={`${title}. Стрелки влево и вправо — значения по дням.`}
         onFocus={() => focusDay(7)} onBlur={() => setActive(null)}
@@ -43,7 +45,7 @@ export default function DailySelectionDistribution({ title, history, explanation
             {active !== null && <line x1={x(active)} x2={x(active)} y1="30" y2="210" className="analytics-cursor" />}
           </svg></div>
         </div>
-        {active !== null && points[active] && <div className="analytics-tooltip" role="tooltip"><strong>{formatDay(points[active].date)}{points[active].partial && " · неполный день"}</strong>{points[active].total === null ? <div>Нет полной истории наблюдений</div> : <>{series.map(row => <div key={row.name}>{row.name}: <b>{formatNumber(row.values[active])}{shares && row.values[active] !== null ? "%" : ""}</b></div>)}{points[active].total === 0 && <div>Нет отметок в этот день</div>}</>}
+        {active !== null && points[active] && <div className="analytics-tooltip" role="tooltip"><strong>{formatDay(points[active].date)}{points[active].partial && " · неполный день"} · {outcomeLabels[outcome]}</strong>{points[active].total === null ? <div>Нет полной истории наблюдений</div> : <>{series.map(row => <div key={row.name}>{row.name}: <b>{formatNumber(row.values[active])}{shares && row.values[active] !== null ? "%" : ""}</b></div>)}{points[active].total === 0 && <div>Нет отметок в этот день</div>}</>}
           <div>Покрыто сессий: {points[active].observed_sessions} / {points[active].active_sessions}</div>
           {points[active].unknown_mode_sessions > 0 && <div>С неизвестным режимом: {points[active].unknown_mode_sessions}</div>}
           {points[active].uncertain_sessions > 0 && <div>Без времени завершения: {points[active].uncertain_sessions}</div>}
@@ -52,6 +54,6 @@ export default function DailySelectionDistribution({ title, history, explanation
       </div>
       <p className="muted">Обновлено {date(history.generated_at)} GMT+3</p>
     </>}
-    <p className="metric-definition">Каждый столбец — день, GMT+3. Сессия учитывается один раз за каждый день, когда была подтверждена и открыта; длинная сессия попадает в несколько дней. {explanation} Доли считаются внутри дня по известным отметкам. Пунктиром обозначено неполное покрытие; отсутствие истории не заменяется нулём. Тестовые аккаунты исключены.</p>
+    <p className="metric-definition">Каждый столбец — день, GMT+3. Успешная сессия учитывается один раз за каждый день, когда была подтверждена и открыта. Неуспешная — завершённая попытка без подтверждения подключения, включая отмену или истечение срока; учитывается один раз в день начала. «Все» объединяет эти группы; попытки без результата не включены. {explanation} Доли считаются внутри выбранной группы за день по известным отметкам. Пунктиром обозначено неполное покрытие; отсутствие истории не заменяется нулём. Тестовые аккаунты исключены.</p>
   </section>;
 }
