@@ -6,6 +6,8 @@ analytics (`/dashboard/product-analytics`). All direct URLs and trailing-slash
 variants are implemented under existing Caddy authentication. The new daily
 distributions use backend 0.47.0; no client navigation or pending backend integration
 is introduced. See [report handoff](availability-pages.md).
+The completion review gives daily category segments distinct colors and reserves
+gray for UNKNOWN; the implemented page links and API integration remain the same.
 
 # Website 0.5.4 — placeholder success page
 
