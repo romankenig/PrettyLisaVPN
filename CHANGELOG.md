@@ -27,6 +27,8 @@
 - Replace instantaneous method/service histograms with daily stacked distributions:
   one session per day it was confirmed and open, counts or within-day shares,
   today's partial day and minute refresh. Expose missing historical coverage.
+- Keep category colors distinct within each daily chart, including colliding
+  method IDs; reserve gray for UNKNOWN.
 - Reuse durable session records; preserve existing API fields, UNKNOWN privacy and
   product analytics. See [report handoff](docs/availability-pages.md).
 

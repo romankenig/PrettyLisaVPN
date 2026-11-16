@@ -40,6 +40,17 @@ test("partial service coverage preserves known categories and missing daily data
   assert.equal(selectionSeries(read, false, (_, name) => name)[0].values[7], 7);
 });
 
+test("colliding method colors stay distinct, reserve UNKNOWN gray and survive unit/order changes", () => {
+  const data = fixture();
+  data.categories = ["amneziawg", "https_proxy", "hysteria", "shadowsocks2022", "sstp_relay", "vless_reality_relay", "wireguard", "wireguard_relay", "hysteria2", "UNKNOWN"].map(id => ({id, name:id}));
+  const series = selectionSeries(data, false, methodName);
+  assert.equal(new Set(series.map(row => row.color)).size, data.categories.length);
+  assert.equal(series.find(row => row.name === "UNKNOWN")!.color, "#9c9c9c");
+  data.categories.reverse();
+  const byName = (rows: typeof series) => Object.fromEntries(rows.map(row => [row.name, row.color]));
+  assert.deepEqual(byName(selectionSeries(data, true, methodName)), byName(series));
+});
+
 test("three stability pages and product analytics retain direct URLs and trailing slashes", () => {
   assert.equal(reports.length, 4);
   for (const report of reports) {

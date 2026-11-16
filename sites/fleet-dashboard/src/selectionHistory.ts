@@ -25,11 +25,19 @@ export function readSelectionHistory(value: unknown): SelectionHistory {
   if (data.from_date !== data.points[0].date || data.through_date !== data.points[7].date || new Date(Date.parse(data.generated_at) + 3 * 3600_000).toISOString().slice(0, 10) !== data.through_date) throw new Error("Invalid period");
   return data;
 }
-const palette = ["#5f22d9", "#17655c", "#ac73ff", "#2c016d", "#51d6ca", "#b28a09", "#6877aa", "#9c9c9c"];
+const palette = ["#5f22d9", "#17655c", "#ac73ff", "#2c016d", "#51d6ca", "#377aa0", "#6877aa", "#5b5b5b"];
 export function selectionSeries(history: SelectionHistory, shares: boolean, name: (id: string, label: string) => string): Series[] {
+  const colors = new Map<string, string>(), used = new Set<string>();
+  for (const id of history.categories.map(row => row.id).sort()) {
+    if (id === "UNKNOWN") { colors.set(id, "#9c9c9c"); continue; }
+    const preferred = [...id].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 0) % palette.length;
+    const color = palette.map((_, offset) => palette[(preferred + offset) % palette.length]).find(candidate => !used.has(candidate))
+      ?? `hsl(${(170 + used.size * 137.508) % 360} 45% 45%)`;
+    colors.set(id, color); used.add(color);
+  }
   return history.categories.map(row => ({
     name: name(row.id, row.name),
-    color: row.id === "UNKNOWN" ? "#9c9c9c" : palette[[...row.id].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 0) % palette.length],
+    color: colors.get(row.id)!,
     values: history.points.map(point => point.counts === null || (shares && !point.total) ? null : shares ? 100 * (point.counts[row.id] ?? 0) / point.total! : point.counts[row.id] ?? 0),
   }));
 }
