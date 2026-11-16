@@ -22,6 +22,7 @@ from prettylisavpn.auth.session_service import AuthenticatedSessionHandler
 from prettylisavpn.connections import Postgres
 from prettylisavpn.devices.domain import DevicePlatform
 from prettylisavpn.devices.repository import DeviceRepository
+from prettylisavpn.product_analytics.app_versions import AppActivitySink, record_app_activity
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 
@@ -39,8 +40,15 @@ class PublicationConflictError(ValueError):
 
 
 class AccountMessagesService:
-    def __init__(self, postgres: Postgres, auth: AuthenticatedSessionHandler) -> None:
+    def __init__(
+        self,
+        postgres: Postgres,
+        auth: AuthenticatedSessionHandler,
+        *,
+        app_activity: AppActivitySink | None = None,
+    ) -> None:
         self.postgres, self.auth = postgres, auth
+        self.app_activity = app_activity
 
     async def list_messages(self, token: str, context: MessageContext) -> MessagesResponse:
         identity = await self.auth.authenticate(token)
@@ -81,6 +89,9 @@ class AccountMessagesService:
                     await repository.delivered(identity.user_id, message.id, message.revision)
         except (SQLAlchemyError, ValidationError):
             raise MessagesUnavailableError from None
+        await record_app_activity(
+            self.app_activity, identity.user_id, identity.device_id, context.app_version
+        )
         return result
 
     async def acknowledge(self, token: str, message_id: UUID, revision: int) -> Receipt:

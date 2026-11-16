@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-### Device-limit cabinet — backend 0.48.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
+### Device-limit cabinet — backend 0.49.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
 
 - Allow OTP sign-in when all five device slots are occupied. New installations
   enter a restricted cabinet with a red notice, dimmed features and links to
@@ -14,11 +14,22 @@
 - Enforce restrictions on the backend. Pending installations do not consume a
   slot, and existing admitted devices keep working. After removing a device,
   activate the current installation without another OTP, under the account lock.
-- Migration 0051 adds pending device status. Old clients retain the existing
+- Migration 0052 adds pending device status. Old clients retain the existing
   cap response unless they opt in; deploy backend before clients and consult
   [migration/rollback and validation handoff](docs/device-limit-access.md).
 - Website 0.6.1 unchanged; Linux/Android TV scaffolds share the tested backend
   contract and still require their own future client UI.
+
+### App version usage — backend 0.48.0 / dashboard 0.15.0 / Chrome 0.4.1
+
+- Add a private app-version report by platform, with daily active users, counts or
+  shares, current partial day, minute refresh and a current-day device breakdown.
+- Persist the last reported version of each active device/day in migration 0051.
+  Existing message requests supply Windows/Android/Apple versions; Chrome sends
+  its manifest version on authenticated API requests. Unknown versions remain
+  UNKNOWN and pre-collection history remains absent.
+- Deduplicate accounts per platform/version/day; retain 180 days without request
+  destinations or browsing history. See [handoff](docs/app-version-analytics.md).
 
 ### Stability pages and daily usage — backend 0.47.0 / dashboard 0.14.0
 

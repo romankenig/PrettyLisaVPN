@@ -4,12 +4,12 @@
 
 | Component | Before | After |
 | --- | --- | --- |
-| Backend | 0.47.0 | 0.48.0 |
+| Backend | 0.48.0 | 0.49.0 |
 | Windows | 0.29.1 | 0.30.0 |
 | Android | 0.28.2 (57) | 0.29.0 (58) |
 | iOS | 0.4.1 | 0.5.0 |
 | macOS | 0.3.1 | 0.4.0 |
-| Chrome Extension | 0.4.0 | 0.5.0 |
+| Chrome Extension | 0.4.1 | 0.5.0 |
 | Website | 0.6.1 | unchanged |
 
 MINOR: new restricted account cabinet and device activation contract. Linux and
@@ -56,7 +56,7 @@ All new copy is localized into the existing six languages.
 
 ## Compatibility, migration and delivery
 
-Migration `0051_pending_devices` adds enum value `PENDING` and updates the
+Migration `0052_pending_devices` adds enum value `PENDING` and updates the
 revocation-timestamp constraint. No changes to active-slot counting or paid
 entitlements. Without opt-in, existing clients retain HTTP 409 at the cap.
 Deploy backend before the new clients. New clients on an old backend still
@@ -67,11 +67,14 @@ refuses while any pending row exists; revoke/resolve those rows explicitly or
 roll back only to a backend that understands them. The unused enum value is
 retained on schema downgrade, matching PostgreSQL enum migration conventions.
 
-Base product SHA after synchronizing PRs #93/#94: `61d03c42` (develop).
-PR #93 already published backend 0.47.0. On 2026-11-16 the owner explicitly
-approved backend 0.48.0 for PR #90, preserving those report changes, and authorized
-migration 0051 before client publication. Android retains PR #92's method
-list fixes; its new code 58 permits upgrading the already released code 57.
+Base product SHA after synchronizing PR #95: `2ded0291` (develop).
+The owner authorized merging PR #90, backend/migration rollout before clients,
+and accepted using the next free backend version after PR #93 occupied 0.47.0.
+PR #95 then occupied 0.48.0 and migration 0051 before this PR could merge; the
+same numbering rule assigns this task backend 0.49.0 and migration 0052, chained
+after `0051_app_versions`. Keep PR #95's application-version reporting and
+Chrome API metadata. Android retains PR #92's method-list fixes; its new code 58
+permits upgrading the already released code 57.
 Android, Windows and Chrome use the public website; iOS/macOS remain exclusively
 in the authenticated downloads section, as explicitly requested by the owner.
 Website 0.6.1 and Apple signing requirements are unchanged. This instruction is

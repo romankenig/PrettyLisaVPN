@@ -26,15 +26,19 @@ export function readSelectionHistory(value: unknown): SelectionHistory {
   return data;
 }
 const palette = ["#5f22d9", "#17655c", "#ac73ff", "#2c016d", "#51d6ca", "#377aa0", "#6877aa", "#5b5b5b"];
-export function selectionSeries(history: SelectionHistory, shares: boolean, name: (id: string, label: string) => string): Series[] {
+export function categoryColors(ids: string[]): Map<string, string> {
   const colors = new Map<string, string>(), used = new Set<string>();
-  for (const id of history.categories.map(row => row.id).sort()) {
+  for (const id of [...ids].sort()) {
     if (id === "UNKNOWN") { colors.set(id, "#9c9c9c"); continue; }
     const preferred = [...id].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 0) % palette.length;
     const color = palette.map((_, offset) => palette[(preferred + offset) % palette.length]).find(candidate => !used.has(candidate))
       ?? `hsl(${(170 + used.size * 137.508) % 360} 45% 45%)`;
     colors.set(id, color); used.add(color);
   }
+  return colors;
+}
+export function selectionSeries(history: SelectionHistory, shares: boolean, name: (id: string, label: string) => string): Series[] {
+  const colors = categoryColors(history.categories.map(row => row.id));
   return history.categories.map(row => ({
     name: name(row.id, row.name),
     color: colors.get(row.id)!,

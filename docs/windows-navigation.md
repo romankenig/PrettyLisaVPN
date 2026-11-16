@@ -11,10 +11,18 @@ explicit local cleanup → sign-in even offline. Home/settings navigation may
 remain usable to reach Devices, while private destinations are guarded.
 
 Implemented for Windows 0.30.0, Android 0.29.0, iOS 0.5.0, macOS 0.4.0 and Chrome
-0.5.0, with backend 0.48.0 integration. This is implemented API integration,
+0.5.0, with backend 0.49.0 integration. This is implemented API integration,
 not evidence of production deployment. Linux/Android TV have no shipping account
 UI yet. The independent website payment portal is unchanged. See
 [contract, tests and rollout](device-limit-access.md).
+
+# Dashboard 0.15.0 — application versions
+
+Shared report navigation adds `/dashboard/app-versions` and its trailing-slash
+variant under existing private authentication. The implemented backend 0.48.0
+integration shows daily active users by app version/platform and today's devices,
+with counts/shares and minute refresh. Chrome 0.4.1 adds API metadata only; no
+popup or native navigation changes. See [handoff](app-version-analytics.md).
 
 # Dashboard 0.14.0 — separate stability reports
 

@@ -65,6 +65,7 @@ function fixture() {
 describe("browser lease lifecycle", () => {
   it("admits a pending device, blocks private features and activates a freed slot without OTP", async () => {
     const { controller, io } = fixture();
+    io.appVersion = "0.5.0";
     delete controller.state.session;
     let pending = true;
     let full = true;
@@ -73,6 +74,9 @@ describe("browser lease lifecycle", () => {
     io.fetch = async (input, options = {}) => {
       const path = new URL(String(input)).pathname;
       paths.push(path);
+      const headers = new Headers(options.headers);
+      if (headers.has("Authorization"))
+        expect(headers.get("X-PrettyLisaVPN-App-Version")).toBe("0.5.0");
       if (path === "/auth/verify-otp") {
         logins++;
         expect(JSON.parse(String(options.body)).allow_device_management).toBe(
@@ -153,6 +157,21 @@ describe("browser lease lifecycle", () => {
     await controller.forgetLocalSession();
     expect(controller.snapshot().signedIn).toBe(false);
     expect(io.clear).toHaveBeenCalledOnce();
+  });
+  it("reports the product version only on authenticated API requests, never tunnel probes", async () => {
+    const { controller, io, calls } = fixture();
+    io.appVersion = "0.4.1";
+    await controller.connect("AUTO");
+    const apiCalls = calls.filter((call) => !call.path.endsWith("/probe"));
+    expect(apiCalls.length).toBeGreaterThan(0);
+    for (const call of apiCalls)
+      expect(
+        new Headers(call.options.headers).get("X-PrettyLisaVPN-App-Version"),
+      ).toBe("0.4.1");
+    for (const call of calls.filter((call) => call.path.endsWith("/probe")))
+      expect(
+        new Headers(call.options.headers).has("X-PrettyLisaVPN-App-Version"),
+      ).toBe(false);
   });
   it("rechecks transaction errors with real egress proof without restarting a healthy proxy", async () => {
     const { controller, io, calls } = fixture();
