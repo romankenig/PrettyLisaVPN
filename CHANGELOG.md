@@ -6,6 +6,20 @@
 
 ## Unreleased
 
+### Device-limit cabinet — backend 0.49.0 / Windows 0.30.0 / Android 0.29.0 / iOS 0.5.0 / macOS 0.4.0 / Chrome 0.5.0
+
+- Allow OTP sign-in when all five device slots are occupied. New installations
+  enter a restricted cabinet with a red notice, dimmed features and links to
+  device management; logout and local credential cleanup remain available.
+- Enforce restrictions on the backend. Pending installations do not consume a
+  slot, and existing admitted devices keep working. After removing a device,
+  activate the current installation without another OTP, under the account lock.
+- Migration 0052 adds pending device status. Old clients retain the existing
+  cap response unless they opt in; deploy backend before clients and consult
+  [migration/rollback and validation handoff](docs/device-limit-access.md).
+- Website 0.6.1 unchanged; Linux/Android TV scaffolds share the tested backend
+  contract and still require their own future client UI.
+
 ### App version usage — backend 0.48.0 / dashboard 0.15.0 / Chrome 0.4.1
 
 - Add a private app-version report by platform, with daily active users, counts or

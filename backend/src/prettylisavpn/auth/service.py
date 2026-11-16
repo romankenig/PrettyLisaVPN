@@ -68,6 +68,8 @@ class LoginHandler(Protocol):
         installation_id: UUID,
         platform: DevicePlatform,
         device_name: str,
+        *,
+        allow_device_management: bool = False,
     ) -> "LoginResult": ...
 
 
@@ -179,6 +181,8 @@ class LoginService:
         installation_id: UUID,
         platform: DevicePlatform,
         device_name: str,
+        *,
+        allow_device_management: bool = False,
     ) -> LoginResult:
         normalized_email = normalize_email(email)
         if is_demo_email(normalized_email):
@@ -212,6 +216,7 @@ class LoginService:
                         installation_id,
                         platform,
                         device_name,
+                        allow_device_management=allow_device_management,
                     )
                     auth_session = await AuthSessionService(
                         AuthSessionRepository(session), self._refresh_token_ttl

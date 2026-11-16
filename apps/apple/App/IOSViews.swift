@@ -130,7 +130,8 @@ struct IOSRootView<Banners: View>: View {
         }.foregroundStyle(PhoneStyle.card).padding(.horizontal, 12).padding(.top, 8)
     }
     @ViewBuilder private var content: some View {
-        if advanced {
+        if model.deviceLimited { DeviceLimitView(model: model) }
+        else if advanced {
             SettingsView(model: model).scrollContentBackground(.hidden).background(PhoneStyle.card)
         } else {
             switch model.page {
@@ -195,6 +196,8 @@ struct IOSRootView<Banners: View>: View {
                     .foregroundStyle(selected ? PhoneStyle.mint : PhoneStyle.card)
             }.frame(maxWidth: .infinity).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier("nav-" + page.rawValue)
+            .disabled(model.deviceLimited && page == .about)
+            .opacity(model.deviceLimited && page == .about ? 0.45 : 1)
             .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -319,7 +322,7 @@ private struct IOSHomeView: View {
     }
 }
 
-private struct IOSDevicesView: View {
+struct IOSDevicesView: View {
     @ObservedObject var model: AppModel
     @State private var revoke: Device?
     var body: some View {
@@ -332,7 +335,7 @@ private struct IOSDevicesView: View {
                         Text(L("ui_current_device")).font(PhoneStyle.font(17, .bold)).padding(.horizontal, 14).padding(.vertical, 8)
                             .background(PhoneStyle.lilac, in: RoundedRectangle(cornerRadius: 10))
                     }
-                    Text(device.status == "ACTIVE" ? L("ui_active") : L("ui_revoked"))
+                    Text(L(device.status == "PENDING" ? "device_pending" : device.status == "ACTIVE" ? "ui_active" : "ui_revoked"))
                         .font(PhoneStyle.font(12)).foregroundStyle(PhoneStyle.secondary)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("id").foregroundStyle(PhoneStyle.secondary)
@@ -340,7 +343,7 @@ private struct IOSDevicesView: View {
                     }.font(PhoneStyle.font(12))
                     date("dash_added", device.created_at)
                     date("dash_last_login", device.last_login_at)
-                    if device.status == "ACTIVE" {
+                    if device.status == "ACTIVE" || device.status == "PENDING" {
                         Button(L("ui_revoke_access_26")) { revoke = device }.buttonStyle(PhoneActionStyle())
                             .disabled(model.busy || model.fixtures).accessibilityIdentifier("device-revoke")
                     }

@@ -323,6 +323,7 @@ async def test_me_returns_identity_plan_and_active_device_count():
             "email": email,
             "plan": "FREE",
             "active_device_count": 3,
+            "device_limit_reached": False,
             "subscription": {
                 "plan": "FREE",
                 "status": "ACTIVE",

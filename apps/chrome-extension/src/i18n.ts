@@ -8,6 +8,46 @@ export const languages = [
 ] as const;
 export type Language = (typeof languages)[number]["code"];
 export const labels = {
+  deviceLimit: [
+    "достигнут лимит устройств",
+    "device limit reached",
+    "gerätelimit erreicht",
+    "limite d’appareils atteinte",
+    "límite de dispositivos alcanzado",
+    "已达到设备数量上限",
+  ],
+  deviceLimitHelp: [
+    "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.",
+    "remove a device to use the app on this device.",
+    "entferne ein Gerät, um die App auf diesem Gerät zu verwenden.",
+    "supprimez un appareil pour utiliser l’application sur cet appareil.",
+    "elimina un dispositivo para usar la aplicación en este dispositivo.",
+    "请移除一个设备，即可在此设备上使用应用。",
+  ],
+  manageDevices: [
+    "управлять устройствами",
+    "manage devices",
+    "geräte verwalten",
+    "gérer les appareils",
+    "gestionar dispositivos",
+    "管理设备",
+  ],
+  forgetLocal: [
+    "удалить данные входа с этого устройства",
+    "remove sign-in data from this device",
+    "anmeldedaten von diesem Gerät entfernen",
+    "supprimer les données de connexion de cet appareil",
+    "eliminar los datos de acceso de este dispositivo",
+    "移除此设备上的登录数据",
+  ],
+  PENDING: [
+    "ожидает свободного места",
+    "waiting for a free slot",
+    "wartet auf einen freien Platz",
+    "en attente d’une place libre",
+    "esperando un espacio libre",
+    "等待可用名额",
+  ],
   upgrade: [
     "улучшить",
     "upgrade",

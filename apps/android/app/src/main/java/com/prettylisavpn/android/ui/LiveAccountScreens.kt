@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -32,11 +33,15 @@ import com.prettylisavpn.android.data.*
 import java.util.UUID
 
 @Composable
-internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = false, logout: () -> Unit) {
+internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = false, forget: () -> Unit = {}, logout: () -> Unit) {
     val tr = strings()
     val context = LocalContext.current
     val methodSelection = remember { com.prettylisavpn.android.vpn.DeviceMethodSelection.get(context) }
     val state by model.state.collectAsState()
+    if (state.data.deviceLimitReached) {
+        DeviceLimitCabinet(model, forget, logout)
+        return
+    }
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "HOME"
@@ -90,6 +95,45 @@ private fun LiveLoad(model: ScreenModel, area: Area, content: @Composable () -> 
 }
 
 @Composable
+internal fun DeviceLimitCabinet(model: ScreenModel, forget: () -> Unit, logout: () -> Unit) {
+    val tr = strings()
+    val state by model.state.collectAsState()
+    var devices by rememberSaveable { mutableStateOf(false) }
+    Column {
+        BrandCard(Modifier.padding(16.dp).testTag("device-limit-banner")) {
+            Text(tr(R.string.device_limit), color = Brand.PersianRed, style = MaterialTheme.typography.titleMedium)
+            Text(tr(R.string.device_limit_help), color = Brand.PersianRed)
+            BrandActionButton(tr(R.string.manage_devices), { devices = true }, Modifier.testTag("limit-manage-devices"), enabled = !state.busy)
+        }
+        Box(Modifier.weight(1f)) {
+            if (devices) LiveDevices(model) { devices = false }
+            else PhoneScreen("device-limit-cabinet") {
+                BrandCard {
+                    Text(state.data.email, style = MaterialTheme.typography.titleMedium)
+                    DetailValue(tr(R.string.dash_plan), planLabel(state.data.plan))
+                    BrandActionButton("${tr(R.string.ui_devices)} · ${state.data.activeDeviceCount} / 5", { devices = true }, Modifier.testTag("limit-device-count"))
+                }
+                BrandCard(Modifier.alpha(0.45f)) {
+                    Text(tr(R.string.dash_where))
+                    BrandActionButton(tr(R.string.dash_connect), {}, Modifier.testTag("limit-connect"), enabled = false)
+                }
+                Column(Modifier.alpha(0.45f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SettingsOption(tr(R.string.ui_subscription), tr(R.string.ui_manage_your_plan_and_payments), R.drawable.nav_subscription, "limit-subscription", enabled = false) {}
+                    SettingsOption(tr(R.string.advanced_settings), tr(R.string.connection_methods), R.drawable.nav_settings, "limit-advanced", enabled = false) {}
+                }
+                SettingsOption(tr(R.string.ui_devices), tr(R.string.ui_manage_account_access), R.drawable.nav_devices, "limit-settings-devices") { devices = true }
+                OperationError(state.error)
+            }
+        }
+        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = logout, enabled = !state.busy, modifier = Modifier.weight(1f).testTag("limit-logout")) { Text(tr(R.string.ui_sign_out), color = Brand.Mercury) }
+            TextButton(onClick = forget, enabled = !state.busy, modifier = Modifier.weight(1f).testTag("limit-forget")) { Text(tr(R.string.forget_local), color = Brand.Mercury) }
+        }
+    }
+    BackHandler(enabled = devices && !state.busy) { devices = false }
+}
+
+@Composable
 private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
     val tr = strings()
     val state by model.state.collectAsState()
@@ -99,21 +143,21 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
     PhoneScreen("live-devices-screen", onRefresh = { model.load(Area.DEVICES) }, refreshing = state.loads[Area.DEVICES]?.phase == LoadPhase.LOADING) {
         ScreenHeading(tr(R.string.ui_devices), back)
         LiveLoad(model, Area.DEVICES) {
-            val devices = state.data.devices.filter { it.active }.sortedByDescending { it.current }
+            val devices = state.data.devices.filter { it.active || it.pending }.sortedByDescending { it.current }
             if (devices.isEmpty()) BrandCard { Text(tr(R.string.ui_no_devices_to_display)) }
             devices.forEach { device -> BrandCard(Modifier.testTag("device-${device.id}")) {
                 Text(device.name, style = MaterialTheme.typography.titleMedium)
                 if (device.current) Surface(color = Brand.Heliotrope, contentColor = Brand.Christalle, shape = MaterialTheme.shapes.small) {
                     Text(tr(R.string.ui_current_device), Modifier.padding(horizontal = 12.dp, vertical = 6.dp).testTag("current-device-badge"), style = MaterialTheme.typography.titleMedium)
                 }
-                Text(if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
+                Text(if (device.pending) tr(R.string.device_pending) else if (device.active) tr(R.string.ui_active) else tr(R.string.ui_revoked), style = MaterialTheme.typography.labelMedium, color = Brand.Scorpion)
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text("id", style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
                     Text(device.id, style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace))
                 }
                 DetailValue(tr(R.string.dash_added), readableDate(device.added, locale, java.time.ZoneId.systemDefault()) ?: tr(R.string.unavailable))
                 DetailValue(tr(R.string.dash_last_login), readableDate(device.lastLogin, locale, java.time.ZoneId.systemDefault()) ?: tr(R.string.ui_no_data))
-                BrandActionButton(tr(R.string.ui_revoke_access_26), { model.clearError(); target = device.id }, Modifier.testTag("live-revoke-${device.id}"), enabled = device.active && !state.busy && state.loads[Area.DEVICES]?.phase == LoadPhase.READY)
+                BrandActionButton(tr(R.string.ui_revoke_access_26), { model.clearError(); target = device.id }, Modifier.testTag("live-revoke-${device.id}"), enabled = (device.active || device.pending) && !state.busy && state.loads[Area.DEVICES]?.phase == LoadPhase.READY)
             } }
             if (target == null) OperationError(state.error)
         }

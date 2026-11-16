@@ -87,6 +87,11 @@ import PrettyLisaCore
         return vpn
     }
     var connection: ConnectionState { controller.state }
+    var deviceLimited: Bool { profile?.deviceLimited == true }
+    func reconcileIfAllowed() async {
+        guard profile != nil, !deviceLimited else { return }
+        await vpn.reconcile()
+    }
     func perform(_ action: @escaping () async throws -> Void) {
         guard !busy else { return }
         busy = true; error = nil
@@ -105,9 +110,9 @@ import PrettyLisaCore
         #if DEBUG
         if fixtures {
             do {
-                profile = try fixture("profile", Profile.self)
+                profile = try fixture(ProcessInfo.processInfo.arguments.contains("-device-limit-fixture") ? "profile-pending" : "profile", Profile.self)
                 countries = try fixture("countries", Countries.self)
-                devices = try fixture("devices", [Device].self)
+                devices = try fixture(deviceLimited ? "devices-pending" : "devices", [Device].self)
                 billing = try fixture("billing", BillingOverview.self)
             } catch { self.error = "INVALID_FIXTURE" }
             return
@@ -115,7 +120,7 @@ import PrettyLisaCore
         #endif
         do {
             backendVersion = try? WireJSON.decode(BackendVersion.self, from: await session.api.data("version")).application_version
-            if try await session.hasCredentials() { try await refresh(); await vpn.reconcile() }
+            if try await session.hasCredentials() { try await refresh(); await reconcileIfAllowed() }
         } catch { handle(error) }
     }
     func requestOTP(_ email: String) {
@@ -131,7 +136,7 @@ import PrettyLisaCore
                                          installation: self.vault.installationID(), platform: self.platform, name: "PrettyLisaVPN " + self.platform)
             self.resetAccount()
             self.needsSignIn = false
-            try await self.refresh(); await self.vpn.reconcile()
+            try await self.refresh(); await self.reconcileIfAllowed()
         }
     }
     func refresh() async throws {
@@ -139,6 +144,7 @@ import PrettyLisaCore
         let current = try WireJSON.decode(Profile.self, from: await session.request("me"))
         guard ["FREE", "PREMIUM", "PLATINUM"].contains(current.plan), (0...5).contains(current.active_device_count) else { throw ClientError("INVALID_RESPONSE") }
         profile = current
+        if deviceLimited { countries = nil; messages = []; billing = nil; return }
         countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries"))
         let context = [URLQueryItem(name: "platform", value: platform), .init(name: "app_version", value: version),
                        .init(name: "locale", value: Locale.current.identifier.replacingOccurrences(of: "_", with: "-")), .init(name: "schema_version", value: "1")]
@@ -148,18 +154,30 @@ import PrettyLisaCore
     }
     func loadPage() async {
         guard profile != nil, !fixtures else { return }
+        if deviceLimited && ![.home, .devices, .settings].contains(page) { page = .home; return }
         do {
             switch page {
-            case .devices: devices = try WireJSON.decode([Device].self, from: await session.request("devices"))
+            case .devices:
+                try await activateDevice()
+                devices = try WireJSON.decode([Device].self, from: await session.request("devices"))
             case .subscription:
                 let value = try WireJSON.decode(BillingOverview.self, from: await session.request("billing/overview"))
                 try value.validate(); billing = value
-            case .home: try await refresh(); await vpn.reconcile()
+            case .home: try await refresh(); await reconcileIfAllowed()
             default: break
             }
         } catch { handle(error) }
     }
+    private func activateDevice() async throws {
+        guard deviceLimited else { return }
+        do {
+            let device = try WireJSON.decode(Device.self, from: await session.request("devices/activate", method: "POST", body: Data("{}".utf8)))
+            guard device.status == "ACTIVE", device.is_current else { throw ClientError("INVALID_RESPONSE") }
+        } catch let failure as ClientError where failure.code == "device_limit_reached" { }
+        try await refresh()
+    }
     func openBillingPortal(_ open: @escaping (URL) -> Void) {
+        guard !deviceLimited else { return }
         guard !fixtures else { error = "FIXTURE_NO_PAYMENT"; return }
         perform {
             let portal = try WireJSON.decode(BillingPortal.self, from: await self.session.request("billing/portal", method: "POST", body: Data("{}".utf8)))
@@ -167,11 +185,13 @@ import PrettyLisaCore
         }
     }
     func saveMethods(_ selected: [String]) {
+        guard !deviceLimited else { return }
         guard !selected.isEmpty, selected.allSatisfy(Methods.all.contains) else { return }
         methods = selected
         UserDefaults.standard.set(methods, forKey: "methods")
     }
     func connect() {
+        guard !deviceLimited else { return }
         if simulation {
             controller.connect(country: country, methods: methods)
             return
@@ -188,7 +208,7 @@ import PrettyLisaCore
     }
     func logout() {
         perform {
-            await self.disconnect()
+            if !self.deviceLimited { await self.disconnect() }
             guard self.connection == .disconnected else { throw ClientError("CLEANUP_UNCONFIRMED") }
             try await self.session.logout(); self.resetAccount()
         }
@@ -196,7 +216,7 @@ import PrettyLisaCore
     func forget() {
         perform {
             // Explicit local reset never claims that server-side logout or quota release succeeded.
-            await self.disconnect()
+            if !self.deviceLimited { await self.disconnect() }
             guard self.vpn.localTunnelDown else { throw ClientError("TUNNEL_STOP_FAILED") }
             try await self.session.forget(); self.resetAccount()
         }
@@ -208,13 +228,14 @@ import PrettyLisaCore
     }
     func revoke(_ device: Device) {
         perform {
-            if device.is_current { await self.disconnect(); guard self.connection == .disconnected else { throw ClientError("CLEANUP_UNCONFIRMED") } }
+            if device.is_current && !self.deviceLimited { await self.disconnect(); guard self.connection == .disconnected else { throw ClientError("CLEANUP_UNCONFIRMED") } }
             _ = try await self.session.request("devices/" + device.id.uuidString.lowercased(), method: "DELETE")
             if device.is_current { try await self.session.forget(); self.resetAccount() }
             else { await self.loadPage() }
         }
     }
     func acknowledge(_ message: AccountMessage, navigate: Bool = false) {
+        guard !deviceLimited else { return }
         perform {
             _ = try await self.session.request("messages/\(message.id.uuidString.lowercased())/acknowledgements", method: "POST", body: WireJSON.encode(["revision": message.revision]))
             self.messages.removeAll { $0.id == message.id }
@@ -224,6 +245,7 @@ import PrettyLisaCore
         }
     }
     func submitSupport(subject: String, description: String, email: String, images: [SupportImage]) {
+        guard !deviceLimited else { return }
         guard !fixtures else { error = "FIXTURE_NO_VPN"; return }
         perform {
             if self.supportRequest == nil {

@@ -323,7 +323,7 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
 @pytest.mark.parametrize("proxy_ip", [None, "1", "unknown"])
 async def test_country_ratings_respect_effective_plan(plan, free_only, method, proxy_ip):
     fleet, auth = AsyncMock(), AsyncMock()
-    auth.me.return_value = SimpleNamespace(plan=plan)
+    auth.me.return_value = SimpleNamespace(plan=plan, device_limit_reached=False)
     fleet.countries.return_value = {
         "autopilot": {"quality": 90, "available": True},
         "countries": [{"country_code": "DE", "quality": 90, "available": True}],

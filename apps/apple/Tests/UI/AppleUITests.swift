@@ -1,6 +1,21 @@
 import XCTest
 
 final class AppleUITests: XCTestCase {
+    func testPendingDeviceCabinet() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-fixtures", "YES", "-device-limit-fixture", "YES", "-language", "ru"]
+        app.launch()
+        XCTAssertTrue(app.buttons["limit-manage-devices"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["limit-connect"].isEnabled)
+        XCTAssertFalse(app.buttons["nav-about"].isEnabled)
+        XCTAssertTrue(app.buttons["limit-logout"].isHittable)
+        XCTAssertTrue(app.buttons["limit-forget"].isHittable)
+        capture(app, "device-limit-cabinet")
+        app.buttons["limit-manage-devices"].tap()
+        XCTAssertTrue(app.staticTexts["iPhone Preview"].waitForExistence(timeout: 5))
+        capture(app, "device-limit-devices")
+        app.terminate()
+    }
     func testSimulatorClearlyLabelsSimulation() {
         for theme in ["light", "dark"] { reviewSimulation(theme: theme) }
     }

@@ -63,6 +63,7 @@ class VerifyOtpBody(BaseModel):
     installation_id: UUID
     platform: DevicePlatform
     device_name: Annotated[str, Field(min_length=1, max_length=255)]
+    allow_device_management: bool = False
 
     @field_validator("device_name")
     @classmethod
@@ -143,6 +144,7 @@ class MeResponse(BaseModel):
     email: EmailStr | None
     plan: SubscriptionPlan
     active_device_count: int
+    device_limit_reached: bool = False
     subscription: SubscriptionAccessResponse | None = None
     entitlements: EntitlementsResponse | None = None
 
@@ -205,6 +207,7 @@ async def verify_otp(body: VerifyOtpBody, request: Request) -> VerifyOtpResponse
             body.installation_id,
             body.platform,
             body.device_name,
+            allow_device_management=body.allow_device_management,
         )
     except EmailAliasConflictError:
         return error_response("EMAIL_ALIAS_CONFLICT", 409)
@@ -337,6 +340,7 @@ async def me(
         email=None if result.plan is SubscriptionPlan.DEMO else result.email,
         plan=result.plan,
         active_device_count=result.active_device_count,
+        device_limit_reached=result.device_limit_reached,
         subscription=None
         if result.subscription is None
         else SubscriptionAccessResponse(

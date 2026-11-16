@@ -28,6 +28,7 @@ from prettylisavpn.billing.operations_domain import BillingCommand, BillingOpera
 from prettylisavpn.billing.public_catalog import PublicCatalog, PublicCatalogPort
 from prettylisavpn.billing.service import BillingOverviewPort, BillingUnavailableError
 from prettylisavpn.demo.domain import RegistrationRequiredError
+from prettylisavpn.devices.domain import DeviceAccessLimitedError
 from prettylisavpn.main_errors import error_response
 
 
@@ -54,6 +55,8 @@ class BillingRoute(APIRoute):
                 response = error_response("validation_error", 422)
             except RegistrationRequiredError:
                 response = error_response("REGISTRATION_REQUIRED", 403)
+            except DeviceAccessLimitedError:
+                response = error_response("device_limit_reached", 403)
             except Exception:
                 response = error_response("BILLING_UNAVAILABLE", 503)
             response.headers["Cache-Control"] = "no-store"

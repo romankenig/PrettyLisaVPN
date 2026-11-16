@@ -16,7 +16,7 @@ from prettylisavpn.auth.session_service import (
     RevokedDeviceError,
 )
 from prettylisavpn.auth.tokens import InvalidAccessTokenError
-from prettylisavpn.devices.domain import DevicePlatform, DeviceStatus
+from prettylisavpn.devices.domain import DeviceLimitReachedError, DevicePlatform, DeviceStatus
 from prettylisavpn.devices.management import (
     DeviceManagementHandler,
     DeviceManagementUnavailableError,
@@ -104,6 +104,38 @@ async def list_devices(
     ) as error:
         return _authentication_error(error)
     return [_response(device) for device in devices]
+
+
+@router.post(
+    "/activate",
+    response_model=DeviceResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Authentication is required or invalid"},
+        403: {"model": ErrorResponse, "description": "User or current device is blocked"},
+        409: {"model": ErrorResponse, "description": "All active device slots are occupied"},
+        503: {"model": ErrorResponse, "description": "Device service unavailable"},
+    },
+)
+async def activate_current(
+    request: Request,
+    token: Annotated[str | None, Depends(bearer_token)],
+) -> DeviceResponse | JSONResponse:
+    if token is None:
+        return error_response("authentication_required", 401)
+    service = cast(DeviceManagementHandler, request.app.state.device_management)
+    try:
+        return _response(await service.activate_current(token))
+    except DeviceLimitReachedError:
+        return error_response("device_limit_reached", 409)
+    except (
+        InvalidAccessTokenError,
+        InvalidSessionError,
+        BlockedUserError,
+        RevokedDeviceError,
+        AuthServiceUnavailableError,
+        DeviceManagementUnavailableError,
+    ) as error:
+        return _authentication_error(error)
 
 
 @router.delete(

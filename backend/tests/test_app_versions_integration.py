@@ -14,7 +14,7 @@ from test_fleet import MONITOR, settings
 
 from prettylisavpn.auth.tokens import AccessTokenService
 from prettylisavpn.connections import Postgres
-from prettylisavpn.devices.domain import DevicePlatform
+from prettylisavpn.devices.domain import DevicePlatform, DeviceStatus
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.main import create_app
 from prettylisavpn.product_analytics.app_versions import AppVersionAnalytics
@@ -146,3 +146,41 @@ async def test_existing_messages_and_new_headers_capture_only_valid_authenticate
                 )
             )
             assert len(rows) == 2
+
+
+async def test_pending_cabinet_with_version_metadata_records_usage_only_after_activation(
+    version_state,
+):
+    pg, config, own, _ = version_state
+    device_id = own.devices[0].id
+    async with pg.session() as session, session.begin():
+        await session.execute(
+            update(DeviceRecord)
+            .where(DeviceRecord.id == device_id)
+            .values(status=DeviceStatus.PENDING)
+        )
+    app = create_app(config, postgres=pg, valkey=FakeDependency(), product_events=AsyncMock())
+    version_headers = {**headers(own.access_token), "X-PrettyLisaVPN-App-Version": "0.5.0"}
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client,
+    ):
+        profile = await client.get("/me", headers=version_headers)
+        assert profile.status_code == 200 and profile.json()["device_limit_reached"] is True
+        assert (await client.get("/devices", headers=version_headers)).status_code == 200
+        assert (await client.get("/billing/overview", headers=version_headers)).status_code == 403
+        async with pg.session() as session:
+            assert (
+                await session.scalar(
+                    select(AppActivityRecord).where(AppActivityRecord.device_id == device_id)
+                )
+                is None
+            )
+        assert (await client.post("/devices/activate", headers=version_headers)).status_code == 200
+        profile = await client.get("/me", headers=version_headers)
+        assert profile.status_code == 200 and profile.json()["device_limit_reached"] is False
+        async with pg.session() as session:
+            usage = await session.scalar(
+                select(AppActivityRecord).where(AppActivityRecord.device_id == device_id)
+            )
+            assert usage is not None and usage.app_version == "0.5.0"

@@ -48,6 +48,7 @@ function mockApi(): ApiClient {
     me: vi.fn(),
     logout: vi.fn(),
     listDevices: vi.fn().mockResolvedValue([currentDevice, otherDevice]),
+    activateDevice: vi.fn(),
     revokeDevice: vi.fn().mockResolvedValue({
       status: "revoked",
       device: { ...otherDevice, status: "REVOKED" },
@@ -65,6 +66,7 @@ beforeEach(() => {
 function renderDevices(
   api = mockApi(),
   vpnConnection = createTestVpnConnection(),
+  limited = false,
 ) {
   const storage = createTestCredentialStorage();
   storage.delete = vi.fn(storage.delete);
@@ -80,6 +82,7 @@ function renderDevices(
       email: "user@example.com",
       plan: "FREE",
       active_device_count: 2,
+      device_limit_reached: limited,
     },
   });
   const result = render(
@@ -106,6 +109,52 @@ function renderDevices(
 }
 
 describe("Devices screen", () => {
+  it("keeps pending sessions in the cabinet and unlocks after removing a device", async () => {
+    const api = mockApi();
+    let limited = true;
+    vi.mocked(api.me).mockImplementation(async () => ({
+      id: "123e4567-e89b-42d3-a456-426614174006",
+      email: "user@example.com",
+      plan: "FREE",
+      active_device_count: 5,
+      device_limit_reached: limited,
+    }));
+    vi.mocked(api.activateDevice).mockImplementation(async () => {
+      if (limited) throw new ApiError("DEVICE_LIMIT");
+      return currentDevice;
+    });
+    vi.mocked(api.listDevices).mockImplementation(async () => [
+      { ...currentDevice, status: limited ? "PENDING" : "ACTIVE" },
+      otherDevice,
+    ]);
+    vi.mocked(api.revokeDevice).mockImplementation(async () => {
+      limited = false;
+      return {
+        status: "revoked",
+        device: { ...otherDevice, status: "REVOKED" },
+      };
+    });
+    const vpn = createTestVpnConnection();
+    const { session } = renderDevices(api, vpn, true);
+    expect(
+      await screen.findByText("ожидает свободного места"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("достигнут лимит устройств")).toBeInTheDocument();
+    expect(api.listVpnCountries).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "о приложении" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "отозвать доступ" }));
+    fireEvent.click(screen.getByRole("button", { name: "да, отозвать" }));
+    await waitFor(() =>
+      expect(session.current()?.profile?.device_limit_reached).toBe(false),
+    );
+    expect(
+      screen.queryByText("достигнут лимит устройств"),
+    ).not.toBeInTheDocument();
+    expect(api.verifyOtp).not.toHaveBeenCalled();
+  });
   it("loads device metadata and marks the current device", async () => {
     const { api } = renderDevices();
 

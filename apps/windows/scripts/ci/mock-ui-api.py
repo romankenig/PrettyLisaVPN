@@ -22,6 +22,10 @@ DEVICE_REVOKED = False
 LONG_DEVICE_LIST = False
 ALLOW_CURRENT_REVOKE = False
 CURRENT_REVOKED = False
+LIMIT_REVIEW = False
+LIMIT_ACTIVATED = False
+LIMIT_REMOVED = False
+LIMIT_PRIVATE_ATTEMPTS = []
 SUPPORT_REQUESTS = {}
 SUPPORT_ATTEMPTS = 0
 SUPPORT_DROP_FIRST = True
@@ -72,11 +76,41 @@ MESSAGE_FIXTURES = [
 
 
 def fixture(method, path, body):
+    global LIMIT_REVIEW, LIMIT_ACTIVATED, LIMIT_REMOVED
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
     global QUOTA_REVIEW, QUOTA_EXTENDED, QUOTA_EXHAUSTED, DEMO_REVIEW
     global AUTH_RECOVERY_MODE, AUTH_EXPIRED_ONCE
     global LONG_DEVICE_LIST, ALLOW_CURRENT_REVOKE, CURRENT_REVOKED
+    if method == "POST" and path == "/ui-review/device-limit":
+        LIMIT_REVIEW = body.get("enabled") is True
+        LIMIT_ACTIVATED = LIMIT_REMOVED = False
+        LIMIT_PRIVATE_ATTEMPTS.clear()
+        return 200, {}
+    if method == "GET" and path == "/ui-review/device-limit":
+        return 200, {"private_attempts": LIMIT_PRIVATE_ATTEMPTS, "activated": LIMIT_ACTIVATED}
+    if LIMIT_REVIEW:
+        rows = [{"id": DEVICE_ID if index == 0 else f"50000000-0000-4000-8000-{index:012d}",
+                 "installation_id": INSTALLATION_ID, "device_name": "Windows device" if index == 0 else f"Limit device {index}",
+                 "platform": "WINDOWS" if index == 0 else "ANDROID", "status": "PENDING" if index == 0 and not LIMIT_ACTIVATED else "ACTIVE",
+                 "created_at": DATE, "updated_at": DATE, "last_login_at": None, "revoked_at": None, "is_current": index == 0}
+                for index in range(6) if not (index == 1 and LIMIT_REMOVED)]
+        if method == "GET" and path == "/me":
+            return 200, {"id": USER_ID, "email": ACCOUNT_EMAIL, "plan": "PLATINUM", "active_device_count": 5,
+                         "device_limit_reached": not LIMIT_ACTIVATED}
+        if method == "GET" and path == "/devices":
+            return 200, rows
+        if method == "POST" and path == "/devices/activate":
+            if not LIMIT_REMOVED:
+                return 409, {"error": {"code": "device_limit_reached"}}
+            LIMIT_ACTIVATED = True
+            return 200, {**rows[0], "status": "ACTIVE"}
+        if method == "DELETE" and path == "/devices/50000000-0000-4000-8000-000000000001":
+            LIMIT_REMOVED = True
+            return 200, {"status": "revoked", "device": {**rows[1], "status": "REVOKED", "revoked_at": DATE}}
+        if not LIMIT_ACTIVATED and path.startswith(("/vpn/", "/billing/", "/messages", "/support/")):
+            LIMIT_PRIVATE_ATTEMPTS.append(path)
+            return 403, {"error": {"code": "device_limit_reached"}}
     if method == "POST" and path == "/ui-review/devices":
         LONG_DEVICE_LIST = body.get("long_list") is True
         ALLOW_CURRENT_REVOKE = body.get("allow_current_revoke") is True
@@ -229,7 +263,7 @@ def fixture(method, path, body):
             "device": {
                 "id": DEVICE_ID,
                 "installation_id": body.get("installation_id", INSTALLATION_ID),
-                "status": "ACTIVE",
+                "status": "PENDING" if LIMIT_REVIEW and not LIMIT_ACTIVATED else "ACTIVE",
             },
             "subscription": {"plan": "DEMO" if DEMO_REVIEW else "PREMIUM", "status": "ACTIVE"},
         }

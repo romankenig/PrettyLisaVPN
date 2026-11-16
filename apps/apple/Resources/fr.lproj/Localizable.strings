@@ -92,6 +92,9 @@
 "detail_7" = "le prix ou l’abonnement a changé. vérifiez les détails actualisés avant de confirmer.";
 "detail_8" = "cette devise est indisponible.";
 "detail_9" = "cette fonction n’est pas encore connectée.";
+"device_limit" = "limite d’appareils atteinte";
+"device_limit_help" = "supprimez un appareil pour utiliser l’application sur cet appareil.";
+"device_pending" = "en attente d’une place libre";
 "direct_location" = "localisation sans VPN :";
 "error_0" = "pas de réseau. vérifiez la connexion et réessayez.";
 "error_1" = "le code est invalide ou expiré. demandez-en un autre.";
@@ -129,6 +132,7 @@
 "faq_split_q" = "comment choisir les sites pour le VPN ?";
 "faq_support_a" = "ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.";
 "faq_support_q" = "comment contacter le support ?";
+"forget_local" = "supprimer les données de connexion de cet appareil";
 "free_time_remaining" = "temps restant aujourd’hui";
 "free_time_resets" = "renouvellement : %1$@";
 "home" = "accueil";
@@ -143,6 +147,7 @@
 "legal_refunds" = "remboursements et réclamations";
 "legal_terms" = "conditions d’utilisation";
 "location_quality" = "disponibilité %1$@ sur 100";
+"manage_devices" = "gérer les appareils";
 "notification_disconnect" = "déconnecter le VPN";
 "notification_open" = "ouvrir l’application";
 "notification_vpn_connected" = "VPN activé";

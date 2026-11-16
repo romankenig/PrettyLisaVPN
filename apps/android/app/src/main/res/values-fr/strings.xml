@@ -366,4 +366,9 @@
     <string name="vpn_location_expected">localisation VPN attendue :</string>
     <string name="direct_location_expected">localisation attendue sans VPN :</string>
     <string name="randomize_methods">sélection et ordre aléatoires des méthodes</string>
+    <string name="device_limit">limite d’appareils atteinte</string>
+    <string name="device_limit_help">supprimez un appareil pour utiliser l’application sur cet appareil.</string>
+    <string name="manage_devices">gérer les appareils</string>
+    <string name="forget_local">supprimer les données de connexion de cet appareil</string>
+    <string name="device_pending">en attente d’une place libre</string>
 </resources>

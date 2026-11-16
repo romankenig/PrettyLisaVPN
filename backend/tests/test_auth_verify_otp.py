@@ -174,6 +174,7 @@ def test_verify_endpoint_returns_tokens_and_login_context():
         UUID(body["installation_id"]),
         DevicePlatform.WINDOWS,
         "Laptop",
+        allow_device_management=False,
     )
 
 

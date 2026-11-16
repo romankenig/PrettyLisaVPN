@@ -30,6 +30,8 @@ let guest = false;
 let deviceResponse = "valid";
 let otherDeviceRevoked = false;
 let deviceReads = 0;
+let limited = false;
+const restrictedRequests = [];
 const otherDevice = "33333333-3333-4333-8333-333333333333";
 const demoKeys = [];
 async function mockAPI() {
@@ -44,6 +46,13 @@ async function mockAPI() {
   );
   await context.route("https://api.prettylisavpn.com/**", async (route) => {
     const p = new URL(route.request().url()).pathname;
+    if (limited && /^\/(vpn|billing|support|messages)\b/.test(p)) {
+      restrictedRequests.push(p);
+      return route.fulfill({
+        status: 403,
+        json: { error: { code: "device_limit_reached" } },
+      });
+    }
     if (p === "/billing/overview" && !billingAvailable)
       return route.fulfill({
         status: 503,
@@ -67,7 +76,7 @@ async function mockAPI() {
         access_token: "fixture-access",
         refresh_token: "fixture-refresh",
         user: { id },
-        device: { id: device },
+        device: { id: device, status: limited ? "PENDING" : "ACTIVE" },
       };
     } else if (p === "/auth/logout") value = {};
     else if (p === "/me")
@@ -75,7 +84,8 @@ async function mockAPI() {
         id,
         email: guest ? null : "preview@example.com",
         plan: guest ? "DEMO" : "FREE",
-        active_device_count: guest ? 1 : 2,
+        active_device_count: limited ? 5 : guest ? 1 : 2,
+        device_limit_reached: limited,
         entitlements: { free_seconds_usable: guest ? 900 : 3600 },
       };
     else if (p === "/vpn/countries")
@@ -97,7 +107,7 @@ async function mockAPI() {
         device_name: guest ? "Chrome DEMO" : "Chrome Preview",
         platform: "CHROME_EXTENSION",
         is_current: true,
-        status: "ACTIVE",
+        status: limited ? "PENDING" : "ACTIVE",
         created_at: "2026-11-04T10:00:00Z",
         updated_at: "2026-11-04T12:00:00Z",
         revoked_at: null,
@@ -121,6 +131,14 @@ async function mockAPI() {
       if (deviceResponse === "unavailable") {
         status = 503;
         value = { error: { code: "device_service_unavailable" } };
+      }
+    } else if (p === "/devices/activate") {
+      if (!otherDeviceRevoked) {
+        status = 409;
+        value = { error: { code: "device_limit_reached" } };
+      } else {
+        limited = false;
+        value = { id: device, status: "ACTIVE" };
       }
     } else if (
       p === "/devices/" + otherDevice &&
@@ -654,6 +672,54 @@ try {
     "revoked current device must not refetch an authenticated list",
   );
   assert.equal(await page.locator("[role=alert]").count(), 0);
+  limited = true;
+  otherDeviceRevoked = false;
+  await page.getByLabel("ваша почта").fill("pending@example.com");
+  await page.getByRole("button", { name: "получить код" }).click();
+  await page.getByLabel("код из письма").fill("123456");
+  await page.getByRole("button", { name: "войти", exact: true }).click();
+  await page.getByText("достигнут лимит устройств", { exact: true }).waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "подключить", exact: true })
+      .isDisabled(),
+    true,
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "о приложении", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page.screenshot({ path: path.join(output, "device-limit-home.png") });
+  await page
+    .getByRole("button", { name: "управлять устройствами", exact: true })
+    .first()
+    .click();
+  await page.getByText("ожидает свободного места", { exact: true }).waitFor();
+  await page.screenshot({
+    path: path.join(output, "device-limit-devices.png"),
+  });
+  assert.deepEqual(restrictedRequests, []);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .locator("section.card")
+    .filter({
+      has: page.getByRole("heading", { name: "Other device", exact: true }),
+    })
+    .getByRole("button")
+    .click();
+  await page.locator(".device-limit").waitFor({ state: "hidden" });
+  assert.equal(limited, false);
+  assert.equal(
+    await page
+      .getByRole("button", { name: "о приложении", exact: true })
+      .isEnabled(),
+    true,
+  );
+  await page.screenshot({
+    path: path.join(output, "device-limit-unlocked.png"),
+  });
   assert.deepEqual(errors, []);
   console.log(
     "Installed MV3 artifact: reopened OTP, browser restart, Home/Settings/About, devices, support, languages and honest failure passed. API fixtures; no live proxy claim.",

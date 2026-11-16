@@ -373,4 +373,9 @@
     <string name="vpn_location_expected">expected VPN location:</string>
     <string name="direct_location_expected">expected location without VPN:</string>
     <string name="randomize_methods">random method selection and order</string>
+    <string name="device_limit">device limit reached</string>
+    <string name="device_limit_help">remove a device to use the app on this device.</string>
+    <string name="manage_devices">manage devices</string>
+    <string name="forget_local">remove sign-in data from this device</string>
+    <string name="device_pending">waiting for a free slot</string>
 </resources>

@@ -20,6 +20,7 @@ struct RootView: View {
                     List(AppModel.Page.allCases, selection: Binding<AppModel.Page?>(get: { model.page }, set: { model.page = $0 ?? .home })) { page in
                         NavigationLink(value: page) { Label(L(page.key), systemImage: page.icon) }
                             .accessibilityIdentifier("nav-" + page.rawValue)
+                            .disabled(model.deviceLimited && ![.home, .settings, .devices].contains(page))
                     }
                     .navigationTitle("PrettyLisaVPN")
                     .safeAreaInset(edge: .bottom) {
@@ -43,7 +44,7 @@ struct RootView: View {
             if model.profile != nil { await model.loadPage() }
             while !Task.isCancelled {
                 do { try await Task.sleep(nanoseconds: 20_000_000_000) } catch { return }
-                if model.profile != nil && !model.fixtures && !model.simulation { await model.vpn.reconcile() }
+                if model.profile != nil && !model.fixtures && !model.simulation { await model.reconcileIfAllowed() }
             }
         }
         .confirmationDialog(L("ui_sign_out_54"), isPresented: $logout, titleVisibility: .visible) {
@@ -59,6 +60,8 @@ struct RootView: View {
         }
     }
     @ViewBuilder var pageContent: some View {
+        if model.deviceLimited { DeviceLimitView(model: model) }
+        else {
         switch model.page {
         case .home: HomeView(model: model)
         case .devices: DevicesView(model: model)
@@ -67,6 +70,7 @@ struct RootView: View {
         case .support: SupportView(model: model)
         case .settings: SettingsView(model: model)
         case .about: AboutView(model: model)
+        }
         }
     }
 }
@@ -202,7 +206,8 @@ struct DevicesView: View {
                     Text(device.id.uuidString).font(.caption.monospaced()).textSelection(.enabled)
                     LabeledContent(L("dash_added"), value: formatDate(device.created_at))
                     LabeledContent(L("dash_last_login"), value: device.last_login_at.map(formatDate) ?? L("unavailable"))
-                    if device.status == "ACTIVE" { Button(L("dash_end_session"), role: .destructive) { revoke = device }.disabled(model.busy || model.fixtures) }
+                    if device.status == "PENDING" { Text(L("device_pending")).foregroundStyle(.secondary) }
+                    if device.status == "ACTIVE" || device.status == "PENDING" { Button(L("dash_end_session"), role: .destructive) { revoke = device }.disabled(model.busy || model.fixtures) }
                     else { Text(device.status).foregroundStyle(.secondary) }
                 }.padding(.vertical, 8)
             }

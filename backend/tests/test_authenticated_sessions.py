@@ -148,6 +148,7 @@ def test_me_returns_identity_plan_and_active_device_count():
         "email": summary.email,
         "plan": "PREMIUM",
         "active_device_count": 3,
+        "device_limit_reached": False,
         "subscription": None,
         "entitlements": {
             "split_tunneling_allowed": True,

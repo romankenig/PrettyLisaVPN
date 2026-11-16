@@ -47,6 +47,7 @@ function mockApi(): ApiClient {
     me: vi.fn(),
     logout: vi.fn(),
     listDevices: vi.fn(),
+    activateDevice: vi.fn(),
     revokeDevice: vi.fn(),
     listVpnCountries: vi.fn().mockResolvedValue(availability),
   };
