@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readSelectionHistory, selectionSeries, type SelectionHistory } from "../src/selectionHistory.ts";
+import { historyForOutcome, readSelectionHistory, selectionSeries, type SelectionHistory } from "../src/selectionHistory.ts";
 import { methodName } from "../src/connectionMethods.ts";
 import { reportPage, reports } from "../src/reportRoutes.ts";
 
@@ -58,4 +58,42 @@ test("three stability pages and product analytics retain direct URLs and trailin
     assert.equal(reportPage(report.path.replace(/\/$/, "") + "/"), report.id);
   }
   assert.equal(reportPage("/dashboard"), "servers");
+});
+
+function outcomesFixture(): SelectionHistory {
+  const successful = fixture(), unsuccessful = fixture(), all = fixture();
+  for (let i = 2; i < 8; i++) {
+    Object.assign(unsuccessful.points[i], { counts: {wireguard: 1, wireguard_relay: 3}, total: 4, active_sessions: 4, observed_sessions: 4 });
+    Object.assign(all.points[i], { counts: {wireguard: i + 1, wireguard_relay: 4}, total: i + 5, active_sessions: i + 5, observed_sessions: i + 5 });
+  }
+  return { ...successful, outcomes: { successful, unsuccessful, all } };
+}
+
+test("outcome selection has independent daily denominators and stable category colors", () => {
+  const data = readSelectionHistory(outcomesFixture());
+  const series = (outcome: "successful" | "unsuccessful" | "all", shares = true) => selectionSeries(historyForOutcome(data, outcome)!, shares, methodName);
+  assert.equal(series("successful")[0].values[7], 87.5);
+  assert.equal(series("unsuccessful")[0].values[7], 25);
+  assert.equal(series("all")[0].values[7], 100 * 8 / 12);
+  assert.equal(series("all", false)[1].values[7], 4);
+  assert.deepEqual(series("all").map(row => row.color), series("unsuccessful").map(row => row.color));
+  assert.equal(series("unsuccessful")[0].values[0], null);
+});
+
+test("old reports only supply successful history, never fabricated failures or all", () => {
+  const data = readSelectionHistory(fixture());
+  assert.equal(historyForOutcome(data, "successful"), data);
+  assert.equal(historyForOutcome(data, "all"), undefined);
+  assert.equal(historyForOutcome(data, "unsuccessful"), undefined);
+  assert.equal(historyForOutcome(undefined, "successful"), undefined);
+});
+
+test("reject malformed or mixed-revision outcome data", () => {
+  for (const mutate of [
+    (data: SelectionHistory) => { data.outcomes!.unsuccessful.points[7].total = 99; },
+    (data: SelectionHistory) => { data.outcomes!.all.generated_at = "2026-11-16T12:01:00Z"; },
+    (data: SelectionHistory) => { data.outcomes!.all.categories = []; },
+    (data: SelectionHistory) => { data.outcomes!.successful.points = structuredClone(data.points); data.outcomes!.successful.points[7].complete = false; },
+    (data: SelectionHistory) => { delete (data.outcomes as Partial<NonNullable<SelectionHistory["outcomes"]>>).all; },
+  ]) { const data = outcomesFixture(); mutate(data); assert.throws(() => readSelectionHistory(data)); }
 });
