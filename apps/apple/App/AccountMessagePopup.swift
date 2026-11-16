@@ -35,12 +35,21 @@ struct AccountMessagePopup: View {
                 HStack {
                     if message.dismissal_mode == nil {
                         Button(L("ui_later")) { model.deferMessage(message) }.disabled(model.messageBusy).accessibilityIdentifier("message-later")
+                        #if os(macOS)
+                        .keyboardShortcut(.cancelAction)
+                        #endif
                     }
                     Spacer()
-                    Button(message.dismiss_label) {
-                        if message.dismissal_mode == nil { model.acknowledge(message) } else { model.closeMessage(message) }
+                    if message.dismissal_mode == nil {
+                        Button(message.dismiss_label) { model.acknowledge(message) }
+                            .disabled(model.messageBusy).accessibilityIdentifier("message-ack")
+                    } else {
+                        Button(message.dismiss_label) { model.closeMessage(message) }
+                            .disabled(model.messageBusy).accessibilityIdentifier("message-ack")
+                        #if os(macOS)
+                        .keyboardShortcut(.cancelAction)
+                        #endif
                     }
-                        .disabled(model.messageBusy).accessibilityIdentifier("message-ack")
                 }
                 if let action = message.primary_action, ["OPEN_SUBSCRIPTION", "OPEN_SETTINGS", "OPEN_ABOUT"].contains(action.type) {
                     Button(action.label) { model.acknowledge(message, navigate: true) }.disabled(model.messageBusy)
@@ -57,8 +66,5 @@ struct AccountMessagePopup: View {
             }
             model.messageNow = Date()
         }
-        #if os(macOS)
-        .onExitCommand { model.closeMessage(message) }
-        #endif
     }
 }
