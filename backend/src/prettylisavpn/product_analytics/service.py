@@ -18,11 +18,13 @@ from prettylisavpn.product_analytics.domain import (
     Activity,
     Attempt,
     Plan,
+    Registration,
     boundary,
     day,
     snapshot,
     two_months_before,
 )
+from prettylisavpn.product_analytics.durations import duration_history
 from prettylisavpn.product_analytics.model import (
     ActivityRecord,
     AnalyticsCollectionRecord,
@@ -30,6 +32,7 @@ from prettylisavpn.product_analytics.model import (
     AppActivityRecord,
     SessionSilenceRecord,
 )
+from prettylisavpn.product_analytics.plans import lease_plan
 from prettylisavpn.product_events.domain import ProductEventName
 from prettylisavpn.product_events.model import ProductEventRecord
 from prettylisavpn.users.model import UserRecord
@@ -45,7 +48,9 @@ class ProductAnalyticsService:
     def __init__(self, postgres: Postgres) -> None:
         self.postgres = postgres
 
-    async def latest(self, now: datetime | None = None) -> dict[str, Any]:
+    async def latest(
+        self, now: datetime | None = None, *, plan: Plan | None = None
+    ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         async with self.postgres.session() as session, session.begin():
             await session.execute(
@@ -59,7 +64,7 @@ class ProductAnalyticsService:
             )
             if row is None:
                 raise FleetError("product_analytics_pending", 503)
-            current = await self.build(session, now, live=True)
+            current = await self.build(session, now, live=True, plan=plan)
             point = current["points"][0]
             live = {
                 "partial": True,
@@ -78,7 +83,9 @@ class ProductAnalyticsService:
                 },
             }
             return {
-                **row.data,
+                **current.get("filtered_history", row.data),
+                "plan": plan or "ALL",
+                "duration_history": current["duration_history"],
                 "live": live,
                 # Keep the additive 0.45 contract for dashboards during rollout.
                 "device_today": {
@@ -136,7 +143,7 @@ class ProductAnalyticsService:
         return True
 
     async def build(
-        self, session: AsyncSession, now: datetime, *, live: bool = False
+        self, session: AsyncSession, now: datetime, *, live: bool = False, plan: Plan | None = None
     ) -> dict[str, Any]:
         lower = boundary(two_months_before(day(now)) - timedelta(days=29))
         cutoff = now + timedelta(microseconds=1) if live else boundary(day(now))
@@ -147,9 +154,12 @@ class ProductAnalyticsService:
         users = (await session.scalars(select(UserRecord))).all()
         ids = {user.id for user in users if not is_test_account(user.email)}
         registrations = [
-            user.created_at for user in users if user.id in ids and not is_demo_email(user.email)
+            Registration(user.id, user.created_at)
+            for user in users
+            if user.id in ids and not is_demo_email(user.email)
         ]
         demo_ids = {user.id for user in users if is_demo_email(user.email)}
+        emails = {user.id: user.email for user in users}
         events = (
             await session.scalars(
                 select(ProductEventRecord).where(
@@ -261,6 +271,7 @@ class ProductAnalyticsService:
                     quiet.first_silence_at if quiet else None,
                     quiet.complete if quiet else False,
                     user_id=row.user_id,
+                    plan=lease_plan(row, emails[row.user_id]),
                 )
             )
         observed = await session.scalar(
@@ -270,7 +281,7 @@ class ProductAnalyticsService:
         )
         attempts_from = await session.scalar(select(func.min(ClientLeaseRecord.created_at)))
         observed_from = min(observed, collection.started_at) if observed else collection.started_at
-        return snapshot(
+        payload = snapshot(
             now,
             activity,
             registrations,
@@ -279,4 +290,31 @@ class ProductAnalyticsService:
             collection.started_at,
             attempts_from,
             live=live,
+            plan=plan,
         )
+        if live:
+            first = await session.scalar(
+                select(func.min(ClientLeaseRecord.created_at)).where(
+                    ClientLeaseRecord.user_id.in_(ids), ClientLeaseRecord.created_at < cutoff
+                )
+            )
+            payload["duration_history"] = duration_history(
+                now,
+                attempts,
+                min(first, collection.started_at) if first else collection.started_at,
+                plan,
+            )
+            if plan is not None:
+                # Filter evidence, never the already aggregated ALL snapshot. Reuse
+                # this transaction's data; reads do not publish or rewrite history.
+                payload["filtered_history"] = snapshot(
+                    now,
+                    activity,
+                    registrations,
+                    attempts,
+                    observed_from,
+                    collection.started_at,
+                    attempts_from,
+                    plan=plan,
+                )
+        return payload

@@ -355,6 +355,7 @@ class ClientVpnService:
                     address=address,
                     engine_port=engine_port,
                     is_free=is_free,
+                    plan_snapshot=subscription.effective_plan(now).value,
                     created_at=now,
                     expires_at=expires,
                     quota_reserved_until=min(

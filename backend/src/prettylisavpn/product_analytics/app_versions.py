@@ -15,11 +15,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from prettylisavpn.account_messages.version import Version
 from prettylisavpn.connections import Postgres
+from prettylisavpn.demo.domain import is_demo_email
 from prettylisavpn.devices.domain import DeviceStatus
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import day
+from prettylisavpn.product_analytics.domain import Plan, day
 from prettylisavpn.product_analytics.model import AnalyticsCollectionRecord, AppActivityRecord
+from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
 
 logger = logging.getLogger(__name__)
@@ -76,7 +78,10 @@ async def record_app_activity(
 
 
 def app_version_report(
-    now: datetime, started_at: datetime | None, rows: list[AppActivityRecord]
+    now: datetime,
+    started_at: datetime | None,
+    rows: list[AppActivityRecord],
+    plan: Plan | None = None,
 ) -> dict[str, Any]:
     dates = [day(now) - timedelta(days=offset) for offset in range(30, -1, -1)]
     points = []
@@ -84,7 +89,13 @@ def app_version_report(
         platforms: dict[str, Any] | None = None
         if started_at is not None and on >= day(started_at):
             platforms = {}
-            active = [row for row in rows if row.day == on and row.observed_at <= now]
+            active = [
+                row
+                for row in rows
+                if row.day == on
+                and row.observed_at <= now
+                and (plan is None or (row.plan or "UNKNOWN") == plan)
+            ]
             for platform in sorted({row.platform for row in active}):
                 devices = [row for row in active if row.platform == platform]
                 users = {(row.user_id, row.app_version or "UNKNOWN") for row in devices}
@@ -98,6 +109,7 @@ def app_version_report(
         points.append({"date": on.isoformat(), "partial": on == day(now), "platforms": platforms})
     return {
         "schema": 1,
+        "plan": plan or "ALL",
         "timezone": "GMT+3",
         "generated_at": now.isoformat(),
         "collection_started_at": started_at.isoformat() if started_at else None,
@@ -127,6 +139,12 @@ class AppVersionAnalytics:
                 or device.status != DeviceStatus.ACTIVE
             ):
                 return
+            subscription = await SubscriptionRepository(session).get_by_user_id(user_id)
+            plan = (
+                "DEMO"
+                if is_demo_email(user.email)
+                else (subscription.effective_plan(now).value if subscription else "UNKNOWN")
+            )
             statement = insert(AppActivityRecord).values(
                 user_id=user_id,
                 device_id=device_id,
@@ -135,6 +153,7 @@ class AppVersionAnalytics:
                 observed_at=now,
                 app_version=version,
                 version_observed_at=now if version else None,
+                plan=plan,
             )
             newer_version = statement.excluded.version_observed_at.is_not(None) & (
                 AppActivityRecord.version_observed_at.is_(None)
@@ -144,6 +163,13 @@ class AppVersionAnalytics:
                 statement.on_conflict_do_update(
                     index_elements=[AppActivityRecord.device_id, AppActivityRecord.day],
                     set_={
+                        "plan": case(
+                            (
+                                AppActivityRecord.observed_at <= statement.excluded.observed_at,
+                                statement.excluded.plan,
+                            ),
+                            else_=AppActivityRecord.plan,
+                        ),
                         "observed_at": func.greatest(
                             AppActivityRecord.observed_at, statement.excluded.observed_at
                         ),
@@ -159,7 +185,9 @@ class AppVersionAnalytics:
                 )
             )
 
-    async def latest(self, now: datetime | None = None) -> dict[str, Any]:
+    async def latest(
+        self, now: datetime | None = None, *, plan: Plan | None = None
+    ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         async with self.postgres.session() as session, session.begin():
             await session.execute(
@@ -181,5 +209,5 @@ class AppVersionAnalytics:
                 )
             )
             return app_version_report(
-                now, collection.app_versions_started_at if collection else None, rows
+                now, collection.app_versions_started_at if collection else None, rows, plan
             )

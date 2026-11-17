@@ -1,3 +1,4 @@
+import { validateReportPlan, withPlan, type ReportPlan } from "./reportPlan";
 import { useEffect, useState } from "react";
 import AnalyticsChart from "./AnalyticsChart";
 import DailySelectionDistribution from "./DailySelectionDistribution";
@@ -6,27 +7,28 @@ import { formatNumber } from "./analytics";
 import { date } from "./time";
 
 type Service = { id: string; name: string; points: {date: string; score: number | null}[]; week_score: number | null; observed_days: number; today_score: number | null; today_code: string | null; next_check_at: string };
-type Report = { generated_at: string; services: Service[]; selection_history?: SelectionHistory; selection: { active_sessions: number; observed_sessions: number; unknown_mode_sessions: number; items: {name: string; count: number}[] } };
+type Report = { plan?: string; generated_at: string; services: Service[]; selection_history?: SelectionHistory; selection: { active_sessions: number; observed_sessions: number; unknown_mode_sessions: number; items: {name: string; count: number}[] } };
 
-export default function ServiceAvailability() {
-  const [data, setData] = useState<Report | null>(null);
+export default function ServiceAvailability({ plan = "ALL" }: { plan?: ReportPlan }) {
+  const [result, setData] = useState<Report | null>(null);
+  const data = (result?.plan ?? "ALL") === plan ? result : null;
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     const refresh = async () => {
       try {
-        const response = await fetch("/dashboard/api/services", { signal: controller.signal, cache: "no-store" });
+        const response = await fetch(withPlan("/dashboard/api/services", plan), { signal: controller.signal, cache: "no-store" });
         if (!response.ok) throw new Error("Unavailable");
         const report = await response.json() as Report;
         if (!Array.isArray(report.services) || !report.selection) throw new Error("Invalid");
         if (report.selection_history !== undefined) readSelectionHistory(report.selection_history);
-        if (!controller.signal.aborted) { setData(report); setError(false); }
+        validateReportPlan(report, plan); if (!controller.signal.aborted) { setData(report); setError(false); }
       } catch { if (!controller.signal.aborted) setError(true); }
     };
     void refresh(); const timer = setInterval(() => void refresh(), 60000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, []);
+  }, [plan]);
   const active = data?.services.find(row => row.id === selected) ?? data?.services[0];
   return <div className="service-analytics">
     <section className="panel analytics-chart"><div className="section-title"><div><h2>Доступность выбранных сервисов</h2><p>Семь завершённых дней · GMT+3 · независимая проверка каждого сервиса раз в день</p></div><select aria-label="Сервис для графика" value={active?.id ?? ""} onChange={event => setSelected(event.target.value)}>{data?.services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}</select></div>

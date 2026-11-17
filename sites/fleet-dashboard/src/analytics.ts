@@ -1,3 +1,5 @@
+import { readDurationHistory, type DurationHistory } from "./durationHistory.ts";
+
 export const plans = ["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"] as const;
 export type Plan = typeof plans[number];
 export type ActiveMetric = "dau" | "wau" | "mau";
@@ -20,6 +22,7 @@ export type AnalyticsSummary = {
 };
 export type LiveAnalytics = { partial: true; updated_at: string; from_date: string; point: AnalyticsPoint; summary: AnalyticsSummary };
 export type Analytics = AnalyticsSummary & {
+  plan?: string; duration_history?: DurationHistory;
   schema: 1; generated_at: string; next_update_at: string; from_date: string; through_date: string;
   timezone: string; observed_from: string | null; full_collection_from: string; history_partial: boolean;
   attempts_from: string | null; points: AnalyticsPoint[]; methods: Record<string, number>;
@@ -81,6 +84,10 @@ export function readAnalytics(value: unknown): Analytics {
       if (!dist || JSON.stringify(dist.bounds_seconds) !== "[10,60,180,300,900]" || !Array.isArray(dist.counts) || dist.counts.length !== 6 || !dist.counts.every(n => Number.isSafeInteger(n) && n >= 0) || dist.counts.reduce((sum, n) => sum + n, 0) !== dist.samples) throw new Error("Invalid live distribution");
     }
     for (const key of ["mean_session_seconds", "duration_unobserved_sessions", "silence_unobserved_sessions"] as const) if (!number(live.summary[key])) throw new Error("Invalid live summary");
+  }
+  if (data.duration_history !== undefined) {
+    readDurationHistory(data.duration_history);
+    if (data.duration_history.plan !== (data.plan ?? "ALL")) throw new Error("Wrong duration tariff");
   }
   return data;
 }

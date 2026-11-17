@@ -61,6 +61,13 @@ class Attempt:
     first_silence_at: datetime | None = None
     silence_complete: bool = False
     user_id: UUID | None = None
+    plan: Plan = "UNKNOWN"
+
+
+@dataclass(frozen=True)
+class Registration:
+    user_id: UUID
+    at: datetime
 
 
 def device_platforms(attempts: list[Attempt], covered: bool) -> dict[str, Any]:
@@ -113,13 +120,14 @@ def latest_activity(values: list[Activity]) -> list[Activity]:
 def snapshot(
     now: datetime,
     activity: list[Activity],
-    registrations: list[datetime],
+    registrations: list[datetime] | list[Registration],
     attempts: list[Attempt],
     observed_from: datetime | None,
     collected_from: datetime,
     attempts_from: datetime | None,
     *,
     live: bool = False,
+    plan: Plan | None = None,
 ) -> dict[str, Any]:
     """Saved history, or just today's point and the period totals as of now."""
     today = day(now)
@@ -129,6 +137,8 @@ def snapshot(
     values = sorted(
         latest_activity([item for item in activity if item.at < cutoff]), key=lambda a: a.at
     )
+    daily_plans = {(a.user_id, day(a.at)): a.plan for a in values}
+    attempts = [a for a in attempts if plan is None or a.plan == plan]
     # The first full day after enabling collection is the reliable coverage boundary.
     complete_from = day(collected_from) + timedelta(days=1)
     points: list[dict[str, Any]] = []
@@ -141,6 +151,10 @@ def snapshot(
             for item in values:
                 if first <= day(item.at) <= current:
                     last_by_user[item.user_id] = item
+            if plan is not None:
+                last_by_user = {
+                    key: item for key, item in last_by_user.items() if item.plan == plan
+                }
             known = observed_from is not None and current >= day(observed_from)
             counts = Counter(item.plan for item in last_by_user.values())
             point[metric] = {
@@ -148,7 +162,20 @@ def snapshot(
                 "plans": {plan: counts[plan] if known else None for plan in PLANS},
                 "complete": first >= complete_from,
             }
-        point["new_accounts"] = sum(day(at) == current and at < cutoff for at in registrations)
+        point["new_accounts"] = sum(
+            day(at := row.at if isinstance(row, Registration) else row) == current
+            and at < cutoff
+            and (
+                plan is None
+                or (
+                    daily_plans.get((row.user_id, day(at)), "UNKNOWN")
+                    if isinstance(row, Registration)
+                    else "UNKNOWN"
+                )
+                == plan
+            )
+            for row in registrations
+        )
         visible_attempts = [
             a for a in attempts if day(a.created_at) == current and a.created_at < cutoff
         ]

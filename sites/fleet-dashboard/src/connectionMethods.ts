@@ -11,7 +11,7 @@ export function methodName(id: string): string {
   return (names[base] ?? base) + (relay ? "+" : "");
 }
 export type MethodAssessment = { id: string; points: { date: string; score: number | null }[]; week_score: number | null; observed_days: number; today_score: number | null; today_code: string | null; next_check_at: string };
-export type MethodReport = { generated_at: string; methods: MethodAssessment[]; selection_history?: SelectionHistory; selection: { active_sessions: number; items: { method: string; count: number; share: number }[] } };
+export type MethodReport = { plan?: string; generated_at: string; methods: MethodAssessment[]; selection_history?: SelectionHistory; selection: { active_sessions: number; items: { method: string; count: number; share: number }[] } };
 export function readMethodReport(value: unknown): MethodReport {
   const data = value as MethodReport;
   const score = (v: unknown) => v === null || (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100);

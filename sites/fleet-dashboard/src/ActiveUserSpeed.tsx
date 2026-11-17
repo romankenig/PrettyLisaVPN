@@ -1,3 +1,4 @@
+import { validateReportPlan, type ReportPlan } from "./reportPlan";
 import { useEffect, useId, useState } from "react";
 import { clock, date, TIME_ZONE_LABEL } from "./time";
 import { parseSpeedMaximum, speedNumber, speedSamples, speedScaleMaximum, speedTooltip, type SpeedHistory, type SpeedPoint } from "./activeSpeed";
@@ -54,12 +55,13 @@ function DirectionChart({ history, direction }: { history: SpeedHistory; directi
   </div>;
 }
 
-export default function ActiveUserSpeed({ nodes, refreshKey }: { nodes: Server[]; refreshKey: string | null }) {
+export default function ActiveUserSpeed({ nodes, refreshKey, plan = "ALL" }: { nodes: Server[]; refreshKey: string | null; plan?: ReportPlan }) {
   const exits = nodes.filter(node => node.group !== "INTERMEDIATE");
   const [period, setPeriod] = useState("7d");
   const [selected, setSelected] = useState<string[] | null>(null);
   const ids = exits.filter(node => selected === null || selected.includes(node.id)).map(node => node.id).sort();
   const query = new URLSearchParams({ period });
+  if (plan !== "ALL") query.set("plan", plan);
   ids.forEach(id => query.append("node_ids", id));
   const key = query.toString();
   const [result, setResult] = useState<{ key: string; data: SpeedHistory } | null>(null);
@@ -73,6 +75,7 @@ export default function ActiveUserSpeed({ nodes, refreshKey }: { nodes: Server[]
         const response = await fetch(`/dashboard/api/active-user-speed?${key}`, { cache: "no-store", signal: abort.signal });
         if (!response.ok) throw new Error("unavailable");
         const payload = await response.json() as SpeedHistory;
+        validateReportPlan(payload, plan);
         if (!Array.isArray(payload.points)) throw new Error("invalid");
         if (!abort.signal.aborted) { setResult({ key, data: payload }); setError(null); }
       } catch {

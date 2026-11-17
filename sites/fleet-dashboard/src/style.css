@@ -30,3 +30,5 @@
 .version-filter{flex-wrap:wrap}.version-filter .select{max-width:100%}.version-filter select{min-width:0;flex:1}
 @media(max-width:600px){.app-version-chart .service-table{font-size:12px}.app-version-chart .service-table th,.app-version-chart .service-table td{padding:10px 6px}}
 .daily-selection-chart>.section-title{flex-wrap:wrap}.daily-selection-chart .device-chart-controls{max-width:100%}
+
+.report-plan-filter{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin:18px 0}.report-plan-filter label{display:flex;align-items:center;gap:12px;white-space:nowrap}.report-plan-filter p{margin:0;flex:1;min-width:240px;font-size:12px;line-height:1.6;color:#665d79}.daily-duration-chart .section-title{flex-wrap:wrap;gap:12px}.daily-duration-chart{min-width:0}

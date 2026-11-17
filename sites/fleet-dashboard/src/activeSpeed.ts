@@ -9,7 +9,7 @@ export type SpeedPoint = {
   at: string; duration_seconds?: number; download: SpeedDirection; upload: SpeedDirection;
   coverage: { expected_servers: number; complete_servers: number; reporting_servers: number; fraction: number | null; server_seconds: Record<string, number> };
 };
-export type SpeedHistory = {
+export type SpeedHistory = { plan?: string;
   generated_at: string; activity_threshold_bps: number; bucket_seconds: number;
   period: string; nodes: { id: string; name: string }[]; points: SpeedPoint[];
 };

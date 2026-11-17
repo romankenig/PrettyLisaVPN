@@ -8,12 +8,16 @@ from uuid import UUID
 from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert
 
+from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.fleet.model import FleetNodeRecord, FleetObservationRecord
 from prettylisavpn.fleet.traffic import MAX_GAP, PERIODS, Snapshot, TrafficRollup, intervals
 from prettylisavpn.fleet.traffic_model import TrafficCursorRecord, TrafficIntervalRecord
+from prettylisavpn.product_analytics.domain import Plan
+from prettylisavpn.product_analytics.plans import lease_plan
+from prettylisavpn.users.model import UserRecord
 
 
 class TrafficService:
@@ -37,7 +41,15 @@ class TrafficService:
             previous = Snapshot.model_validate(cursor.data) if cursor.data else None
             if previous is not None and sample.at <= previous.at:
                 return False
-            data, complete = intervals(previous, sample, owners)
+            plans = {
+                row.id: lease_plan(row, email)
+                for row, email in await session.execute(
+                    select(ClientLeaseRecord, UserRecord.email)
+                    .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
+                    .where(ClientLeaseRecord.id.in_(owners))
+                )
+            }
+            data, complete = intervals(previous, sample, owners, plans)
             from prettylisavpn.product_analytics.silence import capture_silence
 
             await capture_silence(session, previous, sample)
@@ -74,7 +86,12 @@ class TrafficService:
             )
 
     async def history(
-        self, period: str, node_ids: list[UUID] | None, now: datetime | None = None
+        self,
+        period: str,
+        node_ids: list[UUID] | None,
+        now: datetime | None = None,
+        *,
+        plan: Plan | None = None,
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         duration, step = PERIODS[period]
@@ -121,7 +138,11 @@ class TrafficService:
             async for row in rows:
                 rollup.add(
                     str(row.node_id),
-                    row.data,
+                    [
+                        value
+                        for value in row.data
+                        if plan is None or value.get("plan", "UNKNOWN") == plan
+                    ],
                     row.start_at.timestamp(),
                     row.end_at.timestamp(),
                     row.complete,
@@ -181,6 +202,7 @@ class TrafficService:
             return {
                 "generated_at": now,
                 "period": period,
+                "plan": plan or "ALL",
                 "bucket_seconds": step,
                 "activity_threshold_bps": self.settings.fleet_activity_threshold_bps,
                 "sample_seconds": 5,

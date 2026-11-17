@@ -184,7 +184,7 @@ async def test_endpoint_uses_existing_monitor_authorization_and_validates_filter
         )
         assert response.status_code == status
         if status == 200:
-            history.assert_awaited_once_with("24h", [identifier])
+            history.assert_awaited_once_with("24h", [identifier], plan=None)
             assert (
                 await client.get("/admin/monitoring/active-user-speed?period=30d", headers=headers)
             ).status_code == 422

@@ -29,6 +29,10 @@ class ClientLeaseRecord(Base):
             "status IN ('PROVISIONING','READY','REVOKING','CLOSED')", name="ck_client_lease_status"
         ),
         CheckConstraint(
+            "plan_snapshot IN ('DEMO','FREE','PREMIUM','PLATINUM','UNKNOWN')",
+            name="ck_client_lease_plan_snapshot",
+        ),
+        CheckConstraint(
             "(right(method, 6) <> '_relay' AND relay_node_id IS NULL AND relay_port IS NULL) OR "
             "(right(method, 6) = '_relay' AND relay_node_id IS NOT NULL AND relay_port IS NOT NULL "
             "AND relay_port BETWEEN 20000 AND 29999 AND relay_node_id <> node_id)",
@@ -105,6 +109,7 @@ class ClientLeaseRecord(Base):
     engine_port: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="PROVISIONING")
     is_free: Mapped[bool] = mapped_column(Boolean)
+    plan_snapshot: Mapped[str | None] = mapped_column(String(16))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     # A Free reservation covers only a short node grant, not the entire daily hour.

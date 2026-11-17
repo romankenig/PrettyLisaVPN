@@ -1,3 +1,4 @@
+import { validateReportPlan, withPlan, type ReportPlan } from "./reportPlan";
 import { useEffect, useState } from "react";
 import AnalyticsChart from "./AnalyticsChart";
 import DailySelectionDistribution from "./DailySelectionDistribution";
@@ -5,23 +6,24 @@ import { formatNumber } from "./analytics";
 import { methodName, readMethodReport, type MethodReport } from "./connectionMethods";
 import { date } from "./time";
 
-export default function MethodAvailability() {
-  const [data, setData] = useState<MethodReport | null>(null);
+export default function MethodAvailability({ plan = "ALL" }: { plan?: ReportPlan }) {
+  const [result, setData] = useState<MethodReport | null>(null);
+  const data = (result?.plan ?? "ALL") === plan ? result : null;
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState("wireguard");
   useEffect(() => {
     const controller = new AbortController();
     const refresh = async () => {
       try {
-        const response = await fetch("/dashboard/api/connection-methods", { signal: controller.signal, cache: "no-store" });
+        const response = await fetch(withPlan("/dashboard/api/connection-methods", plan), { signal: controller.signal, cache: "no-store" });
         if (!response.ok) throw new Error("Unavailable");
         const report = readMethodReport(await response.json());
-        if (!controller.signal.aborted) { setData(report); setError(false); }
+        validateReportPlan(report, plan); if (!controller.signal.aborted) { setData(report); setError(false); }
       } catch { if (!controller.signal.aborted) setError(true); }
     };
     void refresh(); const timer = setInterval(() => void refresh(), 60000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, []);
+  }, [plan]);
   const active = data?.methods.find(row => row.id === selected) ?? data?.methods[0];
   return <div className="service-analytics">
     <section className="panel analytics-chart"><div className="section-title"><div><h2>Доступность способов подключения</h2><p>Семь завершённых дней · GMT+3 · проверка каждого способа раз в день</p></div><select aria-label="Способ подключения для графика" value={active?.id ?? ""} onChange={event => setSelected(event.target.value)}>{data?.methods.map(method => <option key={method.id} value={method.id}>{methodName(method.id)}</option>)}</select></div>
