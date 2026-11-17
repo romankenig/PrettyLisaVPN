@@ -85,3 +85,20 @@ tests and real PostgreSQL migration/integration checks. Frontend: 53 tests and
 TypeScript/Vite production build passed. This file does not claim a deployed build.
 The task PR records verified source HEAD, temporary merge SHA, all workflow events
 and jobs, actual release SHA/run/attempt/artifact, and live verification results.
+
+## Speed history follow-up
+
+PR #98 released source `b50d393e` through develop `19c3099a`, backend 0.52.0
+and dashboard 0.17.0. All source/release workflows passed. Live acceptance found
+weekly speed queries timing out under concurrent tariff checks: about 363,000
+observations were individually materialized and awaited. A read-only comparison
+using the same timestamp and database produced identical response hashes: All
+20.541s → 12.598s; Free 16.735s → 9.287s with batched column reads.
+
+The follow-up raises only backend 0.52.0 → 0.52.1 (PATCH). It keeps bounded
+500-row streaming, global observation ordering, the same rollup across batch
+boundaries, coverage for empty tariffs and unchanged output contracts. No schema
+change or dashboard/client/engine rebuild is needed. A 601-interval PostgreSQL
+test checks counts, active seconds, speed and independent coverage across batches.
+The follow-up PR records its own source/build identity and completed live tests;
+the installed dashboard remains the verified `19c3099a` artifact, not a new build.

@@ -125,8 +125,14 @@ class TrafficService:
                 self.settings.fleet_activity_threshold_bps,
                 offset=offset,
             )
-            rows = await session.stream_scalars(
-                select(TrafficIntervalRecord)
+            rows = await session.stream(
+                select(
+                    TrafficIntervalRecord.node_id,
+                    TrafficIntervalRecord.start_at,
+                    TrafficIntervalRecord.end_at,
+                    TrafficIntervalRecord.complete,
+                    TrafficIntervalRecord.data,
+                )
                 .where(
                     TrafficIntervalRecord.node_id.in_(ids),
                     TrafficIntervalRecord.end_at > datetime.fromtimestamp(start, UTC),
@@ -135,20 +141,22 @@ class TrafficService:
                 .order_by(TrafficIntervalRecord.end_at)
                 .execution_options(yield_per=500)
             )
-            async for row in rows:
-                rollup.add(
-                    str(row.node_id),
-                    [
-                        value
-                        for value in row.data
-                        if plan is None or value.get("plan", "UNKNOWN") == plan
-                    ],
-                    row.start_at.timestamp(),
-                    row.end_at.timestamp(),
-                    row.complete,
-                )
-                # A connection snapshot may lag its enclosing poll by MAX_GAP.
-                rollup.flush(row.end_at.timestamp() - 2 * MAX_GAP)
+            # Avoid an ORM object and an async/greenlet handoff for every five-second
+            # observation. Keep bounded batches and the same globally ordered rollup.
+            async for batch in rows.partitions():
+                for node_id, start_at, end_at, complete, data in batch:
+                    end_seconds = end_at.timestamp()
+                    rollup.add(
+                        str(node_id),
+                        data
+                        if plan is None
+                        else [value for value in data if value.get("plan", "UNKNOWN") == plan],
+                        start_at.timestamp(),
+                        end_seconds,
+                        complete,
+                    )
+                    # A connection snapshot may lag its enclosing poll by MAX_GAP.
+                    rollup.flush(end_seconds - 2 * MAX_GAP)
             points = rollup.points()
             observations = (
                 await session.scalars(
