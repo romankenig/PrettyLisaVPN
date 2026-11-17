@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select, update
-from test_active_user_speed import BASE, sample
+from test_active_user_speed import BASE, row, sample
 from test_fleet import settings
 from test_fleet_integration import fleet_state as _fleet_state
 
@@ -24,6 +24,38 @@ pytestmark = [
 ]
 
 fleet_state = _fleet_state
+
+
+async def test_large_history_keeps_rollup_continuous_across_database_batches(fleet_state):
+    postgres, _, ids = fleet_state
+    service = TrafficService(postgres, settings())
+    user = str(uuid4())
+    # More than one database batch; intervals cross both five-second and output buckets.
+    async with postgres.session() as session, session.begin():
+        session.add_all(
+            TrafficIntervalRecord(
+                node_id=ids[0],
+                start_at=datetime.fromtimestamp(BASE + i * 5, UTC),
+                end_at=datetime.fromtimestamp(BASE + (i + 1) * 5, UTC),
+                complete=True,
+                data=[{**row(user, i * 5, (i + 1) * 5, 12500), "plan": "FREE"}],
+            )
+            for i in range(601)
+        )
+    now = datetime.fromtimestamp(BASE + 3600 + 30, UTC)
+    result = await service.history("1h", [ids[0]], now)
+    filtered = await service.history("1h", [ids[0]], now, plan="FREE")
+    empty = await service.history("1h", [ids[0]], now, plan="PREMIUM")
+    assert result["points"] == filtered["points"]
+    assert sum(p["download"]["bytes"] for p in result["points"]) == 601 * 12500
+    assert sum(p["download"]["active_seconds"] for p in result["points"]) == 601 * 5
+    assert all(
+        p["download"]["mean_mbps"] == pytest.approx(0.02)
+        for p in result["points"]
+        if p["download"]["active_users"]
+    )
+    assert all(p["download"]["mean_mbps"] is None for p in empty["points"])
+    assert [p["coverage"] for p in result["points"]] == [p["coverage"] for p in empty["points"]]
 
 
 async def test_idempotent_ingest_account_filtering_recovery_and_retention(fleet_state):

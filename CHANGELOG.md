@@ -12,6 +12,14 @@
   all six languages. Other content, direct downloads and styling are unchanged.
 - See [handoff](docs/website-store-mentions.md).
 
+### Weekly speed report performance — backend 0.52.1
+
+- Read traffic history in bounded batches without per-observation ORM objects or
+  async handoffs. Preserve tariff filtering, account aggregation, coverage and
+  synthetic references. Live pre-release comparison produced identical results
+  with substantially lower latency; dashboard remains 0.17.0. See
+  [handoff](docs/analytics-tariff-filters.md#speed-history-follow-up).
+
 ### Daily duration distributions and tariff filters — backend 0.52.0 / dashboard 0.17.0
 
 - Show session duration and time to first silence as daily stacked bars, with
