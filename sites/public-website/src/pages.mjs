@@ -1,5 +1,11 @@
 import { readFileSync } from "node:fs";
-import { languages, platforms, legalKeys, routeFor } from "./structure.mjs";
+import {
+  languages,
+  languageFlags,
+  platforms,
+  legalKeys,
+  routeFor,
+} from "./structure.mjs";
 import { website } from "./model.mjs";
 import {
   referencePrices,
@@ -29,6 +35,8 @@ const text = (value) =>
     '<span class="product-name">PrettyLisaVPN</span>',
   );
 const lines = (value) => text(value).replaceAll("\n", "<br>");
+const languageFlag = (code) =>
+  `<img src="/assets/flags/${languageFlags[code]}.svg" alt="" width="18" height="18">`;
 const mail = "mailto:help@prettylisavpn.com";
 const money = (minor, currency, lang) =>
   new Intl.NumberFormat(lang, {
@@ -96,7 +104,7 @@ function shell(lang, route, content) {
   return `<!doctype html><html lang="${lang === "zh" ? "zh-CN" : lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="${escape(t.description)}"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#2c016d"><title>PrettyLisaVPN</title><link rel="icon" href="/assets/favicon-light.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/style.css">${languages.map((code) => `<link rel="alternate" hreflang="${code === "zh" ? "zh-CN" : code}" href="https://prettylisavpn.com${routeFor(code, route)}">`).join("")}<script src="/assets/app.js" type="module"></script></head><body>
   <a class="skip" href="#main">${text(t.nav.skip)}</a><header class="header wrap"><a class="brand" href="${home}" aria-label="PrettyLisaVPN — ${escape(t.nav.home)}"><img src="/assets/lock.svg" width="28" height="38" alt=""><span class="product-name">PrettyLisaVPN</span></a>
   <nav aria-label="${escape(t.nav.menu)}"><a href="${home}#features">${text(t.nav.features)}</a><a href="${home}#pricing">${text(t.nav.pricing)}</a><a href="${home}#download">${text(t.nav.download)}</a><a href="${home}#help">${text(t.nav.help)}</a><a href="#documents">${text(t.footer.documents)}</a></nav>
-  <details class="language"><summary aria-label="${escape(t.nav.language)}"><span aria-hidden="true">◎</span> ${lang} <span aria-hidden="true">⌄</span></summary><div>${languages.map((code) => `<a lang="${code}" hreflang="${code}" href="${routeFor(code, route)}" ${code === lang ? 'aria-current="true"' : ""}>${escape(locales[code].name)}</a>`).join("")}</div></details></header>
+  <details class="language"><summary aria-label="${escape(t.nav.language)}">${languageFlag(lang)} ${lang} <span aria-hidden="true">⌄</span></summary><div>${languages.map((code) => `<a lang="${code}" hreflang="${code}" href="${routeFor(code, route)}" ${code === lang ? 'aria-current="true"' : ""}>${languageFlag(code)}${escape(locales[code].name)}</a>`).join("")}</div></details></header>
   <main id="main">${content}</main><footer class="footer wrap"><a class="brand" href="${home}"><img src="/assets/lock.svg" width="24" height="34" alt=""><span class="product-name">PrettyLisaVPN</span></a><nav class="legal-links" id="documents" aria-label="${escape(t.footer.documents)}">${legalKeys.map((key) => `<a href="${routeFor(lang, `/legal/${key}/`)}" class="document-button">${text(t.footer[key])}</a>`).join("")}</nav><div class="footer-bottom"><small class="moderation-marker">${text(website.moderationMarker)}</small><div class="footer-contacts"><a href="${mail}">help@prettylisavpn.com</a></div><small>© 2026 <span class="product-name">PrettyLisaVPN</span></small></div></footer></body></html>`;
 }
 function platformCard(lang, platform) {

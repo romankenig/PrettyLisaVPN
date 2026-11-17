@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { pages } from "../src/pages.mjs";
 import { website, releaseBlockers } from "../src/model.mjs";
+import { languageFlags } from "../src/structure.mjs";
 
 export const root = fileURLToPath(new URL("..", import.meta.url));
 export const dist = path.join(root, "dist");
@@ -74,6 +75,16 @@ export async function build() {
   };
   for (const [name, source] of Object.entries(sources))
     await copyFile(path.resolve(root, source), path.join(dist, "assets", name));
+  const flags = path.join(dist, "assets/flags");
+  await mkdir(flags);
+  for (const name of [
+    ...Object.values(languageFlags).map((code) => `${code}.svg`),
+    "LICENSE.md",
+  ])
+    await copyFile(
+      path.resolve(root, "../../apps/chrome-extension/public/flags", name),
+      path.join(flags, name),
+    );
   const lock = await readFile(path.join(dist, "assets/lock.svg"), "utf8");
   for (const [theme, color] of [
     ["light", "#2c016d"],

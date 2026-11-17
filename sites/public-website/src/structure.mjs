@@ -1,4 +1,12 @@
 export const languages = ["ru", "en", "de", "fr", "es", "zh"];
+export const languageFlags = {
+  ru: "ru",
+  en: "gb",
+  de: "de",
+  fr: "fr",
+  es: "es",
+  zh: "cn",
+};
 export const legalKeys = ["terms", "privacy", "refunds", "payments"];
 export const platforms = [
   { id: "android", file: "android.apk", stores: ["google", "rustore"] },

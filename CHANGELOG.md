@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Public website — 0.6.4
+
+- Add matching plan emoji to the account's current-plan badge: Platinum 💎,
+  Premium ⭐, Free 🕊️ and Demo ⏳.
+- Show bundled language flags beside the current language and every menu option,
+  reusing the existing Chrome SVG assets and license. Routes and billing are unchanged.
+- See [handoff](docs/website-plan-emojis-language-flags.md).
+
 ### Public website — 0.6.3
 
 - Rename the homepage CTA to download and spell out one account in all six
