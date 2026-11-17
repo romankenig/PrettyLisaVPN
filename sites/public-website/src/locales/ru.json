@@ -16,7 +16,7 @@
   "hero": {
     "title": "ваш интернет.\nваши правила.",
     "text": "VPN для повседневных задач на нескольких устройствах",
-    "button": "выбрать устройство",
+    "button": "скачать",
     "link": "как это работает"
   },
   "features": {
@@ -53,7 +53,7 @@
       "ios": "ios",
       "macos": "macos",
       "linux": "linux",
-      "android-tv": "android tv",
+      "android-tv": "tv",
       "chrome": "chrome"
     },
     "descriptions": {
@@ -65,7 +65,7 @@
       "android-tv": "для телевизоров и приставок",
       "chrome": "расширение для трафика браузера"
     },
-    "account": "1 аккаунт"
+    "account": "один аккаунт"
   },
   "download": {
     "title": "для",

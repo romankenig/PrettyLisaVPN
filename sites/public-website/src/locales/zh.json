@@ -16,7 +16,7 @@
   "hero": {
     "title": "你的网络。\n你的规则。",
     "text": "在多个设备上用 VPN 处理日常任务",
-    "button": "选择设备",
+    "button": "下载",
     "link": "了解使用方式"
   },
   "features": {
@@ -53,7 +53,7 @@
       "ios": "ios",
       "macos": "macos",
       "linux": "linux",
-      "android-tv": "android tv",
+      "android-tv": "tv",
       "chrome": "chrome"
     },
     "descriptions": {
@@ -65,7 +65,7 @@
       "android-tv": "适用于电视和机顶盒",
       "chrome": "仅处理浏览器流量的扩展程序"
     },
-    "account": "1 个账户"
+    "account": "一个账户"
   },
   "download": {
     "title": "适用于",

@@ -29,7 +29,6 @@ const text = (value) =>
     '<span class="product-name">PrettyLisaVPN</span>',
   );
 const lines = (value) => text(value).replaceAll("\n", "<br>");
-const arrow = '<span aria-hidden="true">↗</span>';
 const mail = "mailto:help@prettylisavpn.com";
 const money = (minor, currency, lang) =>
   new Intl.NumberFormat(lang, {
@@ -102,7 +101,7 @@ function shell(lang, route, content) {
 }
 function platformCard(lang, platform) {
   const t = locales[lang];
-  return `<a class="platform-card ${platform.file ? "" : "soon"}" href="${routeFor(lang, `/download/${platform.id}/`)}">${icon(platform.id)}<span><strong>${text(t.platforms.names[platform.id])}</strong><small>${text(t.platforms.descriptions[platform.id])}</small></span><span class="platform-status">${platform.file ? arrow : text(t.platforms.soon)}</span></a>`;
+  return `<a class="platform-card ${platform.file ? "" : "soon"}" href="${routeFor(lang, `/download/${platform.id}/`)}">${icon(platform.id)}<span><strong>${text(t.platforms.names[platform.id])}</strong><small>${text(t.platforms.descriptions[platform.id])}</small></span>${platform.file ? "" : `<span class="platform-status">${text(t.platforms.soon)}</span>`}</a>`;
 }
 function prices(lang) {
   const p = locales[lang].pricing;
@@ -110,7 +109,7 @@ function prices(lang) {
 }
 function pricing(lang) {
   const p = locales[lang].pricing;
-  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan premium-plan"><h3>premium ⭐</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article><article class="plan free-plan"><h3>free 🕊️</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><ul>${p.freeFeatures.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)} ${arrow}</a></article></div><aside class="demo-plan" data-demo-plan><div><h3>demo ⏳ · ${text(p.demo.title)}</h3><p>${text(p.demo.description)}</p><ul>${p.demo.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><p class="demo-upgrade">${text(p.demo.upgrade)}</p></div><a class="text-link" href="${routeFor(lang, "/download/android/")}">${text(p.demo.button)} ${arrow}</a></aside><div class="purchase-details"><p>${text(p.terms)}</p></div></section>`;
+  return `<section class="pricing section wrap" id="pricing" data-pricing><div class="section-heading"><h2>${text(p.title)}</h2><p>${text(p.intro)}</p></div><div class="plans"><article class="plan premium-plan"><h3>premium ⭐</h3><p class="plan-description">${text(p.description)}</p><ul>${p.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><div class="currency-picker"><fieldset class="currency-switch"><legend class="sr-only">${text(p.currency)}</legend><label><input type="radio" name="currency" value="RUB" checked><span>₽ RUB</span></label><label><input type="radio" name="currency" value="USD"><span>$ USD</span></label></fieldset>${prices(lang)}</div></article><article class="plan free-plan"><h3>free 🕊️</h3><p class="free-price"><span data-free-currency="RUB">${text(money(0, "RUB", lang))}</span><span data-free-currency="USD">${text(money(0, "USD", lang))}</span></p><p>${text(p.free)}</p><ul>${p.freeFeatures.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><a class="text-link" href="${routeFor(lang, "/account/")}">${text(p.upgrade)}</a></article></div><aside class="demo-plan" data-demo-plan><div><h3>demo ⏳ · ${text(p.demo.title)}</h3><p>${text(p.demo.description)}</p><ul>${p.demo.features.map((feature) => `<li>${text(feature)}</li>`).join("")}</ul><p class="demo-upgrade">${text(p.demo.upgrade)}</p></div><a class="text-link" href="${routeFor(lang, "/download/android/")}">${text(p.demo.button)}</a></aside><div class="purchase-details"><p>${text(p.terms)}</p></div></section>`;
 }
 function paymentNotice(lang) {
   const p = locales[lang].pricing;
@@ -122,11 +121,11 @@ function home(lang) {
     lang,
     "/",
     `
-  <section class="hero wrap"><p class="launch">${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)} ${arrow}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
+  <section class="hero wrap"><p class="launch">${text(t.launch)}</p><h1>${lines(t.hero.title)}</h1><p class="lead">${text(t.hero.text)}</p><div class="actions"><a class="button" href="#download">${text(t.hero.button)}</a><a class="text-link" href="#features">${text(t.hero.link)} <span aria-hidden="true">↓</span></a></div></section>
   <section class="features section wrap" id="features"><div class="section-heading"><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div>${devicePair(t)}</div></section>
   ${pricing(lang)}
   <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><h2><strong class="account-highlight">${text(t.platforms.account)}</strong> ${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div>${devicePair(t)}</div></div></section>
-  <section class="help section wrap" id="help"><div class="section-heading"><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)} ${arrow}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
+  <section class="help section wrap" id="help"><div class="section-heading"><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
   );
 }
 function download(lang, platform) {
@@ -142,14 +141,14 @@ function download(lang, platform) {
   return shell(
     lang,
     route,
-    `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">← ${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.id === "chrome" ? d.chromeText : platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
+    `<div class="download-page wrap"><a class="back" href="${routeFor(lang)}#download">${text(d.other)}</a><div class="download-heading">${icon(platform.id)}<h1><span class="product-name">PrettyLisaVPN</span><br>${text(d.title)} ${text(name)}</h1><p class="lead">${text(platform.id === "chrome" ? d.chromeText : platform.file ? d.text : t.platforms.descriptions[platform.id])}</p></div><div class="download-options">${choices}</div>${
       platform.file
         ? `<section class="setup"><h2>${text(d.setup)}</h2><ol>${(platform.id === "chrome" ? d.chromeSteps : d.steps).map((step) => `<li>${text(step)}</li>`).join("")}</ol></section>${platform.id === "chrome" ? "" : `<figure class="download-screen ${platform.id === "android" ? "phone" : ""}">${screenshot(platform.id === "android" ? "android-home" : "windows-home", platform.id === "android" ? t.screens.android : t.screens.windows)}</figure>`}`
         : `<p class="upcoming-copy">${text(d.upcoming)}</p><div class="alternative-platforms">${platforms
             .filter((p) => p.file)
             .map((p) => platformCard(lang, p))
             .join("")}</div>`
-    }<p class="download-help"><a href="${routeFor(lang)}#help">${text(d.help)} ${arrow}</a></p></div>`,
+    }<p class="download-help"><a href="${routeFor(lang)}#help">${text(d.help)}</a></p></div>`,
   );
 }
 function legalDocument(lang, key) {
@@ -187,7 +186,7 @@ export function pages() {
         shell(
           lang,
           route,
-          `<article class="legal-page wrap"><a class="back" href="${routeFor(lang)}">← ${text(t.nav.home)}</a><h1>${text(t.footer[key])}</h1><p class="document-date">${text(t.legal.updated)}</p>${key === "payments" ? paymentNotice(lang) : ""}${legalDocument(lang, key)}</article>`,
+          `<article class="legal-page wrap"><a class="back" href="${routeFor(lang)}">${text(t.nav.home)}</a><h1>${text(t.footer[key])}</h1><p class="document-date">${text(t.legal.updated)}</p>${key === "payments" ? paymentNotice(lang) : ""}${legalDocument(lang, key)}</article>`,
         ),
       );
     }
@@ -196,7 +195,7 @@ export function pages() {
       shell(
         lang,
         "/404/",
-        `<section class="not-found wrap"><h1>${text(t.notFound.title)}</h1><p>${text(t.notFound.text)}</p><a class="button" href="${routeFor(lang)}">${text(t.nav.home)} ${arrow}</a></section>`,
+        `<section class="not-found wrap"><h1>${text(t.notFound.title)}</h1><p>${text(t.notFound.text)}</p><a class="button" href="${routeFor(lang)}">${text(t.nav.home)}</a></section>`,
       ),
     );
   }

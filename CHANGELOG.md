@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Public website — 0.6.3
+
+- Rename the homepage CTA to download and spell out one account in all six
+  languages. Remove navigation arrows while preserving downward arrows.
+- Order platforms as Android, Windows, Chrome, TV, iOS, macOS and Linux. Keep
+  existing download routes and availability; rename the Android TV display to TV.
+- See [handoff](docs/website-download-copy.md).
+
 ### Public website — 0.6.2
 
 - Remove app-store placeholder cards from all seven platform download pages in

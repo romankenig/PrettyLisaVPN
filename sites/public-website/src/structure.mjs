@@ -3,11 +3,11 @@ export const legalKeys = ["terms", "privacy", "refunds", "payments"];
 export const platforms = [
   { id: "android", file: "android.apk", stores: ["google", "rustore"] },
   { id: "windows", file: "windows.exe", stores: ["microsoft"] },
+  { id: "chrome", file: "chrome-extension.zip", stores: ["chrome"] },
+  { id: "android-tv", stores: ["google"] },
   { id: "ios", stores: ["apple"] },
   { id: "macos", stores: ["apple"] },
   { id: "linux", stores: ["flathub"] },
-  { id: "android-tv", stores: ["google"] },
-  { id: "chrome", file: "chrome-extension.zip", stores: ["chrome"] },
 ];
 export function routeFor(language, route = "/") {
   if (!languages.includes(language)) throw new Error("Unknown language");

@@ -16,7 +16,7 @@
   "hero": {
     "title": "ihr internet.\nihre regeln.",
     "text": "VPN für alltägliche aufgaben auf mehreren geräten",
-    "button": "gerät auswählen",
+    "button": "herunterladen",
     "link": "so funktioniert es"
   },
   "features": {
@@ -53,7 +53,7 @@
       "ios": "ios",
       "macos": "macos",
       "linux": "linux",
-      "android-tv": "android tv",
+      "android-tv": "tv",
       "chrome": "chrome"
     },
     "descriptions": {
@@ -65,7 +65,7 @@
       "android-tv": "für fernseher und tv-boxen",
       "chrome": "erweiterung für den browser-datenverkehr"
     },
-    "account": "1 konto"
+    "account": "ein konto"
   },
   "download": {
     "title": "für",

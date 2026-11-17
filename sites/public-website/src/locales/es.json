@@ -16,7 +16,7 @@
   "hero": {
     "title": "tu internet.\ntus reglas.",
     "text": "VPN para tus tareas diarias en varios dispositivos",
-    "button": "elegir dispositivo",
+    "button": "descargar",
     "link": "cómo funciona"
   },
   "features": {
@@ -53,7 +53,7 @@
       "ios": "ios",
       "macos": "macos",
       "linux": "linux",
-      "android-tv": "android tv",
+      "android-tv": "tv",
       "chrome": "chrome"
     },
     "descriptions": {
@@ -65,7 +65,7 @@
       "android-tv": "para televisores y dispositivos de tv",
       "chrome": "extensión para el tráfico del navegador"
     },
-    "account": "1 cuenta"
+    "account": "una cuenta"
   },
   "download": {
     "title": "para",
