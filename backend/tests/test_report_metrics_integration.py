@@ -208,10 +208,15 @@ async def test_live_device_day_is_fresh_separate_and_rolls_over_without_mutating
         assert later["points"] == first["points"]
         async with postgres.session() as session:
             saved = (await session.get(AnalyticsSnapshotRecord, yesterday)).data
-            assert "device_today" not in saved
+            assert not {"device_today", "live", "duration_history", "plan"}.intersection(saved)
             assert saved == {
-                key: value for key, value in first.items() if key not in {"device_today", "live"}
+                key: value
+                for key, value in first.items()
+                if key not in {"device_today", "live", "duration_history", "plan"}
             }
+        assert first["plan"] == first["duration_history"]["plan"] == "ALL"
+        assert first["duration_history"]["points"][-1]["sessions"] == 5
+        assert later["duration_history"]["points"][-1]["sessions"] == 6
         assert email not in str(later) and str(identity.user_id) not in str(later)
         next_midnight = midnight + timedelta(days=1)
         rolled = await analytics.latest(next_midnight)
