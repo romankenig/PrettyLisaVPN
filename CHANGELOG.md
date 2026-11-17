@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+### Public website — 0.6.2
+
+- Remove app-store placeholder cards from all seven platform download pages in
+  all six languages. Other content, direct downloads and styling are unchanged.
+- See [handoff](docs/website-store-mentions.md).
+
 ### Weekly speed report performance — backend 0.52.1
 
 - Read traffic history in bounded batches without per-observation ORM objects or
