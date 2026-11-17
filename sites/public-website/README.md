@@ -1,4 +1,7 @@
-# PrettyLisaVPN website · 0.6.3
+# PrettyLisaVPN website · 0.6.4
+
+Current-plan badges include matching emoji; the language picker uses local flags
+for its current language and options. See the [handoff](../../docs/website-plan-emojis-language-flags.md).
 
 The homepage uses a download CTA and spells out one account. Ready downloads
 come first, followed by TV, iOS, macOS and Linux. Only downward arrows remain.

@@ -5,6 +5,8 @@ import {
   purchasePresentation,
 } from "./pricing.mjs";
 
+const planEmoji = { DEMO: "⏳", FREE: "🕊️", PREMIUM: "⭐", PLATINUM: "💎" };
+
 export function providerURL(raw) {
   const url = new URL(raw);
   if (
@@ -352,16 +354,15 @@ export async function mountPortal(root) {
     summary();
   }
   function summary() {
+    const planLabel =
+      `${overview.plan.toLowerCase()} ${planEmoji[overview.plan] ?? ""}`.trim();
     const showPurchase =
       overview.new_contract_required ||
       overview.plan !== "PREMIUM" ||
       overview.actions.includes("RENEW");
     screen(t.title, showPurchase ? null : t.fixedPrice);
     const card = el("section", null, "portal-plan");
-    card.append(
-      el("p", t.yourPlan),
-      el("span", overview.plan.toLowerCase(), "portal-badge"),
-    );
+    card.append(el("p", t.yourPlan), el("span", planLabel, "portal-badge"));
     if (overview.current_price)
       card.append(el("h2", money(overview.current_price) + " / " + t.month));
     if (overview.paid_until)
@@ -396,7 +397,7 @@ export async function mountPortal(root) {
       const current = el("p", null, "portal-current-summary");
       current.append(
         document.createTextNode(t.yourPlan + ": "),
-        el("strong", overview.plan.toLowerCase()),
+        el("strong", planLabel),
       );
       root.append(current, purchaseCard({ signedIn: true }));
     }
