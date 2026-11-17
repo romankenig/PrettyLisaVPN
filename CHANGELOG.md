@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
+
+- Buy, renew and subscription management open the website for every provider mode.
+  Remove native payment selection and confirmation; retain account summaries and
+  recovery of previously pending operations without starting another payment.
+- DEMO Buy opens the public account page without ending the guest VPN session.
+  Registered accounts use the existing single-use web handoff. Apple and Chrome
+  already use that flow and keep their versions. See [handoff](docs/client-purchase-website.md).
+
 ### Public website — 0.7.0
 
 - Replace the payment-success preview with a dedicated payment-unavailable page

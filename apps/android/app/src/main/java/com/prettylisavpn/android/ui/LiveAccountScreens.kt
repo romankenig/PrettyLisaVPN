@@ -47,7 +47,6 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
     val route = entry?.destination?.route ?: "HOME"
     val demo = state.data.plan.equals("Demo", ignoreCase = true)
     fun register() { model.perform(Command.Logout) { model.emailDraft = "" } }
-    fun registerToBuy() { model.perform(Command.Logout) { model.emailDraft = ""; model.afterLoginSubscription = true } }
     LaunchedEffect(Unit) { if (model.afterLoginSubscription) { model.afterLoginSubscription = false; nav.navigate("SUBSCRIPTION") } }
     fun go(value: String) {
         if (demo && value == "SUPPORT") { register(); return }
@@ -72,7 +71,7 @@ internal fun LiveAccountScreens(model: ScreenModel, messageBlocked: Boolean = fa
             composable("ABOUT") { AboutScreen("live-about", { go("SUPPORT") }, navigate = { go(it) }) }
             composable("ADVANCED") { AdvancedSettings(methodSelection) { nav.popBackStack() } }
             composable("DEVICES") { LiveDevices(model) { nav.popBackStack() } }
-            composable("SUBSCRIPTION") { LiveSubscription(model, ::register, ::registerToBuy) { nav.popBackStack() } }
+            composable("SUBSCRIPTION") { LiveSubscription(model, ::register) { nav.popBackStack() } }
             composable("SUPPORT") { support -> LiveSupport(model, support.savedStateHandle) { nav.popBackStack() } }
         }
     }
@@ -168,7 +167,7 @@ private fun LiveDevices(model: ScreenModel, back: () -> Unit) {
 }
 
 @Composable
-private fun LiveSubscription(model: ScreenModel, register: () -> Unit, registerToBuy: () -> Unit, back: () -> Unit) {
+private fun LiveSubscription(model: ScreenModel, register: () -> Unit, back: () -> Unit) {
     val tr = strings()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, model) {
@@ -180,37 +179,24 @@ private fun LiveSubscription(model: ScreenModel, register: () -> Unit, registerT
     }
     val state by model.state.collectAsState()
     var currency by rememberSaveable { mutableStateOf("RUB") }
-    var route by rememberSaveable { mutableStateOf("MIR") }
-    var action by rememberSaveable { mutableStateOf<String?>(null) }
-    var confirmedRevision by rememberSaveable { mutableStateOf("") }
-    var requestId by rememberSaveable { mutableStateOf(UUID.randomUUID().toString()) }
     val context = LocalContext.current
     val language by LocalPresentation.current.preference.language.collectAsState()
     val locale = java.util.Locale.forLanguageTag(language.code)
     val billing = state.data.billing
     val currentPlan = billing?.plan ?: state.data.plan.uppercase(java.util.Locale.ROOT)
     val demo = currentPlan == "DEMO"
-    var purchaseUnavailable by rememberSaveable { mutableStateOf(false) }
     val contract = subscriptionContractPrice(billing?.currentPrice)?.takeIf { billing?.plan == "PREMIUM" && !billing.newContractRequired }
-    val purchaseRoutes = billing?.let { subscriptionPurchaseRoutes(it, currency) }.orEmpty()
     LaunchedEffect(billing?.revision, currency) {
         val currencies = billing?.offers?.flatMap { it.prices.keys }.orEmpty()
         if (contract != null && currency != contract.first) currency = contract.first
         else if (contract == null && currencies.isNotEmpty() && currency !in currencies) currency = currencies.first()
-        if (purchaseRoutes.none { it.id == route }) route = purchaseRoutes.firstOrNull()?.id.orEmpty()
     }
     var now by remember { mutableStateOf(java.time.Instant.now()) }
     LaunchedEffect(Unit) { while (true) { now = java.time.Instant.now(); kotlinx.coroutines.delay(60_000) } }
-    LaunchedEffect(state.data.billing?.revision, action) {
-        if (action != null && confirmedRevision != state.data.billing?.revision) action = null
-    }
-    fun buy() {
-        if (demo) { registerToBuy(); return }
-        val kind = listOf("SUBSCRIBE", "RENEW").firstOrNull { billing?.permits(it) == true }
-        if (kind != null && state.data.operationsReady && billing?.offers?.size == 1 &&
-            purchaseRoutes.any { it.id == route } && !state.data.stale && state.loads[Area.BILLING]?.phase == LoadPhase.READY) {
-            model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing!!.revision; action = kind
-        } else purchaseUnavailable = true
+    fun openPortal() {
+        model.openBillingPortal { url ->
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE))
+        }
     }
     PhoneScreen("live-subscription-screen", onRefresh = { if (!state.busy) model.load(Area.BILLING) },
         refreshing = state.loads[Area.BILLING]?.phase == LoadPhase.LOADING, refreshAtEnd = false) {
@@ -227,16 +213,8 @@ private fun LiveSubscription(model: ScreenModel, register: () -> Unit, registerT
                 note = if (!showOffer) (if (contract != null) tr(R.string.billing_fixed_price) else tr(R.string.subscription_price_unconfirmed))
                     else if (billing == null) tr(R.string.billing_reference_prices) else if (currentPlan == "PREMIUM") tr(R.string.billing_resubscribe) else null,
                 featured = true, current = currentPlan == "PREMIUM") {
-                    if (showOffer) {
-                        if (purchaseRoutes.isNotEmpty()) Column {
-                            purchaseRoutes.forEach { cap ->
-                                FilterChip(selected = route == cap.id, onClick = { route = cap.id }, label = { Text(cap.label) },
-                                    colors = FilterChipDefaults.filterChipColors(labelColor = Brand.Mercury, selectedLabelColor = Brand.Christalle, selectedContainerColor = Brand.Viking),
-                                    modifier = Modifier.heightIn(min = 48.dp).testTag("live-route-${cap.id}"), enabled = !state.busy && !state.data.paymentPending)
-                            }
-                        }
-                        BrandActionButton(tr(R.string.plan_buy), ::buy, Modifier.testTag("plan-buy"), enabled = !state.busy && !state.data.paymentPending)
-                    }
+                    BrandActionButton(tr(if (showOffer) R.string.plan_buy else R.string.ui_renew), ::openPortal,
+                        Modifier.testTag("plan-buy"), enabled = !state.busy && !model.fixture)
                 }
             if (currentPlan != "PREMIUM") {
                 PlanTierCard("FREE", currentPlan == "FREE", if (demo) register else null, !state.busy)
@@ -265,49 +243,13 @@ private fun LiveSubscription(model: ScreenModel, register: () -> Unit, registerT
                 Spacer(Modifier.testTag("provider-mode"))
                 if (state.data.paymentPending) BrandCard {
                     Text(tr(R.string.ui_an_operation_needs_confirmation_refresh_its_status_before_startin))
-                    BrandActionButton(tr(R.string.ui_check_operation), { model.perform(Command.ConfirmPayment) }, Modifier.testTag("live-check-payment"), loading = state.busy)
-                    if (state.data.billingRetryAvailable) BrandActionButton(tr(R.string.ui_retry_original_operation), { model.perform(Command.Payment(requestId, "RENEW", route, currency)) }, Modifier.testTag("live-retry-payment"), enabled = billing.mode == "LIVE" && billing.available && !state.busy)
+                    BrandActionButton(tr(R.string.ui_check_operation), ::openPortal,
+                        Modifier.testTag("live-check-payment"), enabled = !state.busy && !model.fixture)
                 }
-                state.data.billingOperation?.let { operation -> BrandCard {
-                    Text(tr(R.string.ui_operation_0_1, operation.id, operation.status))
-                    val url = operation.redirect?.let { value -> runCatching { value.toUri().takeIf { it.scheme == "https" && it.host != null && it.userInfo == null && it.fragment == null && it.port in setOf(-1,443) } }.getOrNull() }
-                    if (url != null && operation.status == "PENDING") BrandActionButton(tr(R.string.ui_continue_with_payment_provider), {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
-                    }, enabled = billing.mode == "LIVE" && billing.available)
-                } }
                 if (billing.plan == "PREMIUM" || billing.method != null || billing.autoRenew) BrandCard(Modifier.testTag("billing-management")) {
-                    if (action == null) OperationError(state.error)
-                    SubscriptionManageButton(tr(R.string.subscription_change), { model.openBillingPortal { url -> context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) } }, "billing-portal", !state.busy && !model.fixture && !state.data.paymentPending)
-                    listOf("CHANGE_METHOD", "CANCEL").filter { billing.permits(it) }.forEach { kind ->
-                        if (kind == "CANCEL") Text(tr(R.string.billing_cancel_detail), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                        SubscriptionManageButton(tr(if (kind == "CANCEL") R.string.subscription_delete else R.string.billing_replace_card),
-                            { model.clearError(); requestId = UUID.randomUUID().toString(); confirmedRevision = billing.revision; action = kind }, "live-pay-$kind",
-                            state.data.operationsReady && !state.data.paymentPending && !state.data.stale && !state.busy && state.loads[Area.BILLING]?.phase == LoadPhase.READY,
-                            danger = kind == "CANCEL")
-                    }
+                    SubscriptionManageButton(tr(R.string.subscription_change), ::openPortal, "billing-portal", !state.busy && !model.fixture)
                 }
             }
-        }
-    }
-    if (purchaseUnavailable) AlertDialog(onDismissRequest = { purchaseUnavailable = false },
-        modifier = Modifier.testTag("purchase-unavailable"), containerColor = Brand.Mercury,
-        title = { Text(tr(R.string.subscription_premium_offer)) },
-        text = { Text(tr(R.string.subscription_payments_unavailable)) },
-        confirmButton = { TextButton({ purchaseUnavailable = false }) { Text(tr(R.string.ui_understood)) } })
-    action?.let { kind ->
-        if (kind == "CANCEL") ConfirmDialog(
-            tr.action(kind) + "?", tr(R.string.billing_cancel_detail), tr(R.string.ui_confirm), state,
-            { if (!state.busy) action = null },
-            extraContent = {
-                if (state.data.billing?.permits("CHANGE_METHOD") == true) {
-                    Text(tr(R.string.billing_replace_prompt))
-                    BrandActionButton(tr(R.string.billing_replace_card), { action = "CHANGE_METHOD"; requestId = UUID.randomUUID().toString() }, enabled = !state.busy)
-                }
-            },
-        ) {
-            model.perform(Command.Payment(requestId, kind, route, currency, confirmedRevision)) { action = null }
-        } else ConfirmDialog(tr.action(kind) + "?", tr(R.string.ui_review_the_displayed_price_and_currency_cancel_change_method_pres), tr(R.string.ui_confirm), state, { action = null }) {
-            model.perform(Command.Payment(requestId, kind, route, currency, confirmedRevision)) { action = null }
         }
     }
 }

@@ -8,12 +8,27 @@ import { PlanComparison, referenceOffer } from "./PlanComparison";
 
 export function GuestSubscription() {
   useLanguage();
-  const { billing } = useApplication();
+  const { billing, paymentBrowser } = useApplication();
   const [offer, setOffer] = useState<Offer>(referenceOffer);
   const [currency, setCurrency] = useState<Currency>("RUB");
   const [attempt, setAttempt] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [portalError, setPortalError] = useState(false);
   const registration = useRegistration();
+  async function buy() {
+    if (opening || registration.busy) return;
+    setOpening(true);
+    setPortalError(false);
+    try {
+      if (!paymentBrowser) throw new Error("PAYMENT_BROWSER_UNAVAILABLE");
+      await paymentBrowser.open("https://prettylisavpn.com/account/");
+    } catch {
+      setPortalError(true);
+    } finally {
+      setOpening(false);
+    }
+  }
   useEffect(() => {
     if (!billing?.catalog) return;
     const controller = new AbortController();
@@ -53,10 +68,13 @@ export function GuestSubscription() {
           offer={offer}
           currency={currency}
           onCurrency={setCurrency}
-          busy={registration.busy}
-          onBuy={() => void registration.register("/settings/subscription")}
+          busy={registration.busy || opening}
+          onBuy={() => void buy()}
           onRegister={() => void registration.register()}
         />
+        {portalError && (
+          <p role="alert">{t("не удалось открыть кабинет оплаты")}</p>
+        )}
         {registration.error && (
           <p role="alert">
             {t("не удалось завершить гостевую сессию. попробуйте снова")}

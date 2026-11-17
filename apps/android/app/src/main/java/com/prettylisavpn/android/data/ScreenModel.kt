@@ -96,8 +96,9 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
         mutable.value = mutable.value.copy(busy = true, error = null)
         scope.launch {
             try {
-                val url = source.billingPortal()
-                require(validBillingPortal(url))
+                val demo = mutable.value.data.plan.equals("DEMO", ignoreCase = true)
+                val url = if (demo) "https://prettylisavpn.com/account/" else source.billingPortal()
+                require(if (demo) url == "https://prettylisavpn.com/account/" else validBillingPortal(url))
                 if (owner == epoch) open(url)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure
