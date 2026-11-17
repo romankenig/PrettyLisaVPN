@@ -6,6 +6,7 @@ overlapping connection durations form a union, not device-seconds.
 """
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from statistics import median
@@ -51,7 +52,10 @@ def elapsed(before_at: float, after_at: float, before_mono: float, after_mono: f
 
 
 def intervals(
-    previous: Snapshot | None, current: Snapshot, owners: dict[UUID, UUID]
+    previous: Snapshot | None,
+    current: Snapshot,
+    owners: dict[UUID, UUID],
+    plans: Mapping[UUID, str] | None = None,
 ) -> tuple[list[dict[str, Any]], bool]:
     """A new epoch/reset/gap establishes a baseline; it never becomes traffic."""
     if (
@@ -83,6 +87,7 @@ def intervals(
                 "end": row.at,
                 "download": row.download - old.download,
                 "upload": row.upload - old.upload,
+                **({"plan": plans.get(row.lease_id, "UNKNOWN")} if plans is not None else {}),
             }
         )
     return result, complete

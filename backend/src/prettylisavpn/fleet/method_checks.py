@@ -7,7 +7,7 @@ from statistics import mean
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, true
 
 from prettylisavpn.client_vpn.methods import METHODS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
@@ -16,7 +16,8 @@ from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.selection_history import load_selection_history
 from prettylisavpn.fleet.service_checks import daily_slot
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import day
+from prettylisavpn.product_analytics.domain import Plan, day
+from prettylisavpn.product_analytics.plans import lease_plan_expression
 from prettylisavpn.users.model import UserRecord
 
 Route = tuple[UUID, UUID | None]
@@ -36,7 +37,9 @@ class MethodAnalytics:
     def __init__(self, postgres: Postgres):
         self.postgres = postgres
 
-    async def report(self, now: datetime | None = None) -> dict[str, Any]:
+    async def report(
+        self, now: datetime | None = None, *, plan: Plan | None = None
+    ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         today = day(now)
         dates = [today - timedelta(days=offset) for offset in range(7, 0, -1)]
@@ -52,6 +55,7 @@ class MethodAnalytics:
                 select(ClientLeaseRecord.method, UserRecord.email)
                 .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
                 .where(
+                    true() if plan is None else lease_plan_expression() == plan,
                     ClientLeaseRecord.status == "READY",
                     ClientLeaseRecord.removed_at.is_(None),
                     ClientLeaseRecord.verified_at.is_not(None),
@@ -90,8 +94,9 @@ class MethodAnalytics:
             return {
                 "generated_at": now.isoformat(),
                 "timezone": "GMT+3",
+                "plan": plan or "ALL",
                 "methods": items,
-                "selection_history": await load_selection_history(session, now, "methods"),
+                "selection_history": await load_selection_history(session, now, "methods", plan),
                 "selection": {
                     "active_sessions": total,
                     "items": [

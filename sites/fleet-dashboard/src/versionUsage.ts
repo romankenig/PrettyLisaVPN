@@ -3,7 +3,7 @@ import { categoryColors } from "./selectionHistory.ts";
 export const appPlatforms: Record<string, string> = { WINDOWS: "Windows", ANDROID: "Android", CHROME_EXTENSION: "Chrome Extension", MACOS: "macOS", IOS: "iOS", LINUX: "Linux", ANDROID_TV: "Android TV" };
 export type VersionCounts = { users: Record<string, number>; devices: Record<string, number>; active_users: number };
 export type VersionDay = { date: string; partial: boolean; platforms: Record<string, VersionCounts> | null };
-export type VersionReport = { schema: 1; timezone: "GMT+3"; generated_at: string; collection_started_at: string | null; from_date: string; through_date: string; points: VersionDay[] };
+export type VersionReport = { plan?: string; schema: 1; timezone: "GMT+3"; generated_at: string; collection_started_at: string | null; from_date: string; through_date: string; points: VersionDay[] };
 export function readVersionReport(value: unknown): VersionReport {
   const data = value as VersionReport;
   if (!data || data.schema !== 1 || data.timezone !== "GMT+3" || !Number.isFinite(Date.parse(data.generated_at)) || (data.collection_started_at !== null && !Number.isFinite(Date.parse(data.collection_started_at))) || !Array.isArray(data.points) || data.points.length !== 31) throw new Error("Invalid version report");

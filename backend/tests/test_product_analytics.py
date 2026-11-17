@@ -46,6 +46,7 @@ async def test_historical_late_heartbeat_does_not_invent_activity_at_expiry():
                     user_id=user,
                     created_at=created,
                     is_free=True,
+                    plan_snapshot=None,
                     verified_at=created + timedelta(seconds=5),
                     heartbeat_at=boundary(date(2026, 11, 1)),
                     expires_at=boundary(date(2026, 10, 31)),

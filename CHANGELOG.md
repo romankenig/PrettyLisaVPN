@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Daily duration distributions and tariff filters — backend 0.52.0 / dashboard 0.17.0
+
+- Show session duration and time to first silence as daily stacked bars, with
+  counts/shares, incomplete today and minute refresh. Late observations update
+  the original connection day without rewriting saved daily snapshots.
+- Add All / DEMO / Free / Premium / Platinum / Unknown filters to user analytics,
+  app versions, method/service usage and actual user speed. Preserve filters in
+  report navigation; synthetic checks remain shared across tariffs.
+- Migration 0053 stores connection-time and app-activity-time tariffs. Legacy
+  unknown paid tariffs are not inferred from current subscriptions. Client and
+  engine versions are unchanged. See [handoff](docs/analytics-tariff-filters.md).
+
 ### Account message popups — backend 0.51.0 / Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
 
 - Added shared JSON v2 with operator-authored HTTPS links and three dismissal modes:

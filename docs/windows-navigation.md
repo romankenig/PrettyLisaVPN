@@ -1,3 +1,14 @@
+# Private reports — dashboard 0.17.0 / backend 0.52.0
+
+Each of the five report pages → tariff selector → filtered user statistics.
+Report links retain `?plan=...`; All removes it. Existing private authentication
+remains in place. Synthetic checks and technical counters remain shared and are
+labelled accordingly. Product analytics → daily duration / first-silence stacked
+bars → independent counts/shares and day tooltips, including incomplete today.
+Minute refresh retains tariff selection. These controls use implemented backend
+queries; deployment evidence is recorded in the task PR. No client navigation
+changes. See [handoff](analytics-tariff-filters.md).
+
 # Account popup v2 — Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
 
 After OTP login or saved-session restoration, authenticated account → GET /messages

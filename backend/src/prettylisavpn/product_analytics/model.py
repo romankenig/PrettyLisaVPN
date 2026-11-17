@@ -48,7 +48,12 @@ class AppActivityRecord(Base):
     """Latest reported app version per active device/day, without request details."""
 
     __tablename__ = "product_app_activity_days"
-    __table_args__ = (Index("ix_app_activity_day", "day"),)
+    __table_args__ = (
+        Index("ix_app_activity_day", "day"),
+        CheckConstraint(
+            "plan IN ('DEMO','FREE','PREMIUM','PLATINUM','UNKNOWN')", name="ck_app_activity_plan"
+        ),
+    )
     device_id: Mapped[UUID] = mapped_column(
         ForeignKey("devices.id", ondelete="CASCADE"), primary_key=True
     )
@@ -58,6 +63,7 @@ class AppActivityRecord(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     app_version: Mapped[str | None] = mapped_column(String(100))
     version_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    plan: Mapped[str | None] = mapped_column(String(16))
 
 
 class SessionSilenceRecord(Base):

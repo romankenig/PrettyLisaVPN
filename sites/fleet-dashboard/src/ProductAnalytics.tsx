@@ -2,21 +2,24 @@ import { useEffect, useState } from "react";
 import { Clock3, LockKeyhole, RefreshCw } from "lucide-react";
 import AnalyticsChart from "./AnalyticsChart";
 import ReportNavigation from "./ReportNavigation";
-import BarDistribution from "./BarDistribution";
+import DailyDurationDistribution from "./DailyDurationDistribution";
+import PlanFilter, { useReportPlan } from "./PlanFilter";
+import { validateReportPlan, withPlan } from "./reportPlan";
 import DailyDeviceDistribution from "./DailyDeviceDistribution";
 import { analyticsChartPoints, formatDay, formatNumber, plans, planShare, readAnalytics, type ActiveMetric, type Analytics } from "./analytics";
 import { date } from "./time";
 
 const planNames = { DEMO: "DEMO", FREE: "Free", PREMIUM: "Premium", PLATINUM: "Platinum", UNKNOWN: "Тариф неизвестен" };
 const planColors = { DEMO: "#d3618e", FREE: "#17655c", PREMIUM: "#5f22d9", PLATINUM: "#b28a09", UNKNOWN: "#9c9c9c" };
-const durationLabels = ["≤10 с", "10–60 с", "1–3 мин", "3–5 мин", "5–15 мин", ">15 мин"];
 const colors = { mau: "#5f22d9", wau: "#17655c", dau: "#d7ad0d" };
 const widths = { dau: 1, wau: 7, mau: 30 };
 const definition = (metric: ActiveMetric) => `${metric.toUpperCase()} — уникальные аккаунты с успешным авторизованным обращением за ${widths[metric]} ${metric === "dau" ? "день" : "дней"}, включая дату точки. Обновление токена и VPN heartbeat также считаются активностью. Несколько устройств одного аккаунта считаются один раз.`;
 
 export default function ProductAnalytics() {
   useEffect(() => { document.title = "PrettyLisaVPN — Продуктовая аналитика"; }, []);
-  const [data, setData] = useState<Analytics | null>(null);
+  const [plan, setPlan] = useReportPlan();
+  const [result, setData] = useState<Analytics | null>(null);
+  const data = (result?.plan ?? "ALL") === plan ? result : null;
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -25,23 +28,25 @@ export default function ProductAnalytics() {
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
     void (async () => {
       try {
-        const response = await fetch("/dashboard/api/product-analytics", { cache: "no-store", signal: controller.signal });
+        const response = await fetch(withPlan("/dashboard/api/product-analytics", plan), { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Unavailable");
         const value = readAnalytics(await response.json());
+        validateReportPlan(value, plan);
         if (controller.signal.aborted) return;
         setData(value); setError(false);
       } catch { if (!controller.signal.aborted) setError(true); }
       finally { if (!controller.signal.aborted) { setLoading(false); timer = setTimeout(() => setRetry(v => v + 1), 60_000); } }
     })();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [retry]);
+  }, [retry, plan]);
   const points = data ? analyticsChartPoints(data) : [], last = points.at(-1), dates = points.map(point => point.date);
   const partialDate = data?.live?.point.date, summary = data?.live?.summary ?? data;
   const stale = data && Date.now() > Date.parse(data.next_update_at) + 15 * 60_000;
   return <>
     <header className="topbar"><a href="/dashboard/"><img src="/dashboard/logo.svg" alt="PrettyLisaVPN" width={236} height={54} /></a><div className="private"><LockKeyhole size={14} />Приватная аналитика</div></header>
     <main className="workspace product-analytics">
-      <ReportNavigation current="product" />
+      <ReportNavigation current="product" plan={plan} />
+      <PlanFilter plan={plan} onChange={setPlan} note="Активная аудитория — тариф на момент последней активности в окне; подключения — тариф при создании сессии. Старые записи без точного тарифа показаны как «Неизвестен»." />
       <div className="heading"><div><div className="eyebrow">Продукт / Аудитория</div><h1>Как используют PrettyLisaVPN</h1><p>Два месяца · по дням · время GMT+3{data && <> · по {formatDay(partialDate ?? data.through_date)}{partialDate ? " · неполный день" : " включительно"}</>}</p></div><button className="refresh" disabled={loading} aria-label="Обновить данные отчёта" onClick={() => { setLoading(true); setRetry(v => v + 1); }}><RefreshCw size={18} className={loading ? "spin" : ""} /></button></div>
       <div className="analytics-updated"><Clock3 size={15} />{data ? <>Обновлено {date(data.live?.updated_at ?? data.generated_at)} GMT+3 · {data.live ? "обновление раз в минуту" : `следующее обновление ${date(data.next_update_at)} GMT+3`}</> : "Ожидаем первый ежедневный расчёт"}</div>
       {error && <div role="alert" className="notice">Не удалось обновить отчёт. {data ? "Показан предыдущий результат." : "Повторите загрузку позже."}</div>}
@@ -49,7 +54,7 @@ export default function ProductAnalytics() {
       {data?.history_partial && <div className="analytics-coverage">Исторические данные неполные: раньше сохранялись только входы, обновления токенов и отдельные события VPN. Полный сбор авторизованной активности — с {formatDay(data.full_collection_from)}. Неизвестные тарифы показаны отдельно; разрывы на графике означают отсутствие истории, а не ноль.</div>}
       <section className="metrics analytics-cards" aria-label={partialDate ? "Текущий неполный день" : "Последний завершённый день"}>
         {(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => <article className={`metric ${metric === "mau" ? "featured" : ""}`} key={metric}><span>{metric.toUpperCase()}{last && ` · ${formatDay(last.date)}${partialDate ? " · неполный день" : ""}`}</span><strong>{formatNumber(last?.[metric].total)}</strong><p>{definition(metric)}</p></article>)}
-        <article className="metric"><span>Новые аккаунты{last && ` · ${formatDay(last.date)}${partialDate ? " · неполный день" : ""}`}</span><strong>{formatNumber(last?.new_accounts)}</strong><p>Аккаунты, созданные в этот календарный день. Тестовые адреса исключены.</p></article>
+        <article className="metric"><span>Новые аккаунты{last && ` · ${formatDay(last.date)}${partialDate ? " · неполный день" : ""}`}</span><strong>{formatNumber(last?.new_accounts)}</strong><p>Аккаунты, созданные в этот календарный день. Тариф — по последней активности в день регистрации; без наблюдения — «Неизвестен». Тестовые адреса исключены.</p></article>
       </section>
       {data && <>
         <AnalyticsChart partialDate={partialDate} title="Динамика активной аудитории" dates={dates} series={(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => ({ name: metric.toUpperCase(), color: colors[metric], values: points.map(p => p[metric].total) }))} explanation="Каждая точка — календарный день; текущий день неполный. DAU: 1 день, WAU: 7 дней, MAU: 30 дней до точки включительно. Это уникальные аккаунты, не сумма устройств и не сумма ежедневных значений." />
@@ -57,12 +62,10 @@ export default function ProductAnalytics() {
         <div className="analytics-cohorts">{(["mau", "wau", "dau"] as ActiveMetric[]).map(metric => <AnalyticsChart partialDate={partialDate} key={metric} title={`${metric.toUpperCase()} по тарифам`} dates={dates} unit={planShares ? "%" : ""} series={plans.map(plan => ({ name: planNames[plan], color: planColors[plan], values: points.map(p => planShares ? planShare(p[metric], plan) : p[metric].plans[plan]), dashed: plan === "UNKNOWN" }))} explanation={`${definition(metric)} DEMO — гостевые аккаунты. Доля — категория / вся активная аудитория окна × 100%. Тариф берётся на момент последней активности; неизвестные исторические тарифы не заменяются текущими.`} />)}</div>
         <DailyDeviceDistribution points={data.points} today={data.device_today} />
         <AnalyticsChart partialDate={partialDate} title="Средняя длительность подключения" dates={dates} unit=" с" series={[{ name: "От подключения до отключения", color: "#5f22d9", values: points.map(point => point.mean_session_seconds ?? null) }]} explanation={`Среднее по завершённым сессиям, по дате отключения. Начало — подтверждение VPN; конец — запрос отключения или прекращение доступа сервером. Открытые сессии и старая история без времени отключения исключены. Среднее по сессиям, начавшимся за период: ${formatNumber(summary?.mean_session_seconds)} с.`} />
+        <DailyDurationDistribution data={data.duration_history} kind="session_duration" />
+        <DailyDurationDistribution data={data.duration_history} kind="time_to_silence" />
         <div className="analytics-extras">
-          <BarDistribution partialDate={partialDate} title="Длительность подключения" items={(summary?.session_duration?.counts ?? []).map((count, i) => ({ name: durationLabels[i], count }))} explanation={`От подключения до отключения для сессий, начавшихся за период, включая текущий неполный день. Верхняя граница интервала включена. Без конечного наблюдения: ${formatNumber(summary?.duration_unobserved_sessions)}.`} />
-          <BarDistribution partialDate={partialDate} title="Время до первой тишины" items={(summary?.time_to_silence?.counts ?? []).map((count, i) => ({ name: durationLabels[i], count }))} explanation={`Для сессий за период, включая текущий неполный день: от подключения до начала первых 10 секунд без изменения счётчиков байтов. Измерения примерно каждые 5 секунд; пропуски не считаются тишиной. Без подтверждённого первого периода тишины: ${formatNumber(summary?.silence_unobserved_sessions)}.`} />
-        </div>
-        <div className="analytics-extras">
-          <AnalyticsChart partialDate={partialDate} title="Новые аккаунты" dates={dates} series={[{ name: "Регистрации", color: "#5f22d9", values: points.map(p => p.new_accounts) }]} explanation="Число аккаунтов по дате создания (GMT+3), без зарезервированных тестовых доменов. Повторный вход не является новой регистрацией." />
+          <AnalyticsChart partialDate={partialDate} title="Новые аккаунты" dates={dates} series={[{ name: "Регистрации", color: "#5f22d9", values: points.map(p => p.new_accounts) }]} explanation="Число аккаунтов по дате создания (GMT+3), без зарезервированных тестовых доменов. Повторный вход не является новой регистрацией. Тариф определяется по последней активности в день регистрации; без наблюдения — «Неизвестен»." />
           <AnalyticsChart partialDate={partialDate} title="Подтверждённые подключения VPN" dates={dates} series={[{ name: "Подключения", color: "#17655c", values: points.map(p => p.verified_sessions) }]} explanation="Количество клиентских VPN-сессий по дате подтверждения доступа в Интернет. Установка peer и старый статус ACTIVE не считаются подтверждением. Автоматические проверки серверов исключены." />
           <AnalyticsChart partialDate={partialDate} title="Успешность подключения" dates={dates} unit="%" series={[{ name: "Успешность", color: "#5f22d9", values: points.map(p => p.connection_success_percent) }]} explanation="Подтверждённые / завершённые попытки × 100%, сгруппированные по дате начала. Каждый кандидат автоматического перебора — отдельная попытка. Незавершённые попытки исключены; при отсутствии попыток — нет значения." />
           <AnalyticsChart partialDate={partialDate} title="Регулярность использования · DAU/MAU" dates={dates} unit="%" series={[{ name: "DAU/MAU", color: "#17655c", values: points.map(p => p.engagement_percent) }]} explanation="Доля месячной активной аудитории, активная в день точки: DAU / MAU × 100%. Это показатель регулярности использования, а не удержания когорты. При MAU = 0 значения нет." />
