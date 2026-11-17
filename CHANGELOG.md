@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+### Public website — 0.6.2
+
+- Remove app-store placeholder cards from all seven platform download pages in
+  all six languages. Other content, direct downloads and styling are unchanged.
+- See [handoff](docs/website-store-mentions.md).
+
 ### Daily duration distributions and tariff filters — backend 0.52.0 / dashboard 0.17.0
 
 - Show session duration and time to first silence as daily stacked bars, with

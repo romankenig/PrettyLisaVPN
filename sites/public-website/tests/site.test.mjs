@@ -184,9 +184,9 @@ test("home has five sections including database-backed prices, one launch notice
     for (const platform of platforms) {
       const page = all.get(routeFor(language, `/download/${platform.id}/`));
       assert.ok(page);
-      assert.equal(
-        (page.match(/class="store-option" disabled/g) ?? []).length,
-        platform.stores.length,
+      assert.doesNotMatch(
+        page,
+        /class="download-card stores"|class="store-option"/,
       );
       if (platform.file) {
         assert.ok(page.includes(`href="/downloads/${platform.file}" download`));

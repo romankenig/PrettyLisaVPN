@@ -1,4 +1,7 @@
-# PrettyLisaVPN website · 0.6.1
+# PrettyLisaVPN website · 0.6.2
+
+Store placeholder cards are removed from all localized platform download pages.
+See the [handoff](../../docs/website-store-mentions.md).
 
 Chrome now has a public ZIP download, six translated installation guides and
 version/size/hash metadata from the same verified publisher used by other clients.
