@@ -2,7 +2,7 @@
 
 Owner request on 2026-11-17: remove store mentions from prettylisavpn.com and
 leave everything else unchanged. Website 0.6.1 → 0.6.2 (PATCH); all other component
-versions are unchanged. Base: `19c3099a6648b91a1cf5f619ade9d51bf6818963`.
+versions are unchanged. Base: `978cfc164b71872d31d1d750c7a1aa63e8ce30a9`.
 
 Remove only the generated store card on each of seven platform download pages
 in all six languages. Direct downloads, installation instructions, screenshots,

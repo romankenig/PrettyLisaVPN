@@ -1,6 +1,6 @@
 # PrettyLisaVPN website · 0.6.2
 
-Store placeholder cards are removed from all localized platform download pages.
+Download pages no longer show store placeholder cards in any supported language.
 See the [handoff](../../docs/website-store-mentions.md).
 
 Chrome now has a public ZIP download, six translated installation guides and
