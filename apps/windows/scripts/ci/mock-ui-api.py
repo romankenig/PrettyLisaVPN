@@ -53,6 +53,7 @@ AUTH_EXPIRED_ONCE = False
 AUTH_ROTATIONS = []
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
+MESSAGE_SCENARIO = "optional"
 MESSAGE_FIXTURES = [
     {
         "id": "88888888-8888-4888-8888-888888888888", "revision": 1,
@@ -76,6 +77,7 @@ MESSAGE_FIXTURES = [
 
 
 def fixture(method, path, body):
+    global MESSAGE_SCENARIO
     global LIMIT_REVIEW, LIMIT_ACTIVATED, LIMIT_REMOVED
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
     global MESSAGE_ACK_ATTEMPTS, DEVICE_REVOKED, BILLING_READONLY_OPERATION_ATTEMPTS
@@ -168,8 +170,20 @@ def fixture(method, path, body):
             return 200, DEVICE_EVIDENCE["revoked_response"]
     if method == "GET" and path == "/version":
         return 200, {"application_name": "PrettyLisaVPN", "application_version": "0.40.1-dev.1+gfixture", "environment": "test"}
+    if SIMULATE_MESSAGES and method == "POST" and path == "/ui-review/messages-scenario":
+        if body.get("scenario") not in ("optional", "mandatory", "repeat", "none"):
+            return 400, {"error": {"code": "INVALID_SCENARIO"}}
+        MESSAGE_SCENARIO = body["scenario"]
+        return 200, {"scenario": MESSAGE_SCENARIO}
     if SIMULATE_MESSAGES and method == "GET" and path == "/messages":
-        return 200, {"schema_version": 1, "messages": [item for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]}
+        items = [dict(item, dismissal_mode="ONCE", links=[{"label": "сайт PrettyLisaVPN", "url": "https://prettylisavpn.com/"}]) for item in MESSAGE_FIXTURES if (item["id"], item["revision"]) not in MESSAGE_RECEIPTS]
+        if MESSAGE_SCENARIO == "mandatory":
+            items = [dict(MESSAGE_FIXTURES[0], revision=2, title="обновите PrettyLisaVPN", dismissal_mode="REQUIRE_LINK", links=[{"label": "скачать обновление", "url": "https://prettylisavpn.com/"}])]
+        elif MESSAGE_SCENARIO == "repeat":
+            items = [dict(MESSAGE_FIXTURES[0], revision=3, title="напоминание PrettyLisaVPN", dismissal_mode="NEXT_VISIT", primary_action=None, links=[])]
+        elif MESSAGE_SCENARIO == "none":
+            items = []
+        return 200, {"schema_version": 2, "messages": items}
     if SIMULATE_MESSAGES and method == "POST" and path.startswith("/messages/") and path.endswith("/acknowledgements"):
         message_id = path.split("/")[2]
         if not any(item["id"] == message_id and item["revision"] == body.get("revision") for item in MESSAGE_FIXTURES):

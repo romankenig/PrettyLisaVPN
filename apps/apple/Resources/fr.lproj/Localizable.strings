@@ -391,3 +391,6 @@
 "vpn_unstable" = "la connexion est instable. la récupération automatique est arrêtée ; essayez de vous reconnecter";
 "vpn_waiting_network" = "en attente du réseau…";
 "vpn_wireguard_relay" = "WireGuard+";
+
+"message_link_error" = "Impossible d’ouvrir le lien. Réessayez.";
+"message_ack_error" = "Impossible d’enregistrer la confirmation. Réessayez.";

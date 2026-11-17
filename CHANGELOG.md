@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Account message popups — backend 0.51.0 / Windows 0.31.0 / Android 0.30.0 / iOS 0.6.0 / macOS 0.5.0
+
+- Added shared JSON v2 with operator-authored HTTPS links and three dismissal modes:
+  REQUIRE_LINK unlocks closing after a browser launch and repeats next launch;
+  NEXT_VISIT closes locally and repeats; ONCE closes after account-wide ACK until
+  a new revision. Failed URL launch/ACK preserves the relevant popup restriction.
+- Windows, Android, iOS and macOS show personal messages after new/saved login;
+  empty lists leave normal use unchanged. PostgreSQL owns audiences and revisions.
+- Keep v1 for old clients; v2 requires the client versions above. An unclosed
+  REQUIRE_LINK rechecks for withdrawal/expiry; no server-side VPN ban is added.
+- See [contract and publication examples](docs/account-messages.md) and
+  [validation handoff](docs/account-messages-v2-handoff.md).
+
 ### Connection outcome distributions — backend 0.50.0 / dashboard 0.16.0
 
 - Add All / Successful / Unsuccessful filters to daily connection-method and

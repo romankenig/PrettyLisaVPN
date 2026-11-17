@@ -17,6 +17,7 @@ from prettylisavpn.account_messages.domain import (
 )
 from prettylisavpn.account_messages.service import (
     AccountMessagesService,
+    MessageAcknowledgementNotAllowedError,
     MessageNotFoundError,
     MessagesUnavailableError,
 )
@@ -48,6 +49,8 @@ class PrivateRoute(APIRoute):
                 response = error_response("MESSAGES_UNAVAILABLE", 503)
             except MessageNotFoundError:
                 response = error_response("MESSAGE_NOT_FOUND", 404)
+            except MessageAcknowledgementNotAllowedError:
+                response = error_response("MESSAGE_ACK_NOT_ALLOWED", 409)
             response.headers["Cache-Control"] = "no-store"
             response.headers["Vary"] = "Authorization"
             return response
@@ -68,7 +71,12 @@ async def messages(
         return error_response("authentication_required", 401)
     service = cast(AccountMessagesService, request.app.state.account_messages)
     result = await service.list_messages(token, context)
-    return JSONResponse(result.model_dump(mode="json"))
+    payload = result.model_dump(mode="json")
+    if context.schema_version == 1:
+        for message in payload["messages"]:
+            message.pop("dismissal_mode")
+            message.pop("links")
+    return JSONResponse(payload)
 
 
 @router.post("/{message_id}/acknowledgements", response_model=Receipt)

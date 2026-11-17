@@ -366,6 +366,7 @@
     <string name="vpn_location_expected">ubicación VPN esperada:</string>
     <string name="direct_location_expected">ubicación esperada sin VPN:</string>
     <string name="randomize_methods">selección y orden aleatorios de métodos</string>
+    <string name="message_link_error">no se pudo abrir el enlace. inténtalo de nuevo.</string>
     <string name="device_limit">límite de dispositivos alcanzado</string>
     <string name="device_limit_help">elimina un dispositivo para usar la aplicación en este dispositivo.</string>
     <string name="manage_devices">gestionar dispositivos</string>

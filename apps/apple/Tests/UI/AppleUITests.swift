@@ -1,6 +1,40 @@
 import XCTest
 
 final class AppleUITests: XCTestCase {
+    func testAccountMessagePopups() {
+        for mode in ["once", "repeat", "mandatory"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES", "-language", "ru"]
+            if mode != "once" { app.launchArguments += ["-\(mode)-message", "YES"] }
+            app.launch()
+            XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
+            XCTAssertTrue(app.buttons["message-link-0"].exists)
+            capture(app, "message-\(mode)")
+            XCTAssertFalse(app.buttons["message-later"].exists)
+            if mode == "mandatory" {
+                XCTAssertFalse(app.buttons["message-ack"].exists)
+                app.swipeDown(); XCTAssertTrue(app.staticTexts["message-title"].exists)
+                app.buttons["message-link-0"].tap()
+                let browser = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+                XCTAssertTrue(browser.wait(for: .runningForeground, timeout: 15))
+                app.activate()
+                XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+                XCTAssertTrue(app.buttons["message-ack"].waitForExistence(timeout: 10))
+                capture(app, "message-link-opened")
+                browser.terminate()
+                app.activate()
+            }
+            app.buttons["message-ack"].tap()
+            XCTAssertTrue(app.buttons["connect"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.staticTexts["message-title"].exists)
+            if mode != "once" {
+                app.terminate(); app.launch()
+                XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 15))
+                XCTAssertEqual(app.buttons["message-ack"].exists, mode == "repeat")
+            }
+            app.terminate()
+        }
+    }
     func testPendingDeviceCabinet() {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-fixtures", "YES", "-device-limit-fixture", "YES", "-language", "ru"]

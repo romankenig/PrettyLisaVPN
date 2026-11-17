@@ -130,3 +130,74 @@ def test_content_limits_match_contract():
     }
     with pytest.raises(ValidationError):
         Publication.model_validate(payload)
+
+
+def mandatory_document(**changes):
+    value = document(schema_version=2, dismissal_mode="REQUIRE_LINK", **changes)
+    value["localizations"]["ru"]["primary_action"] = None
+    value["localizations"]["ru"]["links"] = [
+        {"label": "обновить", "url": "https://prettylisavpn.com/download#latest"}
+    ]
+    return value
+
+
+def test_v2_mandatory_contract_and_v1_compatibility():
+    publication = Publication.model_validate(mandatory_document())
+    assert publication.localized("ru").dismissal_mode == "REQUIRE_LINK"
+    assert len(publication.localized("ru").links) == 1
+    assert Publication.model_validate(document()).dismissal_mode == "ONCE"
+    assert MessageContext(platform="IOS", app_version="1.0.0", schema_version=2)
+    legacy = Publication.model_validate(document())
+    stored = legacy.storage_payload()
+    assert "dismissal_mode" not in stored
+    assert "links" not in stored["localizations"]["ru"]
+    assert Publication.model_validate(stored) == legacy
+    assert publication.storage_payload()["dismissal_mode"] == "REQUIRE_LINK"
+
+
+@pytest.mark.parametrize(
+    "change", ["v1", "no_link", "internal_action", "unknown_mode", "missing_mode"]
+)
+def test_mandatory_requires_v2_explicit_mode_and_external_exit_path(change):
+    payload = mandatory_document()
+    if change == "v1":
+        payload["schema_version"] = 1
+    elif change == "no_link":
+        payload["localizations"]["ru"]["links"] = []
+    elif change == "internal_action":
+        payload["localizations"]["ru"]["primary_action"] = {"type": "OPEN_ABOUT", "label": "about"}
+    elif change == "missing_mode":
+        payload.pop("dismissal_mode")
+    else:
+        payload["dismissal_mode"] = "UNKNOWN"
+    with pytest.raises(ValidationError):
+        Publication.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://example.com",
+        "javascript:alert(1)",
+        "file:///tmp/x",
+        "https://user@example.com",
+        "https://@example.com",
+        "https://example.com:8443",
+        "https://example.com\\@evil.com",
+        "https://example.com/\n",
+        "https:///missing",
+        "https://example.com/" + "a" * 2048,
+    ],
+)
+def test_message_links_reject_unsafe_urls(url):
+    payload = mandatory_document()
+    payload["localizations"]["ru"]["links"][0]["url"] = url
+    with pytest.raises(ValidationError):
+        Publication.model_validate(payload)
+
+
+@pytest.mark.parametrize("mode", ["REQUIRE_LINK", "NEXT_VISIT", "ONCE"])
+def test_v2_exposes_operator_selected_dismissal_mode(mode):
+    payload = mandatory_document()
+    payload["dismissal_mode"] = mode
+    assert Publication.model_validate(payload).localized("ru").dismissal_mode == mode

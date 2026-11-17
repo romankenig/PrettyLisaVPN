@@ -391,3 +391,6 @@
 "vpn_unstable" = "die verbindung ist instabil. die automatische wiederherstellung wurde gestoppt; versuchen sie erneut, eine verbindung herzustellen";
 "vpn_waiting_network" = "warten auf das netzwerk…";
 "vpn_wireguard_relay" = "WireGuard+";
+
+"message_link_error" = "Link konnte nicht geöffnet werden. Bitte erneut versuchen.";
+"message_ack_error" = "Bestätigung konnte nicht gespeichert werden. Erneut versuchen.";

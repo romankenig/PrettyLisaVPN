@@ -35,6 +35,10 @@ class MessagesUnavailableError(RuntimeError):
     pass
 
 
+class MessageAcknowledgementNotAllowedError(ValueError):
+    pass
+
+
 class PublicationConflictError(ValueError):
     pass
 
@@ -53,7 +57,7 @@ class AccountMessagesService:
     async def list_messages(self, token: str, context: MessageContext) -> MessagesResponse:
         identity = await self.auth.authenticate(token)
         identity.require_registered()
-        result = MessagesResponse(messages=[])
+        result = MessagesResponse(schema_version=context.schema_version, messages=[])
         if context.platform is DevicePlatform.WINDOWS:
             if Version.parse(context.app_version) < Version.parse("0.8.0"):
                 return result
@@ -78,7 +82,10 @@ class AccountMessagesService:
                         ):
                             continue
                         message = publication.localized(context.locale)
-                        candidate = MessagesResponse(messages=[*result.messages, message])
+                        candidate = MessagesResponse(
+                            schema_version=context.schema_version,
+                            messages=[*result.messages, message],
+                        )
                         if encoded_size(candidate) > MAX_RESPONSE_BYTES:
                             break
                         result = candidate
@@ -103,11 +110,16 @@ class AccountMessagesService:
                 repository = MessageRepository(session)
                 message = await repository.lock_message(message_id)
                 offered = await repository.receipt(identity.user_id, message_id, revision)
-                if offered is not None and offered.acknowledged_at is not None:
+                row = await repository.revision(message_id, revision)
+                if (
+                    offered is not None
+                    and offered.acknowledged_at is not None
+                    and row is not None
+                    and row.payload.get("dismissal_mode", "ONCE") == "ONCE"
+                ):
                     return Receipt(id=message_id, revision=revision)
                 if message is None or not message.active or message.current_revision != revision:
                     raise MessageNotFoundError
-                row = await repository.revision(message_id, revision)
                 if offered is None or row is None:
                     raise MessageNotFoundError
                 if (row.starts_at is not None and row.starts_at > now) or (
@@ -116,6 +128,8 @@ class AccountMessagesService:
                     raise MessageNotFoundError
                 if row.user_ids is not None and str(identity.user_id) not in row.user_ids:
                     raise MessageNotFoundError
+                if row.payload.get("dismissal_mode", "ONCE") != "ONCE":
+                    raise MessageAcknowledgementNotAllowedError
                 offered.acknowledged_at = now
         except SQLAlchemyError:
             raise MessagesUnavailableError from None
@@ -137,7 +151,7 @@ class MessagePublicationService:
             assert message is not None
             existing = await repository.revision(payload.id, payload.revision)
             if existing is not None:
-                if existing.payload != payload.model_dump(mode="json"):
+                if Publication.model_validate(existing.payload) != payload:
                     raise PublicationConflictError("Published revisions are immutable")
                 # A retry must not reactivate a withdrawn message or replace a newer revision.
                 return PublicationReceipt(id=payload.id, revision=payload.revision)
@@ -146,7 +160,7 @@ class MessagePublicationService:
             previous = await repository.revision(payload.id, message.current_revision)
             floor = (
                 payload.revision
-                if payload.redisplay_after_ack or previous is None
+                if payload.schema_version == 2 or payload.redisplay_after_ack or previous is None
                 else previous.acknowledgement_floor
             )
             await repository.store_revision(payload, floor, publisher)

@@ -3,6 +3,7 @@
 mod demo_identity;
 mod installation_id;
 mod managed;
+mod message_browser;
 mod payment_browser;
 mod public_documents;
 mod public_location;
@@ -42,6 +43,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             payment_browser::open_payment_url,
+            message_browser::open_message_url,
             demo_identity::get_demo_device_key,
             public_documents::open_public_document,
             public_location::get_public_location,

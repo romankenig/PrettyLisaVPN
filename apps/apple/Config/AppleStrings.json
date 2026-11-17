@@ -1,4 +1,6 @@
 {
+  "message_link_error": ["Unable to open the link. Please retry.", "не удалось открыть ссылку. попробуйте ещё раз", "Link konnte nicht geöffnet werden. Bitte erneut versuchen.", "No se pudo abrir el enlace. Inténtalo de nuevo.", "Impossible d’ouvrir le lien. Réessayez.", "无法打开链接。请重试。"],
+  "message_ack_error": ["Unable to save confirmation. Please retry.", "не удалось сохранить подтверждение. попробуйте ещё раз", "Bestätigung konnte nicht gespeichert werden. Erneut versuchen.", "No se pudo guardar la confirmación. Reintenta.", "Impossible d’enregistrer la confirmation. Réessayez.", "无法保存确认。请重试。"],
   "apple_simulation": ["VPN simulation — traffic is not protected", "Симуляция VPN — трафик не защищён", "VPN-Simulation — Datenverkehr ist ungeschützt", "Simulación VPN — el tráfico no está protegido", "Simulation VPN — trafic non protégé", "VPN 模拟 — 流量未受保护"],
   "apple_verifying": ["Verifying internet access…", "Проверяем доступ в интернет…", "Internetzugang wird geprüft…", "Verificando acceso a internet…", "Vérification de l’accès à Internet…", "正在验证互联网连接…"],
   "apple_reconnecting": ["Restoring connection…", "Восстанавливаем соединение…", "Verbindung wird wiederhergestellt…", "Restableciendo la conexión…", "Rétablissement de la connexion…", "正在恢复连接…"],

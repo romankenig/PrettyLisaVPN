@@ -1,0 +1,25 @@
+{
+  "id": "99999999-9999-4999-8999-999999999999",
+  "revision": 1,
+  "schema_version": 2,
+  "kind": "announcement",
+  "dismissal_mode": "ONCE",
+  "redisplay_after_ack": false,
+  "user_ids": ["11111111-1111-4111-8111-111111111111"],
+  "platforms": {
+    "WINDOWS": {"min_version": "0.31.0"},
+    "ANDROID": {"min_version": "0.30.0"},
+    "IOS": {"min_version": "0.6.0"},
+    "MACOS": {"min_version": "0.5.0"}
+  },
+  "default_locale": "ru",
+  "localizations": {
+    "ru": {
+      "title": "новости PrettyLisaVPN",
+      "blocks": [{"type": "paragraph", "text": "Сообщение для вашего аккаунта. Можно прочитать подробности или закрыть это окно и продолжить работу."}],
+      "fallback_text": "Сообщение для вашего аккаунта.",
+      "dismiss_label": "понятно",
+      "links": [{"label": "подробнее", "url": "https://prettylisavpn.com/"}]
+    }
+  }
+}

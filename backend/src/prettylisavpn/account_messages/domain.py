@@ -1,9 +1,11 @@
-"""Validated shared JSON v1 contract and operator publication document."""
+"""Validated shared message contracts and operator publication document."""
 
 import json
 import re
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import (
@@ -73,6 +75,30 @@ class PrimaryAction(StrictModel):
         return visible_text(value, 60)
 
 
+class MessageLink(StrictModel):
+    label: str = Field(min_length=1, max_length=60)
+    url: str = Field(min_length=1, max_length=2048)
+
+    @field_validator("label")
+    @classmethod
+    def display_label(cls, value: str) -> str:
+        return visible_text(value, 60)
+
+    @field_validator("url")
+    @classmethod
+    def https_link(cls, value: str) -> str:
+        # Operator-authored links open only after a click, in the external browser.
+        # Reject ambiguous parser inputs, credentials and custom/local URI schemes.
+        if not value.startswith("https://") or re.search(r"[\s\\\x00-\x1f\x7f]", value):
+            raise ValueError("Expected an unambiguous HTTPS URL")
+        parsed = urlsplit(value)
+        if not parsed.hostname or parsed.username is not None or parsed.password is not None:
+            raise ValueError("URL host required; credentials forbidden")
+        if parsed.port not in (None, 443):
+            raise ValueError("Only HTTPS port 443 is supported")
+        return value
+
+
 class Content(StrictModel):
     title: str = Field(min_length=1, max_length=120)
     blocks: list[Annotated[Paragraph | TextList, Field(discriminator="type")]] = Field(
@@ -81,6 +107,7 @@ class Content(StrictModel):
     fallback_text: str = Field(min_length=1, max_length=4000)
     primary_action: PrimaryAction | None = None
     dismiss_label: str = Field(default="понятно", min_length=1, max_length=60)
+    links: list[MessageLink] = Field(default_factory=list, max_length=4)
 
     @field_validator("title", "fallback_text", "dismiss_label")
     @classmethod
@@ -89,15 +116,22 @@ class Content(StrictModel):
         return visible_text(value, limits[str(info.field_name)])
 
 
+class DismissalMode(StrEnum):
+    REQUIRE_LINK = "REQUIRE_LINK"
+    NEXT_VISIT = "NEXT_VISIT"
+    ONCE = "ONCE"
+
+
 class MessageResponse(Content):
     id: UUID
     revision: int = Field(strict=True, gt=0, le=2147483647)
     kind: Literal["announcement", "update", "promotion"]
     expires_at: datetime | None
+    dismissal_mode: DismissalMode = DismissalMode.ONCE
 
 
 class MessagesResponse(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: int = Field(default=1, ge=1, le=2)
     messages: list[MessageResponse]
 
 
@@ -139,7 +173,7 @@ class MessageContext(StrictModel):
     platform: DevicePlatform
     app_version: str = Field(max_length=100)
     locale: str = Field(default="ru-RU", max_length=63)
-    schema_version: int = Field(default=1, ge=1, le=1)
+    schema_version: int = Field(default=1, ge=1, le=2)
 
     @field_validator("app_version")
     @classmethod
@@ -156,7 +190,8 @@ class MessageContext(StrictModel):
 class Publication(StrictModel):
     id: UUID
     revision: int = Field(strict=True, gt=0, le=2147483647)
-    schema_version: int = Field(default=1, strict=True, ge=1, le=1)
+    schema_version: int = Field(default=1, strict=True, ge=1, le=2)
+    dismissal_mode: DismissalMode = DismissalMode.ONCE
     kind: Literal["announcement", "update", "promotion"] = "announcement"
     redisplay_after_ack: StrictBool
     priority: int = Field(default=0, strict=True, ge=-10000, le=10000)
@@ -194,6 +229,21 @@ class Publication(StrictModel):
 
     @model_validator(mode="after")
     def consistent(self) -> Self:
+        if self.schema_version == 1 and (
+            self.dismissal_mode is not DismissalMode.ONCE
+            or any(content.links for content in self.localizations.values())
+        ):
+            raise ValueError("Links and dismissal modes require schema_version=2")
+        if self.schema_version == 2 and "dismissal_mode" not in self.model_fields_set:
+            raise ValueError("Choose an explicit dismissal_mode for schema_version=2")
+        if self.dismissal_mode is DismissalMode.REQUIRE_LINK and any(
+            not content.links for content in self.localizations.values()
+        ):
+            raise ValueError("REQUIRE_LINK requires a link in every localization")
+        if self.dismissal_mode is not DismissalMode.ONCE and any(
+            content.primary_action is not None for content in self.localizations.values()
+        ):
+            raise ValueError("Repeating messages cannot navigate inside the app")
         if self.default_locale not in self.localizations:
             raise ValueError("Missing default localization")
         if self.starts_at and self.expires_at and self.starts_at >= self.expires_at:
@@ -210,7 +260,18 @@ class Publication(StrictModel):
             revision=self.revision,
             kind=self.kind,
             expires_at=self.expires_at,
+            dismissal_mode=self.dismissal_mode,
         )
+
+    def storage_payload(self) -> dict[str, Any]:
+        payload = self.model_dump(mode="json")
+        if self.schema_version == 1:
+            # Older deployments validate stored v1 JSON with extra="forbid".
+            # Preserve its exact field vocabulary for rolling deploy/rollback.
+            payload.pop("dismissal_mode")
+            for content in payload["localizations"].values():
+                content.pop("links")
+        return payload
 
     def localized(self, locale: str) -> MessageResponse:
         key = next(

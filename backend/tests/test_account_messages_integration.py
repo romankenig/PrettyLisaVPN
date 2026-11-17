@@ -10,7 +10,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
-from test_account_messages import document
+from test_account_messages import document, mandatory_document
 from test_device_management_integration import FakeDependency, create_state, headers, settings
 
 from prettylisavpn.account_messages.domain import Publication
@@ -214,7 +214,7 @@ async def test_filters_period_platform_versions_locale_schema_and_plan(state):
         == 1
     )
     for params in (
-        {**WINDOWS, "schema_version": "2"},
+        {**WINDOWS, "schema_version": "3"},
         {**WINDOWS, "app_version": "garbage"},
         {**WINDOWS, "user_id": str(own.user.id)},
     ):
@@ -407,3 +407,85 @@ async def test_broadcast_without_user_filter_is_still_acknowledged_per_account(s
     assert response.status_code == 200
     assert await listing(client, own.access_token) == []
     assert len(await listing(client, other.access_token)) == 1
+
+
+async def test_v2_required_is_private_not_acknowledgeable_and_survives_another_device(state):
+    _, own, other, token, publish, publisher, windows, android = state
+    optional = await publish(priority=10000)
+    value = mandatory_document(priority=-10000)
+    required = await publish(**value)
+    v2 = {**WINDOWS, "schema_version": "2"}
+    assert [item["id"] for item in await listing(windows, own.access_token)] == [str(optional.id)]
+    assert await listing(windows, other.access_token, v2) == []
+    offered = await listing(windows, own.access_token, v2)
+    assert [item["id"] for item in offered] == [str(required.id), str(optional.id)]
+    assert offered[0]["dismissal_mode"] == "REQUIRE_LINK"
+    for client, access, context in [
+        (windows, own.access_token, v2),
+        (android, token, {**ANDROID, "schema_version": "2"}),
+    ]:
+        await listing(client, access, context)
+        response = await client.post(
+            ack_url(required), json={"revision": 1}, headers=headers(access)
+        )
+        assert response.status_code == 409
+        assert response.json() == {"error": {"code": "MESSAGE_ACK_NOT_ALLOWED"}}
+        assert response.headers["cache-control"] == "no-store"
+        assert (await listing(client, access, context))[0]["id"] == str(required.id)
+    await publisher.withdraw(required.id)
+    assert [item["id"] for item in await listing(windows, own.access_token, v2)] == [
+        str(optional.id)
+    ]
+
+
+async def test_required_update_stops_after_target_version_and_ignores_prior_ack(state):
+    _, own, _, _, publish, publisher, windows, _ = state
+    first = await publish()
+    await listing(windows, own.access_token)
+    assert (
+        await windows.post(ack_url(first), json={"revision": 1}, headers=headers(own.access_token))
+    ).status_code == 200
+    value = mandatory_document(
+        id=str(first.id),
+        revision=2,
+        platforms={"WINDOWS": {"min_version": "0.8.0", "max_version_exclusive": "0.30.0"}},
+    )
+    required = await publish(**value)
+    v2 = {**WINDOWS, "schema_version": "2", "app_version": "0.29.1"}
+    assert (await listing(windows, own.access_token, v2))[0]["revision"] == 2
+    assert await listing(windows, own.access_token, {**v2, "app_version": "0.30.0"}) == []
+    # Publishing the identical legacy document remains idempotent after adding v2 defaults.
+    await publisher.publish(first, "retry")
+    assert (await listing(windows, own.access_token, v2))[0]["id"] == str(required.id)
+
+
+async def test_v2_repeat_and_once_closure_rules_across_devices_and_revisions(state):
+    _, own, _, token, publish, _, windows, android = state
+    v2 = {**WINDOWS, "schema_version": "2"}
+    android_v2 = {**ANDROID, "schema_version": "2"}
+    value = mandatory_document()
+    value["dismissal_mode"] = "NEXT_VISIT"
+    repeating = await publish(**value)
+    for client, access, context in [(windows, own.access_token, v2), (android, token, android_v2)]:
+        assert len(await listing(client, access, context)) == 1
+        result = await client.post(
+            ack_url(repeating), json={"revision": 1}, headers=headers(access)
+        )
+        assert result.status_code == 409
+        assert result.json()["error"]["code"] == "MESSAGE_ACK_NOT_ALLOWED"
+        assert len(await listing(client, access, context)) == 1
+
+    once = await publish(schema_version=2, dismissal_mode="ONCE")
+    await listing(windows, own.access_token, v2)
+    assert (
+        await windows.post(ack_url(once), json={"revision": 1}, headers=headers(own.access_token))
+    ).status_code == 200
+    assert str(once.id) not in [item["id"] for item in await listing(android, token, android_v2)]
+    changed = await publish(
+        id=str(once.id),
+        revision=2,
+        schema_version=2,
+        dismissal_mode="ONCE",
+        redisplay_after_ack=False,
+    )
+    assert str(changed.id) in [item["id"] for item in await listing(android, token, android_v2)]

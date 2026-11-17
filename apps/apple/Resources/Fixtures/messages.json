@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "messages": [
+    {
+      "id": "88888888-8888-4888-8888-888888888888",
+      "revision": 1,
+      "title": "новости PrettyLisaVPN",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Сообщение для вашего аккаунта. Ссылки открываются в браузере; окно можно закрыть и продолжить работу."
+        }
+      ],
+      "fallback_text": "Сообщение для вашего аккаунта.",
+      "dismiss_label": "понятно",
+      "links": [
+        {
+          "label": "сайт PrettyLisaVPN",
+          "url": "https://prettylisavpn.com/"
+        }
+      ],
+      "dismissal_mode": "ONCE"
+    },
+    {
+      "id": "99999999-9999-4999-8999-999999999999",
+      "revision": 1,
+      "title": "обновите PrettyLisaVPN",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Откройте ссылку, чтобы скачать актуальную версию приложения. После перехода это окно можно закрыть."
+        }
+      ],
+      "fallback_text": "Установите актуальную версию приложения.",
+      "dismiss_label": "понятно",
+      "links": [
+        {
+          "label": "скачать обновление",
+          "url": "https://prettylisavpn.com/"
+        }
+      ],
+      "dismissal_mode": "REQUIRE_LINK"
+    },
+    {
+      "id": "77777777-7777-4777-8777-777777777777",
+      "revision": 1,
+      "title": "новости PrettyLisaVPN",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Сообщение для вашего аккаунта. Ссылки открываются в браузере; окно можно закрыть и продолжить работу."
+        }
+      ],
+      "fallback_text": "Сообщение для вашего аккаунта.",
+      "dismiss_label": "понятно",
+      "links": [
+        {
+          "label": "сайт PrettyLisaVPN",
+          "url": "https://prettylisavpn.com/"
+        }
+      ],
+      "dismissal_mode": "NEXT_VISIT",
+      "primary_action": null
+    }
+  ]
+}

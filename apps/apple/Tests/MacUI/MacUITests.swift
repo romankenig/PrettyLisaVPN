@@ -1,6 +1,42 @@
 import XCTest
 
 final class MacUITests: XCTestCase {
+    func testAccountMessagePopups() {
+        for mode in ["once", "repeat", "mandatory"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-ui-fixtures", "YES", "-message-fixture", "YES", "-language", "ru"]
+            if mode != "once" { app.launchArguments += ["-\(mode)-message", "YES"] }
+            app.launch()
+            XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 20))
+            XCTAssertTrue(app.buttons["message-link-0"].exists)
+            let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+            shot.name = "macOS-message-\(mode)"; shot.lifetime = .keepAlways; add(shot)
+            XCTAssertFalse(app.buttons["message-later"].exists)
+            if mode == "mandatory" {
+                XCTAssertFalse(app.buttons["message-ack"].exists)
+                app.typeKey(.escape, modifierFlags: [])
+                XCTAssertTrue(app.staticTexts["message-title"].exists)
+                app.buttons["message-link-0"].click()
+                let browser = XCUIApplication(bundleIdentifier: "com.apple.Safari")
+                XCTAssertTrue(browser.wait(for: .runningForeground, timeout: 15))
+                app.activate()
+                XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+                XCTAssertTrue(app.buttons["message-ack"].waitForExistence(timeout: 10))
+                let unlocked = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+                unlocked.name = "macOS-message-link-opened"; unlocked.lifetime = .keepAlways; add(unlocked)
+                browser.terminate()
+                app.activate()
+            }
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertTrue(app.staticTexts["message-title"].waitForNonExistence(timeout: 5))
+            if mode != "once" {
+                app.terminate(); app.launch()
+                XCTAssertTrue(app.staticTexts["message-title"].waitForExistence(timeout: 20))
+                XCTAssertEqual(app.buttons["message-ack"].exists, mode == "repeat")
+            }
+            app.terminate()
+        }
+    }
     func testPendingCabinetInNativeWindow() {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-fixtures", "YES", "-device-limit-fixture", "YES", "-language", "ru"]

@@ -391,3 +391,6 @@
 "vpn_unstable" = "连接不稳定。自动恢复已停止，请尝试重新连接";
 "vpn_waiting_network" = "等待网络…";
 "vpn_wireguard_relay" = "WireGuard+";
+
+"message_link_error" = "无法打开链接。请重试。";
+"message_ack_error" = "无法保存确认。请重试。";
