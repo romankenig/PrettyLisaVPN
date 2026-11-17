@@ -176,5 +176,18 @@ async def test_report_plan_contract_validates_and_keeps_auth(path, state, method
             auth = {"Authorization": f"Bearer {MONITOR}"}
             assert (await client.get(url, params={"plan": "FREE"}, headers=auth)).status_code == 200
             assert getattr(service, method).await_args.kwargs["plan"] == "FREE"
+            for query, expected in [
+                ("plan=PREMIUM,FREE,FREE", ("FREE", "PREMIUM")),
+                ("plan=FREE&plan=PREMIUM", ("FREE", "PREMIUM")),
+                ("plan=NONE", ()),
+                ("plan=DEMO,FREE,PREMIUM,PLATINUM,UNKNOWN", None),
+            ]:
+                assert (await client.get(url + "?" + query, headers=auth)).status_code == 200
+                assert getattr(service, method).await_args.kwargs["plan"] == expected
+            for invalid in ("NONE,FREE", "FREE,invalid", "FREE,", ""):
+                assert (
+                    await client.get(url, params={"plan": invalid}, headers=auth)
+                ).status_code == 422
             assert (await client.get(url, params={"plan": "ALL"}, headers=auth)).status_code == 422
             assert (await client.get(url, params={"plan": "FREE"})).status_code == 401
+            assert (await client.get(url, params={"plan": "FREE,PREMIUM"})).status_code == 401

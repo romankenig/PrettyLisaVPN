@@ -15,7 +15,7 @@ from prettylisavpn.fleet.domain import FleetError
 from prettylisavpn.fleet.model import FleetNodeRecord, FleetObservationRecord
 from prettylisavpn.fleet.traffic import MAX_GAP, PERIODS, Snapshot, TrafficRollup, intervals
 from prettylisavpn.fleet.traffic_model import TrafficCursorRecord, TrafficIntervalRecord
-from prettylisavpn.product_analytics.domain import Plan
+from prettylisavpn.product_analytics.domain import PlanFilter, plan_key, selected_plans
 from prettylisavpn.product_analytics.plans import lease_plan
 from prettylisavpn.users.model import UserRecord
 
@@ -91,10 +91,11 @@ class TrafficService:
         node_ids: list[UUID] | None,
         now: datetime | None = None,
         *,
-        plan: Plan | None = None,
+        plan: PlanFilter = None,
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         duration, step = PERIODS[period]
+        allowed = frozenset(selected_plans(plan))
         # Completed minutes only, including the current partial five-minute/hour
         # block. Allow both counter age and collection interval before finalizing.
         end = int((now.timestamp() - 2 * MAX_GAP) // 60) * 60
@@ -150,7 +151,7 @@ class TrafficService:
                         str(node_id),
                         data
                         if plan is None
-                        else [value for value in data if value.get("plan", "UNKNOWN") == plan],
+                        else [value for value in data if value.get("plan", "UNKNOWN") in allowed],
                         start_at.timestamp(),
                         end_seconds,
                         complete,
@@ -210,7 +211,7 @@ class TrafficService:
             return {
                 "generated_at": now,
                 "period": period,
-                "plan": plan or "ALL",
+                "plan": plan_key(plan),
                 "bucket_seconds": step,
                 "activity_threshold_bps": self.settings.fleet_activity_threshold_bps,
                 "sample_seconds": 5,

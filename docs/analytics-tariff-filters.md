@@ -24,6 +24,10 @@ completion, without modifying stored completed-day product snapshots.
 
 ## Tariff meaning
 
+Dashboard 0.18.0 / backend 0.53.0 extend this filter to multiple checkboxes;
+see [the multiselect handoff](report-tariff-multiselect.md). Attribution rules
+below are retained, with the selected tariffs aggregated as one union.
+
 All five private report pages have a tariff control: All (default), DEMO, Free,
 Premium, Platinum, Unknown. The URL query retains selection across navigation.
 An obsolete request is aborted; a mismatched/old tariff response cannot be shown
