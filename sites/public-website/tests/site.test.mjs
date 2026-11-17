@@ -161,7 +161,7 @@ test("all six client languages have complete UI, download instructions and four 
 });
 test("home has five sections including database-backed prices, one launch notice and seven distinct platform pages", () => {
   const all = pages();
-  assert.equal(all.size, 96);
+  assert.equal(all.size, 102);
   for (const language of languages) {
     const html = all.get(routeFor(language));
     assert.equal((html.match(/<section /g) ?? []).length, 5);

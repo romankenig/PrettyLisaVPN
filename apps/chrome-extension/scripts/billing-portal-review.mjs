@@ -287,21 +287,24 @@ try {
     fullPage: true,
   });
   await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.locator("[data-success-preview]").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/account/success/");
-  assert.equal(new URL(page.url()).searchParams.get("preview"), "1");
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(new URL(page.url()).pathname, "/account/unavailable/");
+  assert.equal(new URL(page.url()).searchParams.has("preview"), false);
   assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
   assert.equal(
-    await page.getByText(portalCopy.ru.placeholderText).isVisible(),
+    await page.getByText(portalCopy.ru.paymentUnavailableText).isVisible(),
     true,
   );
   assert.equal(commands.length, 0);
-  assert.equal(state, "FREE", "preview cannot grant Premium");
+  assert.equal(state, "FREE", "unavailable payments cannot grant Premium");
   await page.reload();
-  await page.locator("[data-success-preview]").waitFor();
-  assert.match(await page.locator("[data-success-preview]").textContent(), /5/);
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(
+    await page.locator("[data-payment-unavailable]").textContent(),
+    portalCopy.ru.paymentUnavailableText,
+  );
   await page.screenshot({
-    path: `${output}/13-success-preview.png`,
+    path: `${output}/13-payment-unavailable.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "назад", exact: true }).click();
@@ -328,9 +331,18 @@ try {
   await page.goto(origin + "/account/success/");
   await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
   assert.equal(
-    await page.locator("[data-success-preview]").count(),
+    await page.locator("[data-payment-unavailable]").count(),
     0,
-    "the success path alone cannot assert payment or preview",
+    "the success path alone cannot assert a payment result",
+  );
+  await page.goto(origin + "/account/success/?preview=1&currency=USD");
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(new URL(page.url()).pathname, "/account/unavailable/");
+  assert.equal(new URL(page.url()).searchParams.has("preview"), false);
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
+  assert.equal(
+    await page.locator(".portal-success-icon, .portal-preview-label").count(),
+    0,
   );
   state = "PLATINUM";
   for (const language of ["", "en", "de", "fr", "es", "zh"]) {
@@ -364,19 +376,31 @@ try {
           fullPage: true,
         });
       await page.locator("[data-purchase-offer] > .button").click();
-      await page.locator("[data-success-preview]").waitFor();
+      await page.locator("[data-payment-unavailable]").waitFor();
       const prefix = language ? `/${language}` : "";
       const copy = portalCopy[language === "zh" ? "zh-CN" : language || "ru"];
-      assert.equal(new URL(page.url()).pathname, prefix + "/account/success/");
+      assert.equal(
+        new URL(page.url()).pathname,
+        prefix + "/account/unavailable/",
+      );
       assert.equal(
         await page
-          .getByRole("heading", { name: copy.success, exact: true })
+          .getByRole("heading", {
+            name: copy.paymentUnavailableTitle,
+            exact: true,
+          })
           .isVisible(),
         true,
       );
       assert.equal(
-        await page.getByText(copy.placeholderText).isVisible(),
+        await page.getByText(copy.paymentUnavailableText).isVisible(),
         true,
+      );
+      assert.equal(
+        await page
+          .locator(".portal-success-icon, .portal-preview-label")
+          .count(),
+        0,
       );
       assert.equal(
         await page.getByRole("link", { name: copy.home }).getAttribute("href"),
@@ -392,7 +416,7 @@ try {
       );
       if (!language && width === 390)
         await page.screenshot({
-          path: `${output}/16-success-preview-mobile.png`,
+          path: `${output}/16-payment-unavailable-mobile.png`,
           fullPage: true,
         });
     }
@@ -416,24 +440,24 @@ try {
   await privatePage
     .getByRole("button", { name: "оплатить", exact: true })
     .click();
-  await privatePage.locator("[data-success-preview]").waitFor();
+  await privatePage.locator("[data-payment-unavailable]").waitFor();
   assert.equal(
     privateMutations,
     0,
     "blocked optional storage must not hide the purchase or create payments",
   );
   await privatePage.close();
-  // Sandbox and unsupported USD use the marked success preview without charging.
+  // Sandbox and unsupported USD show payment unavailability without charging.
   offersAvailable = true;
   providerMode = "SANDBOX";
   state = "FREE";
   await page.goto(origin + "/account/");
   await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.locator("[data-success-preview]").waitFor();
+  await page.locator("[data-payment-unavailable]").waitFor();
   providerMode = "LIVE";
   await page.goto(origin + "/account/?currency=USD");
   await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.locator("[data-success-preview]").waitFor();
+  await page.locator("[data-payment-unavailable]").waitFor();
   assert.equal(
     commands.length,
     0,
@@ -441,9 +465,9 @@ try {
   );
   authenticated = false;
   await page.setViewportSize({ width: 1280, height: 1000 });
-  await page.goto(origin + "/account/success/?preview=1");
+  await page.goto(origin + "/account/unavailable/");
   await page.getByLabel("Электронная почта").waitFor();
-  assert.equal(await page.locator("[data-success-preview]").count(), 0);
+  assert.equal(await page.locator("[data-payment-unavailable]").count(), 0);
   await page.goto(origin + "/account/");
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
   await page.getByRole("button", { name: "получить код" }).click();
@@ -469,12 +493,12 @@ try {
     "lost response must not create a new charge",
   );
   await page.screenshot({ path: `${output}/04-pending.png`, fullPage: true });
-  await page.goto(origin + "/account/success/?preview=1");
+  await page.goto(origin + "/account/unavailable/");
   await page.getByRole("heading", { name: "ждём подтверждения" }).waitFor();
   assert.equal(
-    await page.locator("[data-success-preview]").count(),
+    await page.locator("[data-payment-unavailable]").count(),
     0,
-    "pending provider operation takes precedence over the preview flag",
+    "pending provider operation takes precedence over the unavailable route",
   );
   assert.equal(commands.length, 1);
   status = "SUCCEEDED";
@@ -533,7 +557,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "оплатить" }).count(), 1);
   assert.equal(commands.length, commandCount);
   await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.locator("[data-success-preview]").waitFor();
+  await page.locator("[data-payment-unavailable]").waitFor();
   assert.equal(
     commands.length,
     commandCount,

@@ -8,11 +8,9 @@ export const portalCopy = {
     monthly: "pro kalendermonat",
     currency: "währung",
     yourPlan: "ihr aktueller tarif",
-    placeholderTitle: "zahlungsdemo",
-    placeholderText:
-      "dies ist eine vorschau einer erfolgreichen zahlung. es wurde nichts abgebucht und ihr abonnement bleibt unverändert.",
-    placeholderHint:
-      "demomodus: diese schaltfläche öffnet die erfolgsseite ohne abbuchung.",
+    paymentUnavailableTitle: "zahlungen sind vorübergehend nicht verfügbar.",
+    paymentUnavailableText:
+      "wir benachrichtigen sie per e-mail, sobald zahlungen wieder möglich sind.",
     signIn: "anmelden",
     signInText:
       "melden sie sich per e-mail an, um ein abonnement für ihr konto abzuschließen.",
@@ -87,11 +85,9 @@ export const portalCopy = {
     monthly: "par mois civil",
     currency: "devise",
     yourPlan: "votre forfait actuel",
-    placeholderTitle: "démonstration du paiement",
-    placeholderText:
-      "ceci est un aperçu d’un paiement réussi. aucun montant n’a été prélevé et votre abonnement reste inchangé.",
-    placeholderHint:
-      "mode démonstration : ce bouton ouvre la page de confirmation sans prélèvement.",
+    paymentUnavailableTitle: "le paiement est temporairement indisponible.",
+    paymentUnavailableText:
+      "nous vous préviendrons par e-mail dès qu’il sera disponible.",
     signIn: "se connecter",
     signInText: "connectez-vous par e-mail pour souscrire avec votre compte.",
     email: "adresse e-mail",
@@ -164,11 +160,9 @@ export const portalCopy = {
     monthly: "por mes natural",
     currency: "moneda",
     yourPlan: "tu plan actual",
-    placeholderTitle: "demostración del pago",
-    placeholderText:
-      "esta es una vista previa de un pago correcto. no se ha realizado ningún cobro y tu suscripción no ha cambiado.",
-    placeholderHint:
-      "modo de demostración: este botón abre la página de confirmación sin realizar cobros.",
+    paymentUnavailableTitle: "el pago no está disponible temporalmente.",
+    paymentUnavailableText:
+      "te avisaremos por correo electrónico cuando esté disponible.",
     signIn: "iniciar sesión",
     signInText: "inicia sesión por correo para suscribirte con tu cuenta.",
     email: "correo electrónico",
@@ -242,9 +236,8 @@ export const portalCopy = {
     monthly: "每个日历月",
     currency: "货币",
     yourPlan: "当前套餐",
-    placeholderTitle: "付款演示",
-    placeholderText: "这是付款成功页面的演示。未扣费，您的订阅保持不变。",
-    placeholderHint: "演示模式：点击按钮将打开付款成功页面，不会扣费。",
+    paymentUnavailableTitle: "支付暂时不可用。",
+    paymentUnavailableText: "支付恢复后，我们会通过电子邮件通知您。",
     signIn: "登录",
     signInText: "通过电子邮箱登录，为您的账户开通订阅。",
     email: "电子邮箱",
@@ -306,11 +299,8 @@ export const portalCopy = {
     monthly: "per calendar month",
     currency: "currency",
     yourPlan: "your current plan",
-    placeholderTitle: "payment preview",
-    placeholderText:
-      "this is a payment success preview. no money was charged and your subscription is unchanged.",
-    placeholderHint:
-      "preview mode: this button opens the success page without charging you.",
+    paymentUnavailableTitle: "payments are temporarily unavailable.",
+    paymentUnavailableText: "we’ll email you when payments are available.",
     signIn: "sign in",
     signInText: "sign in by email to subscribe with your account.",
     email: "email",
@@ -383,11 +373,8 @@ export const portalCopy = {
     monthly: "за календарный месяц",
     currency: "валюта",
     yourPlan: "ваш текущий тариф",
-    placeholderTitle: "демонстрация оплаты",
-    placeholderText:
-      "это демонстрация успешной оплаты. деньги не списаны, подписка не изменилась.",
-    placeholderHint:
-      "демонстрационный режим: кнопка откроет страницу успешной оплаты без списания.",
+    paymentUnavailableTitle: "временно оплата недоступна.",
+    paymentUnavailableText: "мы напишем вам на почту, как заработает",
     signIn: "войти",
     signInText: "войдите по email, чтобы оформить подписку на свой аккаунт.",
     email: "электронная почта",

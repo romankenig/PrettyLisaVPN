@@ -210,6 +210,7 @@ export function pages() {
   for (const lang of languages) {
     for (const route of [
       "/account/",
+      "/account/unavailable/",
       "/account/success/",
       "/account/failure/",
     ]) {

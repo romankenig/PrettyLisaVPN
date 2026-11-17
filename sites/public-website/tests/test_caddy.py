@@ -160,6 +160,8 @@ class PublicWebsiteTests(unittest.TestCase):
             self.assertIn("200 OK", response.stderr)
             self.assertIn("payment-return-stub", response.stdout)
         self.assertIn("200 OK", self.request("/account/").stderr)
+        for prefix in ("", "/en", "/de", "/fr", "/es", "/zh"):
+            self.assertIn("200 OK", self.request(prefix + "/account/unavailable/").stderr)
         self.assertIn("404 Not Found", self.request("/account/", "--post-data=private-marker").stderr)
 
     def test_private_paths_and_removed_provider_stay_closed(self):

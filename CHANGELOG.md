@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Public website — 0.7.0
+
+- Replace the payment-success preview with a dedicated payment-unavailable page
+  after Pay, promising an email when payments become available. Use all six
+  languages without demonstration wording; retain Back/Home navigation.
+- Preserve authentication, selected currency and pending-operation recovery.
+  Old preview links resolve to the new page. No payment or subscription is
+  created by unavailable checkout. See [handoff](docs/website-payment-unavailable.md).
+
 ### Public website — 0.6.4
 
 - Add matching plan emoji to the account's current-plan badge: Platinum 💎,
