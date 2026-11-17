@@ -94,6 +94,15 @@ async def test_lease_plan_is_immutable_and_all_usage_outcomes_are_filtered(vpn_s
         assert platinum["selection_history"]["outcomes"]["all"]["points"][-1]["total"] == 0
         assert free["selection"]["active_sessions"] == 1
         assert paid["selection"]["active_sessions"] == 0
+        combined = await reader.report(now, plan=("FREE", "PREMIUM"))
+        empty = await reader.report(now, plan=())
+        assert combined["plan"] == "FREE,PREMIUM" and empty["plan"] == "NONE"
+        assert combined[synthetic] == empty[synthetic] == all_data[synthetic]
+        assert combined["selection"] == all_data["selection"]
+        assert combined["selection_history"] == all_data["selection_history"]
+        assert empty["selection"]["active_sessions"] == 0
+        for outcome in ("all", "successful", "unsuccessful"):
+            assert empty["selection_history"]["outcomes"][outcome]["points"][-1]["total"] == 0
     analytics = ProductAnalyticsService(pg)
     async with pg.session() as session, session.begin():
         collection = await session.get(AnalyticsCollectionRecord, 1)
@@ -114,6 +123,13 @@ async def test_lease_plan_is_immutable_and_all_usage_outcomes_are_filtered(vpn_s
         assert after["duration_history"]["points"][-2]["session_duration"]["samples"] == 1
         assert after["duration_history"]["points"][-1]["sessions"] == 0
         assert after["points"][-1]["device_platforms"]["connections"] == {"WINDOWS": 1}
+        combined = await analytics.latest(now, plan=("FREE", "PREMIUM"))
+        empty = await analytics.latest(now, plan=())
+        assert combined["plan"] == combined["duration_history"]["plan"] == "FREE,PREMIUM"
+        assert combined["duration_history"]["points"] == after["duration_history"]["points"]
+        assert empty["plan"] == empty["duration_history"]["plan"] == "NONE"
+        assert empty["duration_history"]["points"][-2]["sessions"] == 0
+        assert empty["points"][-1]["verified_sessions"] == 0
         async with pg.session() as session:
             assert (
                 await session.get(AnalyticsSnapshotRecord, day(now) - timedelta(days=1))
@@ -193,6 +209,13 @@ async def test_speed_filters_before_account_threshold_and_legacy_is_unknown(flee
         assert (await service.history("1h", nodes[:2], now, plan=plan))["points"][-1]["download"][
             "mean_mbps"
         ] is None
+    combined = await service.history("1h", nodes[:2], now, plan=("FREE", "PREMIUM"))
+    all_data = await service.history("1h", nodes[:2], now)
+    empty = await service.history("1h", nodes[:2], now, plan=())
+    assert combined["plan"] == "FREE,PREMIUM" and empty["plan"] == "NONE"
+    assert combined["points"] == all_data["points"]
+    assert empty["points"][-1]["download"]["mean_mbps"] is None
+    assert empty["points"][-1]["coverage"] == combined["points"][-1]["coverage"]
     async with pg.session() as session, session.begin():
         for row in await session.scalars(
             select(TrafficIntervalRecord).where(TrafficIntervalRecord.node_id.in_(nodes[:2]))

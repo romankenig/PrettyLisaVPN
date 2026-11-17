@@ -19,7 +19,7 @@ from prettylisavpn.demo.domain import is_demo_email
 from prettylisavpn.devices.domain import DeviceStatus
 from prettylisavpn.devices.model import DeviceRecord
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import Plan, day
+from prettylisavpn.product_analytics.domain import PlanFilter, day, matches_plan, plan_key
 from prettylisavpn.product_analytics.model import AnalyticsCollectionRecord, AppActivityRecord
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
@@ -81,7 +81,7 @@ def app_version_report(
     now: datetime,
     started_at: datetime | None,
     rows: list[AppActivityRecord],
-    plan: Plan | None = None,
+    plan: PlanFilter = None,
 ) -> dict[str, Any]:
     dates = [day(now) - timedelta(days=offset) for offset in range(30, -1, -1)]
     points = []
@@ -94,7 +94,7 @@ def app_version_report(
                 for row in rows
                 if row.day == on
                 and row.observed_at <= now
-                and (plan is None or (row.plan or "UNKNOWN") == plan)
+                and matches_plan(row.plan or "UNKNOWN", plan)
             ]
             for platform in sorted({row.platform for row in active}):
                 devices = [row for row in active if row.platform == platform]
@@ -109,7 +109,7 @@ def app_version_report(
         points.append({"date": on.isoformat(), "partial": on == day(now), "platforms": platforms})
     return {
         "schema": 1,
-        "plan": plan or "ALL",
+        "plan": plan_key(plan),
         "timezone": "GMT+3",
         "generated_at": now.isoformat(),
         "collection_started_at": started_at.isoformat() if started_at else None,
@@ -186,7 +186,7 @@ class AppVersionAnalytics:
             )
 
     async def latest(
-        self, now: datetime | None = None, *, plan: Plan | None = None
+        self, now: datetime | None = None, *, plan: PlanFilter = None
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         async with self.postgres.session() as session, session.begin():

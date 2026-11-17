@@ -1,4 +1,13 @@
-# Private reports — dashboard 0.17.0 / backend 0.52.0
+# Private reports — dashboard 0.18.0 / backend 0.53.0
+
+Each report page → tariff checkboxes → one combined selection. All tariffs is
+the default and supports partial selection; clearing all displays an explicit
+empty selection. Navigation, reload and minute refresh retain the selected set.
+Backend union filtering is implemented for product, versions, method/service
+usage and actual speed. Native client navigation is unchanged. See
+[multiselect handoff](report-tariff-multiselect.md).
+
+## Previous single-tariff report controls — dashboard 0.17.0 / backend 0.52.0
 
 Each of the five report pages → tariff selector → filtered user statistics.
 Report links retain `?plan=...`; All removes it. Existing private authentication

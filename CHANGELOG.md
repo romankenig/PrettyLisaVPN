@@ -14,6 +14,16 @@
   reusing the existing Chrome SVG assets and license. Routes and billing are unchanged.
 - See [handoff](docs/website-plan-emojis-language-flags.md).
 
+### Report tariff multiselect — backend 0.53.0 / dashboard 0.18.0
+
+- Replace the single tariff selector with checkboxes on all five report pages.
+  Select multiple tariffs, all tariffs or an explicit empty set; preserve the
+  selection in links, reloads and minute refresh.
+- Aggregate the selected observations together before account deduplication and
+  speed thresholds. Keep daily shares, legacy single-tariff requests and shared
+  synthetic checks correct. No database migration or client changes. See
+  [handoff](docs/report-tariff-multiselect.md).
+
 ### Public website — 0.6.3
 
 - Rename the homepage CTA to download and spell out one account in all six

@@ -6,17 +6,19 @@ from typing import Any
 
 from prettylisavpn.product_analytics.domain import (
     Attempt,
-    Plan,
+    PlanFilter,
     day,
     distribution,
     duration,
+    matches_plan,
+    plan_key,
     silence_duration,
     two_months_before,
 )
 
 
 def duration_history(
-    now: datetime, attempts: list[Attempt], observed_from: datetime, plan: Plan | None = None
+    now: datetime, attempts: list[Attempt], observed_from: datetime, plan: PlanFilter = None
 ) -> dict[str, Any]:
     today = day(now)
     start = two_months_before(today)
@@ -26,7 +28,7 @@ def duration_history(
         if (
             attempt.verified_at is not None
             and attempt.created_at <= attempt.verified_at < cutoff
-            and (plan is None or attempt.plan == plan)
+            and matches_plan(attempt.plan, plan)
         ):
             cohorts[day(attempt.verified_at)].append(attempt)
     points = []
@@ -51,7 +53,7 @@ def duration_history(
     return {
         "timezone": "GMT+3",
         "generated_at": now.isoformat(),
-        "plan": plan or "ALL",
+        "plan": plan_key(plan),
         "from_date": start.isoformat(),
         "through_date": today.isoformat(),
         "observed_from": observed_from.isoformat(),

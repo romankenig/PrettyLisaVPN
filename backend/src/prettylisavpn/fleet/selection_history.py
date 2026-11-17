@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from prettylisavpn.client_vpn.methods import METHODS
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import Plan, boundary, day
+from prettylisavpn.product_analytics.domain import PlanFilter, boundary, day, selected_plans
 from prettylisavpn.product_analytics.plans import lease_plan_expression
 from prettylisavpn.traffic.model import TrafficServiceRecord
 from prettylisavpn.users.model import UserRecord
@@ -134,7 +134,7 @@ def selection_history(
 
 
 async def load_selection_history(
-    session: AsyncSession, now: datetime, kind: Kind, plan: Plan | None = None
+    session: AsyncSession, now: datetime, kind: Kind, plan: PlanFilter = None
 ) -> dict[str, Any]:
     start = boundary(day(now) - timedelta(days=7))
     ids = [
@@ -170,7 +170,7 @@ async def load_selection_history(
         .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
         .where(
             ClientLeaseRecord.user_id.in_(ids),
-            true() if plan is None else lease_plan_expression() == plan,
+            true() if plan is None else lease_plan_expression().in_(selected_plans(plan)),
             ClientLeaseRecord.created_at <= now,
             (
                 (ClientLeaseRecord.verified_at <= now)

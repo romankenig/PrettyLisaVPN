@@ -16,7 +16,7 @@ from prettylisavpn.fleet.domain import (
     WireGuardConfig,
 )
 from prettylisavpn.fleet.service import FleetService
-from prettylisavpn.product_analytics.domain import Plan
+from prettylisavpn.product_analytics.report_filters import ReportPlanQuery
 
 router = APIRouter(prefix="/admin", tags=["fleet"])
 
@@ -104,9 +104,9 @@ async def monitoring(
 @router.get("/monitoring/active-user-speed")
 async def active_user_speed(
     service: Annotated[FleetService, Depends(reader)],
+    plan: ReportPlanQuery,
     period: Literal["1h", "24h", "7d"] = "1h",
     node_ids: Annotated[list[UUID] | None, Query(max_length=100)] = None,
-    plan: Plan | None = None,
 ) -> dict[str, Any]:
     from prettylisavpn.fleet.traffic_service import TrafficService
 
@@ -118,7 +118,7 @@ async def active_user_speed(
 @router.get("/monitoring/services")
 async def service_analytics(
     service: Annotated[FleetService, Depends(reader)],
-    plan: Plan | None = None,
+    plan: ReportPlanQuery,
 ) -> dict[str, Any]:
     from prettylisavpn.fleet.service_checks import ServiceAnalytics
 
@@ -127,7 +127,7 @@ async def service_analytics(
 
 @router.get("/monitoring/connection-methods")
 async def method_analytics(
-    service: Annotated[FleetService, Depends(reader)], plan: Plan | None = None
+    service: Annotated[FleetService, Depends(reader)], plan: ReportPlanQuery
 ) -> dict[str, Any]:
     from prettylisavpn.fleet.method_checks import MethodAnalytics
 

@@ -1,5 +1,5 @@
 import type { Distribution, Series } from "./analytics";
-import { reportPlans, type ReportPlan } from "./reportPlan.ts";
+import { parseReportPlan, type ReportPlan } from "./reportPlan.ts";
 
 export const durationLabels = ["≤10 с", "10–60 с", "1–3 мин", "3–5 мин", "5–15 мин", ">15 мин"];
 export type DurationKind = "session_duration" | "time_to_silence";
@@ -7,7 +7,7 @@ export type DurationDay = { date: string; partial: boolean; sessions: number | n
 export type DurationHistory = { timezone: "GMT+3"; plan: ReportPlan; generated_at: string; observed_from: string; from_date: string; through_date: string; points: DurationDay[] };
 export function readDurationHistory(value: unknown): DurationHistory {
   const data = value as DurationHistory;
-  if (!data || data.timezone !== "GMT+3" || !reportPlans.includes(data.plan) || !Number.isFinite(Date.parse(data.generated_at)) || !Number.isFinite(Date.parse(data.observed_from)) || !Array.isArray(data.points) || data.points.length < 1 || data.points.length > 63) throw new Error("Invalid duration history");
+  if (!data || data.timezone !== "GMT+3" || typeof data.plan !== "string" || parseReportPlan(data.plan) !== data.plan || !Number.isFinite(Date.parse(data.generated_at)) || !Number.isFinite(Date.parse(data.observed_from)) || !Array.isArray(data.points) || data.points.length < 1 || data.points.length > 63) throw new Error("Invalid duration history");
   let previous: number | undefined;
   for (const [i, p] of data.points.entries()) {
     if (!p || !/^\d{4}-\d{2}-\d{2}$/.test(p.date) || !Number.isFinite(Date.parse(p.date)) || (previous !== undefined && Date.parse(p.date) - previous !== 86400_000) || p.partial !== (i === data.points.length - 1)) throw new Error("Invalid duration date");

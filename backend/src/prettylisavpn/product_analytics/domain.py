@@ -11,8 +11,38 @@ from uuid import UUID
 MOSCOW = timezone(timedelta(hours=3))
 Plan = Literal["DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN"]
 PLANS: tuple[Plan, ...] = ("DEMO", "FREE", "PREMIUM", "PLATINUM", "UNKNOWN")
+PlanFilter = Plan | tuple[Plan, ...] | None
 DURATION_BOUNDS = (10, 60, 180, 300, 900)
 METRICS_REVISION = 3
+
+
+def selected_plans(plan: PlanFilter) -> tuple[Plan, ...]:
+    return PLANS if plan is None else (plan,) if isinstance(plan, str) else plan
+
+
+def matches_plan(value: str, plan: PlanFilter) -> bool:
+    return plan is None or value in selected_plans(plan)
+
+
+def plan_key(plan: PlanFilter) -> str:
+    selected = selected_plans(plan)
+    ordered = tuple(value for value in PLANS if value in selected)
+    return "ALL" if ordered == PLANS else ",".join(ordered) or "NONE"
+
+
+def parse_plan_filter(value: str | None) -> PlanFilter:
+    """One canonical union; an explicit empty set must never mean all tariffs."""
+    if value is None:
+        return None
+    if value == "NONE":
+        return ()
+    values = value.split(",")
+    if len(value) > 100 or any(item not in PLANS for item in values):
+        raise ValueError("Invalid report tariffs")
+    selected = tuple(item for item in PLANS if item in values)
+    if selected == PLANS:
+        return None
+    return selected[0] if len(selected) == 1 else selected
 
 
 def distribution(values: list[float]) -> dict[str, Any]:
@@ -127,7 +157,7 @@ def snapshot(
     attempts_from: datetime | None,
     *,
     live: bool = False,
-    plan: Plan | None = None,
+    plan: PlanFilter = None,
 ) -> dict[str, Any]:
     """Saved history, or just today's point and the period totals as of now."""
     today = day(now)
@@ -138,7 +168,7 @@ def snapshot(
         latest_activity([item for item in activity if item.at < cutoff]), key=lambda a: a.at
     )
     daily_plans = {(a.user_id, day(a.at)): a.plan for a in values}
-    attempts = [a for a in attempts if plan is None or a.plan == plan]
+    attempts = [a for a in attempts if matches_plan(a.plan, plan)]
     # The first full day after enabling collection is the reliable coverage boundary.
     complete_from = day(collected_from) + timedelta(days=1)
     points: list[dict[str, Any]] = []
@@ -153,7 +183,7 @@ def snapshot(
                     last_by_user[item.user_id] = item
             if plan is not None:
                 last_by_user = {
-                    key: item for key, item in last_by_user.items() if item.plan == plan
+                    key: item for key, item in last_by_user.items() if matches_plan(item.plan, plan)
                 }
             known = observed_from is not None and current >= day(observed_from)
             counts = Counter(item.plan for item in last_by_user.values())
@@ -166,13 +196,12 @@ def snapshot(
             day(at := row.at if isinstance(row, Registration) else row) == current
             and at < cutoff
             and (
-                plan is None
-                or (
+                matches_plan(
                     daily_plans.get((row.user_id, day(at)), "UNKNOWN")
                     if isinstance(row, Registration)
-                    else "UNKNOWN"
+                    else "UNKNOWN",
+                    plan,
                 )
-                == plan
             )
             for row in registrations
         )

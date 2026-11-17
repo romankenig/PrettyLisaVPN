@@ -18,9 +18,11 @@ from prettylisavpn.product_analytics.domain import (
     Activity,
     Attempt,
     Plan,
+    PlanFilter,
     Registration,
     boundary,
     day,
+    plan_key,
     snapshot,
     two_months_before,
 )
@@ -49,7 +51,7 @@ class ProductAnalyticsService:
         self.postgres = postgres
 
     async def latest(
-        self, now: datetime | None = None, *, plan: Plan | None = None
+        self, now: datetime | None = None, *, plan: PlanFilter = None
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         async with self.postgres.session() as session, session.begin():
@@ -84,7 +86,7 @@ class ProductAnalyticsService:
             }
             return {
                 **current.get("filtered_history", row.data),
-                "plan": plan or "ALL",
+                "plan": plan_key(plan),
                 "duration_history": current["duration_history"],
                 "live": live,
                 # Keep the additive 0.45 contract for dashboards during rollout.
@@ -143,7 +145,7 @@ class ProductAnalyticsService:
         return True
 
     async def build(
-        self, session: AsyncSession, now: datetime, *, live: bool = False, plan: Plan | None = None
+        self, session: AsyncSession, now: datetime, *, live: bool = False, plan: PlanFilter = None
     ) -> dict[str, Any]:
         lower = boundary(two_months_before(day(now)) - timedelta(days=29))
         cutoff = now + timedelta(microseconds=1) if live else boundary(day(now))

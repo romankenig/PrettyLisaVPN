@@ -16,7 +16,7 @@ from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.selection_history import load_selection_history
 from prettylisavpn.fleet.service_checks import daily_slot
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import Plan, day
+from prettylisavpn.product_analytics.domain import PlanFilter, day, plan_key, selected_plans
 from prettylisavpn.product_analytics.plans import lease_plan_expression
 from prettylisavpn.users.model import UserRecord
 
@@ -38,7 +38,7 @@ class MethodAnalytics:
         self.postgres = postgres
 
     async def report(
-        self, now: datetime | None = None, *, plan: Plan | None = None
+        self, now: datetime | None = None, *, plan: PlanFilter = None
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         today = day(now)
@@ -55,7 +55,7 @@ class MethodAnalytics:
                 select(ClientLeaseRecord.method, UserRecord.email)
                 .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
                 .where(
-                    true() if plan is None else lease_plan_expression() == plan,
+                    true() if plan is None else lease_plan_expression().in_(selected_plans(plan)),
                     ClientLeaseRecord.status == "READY",
                     ClientLeaseRecord.removed_at.is_(None),
                     ClientLeaseRecord.verified_at.is_not(None),
@@ -94,7 +94,7 @@ class MethodAnalytics:
             return {
                 "generated_at": now.isoformat(),
                 "timezone": "GMT+3",
-                "plan": plan or "ALL",
+                "plan": plan_key(plan),
                 "methods": items,
                 "selection_history": await load_selection_history(session, now, "methods", plan),
                 "selection": {

@@ -14,7 +14,13 @@ from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.selection_history import load_selection_history
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
 from prettylisavpn.product_analytics.activity import is_test_account
-from prettylisavpn.product_analytics.domain import Plan, boundary, day
+from prettylisavpn.product_analytics.domain import (
+    PlanFilter,
+    boundary,
+    day,
+    plan_key,
+    selected_plans,
+)
 from prettylisavpn.product_analytics.plans import lease_plan_expression
 from prettylisavpn.traffic.model import TrafficServiceRecord
 from prettylisavpn.users.model import UserRecord
@@ -59,7 +65,7 @@ class ServiceAnalytics:
         self.postgres = postgres
 
     async def report(
-        self, now: datetime | None = None, *, plan: Plan | None = None
+        self, now: datetime | None = None, *, plan: PlanFilter = None
     ) -> dict[str, Any]:
         now = now or datetime.now(UTC)
         today = day(now)
@@ -85,7 +91,9 @@ class ServiceAnalytics:
                     select(ClientLeaseRecord, UserRecord.email)
                     .join(UserRecord, UserRecord.id == ClientLeaseRecord.user_id)
                     .where(
-                        true() if plan is None else lease_plan_expression() == plan,
+                        true()
+                        if plan is None
+                        else lease_plan_expression().in_(selected_plans(plan)),
                         ClientLeaseRecord.status == "READY",
                         ClientLeaseRecord.removed_at.is_(None),
                         ClientLeaseRecord.verified_at.is_not(None),
@@ -145,7 +153,7 @@ class ServiceAnalytics:
             return {
                 "generated_at": now.isoformat(),
                 "timezone": "GMT+3",
-                "plan": plan or "ALL",
+                "plan": plan_key(plan),
                 "services": result,
                 "selection_history": await load_selection_history(session, now, "services", plan),
                 "selection": {
