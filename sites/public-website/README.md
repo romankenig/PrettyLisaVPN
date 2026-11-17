@@ -1,4 +1,8 @@
-# PrettyLisaVPN website · 0.6.2
+# PrettyLisaVPN website · 0.6.3
+
+The homepage uses a download CTA and spells out one account. Ready downloads
+come first, followed by TV, iOS, macOS and Linux. Only downward arrows remain.
+See the [handoff](../../docs/website-download-copy.md).
 
 Download pages no longer show store placeholder cards in any supported language.
 See the [handoff](../../docs/website-store-mentions.md).
