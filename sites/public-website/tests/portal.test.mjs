@@ -32,7 +32,12 @@ test("checkout links require the exact provider origin without credentials", () 
 });
 
 test("return pages load the authenticated portal rather than assert payment success", () => {
-  for (const path of ["/account/", "/account/success/", "/account/failure/"]) {
+  for (const path of [
+    "/account/",
+    "/account/unavailable/",
+    "/account/success/",
+    "/account/failure/",
+  ]) {
     const html = pages().get(path);
     assert.ok(html.includes("data-portal"));
     assert.ok(!html.includes("status=CONFIRMED"));

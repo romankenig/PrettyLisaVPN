@@ -191,6 +191,17 @@ Existing subscription-management entry points retain their management wording.
 
 # Billing portal — Windows 0.26.0 / Android 0.22.0 / Apple and Chrome 0.2.0
 
+Website 0.7.0 updates the browser destination only: authenticated account → Pay
+with unavailable live checkout → localized `/account/unavailable/` → Back to
+the account (same currency) or Home. The page says payments are temporarily
+unavailable and an email will follow when available; there is no success preview
+or demonstration label. The old `success/?preview=1` URL resolves to this screen.
+Authentication and existing pending operations take precedence. The provider flow
+below still requires explicitly enabled LIVE capabilities; merchant activation
+and the future notification delivery remain operational follow-up. Native client
+versions and handoff transitions are unchanged. See the
+[website handoff](website-payment-unavailable.md).
+
 Free Home → «улучшить» → Settings/Subscription. Subscription keeps the account
 price, paid period, payment method and next-charge summary, and adds «управлять
 подпиской и оплатой» → authenticated POST `/billing/portal` → external browser

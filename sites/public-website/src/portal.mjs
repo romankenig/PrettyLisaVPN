@@ -33,17 +33,19 @@ export async function mountPortal(root) {
     new URLSearchParams(location.search).get("currency") === "USD"
       ? "USD"
       : "RUB";
-  const pagePath = () =>
-    location.pathname +
-    "?currency=" +
-    currency +
-    (isSuccessPreview() ? "&preview=1" : "");
   const languagePrefix = location.pathname.match(/^\/(en|de|fr|es|zh)\//)?.[1];
   const accountPath =
     (languagePrefix ? "/" + languagePrefix : "") + "/account/";
-  const isSuccessPreview = () =>
-    location.pathname === accountPath + "success/" &&
-    new URLSearchParams(location.search).get("preview") === "1";
+  const isPaymentUnavailable = () =>
+    location.pathname === accountPath + "unavailable/" ||
+    (location.pathname === accountPath + "success/" &&
+      new URLSearchParams(location.search).get("preview") === "1");
+  const pagePath = () =>
+    (isPaymentUnavailable()
+      ? accountPath + "unavailable/"
+      : location.pathname) +
+    "?currency=" +
+    currency;
   const savedPrices = () => {
     try {
       return cachedPrices(localStorage);
@@ -127,13 +129,8 @@ export async function mountPortal(root) {
     if (account && accountEmail)
       root.append(el("p", accountEmail, "portal-account"));
   }
-  function purchaseCard({
-    signedIn = false,
-    stale = false,
-    preview = null,
-  } = {}) {
-    const p =
-      preview ?? purchasePresentation(overview, currency, savedPrices(), stale);
+  function purchaseCard({ signedIn = false, stale = false } = {}) {
+    const p = purchasePresentation(overview, currency, savedPrices(), stale);
     const card = el("section", null, "portal-offer portal-purchase");
     card.dataset.purchaseOffer = "";
     if (p.reference) card.dataset.referencePrices = "";
@@ -168,7 +165,7 @@ export async function mountPortal(root) {
     );
     price.append(amount, el("p", t.monthly, "portal-price-period"));
     row.append(price);
-    if (!p.contract && !preview) {
+    if (!p.contract) {
       const picker = el("fieldset", null, "portal-currency");
       picker.append(el("legend", t.currency, "sr-only"));
       for (const code of ["RUB", "USD"]) {
@@ -195,53 +192,25 @@ export async function mountPortal(root) {
       card.append(
         button(
           t.pay,
-          () => (p.canPay ? confirm(p.action, p.offer) : openSuccessPreview(p)),
+          () =>
+            p.canPay
+              ? confirm(p.action, p.offer)
+              : location.assign(
+                  accountPath + "unavailable/?currency=" + p.currency,
+                ),
           true,
         ),
       );
-      if (!p.canPay)
-        card.append(el("p", t.placeholderHint, "portal-price-note"));
     }
     return card;
   }
-  function openSuccessPreview(preview) {
-    location.assign(
-      accountPath + "success/?preview=1&currency=" + preview.currency,
-    );
-  }
-  function successPreview(stale = false) {
-    const preview = purchasePresentation(
-      overview,
-      currency,
-      savedPrices(),
-      stale,
-    );
-    screen(t.success, t.placeholderText);
-    const icon = el("span", "✓", "portal-success-icon");
-    icon.setAttribute("aria-hidden", "true");
-    root
-      .querySelector("h1")
-      .before(icon, el("p", t.placeholderTitle, "portal-preview-label"));
-    const receipt = el("section", null, "portal-plan");
-    receipt.dataset.successPreview = "";
-    receipt.append(
-      el("h2", "premium ⭐"),
-      el(
-        "p",
-        formatMonthlyPrice(
-          preview.amount,
-          preview.currency,
-          document.documentElement.lang,
-        ) +
-          " · " +
-          t.monthly,
-      ),
-    );
+  function paymentUnavailable() {
+    screen(t.paymentUnavailableTitle, t.paymentUnavailableText);
+    root.querySelector(".portal-lead").dataset.paymentUnavailable = "";
     root.append(
-      receipt,
       button(
         t.back,
-        () => location.assign(accountPath + "?currency=" + preview.currency),
+        () => location.assign(accountPath + "?currency=" + currency),
         true,
       ),
     );
@@ -310,7 +279,7 @@ export async function mountPortal(root) {
       value = await request("/overview");
     } catch (error) {
       if (error.code === "AUTH_INVALID") throw error;
-      if (isSuccessPreview()) return successPreview(true);
+      if (isPaymentUnavailable()) return paymentUnavailable();
       screen(t.title, t.error);
       if (overview?.current_price)
         root.append(
@@ -350,7 +319,7 @@ export async function mountPortal(root) {
         );
       if (journal.command) return send(journal.command);
     }
-    if (isSuccessPreview()) return successPreview();
+    if (isPaymentUnavailable()) return paymentUnavailable();
     summary();
   }
   function summary() {

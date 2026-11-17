@@ -1,4 +1,7 @@
-# PrettyLisaVPN website · 0.6.4
+# PrettyLisaVPN website · 0.7.0
+
+Unavailable checkout now opens a dedicated localized page with an email-notification
+message and Back/Home navigation. See the [handoff](../../docs/website-payment-unavailable.md).
 
 Current-plan badges include matching emoji; the language picker uses local flags
 for its current language and options. See the [handoff](../../docs/website-plan-emojis-language-flags.md).
@@ -18,9 +21,9 @@ installations still require replacing files and reloading. See the
 
 The account page keeps PREMIUM, its monthly price and a visible Pay button
 through email sign-in and unavailable-provider/catalog states. Until live checkout
-is available, Pay opens a localized success-page preview without charging or
-changing access. A visible demonstration label distinguishes it from a confirmed
-provider result. See the [purchase-path handoff](../../docs/website-purchase-path.md#success-preview-follow-up--054).
+is available, Pay opens the payment-unavailable page without charging or changing
+access. It has no demonstration label or simulated success. Existing authenticated
+checkout and pending-operation recovery remain available for configured providers.
 
 Version 0.5.2 combined the already live legal templates with Windows guest identity
 disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
@@ -62,7 +65,7 @@ website publication and do not activate payments.
 ## Structure
 
 - `src/locales/*.json`: complete ru/en/de/fr/es/zh UI and legal content.
-- `src/structure.mjs`, `src/pages.mjs`: 96 static pages; contextual language links.
+- `src/structure.mjs`, `src/pages.mjs`: 102 static pages; contextual language links.
 - `src/app.js`, `src/downloads.mjs`: accessible language menu and safe optional
   version/size/hash metadata; no browsing analytics.
 - `src/portal.mjs`: OTP/cookie-authenticated billing portal; payment-authorizing

@@ -1,5 +1,13 @@
 # Website purchase path — 0.5.3
 
+## Current unavailable-payment page — 0.7.0
+
+The success preview described below is superseded. When live checkout is not
+available, Pay opens the localized `/account/unavailable/` page with the owner's
+email-notification message. Existing preview URLs resolve to this page, without
+simulated success or demonstration wording. See the
+[current handoff](website-payment-unavailable.md).
+
 ## Success preview follow-up — 0.5.4
 
 Website 0.5.3 → 0.5.4 (PATCH): the owner requested that the placeholder Pay button
