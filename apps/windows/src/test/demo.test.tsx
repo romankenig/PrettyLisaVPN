@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 import { createApiClient } from "../api/client";
@@ -60,6 +66,7 @@ function setup() {
   const restoration = createTestSessionRestoration(),
     vpn = createTestVpnConnection();
   vi.spyOn(vpn, "disconnect");
+  const open = vi.fn().mockResolvedValue(undefined);
   render(
     <ApplicationProvider
       value={{
@@ -71,6 +78,7 @@ function setup() {
         desktop: { getVersion: async () => "0.27.0" },
         installationId: { getInstallationId: vi.fn() },
         demoDeviceKey: async () => key,
+        paymentBrowser: { open },
       }}
     >
       <MemoryRouter initialEntries={["/login"]}>
@@ -80,10 +88,10 @@ function setup() {
       </MemoryRouter>
     </ApplicationProvider>,
   );
-  return { requests, storage, session, vpn };
+  return { requests, storage, session, vpn, open };
 }
 it("enters a guest session without email, retains the credential and offers all plans", async () => {
-  const { requests, storage, session, vpn } = setup();
+  const { requests, storage, session, vpn, open } = setup();
   fireEvent.click(
     await screen.findByRole("button", { name: /попробовать без регистрации/ }),
   );
@@ -105,6 +113,13 @@ it("enters a guest session without email, retains the credential and offers all 
     "ваш тариф",
   );
   fireEvent.click(within(premium).getByRole("button", { name: "купить" }));
+  await waitFor(() =>
+    expect(open).toHaveBeenCalledWith("https://prettylisavpn.com/account/"),
+  );
+  expect(session.current()?.plan).toBe("DEMO");
+  expect(vpn.disconnect).not.toHaveBeenCalled();
+  expect(requests.some((r) => r.url.includes("/billing/portal"))).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "зарегистрироваться" }));
   await screen.findByRole("textbox", { name: "Email" });
   expect(vpn.disconnect).toHaveBeenCalledOnce();
   expect(session.current()).toBeNull();

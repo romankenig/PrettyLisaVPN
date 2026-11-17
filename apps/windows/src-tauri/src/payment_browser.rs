@@ -15,15 +15,16 @@ pub fn open_payment_url(url: String) -> Result<(), &'static str> {
     let portal = parsed.host_str() == Some("prettylisavpn.com")
         && parsed.path() == "/account/"
         && parsed.query().is_none()
-        && parsed
-            .fragment()
-            .and_then(|value| value.strip_prefix("handoff="))
-            .is_some_and(|value| {
-                value.len() == 43
-                    && value
-                        .bytes()
-                        .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
-            });
+        && (parsed.fragment().is_none()
+            || parsed
+                .fragment()
+                .and_then(|value| value.strip_prefix("handoff="))
+                .is_some_and(|value| {
+                    value.len() == 43
+                        && value
+                            .bytes()
+                            .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
+                }));
     if url.len() > 2048
         || parsed.scheme() != "https"
         || !parsed.username().is_empty()

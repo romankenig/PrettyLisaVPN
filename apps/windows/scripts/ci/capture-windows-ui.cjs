@@ -917,20 +917,6 @@ async function main() {
     );
     if (!response.ok) throw new Error("Billing fixture scenario failed");
   }
-  async function confirmBilling() {
-    const response = await fetch(
-      "http://127.0.0.1:8000/ui-review/billing-confirm",
-      { method: "POST" },
-    );
-    if (!response.ok) throw new Error("Billing fixture confirmation failed");
-    await page
-      .getByRole("button", { name: "обновить подписку", exact: true })
-      .click();
-    await page.getByText("автопродление включено", { exact: true }).waitFor();
-    await page
-      .getByRole("button", { name: "отменить подписку", exact: true })
-      .waitFor();
-  }
   async function lastBillingCommand() {
     const response = await fetch(
       "http://127.0.0.1:8000/ui-review/billing-last-command",
@@ -957,124 +943,48 @@ async function main() {
   if ((await page.getByLabel("цена в рублях").locator("del").count()) !== 1)
     throw new Error("Backend discount must be shown");
   await screenshot("05a-subscription-free");
-  await page.getByRole("button", { name: "купить", exact: true }).click();
-  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
-  const paymentOptions = page.getByRole("dialog").getByRole("radio");
-  if (
-    (await paymentOptions.count()) !== 4 ||
-    (await paymentOptions.first().inputValue()) !== "MIR" ||
-    !(await paymentOptions.first().isChecked())
-  )
-    throw new Error("RUB must prefer MIR in the four-option payment choice");
-  if ((await page.getByRole("dialog").locator("svg").count()) !== 4)
-    throw new Error("Every payment option must have an icon");
-  if (await lastBillingCommand())
-    throw new Error("Opening payment choice must not create an operation");
-  await screenshot("05aa-payment-choice-rub");
-  for (const route of ["ALIPAY_WECHAT", "CRYPTO"]) {
+  async function openWebsitePayment(name = "купить") {
+    await page.evaluate(() => {
+      delete document.documentElement.dataset.paymentReviewUrl;
+      delete document.documentElement.dataset.paymentReviewDestination;
+    });
+    await page.getByRole("button", { name, exact: true }).click();
+    await page.waitForFunction(
+      () => document.documentElement.dataset.paymentReviewUrl === "opened",
+    );
     if (
-      !(await page
-        .getByRole("dialog")
-        .locator(`input[value="${route}"]`)
-        .isDisabled())
+      (await page.evaluate(
+        () => document.documentElement.dataset.paymentReviewDestination,
+      )) !== "account"
     )
-      throw new Error("RUB checkout must respect server currency availability");
+      throw new Error(
+        "Payment entry must open the website account, never a provider",
+      );
+    if (
+      (await page.getByRole("dialog").count()) ||
+      (await lastBillingCommand())
+    )
+      throw new Error(
+        "Client payment navigation created a native checkout or operation",
+      );
   }
-  await page.getByRole("button", { name: "назад", exact: true }).click();
+  await openWebsitePayment();
+  await screenshot("05aa-purchase-website-rub");
   await page.getByRole("button", { name: "USD", exact: true }).click();
-  await page.getByRole("button", { name: "купить", exact: true }).click();
-  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
-  if (
-    (await paymentOptions.first().inputValue()) !== "BANK_CARD" ||
-    !(await paymentOptions.first().isChecked())
-  )
-    throw new Error("USD must prefer bank cards");
-  await screenshot("05ab-payment-choice-usd");
-  if (
-    !(await page.getByRole("dialog").locator('input[value="MIR"]').isDisabled())
-  )
-    throw new Error("MIR must be disabled when server does not support USD");
-  await page
-    .getByRole("radio", { name: "криптовалюта", exact: true })
-    .locator("..")
-    .click();
-  await page
-    .getByText("разовая оплата. автоматических списаний не будет", {
-      exact: true,
-    })
-    .waitFor();
-  await screenshot("05ac-payment-choice-nonrecurring");
-  await page.keyboard.press("Escape");
-  await page.getByRole("dialog").waitFor({ state: "hidden" });
-  await page.getByRole("button", { name: "RUB", exact: true }).click();
-  await page.getByRole("button", { name: "купить", exact: true }).click();
-  await page
-    .getByRole("button", { name: "перейти к оплате", exact: true })
-    .click();
-  await page.waitForFunction(
-    () => document.documentElement.dataset.paymentReviewUrl === "opened",
-  );
-  await page
-    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
-    .waitFor();
-  if (
-    !(await page
-      .getByRole("button", { name: "купить", exact: true })
-      .isDisabled())
-  )
-    throw new Error("Pending operation must block duplicate checkout");
-  await screenshot("05b-subscription-pending");
-  await confirmBilling();
-  await screenshot("05c-subscription-active");
-  const checkoutCommand = await lastBillingCommand();
-  if (
-    checkoutCommand.action !== "SUBSCRIBE" ||
-    checkoutCommand.payment_route !== "MIR"
-  )
-    throw new Error("Checkout must submit the explicitly confirmed MIR route");
-  await page
-    .getByRole("button", { name: "продлить подписку", exact: true })
-    .click();
-  await page.getByRole("dialog", { name: "как оплатить" }).waitFor();
-  await page
-    .getByRole("radio", { name: "банковская карта", exact: true })
-    .locator("..")
-    .click();
-  await page
-    .getByRole("button", { name: "перейти к оплате", exact: true })
-    .click();
-  await page
-    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
-    .waitFor();
-  const renewalCommand = await lastBillingCommand();
-  if (
-    renewalCommand.action !== "RENEW" ||
-    renewalCommand.payment_route !== "BANK_CARD"
-  )
-    throw new Error("Renewal must submit its own confirmed payment route");
-  await confirmBilling();
-  await page
-    .getByRole("button", { name: "изменить способ оплаты", exact: true })
-    .click();
-  await page
-    .getByText("ожидаем подтверждения платёжного сервиса", { exact: true })
-    .waitFor();
-  await confirmBilling();
-  await page
-    .getByRole("button", { name: "отменить подписку", exact: true })
-    .click();
-  await page.getByRole("dialog").waitFor();
-  await screenshot("05d-subscription-cancel-confirmation");
-  await page.getByRole("button", { name: "да, отменить", exact: true }).click();
-  await page.getByText("автопродление отключено", { exact: true }).waitFor();
-  if (
-    await page.getByText("тестовый способ •••• 4242", { exact: true }).count()
-  )
-    throw new Error("Canceled subscription must detach payment method");
-  await page
-    .getByRole("button", { name: "продлить подписку", exact: true })
-    .waitFor();
-  await screenshot("05e-subscription-canceled");
+  await openWebsitePayment();
+  await screenshot("05ab-purchase-website-usd");
+  for (const scenario of ["active", "canceled"]) {
+    await billingScenario(scenario);
+    await page
+      .getByRole("button", { name: "обновить подписку", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "продлить подписку", exact: true })
+      .waitFor();
+    await openWebsitePayment("продлить подписку");
+    await openWebsitePayment("изменить подписку");
+    await screenshot(`05c-subscription-${scenario}-website`);
+  }
   await billingScenario("error");
   await page
     .getByRole("button", { name: "обновить подписку", exact: true })
@@ -1094,12 +1004,7 @@ async function main() {
     await page
       .getByRole("button", { name: "обновить подписку", exact: true })
       .click();
-    await page
-      .getByText(
-        "оплата пока недоступна. данные подписки доступны для просмотра.",
-        { exact: true },
-      )
-      .waitFor();
+    await page.getByRole("button", { name: "купить", exact: true }).waitFor();
     const purchase = page.getByRole("button", { name: "купить", exact: true });
     if (await purchase.count()) await purchase.click();
     if (
@@ -1117,14 +1022,7 @@ async function main() {
   await page
     .getByText("СБП · привязанный банковский счёт", { exact: true })
     .waitFor();
-  if (
-    await page
-      .getByRole("button", { name: "продлить подписку", exact: true })
-      .count()
-  )
-    throw new Error(
-      "SBP recurring authority must not offer an unsupported manual renewal",
-    );
+  await openWebsitePayment("продлить подписку");
   await screenshot("05fb-subscription-sbp");
   await page.evaluate(
     () => delete document.documentElement.dataset.paymentReviewUrl,
@@ -1146,10 +1044,7 @@ async function main() {
         .getByRole("button", { name: "обновить подписку", exact: true })
         .click();
       await page
-        .getByText(
-          "оплата пока недоступна. данные подписки доступны для просмотра.",
-          { exact: true },
-        )
+        .getByRole("button", { name: /^(купить|продлить подписку)$/ })
         .waitFor();
       const offer = overview.offers[0];
       if (offer) {
@@ -1182,9 +1077,7 @@ async function main() {
       });
       // Focus after portal review can refresh the overview and briefly render
       // a disabled fallback CTA. Assert the recorded plan, not that transient DOM.
-      if (overview.plan === "PREMIUM" && !overview.new_contract_required)
-        await purchase.waitFor({ state: "hidden" });
-      else await purchase.click();
+      await purchase.click();
       if (scenario === "active-unknown")
         await page.getByText("сведения недоступны", { exact: true }).waitFor();
       if (await page.getByRole("dialog").count())
@@ -1489,14 +1382,9 @@ async function main() {
   await page.getByText("после регистрации", { exact: true }).waitFor();
   await page.getByText("без регистрации", { exact: true }).waitFor();
   await screenshot("18b-plan-registration");
-  await page.getByRole("button", { name: "купить", exact: true }).click();
-  await page.getByRole("textbox", { name: "Email", exact: true }).waitFor();
-  await screenshot("19-demo-register");
-  await page
-    .getByRole("button", { name: /попробовать без регистрации/ })
-    .click();
-  // Buy stores an allowlisted return route; a new guest login returns there too.
+  await openWebsitePayment();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
+  await screenshot("19-demo-purchase-website");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "главная", exact: true })

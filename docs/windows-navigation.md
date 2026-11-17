@@ -1,3 +1,19 @@
+# Website checkout — Windows 0.31.1 / Android 0.30.1
+
+Subscription → Buy / Renew / Manage → POST /billing/portal → system browser →
+website account page with a single-use handoff. This navigation is independent
+of provider mode; payment selection, confirmation and availability belong to the
+website. Previously pending operations remain readable without reissuing a charge.
+Return to Windows refreshes the overview. Failed handoff/browser opening stays
+on the subscription screen with a retryable error.
+
+DEMO → Buy → public website account page → web email authentication; the guest
+session and tunnel remain active. The separate FREE registration button retains
+native cleanup and OTP navigation. No guest principal is sent to the portal API.
+iOS, macOS and Chrome already use the web portal. Linux/TV have no shipping
+account UI. Backend handoff is implemented; provider activation and future email
+delivery remain separate operational work. See [handoff](client-purchase-website.md).
+
 # Private reports — dashboard 0.18.0 / backend 0.53.0
 
 Each report page → tariff checkboxes → one combined selection. All tariffs is

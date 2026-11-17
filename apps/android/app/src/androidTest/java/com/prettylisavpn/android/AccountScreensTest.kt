@@ -37,6 +37,8 @@ class AccountScreensTest {
     private var mandatoryMessage=false
     private var messageMode=MessageDismissalMode.LEGACY
     private var starts=0
+    private var portals=0
+    private var portalFails=false
     private var billingReads=0
     private var offerRub=39900L
     private var lastIntent:BillingIntent?=null
@@ -83,6 +85,11 @@ class AccountScreensTest {
                 listOf(AccountOffer("30000000-0000-0000-0000-000000000005",mapOf("RUB" to OfferPrice(offerRub,49900),"USD" to OfferPrice(500,700)))),
                 if(premium)billingActions else setOf("SUBSCRIBE"),null,newContractRequired=!premium)
         }
+        override suspend fun billingPortal(token:String):String {
+            portals++;assertEquals("fake",token)
+            if(portalFails)throw AuthFailure("BILLING_UNAVAILABLE")
+            return "https://prettylisavpn.com/account/#handoff="+"a".repeat(43)
+        }
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;lastIntent=intent;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
         override suspend fun supportStatus(token:String,id:String)=receipt
@@ -113,6 +120,24 @@ class AccountScreensTest {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         compose.runOnUiThread { com.prettylisavpn.android.ui.PresentationStore.get(context).preference.choose(com.prettylisavpn.android.ui.AppLanguage.ENGLISH) }
         com.prettylisavpn.android.vpn.DeviceTrafficSelection.get(context).save(com.prettylisavpn.android.vpn.TrafficSelection())
+    }
+    private fun openWebsite(tag:String, demo:Boolean=false) {
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val filter=android.content.IntentFilter(android.content.Intent.ACTION_VIEW).apply {
+            addCategory(android.content.Intent.CATEGORY_BROWSABLE);addDataScheme("https")
+            addDataAuthority("prettylisavpn.com",null)
+            addDataPath("/account/",android.os.PatternMatcher.PATTERN_LITERAL)
+        }
+        val monitor=instrumentation.addMonitor(filter,null,true)
+        val before=portals
+        try {
+            click(tag)
+            compose.waitUntil(10_000) { monitor.hits==1 && !model.state.value.busy }
+            assertEquals(before+(if(demo)0 else 1),portals)
+            assertEquals(0,starts)
+            compose.onNodeWithTag("confirmation-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("purchase-unavailable").assertDoesNotExist()
+        } finally { instrumentation.removeMonitor(monitor) }
     }
     private fun waitFor(tag:String)=compose.waitUntil(10_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     private fun click(tag:String) {
@@ -252,18 +277,10 @@ class AccountScreensTest {
         compose.onNodeWithTag("plan-registration-DEMO").assertTextEquals("без регистрации")
         screenshot("plan-polish-demo-current-ru")
         assertEquals(0,billingReads)
-        click("plan-buy");waitFor("screen_LOGIN")
-        enterAuth("login-email","buyer@example.com");click("auth-submit");waitFor("screen_OTP")
-        enterAuth("otp","123456")
-        compose.runOnUiThread { plan="Free" };click("auth-submit")
-        try { waitFor("plan-buy") } catch(error:ComposeTimeoutException) {
-            screenshot("guest-buy-transition-failed")
-            throw AssertionError("Guest purchase transition: signedIn=${model.state.value.data.signedIn}, plan=${model.state.value.data.plan}, pendingNavigation=${model.afterLoginSubscription}",error)
-        }
-        compose.onNodeWithTag("current-plan-FREE").assertExists()
-        compose.onNodeWithTag("billing-offer").performScrollTo();screenshot("plan-polish-free-premium-ru")
-        compose.onNodeWithTag("plan-tier-FREE").performScrollTo();screenshot("plan-polish-free-current-ru")
-        click("plan-buy");waitFor("purchase-unavailable")
+        openWebsite("plan-buy",demo=true)
+        assertTrue(model.state.value.data.plan.equals("DEMO",ignoreCase=true))
+        compose.onNodeWithTag("screen_LOGIN").assertDoesNotExist()
+        screenshot("demo-buy-opens-website")
         assertEquals(0,starts)
     }
 
@@ -515,7 +532,7 @@ class AccountScreensTest {
         click("billing-currency-USD")
         compose.onNodeWithTag("billing-price").assertTextEquals("${'$'}5")
         for(kind in billingActions)compose.onNodeWithTag("live-pay-$kind").assertDoesNotExist()
-        assertEquals(0,starts);screenshot("billing-reference-prices")
+        openWebsite("plan-buy");assertEquals(0,starts);screenshot("billing-reference-prices")
     }
     @Test fun disabledAndSandboxActionsAreHiddenAndPullRefreshes() {
         click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")
@@ -544,8 +561,7 @@ class AccountScreensTest {
         compose.onNodeWithTag("billing-original-price").assertTextEquals("${'$'}7")
         screenshot("subscription-platinum-usd")
         compose.onNodeWithTag("billing-management").assertDoesNotExist()
-        click("plan-buy");waitFor("purchase-unavailable");screenshot("subscription-payment-unavailable")
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        openWebsite("plan-buy");screenshot("subscription-buy-website")
         assertEquals(0,starts)
         click("language-picker");click("language-en")
     }
@@ -576,36 +592,36 @@ class AccountScreensTest {
         compose.onNodeWithTag("billing-currency-RUB").assertIsSelected()
         compose.onNodeWithTag("billing-currency-USD").performScrollTo().assertIsDisplayed()
     }
-    @Test fun agreedPriceAndCancellationKeepPaidAccessUntilConfirmation() {
+    @Test fun agreedPriceAndManagementStayOnWebsiteWithoutChangingPaidAccess() {
         mode="LIVE";click("tab_SETTINGS");click("settings-subscription");waitFor("billing-contract-price")
         compose.onNodeWithTag("billing-price").assertTextEquals("100 ₽")
         compose.onNodeWithTag("billing-currency-USD").assertDoesNotExist()
-        compose.onNodeWithTag("billing-offer").assertDoesNotExist()
-        for(route in routeIds-setOf("MIR"))compose.onNodeWithTag("live-route-$route").assertDoesNotExist()
-        compose.onNodeWithTag("billing-contract-price").performScrollTo();screenshot("subscription-contract-price")
         val paid=model.state.value.data.billing?.paidUntil
-        click("live-pay-CANCEL");waitFor("confirmation-dialog")
-        assertEquals(0,starts);screenshot("subscription-cancel-confirmation")
-        click("confirm-dialog");idle()
-        assertEquals(1,starts);assertEquals("CANCEL",lastIntent?.action)
+        openWebsite("plan-buy")
+        openWebsite("billing-portal")
         assertEquals(paid,model.state.value.data.billing?.paidUntil)
+        for(kind in billingActions)compose.onNodeWithTag("live-pay-$kind").assertDoesNotExist()
+        screenshot("subscription-management-website")
     }
-    @Test fun freeBuyRequiresConfirmationAndUsesTheServerOffer() {
-        mode="LIVE";plan="Free"
+    @Test fun freeBuyOpensWebsiteForEveryProviderModeWithoutStartingPayment() {
+        plan="Free"
         click("tab_SETTINGS");click("settings-subscription");waitFor("plan-buy")
-        click("plan-buy");waitFor("confirmation-dialog")
-        assertEquals(0,starts)
-        click("confirm-dialog");idle()
-        assertEquals(1,starts);assertEquals("SUBSCRIBE",lastIntent?.action)
-        assertEquals("RUB",lastIntent?.currency)
-        assertEquals("30000000-0000-0000-0000-000000000005",lastIntent?.offer_id)
+        for(provider in listOf("DISABLED","SANDBOX","LIVE")) {
+            mode=provider;compose.runOnUiThread { model.load(Area.BILLING) }
+            compose.waitUntil(10_000) { model.state.value.data.billing?.mode==provider && model.state.value.loads[Area.BILLING]?.phase==LoadPhase.READY }
+            openWebsite("plan-buy")
+            for(route in routeIds)compose.onNodeWithTag("live-route-$route").assertDoesNotExist()
+        }
+        screenshot("free-buy-website")
     }
-    @Test fun changedPriceClosesConfirmationWithoutPosting() {
-        mode="LIVE";click("tab_SETTINGS");click("settings-subscription");waitFor("provider-mode")
-        click("live-pay-CANCEL");waitFor("confirmation-dialog");revision="r2"
-        click("confirm-dialog");idle()
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("confirmation-dialog").fetchSemanticsNodes().isEmpty() }
-        assertEquals(0,starts)
+    @Test fun failedPortalCanRetryWithoutNativeCheckout() {
+        plan="Free";portalFails=true
+        click("tab_SETTINGS");click("settings-subscription");waitFor("plan-buy")
+        click("plan-buy");idle()
+        assertEquals(1,portals);assertEquals(0,starts)
+        assertEquals("BILLING_UNAVAILABLE",model.state.value.error)
+        portalFails=false;openWebsite("plan-buy")
+        assertNull(model.state.value.error)
     }
     @Test fun supportAcceptedReceiptSurvivesRecreationWithoutResending() {
         click("tab_ABOUT");click("about-support");waitFor("live-support-screen")

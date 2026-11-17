@@ -8,6 +8,7 @@ export function validatePaymentUrl(
   allowedHosts: readonly string[],
 ): string {
   if (
+    raw === "https://prettylisavpn.com/account/" ||
     /^https:\/\/prettylisavpn\.com\/account\/#handoff=[A-Za-z0-9_-]{43}$/.test(
       raw,
     )

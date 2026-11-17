@@ -83,6 +83,10 @@ try {
                 async open(url) {
                   validatePaymentUrl(url, ["payments.example.test"]);
                   document.documentElement.dataset.paymentReviewUrl = "opened";
+                  document.documentElement.dataset.paymentReviewDestination =
+                    url.startsWith("https://prettylisavpn.com/account/")
+                      ? "account"
+                      : "provider";
                 },
               }
             : createPaymentBrowser(
