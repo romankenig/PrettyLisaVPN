@@ -1,5 +1,12 @@
 import { t, useLanguage, getLanguage } from "../i18n";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { ApiError, type VpnCountriesResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import type { VpnLocationSelection } from "../vpn/selection";
@@ -49,6 +56,7 @@ export function ConnectionLocationSelector({
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [dropdownHeight, setDropdownHeight] = useState(240);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -187,6 +195,34 @@ export function ConnectionLocationSelector({
         ) ?? autopilot);
   const usable = !disabled && state.phase === "ready";
   const expanded = open && usable;
+  useLayoutEffect(() => {
+    if (!expanded || !root.current) return;
+    const element = root.current;
+    const workspace = element.closest(".home-workspace");
+    const measure = () => {
+      const bounds = element.getBoundingClientRect();
+      if (!bounds.height) return;
+      const bottom = Math.min(
+        globalThis.innerHeight,
+        workspace?.getBoundingClientRect().bottom ?? globalThis.innerHeight,
+      );
+      setDropdownHeight(
+        Math.max(0, Math.min(240, bottom - bounds.bottom - 18)),
+      );
+    };
+    measure();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(measure);
+    observer?.observe(element);
+    if (workspace) observer?.observe(workspace);
+    globalThis.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      globalThis.removeEventListener("resize", measure);
+    };
+  }, [expanded]);
   function choose(choice: Choice) {
     if (!usable || !choice.available || choice.premiumRequired) return;
     if (guest && choice.selection.mode === "COUNTRY") {
@@ -301,6 +337,7 @@ export function ConnectionLocationSelector({
       {expanded ? (
         <div
           className="location-dropdown"
+          style={{ maxHeight: dropdownHeight }}
           id={`${id}-list`}
           role="listbox"
           aria-labelledby={`${id}-title`}

@@ -39,6 +39,8 @@ to an older backend restores the old catalog without breaking updated clients.
 ## UI and validation
 
 Windows and Chrome blur only the country content, leaving the explanation clear.
+Windows limits the scrollable dropdown to the actual remaining workspace height,
+including after resize, so additional locked rows cannot overflow the native window.
 Disabled rows are skipped by keyboard selection. Windows and Android reset a
 previously selected locked country to AUTO; Apple checks refreshed selection and
 connection, and Chrome checks cached selections before allocating a proxy lease.
