@@ -115,28 +115,67 @@
     "contactButton": "support kontaktieren",
     "questions": [
       {
+        "id": "connect",
         "q": "wie fange ich an?",
-        "a": "laden sie die app für [android] oder [windows] herunter, melden sie sich mit dem code aus der e-mail an und wählen sie ein land. der kostenlose tarif bietet ihrem konto eine gemeinsame stunde verbindungszeit pro tag."
+        "a": "lade die App herunter, melde dich mit dem Code aus der E-Mail an und wähle ein Land.\n\nim kostenlosen Tarif erhält dein Konto täglich eine gemeinsame Stunde VPN.",
+        "links": []
       },
       {
-        "q": "was bietet premium?",
-        "a": "während des bezahlten zeitraums gibt es mit premium kein tägliches zeitlimit. das abonnement gilt für einen kalendermonat und wird manuell verlängert. tarif und zugangszeitraum sind in der app sichtbar."
+        "id": "free",
+        "q": "was bietet Free?",
+        "a": "eine Stunde VPN pro Tag für das gesamte Konto. das Kontingent wird um 00:00 UTC zurückgesetzt.",
+        "links": []
       },
       {
+        "id": "premium",
+        "q": "was bietet ⭐ PREMIUM?",
+        "a": "♾️ VPN ohne tägliches Zeitlimit während des bezahlten Zeitraums.\n\n🌍 Zugang zu allen verfügbaren Ländern und PREMIUM-Servern.\n\n📱 bis zu fünf Geräte pro Konto.\n\n🔀 gesamter oder ausgewählter Verkehr unter Windows und Android — auch in FREE.\n\n🛡️ keine Werbung.\n\ndas Abo gilt einen Kalendermonat. du verlängerst es manuell auf der Website; Tarif und Ablaufdatum stehen in der App. dasselbe Gerätelimit und Werbefreiheit gelten auch für FREE.",
+        "links": []
+      },
+      {
+        "id": "protect",
         "q": "was schützt ein vpn?",
-        "a": "vpn verschlüsselt den datenverkehr zwischen ihrem gerät und dem server des dienstes, auch in öffentlichen wlan-netzen. nutzen sie außerdem https, app-updates und sichere anmeldeverfahren zum schutz ihrer konten. vpn ersetzt keinen geräteschutz."
+        "a": "vpn verschlüsselt den datenverkehr zwischen ihrem gerät und dem server des dienstes, auch in öffentlichen wlan-netzen.\n\nnutzen sie außerdem https, app-updates und sichere anmeldeverfahren zum schutz ihrer konten.\n\nvpn ersetzt keinen geräteschutz.\n\ndie Chrome-Erweiterung schützt nur den normalen Webverkehr im Browser. andere Apps und der Inkognitomodus werden nicht geschützt.",
+        "links": []
       },
       {
+        "id": "troubleshoot",
         "q": "vpn verbindet sich nicht. was tun?",
-        "a": "prüfen sie ihre internetverbindung ohne vpn und aktualisieren sie die app. tritt der fehler erneut auf, senden sie dem [support] den fehlertext und den zeitpunkt."
+        "a": "1. trenne das VPN und verbinde dich erneut. probiere den Schutz für den gesamten Verkehr oder nur ausgewählte Dienste, falls die App diese Auswahl anbietet.\n\n2. wechsle die Internetverbindung: von WLAN zu mobilen Daten oder umgekehrt. verbinde danach das VPN erneut.\n\n3. setze die Verbindungsarten in den erweiterten Einstellungen zurück und verbinde dich erneut. probiere das mehrmals. fehlt diese Option, gehe zum nächsten Schritt.\n\n4. hilft das nicht, schreibe dem [Support] — wir helfen dir.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "code",
         "q": "der anmeldecode kommt nicht an?",
-        "a": "prüfen sie die e-mail-adresse und den spam-ordner. warten sie, bis sie einen neuen code anfordern können. kommt die nachricht nicht an, schreiben sie dem [support] von der e-mail-adresse ihres kontos."
+        "a": "prüfen sie die e-mail-adresse und den spam-ordner.\n\nwarten sie, bis sie einen neuen code anfordern können.\n\nkommt die nachricht nicht an, schreiben sie dem [support] von der e-mail-adresse ihres kontos.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "payments",
         "q": "wie verlängere ich mein abonnement oder beantrage eine erstattung?",
-        "a": "details stehen in den [zahlungs- und verlängerungsregeln]. tarif und ablaufdatum finden sie in der app. die verlängerung erfolgt durch eine separate zahlung, ohne automatische abbuchungen. bei fragen zu zahlungen, zugang und erstattungen wenden sie sich an den [support]."
+        "a": "details findest du in den [Zahlungs- und Verlängerungsbedingungen].\n\ntarif und Ablaufdatum stehen in der App.\n\ndu verlängerst auf der Website mit einer separaten Zahlung, ohne automatische Abbuchungen.\n\nbei Fragen zu Zahlungen, Zugang oder Erstattungen schreibe dem [Support].",
+        "links": [
+          "payments",
+          "support"
+        ]
+      },
+      {
+        "id": "split",
+        "q": "wie nutze ich das VPN nur für bestimmte Websites und Apps?",
+        "a": "in Windows und Android kannst du wählen, was das VPN und was deine normale Internetverbindung nutzt.\n\n1. öffne auf der Startseite „Was schützen“ und wähle „Ausgewählte“.\n\n2. tippe auf „Dienste auswählen“ und markiere zum Beispiel YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n3. speichere die Liste und verbinde das VPN erneut — beim Speichern wird die aktuelle Verbindung getrennt.\n\nfür das Gegenteil — einzelne Dienste ohne VPN, alles andere geschützt — wähle „Außer ausgewählten“. die beiden Modi haben getrennte Listen. „Alles“ schützt den gesamten Verkehr.\n\nfehlt eine Website, füge ihre Adresse hinzu: example.com für die Website, *.example.com für ihre Subdomains. ein Dienst kann mehrere Adressen nutzen, deshalb ist eine Vorlage meist einfacher.\n\nDEMO unterstützt nur den gesamten Verkehr. unter iOS und macOS lassen sich noch keine einzelnen Dienste auswählen. die Chrome-Erweiterung schützt nur den Browser.",
+        "links": []
+      },
+      {
+        "id": "support",
+        "q": "wie erreiche ich den Support?",
+        "a": "öffne das [Supportformular] in der App oder schreibe an help@prettylisavpn.com. beschreibe das Problem und wann es auftrat.",
+        "links": [
+          "support"
+        ]
       }
     ]
   },

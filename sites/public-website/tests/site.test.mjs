@@ -17,6 +17,30 @@ import { build, dist, root } from "../scripts/build.mjs";
 import { createPreviewServer } from "../scripts/preview.mjs";
 import { portalCopy } from "../src/portal-copy.mjs";
 
+test("shared FAQ preserves paragraphs, PREMIUM and ordered support links in every locale", () => {
+  for (const language of languages) {
+    const questions = locales[language].help.questions;
+    assert.equal(questions.length, 9);
+    const premium = questions.find((item) => item.id === "premium");
+    assert.match(premium.q, /⭐ PREMIUM/);
+    assert.equal(premium.a.split("\n\n").length, 6);
+    const troubleshooting = questions.find(
+      (item) => item.id === "troubleshoot",
+    );
+    assert.deepEqual(
+      troubleshooting.a.split("\n\n").map((p) => p.slice(0, 2)),
+      ["1.", "2.", "3.", "4."],
+    );
+    for (const id of ["protect", "code", "payments", "split"])
+      assert.ok(questions.find((item) => item.id === id).a.includes("\n\n"));
+    assert.deepEqual(questions.find((item) => item.id === "payments").links, [
+      "payments",
+      "support",
+    ]);
+    assert.deepEqual(questions.find((item) => item.id === "connect").links, []);
+  }
+});
+
 test("public plan benefits match Android in every language and in the purchase portal", async () => {
   for (const language of languages) {
     const android = await readFile(
@@ -172,12 +196,12 @@ test("home has five sections including database-backed prices, one launch notice
     const questions = html
       .split('<div class="questions">')[1]
       .split("<aside")[0];
-    assert.equal((questions.match(/<details>/g) ?? []).length, 6);
+    assert.equal((questions.match(/<details>/g) ?? []).length, 9);
     assert.doesNotMatch(questions, /\[[^\]]+\]/);
-    assert.match(questions, /<p>[^<]*<a href="[^"]*\/download\/android\/">/);
+
     assert.match(questions, /<a href="mailto:help@prettylisavpn.com">/);
     const protectionAnswer = questions
-      .split('<div class="faq-answer">')[3]
+      .split('<div class="faq-answer">')[4]
       .split("</details>")[0];
     assert.match(protectionAnswer, /https/i);
     assert.doesNotMatch(protectionAnswer, /<a /);

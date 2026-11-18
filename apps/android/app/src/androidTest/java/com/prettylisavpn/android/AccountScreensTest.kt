@@ -650,27 +650,29 @@ class AccountScreensTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() };waitFor("confirmation-dialog")
         click("dismiss-dialog");compose.onNodeWithTag("live-support-screen").assertExists();assertEquals(0,sends)
     }
-    @Test fun faqSelectionRevealsAnswerAndNavigatesToSubscription() {
+    @Test fun faqSelectionShowsSharedParagraphsAndOpensSupport() {
         click("tab_ABOUT"); waitFor("live-about")
         click("faq-select"); click("faq-option-1")
         compose.onNodeWithTag("faq-answer").assertTextEquals(compose.activity.getString(R.string.faq_free_a))
         screenshot("about-faq-free")
         compose.onNodeWithTag("faq-link").assertDoesNotExist()
-        click("faq-select"); click("faq-option-4")
+        click("faq-select"); click("faq-option-7")
         val split = compose.activity.getString(R.string.faq_split_a)
             .replace("[", "").replace("]", "")
         compose.onNodeWithTag("faq-answer").assertTextEquals(split)
         screenshot("about-faq-split")
-        click("faq-select"); click("faq-option-2")
+        click("faq-select"); click("faq-option-4")
+        screenshot("about-faq-troubleshoot")
+        click("faq-select"); click("faq-option-8")
         val answer = compose.onNodeWithTag("faq-answer").performScrollTo()
         val layouts = mutableListOf<TextLayoutResult>()
         answer.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        val source = compose.activity.getString(R.string.faq_manage_a)
+        val source = compose.activity.getString(R.string.faq_support_a)
         val linkStart = source.indexOf('[')
         val linkEnd = source.indexOf(']') - 1
         val linkCenter = layouts.single().getBoundingBox((linkStart + linkEnd) / 2).center
         answer.performTouchInput { click(linkCenter) }
-        waitFor("provider-mode")
+        waitFor("live-support-screen")
         assertEquals(0, starts)
     }
     @Test fun homeMatchesWindowsAndMissingVpnPortCannotConnect() {

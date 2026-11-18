@@ -405,10 +405,11 @@ struct AboutView: View {
         Form {
             Section { Logo(); Text("PrettyLisaVPN").font(.title.bold()); Text(model.version); LabeledContent("Backend", value: model.backendVersion ?? L("unavailable")) }
             Section("FAQ") {
-                ForEach(["free", "support"], id: \.self) { key in
-                    DisclosureGroup(L("faq_\(key)_q")) { Text(L("faq_\(key)_a")).textSelection(.enabled) }
+                ForEach(faqEntries) { entry in
+                    DisclosureGroup(L("faq_\(entry.id)_q")) {
+                        FAQAnswer(entry: entry) { model.page = .support }
+                    }
                 }
-                DisclosureGroup(L("apple_network_policy")) { Text(L("apple_full_tunnel")) }
             }
             Section {
                 Link("prettylisavpn.com", destination: URL(string: "https://prettylisavpn.com")!)

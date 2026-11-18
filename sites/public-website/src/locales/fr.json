@@ -115,28 +115,67 @@
     "contactButton": "contacter l’assistance",
     "questions": [
       {
+        "id": "connect",
         "q": "comment commencer ?",
-        "a": "téléchargez l’application [android] ou [windows], connectez-vous avec le code reçu par e-mail et choisissez un pays. l’offre gratuite comprend une heure de connexion par jour, partagée sur tout le compte."
+        "a": "téléchargez l’application, connectez-vous avec le code reçu par e-mail et choisissez un pays.\n\nle forfait gratuit offre une heure de VPN par jour, partagée sur le compte.",
+        "links": []
       },
       {
-        "q": "que comprend premium ?",
-        "a": "aucune limite quotidienne de durée ne s’applique pendant la période premium payée. l’abonnement dure un mois calendaire et se renouvelle manuellement. l’offre et la date de fin d’accès sont visibles dans l’application."
+        "id": "free",
+        "q": "que comprend free ?",
+        "a": "une heure de VPN par jour pour tout le compte. le quota est réinitialisé à 00:00 UTC.",
+        "links": []
       },
       {
+        "id": "premium",
+        "q": "que comprend ⭐ PREMIUM ?",
+        "a": "♾️ VPN sans limite de temps quotidienne pendant la période payée.\n\n🌍 accès à tous les pays disponibles et aux serveurs PREMIUM.\n\n📱 jusqu’à cinq appareils par compte.\n\n🔀 tout le trafic ou seulement certains services sur Windows et Android — aussi dans FREE.\n\n🛡️ sans publicité.\n\nl’abonnement dure un mois calendaire. renouvelez-le manuellement sur le site ; le forfait et la date de fin sont indiqués dans l’application. FREE offre aussi cette limite d’appareils et l’absence de publicité.",
+        "links": []
+      },
+      {
+        "id": "protect",
         "q": "que protège un vpn ?",
-        "a": "le vpn chiffre le trafic entre votre appareil et le serveur du service, y compris sur un réseau wi-fi public. utilisez aussi https, les mises à jour et des méthodes de connexion sécurisées pour protéger vos comptes. un vpn ne remplace pas la protection de l’appareil."
+        "a": "le vpn chiffre le trafic entre votre appareil et le serveur du service, y compris sur un réseau wi-fi public.\n\nutilisez aussi https, les mises à jour et des méthodes de connexion sécurisées pour protéger vos comptes.\n\nun vpn ne remplace pas la protection de l’appareil.\n\nl’extension Chrome protège uniquement le trafic web habituel du navigateur. les autres applications et le mode navigation privée ne sont pas protégés par l’extension.",
+        "links": []
       },
       {
+        "id": "troubleshoot",
         "q": "le vpn ne se connecte pas. que faire ?",
-        "a": "vérifiez votre connexion internet sans vpn et mettez l’application à jour. si l’erreur persiste, envoyez son texte et son heure au [support]."
+        "a": "1. déconnectez puis reconnectez le VPN. essayez de protéger tout le trafic ou seulement certains services, si l’application propose ce choix.\n\n2. changez de connexion internet : passez du Wi-Fi aux données mobiles ou inversement, puis reconnectez le VPN.\n\n3. réinitialisez les types de connexion dans les paramètres avancés, puis reconnectez-vous. essayez plusieurs fois. si cette option n’existe pas, passez à l’étape suivante.\n\n4. si cela ne fonctionne toujours pas, écrivez au [support] — nous vous aiderons.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "code",
         "q": "le code de connexion n’arrive pas ?",
-        "a": "vérifiez l’adresse saisie et le dossier des courriers indésirables. attendez de pouvoir demander un nouveau code. si le message n’arrive toujours pas, contactez [l’assistance] depuis l’adresse de votre compte."
+        "a": "vérifiez l’adresse saisie et le dossier des courriers indésirables.\n\nattendez de pouvoir demander un nouveau code.\n\nsi le message n’arrive toujours pas, contactez [l’assistance] depuis l’adresse de votre compte.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "payments",
         "q": "comment renouveler l’abonnement ou demander un remboursement ?",
-        "a": "consultez les [règles de paiement et de renouvellement]. l’offre et la date de fin sont disponibles dans l’application. le renouvellement nécessite un paiement distinct, sans prélèvement automatique. contactez [l’assistance] pour toute question sur les paiements, l’accès ou les remboursements."
+        "a": "consultez les [règles de paiement et de renouvellement].\n\nle forfait et la date de fin sont indiqués dans l’application.\n\nle renouvellement se fait sur le site par un paiement séparé, sans prélèvement automatique.\n\npour toute question sur les paiements, l’accès ou les remboursements, contactez le [support].",
+        "links": [
+          "payments",
+          "support"
+        ]
+      },
+      {
+        "id": "split",
+        "q": "comment utiliser le VPN seulement pour certains sites et applications ?",
+        "a": "sur Windows et Android, vous pouvez choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle.\n\n1. sur l’écran d’accueil, ouvrez « que protéger » et choisissez « sélectionnés ».\n\n2. appuyez sur « choisir les services » et sélectionnez, par exemple, YouTube et Telegram. les autres sites et applications utiliseront la connexion habituelle.\n\n3. enregistrez la liste et reconnectez le VPN : l’enregistrement coupe la connexion en cours.\n\npour faire l’inverse — laisser certains services sans VPN et protéger le reste — choisissez « sauf sélectionnés ». les deux modes ont des listes séparées. « tout » protège tout le trafic.\n\nsi un site manque, ajoutez son adresse : example.com pour le site, *.example.com pour ses sous-domaines. un service peut utiliser plusieurs adresses ; un choix prédéfini est souvent plus simple.\n\nDEMO protège uniquement tout le trafic. la sélection de services n’est pas encore disponible sur iOS et macOS. l’extension Chrome protège uniquement le navigateur.",
+        "links": []
+      },
+      {
+        "id": "support",
+        "q": "comment contacter le support ?",
+        "a": "ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.",
+        "links": [
+          "support"
+        ]
       }
     ]
   },

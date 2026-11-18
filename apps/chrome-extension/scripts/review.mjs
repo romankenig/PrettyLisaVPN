@@ -630,7 +630,46 @@ try {
   billingAvailable = true;
 
   await page.getByRole("button", { name: "о приложении", exact: true }).click();
-  await page.getByRole("button", { name: "написать в поддержку" }).click();
+  assert.equal(await page.locator(".faq-entry").count(), 9);
+  const premiumFAQ = page
+    .locator(".faq-entry")
+    .filter({ has: page.getByText("что даёт ⭐ PREMIUM?", { exact: true }) });
+  await premiumFAQ.locator("summary").click();
+  assert.equal(await premiumFAQ.locator("p").count(), 6);
+  assert.equal(
+    await premiumFAQ
+      .locator("summary")
+      .evaluate(
+        (node) =>
+          node.ownerDocument.defaultView.getComputedStyle(node).textTransform,
+      ),
+    "none",
+  );
+  await premiumFAQ.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(output, "faq-premium.png") });
+  await premiumFAQ.locator("summary").click();
+  const splitFAQ = page.locator(".faq-entry").filter({
+    has: page.getByText(
+      "как включить VPN только для нужных сайтов и приложений?",
+      { exact: true },
+    ),
+  });
+  await splitFAQ.locator("summary").click();
+  assert.match(
+    await splitFAQ.innerText(),
+    /сохраните список и заново подключите VPN/,
+  );
+  await page.screenshot({ path: path.join(output, "faq-split.png") });
+  await splitFAQ.locator("summary").click();
+  const troubleshootingFAQ = page.locator(".faq-entry").filter({
+    has: page.getByText("vpn не подключается. что делать?", { exact: true }),
+  });
+  await troubleshootingFAQ.locator("summary").click();
+  assert.equal(await troubleshootingFAQ.locator("p").count(), 4);
+  await page.screenshot({ path: path.join(output, "faq-troubleshoot.png") });
+  await troubleshootingFAQ
+    .getByRole("button", { name: "поддержку", exact: true })
+    .click();
   await page.getByLabel("тема", { exact: true }).fill("Тестовая форма");
   await page
     .getByLabel("что случилось?")

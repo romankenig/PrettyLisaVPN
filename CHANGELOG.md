@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Shared FAQ — website 0.7.1, Windows 0.31.2, Android 0.30.2, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1
+
+- Synchronize nine questions and answers across the website and existing apps in
+  all six languages from one checked catalogue. Keep the start question without
+  the Android/Windows qualifier; format PREMIUM benefits with emoji and preserve
+  uppercase. Split long answers into paragraphs and troubleshooting into steps.
+- Add simple instructions for choosing services that use VPN, saving and
+  reconnecting, with accurate platform limits and existing support/document links.
+  See [handoff](docs/shared-faq.md). Backend and VPN engines are unchanged.
+
 ### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
 
 - Buy, renew and subscription management open the website for every provider mode.

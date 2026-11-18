@@ -364,7 +364,6 @@ struct IOSDevicesView: View {
 
 private struct IOSAboutView: View {
     @ObservedObject var model: AppModel
-    @State private var faq = true
     var body: some View {
         PhonePage(title: L("about")) {
             HStack(alignment: .top, spacing: 30) {
@@ -373,14 +372,14 @@ private struct IOSAboutView: View {
             }.foregroundStyle(PhoneStyle.card)
             PhoneCard {
                 Text("faq").font(PhoneStyle.font(18, .bold))
-                DisclosureGroup(isExpanded: $faq) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        Text(L("faq_connect_a").replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: ""))
-                            .fixedSize(horizontal: false, vertical: true).lineSpacing(5)
-                        Button(L("home")) { model.page = .home }.font(PhoneStyle.font(16, .bold))
-                    }.padding(.vertical, 16)
-                } label: { Text(L("faq_connect_q")).font(PhoneStyle.font(16, .bold)).foregroundStyle(PhoneStyle.purple) }
-                    .accessibilityIdentifier("faq-connect")
+                ForEach(faqEntries) { entry in
+                    DisclosureGroup {
+                        FAQAnswer(entry: entry) { model.page = .support }
+                            .padding(.vertical, 16)
+                    } label: {
+                        Text(L("faq_\(entry.id)_q")).font(PhoneStyle.font(16, .bold)).foregroundStyle(PhoneStyle.purple)
+                    }.accessibilityIdentifier("faq-\(entry.id)")
+                }
             }
             PhoneCard {
                 Text(L("about_support_title")).font(PhoneStyle.font(18, .bold))

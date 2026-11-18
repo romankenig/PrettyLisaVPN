@@ -1,0 +1,35 @@
+name: Shared FAQ synchronization
+on:
+  push:
+    paths:
+      - "content/faq/**"
+      - "sites/public-website/src/locales/**"
+      - "apps/windows/src/faq.json"
+      - "apps/chrome-extension/src/faq.json"
+      - "apps/android/app/src/main/res/**/strings.xml"
+      - "apps/android/app/src/main/java/com/prettylisavpn/android/ui/FaqCatalog.kt"
+      - "apps/apple/Resources/**/*.strings"
+      - "apps/apple/App/FAQCatalog.swift"
+      - ".github/workflows/faq-sync.yml"
+  pull_request:
+    paths:
+      - "content/faq/**"
+      - "sites/public-website/src/locales/**"
+      - "apps/windows/src/faq.json"
+      - "apps/chrome-extension/src/faq.json"
+      - "apps/android/app/src/main/res/**/strings.xml"
+      - "apps/android/app/src/main/java/com/prettylisavpn/android/ui/FaqCatalog.kt"
+      - "apps/apple/Resources/**/*.strings"
+      - "apps/apple/App/FAQCatalog.swift"
+      - ".github/workflows/faq-sync.yml"
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python content/faq/sync.py --check

@@ -2879,3 +2879,10 @@ input,
   gap: 16px;
   margin-top: 20px;
 }
+
+/* FAQ copy preserves PREMIUM and product names across all locales. */
+.faq-card .faq-select,
+.faq-card .faq-answer,
+.faq-card .faq-answer button {
+  text-transform: none;
+}

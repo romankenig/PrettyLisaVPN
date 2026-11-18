@@ -1215,9 +1215,9 @@ async function main() {
   await faq.getByRole("combobox", { name: "вопрос" }).selectOption("1");
   await faq.getByText(/00:00 UTC/).waitFor();
   await screenshot("08-about-faq-free");
-  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("4");
-  await faq.getByText(/«выбранное» — через VPN идут только/).waitFor();
-  await faq.getByText(/«кроме выбранного» — наоборот/).waitFor();
+  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("7");
+  await faq.getByText(/^1\. на главном/).waitFor();
+  await faq.getByText(/у этих двух режимов отдельные списки/).waitFor();
   await screenshot("08-about-faq-split");
   await faq.locator(".faq-answer").evaluate((node) => {
     if (getComputedStyle(node).overflowY !== "auto")
@@ -1226,17 +1226,22 @@ async function main() {
   });
   await screenshot("08-about-faq-split-bottom");
   await faq.getByRole("combobox", { name: "вопрос" }).selectOption("2");
-  await faq.getByRole("link", { name: "подписке" }).click();
-  await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
-  if (!page.url().endsWith("#/settings/subscription"))
-    throw new Error("FAQ must navigate to the real subscription route");
+  await faq.getByText(/♾️ VPN без/).waitFor();
+  if (
+    (await faq
+      .getByRole("combobox")
+      .evaluate((node) => getComputedStyle(node).textTransform)) !== "none"
+  )
+    throw new Error("PREMIUM must retain uppercase");
+  await screenshot("08-about-faq-premium");
+  await faq.getByRole("combobox", { name: "вопрос" }).selectOption("4");
+  await faq.getByText(/^3\. в расширенных/).waitFor();
+  await screenshot("08-about-faq-troubleshoot");
+  await faq.getByRole("button", { name: "поддержку", exact: true }).click();
+  await page.getByRole("dialog", { name: "помощь и поддержка" }).waitFor();
   await page
-    .getByRole("navigation")
-    .getByRole("link", { name: "о приложении", exact: true })
+    .getByRole("button", { name: "закрыть обращение", exact: true })
     .click();
-  await about
-    .getByRole("heading", { name: "о приложении", exact: true })
-    .waitFor();
   await about
     .getByText("inspired by love of my life, Lisa", { exact: true })
     .waitFor();

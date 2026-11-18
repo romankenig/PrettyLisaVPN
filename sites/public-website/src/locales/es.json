@@ -115,28 +115,67 @@
     "contactButton": "contactar con soporte",
     "questions": [
       {
+        "id": "connect",
         "q": "¿cómo empiezo?",
-        "a": "descarga la aplicación para [android] o [windows], accede con el código del correo y elige un país. el plan gratuito ofrece una hora de conexión al día, compartida por toda la cuenta."
+        "a": "descarga la aplicación, inicia sesión con el código del correo y elige un país.\n\nel plan gratuito ofrece una hora de VPN al día compartida por toda la cuenta.",
+        "links": []
       },
       {
-        "q": "¿qué incluye premium?",
-        "a": "durante el periodo pagado de premium no hay límite diario de tiempo. la suscripción dura un mes natural y se renueva manualmente. el plan y la fecha de fin del acceso se muestran en la aplicación."
+        "id": "free",
+        "q": "¿qué incluye free?",
+        "a": "una hora de VPN al día para toda la cuenta. el límite se restablece a las 00:00 UTC.",
+        "links": []
       },
       {
+        "id": "premium",
+        "q": "¿qué incluye ⭐ PREMIUM?",
+        "a": "♾️ VPN sin límite diario de tiempo durante el período pagado.\n\n🌍 acceso a todos los países disponibles y servidores PREMIUM.\n\n📱 hasta cinco dispositivos por cuenta.\n\n🔀 todo el tráfico o solo los servicios elegidos en Windows y Android — también en FREE.\n\n🛡️ sin anuncios.\n\nla suscripción dura un mes natural. se renueva manualmente en la web; el plan y la fecha de vencimiento aparecen en la aplicación. FREE también incluye el mismo límite de dispositivos y no tiene anuncios.",
+        "links": []
+      },
+      {
+        "id": "protect",
         "q": "¿qué protege una vpn?",
-        "a": "la vpn cifra el tráfico entre tu dispositivo y el servidor del servicio, incluso en redes wi-fi públicas. usa también https, actualizaciones y métodos de acceso seguros para proteger tus cuentas. la vpn no sustituye la seguridad del dispositivo."
+        "a": "la vpn cifra el tráfico entre tu dispositivo y el servidor del servicio, incluso en redes wi-fi públicas.\n\nusa también https, actualizaciones y métodos de acceso seguros para proteger tus cuentas.\n\nla vpn no sustituye la seguridad del dispositivo.\n\nla extensión de Chrome solo protege el tráfico web habitual del navegador. no protege otras aplicaciones ni el modo incógnito.",
+        "links": []
       },
       {
+        "id": "troubleshoot",
         "q": "la vpn no se conecta. ¿qué hago?",
-        "a": "comprueba tu conexión a internet sin vpn y actualiza la aplicación. si el error persiste, envía su texto y la hora al [soporte]."
+        "a": "1. desconecta y vuelve a conectar el VPN. prueba a proteger todo el tráfico o solo los servicios elegidos, si la aplicación ofrece esa opción.\n\n2. cambia de conexión a internet: pasa de Wi-Fi a datos móviles o al revés y vuelve a conectar el VPN.\n\n3. restablece los tipos de conexión en los ajustes avanzados y vuelve a conectarte. inténtalo varias veces. si no existe esa opción, pasa al siguiente paso.\n\n4. si sigue sin funcionar, escribe a [soporte] y te ayudaremos.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "code",
         "q": "¿no llega el código de acceso?",
-        "a": "comprueba la dirección y la carpeta de correo no deseado. espera hasta que puedas solicitar un código nuevo. si el mensaje no llega, escribe a [soporte] desde el correo de la cuenta."
+        "a": "comprueba la dirección y la carpeta de correo no deseado.\n\nespera hasta que puedas solicitar un código nuevo.\n\nsi el mensaje no llega, escribe a [soporte] desde el correo de la cuenta.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "payments",
         "q": "¿cómo renuevo la suscripción o solicito un reembolso?",
-        "a": "consulta las [reglas de pago y renovación]. el plan y la fecha de vencimiento están disponibles en la aplicación. la renovación se realiza con un pago independiente, sin cargos automáticos. para dudas sobre pagos, acceso o reembolsos, escribe a [soporte]."
+        "a": "consulta las [condiciones de pago y renovación].\n\nel plan y la fecha de vencimiento aparecen en la aplicación.\n\nla renovación se realiza en la web con un pago separado, sin cargos automáticos.\n\npara consultas sobre pagos, acceso o reembolsos, escribe a [soporte].",
+        "links": [
+          "payments",
+          "support"
+        ]
+      },
+      {
+        "id": "split",
+        "q": "¿cómo uso el VPN solo para los sitios y aplicaciones que necesito?",
+        "a": "en Windows y Android puedes elegir qué usa el VPN y qué usa tu conexión habitual.\n\n1. en la pantalla de inicio, busca «qué proteger» y elige «seleccionados».\n\n2. pulsa «elegir servicios» y marca los que necesites, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usarán la conexión habitual.\n\n3. guarda la lista y vuelve a conectar el VPN: al guardar se corta la conexión actual.\n\npara hacer lo contrario — dejar algunos servicios fuera del VPN y proteger todo lo demás — elige «excepto seleccionados». los dos modos tienen listas separadas. «todo» protege todo el tráfico.\n\nsi falta un sitio, añade su dirección: example.com para el sitio, *.example.com para sus subdominios. un servicio puede usar varias direcciones, por lo que suele ser más fácil elegir uno predefinido.\n\nDEMO solo permite proteger todo el tráfico. iOS y macOS aún no permiten elegir servicios individuales. la extensión de Chrome solo protege el navegador.",
+        "links": []
+      },
+      {
+        "id": "support",
+        "q": "¿cómo contacto con soporte?",
+        "a": "abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.",
+        "links": [
+          "support"
+        ]
       }
     ]
   },

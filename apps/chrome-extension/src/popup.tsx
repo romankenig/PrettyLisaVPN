@@ -1,3 +1,4 @@
+import catalog from "./faq.json";
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { NavigationIcon } from "./NavigationIcon";
@@ -613,18 +614,43 @@ function App() {
                 <h1 className="white">{t("about")}</h1>
                 <section className="card">
                   <h2>faq</h2>
-                  {(
-                    [
-                      ["faqTitle", "faqText"],
-                      ["faqFree", "freeText"],
-                      ["scopeFAQ", "scopeFAQText"],
-                    ] as const
-                  ).map(([title, text]) => (
-                    <details key={title}>
-                      <summary>{t(title)}</summary>
-                      <p>{t(text)}</p>
-                    </details>
-                  ))}
+                  {catalog[language].map((entry) => {
+                    let linkIndex = 0;
+                    return (
+                      <details key={entry.id} className="faq-entry">
+                        <summary>{entry.q}</summary>
+                        {entry.a.split("\n\n").map((paragraph, index) => (
+                          <p key={index}>
+                            {paragraph
+                              .split(/(\[[^\]]+\])/)
+                              .map((part, partIndex) => {
+                                if (!part.startsWith("[")) return part;
+                                const target = entry.links[linkIndex++];
+                                const label = part.slice(1, -1);
+                                return target === "support" ? (
+                                  <button
+                                    className="faq-inline-link"
+                                    key={partIndex}
+                                    onClick={() => navigate("support")}
+                                  >
+                                    {label}
+                                  </button>
+                                ) : (
+                                  <a
+                                    key={partIndex}
+                                    href={publicUrl(language, "payments")}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {label}
+                                  </a>
+                                );
+                              })}
+                          </p>
+                        ))}
+                      </details>
+                    );
+                  })}
                 </section>
                 <section className="card">
                   <h2>{t("support")}</h2>
