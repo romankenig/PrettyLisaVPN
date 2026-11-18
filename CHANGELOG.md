@@ -6,16 +6,6 @@
 
 ## Unreleased
 
-### Shared FAQ — website 0.7.1, Windows 0.31.2, Android 0.30.2, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1
-
-- Synchronize nine questions and answers across the website and existing apps in
-  all six languages from one checked catalogue. Keep the start question without
-  the Android/Windows qualifier; format PREMIUM benefits with emoji and preserve
-  uppercase. Split long answers into paragraphs and troubleshooting into steps.
-- Add simple instructions for choosing services that use VPN, saving and
-  reconnecting, with accurate platform limits and existing support/document links.
-  See [handoff](docs/shared-faq.md). Backend and VPN engines are unchanged.
-
 ### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
 
 - Buy, renew and subscription management open the website for every provider mode.
@@ -1643,6 +1633,28 @@
   закреплённые в docs/versioning.md и AGENTS.md.
 - Recorded: текущий legacy runtime-формат backend dev-SHA и отдельная задача
   перехода его CI/deploy/rollback. Развёртывание в этой задаче не менялось.
+
+## Shared FAQ development release — 2026-11-18 UTC
+
+### Shared FAQ — website 0.7.1, Windows 0.31.2, Android 0.30.2, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1
+
+- Synchronize nine questions and answers across the website and existing apps in
+  all six languages from one checked catalogue. Keep the start question without
+  the Android/Windows qualifier; format PREMIUM benefits with emoji and preserve
+  uppercase. Split long answers into paragraphs and troubleshooting into steps.
+- Add simple instructions for choosing services that use VPN, saving and
+  reconnecting, with accurate platform limits and existing support/document links.
+  See [handoff](docs/shared-faq.md). Backend and VPN engines are unchanged.
+
+Released through develop `2ac1e72b31ef66e8caba10cc4391bd759e11fe5c`
+([PR #106](https://github.com/romankenig/PrettyLisaVPN/pull/106)).
+Website 0.7.1 is live; Windows 0.31.2, Android 0.30.2/code 61, Chrome 0.5.1,
+iOS 0.6.1 and macOS 0.5.1 are published through the verified development publisher.
+All six release workflows and five publisher jobs passed. Published FAQ contents
+match the shared catalogue in all six languages. Exact CI artifacts, binary hashes,
+source/run/attempt, live checks and Apple unsigned limitations are recorded in the
+[release handoff](docs/shared-faq.md#development-release--2026-11-18-utc).
+No stable release tags, backend deployment or VPN-node changes are part of this release.
 
 ## Development reports — 2026-11-15 UTC
 
