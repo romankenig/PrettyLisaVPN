@@ -649,10 +649,7 @@ try {
   await page.screenshot({ path: path.join(output, "faq-premium.png") });
   await premiumFAQ.locator("summary").click();
   const splitFAQ = page.locator(".faq-entry").filter({
-    has: page.getByText(
-      "как включить VPN только для нужных сайтов и приложений?",
-      { exact: true },
-    ),
+    has: page.getByText("как выбрать сайты для VPN?", { exact: true }),
   });
   await splitFAQ.locator("summary").click();
   assert.match(

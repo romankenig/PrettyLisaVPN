@@ -42,7 +42,7 @@
     },
     {
       "id": "payments",
-      "q": "как продлить подписку или запросить возврат?",
+      "q": "как продлить подписку или вернуть оплату?",
       "a": "подробнее — [в правилах оплаты и продления].\n\nтариф и дата окончания доступа видны в приложении.\n\nпродление выполняется на сайте отдельной оплатой, без автоматических списаний.\n\nпо вопросам платежей, доступа и возврата напишите в [поддержку].",
       "links": [
         "payments",
@@ -51,7 +51,7 @@
     },
     {
       "id": "split",
-      "q": "как включить VPN только для нужных сайтов и приложений?",
+      "q": "как выбрать сайты для VPN?",
       "a": "в Windows и Android можно выбрать, что идёт через VPN, а что — через обычный интернет.\n\n1. на главном экране найдите блок «что защищаем» и выберите «выбранное».\n\n2. нажмите «выбрать сервисы» и отметьте нужные, например YouTube и Telegram. остальные сайты и приложения будут работать через обычный интернет.\n\n3. сохраните список и заново подключите VPN — сохранение отключает текущее соединение.\n\nесли хотите наоборот — оставить отдельные сервисы без VPN, а всё остальное защитить — выберите «кроме выбранного». у этих двух режимов отдельные списки. режим «всё» защищает весь трафик.\n\nесли нужного сайта нет в списке, добавьте его адрес: example.com — сам сайт, *.example.com — его поддомены. у сервиса может быть несколько адресов, поэтому готовый вариант обычно удобнее.\n\nв DEMO доступен только весь трафик. в iOS и macOS выбор отдельных сервисов пока недоступен. расширение Chrome защищает только браузер.",
       "links": []
     },
@@ -107,7 +107,7 @@
     },
     {
       "id": "payments",
-      "q": "how do i renew my subscription or request a refund?",
+      "q": "how do I renew or get a refund?",
       "a": "read the [payment and renewal rules] for details.\n\nyour plan and expiry date are shown in the app.\n\nrenew on the website with a separate payment; there are no automatic charges.\n\nfor payment, access or refund questions, contact [support].",
       "links": [
         "payments",
@@ -116,7 +116,7 @@
     },
     {
       "id": "split",
-      "q": "how do I use the VPN only for the sites and apps I need?",
+      "q": "how do I choose sites for the VPN?",
       "a": "in Windows and Android, you can choose what uses the VPN and what uses your regular internet connection.\n\n1. on the home screen, find “what to protect” and choose “selected”.\n\n2. tap “choose services” and select what you need, such as YouTube and Telegram. other sites and apps will use your regular connection.\n\n3. save the list and reconnect the VPN — saving disconnects the current connection.\n\nto do the opposite — leave some services outside the VPN and protect everything else — choose “except selected”. these two modes keep separate lists. “all” protects all traffic.\n\nif a site is missing, add its address: example.com for the site itself, *.example.com for its subdomains. a service can use several addresses, so a preset is usually easier.\n\nDEMO supports all traffic only. choosing individual services is not yet available on iOS or macOS. the Chrome extension protects only the browser.",
       "links": []
     },
@@ -172,7 +172,7 @@
     },
     {
       "id": "payments",
-      "q": "wie verlängere ich mein abonnement oder beantrage eine erstattung?",
+      "q": "wie verlängere ich oder erhalte Geld zurück?",
       "a": "details findest du in den [Zahlungs- und Verlängerungsbedingungen].\n\ntarif und Ablaufdatum stehen in der App.\n\ndu verlängerst auf der Website mit einer separaten Zahlung, ohne automatische Abbuchungen.\n\nbei Fragen zu Zahlungen, Zugang oder Erstattungen schreibe dem [Support].",
       "links": [
         "payments",
@@ -181,7 +181,7 @@
     },
     {
       "id": "split",
-      "q": "wie nutze ich das VPN nur für bestimmte Websites und Apps?",
+      "q": "wie wähle ich Websites für das VPN?",
       "a": "in Windows und Android kannst du wählen, was das VPN und was deine normale Internetverbindung nutzt.\n\n1. öffne auf der Startseite „Was schützen“ und wähle „Ausgewählte“.\n\n2. tippe auf „Dienste auswählen“ und markiere zum Beispiel YouTube und Telegram. andere Websites und Apps nutzen die normale Verbindung.\n\n3. speichere die Liste und verbinde das VPN erneut — beim Speichern wird die aktuelle Verbindung getrennt.\n\nfür das Gegenteil — einzelne Dienste ohne VPN, alles andere geschützt — wähle „Außer ausgewählten“. die beiden Modi haben getrennte Listen. „Alles“ schützt den gesamten Verkehr.\n\nfehlt eine Website, füge ihre Adresse hinzu: example.com für die Website, *.example.com für ihre Subdomains. ein Dienst kann mehrere Adressen nutzen, deshalb ist eine Vorlage meist einfacher.\n\nDEMO unterstützt nur den gesamten Verkehr. unter iOS und macOS lassen sich noch keine einzelnen Dienste auswählen. die Chrome-Erweiterung schützt nur den Browser.",
       "links": []
     },
@@ -237,7 +237,7 @@
     },
     {
       "id": "payments",
-      "q": "comment renouveler l’abonnement ou demander un remboursement ?",
+      "q": "comment renouveler ou être remboursé ?",
       "a": "consultez les [règles de paiement et de renouvellement].\n\nle forfait et la date de fin sont indiqués dans l’application.\n\nle renouvellement se fait sur le site par un paiement séparé, sans prélèvement automatique.\n\npour toute question sur les paiements, l’accès ou les remboursements, contactez le [support].",
       "links": [
         "payments",
@@ -246,7 +246,7 @@
     },
     {
       "id": "split",
-      "q": "comment utiliser le VPN seulement pour certains sites et applications ?",
+      "q": "comment choisir les sites pour le VPN ?",
       "a": "sur Windows et Android, vous pouvez choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle.\n\n1. sur l’écran d’accueil, ouvrez « que protéger » et choisissez « sélectionnés ».\n\n2. appuyez sur « choisir les services » et sélectionnez, par exemple, YouTube et Telegram. les autres sites et applications utiliseront la connexion habituelle.\n\n3. enregistrez la liste et reconnectez le VPN : l’enregistrement coupe la connexion en cours.\n\npour faire l’inverse — laisser certains services sans VPN et protéger le reste — choisissez « sauf sélectionnés ». les deux modes ont des listes séparées. « tout » protège tout le trafic.\n\nsi un site manque, ajoutez son adresse : example.com pour le site, *.example.com pour ses sous-domaines. un service peut utiliser plusieurs adresses ; un choix prédéfini est souvent plus simple.\n\nDEMO protège uniquement tout le trafic. la sélection de services n’est pas encore disponible sur iOS et macOS. l’extension Chrome protège uniquement le navigateur.",
       "links": []
     },
@@ -302,7 +302,7 @@
     },
     {
       "id": "payments",
-      "q": "¿cómo renuevo la suscripción o solicito un reembolso?",
+      "q": "¿cómo renuevo o pido un reembolso?",
       "a": "consulta las [condiciones de pago y renovación].\n\nel plan y la fecha de vencimiento aparecen en la aplicación.\n\nla renovación se realiza en la web con un pago separado, sin cargos automáticos.\n\npara consultas sobre pagos, acceso o reembolsos, escribe a [soporte].",
       "links": [
         "payments",
@@ -311,7 +311,7 @@
     },
     {
       "id": "split",
-      "q": "¿cómo uso el VPN solo para los sitios y aplicaciones que necesito?",
+      "q": "¿cómo elijo sitios para el VPN?",
       "a": "en Windows y Android puedes elegir qué usa el VPN y qué usa tu conexión habitual.\n\n1. en la pantalla de inicio, busca «qué proteger» y elige «seleccionados».\n\n2. pulsa «elegir servicios» y marca los que necesites, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usarán la conexión habitual.\n\n3. guarda la lista y vuelve a conectar el VPN: al guardar se corta la conexión actual.\n\npara hacer lo contrario — dejar algunos servicios fuera del VPN y proteger todo lo demás — elige «excepto seleccionados». los dos modos tienen listas separadas. «todo» protege todo el tráfico.\n\nsi falta un sitio, añade su dirección: example.com para el sitio, *.example.com para sus subdominios. un servicio puede usar varias direcciones, por lo que suele ser más fácil elegir uno predefinido.\n\nDEMO solo permite proteger todo el tráfico. iOS y macOS aún no permiten elegir servicios individuales. la extensión de Chrome solo protege el navegador.",
       "links": []
     },
@@ -376,7 +376,7 @@
     },
     {
       "id": "split",
-      "q": "怎样只让需要的网站和应用使用 VPN？",
+      "q": "如何选择使用 VPN 的网站？",
       "a": "在 Windows 和 Android 中，可以选择哪些内容走 VPN，哪些使用普通网络。\n\n1. 在主页找到“保护哪些流量”，选择“所选”。\n\n2. 点击“选择服务”，勾选需要的服务，例如 YouTube 和 Telegram。其他网站和应用将使用普通网络。\n\n3. 保存列表，然后重新连接 VPN。保存时会断开当前连接。\n\n如果想反过来，让少数服务不走 VPN、其他内容都受保护，请选择“除所选外”。这两种模式分别保存列表。“全部”会保护全部流量。\n\n如果列表中没有需要的网站，可以添加地址：example.com 代表网站本身，*.example.com 代表其子域名。一个服务可能使用多个地址，因此通常选用预设服务更方便。\n\nDEMO 只支持保护全部流量。iOS 和 macOS 暂不支持选择单个服务。Chrome 扩展只保护浏览器。",
       "links": []
     },

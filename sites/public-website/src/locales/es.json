@@ -156,7 +156,7 @@
       },
       {
         "id": "payments",
-        "q": "¿cómo renuevo la suscripción o solicito un reembolso?",
+        "q": "¿cómo renuevo o pido un reembolso?",
         "a": "consulta las [condiciones de pago y renovación].\n\nel plan y la fecha de vencimiento aparecen en la aplicación.\n\nla renovación se realiza en la web con un pago separado, sin cargos automáticos.\n\npara consultas sobre pagos, acceso o reembolsos, escribe a [soporte].",
         "links": [
           "payments",
@@ -165,7 +165,7 @@
       },
       {
         "id": "split",
-        "q": "¿cómo uso el VPN solo para los sitios y aplicaciones que necesito?",
+        "q": "¿cómo elijo sitios para el VPN?",
         "a": "en Windows y Android puedes elegir qué usa el VPN y qué usa tu conexión habitual.\n\n1. en la pantalla de inicio, busca «qué proteger» y elige «seleccionados».\n\n2. pulsa «elegir servicios» y marca los que necesites, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usarán la conexión habitual.\n\n3. guarda la lista y vuelve a conectar el VPN: al guardar se corta la conexión actual.\n\npara hacer lo contrario — dejar algunos servicios fuera del VPN y proteger todo lo demás — elige «excepto seleccionados». los dos modos tienen listas separadas. «todo» protege todo el tráfico.\n\nsi falta un sitio, añade su dirección: example.com para el sitio, *.example.com para sus subdominios. un servicio puede usar varias direcciones, por lo que suele ser más fácil elegir uno predefinido.\n\nDEMO solo permite proteger todo el tráfico. iOS y macOS aún no permiten elegir servicios individuales. la extensión de Chrome solo protege el navegador.",
         "links": []
       },
