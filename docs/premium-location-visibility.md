@@ -45,8 +45,11 @@ Disabled rows are skipped by keyboard selection. Windows and Android reset a
 previously selected locked country to AUTO; Apple checks refreshed selection and
 connection, and Chrome checks cached selections before allocating a proxy lease.
 Apple uses a native scrollable sheet/popover because system menus flatten custom
-blur content. Android uses platform blur from API 31 and a composited blur
-fallback on API 26–30. All six languages contain the new explanation.
+blur content. Its text follows the sheet appearance, and the Premium explanation
+stays outside the disabled button so native dimming cannot obscure it. Native Mac
+review captures the picker in both appearances. Android uses platform blur from
+API 31 and a composited blur fallback on API 26–30. All six languages contain the
+new explanation.
 
 Unit/API tests cover opt-in/legacy behavior, mixed-country ratings, all-locked
 AUTO, FREE/DEMO locks and Premium/Platinum selection. PostgreSQL integration checks
