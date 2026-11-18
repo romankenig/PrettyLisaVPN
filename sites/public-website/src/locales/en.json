@@ -115,28 +115,67 @@
     "contactButton": "contact support",
     "questions": [
       {
+        "id": "connect",
         "q": "how do i start?",
-        "a": "download the [android] or [windows] app, sign in with the code from your email and choose a country. the free plan gives your account one shared hour of connection time per day."
+        "a": "download the app, sign in with the code from your email and choose a country.\n\nthe free plan gives your account one shared hour of VPN each day.",
+        "links": []
       },
       {
-        "q": "what does premium include?",
-        "a": "premium has no daily time limit during the paid period. a subscription lasts one calendar month and is renewed manually. your plan and access period are shown in the app."
+        "id": "free",
+        "q": "what does free include?",
+        "a": "one hour of VPN per day for the whole account. the allowance resets at 00:00 UTC.",
+        "links": []
       },
       {
+        "id": "premium",
+        "q": "what does ⭐ PREMIUM include?",
+        "a": "♾️ VPN with no time or data limits during your paid period.\n\n🌍 access to all available countries and PREMIUM servers.\n\n📱 up to five devices on one account.\n\n🔀 all or selected traffic on Windows and Android — also available in FREE.\n\n🛡️ no ads.\n\nyour subscription lasts one calendar month. renew manually on the website; your plan and expiry date are shown in the app. FREE also includes the same device limit and no ads.",
+        "links": []
+      },
+      {
+        "id": "protect",
         "q": "what does a vpn protect?",
-        "a": "vpn encrypts traffic between your device and the service server, including on public wi-fi. also use https, app updates and secure sign-in methods to protect your accounts. vpn does not replace device security."
+        "a": "vpn encrypts traffic between your device and the service server, including on public wi-fi.\n\nalso use https, app updates and secure sign-in methods to protect your accounts.\n\nvpn does not replace device security.\n\nthe Chrome extension protects only ordinary browser web traffic. other apps and incognito traffic are not protected by the extension.",
+        "links": []
       },
       {
+        "id": "troubleshoot",
         "q": "vpn will not connect. what should i do?",
-        "a": "check your internet connection without vpn and update the app. if the error persists, send its text and time to [support]."
+        "a": "1. disconnect and reconnect the VPN. try protecting all traffic or only selected services, if your app offers that choice.\n\n2. change your internet connection: switch from Wi-Fi to mobile data or the other way around, then reconnect the VPN.\n\n3. reset the connection types in advanced settings, then reconnect. try this a few times. if that option is missing, go to the next step.\n\n4. if it still does not work, contact [support] — we will help.",
+        "links": [
+          "support"
+        ]
       },
       {
+        "id": "code",
         "q": "the sign-in code has not arrived?",
-        "a": "check your email address and spam folder. wait until you can request a new code. if the message does not arrive, contact [support] from your account email address."
+        "a": "check your email address and spam folder.\n\nwait until you can request a new code.\n\nif the message does not arrive, contact [support] from your account email address.",
+        "links": [
+          "support"
+        ]
       },
       {
-        "q": "how do i renew my subscription or request a refund?",
-        "a": "see the [payment and renewal rules] for details. your plan and expiry date are available in the app. renewal requires a separate payment, with no automatic charges. contact [support] about payments, access or refunds."
+        "id": "payments",
+        "q": "how do I renew or get a refund?",
+        "a": "read the [payment and renewal rules] for details.\n\nyour plan and expiry date are shown in the app.\n\nrenew on the website with a separate payment; there are no automatic charges.\n\nfor payment, access or refund questions, contact [support].",
+        "links": [
+          "payments",
+          "support"
+        ]
+      },
+      {
+        "id": "split",
+        "q": "how do I choose sites for the VPN?",
+        "a": "in Windows and Android, you can choose what uses the VPN and what uses your regular internet connection.\n\n1. on the home screen, find “what to protect” and choose “selected”.\n\n2. tap “choose services” and select what you need, such as YouTube and Telegram. other sites and apps will use your regular connection.\n\n3. save the list and reconnect the VPN — saving disconnects the current connection.\n\nto do the opposite — leave some services outside the VPN and protect everything else — choose “except selected”. these two modes keep separate lists. “all” protects all traffic.\n\nif a site is missing, add its address: example.com for the site itself, *.example.com for its subdomains. a service can use several addresses, so a preset is usually easier.\n\nDEMO supports all traffic only. choosing individual services is not yet available on iOS or macOS. the Chrome extension protects only the browser.",
+        "links": []
+      },
+      {
+        "id": "support",
+        "q": "how do I contact support?",
+        "a": "open the [support form] in the app or email help@prettylisavpn.com. describe the problem and when it happened.",
+        "links": [
+          "support"
+        ]
       }
     ]
   },

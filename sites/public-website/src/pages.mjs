@@ -44,18 +44,10 @@ const money = (minor, currency, lang) =>
     currency,
     maximumFractionDigits: 0,
   }).format(minor / 100);
-function faqAnswer(lang, answer, index) {
-  const targets = [
-    [
-      routeFor(lang, "/download/android/"),
-      routeFor(lang, "/download/windows/"),
-    ],
-    [],
-    [],
-    [mail],
-    [mail],
-    [routeFor(lang, "/legal/payments/"), mail],
-  ][index];
+function faqAnswer(lang, answer, links) {
+  const targets = links.map((link) =>
+    link === "support" ? mail : routeFor(lang, "/legal/payments/"),
+  );
   let linkIndex = 0;
   const paragraphs = answer.split("\n\n").map(
     (paragraph) =>
@@ -64,13 +56,13 @@ function faqAnswer(lang, answer, index) {
         .map((part) => {
           if (!part.startsWith("[")) return text(part);
           const target = targets[linkIndex++];
-          if (!target) throw new Error(`Unexpected FAQ link: ${lang}/${index}`);
+          if (!target) throw new Error(`Unexpected FAQ link: ${lang}`);
           return `<a href="${target}">${text(part.slice(1, -1))}</a>`;
         })
         .join("")}</p>`,
   );
   if (linkIndex !== targets.length)
-    throw new Error(`Missing FAQ link: ${lang}/${index}`);
+    throw new Error(`Missing FAQ link: ${lang}`);
   return `<div class="faq-answer">${paragraphs.join("")}</div>`;
 }
 const icons = {
@@ -133,7 +125,7 @@ function home(lang) {
   <section class="features section wrap" id="features"><div class="section-heading"><h2>${lines(t.features.title)}</h2></div><div class="feature-layout"><div class="feature-copy">${t.features.items.map((item, i) => `<article><span class="feature-number">0${i + 1}</span><div><h3>${text(item.title)}</h3><p>${text(item.text)}</p></div></article>`).join("")}</div>${devicePair(t)}</div></section>
   ${pricing(lang)}
   <section class="platforms-section" id="download"><div class="section wrap"><div class="section-heading"><h2><strong class="account-highlight">${text(t.platforms.account)}</strong> ${text(t.platforms.title)}</h2><p>${text(t.platforms.text)}</p></div><div class="platform-layout"><div class="platform-grid">${platforms.map((p) => platformCard(lang, p)).join("")}</div>${devicePair(t)}</div></div></section>
-  <section class="help section wrap" id="help"><div class="section-heading"><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a }, index) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, index)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
+  <section class="help section wrap" id="help"><div class="section-heading"><h2 class="faq-title">${text(t.help.title)}</h2></div><div class="help-layout"><div class="questions">${t.help.questions.map(({ q, a, links }) => `<details><summary>${text(q)}<span aria-hidden="true">+</span></summary>${faqAnswer(lang, a, links)}</details>`).join("")}</div><aside class="support-card"><img src="/assets/lock.svg" width="36" height="48" alt=""><h3>${text(t.help.contactTitle)}</h3><p>${text(t.help.contactText)}</p><a class="button" href="${mail}">${text(t.help.contactButton)}</a><a class="support-email" href="${mail}">help@prettylisavpn.com</a></aside></div></section>`,
   );
 }
 function download(lang, platform) {

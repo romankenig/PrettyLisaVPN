@@ -119,6 +119,12 @@ final class AppleUITests: XCTestCase {
             app.buttons["nav-about"].tap()
             XCTAssertTrue(app.buttons["about-support"].waitForExistence(timeout: 5))
             capture(app, "reference-about-\(theme)")
+            let premiumFAQ = app.buttons["faq-premium"]
+            for _ in 0..<3 where !premiumFAQ.isHittable { app.swipeUp() }
+            XCTAssertTrue(premiumFAQ.label.contains("PREMIUM"))
+            premiumFAQ.tap()
+            capture(app, "reference-faq-premium-\(theme)")
+            premiumFAQ.tap()
             for _ in 0..<3 where !app.buttons["about-support"].isHittable { app.swipeUp() }
             app.buttons["about-support"].tap()
             XCTAssertTrue(app.textFields["тема"].waitForExistence(timeout: 5))

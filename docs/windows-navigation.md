@@ -1175,3 +1175,14 @@ The existing registration transition and proxy settings are unchanged.
 
 No new screen, route, entitlement or backend integration is introduced. Windows
 and backend versions are unchanged. See [handoff](chrome-devices-fix.md).
+
+## Shared FAQ update — Windows 0.31.2
+
+The About selector now shows the same nine localized questions as the website
+and other clients, generated from `content/faq/catalog.json`. Answers use separate
+paragraphs; PREMIUM keeps uppercase. FAQ support links open the existing support
+dialog, retaining the DEMO registration guard. Payment-rule links call the existing
+`open_public_document` command with `payments` and the selected language; failures
+show the existing document-open error. The old FAQ home/subscription links are
+replaced by instructions and public payment rules. No route or auth guard is added;
+no backend integration is pending. See [FAQ handoff](shared-faq.md).

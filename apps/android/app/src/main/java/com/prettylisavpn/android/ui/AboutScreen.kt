@@ -14,6 +14,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import android.content.Intent
+import androidx.core.net.toUri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.LinkAnnotation
@@ -29,6 +32,9 @@ import com.prettylisavpn.android.R
 @Composable
 internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = "about-support", navigate: (String) -> Unit = {}) {
     val tr = strings()
+    val context = LocalContext.current
+    val language by LocalPresentation.current.preference.language.collectAsState()
+    var linkFailed by remember { mutableStateOf(false) }
     val backend by LocalPresentation.current.version.collectAsState()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         Column(
@@ -44,14 +50,7 @@ internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = 
                 }
                 BrandCard(Modifier.heightIn(min = 96.dp).testTag("about-faq")) {
                     Text(tr(R.string.about_faq), style = MaterialTheme.typography.titleLarge, modifier = Modifier.testTag("about-faq-title"))
-                    val questions = listOf(
-                        Triple(R.string.faq_connect_q, R.string.faq_connect_a, "HOME"),
-                        Triple(R.string.faq_free_q, R.string.faq_free_a, ""),
-                        Triple(R.string.faq_manage_q, R.string.faq_manage_a, "SUBSCRIPTION"),
-                        Triple(R.string.faq_cancel_q, R.string.faq_cancel_a, "SUBSCRIPTION"),
-                        Triple(R.string.faq_split_q, R.string.faq_split_a, "HOME"),
-                        Triple(R.string.faq_support_q, R.string.faq_support_a, "SUPPORT"),
-                    )
+                    val questions = faqEntries
                     var question by rememberSaveable { mutableIntStateOf(0) }
                     var expanded by remember { mutableStateOf(false) }
                     val entry = questions[question]
@@ -63,16 +62,20 @@ internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = 
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Brand.Black),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         ) {
-                            Text(tr(entry.first), Modifier.weight(1f))
+                            Text(tr(entry.question), Modifier.weight(1f))
                             Text("⌄", Modifier.padding(start = 10.dp))
                         }
                         DropdownMenu(expanded, { expanded = false }) {
-                            questions.forEachIndexed { index, item -> DropdownMenuItem(text = { Text(tr(item.first)) }, onClick = { question = index; expanded = false }, modifier = Modifier.testTag("faq-option-$index")) }
+                            questions.forEachIndexed { index, item -> DropdownMenuItem(text = { Text(tr(item.question)) }, onClick = { question = index; expanded = false }, modifier = Modifier.testTag("faq-option-$index")) }
                         }
                     }
-                    FaqAnswer(tr(entry.second)) {
-                        if (entry.third == "SUPPORT") support() else navigate(entry.third)
+                    FaqAnswer(tr(entry.answer)) { index ->
+                        if (entry.links[index] == "support") support()
+                        else linkFailed = runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, legalDocumentUrl(language.code, "payments").toUri()))
+                        }.isFailure
                     }
+                    if (linkFailed) Text(tr(R.string.legal_open_failed), color = Brand.PersianRed)
                 }
                 LegalDocuments()
                 BrandCard(Modifier.testTag("about-help")) {
@@ -88,17 +91,17 @@ internal fun AboutScreen(tag: String, support: () -> Unit, supportTag: String = 
 }
 
 @Composable
-private fun FaqAnswer(answer: String, followLink: () -> Unit) {
+private fun FaqAnswer(answer: String, followLink: (Int) -> Unit) {
     val content = buildAnnotatedString {
         var start = 0
-        Regex("\\[([^\\]]+)\\]").findAll(answer).forEach { match ->
+        Regex("\\[([^\\]]+)\\]").findAll(answer).forEachIndexed { index, match ->
             append(answer.substring(start, match.range.first))
             withLink(LinkAnnotation.Clickable(
                 tag = "faq-navigation",
                 styles = TextLinkStyles(style = SpanStyle(
                     color = Brand.PurpleHeart, textDecoration = TextDecoration.Underline,
                 )),
-                linkInteractionListener = { followLink() },
+                linkInteractionListener = { followLink(index) },
             )) { append(match.groupValues[1]) }
             start = match.range.last + 1
         }

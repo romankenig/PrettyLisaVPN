@@ -482,3 +482,18 @@ code,
   border: 1px solid #ce2026;
   color: #b81820;
 }
+
+.faq-entry,
+.faq-entry summary {
+  text-transform: none;
+}
+.faq-inline-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5f22d9;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -11,6 +11,9 @@ import { SupportError } from "../support/client";
 import { createApiClient } from "../api/client";
 import { loadConfig } from "../config/config";
 import { ApplicationProvider } from "../state/application";
+import { invoke } from "@tauri-apps/api/core";
+import { languagePreference } from "../i18n/language";
+import catalog from "../faq.json";
 import { About } from "../ui/About";
 import { MemoryRouter } from "react-router-dom";
 import {
@@ -24,7 +27,10 @@ import {
   createTestVpnConnection,
 } from "./fakes";
 
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+
 beforeEach(() => {
+  vi.mocked(invoke).mockReset().mockResolvedValue(undefined);
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute("open", "");
   };
@@ -97,29 +103,31 @@ describe("about and support", () => {
     expect(container.querySelector(".eyebrow")).toBeNull();
     const faq = within(screen.getByRole("region", { name: "FAQ" }));
     expect(faq.getByRole("combobox", { name: "вопрос" })).toHaveValue("0");
-    expect(faq.getByRole("link", { name: "главной" })).toHaveAttribute(
-      "href",
-      "/",
-    );
+    expect(faq.getAllByRole("option")).toHaveLength(9);
+    expect(faq.getByText(/скачайте приложение, войдите/)).toBeInTheDocument();
     fireEvent.change(faq.getByRole("combobox"), { target: { value: "1" } });
     expect(faq.getByText(/00:00 UTC/)).toBeInTheDocument();
-    expect(faq.queryByRole("link")).not.toBeInTheDocument();
     fireEvent.change(faq.getByRole("combobox"), { target: { value: "2" } });
-    const subscriptionLink = faq.getByRole("link", { name: "подписке" });
-    expect(subscriptionLink.closest("p")).not.toBeNull();
-    expect(subscriptionLink).toHaveAttribute("href", "/settings/subscription");
+    expect(faq.getByRole("option", { selected: true })).toHaveTextContent(
+      "⭐ PREMIUM",
+    );
+    expect(faq.getByText(/♾️ VPN без/)).toBeInTheDocument();
+    expect(container.querySelectorAll(".faq-answer p")).toHaveLength(6);
     fireEvent.change(faq.getByRole("combobox"), { target: { value: "4" } });
+    expect(container.querySelectorAll(".faq-answer p")).toHaveLength(4);
+    expect(faq.getByText(/^3\. в расширенных/)).toBeInTheDocument();
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "6" } });
     expect(
-      faq.getByText(/«выбранное» — через VPN идут только/),
+      faq.getByRole("button", { name: "в правилах оплаты и продления" }),
     ).toBeInTheDocument();
-    expect(faq.getByText(/«кроме выбранного» — наоборот/)).toBeInTheDocument();
+    expect(faq.getByRole("button", { name: "поддержку" })).toBeInTheDocument();
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "7" } });
+    expect(faq.getByText(/^1\. на главном/)).toBeInTheDocument();
     expect(
-      faq.getByText(/у двух режимов отдельные списки/),
+      faq.getByText(/у этих двух режимов отдельные списки/),
     ).toBeInTheDocument();
-    expect(
-      faq.getByRole("link", { name: "главной" }).closest("p"),
-    ).not.toBeNull();
-    fireEvent.change(faq.getByRole("combobox"), { target: { value: "5" } });
+    expect(faq.getByText(/example.com/)).toBeInTheDocument();
+    fireEvent.change(faq.getByRole("combobox"), { target: { value: "8" } });
     fireEvent.click(faq.getByRole("button", { name: "форму поддержки" }));
     expect(
       screen.getByRole("dialog", { name: "помощь и поддержка" }),
@@ -127,6 +135,33 @@ describe("about and support", () => {
     expect(
       screen.getByText("inspired by love of my life, Lisa"),
     ).toBeInTheDocument();
+  });
+
+  it("uses the same questions in every language and opens the localized payment rules", async () => {
+    setup();
+    for (const language of Object.keys(catalog) as (keyof typeof catalog)[]) {
+      act(() => languagePreference.choose(language));
+      const faq = within(screen.getByRole("region", { name: "FAQ" }));
+      expect(
+        faq.getAllByRole("option").map((option) => option.textContent),
+      ).toEqual(catalog[language].map((entry) => entry.q));
+      fireEvent.change(faq.getByRole("combobox"), { target: { value: "6" } });
+      fireEvent.click(faq.getAllByRole("button")[0]);
+      await waitFor(() =>
+        expect(invoke).toHaveBeenLastCalledWith("open_public_document", {
+          document: "payments",
+          language,
+        }),
+      );
+    }
+    act(() => languagePreference.choose("ru"));
+    vi.mocked(invoke).mockRejectedValueOnce(new Error("unavailable"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "в правилах оплаты и продления" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "не удалось открыть документ",
+    );
   });
 
   it("does not send or fake success when the service is not configured", () => {
