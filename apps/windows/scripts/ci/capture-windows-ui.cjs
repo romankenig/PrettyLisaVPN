@@ -141,6 +141,13 @@ async function screenshot(name) {
       "button, select, option, .method-checkbox, .connection-attempt, .connection-info, .upgrade-plan",
     )) {
       if (
+        button.matches(".faq-select, .faq-select option, .faq-answer button")
+      ) {
+        if (getComputedStyle(button).textTransform !== "none")
+          throw new Error("FAQ must preserve PREMIUM and original name casing");
+        continue;
+      }
+      if (
         getComputedStyle(button).textTransform !== "lowercase" &&
         !button.matches(".plan-currencies button")
       )

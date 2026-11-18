@@ -134,7 +134,7 @@
 "faq_free_q" = "what does free include?";
 "faq_payments_a" = "read the [payment and renewal rules] for details.\n\nyour plan and expiry date are shown in the app.\n\nrenew on the website with a separate payment; there are no automatic charges.\n\nfor payment, access or refund questions, contact [support].";
 "faq_payments_q" = "how do i renew my subscription or request a refund?";
-"faq_premium_a" = "♾️ VPN with no daily time limit during your paid period.\n\n🌍 access to all available countries and PREMIUM servers.\n\n📱 up to five devices on one account.\n\n🔀 all or selected traffic on Windows and Android — also available in FREE.\n\n🛡️ no ads.\n\nyour subscription lasts one calendar month. renew manually on the website; your plan and expiry date are shown in the app. FREE also includes the same device limit and no ads.";
+"faq_premium_a" = "♾️ VPN with no time or data limits during your paid period.\n\n🌍 access to all available countries and PREMIUM servers.\n\n📱 up to five devices on one account.\n\n🔀 all or selected traffic on Windows and Android — also available in FREE.\n\n🛡️ no ads.\n\nyour subscription lasts one calendar month. renew manually on the website; your plan and expiry date are shown in the app. FREE also includes the same device limit and no ads.";
 "faq_premium_q" = "what does ⭐ PREMIUM include?";
 "faq_protect_a" = "vpn encrypts traffic between your device and the service server, including on public wi-fi.\n\nalso use https, app updates and secure sign-in methods to protect your accounts.\n\nvpn does not replace device security.\n\nthe Chrome extension protects only ordinary browser web traffic. other apps and incognito traffic are not protected by the extension.";
 "faq_protect_q" = "what does a vpn protect?";

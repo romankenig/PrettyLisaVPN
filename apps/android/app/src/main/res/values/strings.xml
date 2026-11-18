@@ -361,7 +361,7 @@
     <string name="faq_free_q">what does free include?</string>
     <string name="faq_free_a">one hour of VPN per day for the whole account. the allowance resets at 00:00 UTC.</string>
     <string name="faq_premium_q">what does ⭐ PREMIUM include?</string>
-    <string name="faq_premium_a">♾️ VPN with no daily time limit during your paid period.\n\n🌍 access to all available countries and PREMIUM servers.\n\n📱 up to five devices on one account.\n\n🔀 all or selected traffic on Windows and Android — also available in FREE.\n\n🛡️ no ads.\n\nyour subscription lasts one calendar month. renew manually on the website; your plan and expiry date are shown in the app. FREE also includes the same device limit and no ads.</string>
+    <string name="faq_premium_a">♾️ VPN with no time or data limits during your paid period.\n\n🌍 access to all available countries and PREMIUM servers.\n\n📱 up to five devices on one account.\n\n🔀 all or selected traffic on Windows and Android — also available in FREE.\n\n🛡️ no ads.\n\nyour subscription lasts one calendar month. renew manually on the website; your plan and expiry date are shown in the app. FREE also includes the same device limit and no ads.</string>
     <string name="faq_protect_q">what does a vpn protect?</string>
     <string name="faq_protect_a">vpn encrypts traffic between your device and the service server, including on public wi-fi.\n\nalso use https, app updates and secure sign-in methods to protect your accounts.\n\nvpn does not replace device security.\n\nthe Chrome extension protects only ordinary browser web traffic. other apps and incognito traffic are not protected by the extension.</string>
     <string name="faq_troubleshoot_q">vpn will not connect. what should i do?</string>
