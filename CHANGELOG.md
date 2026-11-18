@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Germany PREMIUM node — infrastructure, version unchanged
+
+- Enroll `digocean-de-001` (`201.79.12.109`, DE) for Premium/Platinum with
+  WireGuard, managed transports and the browser-only HTTPS proxy. Preserve the
+  separate German FREE exit and use a conservative five-lease admission limit
+  for this 512 MiB VPS. See [enrollment evidence](docs/digocean-de-001-enrollment.md).
+
 ### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
 
 - Buy, renew and subscription management open the website for every provider mode.
