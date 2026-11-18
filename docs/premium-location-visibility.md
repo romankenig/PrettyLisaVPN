@@ -56,6 +56,8 @@ AUTO, FREE/DEMO locks and Premium/Platinum selection. PostgreSQL integration che
 cover the actual fleet catalog and Chrome proxy filtering. UI review scenarios
 capture FREE/DEMO Windows, Android and Chrome lists and Apple's native picker;
 they use synthetic account data and do not claim a real VPN acceptance run.
+Apple's two-device UI step allows 30 minutes for cold Simulator startup, both full
+test suites and final theme captures; all checks and the overall job limit remain.
 
 The task PR records final product HEAD, actual build/temporary merge SHA, original
 run/attempt, all workflow/job results and native screenshots after the last push.
