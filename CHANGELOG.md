@@ -6,6 +6,15 @@
 
 ## Unreleased
 
+### Premium location visibility — backend 0.54.0 / client PATCH updates
+
+- Keep Premium-only countries visible to FREE and DEMO with blurred labels and
+  a readable Premium explanation, while preventing selection. Preserve FREE
+  country access, DEMO AUTO and existing registration transitions.
+- Add an opt-in catalog field without changing legacy responses or VPN admission.
+  Update Windows 0.31.3, Android 0.30.3/code 62, Chrome 0.5.2, iOS 0.6.2 and macOS
+  0.5.2. See [contract and validation handoff](docs/premium-location-visibility.md).
+
 ### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
 
 - Buy, renew and subscription management open the website for every provider mode.

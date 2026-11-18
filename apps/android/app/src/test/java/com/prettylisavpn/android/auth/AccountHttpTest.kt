@@ -99,10 +99,18 @@ class AccountHttpTest {
         server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"code":"invalid_session"}}"""))
         try { api.messages("synthetic");fail() } catch(e:AuthFailure) { assertEquals("invalid_access_token",e.code) }
     }
+    @Test fun lockedCountriesAreVisibleAndCannotClaimAvailability()=runBlocking {
+        server.enqueue(MockResponse().setBody("""{"autopilot":{"quality":0,"available":false},"countries":[{"country_code":"AT","quality":0,"available":false,"premium_required":true}]}"""))
+        val country=api.locations("synthetic").countries.single()
+        assertTrue(country.premiumRequired);assertFalse(country.available)
+        assertEquals("true",server.takeRequest().requestUrl!!.queryParameter("include_locked"))
+        server.enqueue(MockResponse().setBody("""{"autopilot":{"quality":0,"available":false},"countries":[{"country_code":"AT","quality":90,"available":true,"premium_required":true}]}"""))
+        try { api.locations("synthetic");fail() } catch(e:AuthFailure) { assertEquals("invalid_response",e.code) }
+    }
     @Test fun countryAvailabilityAndUploadProgressUseExistingApi()=runBlocking {
         server.enqueue(MockResponse().setBody("""{"autopilot":{"quality":80,"available":true},"countries":[{"country_code":"DE","quality":80,"available":true}]}"""))
         val options=api.locations("synthetic");assertEquals("DE",options.countries.single().code);assertEquals(80,options.autopilotQuality)
-        assertEquals("/vpn/countries",server.takeRequest().path)
+        assertEquals("/vpn/countries?include_locked=true",server.takeRequest().path)
         val id="20000000-0000-0000-0000-000000000005"
         server.enqueue(MockResponse().setBody("""{"request_id":"$id","status":"ACCEPTED"}"""))
         val events=mutableListOf<Pair<Long,Long>>()

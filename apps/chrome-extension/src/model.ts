@@ -17,6 +17,7 @@ export interface Country {
   country_code: string;
   available: boolean;
   quality: number;
+  premium_required?: boolean;
 }
 export interface Device {
   id: string;

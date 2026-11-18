@@ -385,7 +385,8 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.",
     "управлять устройствами": "управлять устройствами",
     "удалить данные входа с этого устройства": "удалить данные входа с этого устройства",
-    "ожидает свободного места": "ожидает свободного места"
+    "ожидает свободного места": "ожидает свободного места",
+    "доступно только в Premium": "доступно только в Premium"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -773,7 +774,8 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "remove a device to use the app on this device.",
     "управлять устройствами": "manage devices",
     "удалить данные входа с этого устройства": "remove sign-in data from this device",
-    "ожидает свободного места": "waiting for a free slot"
+    "ожидает свободного места": "waiting for a free slot",
+    "доступно только в Premium": "available only with Premium"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1161,7 +1163,8 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "请移除一个设备，即可在此设备上使用应用。",
     "управлять устройствами": "管理设备",
     "удалить данные входа с этого устройства": "移除此设备上的登录数据",
-    "ожидает свободного места": "等待可用名额"
+    "ожидает свободного места": "等待可用名额",
+    "доступно только в Premium": "仅限 Premium 使用"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1549,7 +1552,8 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "elimina un dispositivo para usar la aplicación en este dispositivo.",
     "управлять устройствами": "gestionar dispositivos",
     "удалить данные входа с этого устройства": "eliminar los datos de acceso de este dispositivo",
-    "ожидает свободного места": "esperando un espacio libre"
+    "ожидает свободного места": "esperando un espacio libre",
+    "доступно только в Premium": "disponible solo con Premium"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1937,7 +1941,8 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "entferne ein Gerät, um die App auf diesem Gerät zu verwenden.",
     "управлять устройствами": "geräte verwalten",
     "удалить данные входа с этого устройства": "anmeldedaten von diesem Gerät entfernen",
-    "ожидает свободного места": "wartet auf einen freien Platz"
+    "ожидает свободного места": "wartet auf einen freien Platz",
+    "доступно только в Premium": "nur mit Premium verfügbar"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2325,6 +2330,7 @@
     "удалите одно из устройств, чтобы пользоваться приложением на этом устройстве.": "supprimez un appareil pour utiliser l’application sur cet appareil.",
     "управлять устройствами": "gérer les appareils",
     "удалить данные входа с этого устройства": "supprimer les données de connexion de cet appareil",
-    "ожидает свободного места": "en attente d’une place libre"
+    "ожидает свободного места": "en attente d’une place libre",
+    "доступно только в Premium": "disponible uniquement avec Premium"
   }
 }

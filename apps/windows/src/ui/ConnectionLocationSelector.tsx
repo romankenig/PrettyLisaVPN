@@ -22,6 +22,7 @@ type Choice = {
   readonly name: string;
   readonly quality: number;
   readonly available: boolean;
+  readonly premiumRequired?: boolean;
 };
 
 export function ConnectionLocationSelector({
@@ -98,6 +99,7 @@ export function ConnectionLocationSelector({
       !state.data.countries.some(
         (country) =>
           country.country_code === selection.country_code &&
+          !country.premium_required &&
           (allowUnavailable || country.available),
       )
     ) {
@@ -113,6 +115,7 @@ export function ConnectionLocationSelector({
           : state.data.countries.some(
               (country) =>
                 country.country_code === selection.country_code &&
+                !country.premium_required &&
                 country.available,
             )),
     );
@@ -137,17 +140,24 @@ export function ConnectionLocationSelector({
   const countries =
     "data" in state
       ? state.data.countries
-          .filter((country) => allowUnavailable || country.available)
+          .filter(
+            (country) =>
+              allowUnavailable || country.available || country.premium_required,
+          )
           .map((country): Choice => ({
             key: country.country_code,
             selection: { mode: "COUNTRY", country_code: country.country_code },
             name: countryName(country.country_code),
             quality: country.quality,
-            available: true,
+            available:
+              !country.premium_required &&
+              (allowUnavailable || country.available),
+            premiumRequired: country.premium_required,
           }))
           .sort((a, b) => a.name.localeCompare(b.name, getLanguage()))
       : [];
   const top = [...countries]
+    .filter((country) => !country.premiumRequired)
     .sort(
       (a, b) =>
         b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()),
@@ -178,7 +188,7 @@ export function ConnectionLocationSelector({
   const usable = !disabled && state.phase === "ready";
   const expanded = open && usable;
   function choose(choice: Choice) {
-    if (!usable || !choice.available) return;
+    if (!usable || !choice.available || choice.premiumRequired) return;
     if (guest && choice.selection.mode === "COUNTRY") {
       setOpen(false);
       void registration.register();
@@ -309,7 +319,7 @@ export function ConnectionLocationSelector({
                       role="option"
                       id={`${id}-${optionIndex}`}
                       key={choice.key}
-                      className={`location-option${active === optionIndex ? " location-option--active" : ""}${guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
+                      className={`location-option${active === optionIndex ? " location-option--active" : ""}${choice.premiumRequired ? " premium-locked" : guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
                       aria-selected={selected.key === choice.key}
                       disabled={!choice.available}
                       tabIndex={-1}
@@ -318,8 +328,13 @@ export function ConnectionLocationSelector({
                       onClick={() => choose(choice)}
                     >
                       <ChoiceLabel choice={choice} />
-                      {guest && choice.selection.mode === "COUNTRY" && (
-                        <small>{t("недоступно в DEMO")}</small>
+                      {choice.premiumRequired ? (
+                        <small>{t("доступно только в Premium")}</small>
+                      ) : (
+                        guest &&
+                        choice.selection.mode === "COUNTRY" && (
+                          <small>{t("недоступно в DEMO")}</small>
+                        )
                       )}
                     </button>
                   );

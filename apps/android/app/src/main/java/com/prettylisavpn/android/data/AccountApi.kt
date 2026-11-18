@@ -104,7 +104,7 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
     }
     override suspend fun countries(token: String): List<Country> = locations(token).countries
     override suspend fun locations(token: String): LocationOptions {
-        val raw = json("vpn/countries", token)
+        val raw = json("vpn/countries", token, query = mapOf("include_locked" to "true"))
         return parse {
             val auto = raw.asJsonObject.getAsJsonObject("autopilot")
             val autoQuality = auto.get("quality").asBigDecimal.intValueExact().also { require(it in 0..100) }
@@ -114,7 +114,9 @@ class HttpAccountApi(private val http: HttpAuthApi, private val version: String)
                 val code = v.text("country_code").also { c -> require(c.matches(Regex("[A-Z]{2}"))) }
                 val quality = v.get("quality").asBigDecimal.intValueExact().also { q -> require(q in 0..100) }
                 val available = v.flag("available").also { a -> require(a == (quality > 0)) }
-                Country(code, code, quality.toString(), available)
+                val premiumRequired = if (v.has("premium_required")) v.flag("premium_required") else false
+                require(!premiumRequired || !available)
+                Country(code, code, quality.toString(), available, premiumRequired)
             }.also { require(it.map { c -> c.code }.distinct().size == it.size) }
             LocationOptions(countries, autoQuality)
         }

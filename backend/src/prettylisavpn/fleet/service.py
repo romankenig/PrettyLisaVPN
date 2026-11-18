@@ -348,7 +348,12 @@ class FleetService:
         }
 
     async def countries(
-        self, free_only: bool, *, browser_proxy: bool = False, allow_proxy_ip: bool = False
+        self,
+        free_only: bool,
+        *,
+        browser_proxy: bool = False,
+        allow_proxy_ip: bool = False,
+        include_locked: bool = False,
     ) -> dict[str, Any]:
         snapshot = await self.monitoring(days=1)
         proxy_nodes: set[str] = set()
@@ -367,10 +372,23 @@ class FleetService:
         for node in snapshot["nodes"]:
             if browser_proxy and node["id"] not in proxy_nodes:
                 continue
-            if node["group"] != "INTERMEDIATE" and (not free_only or node["is_available_for_free"]):
+            if node["group"] != "INTERMEDIATE":
                 by_country[node["country_code"]].append(node)
-        countries = []
+        countries: list[dict[str, Any]] = []
         for code, nodes in sorted(by_country.items()):
+            eligible = [node for node in nodes if not free_only or node["is_available_for_free"]]
+            if not eligible:
+                if include_locked:
+                    countries.append(
+                        {
+                            "country_code": code,
+                            "quality": 0,
+                            "available": False,
+                            "premium_required": True,
+                        }
+                    )
+                continue
+            nodes = eligible
             denominator = sum(item["capacity"] for item in nodes)
             countries.append(
                 {
@@ -379,6 +397,7 @@ class FleetService:
                         sum(item["quality"] * item["capacity"] for item in nodes) / denominator
                     ),
                     "available": any(item["available"] for item in nodes),
+                    **({"premium_required": False} if include_locked else {}),
                 }
             )
         return {

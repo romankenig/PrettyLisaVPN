@@ -11,6 +11,17 @@ func leaseData(changes: [String: Any] = [:]) throws -> Data {
                                                         "expires_at": "2099-01-01T00:00:00Z", "heartbeat_seconds": 30, "heartbeat_required": false, "configuration": config])
 }
 final class ContractTests: XCTestCase {
+    func testCountryAccessSupportsLegacyAndLockedCatalogs() throws {
+        let legacy = try WireJSON.decode(Country.self, from: Data(#"{"country_code":"DE","quality":80,"available":true}"#.utf8))
+        XCTAssertTrue(legacy.selectable)
+        for available in [true, false] {
+            let locked = try WireJSON.decode(Country.self, from: Data("{\"country_code\":\"AT\",\"quality\":0,\"available\":\(available),\"premium_required\":true}".utf8))
+            XCTAssertFalse(locked.selectable)
+        }
+        let paid = try WireJSON.decode(Country.self, from: Data(#"{"country_code":"AT","quality":90,"available":true,"premium_required":false}"#.utf8))
+        XCTAssertTrue(paid.selectable)
+    }
+
     func testRandomMethodsAreNonemptyUniqueOrderedAndDifferent() {
         struct Generator: RandomNumberGenerator {
             var state: UInt64

@@ -50,7 +50,7 @@ function setup() {
             free_seconds_usable: 900,
           },
         });
-      if (String(url).endsWith("/vpn/countries"))
+      if (String(url).endsWith("/vpn/countries?include_locked=true"))
         return Response.json({
           autopilot: { available: true, quality: 90 },
           countries: [{ country_code: "DE", available: true, quality: 90 }],

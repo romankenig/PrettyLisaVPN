@@ -163,7 +163,8 @@ import PrettyLisaCore
         guard ["FREE", "PREMIUM", "PLATINUM"].contains(current.plan), (0...5).contains(current.active_device_count) else { throw ClientError("INVALID_RESPONSE") }
         profile = current
         if deviceLimited { countries = nil; messages = []; billing = nil; return }
-        countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries"))
+        countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries", query: [URLQueryItem(name: "include_locked", value: "true")]))
+        if country != "AUTO", countries?.countries.contains(where: { $0.country_code == country && $0.selectable }) != true { country = "AUTO" }
     }
     func loadMessages() async {
         messageNow = Date()
@@ -237,6 +238,7 @@ import PrettyLisaCore
     }
     func connect() {
         guard !deviceLimited else { return }
+        guard country == "AUTO" || countries?.countries.contains(where: { $0.country_code == country && $0.selectable }) == true else { return }
         if simulation {
             controller.connect(country: country, methods: methods)
             return

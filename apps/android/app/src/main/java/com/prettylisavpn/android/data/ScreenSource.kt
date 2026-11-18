@@ -4,7 +4,7 @@ package com.prettylisavpn.android.data
 enum class Area { SESSION, HOME, COUNTRIES, LOCATION, DEVICES, BILLING, MESSAGES, SUPPORT, TRAFFIC }
 enum class Scenario { STANDARD, SLOW, FREE, EXPIRED, PLATINUM, EMPTY, DEVICE_LIMIT, STALE, OFFLINE, FAIL_NEXT, PAYMENT_PENDING }
 data class Device(val id: String, val name: String, val current: Boolean, val added: String, val lastLogin: String?, val active: Boolean = true, val pending: Boolean = false)
-data class Country(val code: String, val name: String, val quality: String, val available: Boolean)
+data class Country(val code: String, val name: String, val quality: String, val available: Boolean, val premiumRequired: Boolean = false)
 data class LocationOptions(val countries: List<Country>, val autopilotQuality: Int? = null)
 data class PaymentRoute(val id: String, val label: String, val currencies: Set<String>, val recurring: Set<String>)
 enum class MessageDismissalMode { REQUIRE_LINK, NEXT_VISIT, ONCE, LEGACY }
