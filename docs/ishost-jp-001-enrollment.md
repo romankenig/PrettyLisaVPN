@@ -13,7 +13,7 @@ authentication. Installation follows [server enrollment](server-enrollment.md).
 | Provider server / location | is*hosting #487007, Japan (`JP`) |
 | Host / expected exit IPv4 | `38.180.7.144` |
 | Group | `PREMIUM`, `is_available_for_free=false` |
-| Capacity | 10 concurrent leases; conservative admission limit, not a load-test result |
+| Capacity | 20 concurrent leases, as requested by the owner; admission limit, not a load-test result |
 | OS / architecture | Ubuntu 24.04.5 LTS, x86_64; kernel `6.8.0-149-generic` |
 | Observed resources | 1 vCPU, approximately 1 GiB RAM, 20 GiB root disk |
 | WireGuard configuration | `pl-wg0`, `10.88.7.1/24`, UDP 51820, MTU 1380 |
@@ -123,7 +123,11 @@ aggregation behavior was changed by this enrollment task.
 
 Both fleet methods reached READY and have future scheduled checks. Initial
 observations do not establish a complete 24-hour availability history or a
-concurrent-load/throughput guarantee. The capacity of ten is an admission limit.
+concurrent-load/throughput guarantee. Initial acceptance used a capacity of ten.
+The owner subsequently requested twenty sessions; the existing admin update API
+applied `capacity=20`, and both the node inventory and monitoring readback confirmed
+the value. Name, group and other node metadata were preserved. This configuration
+change is not a twenty-session concurrent-load test.
 
 ## Additional protocol acceptance
 
