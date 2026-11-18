@@ -1,6 +1,21 @@
 import XCTest
 
 final class AppleUITests: XCTestCase {
+    func testPremiumCountriesRemainVisibleAndLocked() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-fixtures", "YES", "-language", "ru"]
+        app.launch()
+        XCTAssertTrue(app.buttons["country-picker"].waitForExistence(timeout: 15))
+        app.buttons["country-picker"].tap()
+        XCTAssertTrue(app.buttons["country-AT"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["country-AT"].isEnabled)
+        XCTAssertTrue(app.buttons["country-DE"].isEnabled)
+        capture(app, "premium-country-lock")
+        app.buttons["country-DE"].tap()
+        XCTAssertFalse(app.buttons["country-AT"].exists)
+        app.terminate()
+    }
+
     func testAccountMessagePopups() {
         for mode in ["once", "repeat", "mandatory"] {
             let app = XCUIApplication()

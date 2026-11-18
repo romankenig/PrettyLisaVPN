@@ -176,6 +176,7 @@
 "plan_register" = "зарегистрироваться";
 "plan_split" = "весь или выбранный трафик";
 "plan_unlimited" = "VPN без ограничения времени";
+"premium_location_hint" = "доступно только в Premium";
 "processing" = "обработка…";
 "randomize_methods" = "случайный набор и порядок способов";
 "reply_email" = "email для ответа";

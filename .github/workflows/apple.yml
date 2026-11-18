@@ -108,7 +108,9 @@ jobs:
           retention-days: 14
       - name: Exercise simulator UI and capture native images
         if: ${{ !cancelled() && steps.sdk-build.outcome == 'success' }}
-        timeout-minutes: 25
+        # Two cold Simulator boots, both complete suites, and final theme captures.
+        # On a slow hosted runner, all tests passed just before the old 25m limit.
+        timeout-minutes: 30
         working-directory: apps/apple
         run: bash scripts/ui-review.sh
       - name: Package corresponding sources, licenses and exact build identity

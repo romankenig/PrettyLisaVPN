@@ -176,6 +176,7 @@
 "plan_register" = "s’inscrire";
 "plan_split" = "tout le trafic ou une sélection";
 "plan_unlimited" = "VPN sans limite de temps";
+"premium_location_hint" = "disponible uniquement avec Premium";
 "processing" = "traitement…";
 "randomize_methods" = "sélection et ordre aléatoires des méthodes";
 "reply_email" = "e-mail de réponse";

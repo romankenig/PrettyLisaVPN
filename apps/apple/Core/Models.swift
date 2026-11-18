@@ -84,6 +84,8 @@ public struct Country: Codable, Identifiable, Sendable {
     public let country_code: String
     public let quality: Int
     public let available: Bool
+    public let premium_required: Bool?
+    public var selectable: Bool { available && premium_required != true }
     public var id: String { country_code }
 }
 public struct Countries: Codable, Sendable {

@@ -203,6 +203,7 @@ async def test_browser_country_selection_filters_proxy_capability_and_free_nodes
         ):
             method.configuration = {}
     assert not (await fleet.countries(False, browser_proxy=True))["countries"]
+    assert not (await fleet.countries(True, browser_proxy=True, include_locked=True))["countries"]
     assert (await fleet.countries(False))["countries"]
 
 

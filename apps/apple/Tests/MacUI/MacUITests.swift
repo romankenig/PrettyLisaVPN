@@ -89,6 +89,15 @@ final class MacUITests: XCTestCase {
             let attachment = XCTAttachment(screenshot: window.screenshot())
             attachment.name = "macOS-\(theme)-fixture-not-vpn-proof"
             attachment.lifetime = .keepAlways; add(attachment)
+            app.buttons["country-picker"].click()
+            XCTAssertTrue(app.buttons["country-AT"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.buttons["country-AT"].isEnabled)
+            XCTAssertTrue(app.buttons["country-DE"].isEnabled)
+            let countries = XCTAttachment(screenshot: window.screenshot())
+            countries.name = "macOS-\(theme)-premium-country-lock"
+            countries.lifetime = .keepAlways; add(countries)
+            app.buttons["country-DE"].click()
+            XCTAssertTrue(app.buttons["country-AT"].waitForNonExistence(timeout: 5))
             let originalWidth = window.frame.width
             let corner = window.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 1)).withOffset(CGVector(dx: -2, dy: -2))
             corner.click(forDuration: 0.2, thenDragTo: corner.withOffset(CGVector(dx: -160, dy: -90)))

@@ -38,12 +38,14 @@ export function CountryPicker({
   countries,
   language,
   disabled,
+  demo = false,
   onChange,
 }: {
   value: string;
   countries: Country[];
   language: Language;
   disabled: boolean;
+  demo?: boolean;
   onChange(value: string): void;
 }) {
   const [open, setOpen] = useState(false);
@@ -52,7 +54,14 @@ export function CountryPicker({
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
-  const options = [{ country_code: "AUTO", available: true }, ...countries];
+  const options = [
+    { country_code: "AUTO", available: true, premium_required: false },
+    ...countries,
+  ];
+  const selectable = (option: (typeof options)[number]) =>
+    option.available &&
+    !option.premium_required &&
+    (!demo || option.country_code === "AUTO");
   const shown = open && !disabled;
   const selected = Math.max(
     0,
@@ -68,7 +77,7 @@ export function CountryPicker({
   }, [shown]);
   const choose = (index: number) => {
     const option = options[index];
-    if (!option?.available) return;
+    if (!option || !selectable(option)) return;
     onChange(option.country_code);
     setOpen(false);
     trigger.current?.focus();
@@ -116,7 +125,7 @@ export function CountryPicker({
           if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
             event.preventDefault();
             const enabled = options
-              .map((option, index) => (option.available ? index : -1))
+              .map((option, index) => (selectable(option) ? index : -1))
               .filter((index) => index >= 0);
             const position = enabled.indexOf(shown ? active : selected);
             const next =
@@ -159,13 +168,19 @@ export function CountryPicker({
               role="option"
               tabIndex={-1}
               aria-selected={value === option.country_code}
-              disabled={!option.available}
-              className={active === index ? "highlighted" : ""}
+              disabled={!selectable(option)}
+              className={`${active === index ? "highlighted" : ""}${option.premium_required ? " premium-locked" : ""}`}
               onClick={() => choose(index)}
             >
               {label(option.country_code)}
-              {!option.available && (
-                <small>{translate("unavailable", language)}</small>
+              {option.premium_required ? (
+                <small>{translate("premiumLocation", language)}</small>
+              ) : demo && option.country_code !== "AUTO" ? (
+                <small>{translate("locationRegistration", language)}</small>
+              ) : (
+                !option.available && (
+                  <small>{translate("unavailable", language)}</small>
+                )
               )}
             </button>
           ))}

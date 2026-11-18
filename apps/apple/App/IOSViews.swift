@@ -219,6 +219,7 @@ private struct IOSHomeView: View {
     @ObservedObject var model: AppModel
     @Environment(\.locale) private var locale
     @State private var policy = false
+    @State private var choosingCountry = false
     private var canStart: Bool {
         switch model.connection {
         case .disconnected: return true
@@ -248,15 +249,7 @@ private struct IOSHomeView: View {
             }
             PhoneCard {
                 Text(L("dash_where")).font(PhoneStyle.font(18, .bold))
-                Menu {
-                    Picker(L("dash_where"), selection: $model.country) {
-                        Text("🌐 " + L("ui_autopilot")).tag("AUTO")
-                        ForEach(model.countries?.countries ?? []) { country in
-                            Text(flag(country.country_code) + " " + countryName(country.country_code))
-                                .tag(country.country_code).disabled(!country.available)
-                        }
-                    }
-                } label: {
+                Button { choosingCountry = true } label: {
                     HStack {
                         Text(model.country == "AUTO" ? "🌐 " + L("ui_autopilot") : flag(model.country) + " " + countryName(model.country))
                         Spacer(); Image(systemName: "chevron.down").font(.caption)
@@ -264,6 +257,7 @@ private struct IOSHomeView: View {
                         .foregroundStyle(PhoneStyle.purple)
                         .overlay(Capsule().stroke(PhoneStyle.purple.opacity(0.4), lineWidth: 1.2))
                 }.disabled(!canStart).accessibilityIdentifier("country-picker")
+                    .sheet(isPresented: $choosingCountry) { CountryOptionsView(model: model) }
                 if model.countries?.autopilot.available == false { Text(L("dash_no_countries")).font(PhoneStyle.font(12)).foregroundStyle(PhoneStyle.secondary) }
                 Button(L(canStart ? "dash_connect" : "vpn_disconnect")) {
                     if canStart { model.connect() } else { Task { await model.disconnect() } }

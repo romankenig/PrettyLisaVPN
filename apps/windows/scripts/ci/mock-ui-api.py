@@ -321,6 +321,7 @@ def fixture(method, path, body):
                 {"country_code": "US", "quality": 75, "available": True},
                 {"country_code": "NL", "quality": 93, "available": True},
                 {"country_code": "FR", "quality": 84, "available": True},
+                {"country_code": "AT", "quality": 0 if QUOTA_REVIEW or DEMO_REVIEW else 96, "available": not (QUOTA_REVIEW or DEMO_REVIEW), "premium_required": QUOTA_REVIEW or DEMO_REVIEW},
             ],
         }
     if method == "POST" and path == "/auth/logout":

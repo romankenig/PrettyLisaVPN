@@ -25,6 +25,7 @@ from prettylisavpn.fleet.domain import (
     server_quality,
     source_order,
 )
+from prettylisavpn.fleet.service import FleetService
 from prettylisavpn.fleet.ssh import Credential, SshTransport
 from prettylisavpn.fleet.wireguard import WireGuardMethod
 from prettylisavpn.fleet.worker import Claim, FleetWorker
@@ -314,6 +315,7 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
 @pytest.mark.parametrize(
     "plan,free_only",
     [
+        (SubscriptionPlan.DEMO, True),
         (SubscriptionPlan.FREE, True),
         (SubscriptionPlan.PREMIUM, False),
         (SubscriptionPlan.PLATINUM, False),
@@ -321,7 +323,10 @@ async def test_all_fleet_routes_delegate_and_monitoring_is_read_only():
 )
 @pytest.mark.parametrize("method", [None, "https_proxy"])
 @pytest.mark.parametrize("proxy_ip", [None, "1", "unknown"])
-async def test_country_ratings_respect_effective_plan(plan, free_only, method, proxy_ip):
+@pytest.mark.parametrize("include_locked", [False, True])
+async def test_country_ratings_respect_effective_plan(
+    plan, free_only, method, proxy_ip, include_locked
+):
     fleet, auth = AsyncMock(), AsyncMock()
     auth.me.return_value = SimpleNamespace(plan=plan, device_limit_reached=False)
     fleet.countries.return_value = {
@@ -342,7 +347,10 @@ async def test_country_ratings_respect_effective_plan(plan, free_only, method, p
         assert (
             await client.get(
                 "/vpn/countries",
-                params={"method": method} if method else {},
+                params={
+                    **({"method": method} if method else {}),
+                    "include_locked": str(include_locked).lower(),
+                },
                 headers={
                     "Authorization": "Bearer user",
                     **({"X-PrettyLisaVPN-Proxy-IP": proxy_ip} if proxy_ip else {}),
@@ -352,7 +360,79 @@ async def test_country_ratings_respect_effective_plan(plan, free_only, method, p
     fleet.countries.assert_awaited_once_with(
         free_only=free_only,
         **({"browser_proxy": True, "allow_proxy_ip": proxy_ip == "1"} if method else {}),
+        **({"include_locked": True} if include_locked else {}),
     )
+
+
+@pytest.mark.parametrize("free_only", [True, False])
+@pytest.mark.parametrize("include_locked", [False, True])
+async def test_locked_country_catalog_preserves_plan_ratings_and_autopilot(
+    free_only, include_locked
+):
+    def item(code, free, quality, group="PREMIUM"):
+        return {
+            "country_code": code,
+            "is_available_for_free": free,
+            "quality": quality,
+            "available": quality > 0,
+            "capacity": 20,
+            "group": group,
+        }
+
+    service = FleetService(AsyncMock(), settings())
+    service.monitoring = AsyncMock(
+        return_value={
+            "nodes": [
+                item("DE", True, 60),
+                item("DE", False, 100),
+                item("US", False, 90),
+                item("FR", True, 0),
+                item("FR", False, 100),
+                item("JP", False, 0),
+                item("NL", False, 100, "INTERMEDIATE"),
+            ]
+        }
+    )
+    result = await service.countries(free_only, include_locked=include_locked)
+    countries = {entry["country_code"]: entry for entry in result["countries"]}
+    assert set(countries) == (
+        {"DE", "FR", "US", "JP"} if include_locked or not free_only else {"DE", "FR"}
+    )
+    assert countries["DE"]["quality"] == (60 if free_only else 80)
+    assert countries["FR"]["quality"] == (0 if free_only else 50)
+    assert result["autopilot"] == {"quality": 60 if free_only else 90, "available": True}
+    if include_locked:
+        assert countries["FR"]["premium_required"] is False
+        for code in ("US", "JP"):
+            assert countries[code]["premium_required"] is free_only
+            if free_only:
+                assert countries[code]["quality"] == 0
+                assert countries[code]["available"] is False
+    else:
+        assert all("premium_required" not in entry for entry in countries.values())
+
+
+async def test_premium_only_fleet_does_not_enable_free_autopilot():
+    service = FleetService(AsyncMock(), settings())
+    service.monitoring = AsyncMock(
+        return_value={
+            "nodes": [
+                {
+                    "country_code": "US",
+                    "is_available_for_free": False,
+                    "quality": 100,
+                    "available": True,
+                    "capacity": 20,
+                    "group": "PREMIUM",
+                }
+            ]
+        }
+    )
+    result = await service.countries(True, include_locked=True)
+    assert result["autopilot"] == {"quality": 0, "available": False}
+    assert result["countries"] == [
+        {"country_code": "US", "quality": 0, "available": False, "premium_required": True}
+    ]
 
 
 async def test_active_users_still_receive_full_synthetic_probe():
