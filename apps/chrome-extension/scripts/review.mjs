@@ -461,7 +461,7 @@ try {
   await picker.press("Escape");
   assert.equal(await page.getByRole("listbox").count(), 0);
   await picker.click();
-  await page.getByText("preview@example.com", { exact: true }).click();
+  await page.getByRole("img", { name: "PrettyLisaVPN", exact: true }).click();
   assert.equal(await page.getByRole("listbox").count(), 0);
 
   // Presentation-only snapshots exercise the connected row and every plan.
