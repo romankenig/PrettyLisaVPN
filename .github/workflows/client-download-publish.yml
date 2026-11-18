@@ -18,7 +18,7 @@ jobs:
     name: Publish verified client on main server
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 40
     environment: development
     env:
       PLATFORM: ${{ inputs.platform }}
@@ -28,6 +28,10 @@ jobs:
       DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
     steps:
       - uses: actions/checkout@v4
+      - name: Wait for matching healthy backend before publishing clients
+        env:
+          DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
+        run: python3 infra/deployment/wait_backend.py --url "https://$DEV_API_DOMAIN"
       - uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact }}

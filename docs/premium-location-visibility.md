@@ -35,6 +35,10 @@ Backend session admission, quotas, identities, paid expiry and traffic routing
 are unchanged. Showing metadata never grants access. No migration is required.
 Deploy backend before publishing updated clients to expose the new rows. Rollback
 to an older backend restores the old catalog without breaking updated clients.
+The shared publisher now waits for a ready development backend matching the source
+manifest (0.54.0 for this task); publication fails closed after 30 minutes. This
+release-order CI follow-up leaves all product versions unchanged. Merge resolution
+preserves the subsequent DE/AT node enrollment documentation from develop.
 
 ## UI and validation
 
