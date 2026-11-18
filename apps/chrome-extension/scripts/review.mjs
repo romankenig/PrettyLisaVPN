@@ -432,7 +432,7 @@ try {
   assert.equal(
     await page
       .locator(".premium-locked .country-label")
-      .evaluate((node) => getComputedStyle(node).filter),
+      .evaluate((node) => globalThis.getComputedStyle(node).filter),
     "blur(2px)",
   );
   assert.equal(

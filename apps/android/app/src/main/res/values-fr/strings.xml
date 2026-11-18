@@ -349,6 +349,7 @@
     <string name="manage_devices">gérer les appareils</string>
     <string name="forget_local">supprimer les données de connexion de cet appareil</string>
     <string name="device_pending">en attente d’une place libre</string>
+    <string name="premium_location_hint">disponible uniquement avec Premium</string>
     <string name="faq_connect_q">comment commencer ?</string>
     <string name="faq_connect_a">téléchargez l’application, connectez-vous avec le code reçu par e-mail et choisissez un pays.\n\nle forfait gratuit offre une heure de VPN par jour, partagée sur le compte.</string>
     <string name="faq_free_q">que comprend free ?</string>
@@ -367,5 +368,4 @@
     <string name="faq_split_a">sur Windows et Android, vous pouvez choisir ce qui passe par le VPN et ce qui utilise votre connexion habituelle.\n\n1. sur l’écran d’accueil, ouvrez « que protéger » et choisissez « sélectionnés ».\n\n2. appuyez sur « choisir les services » et sélectionnez, par exemple, YouTube et Telegram. les autres sites et applications utiliseront la connexion habituelle.\n\n3. enregistrez la liste et reconnectez le VPN : l’enregistrement coupe la connexion en cours.\n\npour faire l’inverse — laisser certains services sans VPN et protéger le reste — choisissez « sauf sélectionnés ». les deux modes ont des listes séparées. « tout » protège tout le trafic.\n\nsi un site manque, ajoutez son adresse : example.com pour le site, *.example.com pour ses sous-domaines. un service peut utiliser plusieurs adresses ; un choix prédéfini est souvent plus simple.\n\nDEMO protège uniquement tout le trafic. la sélection de services n’est pas encore disponible sur iOS et macOS. l’extension Chrome protège uniquement le navigateur.</string>
     <string name="faq_support_q">comment contacter le support ?</string>
     <string name="faq_support_a">ouvrez le [formulaire d’assistance] dans l’application ou écrivez à help@prettylisavpn.com. décrivez le problème et indiquez quand il est survenu.</string>
-    <string name="premium_location_hint">disponible uniquement avec Premium</string>
 </resources>

@@ -349,6 +349,7 @@
     <string name="manage_devices">gestionar dispositivos</string>
     <string name="forget_local">eliminar los datos de acceso de este dispositivo</string>
     <string name="device_pending">esperando un espacio libre</string>
+    <string name="premium_location_hint">disponible solo con Premium</string>
     <string name="faq_connect_q">¿cómo empiezo?</string>
     <string name="faq_connect_a">descarga la aplicación, inicia sesión con el código del correo y elige un país.\n\nel plan gratuito ofrece una hora de VPN al día compartida por toda la cuenta.</string>
     <string name="faq_free_q">¿qué incluye free?</string>
@@ -367,5 +368,4 @@
     <string name="faq_split_a">en Windows y Android puedes elegir qué usa el VPN y qué usa tu conexión habitual.\n\n1. en la pantalla de inicio, busca «qué proteger» y elige «seleccionados».\n\n2. pulsa «elegir servicios» y marca los que necesites, por ejemplo YouTube y Telegram. los demás sitios y aplicaciones usarán la conexión habitual.\n\n3. guarda la lista y vuelve a conectar el VPN: al guardar se corta la conexión actual.\n\npara hacer lo contrario — dejar algunos servicios fuera del VPN y proteger todo lo demás — elige «excepto seleccionados». los dos modos tienen listas separadas. «todo» protege todo el tráfico.\n\nsi falta un sitio, añade su dirección: example.com para el sitio, *.example.com para sus subdominios. un servicio puede usar varias direcciones, por lo que suele ser más fácil elegir uno predefinido.\n\nDEMO solo permite proteger todo el tráfico. iOS y macOS aún no permiten elegir servicios individuales. la extensión de Chrome solo protege el navegador.</string>
     <string name="faq_support_q">¿cómo contacto con soporte?</string>
     <string name="faq_support_a">abre el [formulario de soporte] en la aplicación o escribe a help@prettylisavpn.com. describe el problema e indica cuándo ocurrió.</string>
-    <string name="premium_location_hint">disponible solo con Premium</string>
 </resources>
