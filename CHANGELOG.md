@@ -13,6 +13,14 @@
   separate German FREE exit and use a conservative five-lease admission limit
   for this 512 MiB VPS. See [enrollment evidence](docs/digocean-de-001-enrollment.md).
 
+### Austria PREMIUM node — infrastructure, version unchanged
+
+- Enroll `netcup-aut-001` (`89.58.16.22`, AT) for Premium/Platinum with
+  WireGuard, managed transports and the browser-only HTTPS proxy. Free and DEMO
+  remain excluded. Enable recurring health checks and automatic IP-certificate renewal.
+- Verify protocol traffic, paid/free selection, direct workstation proxy egress
+  and test-access cleanup. See [enrollment evidence](docs/netcup-aut-001-enrollment.md).
+
 ### Website-owned checkout — Windows 0.31.1 / Android 0.30.1
 
 - Buy, renew and subscription management open the website for every provider mode.
