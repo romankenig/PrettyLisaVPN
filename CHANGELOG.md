@@ -42,6 +42,15 @@
 - Gate client publication on the matching healthy backend so the API is deployed
   first; this CI release-order follow-up leaves product versions unchanged.
 
+### Japan PREMIUM node — infrastructure, version unchanged
+
+- Add `ishost-jp-001` (`38.180.7.144`, JP) for Premium/Platinum with the
+  owner-requested twenty-lease admission limit. Upgrade its existing Ubuntu 22.04
+  installation to Ubuntu 24.04 with owner authorization and repair the image's stale GRUB disk
+  reference before reboot. See [enrollment evidence](docs/ishost-jp-001-enrollment.md).
+- Verify WireGuard, managed transports, direct browser-proxy egress, tariff
+  restrictions and test-access cleanup; enable scheduled checks and IP-certificate renewal.
+
 ### Germany PREMIUM node — infrastructure, version unchanged
 
 - Enroll `digocean-de-001` (`201.79.12.109`, DE) for Premium/Platinum with
