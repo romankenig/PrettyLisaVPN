@@ -252,7 +252,8 @@ class BillingWorker:
                 subscription.current_period_end = next_month(
                     max(now, subscription.current_period_end or now)
                 )
-            subscription.plan = SubscriptionPlan.PREMIUM
+            if subscription.plan is not SubscriptionPlan.PLATINUM:
+                subscription.plan = SubscriptionPlan.PREMIUM
         account.provider_name = row.provider_name if result.mandate else None
         account.mandate_reference = result.mandate.reference if result.mandate else None
         account.method_label = result.mandate.label if result.mandate else None

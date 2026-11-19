@@ -1,7 +1,8 @@
-# PrettyLisaVPN website · 0.7.0
+# PrettyLisaVPN website · 0.7.2
 
-Unavailable checkout now opens a dedicated localized page with an email-notification
-message and Back/Home navigation. See the [handoff](../../docs/website-payment-unavailable.md).
+Pay now opens recurring Platega checkout in the same tab, with monthly consent
+on the offer and unavailable states inline. No one-off checkout. See the
+[current handoff](../../docs/website-direct-checkout.md).
 
 Current-plan badges include matching emoji; the language picker uses local flags
 for its current language and options. See the [handoff](../../docs/website-plan-emojis-language-flags.md).
@@ -20,10 +21,9 @@ installations still require replacing files and reloading. See the
 [Chrome handoff](../../docs/chrome-ui-demo.md) for exact publication evidence.
 
 The account page keeps PREMIUM, its monthly price and a visible Pay button
-through email sign-in and unavailable-provider/catalog states. Until live checkout
-is available, Pay opens the payment-unavailable page without charging or changing
-access. It has no demonstration label or simulated success. Existing authenticated
-checkout and pending-operation recovery remain available for configured providers.
+through email sign-in and unavailable-provider/catalog states. Unavailable checkout disables Pay inline without charging or changing access.
+Existing authenticated checkout and pending-operation recovery remain available;
+there is no simulated success or promise to send notification email.
 
 Version 0.5.2 combined the already live legal templates with Windows guest identity
 disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
