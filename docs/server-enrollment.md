@@ -6,6 +6,9 @@ Ubuntu 24.04+ с systemd, публичный IPv4 и SSH-доступ. Поря�
 оплачивает VPS. Историческая настройка DigitalOcean описана
 [отдельно](digitalocean-vpn-node-baseline.md).
 
+Практическая приёмка PREMIUM-узла is*hosting в Японии от 2026-11-18:
+[ishost-jp-001](ishost-jp-001-enrollment.md).
+
 Практическая приёмка PREMIUM-узла DigitalOcean в Германии от 2026-11-18:
 [digocean-de-001](digocean-de-001-enrollment.md).
 

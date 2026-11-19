@@ -3,6 +3,12 @@ import type { ConnectionDetails } from "./connectionDetails";
 import type { ConnectedVpnSession } from "./connection";
 
 export type ProtocolStatus = "UP" | "DOWN";
+/** Local shutdown succeeded; the server has not confirmed removal yet. */
+export class RemoteCleanupPending extends Error {
+  constructor() {
+    super("VPN_REMOTE_CLEANUP_PENDING");
+  }
+}
 export type ConnectionResult =
   | { readonly connected: false }
   | {
@@ -21,6 +27,6 @@ export interface ConnectionAdapter {
     selection: VpnLocationSelection,
     signal: AbortSignal,
   ): Promise<ConnectionResult>;
-  disconnect(): Promise<void>;
-  recover?(): Promise<void>;
+  disconnect(onLocalStopped?: () => void): Promise<void>;
+  recover?(onLocalStopped?: () => void): Promise<void>;
 }

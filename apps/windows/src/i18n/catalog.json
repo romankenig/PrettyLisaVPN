@@ -386,7 +386,13 @@
     "управлять устройствами": "управлять устройствами",
     "удалить данные входа с этого устройства": "удалить данные входа с этого устройства",
     "ожидает свободного места": "ожидает свободного места",
-    "доступно только в Premium": "доступно только в Premium"
+    "доступно только в Premium": "доступно только в Premium",
+    "ОТКЛЮЧЕНО": "ОТКЛЮЧЕНО",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.",
+    "сейчас недоступно": "сейчас недоступно",
+    "Список стран пока не загружен.": "Список стран пока не загружен.",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "Показан сохранённый список. Доступность серверов пока неизвестна.",
+    "доступность неизвестна": "доступность неизвестна"
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -775,7 +781,13 @@
     "управлять устройствами": "manage devices",
     "удалить данные входа с этого устройства": "remove sign-in data from this device",
     "ожидает свободного места": "waiting for a free slot",
-    "доступно только в Premium": "available only with Premium"
+    "доступно только в Premium": "available only with Premium",
+    "ОТКЛЮЧЕНО": "DISCONNECTED",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Cannot reach the server. VPN disconnected. Try connecting again later.",
+    "сейчас недоступно": "currently unavailable",
+    "Список стран пока не загружен.": "The country list has not loaded yet.",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "Showing the saved list. Current server availability is unknown.",
+    "доступность неизвестна": "availability unknown"
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1164,7 +1176,13 @@
     "управлять устройствами": "管理设备",
     "удалить данные входа с этого устройства": "移除此设备上的登录数据",
     "ожидает свободного места": "等待可用名额",
-    "доступно только в Premium": "仅限 Premium 使用"
+    "доступно только в Premium": "仅限 Premium 使用",
+    "ОТКЛЮЧЕНО": "已断开连接",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "无法连接服务器。VPN 已断开。请稍后重新连接。",
+    "сейчас недоступно": "目前不可用",
+    "Список стран пока не загружен.": "国家列表尚未加载。",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "正在显示已保存的列表。目前服务器可用性未知。",
+    "доступность неизвестна": "可用性未知"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1553,7 +1571,13 @@
     "управлять устройствами": "gestionar dispositivos",
     "удалить данные входа с этого устройства": "eliminar los datos de acceso de este dispositivo",
     "ожидает свободного места": "esperando un espacio libre",
-    "доступно только в Premium": "disponible solo con Premium"
+    "доступно только в Premium": "disponible solo con Premium",
+    "ОТКЛЮЧЕНО": "DESCONECTADO",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "No se puede contactar con el servidor. VPN desconectada. Inténtalo más tarde.",
+    "сейчас недоступно": "no disponible ahora",
+    "Список стран пока не загружен.": "La lista de países aún no se ha cargado.",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "Se muestra la lista guardada. La disponibilidad actual de los servidores es desconocida.",
+    "доступность неизвестна": "disponibilidad desconocida"
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1942,7 +1966,13 @@
     "управлять устройствами": "geräte verwalten",
     "удалить данные входа с этого устройства": "anmeldedaten von diesem Gerät entfernen",
     "ожидает свободного места": "wartet auf einen freien Platz",
-    "доступно только в Premium": "nur mit Premium verfügbar"
+    "доступно только в Premium": "nur mit Premium verfügbar",
+    "ОТКЛЮЧЕНО": "GETRENNT",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Der Server ist nicht erreichbar. VPN getrennt. Versuche es später erneut.",
+    "сейчас недоступно": "derzeit nicht verfügbar",
+    "Список стран пока не загружен.": "Die Länderliste wurde noch nicht geladen.",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "Die gespeicherte Liste wird angezeigt. Die aktuelle Serververfügbarkeit ist unbekannt.",
+    "доступность неизвестна": "Verfügbarkeit unbekannt"
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2331,6 +2361,12 @@
     "управлять устройствами": "gérer les appareils",
     "удалить данные входа с этого устройства": "supprimer les données de connexion de cet appareil",
     "ожидает свободного места": "en attente d’une place libre",
-    "доступно только в Premium": "disponible uniquement avec Premium"
+    "доступно только в Premium": "disponible uniquement avec Premium",
+    "ОТКЛЮЧЕНО": "DÉCONNECTÉ",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Le serveur est injoignable. VPN déconnecté. Réessayez plus tard.",
+    "сейчас недоступно": "indisponible actuellement",
+    "Список стран пока не загружен.": "La liste des pays n’est pas encore chargée.",
+    "Показан сохранённый список. Доступность серверов пока неизвестна.": "La liste enregistrée est affichée. La disponibilité actuelle des serveurs est inconnue.",
+    "доступность неизвестна": "disponibilité inconnue"
   }
 }
