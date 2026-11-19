@@ -6,6 +6,19 @@
 
 ## Unreleased
 
+### Windows server outage disconnection — 0.31.4
+
+- Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote
+  session removal. Explain server connectivity failures instead of leaving the
+  Disconnect button or a generic cleanup failure after local shutdown.
+- Stop on the first failed health check of an established connection; retain
+  unconfirmed remote grants and require cleanup before reconnect/fallback.
+  Failed local shutdown still requires retry and never claims disconnection.
+- Keep Autopilot/country browsing available without a wait cursor during loading,
+  active connections and outages. Show unavailable countries and a saved catalog
+  with explicitly unknown availability; preserve selection and plan restrictions.
+- See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
+
 ### Platega website activation — backend 0.54.1
 
 - Record server-only merchant configuration, successful read-only API checks and
@@ -26,7 +39,7 @@
 - Route `develop` deployments and its client API/portal/probe targets to testing;
   reserve `main` for owner-requested production publication after choosing versions.
   Preserve public installers while private dashboard downloads follow test builds.
-- Backend 0.54.1 → 0.54.2; Windows 0.31.3 → 0.31.4; Android 0.30.3 → 0.30.4/code 63;
+- Backend 0.54.1 → 0.54.2; Windows 0.31.4 → 0.31.5; Android 0.30.3 → 0.30.4/code 63;
   Chrome 0.5.2 → 0.5.3; iOS 0.6.2 → 0.6.3; macOS 0.5.2 → 0.5.3. Schema remains
   0053; website remains 0.7.1. No automatic client updater or shared test VPN node.
 - Validate artifact API origins against the destination; retain exact SHA/run/attempt,
@@ -44,6 +57,15 @@
   0.5.2. See [contract and validation handoff](docs/premium-location-visibility.md).
 - Gate client publication on the matching healthy backend so the API is deployed
   first; this CI release-order follow-up leaves product versions unchanged.
+
+### Japan PREMIUM node — infrastructure, version unchanged
+
+- Add `ishost-jp-001` (`38.180.7.144`, JP) for Premium/Platinum with the
+  owner-requested twenty-lease admission limit. Upgrade its existing Ubuntu 22.04
+  installation to Ubuntu 24.04 with owner authorization and repair the image's stale GRUB disk
+  reference before reboot. See [enrollment evidence](docs/ishost-jp-001-enrollment.md).
+- Verify WireGuard, managed transports, direct browser-proxy egress, tariff
+  restrictions and test-access cleanup; enable scheduled checks and IP-certificate renewal.
 
 ### Germany PREMIUM node — infrastructure, version unchanged
 

@@ -1,3 +1,20 @@
+# Server outage disconnection — Windows 0.31.4
+
+Home → Disconnect / detected connection loss → native shutdown → ОТКЛЮЧЕНО.
+The server response no longer gates this status. A failed remote cleanup or
+connection health check displays a localized server-connectivity notice and
+Connect instead of an apparent stuck Disconnect action. Connect retries retained
+cleanup before allocating a new session; failed local shutdown retains retry
+Disconnect and an explicit local-stop warning. Startup recovery uses the same
+local/remote distinction. Existing APIs are used; no backend integration is pending.
+Build, native screenshot and publication status: [handoff](windows-offline-disconnect.md).
+
+Home → Autopilot/country dropdown remains browsable during loading, connection,
+refresh and outage. Unavailable countries remain listed. A saved per-account/plan
+catalog is available after restart, explicitly read-only with unknown availability
+until a fresh response. No cache → an honest list-not-loaded message. Opening the
+list never switches the tunnel; active-connection and Premium/DEMO guards remain.
+
 # Website checkout — Windows 0.31.1 / Android 0.30.1
 
 Subscription → Buy / Renew / Manage → POST /billing/portal → system browser →
@@ -1203,7 +1220,7 @@ require backend 0.54.0 deployment. No route or new auth guard is introduced. See
 
 ## Test and production navigation — 2026-11-19
 
-Windows 0.31.4 chooses the API at build time. A `develop` installer uses
+Windows 0.31.5 chooses the API at build time. A `develop` installer uses
 `https://api.test.prettylisavpn.com`; DEMO Buy and authenticated billing handoffs
 open only `https://test.prettylisavpn.com/account/`. The frontend and native browser
 allowlists agree, including the exact single-use handoff fragment. A `main` build

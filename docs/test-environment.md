@@ -129,6 +129,10 @@ test database credentials, DNS records and auth SMTP. Local ignored credentials:
    Roll back application/static pointers using retained artifacts if needed;
    database downgrades/restores require a separate explicit data-loss assessment.
 
-Component changes in this task: backend 0.54.1 → 0.54.2; Windows 0.31.3 → 0.31.4;
+Component changes in this task: backend 0.54.1 → 0.54.2; Windows 0.31.4 → 0.31.5;
 Android 0.30.3 → 0.30.4/code 63; Chrome 0.5.2 → 0.5.3; iOS 0.6.2 → 0.6.3;
 macOS 0.5.2 → 0.5.3. Website 0.7.1 and schema 0053 unchanged.
+
+PR coordination: Windows 0.31.4 is the outage/country-browsing fix from #113.
+This independent environment task follows it at 0.31.5; source manifests stay
+synchronized. The documentation from Japan enrollment #111 is retained as well.
