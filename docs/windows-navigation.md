@@ -1,3 +1,14 @@
+# Server outage disconnection — Windows 0.31.4
+
+Home → Disconnect / detected connection loss → native shutdown → ОТКЛЮЧЕНО.
+The server response no longer gates this status. A failed remote cleanup or
+connection health check displays a localized server-connectivity notice and
+Connect instead of an apparent stuck Disconnect action. Connect retries retained
+cleanup before allocating a new session; failed local shutdown retains retry
+Disconnect and an explicit local-stop warning. Startup recovery uses the same
+local/remote distinction. Existing APIs are used; no backend integration is pending.
+Build, native screenshot and publication status: [handoff](windows-offline-disconnect.md).
+
 # Website checkout — Windows 0.31.1 / Android 0.30.1
 
 Subscription → Buy / Renew / Manage → POST /billing/portal → system browser →

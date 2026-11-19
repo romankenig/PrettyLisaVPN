@@ -201,3 +201,50 @@ it("waits for VPN handoff before reserving access and cancellation prevents a la
   expect(start).not.toHaveBeenCalled();
   expect(manager.current().phase).toBe("DISCONNECTED");
 });
+
+it.each(["reconnect", "cancel", "owner", "dispose"])(
+  "serializes %s while locally stopped remote cleanup is pending",
+  async (action) => {
+    let finish!: () => void;
+    const connect = vi.fn(async () => ({
+      connected: true as const,
+      internetVerified: true as const,
+      details: {
+        protocol: "test",
+        transport: "test",
+        server: "test",
+        encryption: "test",
+        obfuscation: "test",
+      },
+    }));
+    const adapter: ConnectionAdapter = {
+      id: "test",
+      name: "test",
+      connect,
+      async disconnect(onLocalStopped) {
+        onLocalStopped?.();
+        await new Promise<void>((resolve) => {
+          finish = resolve;
+        });
+      },
+    };
+    const manager = createVpnConnectionManager([adapter]);
+    await manager.connect("", selection);
+    const stopping = manager.disconnect("");
+    await Promise.resolve();
+    expect(manager.current().phase).toBe("DISCONNECTED");
+    expect(await manager.localTunnelStatus?.()).toBe("DOWN");
+    const reconnecting = manager.connect("", selection);
+    const cancelled =
+      action === "cancel" ? manager.disconnect("") : Promise.resolve();
+    if (action === "owner") manager.setOwner?.("other");
+    if (action === "dispose") manager.dispose();
+    expect(connect).toHaveBeenCalledOnce();
+    finish();
+    await Promise.all([stopping, reconnecting, cancelled]);
+    expect(connect).toHaveBeenCalledTimes(action === "reconnect" ? 2 : 1);
+    expect(manager.current().phase).toBe(
+      action === "reconnect" ? "CONNECTED" : "DISCONNECTED",
+    );
+  },
+);

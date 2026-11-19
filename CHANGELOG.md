@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Windows server outage disconnection — 0.31.4
+
+- Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote
+  session removal. Explain server connectivity failures instead of leaving the
+  Disconnect button or a generic cleanup failure after local shutdown.
+- Stop on the first failed health check of an established connection; retain
+  unconfirmed remote grants and require cleanup before reconnect/fallback.
+  Failed local shutdown still requires retry and never claims disconnection.
+- See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
+
 ### Platega website activation — backend 0.54.1
 
 - Record server-only merchant configuration, successful read-only API checks and

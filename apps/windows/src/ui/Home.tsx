@@ -159,7 +159,8 @@ export function Home() {
     try {
       await vpnConnection.disconnect(accessToken);
     } catch (error) {
-      setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
+      if (vpnConnection.current().phase !== "DISCONNECTED")
+        setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
   }
 
@@ -264,7 +265,13 @@ export function Home() {
                       : "CONNECT",
               )}
             </button>
-            <h2 className="connection-status" aria-live="polite">
+            <h2
+              className="connection-status"
+              aria-live="polite"
+              data-disconnected={
+                connectionHeading(connectionState) === "ОТКЛЮЧЕНО"
+              }
+            >
               {t(connectionHeading(connectionState))}
             </h2>
             {connectionState.phase === "CONNECTING" &&
@@ -315,10 +322,13 @@ export function Home() {
               </p>
             ) : null}
             {connectionState.phase === "DISCONNECTED" &&
-            connectionState.backend === "UNAVAILABLE" ? (
-              <p className="connection-error" role="status">
+            (connectionState.backend === "UNAVAILABLE" ||
+              ["VPN_CONNECTION_LOST", "VPN_SERVER_UNAVAILABLE"].includes(
+                connectionState.failure_code ?? "",
+              )) ? (
+              <p className="connection-error" role="alert">
                 {t(
-                  "VPN на компьютере остановлен. Сервер завершит сессию после восстановления связи.",
+                  "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.",
                 )}
               </p>
             ) : null}
@@ -428,6 +438,8 @@ function unavailableMessage(
 }
 
 function connectionUnavailableMessage(state: VpnConnectionState) {
+  if (state.phase === "FAILED" && state.failure_code === "CLEANUP_FAILED")
+    return "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.";
   if (
     state.phase === "FAILED" &&
     state.failure_code === "VPN_SERVICE_UNAVAILABLE"
@@ -466,7 +478,7 @@ function connectionHeading(state: VpnConnectionState) {
     return "CONNECTING";
   if (state.phase === "DISCONNECTING" && state.tunnel === "UP")
     return "DISCONNECTING";
-  if (state.tunnel === "DOWN") return "Not connected";
+  if (state.tunnel === "DOWN") return "ОТКЛЮЧЕНО";
   return "Connection status unavailable";
 }
 

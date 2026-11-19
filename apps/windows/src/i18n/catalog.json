@@ -386,7 +386,9 @@
     "управлять устройствами": "управлять устройствами",
     "удалить данные входа с этого устройства": "удалить данные входа с этого устройства",
     "ожидает свободного места": "ожидает свободного места",
-    "доступно только в Premium": "доступно только в Premium"
+    "доступно только в Premium": "доступно только в Premium",
+    "ОТКЛЮЧЕНО": "ОТКЛЮЧЕНО",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже."
   },
   "en": {
     "Пробую {0}…": "Trying {0}…",
@@ -775,7 +777,9 @@
     "управлять устройствами": "manage devices",
     "удалить данные входа с этого устройства": "remove sign-in data from this device",
     "ожидает свободного места": "waiting for a free slot",
-    "доступно только в Premium": "available only with Premium"
+    "доступно только в Premium": "available only with Premium",
+    "ОТКЛЮЧЕНО": "DISCONNECTED",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Cannot reach the server. VPN disconnected. Try connecting again later."
   },
   "zh": {
     "Пробую {0}…": "正在尝试 {0}…",
@@ -1164,7 +1168,9 @@
     "управлять устройствами": "管理设备",
     "удалить данные входа с этого устройства": "移除此设备上的登录数据",
     "ожидает свободного места": "等待可用名额",
-    "доступно только в Premium": "仅限 Premium 使用"
+    "доступно только в Premium": "仅限 Premium 使用",
+    "ОТКЛЮЧЕНО": "已断开连接",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "无法连接服务器。VPN 已断开。请稍后重新连接。"
   },
   "es": {
     "Пробую {0}…": "Probando {0}…",
@@ -1553,7 +1559,9 @@
     "управлять устройствами": "gestionar dispositivos",
     "удалить данные входа с этого устройства": "eliminar los datos de acceso de este dispositivo",
     "ожидает свободного места": "esperando un espacio libre",
-    "доступно только в Premium": "disponible solo con Premium"
+    "доступно только в Premium": "disponible solo con Premium",
+    "ОТКЛЮЧЕНО": "DESCONECTADO",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "No se puede contactar con el servidor. VPN desconectada. Inténtalo más tarde."
   },
   "de": {
     "Пробую {0}…": "Versuche {0}…",
@@ -1942,7 +1950,9 @@
     "управлять устройствами": "geräte verwalten",
     "удалить данные входа с этого устройства": "anmeldedaten von diesem Gerät entfernen",
     "ожидает свободного места": "wartet auf einen freien Platz",
-    "доступно только в Premium": "nur mit Premium verfügbar"
+    "доступно только в Premium": "nur mit Premium verfügbar",
+    "ОТКЛЮЧЕНО": "GETRENNT",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Der Server ist nicht erreichbar. VPN getrennt. Versuche es später erneut."
   },
   "fr": {
     "Пробую {0}…": "Essai de {0}…",
@@ -2331,6 +2341,8 @@
     "управлять устройствами": "gérer les appareils",
     "удалить данные входа с этого устройства": "supprimer les données de connexion de cet appareil",
     "ожидает свободного места": "en attente d’une place libre",
-    "доступно только в Premium": "disponible uniquement avec Premium"
+    "доступно только в Premium": "disponible uniquement avec Premium",
+    "ОТКЛЮЧЕНО": "DÉCONNECTÉ",
+    "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.": "Le serveur est injoignable. VPN déconnecté. Réessayez plus tard."
   }
 }

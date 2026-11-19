@@ -484,9 +484,7 @@ async function main() {
   await page
     .getByRole("heading", { name: "куда подключиться", exact: true })
     .waitFor();
-  await page
-    .getByRole("heading", { name: "Not connected", exact: true })
-    .waitFor();
+  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   for (const item of await page
     .getByRole("navigation")
     .getByRole("link")
@@ -801,9 +799,7 @@ async function main() {
   await screenshot("04d-home-all-methods-failed");
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByRole("button", { name: "Отменить", exact: true }).click();
-  await page
-    .getByRole("heading", { name: "Not connected", exact: true })
-    .waitFor();
+  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   await screenshot("04e-home-cancelled");
   await page.evaluate(() => {
     document.documentElement.dataset.vpnReviewConnect = "1";
@@ -850,10 +846,31 @@ async function main() {
       document.documentElement.dataset.vpnReviewAttempts ===
       "wireguard,amneziawg,wireguard,amneziawg",
   );
+  await page.evaluate(() => {
+    document.documentElement.dataset.vpnReviewServerOffline = "1";
+  });
   await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   await page
-    .getByRole("heading", { name: "Not connected", exact: true })
+    .getByText(
+      "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.",
+      { exact: true },
+    )
     .waitFor();
+  if (
+    await page.getByRole("button", { name: "DISCONNECT", exact: true }).count()
+  )
+    throw Error(
+      "Remote outage must not leave a disconnect button after local shutdown",
+    );
+  await screenshot("04h-home-server-unavailable-disconnected");
+  await page.evaluate(() => {
+    document.documentElement.dataset.vpnReviewServerOffline = "0";
+  });
+  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
+  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
+  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   if (
     await page
       .getByRole("button", { name: "изменить способ подключения", exact: true })
