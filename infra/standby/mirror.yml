@@ -1,0 +1,95 @@
+---
+# Run from a trusted Linux Ansible controller with administrator SSH access.
+# bootstrap.yml prepares the standby first. Never start application containers.
+- name: Prepare restricted standby transfer identity
+  hosts: standby
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Require the designated standby and a pinned primary host key file
+      ansible.builtin.assert:
+        that:
+          - "'130.0.234.51' in ansible_facts['all_ipv4_addresses']"
+          - primary_known_hosts_file is defined
+          - groups['standby'] | length == 1
+          - groups['primary'] | length == 1
+    - name: Create private transfer configuration
+      ansible.builtin.file:
+        path: /etc/prettylisavpn-standby
+        state: directory
+        mode: '0700'
+    - name: Generate separate read-only transfer key if absent
+      ansible.builtin.command:
+        argv: [ssh-keygen, -q, -t, ed25519, -N, '', -C, PrettyLisaVPN-standby-readonly, -f, /etc/prettylisavpn-standby/mirror_key]
+        creates: /etc/prettylisavpn-standby/mirror_key
+      no_log: true
+    - name: Read public transfer key
+      ansible.builtin.slurp:
+        src: /etc/prettylisavpn-standby/mirror_key.pub
+      register: standby_transfer_public_key
+    - name: Install operator-verified primary host keys
+      ansible.builtin.copy:
+        src: '{{ primary_known_hosts_file }}'
+        dest: /etc/prettylisavpn-standby/known_hosts
+        mode: '0600'
+
+- name: Allow only export reads from the standby
+  hosts: primary
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Require the designated production primary
+      ansible.builtin.assert:
+        that:
+          - "'95.140.152.42' in ansible_facts['all_ipv4_addresses']"
+    - name: Install restricted transfer tool
+      ansible.builtin.apt:
+        name: [rsync, python3]
+        state: present
+    - name: Create private export directory
+      ansible.builtin.file:
+        path: /opt/prettylisavpn/standby-export
+        state: directory
+        mode: '0700'
+    - name: Enroll read-only restricted transfer key
+      ansible.builtin.lineinfile:
+        path: /root/.ssh/authorized_keys
+        create: true
+        mode: '0600'
+        line: >-
+          from="130.0.234.51",restrict,command="/usr/bin/rrsync -ro /opt/prettylisavpn/standby-export"
+          {{ hostvars[groups['standby'][0]]['standby_transfer_public_key']['content'] | b64decode | trim }}
+
+- name: Install inactive snapshot automation
+  hosts: primary:standby
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Check role and host before installing services
+      ansible.builtin.assert:
+        that:
+          - standby_role in ['prepare', 'pull']
+          - "({'prepare': '95.140.152.42', 'pull': '130.0.234.51'}[standby_role]) in ansible_facts['all_ipv4_addresses']"
+    - name: Create private mirror program directory
+      ansible.builtin.file:
+        path: /usr/local/lib/prettylisavpn-standby
+        state: directory
+        mode: '0700'
+    - name: Install reviewed mirror program atomically
+      ansible.builtin.copy:
+        src: mirror.py
+        dest: /usr/local/lib/prettylisavpn-standby/mirror.py
+        mode: '0600'
+    - name: Install mirror systemd definitions
+      ansible.builtin.copy:
+        src: 'prettylisavpn-standby-{{ standby_role }}.{{ item }}'
+        dest: '/etc/systemd/system/prettylisavpn-standby-{{ standby_role }}.{{ item }}'
+        mode: '0644'
+      loop: [service, timer]
+      register: standby_units
+    - name: Enable periodic snapshot preparation or verification
+      ansible.builtin.systemd_service:
+        name: 'prettylisavpn-standby-{{ standby_role }}.timer'
+        daemon_reload: '{{ standby_units.changed }}'
+        enabled: true
+        state: started

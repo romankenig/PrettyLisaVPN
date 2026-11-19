@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the inactive PrettyLisaVPN standby every minute
+
+[Timer]
+OnBootSec=90
+OnUnitInactiveSec=60
+AccuracySec=5
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,47 @@
+name: Standby infrastructure
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'infra/standby/**'
+      - 'docs/production-standby.md'
+      - '.github/workflows/standby-infrastructure.yml'
+  pull_request:
+    paths:
+      - 'infra/standby/**'
+      - 'docs/production-standby.md'
+      - '.github/workflows/standby-infrastructure.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Snapshot integrity and inactive standby safeguards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.12.9'
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install locked quality tools
+        run: uv sync --project backend --frozen
+      - name: Format, lint and type check
+        run: |
+          uv run --project backend ruff format --check --config backend/pyproject.toml infra/standby
+          uv run --project backend ruff check --config backend/pyproject.toml infra/standby
+          uv run --project backend mypy --strict --platform linux infra/standby/mirror.py
+      - name: Test integrity, restricted copies and inactive standby
+        run: python -m unittest discover -s infra/standby -p 'test_*.py' -v
+      - name: Validate Ansible and systemd definitions without deployment
+        run: |
+          uv run --project backend ansible-playbook -i infra/standby/inventory.example.ini infra/standby/bootstrap.yml --syntax-check
+          uv run --project backend ansible-playbook -i infra/standby/inventory.example.ini infra/standby/mirror.yml --syntax-check
+          systemd-analyze verify infra/standby/*.service infra/standby/*.timer
