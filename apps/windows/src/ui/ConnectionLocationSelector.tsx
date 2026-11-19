@@ -13,6 +13,7 @@ import type { VpnLocationSelection } from "../vpn/selection";
 import { CountryIcon } from "./CountryIcon";
 import { useRegistration } from "../auth/useRegistration";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
+import { readCountryCache, saveCountryCache } from "../vpn/countryCache";
 
 const AVAILABILITY_MAX_AGE_MS = 60_000;
 type AvailabilityState =
@@ -28,6 +29,7 @@ type Choice = {
   readonly selection: VpnLocationSelection;
   readonly name: string;
   readonly quality: number;
+  readonly online?: boolean;
   readonly available: boolean;
   readonly premiumRequired?: boolean;
 };
@@ -48,11 +50,20 @@ export function ConnectionLocationSelector({
   readonly refreshKey?: number;
 }) {
   useLanguage();
-  const { api, session } = useApplication();
+  const { api, session, config } = useApplication();
   const activeSession = session.current();
+  const accessToken = activeSession?.accessToken;
+  const cacheKey = JSON.stringify([
+    config.backendBaseUrl,
+    activeSession?.userId,
+    activeSession?.plan,
+  ]);
   const guest = activeSession?.plan === "DEMO";
   const registration = useRegistration();
-  const [state, setState] = useState<AvailabilityState>({ phase: "loading" });
+  const [state, setState] = useState<AvailabilityState>(() => {
+    const data = readCountryCache(cacheKey);
+    return data ? { phase: "refreshing", data } : { phase: "loading" };
+  });
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -62,7 +73,7 @@ export function ConnectionLocationSelector({
   const id = useId();
 
   useEffect(() => {
-    if (!activeSession) return;
+    if (!accessToken) return;
     const controller = new AbortController();
     setState((current) =>
       "data" in current
@@ -70,11 +81,14 @@ export function ConnectionLocationSelector({
         : { phase: "loading" },
     );
     void readWithNetworkGrace(
-      () => api.listVpnCountries(activeSession.accessToken, controller.signal),
+      () => api.listVpnCountries(accessToken, controller.signal),
       controller.signal,
     )
       .then((data) => {
-        if (!controller.signal.aborted) setState({ phase: "ready", data });
+        if (!controller.signal.aborted) {
+          saveCountryCache(cacheKey, data);
+          setState({ phase: "ready", data });
+        }
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -89,7 +103,7 @@ export function ConnectionLocationSelector({
         );
       });
     return () => controller.abort();
-  }, [activeSession, api, attempt, refreshKey]);
+  }, [accessToken, cacheKey, api, attempt, refreshKey]);
 
   useEffect(() => {
     if (state.phase !== "ready") return;
@@ -148,15 +162,12 @@ export function ConnectionLocationSelector({
   const countries =
     "data" in state
       ? state.data.countries
-          .filter(
-            (country) =>
-              allowUnavailable || country.available || country.premium_required,
-          )
           .map((country): Choice => ({
             key: country.country_code,
             selection: { mode: "COUNTRY", country_code: country.country_code },
             name: countryName(country.country_code),
             quality: country.quality,
+            online: country.available,
             available:
               !country.premium_required &&
               (allowUnavailable || country.available),
@@ -165,7 +176,7 @@ export function ConnectionLocationSelector({
           .sort((a, b) => a.name.localeCompare(b.name, getLanguage()))
       : [];
   const top = [...countries]
-    .filter((country) => !country.premiumRequired)
+    .filter((country) => !country.premiumRequired && country.online)
     .sort(
       (a, b) =>
         b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()),
@@ -194,7 +205,7 @@ export function ConnectionLocationSelector({
             choice.selection.country_code === selection.country_code,
         ) ?? autopilot);
   const usable = !disabled && state.phase === "ready";
-  const expanded = open && usable;
+  const expanded = open;
   useLayoutEffect(() => {
     if (!expanded || !root.current) return;
     const element = root.current;
@@ -235,9 +246,8 @@ export function ConnectionLocationSelector({
     trigger.current?.focus();
   }
   function keyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    if (!usable) return;
     const enabled = choices
-      .map((choice, index) => (choice.available ? index : -1))
+      .map((choice, index) => (!usable || choice.available ? index : -1))
       .filter((index) => index >= 0);
     if (event.key === "Escape") {
       event.preventDefault();
@@ -270,7 +280,7 @@ export function ConnectionLocationSelector({
     } else if (event.key.length === 1 && event.key !== " ") {
       const index = choices.findIndex(
         (choice) =>
-          choice.available &&
+          (!usable || choice.available) &&
           choice.name
             .toLocaleLowerCase("ru")
             .startsWith(event.key.toLocaleLowerCase("ru")),
@@ -298,11 +308,7 @@ export function ConnectionLocationSelector({
           className="location-refresh"
           aria-label={t("обновить страны")}
           title={t("обновить страны")}
-          disabled={
-            disabled ||
-            state.phase === "refreshing" ||
-            state.phase === "loading"
-          }
+          disabled={state.phase === "refreshing" || state.phase === "loading"}
           onClick={() => {
             setOpen(false);
             setAttempt((value) => value + 1);
@@ -321,7 +327,6 @@ export function ConnectionLocationSelector({
         aria-expanded={expanded}
         aria-haspopup="listbox"
         aria-activedescendant={expanded ? `${id}-${active}` : undefined}
-        disabled={!usable}
         onKeyDown={keyDown}
         onClick={() => {
           setOpen(!expanded);
@@ -329,7 +334,11 @@ export function ConnectionLocationSelector({
           setActive(Math.max(0, selectedIndex));
         }}
       >
-        <ChoiceLabel choice={selected} id={`${id}-selection`} />
+        <ChoiceLabel
+          choice={selected}
+          id={`${id}-selection`}
+          fresh={state.phase === "ready"}
+        />
         <span className="location-chevron" aria-hidden="true">
           ⌄
         </span>
@@ -358,13 +367,16 @@ export function ConnectionLocationSelector({
                       key={choice.key}
                       className={`location-option${active === optionIndex ? " location-option--active" : ""}${choice.premiumRequired ? " premium-locked" : guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
                       aria-selected={selected.key === choice.key}
-                      disabled={!choice.available}
+                      disabled={!usable || !choice.available}
                       tabIndex={-1}
                       onMouseDown={(event) => event.preventDefault()}
                       onMouseEnter={() => setActive(optionIndex)}
                       onClick={() => choose(choice)}
                     >
-                      <ChoiceLabel choice={choice} />
+                      <ChoiceLabel
+                        choice={choice}
+                        fresh={state.phase === "ready"}
+                      />
                       {choice.premiumRequired ? (
                         <small>{t("доступно только в Premium")}</small>
                       ) : (
@@ -373,11 +385,22 @@ export function ConnectionLocationSelector({
                           <small>{t("недоступно в DEMO")}</small>
                         )
                       )}
+                      {!choice.premiumRequired &&
+                        choice.online === false &&
+                        state.phase === "ready" && (
+                          <small>{t("сейчас недоступно")}</small>
+                        )}
                     </button>
                   );
                 })
               ) : (
-                <p className="location-empty">{t("нет доступных стран")}</p>
+                <p className="location-empty">
+                  {t(
+                    "data" in state
+                      ? "нет доступных стран"
+                      : "Список стран пока не загружен.",
+                  )}
+                </p>
               )}
             </div>
           ))}
@@ -386,6 +409,13 @@ export function ConnectionLocationSelector({
       {registration.error && (
         <p role="alert">
           {t("не удалось завершить гостевую сессию. попробуйте снова")}
+        </p>
+      )}
+      {"data" in state && state.phase !== "ready" && (
+        <p className="availability-note" role="status">
+          {t(
+            "Показан сохранённый список. Доступность серверов пока неизвестна.",
+          )}
         </p>
       )}
       {state.phase === "loading" || state.phase === "refreshing" ? (
@@ -412,9 +442,11 @@ export function ConnectionLocationSelector({
 function ChoiceLabel({
   choice,
   id,
+  fresh = true,
 }: {
   readonly choice: Choice;
   readonly id?: string;
+  readonly fresh?: boolean;
 }) {
   useLanguage();
   return (
@@ -432,19 +464,25 @@ function ChoiceLabel({
       {choice.selection.mode === "COUNTRY" && (
         <span
           className="location-option__quality"
-          aria-label={t(`доступность ${choice.quality} из 100`)}
+          aria-label={t(
+            fresh
+              ? `доступность ${choice.quality} из 100`
+              : "доступность неизвестна",
+          )}
         >
           <span className="quality-bars" aria-hidden="true">
             {[1, 2, 3].map((level) => (
               <i
                 key={level}
                 className={
-                  choice.quality > ((level - 1) * 100) / 3 ? "filled" : ""
+                  fresh && choice.quality > ((level - 1) * 100) / 3
+                    ? "filled"
+                    : ""
                 }
               />
             ))}
           </span>
-          {t(choice.quality)}
+          {fresh ? t(choice.quality) : "—"}
         </span>
       )}
     </>

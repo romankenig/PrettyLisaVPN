@@ -198,7 +198,7 @@ async function main() {
         () =>
           window.document
             .querySelector(".connection-status")
-            ?.textContent?.trim() === "Not connected",
+            ?.textContent?.trim() === "ОТКЛЮЧЕНО",
       );
       const row = {
         method,

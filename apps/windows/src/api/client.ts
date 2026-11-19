@@ -469,7 +469,9 @@ export function createApiClient(
   };
 }
 
-function isVpnCountriesResponse(value: unknown): value is VpnCountriesResponse {
+export function isVpnCountriesResponse(
+  value: unknown,
+): value is VpnCountriesResponse {
   return (
     hasOnlyKeys(value, ["autopilot", "countries"]) &&
     hasOnlyKeys(value.autopilot, ["quality", "available"]) &&
