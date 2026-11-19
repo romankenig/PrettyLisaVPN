@@ -13,6 +13,16 @@
   supports the owner's recurring-payment website release without updating apps.
 - See the [publication selector](docs/test-environment.md#publication-and-rollback-checklist).
 
+### Preserve VPN deployment configuration — version unchanged
+
+- Persist server-owned configuration paths in release/canonical env files so a
+  later backend recreation retains fleet and VPN settings without shell exports.
+- Require previously present configuration files and verify running backend/worker
+  settings after deployment; health/readiness alone cannot detect disabled VPN.
+- Restore the existing backend image and confirm Windows/Android disconnect and
+  reconnect, including server cleanup and verified new leases. Infrastructure only;
+  no application, client or schema changes. See [recovery handoff](docs/vpn-deployment-config-recovery.md).
+
 ### Windows server outage disconnection — 0.31.4
 
 - Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote
