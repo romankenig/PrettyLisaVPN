@@ -52,6 +52,13 @@ features disabled; a previously present file cannot silently disappear on update
 CI and manual deploy use the retained release env. Post-deploy verification compares
 running image/environment with resolved configuration without printing values.
 
+The subsequent test/production split is retained: a persisted
+`FLEET_WORKER_ENABLED=false` stops the test worker, and verification requires it to
+remain stopped. Required fleet files still apply to the backend. These shared
+deployment changes affect both environments; a `develop` merge deploys only to
+the test environment when its gate is enabled. Production application publication
+remains separate; see [test environment](test-environment.md).
+
 Regression checks cover preparation, subsequent releases, lost files, permissions,
 shell-free Compose rendering, runtime drift, missing workers and rollback/migration
 ordering. Tests use synthetic credentials and never start test containers on the

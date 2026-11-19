@@ -50,6 +50,7 @@ def test_legacy_clients_do_not_receive_unknown_sbp_route_or_purchase_action():
 @pytest.fixture
 def web():
     app = FastAPI()
+    app.state.public_website_origin = WEB_ORIGIN
     app.include_router(router)
     app.include_router(native_router)
     account = uuid4()
@@ -75,6 +76,21 @@ def web():
     )
     with TestClient(app, base_url=WEB_ORIGIN) as client:
         yield client, app, sessions, account, operation
+
+
+def test_test_portal_rejects_production_origin_before_using_cookie(web):
+    client, app, sessions, _, _ = web
+    app.state.public_website_origin = "https://test.prettylisavpn.com"
+    rejected = client.post("/api/web/billing/exchange", headers=HEADERS, json={"token": TOKEN})
+    assert rejected.status_code == 403
+    sessions.exchange.assert_not_awaited()
+    accepted = client.post(
+        "/api/web/billing/exchange",
+        headers={**HEADERS, "Origin": app.state.public_website_origin},
+        json={"token": TOKEN},
+    )
+    assert accepted.status_code == 200
+    sessions.exchange.assert_awaited_once_with(TOKEN)
 
 
 @pytest.mark.parametrize(

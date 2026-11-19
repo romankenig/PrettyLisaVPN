@@ -11,21 +11,24 @@ from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 
-def matches(version: object, ready: object, base: str) -> bool:
+def matches(version: object, ready: object, base: str, environment: str = "development") -> bool:
     if not isinstance(version, dict) or not isinstance(ready, dict):
         return False
     runtime = version.get("application_version")
+    suffix = (
+        r"-dev\.[1-9][0-9]*\+g[0-9a-f]{40}" if environment == "development" else r"\+g[0-9a-f]{40}"
+    )
     return (
         version.get("application_name") == "PrettyLisaVPN"
-        and version.get("environment") == "development"
+        and version.get("environment") == environment
         and isinstance(runtime, str)
-        and re.fullmatch(re.escape(base) + r"-dev\.[1-9][0-9]*\+g[0-9a-f]{40}", runtime) is not None
+        and re.fullmatch(re.escape(base) + suffix, runtime) is not None
         and ready.get("status") == "ready"
         and ready.get("dependencies") == {"postgresql": True, "valkey": True}
     )
 
 
-def wait_backend(url: str, base: str, timeout: float) -> None:
+def wait_backend(url: str, base: str, timeout: float, environment: str = "development") -> None:
     parsed = urlsplit(url)
     if (
         parsed.scheme != "https"
@@ -46,7 +49,7 @@ def wait_backend(url: str, base: str, timeout: float) -> None:
                 version = json.load(response)
             with urlopen(url.rstrip("/") + "/ready", timeout=10) as response:
                 ready = json.load(response)
-            if matches(version, ready, base):
+            if matches(version, ready, base, environment):
                 print(json.dumps({"event": "backend_ready_for_clients", "version": version}))
                 return
         except (URLError, OSError, ValueError):
@@ -62,11 +65,14 @@ def wait_backend(url: str, base: str, timeout: float) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", required=True)
+    parser.add_argument(
+        "--environment", choices=("development", "production"), default="development"
+    )
     parser.add_argument("--timeout", type=float, default=1800)
     args = parser.parse_args()
     manifest = Path(__file__).resolve().parents[2] / "backend/pyproject.toml"
     base = tomllib.loads(manifest.read_text(encoding="utf-8"))["project"]["version"]
-    wait_backend(args.url, base, args.timeout)
+    wait_backend(args.url, base, args.timeout, args.environment)
 
 
 if __name__ == "__main__":

@@ -1218,6 +1218,17 @@ Implemented API integration requests `include_locked=true` and consumes
 require backend 0.54.0 deployment. No route or new auth guard is introduced. See
 [all-client compatibility and validation handoff](premium-location-visibility.md).
 
+## Test and production navigation — 2026-11-19
+
+Windows 0.31.5 chooses the API at build time. A `develop` installer uses
+`https://api.test.prettylisavpn.com`; DEMO Buy and authenticated billing handoffs
+open only `https://test.prettylisavpn.com/account/`. The frontend and native browser
+allowlists agree, including the exact single-use handoff fragment. A `main` build
+retains the production API/account site. This is implemented navigation with the
+existing backend portal contract; payment-provider activation is separate.
+Public read-only legal documents retain their existing production URLs. No screen
+layout, auth guard, token transport or automatic update behavior changes.
+See [environment workflow and verification](test-environment.md).
 
 ## Website 0.7.2 — direct recurring checkout
 

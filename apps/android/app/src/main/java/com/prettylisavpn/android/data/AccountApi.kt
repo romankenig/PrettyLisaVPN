@@ -1,5 +1,7 @@
 package com.prettylisavpn.android.data
 
+import com.prettylisavpn.android.BuildConfig
+
 import com.google.gson.*
 import com.prettylisavpn.android.auth.AuthFailure
 import com.prettylisavpn.android.auth.HttpAuthApi
@@ -253,4 +255,4 @@ private class ProgressBody(private val body: okhttp3.RequestBody, private val pr
     }
 }
 
-fun validBillingPortal(value: String): Boolean = Regex("https://prettylisavpn\\.com/account/#handoff=[A-Za-z0-9_-]{43}").matches(value)
+fun validBillingPortal(value: String): Boolean = Regex(Regex.escape(BuildConfig.WEBSITE_BASE_URL) + "/account/#handoff=[A-Za-z0-9_-]{43}").matches(value)

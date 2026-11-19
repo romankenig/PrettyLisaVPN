@@ -75,7 +75,7 @@ def docker_json(arguments: list[str]) -> object:
     )
     if result.returncode:
         raise ValueError("Docker configuration inspection failed (details suppressed)")
-    return json.loads(result.stdout)
+    return json.loads(result.stdout.strip() or "[]")
 
 
 def verify(environment_file: Path, compose_file: Path, project: str) -> None:
@@ -88,7 +88,8 @@ def verify(environment_file: Path, compose_file: Path, project: str) -> None:
         str(environment_file),
     ]
     compose += ["--file", str(compose_file)]
-    fleet = values.get("FLEET_ENV_REQUIRED") == "true"
+    worker_enabled = values.get("FLEET_WORKER_ENABLED", "true") == "true"
+    fleet = values.get("FLEET_ENV_REQUIRED") == "true" and worker_enabled
     if fleet:
         compose += ["--profile", "fleet"]
     config = docker_json([*compose, "config", "--format", "json"])
@@ -109,6 +110,12 @@ def verify(environment_file: Path, compose_file: Path, project: str) -> None:
             raise ValueError(f"{service} is not running the configured image")
         if any(actual.get(key) != str(value) for key, value in expected["environment"].items()):
             raise ValueError(f"{service} runtime environment differs from persisted configuration")
+    if not worker_enabled:
+        workers = docker_json(
+            [*compose, "--profile", "fleet", "ps", "--format", "json", "fleet-worker"]
+        )
+        if workers:
+            raise ValueError("Disabled fleet-worker is still running")
     print("Running backend/worker configuration matches the persisted release")
 
 

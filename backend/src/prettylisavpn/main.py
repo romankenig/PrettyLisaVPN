@@ -270,6 +270,7 @@ def create_app(
                         cast(Postgres, pg),
                         cast(OtpVerifier, app.state.otp_service),
                         RedisWebTokens(cache.client),
+                        config.public_website_origin,
                     )
                     if isinstance(cache, Valkey)
                     else None
@@ -332,6 +333,7 @@ def create_app(
     )
     app.add_middleware(SafeExceptionMiddleware)
     app.add_middleware(AppVersionContextMiddleware)
+    app.state.public_website_origin = config.public_website_origin
     app.state.cardlink_callbacks = cardlink_callbacks
     app.include_router(auth_router)
     app.include_router(demo_router)

@@ -47,7 +47,7 @@ jobs:
               "/ready": ("status", "dependencies"),
               "/version": ("application_name", "application_version", "environment"),
           }
-          for host in ("dev-api.prettylisavpn.com", "api.prettylisavpn.com"):
+          for host in ("api.test.prettylisavpn.com", "api.prettylisavpn.com"):
               item = {"host": host, "endpoints": []}
               try:
                   item["resolved_addresses"] = sorted({

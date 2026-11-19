@@ -150,7 +150,7 @@ class DeploymentConfigurationTests(unittest.TestCase):
 
 
 class RuntimeConfigurationTests(unittest.TestCase):
-    def verify(self, *, missing_flag=False, missing_worker=False):
+    def verify(self, *, missing_flag=False, missing_worker=False, worker_enabled=True):
         expected = {"FLEET_ENABLED": "true", "MANAGED_VPN_SECRET": "test-only-secret"}
         responses = [
             {
@@ -160,7 +160,7 @@ class RuntimeConfigurationTests(unittest.TestCase):
                 }
             }
         ]
-        for name in ("backend", "fleet-worker"):
+        for name in ("backend", "fleet-worker") if worker_enabled else ("backend",):
             responses.append([] if missing_worker and name == "fleet-worker" else {"ID": name})
             actual = expected if not missing_flag else {"MANAGED_VPN_SECRET": "test-only-secret"}
             responses.append(
@@ -174,7 +174,10 @@ class RuntimeConfigurationTests(unittest.TestCase):
                     }
                 ]
             )
-        with patch.object(CONFIG, "read_values", return_value={"FLEET_ENV_REQUIRED": "true"}):
+        if not worker_enabled:
+            responses.append([] if missing_worker else {"ID": "unexpected-worker"})
+        values = {"FLEET_ENV_REQUIRED": "true", "FLEET_WORKER_ENABLED": str(worker_enabled).lower()}
+        with patch.object(CONFIG, "read_values", return_value=values):
             with patch.object(CONFIG, "docker_json", side_effect=responses):
                 CONFIG.verify(Path("release.env"), Path("compose.yaml"), "test-project")
 
@@ -188,6 +191,13 @@ class RuntimeConfigurationTests(unittest.TestCase):
     def test_missing_worker_is_a_failed_deployment(self):
         with self.assertRaisesRegex(ValueError, "one running fleet-worker"):
             self.verify(missing_worker=True)
+
+    def test_test_clone_with_disabled_worker_passes(self):
+        self.verify(worker_enabled=False, missing_worker=True)
+
+    def test_test_clone_with_running_worker_fails(self):
+        with self.assertRaisesRegex(ValueError, "Disabled fleet-worker"):
+            self.verify(worker_enabled=False)
 
 
 if __name__ == "__main__":

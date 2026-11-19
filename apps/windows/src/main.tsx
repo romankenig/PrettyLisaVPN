@@ -2,7 +2,7 @@ import { t } from "./i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
-import { loadConfig } from "./config/config";
+import { loadConfig, websiteOrigin } from "./config/config";
 import { createApiClient } from "./api/client";
 import { createBillingClient } from "./billing/client";
 import { createSupportSender } from "./support/client";
@@ -94,6 +94,7 @@ try {
                   .split(",")
                   .map((host) => host.trim())
                   .filter(Boolean),
+                websiteOrigin(config.backendBaseUrl),
               ),
           desktop: desktopAdapter,
           installationId: installationIdProvider,

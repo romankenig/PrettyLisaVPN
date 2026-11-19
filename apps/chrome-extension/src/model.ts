@@ -1,5 +1,6 @@
-export const API = "https://api.prettylisavpn.com";
-export const PROBE = "https://prettylisavpn.com";
+import { target } from "./deployment";
+export const API = target.api;
+export const PROBE = target.website;
 export const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export interface Account {
@@ -144,7 +145,7 @@ export function proxySettings(proxy: ProxyConfig): chrome.proxy.ProxyConfig {
     mode: "fixed_servers",
     rules: {
       singleProxy: { scheme: "https", host: proxy.host, port: proxy.port },
-      bypassList: ["<-loopback>", "api.prettylisavpn.com"],
+      bypassList: ["<-loopback>", new URL(API).hostname],
     },
   };
 }
@@ -160,7 +161,7 @@ export function controlsProxy(
     actual?.scheme === "https" &&
     actual.host === proxy.host &&
     actual.port === proxy.port &&
-    value.rules?.bypassList?.join() === "<-loopback>,api.prettylisavpn.com"
+    value.rules?.bypassList?.join() === `<-loopback>,${new URL(API).hostname}`
   );
 }
 export function proxyAuth(

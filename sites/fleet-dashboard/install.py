@@ -1,6 +1,7 @@
 """Install a built private dashboard on the main server; never prints credentials."""
 
 import argparse
+import base64
 import json
 import os
 import re
@@ -22,6 +23,29 @@ def render(template: str, username: str, password_hash: str, monitor_token: str)
         .replace("@@PASSWORD_HASH@@", password_hash)
         .replace("@@MONITOR_TOKEN@@", monitor_token)
     )
+
+
+def test_download_proxy(config: str, username: str, password: str) -> str:
+    """Replace only the private download handler; retain outer authentication."""
+    if not re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", username) or not re.fullmatch(
+        r"[A-Za-z0-9_-]{20,256}", password
+    ):
+        raise ValueError("Invalid upstream dashboard credentials")
+    authorization = base64.b64encode(f"{username}:{password}".encode()).decode()
+    local = re.compile(r"        handle_path /dashboard/downloads/\* \{\n.*?\n        \}", re.S)
+    if len(local.findall(config)) != 1 or "basic_auth" not in config:
+        raise ValueError("Expected the authenticated local download handler")
+    proxy = """        handle /dashboard/downloads/* {
+            @download_read method GET HEAD
+            handle @download_read {
+                reverse_proxy https://api.test.prettylisavpn.com {
+                    header_up Host api.test.prettylisavpn.com
+                    header_up Authorization "Basic %s"
+                }
+            }
+            respond 405
+        }""" % authorization
+    return local.sub(lambda _: proxy, config)
 
 
 def main() -> None:
@@ -73,6 +97,10 @@ def main() -> None:
         password_hash,
         fleet["FLEET_MONITOR_TOKEN"],
     )
+    upstream_credentials = root / "test-download-login.json"
+    if upstream_credentials.exists():
+        upstream = json.loads(upstream_credentials.read_text())
+        config = test_download_proxy(config, upstream["username"], upstream["password"])
     pending = root / "monitoring.pending"
     pending.write_text(config)
     # Validate in the pinned runtime before making the route visible.

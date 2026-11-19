@@ -146,7 +146,12 @@ def archive_version(payload: bytes, platform: str, *, simulator: bool = False) -
 
 
 def validate(
-    directory: Path, platform: str, sha: str, run: int, attempt: int
+    directory: Path,
+    platform: str,
+    sha: str,
+    run: int,
+    attempt: int,
+    expected_backend: str | None = None,
 ) -> tuple[dict[str, Any], bytes, dict[str, bytes]]:
     if platform not in FILES or not re.fullmatch(r"[0-9a-f]{40}", sha) or run < 1 or attempt < 1:
         raise ValueError("Invalid build coordinates")
@@ -158,6 +163,12 @@ def validate(
         or identity.get("pr_head_sha")
     ):
         raise ValueError("Build identity does not match the trusted develop push")
+    if expected_backend is not None and (
+        expected_backend
+        not in ("https://api.prettylisavpn.com", "https://api.test.prettylisavpn.com")
+        or identity.get("backend") != expected_backend
+    ):
+        raise ValueError("Client backend does not match the destination environment")
     android = platform == "android"
     version = identity["version_name" if android else "version"]
     if not isinstance(version, str) or not VERSION.fullmatch(version):
@@ -229,6 +240,8 @@ def validate(
         "url": "/dashboard/downloads/" + DOWNLOADS[platform],
         "published_at": datetime.now(UTC).isoformat(),
     }
+    if identity.get("backend"):
+        entry["backend"] = identity["backend"]
     if installed_windows:
         entry["package_kind"] = "nsis"
     if platform in PACKAGE_KINDS:
@@ -272,11 +285,19 @@ def validate(
     return entry, payload, companions
 
 
-def publish(root: Path, directory: Path, platform: str, sha: str, run: int, attempt: int) -> str:
+def publish(
+    root: Path,
+    directory: Path,
+    platform: str,
+    sha: str,
+    run: int,
+    attempt: int,
+    expected_backend: str | None = None,
+) -> str:
     # Only used on the Linux main server. A shared lock serializes both platforms.
     import fcntl
 
-    entry, payload, companions = validate(directory, platform, sha, run, attempt)
+    entry, payload, companions = validate(directory, platform, sha, run, attempt, expected_backend)
     root.mkdir(parents=True, exist_ok=True)
     with (root / "publish.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -359,9 +380,13 @@ def main() -> None:
     parser.add_argument("--sha", required=True)
     parser.add_argument("--run", type=int, required=True)
     parser.add_argument("--attempt", type=int, required=True)
+    parser.add_argument("--backend", required=True)
     args = parser.parse_args()
     if os.geteuid() != 0:
         raise SystemExit("Run as root on the main server")
+    root = Path("/opt/prettylisavpn/secrets/dashboard/downloads")
+    if (root / "publish-backend").read_text().strip() != args.backend:
+        raise SystemExit("Server publication destination mismatch")
     os.umask(0o077)
     result = publish(
         Path("/opt/prettylisavpn/secrets/dashboard/downloads"),
@@ -370,6 +395,7 @@ def main() -> None:
         args.sha,
         args.run,
         args.attempt,
+        args.backend,
     )
     print(json.dumps({"platform": args.platform, "result": result, "run": args.run}))
 

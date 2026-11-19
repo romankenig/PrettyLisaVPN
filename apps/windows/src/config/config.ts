@@ -58,3 +58,9 @@ export function loadConfig(env: Record<string, unknown>): AppConfig {
     backendHealthIntervalMs,
   });
 }
+
+export function websiteOrigin(backendBaseUrl: string): string {
+  return backendBaseUrl === "https://api.test.prettylisavpn.com"
+    ? "https://test.prettylisavpn.com"
+    : "https://prettylisavpn.com";
+}

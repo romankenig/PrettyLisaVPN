@@ -1,5 +1,15 @@
 # Dashboard downloads and GMT+3 — 2026-10-28
 
+Current environment policy (2026-11-19): `develop` builds target the isolated test API
+and publish on `5.129.211.150` through GitHub Environment `testing`. The main private
+dashboard proxies only its authenticated download routes to those test files; the
+public main website continues serving its independent production download store.
+`main` publishes production builds through Environment `production` only after the
+owner's «опубликуй» instruction and chosen release versions. The shared publisher
+checks both build provenance and the expected API origin against a server-owned
+`publish-backend` marker. Historical descriptions below predate this separation.
+See [current environment inventory](test-environment.md).
+
 Dashboard 0.2.0 → 0.3.0 (new capability). Android remains 0.14.0/code 25,
 Windows 0.17.0. Backend 0.20.0 → 0.21.0 adds durable rating history (migration 0033).
 No VPN transport, entitlement or client behavior changes. All frontend dates use fixed GMT+3, including midnight rollover;

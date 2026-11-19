@@ -14,7 +14,7 @@ jobs:
     name: Check existing SSH access and retained deployment
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: development
+    environment: testing
     steps:
       - name: Read development metadata over verified SSH
         env:
@@ -41,7 +41,7 @@ jobs:
           if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
               raise SystemExit("Configured host is not a plain DNS hostname or IPv4 address")
           addresses = {r[4][0] for r in socket.getaddrinfo(host, 22, type=socket.SOCK_STREAM)}
-          if addresses != {"95.140.152.42"}:
+          if addresses != {"5.129.211.150"}:
               print("target_matches_confirmed_development_vps=false")
               raise SystemExit("Configured target resolves outside the confirmed development VPS")
           print("target_matches_confirmed_development_vps=true")
@@ -132,7 +132,7 @@ jobs:
               report["alembic_" + verb] = {"exit_code": result.returncode, "revisions": re.findall(r"(?m)^([0-9]{4}_[a-z0-9_]+)", result.stdout)}
           report["public"] = {}
           for endpoint in ("health", "ready", "version"):
-              with urllib.request.urlopen("https://api.prettylisavpn.com/" + endpoint, timeout=10) as response:
+              with urllib.request.urlopen("https://api.test.prettylisavpn.com/" + endpoint, timeout=10) as response:
                   payload = json.loads(response.read(16385))
                   allowed = {"status", "dependencies"} if endpoint != "version" else {"application_name", "application_version", "environment"}
                   report["public"][endpoint] = {"http_status": response.status, "response": {k: v for k, v in payload.items() if k in allowed}}

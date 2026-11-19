@@ -73,7 +73,7 @@ internal data class PublicLocation(val ip: String?, val country: String?, val ci
 
 /** Independent public metadata only: no auth headers, email, session or installation ID. */
 internal class PublicMetadata(
-    private val versionUrl: String = "https://api.prettylisavpn.com/version",
+    private val versionUrl: String = "${BuildConfig.API_BASE_URL}/version",
     private val countryUrl: String = "https://ipwho.is/",
     private val fallbackCountryUrl: String? = if (countryUrl == "https://ipwho.is/") "https://ipinfo.io/json" else null,
     private val vpnIpUrl: String = "https://ifconfig.me/all.json",

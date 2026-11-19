@@ -1,4 +1,5 @@
 # gofmt requires canonical line endings on Windows and Linux checkouts alike.
 engines/**/*.go text eol=lf
 apps/apple/**/*.sh text eol=lf
-infra/deployment/*.sh text eol=lf
+# Deployment scripts are also copied directly from Windows to Linux test hosts.
+infra/**/*.sh text eol=lf

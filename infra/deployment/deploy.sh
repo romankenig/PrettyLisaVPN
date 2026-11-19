@@ -41,6 +41,12 @@ backend_image="$(read_environment_value BACKEND_IMAGE)"
 application_version="$(read_environment_value APPLICATION_VERSION)"
 project_name="$(read_environment_value COMPOSE_PROJECT_NAME)"
 project_name="${project_name:-prettylisavpn}"
+fleet_worker_enabled="$(read_environment_value FLEET_WORKER_ENABLED)"
+fleet_worker_enabled="${fleet_worker_enabled:-true}"
+if [[ "$fleet_worker_enabled" != "true" && "$fleet_worker_enabled" != "false" ]]; then
+    printf 'FLEET_WORKER_ENABLED must be true or false.\n' >&2
+    exit 1
+fi
 
 if [[ ! "$api_domain" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]]; then
     printf 'API_DOMAIN must be an unquoted public DNS hostname: %s\n' "$api_domain" >&2
@@ -71,11 +77,15 @@ unset DASHBOARD_DIR FLEET_ENV_FILE FLEET_CREDENTIALS_DIR CARDLINK_ENV_FILE \
     FLEET_ENV_REQUIRED DEMO_ENV_REQUIRED CARDLINK_ENV_REQUIRED PLATEGA_ENV_REQUIRED
 compose=(docker compose --project-name "$project_name" \
     --env-file "$environment_file" --file "$deployment_dir/compose.yaml")
-if [[ "$(read_environment_value FLEET_ENV_REQUIRED)" == "true" ]]; then
+if [[ "$(read_environment_value FLEET_ENV_REQUIRED)" == "true" && "$fleet_worker_enabled" == "true" ]]; then
     compose+=(--profile fleet)
 fi
 
 "${compose[@]}" config --quiet
+if [[ "$fleet_worker_enabled" == "false" ]]; then
+    # A repeated test deployment must also stop a previously enabled worker.
+    "${compose[@]}" --profile fleet stop fleet-worker
+fi
 if [[ "$deploy_mode" == "rollback" ]]; then
     # A rollback must use an already retained artifact and must not rebuild or pull.
     docker image inspect "$backend_image" >/dev/null
@@ -87,7 +97,7 @@ fi
 
 if [[ "$deploy_mode" == "deploy" ]]; then
     printf 'Applying database migrations...\n'
-    "${compose[@]}" run --rm --no-deps --no-tty backend alembic upgrade head </dev/null
+    "${compose[@]}" run --rm --no-deps -T backend alembic upgrade head </dev/null
 else
     printf 'Application rollback: keeping the database schema unchanged.\n'
 fi

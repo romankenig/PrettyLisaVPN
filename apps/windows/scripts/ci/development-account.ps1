@@ -12,7 +12,7 @@ try {
   $targetHost = $env:DEV_VPS_HOST.Trim()
   $targetPort = $env:DEV_VPS_PORT.Trim()
   $addresses = @([Net.Dns]::GetHostAddresses($targetHost) | ForEach-Object { $_.IPAddressToString })
-  if ($addresses -notcontains '95.140.152.42' -or $targetPort -ne '22') { throw 'Configured development target does not match documented VPS' }
+  if ($addresses -notcontains '5.129.211.150' -or $targetPort -ne '22') { throw 'Configured development target does not match documented VPS' }
   $scope = if ($AccountScope) { $AccountScope } else { "$($env:GITHUB_RUN_ID)-$($env:GITHUB_RUN_ATTEMPT)" }
   if ($scope -notmatch '^[0-9]+-[0-9]+$') { throw 'Invalid acceptance account scope' }
   $script = Get-Content -Raw scripts/ci/development-account.py
