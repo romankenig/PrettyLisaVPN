@@ -13,6 +13,10 @@ interface ConnectionAdapter {
     val egress: VpnEgress? get() = null
     suspend fun connect(country: String): ConnectionResult
     suspend fun disconnect()
+    suspend fun disconnect(onLocalStopped: () -> Unit) {
+        disconnect()
+        onLocalStopped()
+    }
     suspend fun recover() {}
     suspend fun health(): TunnelHealth = TunnelHealth.UNKNOWN
 }
