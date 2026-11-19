@@ -4,7 +4,7 @@
 }
 
 # Public website and client files are separate from private monitoring.
-prettylisavpn.com {
+{$PUBLIC_WEBSITE_DOMAIN:prettylisavpn.com} {
 	encode zstd gzip
 	# Only authenticated browser egress probes use this second hostname.
 	# The extension keeps the API control plane reachable outside its proxy.

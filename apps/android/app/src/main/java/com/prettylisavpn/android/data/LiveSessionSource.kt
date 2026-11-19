@@ -221,7 +221,7 @@ object LiveSessionFactory {
     @Synchronized fun create(context: Context): ScreenSource = source ?: run {
         val app = context.applicationContext
         val diagnostics = com.prettylisavpn.android.diagnostics.AppDiagnostics.get(app)
-        val http = HttpAuthApi("https://api.prettylisavpn.com/", diagnostics = diagnostics::append, elapsedMillis = android.os.SystemClock::elapsedRealtime)
+        val http = HttpAuthApi("${BuildConfig.API_BASE_URL}/", diagnostics = diagnostics::append, elapsedMillis = android.os.SystemClock::elapsedRealtime)
         val sessions = SessionCoordinator(http, KeystoreVault(app), "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(255), demoIdentity = { demoDeviceKey(app) })
         val vpn = com.prettylisavpn.android.vpn.AndroidVpnHost.create(app, sessions, http)
         LiveSessionSource(sessions, HttpAccountApi(http, BuildConfig.VERSION_NAME), EncryptedJournal(app), { uris -> readSupportImages(app, uris) }, vpn, diagnostics)

@@ -27,7 +27,7 @@ for target, entitlement in (('PrettyLisaVPN-iOS', 'App-iOS'), ('PacketTunnel-iOS
         rf'^  {target}:\n(.*?)(?=^  \S|\Z)', project, re.MULTILINE | re.DOTALL
     ).group(1)
     assert f'CODE_SIGN_ENTITLEMENTS: Config/{entitlement}.entitlements' in settings
-for platform, version in {"iOS": "0.6.2", "macOS": "0.5.2"}.items():
+for platform, version in {"iOS": "0.6.3", "macOS": "0.5.3"}.items():
     assert f"MARKETING_VERSION = {version}" in (ROOT / f"Config/{platform}.xcconfig").read_text()
 model = (ROOT / "App/AppModel.swift").read_text()
 assert '#if DEBUG' in model

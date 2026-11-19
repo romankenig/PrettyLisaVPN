@@ -8,6 +8,7 @@ on:
       - "assets/domain-catalog/**"
       - "infra/docker/**"
       - "infra/deployment/**"
+      - "infra/testing/**"
       - "sites/fleet-dashboard/**"
       - ".github/workflows/backend.yaml"
   pull_request:
@@ -16,6 +17,7 @@ on:
       - "assets/domain-catalog/**"
       - "infra/docker/**"
       - "infra/deployment/**"
+      - "infra/testing/**"
       - "sites/fleet-dashboard/**"
       - ".github/workflows/backend.yaml"
 
@@ -77,15 +79,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Check formatting
-        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
 
       - name: Lint
-        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
 
       - name: Type check
         run: |
           uv run mypy
-          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
 
       - name: Run unit tests
         run: uv run pytest -m "not integration and not docker"
@@ -123,16 +125,18 @@ jobs:
           RUN_DOCKER_TESTS: "1"
 
   deploy-development:
-    name: Deploy development
+    name: Deploy ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
     needs: check
     if: >-
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/develop' &&
-      vars.DEV_DEPLOY_ENABLED == 'true'
+      ((github.ref == 'refs/heads/develop' && vars.TEST_DEPLOY_ENABLED == 'true') ||
+       (github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: development
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
     env:
+      RUNTIME_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+      RUNTIME_CHANNEL: ${{ github.ref == 'refs/heads/main' && 'release' || 'development' }}
       SSH_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-ssh
       TRANSFER_DIRECTORY: /tmp/prettylisavpn-${{ github.run_id }}-transfer
 
@@ -148,7 +152,7 @@ jobs:
         run: |
           python3 infra/deployment/runtime_version.py \
             --sha "$BUILD_SHA" --run "$BUILD_RUN" --attempt "$BUILD_ATTEMPT" \
-            --channel development > runtime-identity.json
+            --channel "$RUNTIME_CHANNEL" > runtime-identity.json
           python3 - <<'PYTHON'
           import json
           import os
@@ -181,13 +185,19 @@ jobs:
             DEV_VPS_HOST DEV_VPS_PORT DEV_VPS_USER DEV_SSH_PRIVATE_KEY \
             DEV_SSH_KNOWN_HOSTS DEV_API_DOMAIN DEV_ACME_EMAIL \
             DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET \
-            DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
+            DEV_EMAIL_SMTP_PASSWORD
           do
             if [[ -z "${!secret_name:-}" ]]; then
               echo "::error::Required development secret ${secret_name} is not configured"
               missing=1
             fi
           done
+          if [[ "$GITHUB_REF" == refs/heads/develop ]]; then
+            [[ "$DEV_VPS_HOST" == 5.129.211.150 && "$DEV_API_DOMAIN" == api.test.prettylisavpn.com ]] || exit 1
+            [[ "$DEV_POSTGRES_URL" == *@test-postgres:5432/* && "$DEV_VALKEY_URL" == *@test-valkey:6379/* ]] || exit 1
+          else
+            [[ "$DEV_VPS_HOST" == 95.140.152.42 && "$DEV_API_DOMAIN" == api.prettylisavpn.com ]] || exit 1
+          fi
           exit "$missing"
 
       - name: Build development image
@@ -195,6 +205,8 @@ jobs:
 
       - name: Prepare encrypted connection and transfer files
         env:
+          DEV_PUBLIC_WEBSITE_DOMAIN: ${{ vars.DEV_PUBLIC_WEBSITE_DOMAIN || 'prettylisavpn.com' }}
+          DEV_FLEET_WORKER_ENABLED: ${{ vars.DEV_FLEET_WORKER_ENABLED || 'true' }}
           DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
           DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
           DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
@@ -205,6 +217,11 @@ jobs:
           DEV_EMAIL_SMTP_PASSWORD: ${{ secrets.DEV_EMAIL_SMTP_PASSWORD }}
           DEV_SUPPORT_SMTP_PASSWORD: ${{ secrets.DEV_SUPPORT_SMTP_PASSWORD }}
         run: |
+          if [[ "$GITHUB_REF" == refs/heads/develop ]]; then
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == test.prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == false && -z "$DEV_SUPPORT_SMTP_PASSWORD" ]] || exit 1
+          else
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == true ]] || exit 1
+          fi
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
           printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$SSH_DIRECTORY/id_ed25519"
@@ -212,7 +229,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
+          for value_name in DEV_API_DOMAIN DEV_PUBLIC_WEBSITE_DOMAIN DEV_FLEET_WORKER_ENABLED DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -224,11 +241,13 @@ jobs:
           {
             printf "COMPOSE_PROJECT_NAME='prettylisavpn-development'\n"
             printf "API_DOMAIN='%s'\n" "$DEV_API_DOMAIN"
+            printf "PUBLIC_WEBSITE_DOMAIN='%s'\n" "$DEV_PUBLIC_WEBSITE_DOMAIN"
+            printf "FLEET_WORKER_ENABLED='%s'\n" "$DEV_FLEET_WORKER_ENABLED"
             printf "ACME_EMAIL='%s'\n" "$DEV_ACME_EMAIL"
             printf "BACKEND_IMAGE='%s'\n" "$DEPLOY_IMAGE"
             printf "APPLICATION_NAME='PrettyLisaVPN'\n"
             printf "APPLICATION_VERSION='%s'\n" "$DEPLOY_VERSION"
-            printf "ENVIRONMENT='development'\n"
+            printf "ENVIRONMENT='%s'\n" "$RUNTIME_ENVIRONMENT"
             printf "LOG_LEVEL='INFO'\n"
             printf "POSTGRES_URL='%s'\n" "$DEV_POSTGRES_URL"
             printf "VALKEY_URL='%s'\n" "$DEV_VALKEY_URL"

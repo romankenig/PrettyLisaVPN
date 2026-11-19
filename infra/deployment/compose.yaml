@@ -26,6 +26,7 @@ services:
       APPLICATION_NAME: ${APPLICATION_NAME:-PrettyLisaVPN}
       APPLICATION_VERSION: ${APPLICATION_VERSION:?Set APPLICATION_VERSION}
       ENVIRONMENT: ${ENVIRONMENT:-production}
+      PUBLIC_WEBSITE_ORIGIN: https://${PUBLIC_WEBSITE_DOMAIN:-prettylisavpn.com}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       POSTGRES_URL: ${POSTGRES_URL:?Set POSTGRES_URL for managed PostgreSQL}
       VALKEY_URL: ${VALKEY_URL:?Set VALKEY_URL for managed Valkey}
@@ -125,6 +126,7 @@ services:
         condition: service_healthy
     environment:
       API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN to the public DNS name}
+      PUBLIC_WEBSITE_DOMAIN: ${PUBLIC_WEBSITE_DOMAIN:-prettylisavpn.com}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL for certificate notices}
     ports:
       - "${HTTP_BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:80"

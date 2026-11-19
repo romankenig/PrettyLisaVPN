@@ -1,5 +1,7 @@
 package com.prettylisavpn.android.vpn
 
+import com.prettylisavpn.android.BuildConfig
+
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -209,7 +211,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                 .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()
             try {
-                client.newCall(Request.Builder().url("https://api.prettylisavpn.com/vpn/wireguard/sessions/${ready.id}/probe")
+                client.newCall(Request.Builder().url("${BuildConfig.API_BASE_URL}/vpn/wireguard/sessions/${ready.id}/probe")
                     .header("Authorization", "Bearer $token").header("Cache-Control", "no-store").build()).execute().use { response ->
                     httpStatus = response.code
                     check(response.isSuccessful)

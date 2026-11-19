@@ -11,6 +11,7 @@ on:
       - "backend/src/prettylisavpn/billing/public/logo.svg"
       - "infra/deployment/Caddyfile"
       - "infra/deployment/compose.yaml"
+      - "infra/deployment/publish_website.py"
   pull_request:
     paths:
       - "sites/public-website/**"
@@ -22,6 +23,7 @@ on:
       - "backend/src/prettylisavpn/billing/public/logo.svg"
       - "infra/deployment/Caddyfile"
       - "infra/deployment/compose.yaml"
+      - "infra/deployment/publish_website.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,4 +48,58 @@ jobs:
           name: PrettyLisaVPN-website-preview-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: sites/public-website/dist/
           if-no-files-found: error
-      # There is deliberately no website deploy or payment activation job.
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: PrettyLisaVPN-website-preview-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: website-build
+      - name: Wait for compatible backend and publish static files
+        env:
+          DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
+          DEV_VPS_PORT: ${{ secrets.DEV_VPS_PORT }}
+          DEV_VPS_USER: ${{ secrets.DEV_VPS_USER }}
+          DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
+          DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          python3 infra/deployment/wait_backend.py --url "https://$DEV_API_DOMAIN" --environment "${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}"
+          if [[ "$GITHUB_REF" == refs/heads/develop ]]; then
+            [[ "$DEV_VPS_HOST" == 5.129.211.150 ]] || exit 1
+          else
+            [[ "$DEV_VPS_HOST" == 95.140.152.42 ]] || exit 1
+          fi
+          umask 077
+          ssh_dir="$RUNNER_TEMP/website-ssh"
+          mkdir -p "$ssh_dir"
+          trap 'rm -f "$ssh_dir/key" "$ssh_dir/known_hosts"' EXIT
+          printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$DEV_SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          common=(-i "$ssh_dir/key" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts" -o LogLevel=ERROR)
+          remote="${DEV_VPS_USER}@${DEV_VPS_HOST}"
+          incoming="/opt/prettylisavpn/incoming/website-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "install -d -m 700 '$incoming'"
+          scp "${common[@]}" -P "$DEV_VPS_PORT" -r website-build infra/deployment/publish_website.py "$remote:$incoming/"
+          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "bash -s -- '$incoming' '$GITHUB_SHA' '$GITHUB_RUN_ID' '$GITHUB_RUN_ATTEMPT'" <<'REMOTE'
+          set -Eeuo pipefail
+          incoming="$1"
+          image="$(docker inspect --format '{{.Image}}' prettylisavpn-development-backend-1)"
+          [[ "$image" =~ ^sha256:[a-f0-9]{64}$ ]]
+          docker run --rm --pull never --network none --read-only --user 0:0 \
+            --cap-drop ALL --cap-add DAC_READ_SEARCH --security-opt no-new-privileges \
+            --no-healthcheck --pids-limit 32 \
+            --mount "type=bind,src=$incoming,dst=/incoming,readonly" \
+            --mount type=bind,src=/opt/prettylisavpn/public-website,dst=/opt/prettylisavpn/public-website \
+            --entrypoint python "$image" /incoming/publish_website.py \
+            --source /incoming/website-build --sha "$2" --run "$3" --attempt "$4"
+          REMOTE

@@ -42,7 +42,9 @@ class PublicWebsiteTests(unittest.TestCase):
             (downloads / name).write_text("verified-client-fixture")
         (Path(cls.temp.name) / "private.txt").write_text("private-marker")
         config = (ROOT / "infra/deployment/Caddyfile").read_text()
-        public = config.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
+        public = config.split("{$PUBLIC_WEBSITE_DOMAIN:prettylisavpn.com} {", 1)[1].split(
+            "{$API_DOMAIN}", 1
+        )[0]
         public = public.replace("backend:8000", "127.0.0.1:8000")
         (Path(cls.temp.name) / "Caddyfile").write_text(
             ":8080 {" + public + '\n:8000 {\nrespond "payment-return-stub" 200\n}\n'

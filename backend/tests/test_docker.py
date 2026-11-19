@@ -328,7 +328,9 @@ def test_vps_compose_exposes_only_caddy_and_uses_external_dependencies():
     assert {"/config", "/data", "/etc/caddy/Caddyfile"} <= volume_targets
 
 
-def test_caddyfile_is_valid():
+@pytest.mark.parametrize("public_domain", [None, "test.prettylisavpn.com"])
+def test_caddyfile_is_valid(public_domain):
+    domain_args = ["--env", f"PUBLIC_WEBSITE_DOMAIN={public_domain}"] if public_domain else []
     docker(
         "run",
         "--rm",
@@ -336,6 +338,7 @@ def test_caddyfile_is_valid():
         "API_DOMAIN=api.example.invalid",
         "--env",
         "ACME_EMAIL=ops@example.invalid",
+        *domain_args,
         "--volume",
         f"{ROOT / 'infra/deployment/Caddyfile'}:/etc/caddy/Caddyfile:ro",
         "caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d",
@@ -346,9 +349,34 @@ def test_caddyfile_is_valid():
     )
 
 
+def test_test_data_services_are_private_and_separate():
+    result = docker(
+        "compose",
+        "-f",
+        str(ROOT / "infra/testing/compose.yaml"),
+        "config",
+        "--format",
+        "json",
+        env={
+            **os.environ,
+            "TEST_POSTGRES_IMAGE": "postgres:17-alpine",
+            "TEST_VALKEY_IMAGE": "valkey/valkey:8-alpine",
+            "TEST_POSTGRES_PASSWORD": "test-only-compose-validation",
+        },
+    )
+    config = json.loads(result.stdout)
+    assert config["name"] == "prettylisavpn-test-data"
+    assert set(config["services"]) == {"test-postgres", "test-valkey"}
+    for service in config["services"].values():
+        assert not service.get("ports")
+    assert config["networks"]["application"]["external"] is True
+
+
 def test_public_host_rejects_removed_provider_and_private_paths(tmp_path):
     source = (ROOT / "infra/deployment/Caddyfile").read_text()
-    public = source.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
+    public = source.split("{$PUBLIC_WEBSITE_DOMAIN:prettylisavpn.com} {", 1)[1].split(
+        "{$API_DOMAIN}", 1
+    )[0]
     (tmp_path / "Caddyfile").write_text(":8080 {" + public)
     name = "prettylisa-public-host-test-" + uuid4().hex[:10]
     docker(

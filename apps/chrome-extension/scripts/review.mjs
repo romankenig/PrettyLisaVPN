@@ -1,5 +1,5 @@
 import { chromium } from "@playwright/test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
@@ -7,6 +7,13 @@ import assert from "node:assert/strict";
 // Production artifact in an isolated browser profile; only the API is a fixture.
 // These screenshots and navigation tests do not claim live proxy acceptance.
 const extension = path.resolve("dist");
+const { backend } = JSON.parse(
+  await readFile(path.join(extension, "build-identity.json"), "utf8"),
+);
+const website =
+  backend === "https://api.test.prettylisavpn.com"
+    ? "https://test.prettylisavpn.com"
+    : "https://prettylisavpn.com";
 const profile = await mkdtemp(path.join(tmpdir(), "pl-chrome-review-"));
 const output = path.resolve("review");
 await mkdir(output, { recursive: true });
@@ -38,13 +45,13 @@ async function mockAPI() {
   context.on("page", (page) =>
     page.on("pageerror", (e) => errors.push(e.message)),
   );
-  await context.route("https://prettylisavpn.com/account/**", (route) =>
+  await context.route(`${website}/account/**`, (route) =>
     route.fulfill({
       contentType: "text/html",
       body: "<title>Fixture billing portal</title>",
     }),
   );
-  await context.route("https://api.prettylisavpn.com/**", async (route) => {
+  await context.route(`${backend}/**`, async (route) => {
     const p = new URL(route.request().url()).pathname;
     if (limited && /^\/(vpn|billing|support|messages)\b/.test(p)) {
       restrictedRequests.push(p);
@@ -180,7 +187,7 @@ async function mockAPI() {
       };
     else if (p === "/billing/portal")
       value = {
-        url: "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
+        url: `${website}/account/#handoff=` + "a".repeat(43),
       };
     else if (p === "/support/requests") value = { status: "ACCEPTED" };
     else if (p === "/vpn/sessions/current") value = null;
@@ -613,18 +620,18 @@ try {
   const billingWorker =
     context.serviceWorkers()[0] ??
     (await context.waitForEvent("serviceworker"));
-  await billingWorker.evaluate(() => {
+  await billingWorker.evaluate((website) => {
     const createTab = chrome.tabs.create.bind(chrome.tabs);
     globalThis.billingReviewDestination = null;
     chrome.tabs.create = (details, ...args) => {
-      if (details.url?.startsWith("https://prettylisavpn.com/account/")) {
+      if (details.url?.startsWith(`${website}/account/`)) {
         globalThis.billingReviewDestination = details.url;
         chrome.tabs.create = createTab;
         return createTab({ ...details, url: "about:blank" }, ...args);
       }
       return createTab(details, ...args);
     };
-  });
+  }, website);
   const billingOpened = context.waitForEvent("page");
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
@@ -633,10 +640,7 @@ try {
   const destination = await billingWorker.evaluate(
     () => globalThis.billingReviewDestination,
   );
-  assert.equal(
-    destination,
-    "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
-  );
+  assert.equal(destination, `${website}/account/#handoff=` + "a".repeat(43));
   await portal.goto(destination);
   assert.equal(portal.url(), destination);
   assert.equal(await portal.title(), "Fixture billing portal");

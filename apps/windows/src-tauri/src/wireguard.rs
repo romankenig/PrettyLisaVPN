@@ -13,7 +13,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use tauri_plugin_http::reqwest::{redirect::Policy, Client};
 use zeroize::Zeroizing;
-const HOST: &str = "api.prettylisavpn.com";
+const HOST: &str = env!("PRETTYLISA_API_HOST");
 const FAILED: &str = "WIREGUARD_UNAVAILABLE";
 const NO_WINDOW: u32 = 0x08000000;
 
