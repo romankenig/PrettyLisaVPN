@@ -6,6 +6,11 @@
 
 ## Unreleased
 
+### Restore production dashboard client downloads — version unchanged
+
+- Restore the private dashboard's authenticated local installer catalog and remove
+  its automatic test-server proxy. Keep development artifacts on the test server.
+
 ### Android offline disconnect — 0.30.5
 
 - Open the app while VPN startup recovery runs. An unavailable VPN API no longer

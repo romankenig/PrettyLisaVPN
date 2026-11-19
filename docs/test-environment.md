@@ -181,6 +181,19 @@ their failed attempts are retained. The PR records the complete workflow/job lin
 and native Windows evidence. Real test VPN sessions and signed Apple distribution
 remain outside this acceptance until their separate resources are supplied.
 
+## Private download rollback
+
+The dashboard installer no longer proxies downloads to the test API. It renders
+the authenticated local route for `/etc/caddy/dashboard/downloads/current`.
+Test builds continue publishing to the test server's own store.
+
+The installer change takes effect on dashboard installation. To roll back an
+existing production proxy, use the retained `monitoring.before-test-downloads`
+or render the current dashboard template with the server's dashboard credentials.
+Validate the resulting configuration with Caddy before activation. Verify that
+the private catalog and public production catalog report the same build identities
+and APK hashes, and that an anonymous private request still returns 401.
+
 ## Publication and rollback checklist
 
 For an owner-authorized website/backend-only publication, set repository variable

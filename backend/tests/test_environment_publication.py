@@ -45,20 +45,16 @@ def test_release_readiness_requires_the_correct_runtime_environment():
     assert not gate.matches(version, ready, "0.54.1", "production")
 
 
-def test_private_download_proxy_retains_owner_auth_and_monitoring():
+def test_private_downloads_use_local_store_behind_owner_auth():
     source = Path(__file__).resolve().parents[2] / "sites/fleet-dashboard"
     functions = runpy.run_path(str(source / "install.py"))
     template = (source / "dashboard.caddy.template").read_text()
-    proxy = functions["test_download_proxy"](template, "admin", "test-only-password-at-least-20")
-    assert proxy.index("basic_auth") < proxy.index("handle /dashboard/downloads/*")
-    assert "reverse_proxy https://api.test.prettylisavpn.com" in proxy
-    assert 'header_up Authorization "Basic ' in proxy
-    assert "reverse_proxy backend:8000" in proxy
-    assert "method GET HEAD" in proxy
-    assert "test-only-password-at-least-20" not in proxy
-    assert "root * /etc/caddy/dashboard/site" in proxy
-    with pytest.raises(ValueError):
-        functions["test_download_proxy"](template, "admin", "injected\nvalue")
+    config = functions["render"](template, "admin", "$2b$12$" + "a" * 53, "t" * 32)
+    assert config.index("basic_auth") < config.index("handle_path /dashboard/downloads/*")
+    assert "api.test.prettylisavpn.com" not in config
+    assert "reverse_proxy backend:8000" in config
+    assert "root * /etc/caddy/dashboard/downloads/current" in config
+    assert "root * /etc/caddy/dashboard/site" in config
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Atomic publisher runs on Linux")
