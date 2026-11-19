@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Android offline disconnect — 0.30.5
+
+- Open the app while VPN startup recovery runs. An unavailable VPN API no longer
+  shows a connection error before the user connects.
+- Show the VPN as disconnected after local shutdown and bound server cleanup.
+  An unconfirmed server session must be cleared before a new tunnel starts.
+
 ### Website-only production publication — version unchanged
 
 - Allow one exact release SHA to exclude production installer publication while

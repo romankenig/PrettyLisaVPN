@@ -264,7 +264,9 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         disconnect()
     }
 
-    override suspend fun disconnect() {
+    override suspend fun disconnect() = disconnect {}
+
+    override suspend fun disconnect(onLocalStopped: () -> Unit) {
         heartbeat?.cancel(); heartbeat = null
         deadline?.cancel(); deadline = null
         expectingUp = false
@@ -275,7 +277,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
                     withContext(Dispatchers.IO) { backend?.setState(tunnel, Tunnel.State.DOWN, null) }
                 }
                 finally { HttpRoutes.default() }
-            }, revokeRemote = { if (acquired || lease != null) closeRemote() })
+            }, revokeRemote = { if (acquired || lease != null) closeRemote() }, onLocalStopped = onLocalStopped)
             // AndroidVpnHost retains the foreground service across recovery/fallback.
         }
     }

@@ -167,11 +167,13 @@ internal class ManagedAdapter(private val context: Context, private val sessions
         }
         lease = null; acquired = false
     }
-    override suspend fun disconnect() {
+    override suspend fun disconnect() = disconnect {}
+
+    override suspend fun disconnect(onLocalStopped: () -> Unit) {
         heartbeat?.cancel(); heartbeat = null; deadline?.cancel(); deadline = null
         withContext(NonCancellable) {
             disconnectCleanup(stopLocal = { try { runtime.stop() } finally { HttpRoutes.default() } },
-                revokeRemote = { if (acquired || lease != null) closeRemote() })
+                revokeRemote = { if (acquired || lease != null) closeRemote() }, onLocalStopped = onLocalStopped)
             // AndroidVpnHost retains the foreground service across recovery/fallback.
         }
     }

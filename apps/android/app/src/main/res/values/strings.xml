@@ -357,6 +357,7 @@
     <string name="forget_local">remove sign-in data from this device</string>
     <string name="device_pending">waiting for a free slot</string>
     <string name="premium_location_hint">available only with Premium</string>
+    <string name="vpn_remote_cleanup">VPN is disconnected. the server session could not be closed yet and will be checked before reconnecting.</string>
     <string name="faq_connect_q">how do i start?</string>
     <string name="faq_connect_a">download the app, sign in with the code from your email and choose a country.\n\nthe free plan gives your account one shared hour of VPN each day.</string>
     <string name="faq_free_q">what does free include?</string>
