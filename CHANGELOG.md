@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### United Kingdom PREMIUM node — infrastructure, version unchanged
+
+- Enroll `ishost-uk-001` (`38.180.140.18`, GB) in the owner-designated production
+  fleet for Premium/Platinum, with WireGuard, managed transports and the
+  browser-only HTTPS proxy. Keep FREE/DEMO excluded and start with a conservative
+  ten-lease admission limit for this 1 GiB VPS.
+- See [enrollment evidence](docs/ishost-uk-001-enrollment.md).
+
 ### Direct recurring checkout — website 0.7.2 / backend 0.54.2
 
 - Put monthly consent on the offer and open Platega in the same tab immediately
