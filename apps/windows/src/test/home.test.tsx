@@ -121,6 +121,43 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
+  it("keeps the precise local-stop failure and retry action when shutdown is unconfirmed", async () => {
+    const vpn = createVpnConnectionManager([
+      {
+        id: "test",
+        name: "test",
+        async connect() {
+          return {
+            connected: true,
+            internetVerified: true,
+            details: {
+              protocol: "test",
+              transport: "test",
+              server: "test",
+              encryption: "test",
+              obfuscation: "test",
+            },
+          };
+        },
+        async disconnect() {
+          throw new Error("LOCAL_TUNNEL_STOP_FAILED");
+        },
+      },
+    ]);
+    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
+    fireEvent.click(await screen.findByRole("button", { name: "CONNECT" }));
+    fireEvent.click(await screen.findByRole("button", { name: "DISCONNECT" }));
+    expect(
+      await screen.findByText(
+        "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "DISCONNECT" })).toBeEnabled();
+    expect(
+      screen.queryByRole("heading", { name: "ОТКЛЮЧЕНО" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows disconnected immediately after local stop and a server warning on remote failure", async () => {
     let rejectRemoval!: (error: Error) => void;
     const vpn = createVpnConnectionManager([

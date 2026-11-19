@@ -159,7 +159,7 @@ export function Home() {
     try {
       await vpnConnection.disconnect(accessToken);
     } catch (error) {
-      if (vpnConnection.current().phase !== "DISCONNECTED")
+      if (!["DISCONNECTED", "FAILED"].includes(vpnConnection.current().phase))
         setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     }
   }
@@ -174,7 +174,8 @@ export function Home() {
         activeSession?.plan === "DEMO" ? { mode: "AUTO" } : locationSelection,
       );
     } catch (error) {
-      setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
+      if (!["DISCONNECTED", "FAILED"].includes(vpnConnection.current().phase))
+        setConnectionErrorMessage(<ConnectionErrorMessage error={error} />);
     } finally {
       setResetting(false);
     }

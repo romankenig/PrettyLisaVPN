@@ -316,6 +316,10 @@ export function createVpnConnectionManager(
               return;
             }
           } catch (error) {
+            if (error instanceof RemoteCleanupPending) {
+              active = adapter;
+              throw error;
+            }
             const code =
               error instanceof Error
                 ? error.message

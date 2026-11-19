@@ -367,6 +367,19 @@ it("keeps startup recovery offline and blocks every fallback until removal succe
   });
 });
 
+it("reports initial server failure without a second blocking cleanup request", async () => {
+  const { adapter, native, transport } = setup();
+  transport.mockRejectedValue(new Error("offline"));
+  const manager = createVpnConnectionManager([adapter]);
+  await manager.connect("", selection);
+  expect(manager.current()).toMatchObject({
+    phase: "DISCONNECTED",
+    backend: "UNAVAILABLE",
+  });
+  expect(transport).toHaveBeenCalledOnce();
+  expect(native.prepare).not.toHaveBeenCalled();
+});
+
 it("ignores a late health check after disconnection", async () => {
   const { adapter, native, lost } = setup();
   const connecting = adapter.connect(selection, new AbortController().signal);
