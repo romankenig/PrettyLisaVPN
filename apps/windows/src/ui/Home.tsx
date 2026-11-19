@@ -225,6 +225,7 @@ export function Home() {
       <div className="home-workspace">
         <div className="home-connect-panel">
           <ConnectionLocationSelector
+            key={`${activeSession.userId}:${activeSession.plan}`}
             refreshKey={refreshKey}
             allowUnavailable
             selection={

@@ -1019,7 +1019,7 @@ describe("authenticated Home", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("combobox", { name: /куда подключиться/ }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(
       screen.getByRole("timer", { name: "Остаток Free" }),
     ).toHaveTextContent("—");

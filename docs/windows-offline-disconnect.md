@@ -22,6 +22,17 @@ not an instantaneous server-push notification. Once detected, local shutdown is
 independent of remote cleanup latency. Initial setup retains sequential fallback.
 No automatic reconnect or browsing telemetry is added.
 
+The country dropdown stays openable during loading, refresh, server outage and
+active connections; opening it uses a pointer, not a waiting cursor. All server
+catalog countries are shown, including currently unavailable and Premium-locked
+entries. The latest successful catalog is cached per API/account/plan for browsing
+after navigation or restart. Cached availability is explicitly unknown, has no
+live quality bars and cannot authorize selection. Changing an active connection
+remains blocked. With no saved catalog, the dropdown explains that the list has
+not loaded instead of inventing countries. A failed/disabled local storage does
+not prevent using the live catalog. Profile refresh no longer restarts the country
+request merely because the session object changed.
+
 If native shutdown fails, the UI cannot claim disconnection: it shows the local
 shutdown error and allows another Disconnect attempt. Remote revocation is still
 attempted, and local errors take priority if both operations fail. No Free quota
@@ -35,6 +46,10 @@ status/button/message. The Windows UI review exercises remote outage/recovery
 through synthetic adapters in the actual Tauri/WebView2 window and captures
 `04h-home-server-unavailable-disconnected.png`. It is UI evidence, not a real
 VPN outage or live traffic acceptance test.
+Additional native captures cover cached countries during a server outage,
+unavailable countries and read-only browsing while connected. Regression tests
+cover loading/keyboard access, cached refresh failure, cache validation, plan
+isolation, storage failure and continued Premium/DEMO selection rules.
 
 Exact verified product HEAD, PR merge build SHA, workflow run/attempt identities,
 artifacts and final check results are recorded in the task PR after the final push.

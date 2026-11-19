@@ -551,6 +551,48 @@ async function main() {
       "Refresh retries must retain their persisted operation identifier",
     );
   await screenshot("04-home-auth-recovered");
+  async function countryOutage(enabled) {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ui-review/countries-outage",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      },
+    );
+    if (!response.ok) throw Error("Country outage fixture failed");
+    await page
+      .getByRole("button", { name: "обновить страны", exact: true })
+      .click();
+  }
+  await countryOutage(true);
+  await page.locator(".availability-warning").waitFor();
+  const countryCombo = page.getByRole("combobox", {
+    name: /куда подключиться/,
+  });
+  await countryCombo.click();
+  if (
+    (await countryCombo.evaluate((node) => getComputedStyle(node).cursor)) !==
+    "pointer"
+  )
+    throw Error("Country browsing must not use a wait cursor");
+  const cachedGermany = page
+    .getByRole("group", { name: "все страны", exact: true })
+    .getByRole("option", { name: /Германия/ });
+  if (!(await cachedGermany.isDisabled()))
+    throw Error("Stale availability must stay read-only");
+  await screenshot("04-home-countries-server-outage");
+  await page.keyboard.press("Escape");
+  await countryOutage(false);
+  await page.waitForFunction(
+    () => document.querySelectorAll(".availability-note").length === 0,
+  );
+  await countryCombo.click();
+  await page
+    .getByRole("option", { name: /Великобритания.*сейчас недоступно/ })
+    .waitFor();
+  await screenshot("04-home-unavailable-countries");
+  await page.keyboard.press("Escape");
   if (await page.locator(".traffic-mode .current-location").count())
     throw new Error("Full-traffic mode must have only one location");
   for (const mode of ["include", "exclude"]) {
@@ -810,6 +852,16 @@ async function main() {
     .getByRole("button", { name: "изменить способ подключения", exact: true })
     .waitFor();
   await screenshot("04f-home-method-reset");
+  await countryCombo.click();
+  if (
+    !(await page
+      .getByRole("group", { name: "все страны", exact: true })
+      .getByRole("option", { name: /Германия/ })
+      .isDisabled())
+  )
+    throw Error("Connected country browsing must not switch an active tunnel");
+  await screenshot("04f-home-connected-countries");
+  await page.keyboard.press("Escape");
   await page.locator(".connection-reset").evaluate((node) => {
     if (getComputedStyle(node).marginTop !== "0px")
       throw Error(

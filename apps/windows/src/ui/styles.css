@@ -1244,6 +1244,7 @@ input,
   font-weight: 600;
 }
 .location-trigger {
+  cursor: pointer;
   min-height: 58px;
   border: 1px solid rgb(95 34 217 / 35%);
   border-radius: 12px;
@@ -1310,10 +1311,20 @@ input,
   border-top: 1px solid var(--color-mercury);
 }
 .location-option {
+  flex-wrap: wrap;
   min-height: 44px;
   padding: 8px 10px;
   border: 0;
   border-radius: 8px;
+}
+.location-selector button:disabled {
+  cursor: default;
+}
+.location-option > small {
+  flex-basis: 100%;
+  padding-left: 34px;
+  font-size: 11px;
+  color: var(--color-scorpion);
 }
 .location-option--active,
 .location-option:hover {

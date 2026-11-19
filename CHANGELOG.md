@@ -14,6 +14,9 @@
 - Stop on the first failed health check of an established connection; retain
   unconfirmed remote grants and require cleanup before reconnect/fallback.
   Failed local shutdown still requires retry and never claims disconnection.
+- Keep Autopilot/country browsing available without a wait cursor during loading,
+  active connections and outages. Show unavailable countries and a saved catalog
+  with explicitly unknown availability; preserve selection and plan restrictions.
 - See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
 
 ### Platega website activation — backend 0.54.1

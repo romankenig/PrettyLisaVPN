@@ -9,6 +9,12 @@ Disconnect and an explicit local-stop warning. Startup recovery uses the same
 local/remote distinction. Existing APIs are used; no backend integration is pending.
 Build, native screenshot and publication status: [handoff](windows-offline-disconnect.md).
 
+Home → Autopilot/country dropdown remains browsable during loading, connection,
+refresh and outage. Unavailable countries remain listed. A saved per-account/plan
+catalog is available after restart, explicitly read-only with unknown availability
+until a fresh response. No cache → an honest list-not-loaded message. Opening the
+list never switches the tunnel; active-connection and Premium/DEMO guards remain.
+
 # Website checkout — Windows 0.31.1 / Android 0.30.1
 
 Subscription → Buy / Renew / Manage → POST /billing/portal → system browser →
