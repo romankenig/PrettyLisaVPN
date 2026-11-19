@@ -19,6 +19,17 @@
   with explicitly unknown availability; preserve selection and plan restrictions.
 - See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
 
+### Direct recurring checkout — website 0.7.2 / backend 0.54.2
+
+- Put monthly consent on the offer and open Platega in the same tab immediately
+  after Pay; remove confirmation and unavailable-page detours. Preserve recovery
+  and prevent redirect loops when returning from the provider.
+- Settle explicit creation validation failures without endless PENDING, retain
+  unknown-outcome fences, and preserve manual Platinum on confirmed purchases.
+- Remove the unused one-off Platega payment-link transport. Only monthly recurring
+  SBP checkout remains. Client versions and prices are unchanged.
+- See [scope, merchant findings and validation](docs/website-direct-checkout.md).
+
 ### Platega website activation — backend 0.54.1
 
 - Record server-only merchant configuration, successful read-only API checks and
@@ -31,7 +42,7 @@
   timeout diagnostics without request bodies, credentials or payment URLs.
 - See [activation evidence and continuation](docs/platega-live-acceptance.md).
 
-### Isolated development and publication — backend 0.54.2 / client PATCH updates
+### Isolated development and publication — backend 0.54.3 / client PATCH updates
 
 - Prepare a separate test copy on `5.129.211.150` with its own PostgreSQL/Valkey,
   test website/API domains and independent credentials. Keep production node
@@ -39,9 +50,9 @@
 - Route `develop` deployments and its client API/portal/probe targets to testing;
   reserve `main` for owner-requested production publication after choosing versions.
   Preserve public installers while private dashboard downloads follow test builds.
-- Backend 0.54.1 → 0.54.2; Windows 0.31.4 → 0.31.5; Android 0.30.3 → 0.30.4/code 63;
+- Backend 0.54.2 → 0.54.3; Windows 0.31.4 → 0.31.5; Android 0.30.3 → 0.30.4/code 63;
   Chrome 0.5.2 → 0.5.3; iOS 0.6.2 → 0.6.3; macOS 0.5.2 → 0.5.3. Schema remains
-  0053; website remains 0.7.1. No automatic client updater or shared test VPN node.
+  0053; website 0.7.2 from #115 is retained. No automatic client updater or shared test VPN node.
 - Validate artifact API origins against the destination; retain exact SHA/run/attempt,
   corresponding sources and unsigned Apple labels. Atomically publish static website
   files only after a compatible backend is ready. See

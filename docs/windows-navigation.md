@@ -1229,3 +1229,14 @@ existing backend portal contract; payment-provider activation is separate.
 Public read-only legal documents retain their existing production URLs. No screen
 layout, auth guard, token transport or automatic update behavior changes.
 See [environment workflow and verification](test-environment.md).
+
+## Website 0.7.2 — direct recurring checkout
+
+Client purchase/manage still opens the authenticated website; no Windows route
+or auth guard changes. The website offer includes monthly consent. Pay creates
+the account operation and navigates directly to the validated Platega page in the
+same tab. Back resumes that operation without automatically redirecting again.
+Legacy unavailable/preview routes normalize to the localized account page; an
+unavailable quote disables Pay inline. Server-confirmed outcomes remain authoritative.
+Implementation is complete; provider recurring activation and live bank acceptance
+remain outstanding. See [direct checkout](website-direct-checkout.md).

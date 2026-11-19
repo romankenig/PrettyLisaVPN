@@ -19,6 +19,7 @@ from prettylisavpn.billing.operations_domain import (
     next_month,
 )
 from prettylisavpn.billing.platega_api import (
+    PlategaCreateRejected,
     PlategaPort,
     PlategaSubscription,
     PlategaUnavailable,
@@ -77,6 +78,8 @@ class PlategaBillingProvider:
             ):
                 raise ValueError("Invalid Platega operation binding")
             row = await session.get(PlategaAgreementRecord, request.operation_id)
+            if row is not None and row.state == "CreateRejected" and row.provider_id is None:
+                return ProviderResult(operation_id=request.operation_id, status="FAILED")
             if row is None:
                 row = PlategaAgreementRecord(
                     operation_id=request.operation_id,
@@ -92,7 +95,22 @@ class PlategaBillingProvider:
         # The create fence above is committed even if the process dies before HTTP.
         if row.provider_id is None:
             if first_create:
-                created = await self.api.create(request.operation_id, request.amount_minor, email)
+                try:
+                    created = await self.api.create(
+                        request.operation_id, request.amount_minor, email
+                    )
+                except PlategaCreateRejected:
+                    # Retain explicit rejection before projecting FAILED. A lost
+                    # projection can recover without another create or a stuck account.
+                    async with self.postgres.session() as session, session.begin():
+                        rejected = await session.get(
+                            PlategaAgreementRecord, request.operation_id, with_for_update=True
+                        )
+                        if rejected is None or rejected.provider_id is not None:
+                            raise PlategaUnavailable from None
+                        rejected.state = "CreateRejected"
+                        rejected.checked_at = datetime.now(UTC)
+                    return ProviderResult(operation_id=request.operation_id, status="FAILED")
                 provider_id = created.id
             else:
                 matches = await self.api.recover(

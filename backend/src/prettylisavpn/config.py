@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.54.2", min_length=1)
+    application_version: str = Field(default="0.54.3", min_length=1)
     demo_enabled: bool = False
     demo_identity_secret: SecretStr | None = Field(default=None, min_length=32)
     public_website_origin: Literal[
