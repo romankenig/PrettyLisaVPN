@@ -11,6 +11,7 @@ from pydantic import SecretStr
 
 from prettylisavpn.billing.platega_api import (
     PlategaAPI,
+    PlategaCreateRejected,
     PlategaUnavailable,
     description_for,
     minor_units,
@@ -263,3 +264,40 @@ async def test_untrusted_error_fields_cannot_enter_logs(body, caplog):
     assert [record.getMessage() for record in caplog.records] == [
         "platega_http_error status=400 code=unknown trace=unknown"
     ]
+
+
+async def test_explicit_validation_rejection_is_terminal_only_for_creation():
+    response = {"code": "Common:VAL_0001", "type": 4001, "data": [{"key": "paymentMethod"}]}
+    client = api(lambda _: httpx.Response(400, json=response))
+    with pytest.raises(PlategaCreateRejected):
+        await client.create(uuid4(), 39900, "payer@example.com")
+    with pytest.raises(PlategaUnavailable) as error:
+        await client.cancel(SUBSCRIPTION)
+    assert not isinstance(error.value, PlategaCreateRejected)
+
+
+@pytest.mark.parametrize(
+    "status,body",
+    [
+        (500, {"code": "Common:VAL_0001", "type": 4001, "data": [{"key": "paymentMethod"}]}),
+        (400, {"code": "UNKNOWN", "type": 4001, "data": [{"key": "paymentMethod"}]}),
+        (400, {"code": "Common:VAL_0001", "type": 4001, "data": []}),
+        (400, {"code": "Common:VAL_0001", "data": [{"key": "paymentMethod"}]}),
+        (400, {"code": "Common:VAL_0001", "type": 4001, "data": ["invalid"]}),
+        (
+            400,
+            {
+                "code": "Common:VAL_0001",
+                "type": 4001,
+                "data": [{"key": "paymentMethod"}],
+                "transactionId": str(SUBSCRIPTION),
+            },
+        ),
+    ],
+)
+async def test_unrecognized_or_contradictory_create_failures_remain_unknown(status, body):
+    with pytest.raises(PlategaUnavailable) as error:
+        await api(lambda _: httpx.Response(status, json=body)).create(
+            uuid4(), 39900, "payer@example.com"
+        )
+    assert not isinstance(error.value, PlategaCreateRejected)

@@ -10,7 +10,6 @@ import re
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, Protocol
-from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
@@ -43,6 +42,30 @@ def log_http_failure(status: int, content: bytes) -> None:
 
 class PlategaUnavailable(RuntimeError):
     pass
+
+
+class PlategaCreateRejected(PlategaUnavailable):
+    """The create request was explicitly rejected before a subscription existed."""
+
+
+def create_was_rejected(status: int, content: bytes) -> bool:
+    if status != 400:
+        return False
+    try:
+        value = json.loads(content)
+    except (ValueError, UnicodeError):
+        return False
+    return (
+        isinstance(value, dict)
+        and value.get("code") == "Common:VAL_0001"
+        and value.get("type") == 4001
+        and isinstance(value.get("data"), list)
+        and bool(value["data"])
+        and all(
+            isinstance(item, dict) and isinstance(item.get("key"), str) for item in value["data"]
+        )
+        and not any(key in value for key in ("transactionId", "subscriptionId", "redirect"))
+    )
 
 
 def minor_units(value: object) -> int:
@@ -85,14 +108,6 @@ class CreatedSubscription(Evidence):
     redirect: str = Field(repr=False)
 
 
-class PaymentLink(Evidence):
-    id: UUID
-    url: str = Field(repr=False)
-    operation_id: UUID
-    amount_minor: int
-    active: bool
-
-
 class PlategaPort(Protocol):
     async def create(
         self, operation_id: UUID, amount_minor: int, email: str
@@ -133,8 +148,6 @@ class PlategaAPI:
         *,
         body: dict[str, object] | None = None,
         params: dict[str, str] | None = None,
-        idempotency_key: UUID | None = None,
-        accepted_statuses: tuple[int, ...] = (200,),
     ) -> dict[str, Any]:
         try:
             # Fixed host, verified TLS, no redirects and no automatic retries, including POST.
@@ -145,8 +158,6 @@ class PlategaAPI:
                     "X-MerchantId": str(self.merchant_id),
                     "X-Secret": self._secret.get_secret_value(),
                 }
-                if idempotency_key is not None:
-                    headers["Idempotency-Key"] = str(idempotency_key)
                 async with client.stream(
                     method,
                     "https://app.platega.io" + path,
@@ -159,8 +170,14 @@ class PlategaAPI:
                         content.extend(chunk)
                         if len(content) > 512_000:
                             raise PlategaUnavailable
-                    if response.status_code not in accepted_statuses:
+                    if response.status_code != 200:
                         log_http_failure(response.status_code, bytes(content))
+                        if (
+                            method == "POST"
+                            and path == "/transaction/process"
+                            and create_was_rejected(response.status_code, bytes(content))
+                        ):
+                            raise PlategaCreateRejected
                         raise PlategaUnavailable
             value = json.loads(content, parse_float=Decimal)
             if path == "/transaction/export/json" and isinstance(value, list):
@@ -293,103 +310,6 @@ class PlategaAPI:
             except (ValueError, KeyError, TypeError, AttributeError):
                 raise PlategaUnavailable from None
         raise PlategaUnavailable
-
-    @staticmethod
-    def _payment_link(value: dict[str, Any], operation_id: UUID, amount_minor: int) -> PaymentLink:
-        try:
-            url = urlsplit(value["url"])
-            amount = Decimal(amount_minor) / 100
-            if (
-                value["usageMode"] != 1
-                or value["paymentMode"] != 0
-                or value["currency"] != "RUB"
-                or Decimal(value["minAmount"]) != amount
-                or Decimal(value["maxAmount"]) != amount
-                or value["orderId"] != str(operation_id)
-                or value["payload"] != str(operation_id)
-                or url.scheme != "https"
-                or url.netloc != "pay.platega.io"
-                or url.fragment
-                or len(value["url"]) > 2048
-                or type(value["active"]) is not bool
-            ):
-                raise ValueError
-            return PaymentLink(
-                id=value["id"],
-                url=value["url"],
-                operation_id=operation_id,
-                amount_minor=amount_minor,
-                active=value["active"],
-            )
-        except (ValueError, KeyError, TypeError, InvalidOperation):
-            raise PlategaUnavailable from None
-
-    async def create_payment_link(self, operation_id: UUID, amount_minor: int) -> PaymentLink:
-        """Optional one-off API contract, NOT an SBP mandate/card-replacement operation.
-
-        Merchant activation is required. This method is deliberately not exposed as
-        recurring checkout: links do not document a reusable payment authority.
-        """
-        if type(amount_minor) is not int or not 0 < amount_minor <= 10**12:
-            raise ValueError("Invalid payment amount")
-        amount = format(Decimal(amount_minor) / 100, ".2f")
-        value = await self._call(
-            "POST",
-            "/v2/payment-links",
-            idempotency_key=operation_id,
-            accepted_statuses=(200, 201),
-            body={
-                "usageMode": 1,
-                "paymentMode": 0,
-                "currency": "RUB",
-                "minAmount": amount,
-                "maxAmount": amount,
-                "orderId": str(operation_id),
-                "payload": str(operation_id),
-                "name": "PrettyLisaVPN Premium",
-                "description": description_for(operation_id),
-                "return": "https://prettylisavpn.com/account/success/",
-                "failedUrl": "https://prettylisavpn.com/account/failure/",
-            },
-        )
-        return self._payment_link(value, operation_id, amount_minor)
-
-    async def payment_link(
-        self, link_id: UUID, operation_id: UUID, amount_minor: int
-    ) -> PaymentLink:
-        value = self._payment_link(
-            await self._call("GET", "/v2/payment-links/" + str(link_id)), operation_id, amount_minor
-        )
-        if value.id != link_id:
-            raise PlategaUnavailable
-        return value
-
-    async def payment_link_payments(self, link: PaymentLink) -> list[PlategaPayment]:
-        value = await self._call(
-            "GET",
-            f"/v2/payment-links/{link.id}/transactions",
-            params={"page": "1", "pageSize": "20"},
-        )
-        try:
-            items = value["items"]
-            # Only our single-use links are supported; never silently truncate a ledger.
-            if not isinstance(items, list) or value["totalCount"] != len(items) or len(items) > 1:
-                raise ValueError
-            result = []
-            for item in items:
-                if (
-                    UUID(item["paymentLinkId"]) != link.id
-                    or minor_units(item["amount"]) != link.amount_minor
-                    or item["currency"] != "RUB"
-                ):
-                    raise ValueError
-                payment = await self.payment(UUID(item["id"]))
-                if payment.amount_minor != link.amount_minor:
-                    raise ValueError
-                result.append(payment)
-            return result
-        except (ValueError, KeyError, TypeError):
-            raise PlategaUnavailable from None
 
     async def recover_payments(self, operation_id: UUID, since: datetime) -> list[PlategaPayment]:
         """Recover missed callbacks only when two provider reads bind the opaque order ID.
