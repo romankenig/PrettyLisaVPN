@@ -1200,3 +1200,15 @@ Implemented API integration requests `include_locked=true` and consumes
 `premium_required`. Older backend responses remain accepted; the new catalog rows
 require backend 0.54.0 deployment. No route or new auth guard is introduced. See
 [all-client compatibility and validation handoff](premium-location-visibility.md).
+
+
+## Website 0.7.2 — direct recurring checkout
+
+Client purchase/manage still opens the authenticated website; no Windows route
+or auth guard changes. The website offer includes monthly consent. Pay creates
+the account operation and navigates directly to the validated Platega page in the
+same tab. Back resumes that operation without automatically redirecting again.
+Legacy unavailable/preview routes normalize to the localized account page; an
+unavailable quote disables Pay inline. Server-confirmed outcomes remain authoritative.
+Implementation is complete; provider recurring activation and live bank acceptance
+remain outstanding. See [direct checkout](website-direct-checkout.md).

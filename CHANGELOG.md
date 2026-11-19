@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Direct recurring checkout — website 0.7.2 / backend 0.54.2
+
+- Put monthly consent on the offer and open Platega in the same tab immediately
+  after Pay; remove confirmation and unavailable-page detours. Preserve recovery
+  and prevent redirect loops when returning from the provider.
+- Settle explicit creation validation failures without endless PENDING, retain
+  unknown-outcome fences, and preserve manual Platinum on confirmed purchases.
+- Remove the unused one-off Platega payment-link transport. Only monthly recurring
+  SBP checkout remains. Client versions and prices are unchanged.
+- See [scope, merchant findings and validation](docs/website-direct-checkout.md).
+
 ### Platega website activation — backend 0.54.1
 
 - Record server-only merchant configuration, successful read-only API checks and
