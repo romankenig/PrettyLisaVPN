@@ -9,7 +9,7 @@
       ansible.builtin.assert:
         that:
           - shared_test_source == '5.129.211.150'
-          - shared_test_public_key is match('^ssh-ed25519 [A-Za-z0-9+/=]+(?: .*)?$')
+          - "shared_test_public_key is match('^ssh-ed25519 [A-Za-z0-9+/=]+( .*)?$')"
           - shared_node_capacity | int > 0
           - shared_node_capacity | int <= 100
           - shared_test_helper_source is match('^/')
