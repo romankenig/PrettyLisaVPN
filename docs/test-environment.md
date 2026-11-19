@@ -126,6 +126,60 @@ test database credentials, DNS records and auth SMTP. Local ignored credentials:
 Upload multiline OpenSSH keys/known-host files to GitHub as exact UTF-8 bytes with
 LF endings. Windows text-mode subprocess input can introduce CRLF and break the
 Linux SSH parser. Verify the test diagnostic before relying on a new CI identity.
+Compose also reads `/etc/prettylisavpn/demo.env` as the deployment user: on the test
+server it is owned by `prettylisa-deploy:prettylisa-deploy`, mode `0600`. Keep
+owner-managed env files readable by that existing deployment identity without
+making their contents public.
+
+Timeweb initially blocked outbound SMTP at provider level. Its server API listed
+465/587 among `blocked_ports`, while local OUTPUT rules allowed them. These two
+ports were unblocked during acceptance; TLS/authentication against the configured
+mailbox passed on both. This diagnostic does not send an email. A future new VPS
+may need the same provider-side change through its dashboard or support; changing
+Ubuntu firewall rules cannot remove this provider restriction.
+
+## Completed deployment acceptance — 2026-11-19
+
+PR [#114](https://github.com/romankenig/PrettyLisaVPN/pull/114) is merged into
+`develop`. Product/deployment source is `bca9c2a2fbaa54a5ed56738afd94ae37b4c53c57`;
+subsequent handoff commits change documentation only. No main promotion or
+production application publication was performed.
+
+| Component | Version | Successful build/deploy run and attempt |
+| --- | --- | --- |
+| Backend | 0.54.3 | 44531573162 / 3 |
+| Website | 0.7.2 | 44531573025 / 2 |
+| Windows | 0.31.5 | 44531573047 / 1 |
+| Android | 0.30.4, code 63 | 44531573139 / 1 |
+| Chrome | 0.5.3 | 44531573249 / 1 |
+| iOS | 0.6.3 | 44531573228 / 1 |
+| macOS | 0.5.3 | 44531573228 / 1 |
+
+Live test `/version` reports
+`0.54.3-dev.44531573162+gbca9c2a2fbaa54a5ed56738afd94ae37b4c53c57`.
+HTTPS health/readiness and website/account checks passed; the running backend uses
+`test-postgres`, `test-valkey`, the test website origin and disabled live billing,
+client VPN, managed VPN and support delivery. No fleet worker is running there.
+
+All five published client entries target `https://api.test.prettylisavpn.com`
+and preserve that exact product SHA and their original run/attempt. Authenticated
+downloads from the existing production dashboard URL verified all eleven file
+hashes: five clients, four source packages, Windows licenses and iOS Simulator.
+Anonymous UI/catalog/binary requests return 401; authenticated UI/downloads return
+200 with private/no-store downloads. Apple device/macOS packages remain unsigned.
+
+The private-download route was activated with one production Caddy restart.
+Before/after checks confirmed the production backend container ID, website release
+and content hash, and every public installer/source/catalog hash were unchanged.
+The previous route is retained in `monitoring.before-test-downloads`; the existing
+dashboard login and production fleet monitoring remain in use.
+
+All eleven PR-head workflow runs and all ten product-merge push workflows completed
+successfully, including reusable publisher jobs. Initial SSH timeout/key-format,
+test env-file ownership, runner UDP timing and provider SMTP failures were resolved;
+their failed attempts are retained. The PR records the complete workflow/job links
+and native Windows evidence. Real test VPN sessions and signed Apple distribution
+remain outside this acceptance until their separate resources are supplied.
 
 ## Publication and rollback checklist
 
