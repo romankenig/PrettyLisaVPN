@@ -243,7 +243,7 @@
     <string name="vpn_disconnecting">verbindung wird getrennt…</string>
     <string name="vpn_disconnect">trennen</string>
     <string name="vpn_cleanup">die bereinigung beim trennen der VPN-verbindung ist noch nicht bestätigt. bitte erneut trennen; bis zum abschluss ist keine neue verbindung möglich.</string>
-    <string name="vpn_remote_cleanup">Das VPN ist getrennt. Vor dem nächsten Verbindungsaufbau prüft die App, ob die Sitzung auf dem Server beendet wurde.</string>
+    <string name="vpn_remote_cleanup">VPN ist getrennt. vor dem nächsten Verbindungsaufbau prüft die App, ob die Sitzung auf dem Server beendet wurde.</string>
     <string name="vpn_failed">verbindung fehlgeschlagen. bitte netzwerk prüfen und erneut versuchen.</string>
     <string name="vpn_trying_method">versuche %1$s…</string>
     <string name="vpn_switching_method">%1$s hat nicht verbunden. versuche %2$s…</string>

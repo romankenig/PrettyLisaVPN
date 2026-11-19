@@ -243,7 +243,7 @@
     <string name="vpn_disconnecting">desconectando…</string>
     <string name="vpn_disconnect">desconectar</string>
     <string name="vpn_cleanup">aún no se ha confirmado la limpieza al desconectar VPN. vuelve a desconectar; la reconexión está bloqueada hasta que termine.</string>
-    <string name="vpn_remote_cleanup">La VPN está desconectada. Antes de volver a conectarse, la aplicación comprobará si se ha cerrado la sesión en el servidor.</string>
+    <string name="vpn_remote_cleanup">VPN desconectada. antes de volver a conectarse, la aplicación comprobará si se ha cerrado la sesión en el servidor.</string>
     <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
     <string name="vpn_trying_method">probando %1$s…</string>
     <string name="vpn_switching_method">%1$s no se conectó. probando %2$s…</string>
