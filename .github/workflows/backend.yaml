@@ -77,15 +77,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Check formatting
-        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/deployment_config.py
 
       - name: Lint
-        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/deployment_config.py
 
       - name: Type check
         run: |
           uv run mypy
-          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py
+          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/deployment_config.py
 
       - name: Run unit tests
         run: uv run pytest -m "not integration and not docker"
@@ -256,7 +256,7 @@ jobs:
           } > "$TRANSFER_DIRECTORY/development.env"
 
           tar -czf "$TRANSFER_DIRECTORY/deployment.tar.gz" \
-            -C infra/deployment Caddyfile compose.yaml deploy.sh
+            -C infra/deployment Caddyfile compose.yaml deploy.sh deployment_config.py
           cp runtime-identity.json "$TRANSFER_DIRECTORY/runtime-identity.json"
           docker save "$DEPLOY_IMAGE" | gzip -1 > "$TRANSFER_DIRECTORY/backend-image.tar.gz"
 
@@ -337,18 +337,19 @@ jobs:
               > "${release_directory}/previous-image-id"
             readlink -f "${deployment_root}/current" > "${release_directory}/previous-release"
           fi
+          python3 "${release_directory}/deployment_config.py" prepare \
+            --environment-file "${incoming_directory}/development.env" \
+            --previous-environment-file "$environment_file" \
+            --configuration-root "${deployment_root}/secrets"
           install -m 0600 "${incoming_directory}/development.env" "${release_directory}/deployment.env"
           install -m 0600 "${incoming_directory}/runtime-identity.json" "${release_directory}/runtime-identity.json"
           docker image inspect --format '{{.Id}}' "$expected_image" > "${release_directory}/image-id"
 
           SKIP_BACKEND_PULL=1 \
-            DASHBOARD_DIR="${deployment_root}/secrets/dashboard" \
-            FLEET_ENV_FILE="${deployment_root}/secrets/fleet.env" \
-            FLEET_CREDENTIALS_DIR="${deployment_root}/secrets/fleet" \
-            "${release_directory}/deploy.sh" "${incoming_directory}/development.env"
+            "${release_directory}/deploy.sh" "${release_directory}/deployment.env"
 
           install -d -m 0700 "${deployment_root}/secrets"
-          install -m 0600 "${incoming_directory}/development.env" "$environment_file"
+          install -m 0600 "${release_directory}/deployment.env" "$environment_file"
           ln -sfn "$release_directory" "${deployment_root}/current.next"
           mv -Tf "${deployment_root}/current.next" "${deployment_root}/current"
           printf 'Development revision %s deployed as %s.\n' "$revision" "$expected_version"

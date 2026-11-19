@@ -58,7 +58,13 @@ class DeploymentScriptTests(unittest.TestCase):
             "getent": "exit 0\n",
             "docker": 'printf "%s\\n" "$*" >> "$COMMAND_LOG"\n'
             'if [[ "$*" == "image inspect "* ]]; then exit "${IMAGE_EXIT:-0}"; fi\n'
-            'if [[ "$*" == *"alembic upgrade"* ]]; then exit "${MIGRATION_EXIT:-0}"; fi\n',
+            'if [[ "$*" == *"alembic upgrade"* ]]; then exit "${MIGRATION_EXIT:-0}"; fi\n'
+            'case "$*" in\n'
+            '*"config --format json") echo \'{"services":{"backend":{"image":"test",'
+            '"environment":{}}}}\';;\n'
+            '*"ps --format json backend") echo \'{"ID":"backend-test"}\';;\n'
+            '\'inspect backend-test\') echo \'[{"State":{"Running":true},'
+            '"Config":{"Image":"test","Env":[]}}]\';;\nesac\n',
             "curl": 'case "${!#}" in\n*/version) printf "%s" "$VERSION_JSON";;\nesac\n'
             'exit "${CURL_EXIT:-0}"\n',
         }.items():
@@ -73,6 +79,8 @@ class DeploymentScriptTests(unittest.TestCase):
             "IMAGE_EXIT": "0",
             "MIGRATION_EXIT": "0",
             "CURL_EXIT": "0",
+            "DEMO_ENV_FILE": str(self.directory / "demo.env"),
+            "PLATEGA_ENV_FILE": str(self.directory / "platega.env"),
         }
 
     def run_deployment(self, mode="deploy"):
