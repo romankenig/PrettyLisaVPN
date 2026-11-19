@@ -243,7 +243,6 @@
     <string name="vpn_disconnecting">desconectando…</string>
     <string name="vpn_disconnect">desconectar</string>
     <string name="vpn_cleanup">aún no se ha confirmado la limpieza al desconectar VPN. vuelve a desconectar; la reconexión está bloqueada hasta que termine.</string>
-    <string name="vpn_remote_cleanup">VPN desconectada. antes de volver a conectarse, la aplicación comprobará si se ha cerrado la sesión en el servidor.</string>
     <string name="vpn_failed">no se pudo conectar. comprueba la red e inténtalo de nuevo.</string>
     <string name="vpn_trying_method">probando %1$s…</string>
     <string name="vpn_switching_method">%1$s no se conectó. probando %2$s…</string>
@@ -350,7 +349,6 @@
     <string name="manage_devices">gestionar dispositivos</string>
     <string name="forget_local">eliminar los datos de acceso de este dispositivo</string>
     <string name="device_pending">esperando un espacio libre</string>
-    <string name="premium_location_hint">disponible solo con Premium</string>
     <string name="faq_connect_q">¿cómo empiezo?</string>
     <string name="faq_connect_a">descarga la aplicación, inicia sesión con el código del correo y elige un país.\n\nel plan gratuito ofrece una hora de VPN al día compartida por toda la cuenta.</string>
     <string name="faq_free_q">¿qué incluye free?</string>

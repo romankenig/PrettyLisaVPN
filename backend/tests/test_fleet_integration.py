@@ -384,15 +384,6 @@ async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_st
     assert free["countries"] == [{"country_code": "DE", "quality": 100, "available": True}]
     assert paid["countries"][0] == {"country_code": "DE", "quality": 50, "available": True}
     assert paid["countries"][1]["available"] is False
-    catalog = await service.countries(free_only=True, include_locked=True)
-    assert catalog["autopilot"] == free["autopilot"]
-    assert catalog["countries"][0] == {**free["countries"][0], "premium_required": False}
-    assert catalog["countries"][1] == {
-        "country_code": paid["countries"][1]["country_code"],
-        "quality": 0,
-        "available": False,
-        "premium_required": True,
-    }
     with pytest.raises(FleetError, match="fleet_check_rate_limited"):
         await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
 

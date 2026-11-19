@@ -1244,7 +1244,6 @@ input,
   font-weight: 600;
 }
 .location-trigger {
-  cursor: pointer;
   min-height: 58px;
   border: 1px solid rgb(95 34 217 / 35%);
   border-radius: 12px;
@@ -1311,20 +1310,10 @@ input,
   border-top: 1px solid var(--color-mercury);
 }
 .location-option {
-  flex-wrap: wrap;
   min-height: 44px;
   padding: 8px 10px;
   border: 0;
   border-radius: 8px;
-}
-.location-selector button:disabled {
-  cursor: default;
-}
-.location-option > small {
-  flex-basis: 100%;
-  padding-left: 34px;
-  font-size: 11px;
-  color: var(--color-scorpion);
 }
 .location-option--active,
 .location-option:hover {
@@ -1373,9 +1362,6 @@ input,
 .connection-card .connection-status {
   margin: 14px 0 0;
   font-size: 17px;
-}
-.connection-card .connection-status[data-disconnected="true"] {
-  text-transform: none;
 }
 .home-connect-panel .connection-card p {
   margin: 6px 0;
@@ -2600,21 +2586,12 @@ input,
 .plan-name {
   text-transform: none;
 }
-.location-option.demo-locked,
-.location-option.premium-locked {
+.location-option.demo-locked {
   flex-wrap: wrap;
   color: var(--color-scorpion);
   background: rgb(172 115 255 / 8%);
 }
-.location-option.premium-locked:disabled {
-  opacity: 1;
-}
-.location-option.premium-locked > :not(small) {
-  filter: blur(2px);
-  opacity: 0.5;
-}
-.location-option.demo-locked > small,
-.location-option.premium-locked > small {
+.location-option.demo-locked > small {
   flex-basis: 100%;
   padding-left: 34px;
   font-size: 11px;

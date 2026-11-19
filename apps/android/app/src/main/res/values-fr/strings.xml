@@ -243,7 +243,6 @@
     <string name="vpn_disconnecting">déconnexion en cours…</string>
     <string name="vpn_disconnect">déconnecter</string>
     <string name="vpn_cleanup">le nettoyage de la déconnexion VPN reste à confirmer. réessayez de déconnecter ; la reconnexion est bloquée jusque-là.</string>
-    <string name="vpn_remote_cleanup">VPN déconnecté. avant la prochaine connexion, l’application vérifiera si la session sur le serveur a été fermée.</string>
     <string name="vpn_failed">connexion impossible. vérifiez le réseau et réessayez.</string>
     <string name="vpn_trying_method">essai de %1$s…</string>
     <string name="vpn_switching_method">%1$s n’a pas pu se connecter. essai de %2$s…</string>
@@ -350,7 +349,6 @@
     <string name="manage_devices">gérer les appareils</string>
     <string name="forget_local">supprimer les données de connexion de cet appareil</string>
     <string name="device_pending">en attente d’une place libre</string>
-    <string name="premium_location_hint">disponible uniquement avec Premium</string>
     <string name="faq_connect_q">comment commencer ?</string>
     <string name="faq_connect_a">téléchargez l’application, connectez-vous avec le code reçu par e-mail et choisissez un pays.\n\nle forfait gratuit offre une heure de VPN par jour, partagée sur le compte.</string>
     <string name="faq_free_q">que comprend free ?</string>

@@ -303,7 +303,7 @@ export class Controller {
         return;
       }
       const countries = (await this.request(
-        "/vpn/countries?method=https_proxy&include_locked=true",
+        "/vpn/countries?method=https_proxy",
       )) as { countries: Country[] };
       if (
         !countries ||
@@ -311,10 +311,7 @@ export class Controller {
         countries.countries.some(
           (c) =>
             !/^[A-Z]{2}$/.test(c.country_code) ||
-            typeof c.available !== "boolean" ||
-            (c.premium_required !== undefined &&
-              typeof c.premium_required !== "boolean") ||
-            (c.premium_required === true && c.available),
+            typeof c.available !== "boolean",
         )
       )
         throw new Error("INVALID_RESPONSE");
@@ -346,12 +343,6 @@ export class Controller {
     this.requireActiveDevice();
     if (!/^(AUTO|[A-Z]{2})$/.test(country)) throw new Error("INVALID_COUNTRY");
     if (!this.state.session) throw new Error("SIGN_IN_REQUIRED");
-    if (
-      this.state.countries.some(
-        (item) => item.country_code === country && item.premium_required,
-      )
-    )
-      throw new Error("INVALID_COUNTRY");
     if (!this.state.lease && !this.state.pending) {
       const current = await this.request("/vpn/sessions/current");
       if (current) this.state.lease = validateLease(current);

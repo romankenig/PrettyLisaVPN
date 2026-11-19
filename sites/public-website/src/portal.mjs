@@ -27,7 +27,6 @@ export async function mountPortal(root) {
     accountEmail,
     overview,
     timer,
-    redirectedOperation,
     generation = 0,
     locked = false;
   let currency =
@@ -42,7 +41,9 @@ export async function mountPortal(root) {
     (location.pathname === accountPath + "success/" &&
       new URLSearchParams(location.search).get("preview") === "1");
   const pagePath = () =>
-    (isPaymentUnavailable() ? accountPath : location.pathname) +
+    (isPaymentUnavailable()
+      ? accountPath + "unavailable/"
+      : location.pathname) +
     "?currency=" +
     currency;
   const savedPrices = () => {
@@ -109,7 +110,7 @@ export async function mountPortal(root) {
       redirect: "error",
       headers: { "Content-Type": "application/json", "X-PrettyLisa-Web": "1" },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(path === "/operations" ? 25000 : 12000),
+      signal: AbortSignal.timeout(12000),
     });
     const value = await response.json();
     if (!response.ok) {
@@ -188,25 +189,36 @@ export async function mountPortal(root) {
     }
     card.append(row);
     if (signedIn) {
-      const pay = button(t.pay, () => begin(p.action, p.offer.id, "SBP"), true);
-      pay.disabled = true;
-      if (p.canPay) {
-        const label = el("label", null, "portal-consent"),
-          check = el("input");
-        check.type = "checkbox";
-        label.append(check, document.createTextNode(t.consent));
-        check.addEventListener("change", () => {
-          pay.disabled = !check.checked;
-        });
-        card.append(el("p", t.recurringTerms, "portal-price-note"), label);
-      } else {
-        const notice = el("p", t.paymentUnavailableTitle, "portal-price-note");
-        notice.dataset.paymentUnavailable = "";
-        card.append(notice);
-      }
-      card.append(pay);
+      card.append(
+        button(
+          t.pay,
+          () =>
+            p.canPay
+              ? confirm(p.action, p.offer)
+              : location.assign(
+                  accountPath + "unavailable/?currency=" + p.currency,
+                ),
+          true,
+        ),
+      );
     }
     return card;
+  }
+  function paymentUnavailable() {
+    screen(t.paymentUnavailableTitle, t.paymentUnavailableText);
+    root.querySelector(".portal-lead").dataset.paymentUnavailable = "";
+    root.append(
+      button(
+        t.back,
+        () => location.assign(accountPath + "?currency=" + currency),
+        true,
+      ),
+    );
+    const home = el("a", t.home, "portal-secondary");
+    home.href = languagePrefix ? "/" + languagePrefix + "/" : "/";
+    root.append(home);
+    root.querySelector("h1").tabIndex = -1;
+    root.querySelector("h1").focus();
   }
   function login() {
     account = accountEmail = overview = null;
@@ -267,6 +279,7 @@ export async function mountPortal(root) {
       value = await request("/overview");
     } catch (error) {
       if (error.code === "AUTH_INVALID") throw error;
+      if (isPaymentUnavailable()) return paymentUnavailable();
       screen(t.title, t.error);
       if (overview?.current_price)
         root.append(
@@ -288,23 +301,16 @@ export async function mountPortal(root) {
     } catch {
       /* Reading the account does not require optional browser storage. */
     }
-    let journal;
+    if (overview.pending_operation_id)
+      return watch({ id: overview.pending_operation_id, status: "PENDING" });
     if (saved) {
+      let journal;
       try {
         journal = JSON.parse(saved);
       } catch {
         localStorage.removeItem(journalKey());
       }
-      if (journal?.redirected && journal.operation_id)
-        redirectedOperation = journal.operation_id;
-    }
-    if (overview.pending_operation_id)
-      return watch(
-        await request(
-          "/operations/" + encodeURIComponent(overview.pending_operation_id),
-        ),
-      );
-    if (journal && typeof journal === "object") {
+      if (!journal || typeof journal !== "object") return summary();
       if (journal.operation_id)
         return watch(
           await request(
@@ -313,6 +319,7 @@ export async function mountPortal(root) {
         );
       if (journal.command) return send(journal.command);
     }
+    if (isPaymentUnavailable()) return paymentUnavailable();
     summary();
   }
   function summary() {
@@ -378,6 +385,28 @@ export async function mountPortal(root) {
       }),
     );
   }
+  function confirm(action, offer) {
+    screen(t.confirm, t.recurringTerms);
+    const price = {
+      amount_minor: offer.prices.RUB.amount_minor,
+      currency: "RUB",
+    };
+    root.append(
+      el("h2", money(price) + " / " + t.month),
+      el("p", t.fixedPrice),
+    );
+    const label = el("label", null, "portal-consent"),
+      check = el("input");
+    check.type = "checkbox";
+    label.append(check, document.createTextNode(t.consent));
+    root.append(label);
+    const pay = button(t.pay, () => begin(action, offer.id, "SBP"), true);
+    pay.disabled = true;
+    check.addEventListener("change", () => {
+      pay.disabled = !check.checked;
+    });
+    root.append(pay, button(t.back, summary));
+  }
   function cancel() {
     screen(t.cancel, t.cancelText);
     root.append(el("p", t.changeMethod), el("p", t.newPrice));
@@ -387,7 +416,6 @@ export async function mountPortal(root) {
     );
   }
   async function begin(action, offer_id, payment_route) {
-    redirectedOperation = null;
     const command = {
       action,
       offer_id,
@@ -447,21 +475,12 @@ export async function mountPortal(root) {
       root.append(home);
       return;
     }
-    if (operation.redirect_url && redirectedOperation !== operation.id) {
-      const destination = providerURL(operation.redirect_url);
-      localStorage.setItem(
-        journalKey(),
-        JSON.stringify({ operation_id: operation.id, redirected: true }),
-      );
-      redirectedOperation = operation.id;
-      location.assign(destination);
-      return;
-    }
-    screen(t.pending, operation.redirect_url ? t.pendingText : t.pendingError);
+    screen(t.pending, t.pendingText);
     if (operation.redirect_url) {
       const link = el("a", t.openBank, "button");
       link.href = providerURL(operation.redirect_url);
-      link.rel = "noreferrer";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
       root.append(link);
     }
     root.append(button(t.check, () => poll(operation.id)));

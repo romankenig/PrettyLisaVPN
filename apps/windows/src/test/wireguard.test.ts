@@ -232,7 +232,7 @@ it("does not cancel method fallback when a slow initial verification overlaps a 
   await manager.disconnect("");
 });
 
-it("retains private configuration and reports the first failed connected probe", async () => {
+it("retains private configuration across heartbeat responses and tolerates one probe failure", async () => {
   const { adapter, native, transport, lost } = setup();
   const normal = transport.getMockImplementation()!;
   transport.mockImplementation(async (input, init) => {
@@ -245,139 +245,15 @@ it("retains private configuration and reports the first failed connected probe",
   const connecting = adapter.connect(selection, new AbortController().signal);
   await vi.advanceTimersByTimeAsync(2500);
   await connecting;
-  await vi.advanceTimersByTimeAsync(30000);
+  vi.mocked(native.verify)
+    .mockResolvedValueOnce(false)
+    .mockResolvedValueOnce(true)
+    .mockResolvedValue(false);
+  await vi.advanceTimersByTimeAsync(60000);
   expect(lost).not.toHaveBeenCalled();
-  vi.mocked(native.verify).mockResolvedValue(false);
-  await vi.advanceTimersByTimeAsync(30000);
+  await vi.advanceTimersByTimeAsync(60000);
   expect(lost).toHaveBeenCalledExactlyOnceWith("VPN_CONNECTION_LOST");
   await adapter.disconnect();
-});
-
-it("shows local disconnection before a slow remote removal and preserves retry", async () => {
-  const { adapter, native, transport } = setup();
-  const manager = createVpnConnectionManager([adapter]);
-  const connecting = manager.connect("", selection);
-  await vi.advanceTimersByTimeAsync(2500);
-  await connecting;
-  let rejectRemoval!: (error: Error) => void;
-  const normal = transport.getMockImplementation()!;
-  transport.mockImplementation(
-    () =>
-      new Promise((_resolve, reject) => {
-        rejectRemoval = reject;
-      }),
-  );
-  const stopping = manager.disconnect("");
-  const result = expect(stopping).rejects.toThrow("VPN_REMOTE_CLEANUP_PENDING");
-  await vi.advanceTimersByTimeAsync(0);
-  expect(native.stop).toHaveBeenCalledTimes(2);
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    tunnel: "DOWN",
-    backend: "PENDING",
-  });
-  expect(await manager.connectionDetails?.()).toBeNull();
-  rejectRemoval(new Error("private network details"));
-  await result;
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    tunnel: "DOWN",
-    backend: "UNAVAILABLE",
-  });
-  transport.mockRejectedValue(new Error("offline"));
-  await manager.connect("", selection);
-  expect(native.start).toHaveBeenCalledOnce();
-  expect(manager.current().phase).toBe("DISCONNECTED");
-  transport.mockImplementation(normal);
-  await manager.disconnect("");
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    backend: "NONE",
-  });
-});
-
-it("never claims disconnection when local and remote shutdown both fail", async () => {
-  const { adapter, native, transport } = setup();
-  const manager = createVpnConnectionManager([adapter]);
-  const connecting = manager.connect("", selection);
-  await vi.advanceTimersByTimeAsync(2500);
-  await connecting;
-  vi.mocked(native.stop).mockRejectedValue(
-    new Error("LOCAL_TUNNEL_STOP_FAILED"),
-  );
-  transport.mockRejectedValue(new Error("offline"));
-  await expect(manager.disconnect("")).rejects.toThrow(
-    "LOCAL_TUNNEL_STOP_FAILED",
-  );
-  expect(manager.current()).toMatchObject({
-    phase: "FAILED",
-    tunnel: "UNAVAILABLE",
-    failure_code: "CLEANUP_FAILED",
-  });
-});
-
-it.each(["network", "server", "probe"])(
-  "disconnects on the first detected %s outage",
-  async (kind) => {
-    const { adapter, native, transport, lost } = setup();
-    const manager = createVpnConnectionManager([adapter]);
-    lost.mockImplementation((code) => {
-      void manager.connectionLost?.(code);
-    });
-    const connecting = manager.connect("", selection);
-    await vi.advanceTimersByTimeAsync(2500);
-    await connecting;
-    if (kind === "network")
-      transport.mockRejectedValue(new Error("private network details"));
-    else if (kind === "server")
-      transport.mockResolvedValue(new Response(null, { status: 503 }));
-    else vi.mocked(native.verify).mockResolvedValue(false);
-    await vi.advanceTimersByTimeAsync(30000);
-    expect(lost).toHaveBeenCalledOnce();
-    expect(native.stop).toHaveBeenCalledTimes(2);
-    expect(manager.current()).toMatchObject({
-      phase: "DISCONNECTED",
-      tunnel: "DOWN",
-      backend: kind === "probe" ? "NONE" : "UNAVAILABLE",
-    });
-    expect(JSON.stringify(manager.current())).not.toContain("private");
-    await vi.advanceTimersByTimeAsync(90000);
-    expect(lost).toHaveBeenCalledOnce();
-  },
-);
-
-it("keeps startup recovery offline and blocks every fallback until removal succeeds", async () => {
-  const direct = setup(),
-    relay = setup(true);
-  direct.transport.mockRejectedValue(new Error("offline"));
-  const manager = createVpnConnectionManager([direct.adapter, relay.adapter]);
-  manager.setOwner?.("owner");
-  await manager.disconnect("");
-  await manager.reconcile("");
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    backend: "UNAVAILABLE",
-  });
-  await manager.connect("", selection);
-  expect(direct.native.prepare).not.toHaveBeenCalled();
-  expect(relay.native.prepare).not.toHaveBeenCalled();
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    backend: "UNAVAILABLE",
-  });
-});
-
-it("reports initial server failure without a second blocking cleanup request", async () => {
-  const { adapter, native, transport } = setup();
-  transport.mockRejectedValue(new Error("offline"));
-  const manager = createVpnConnectionManager([adapter]);
-  await manager.connect("", selection);
-  expect(manager.current()).toMatchObject({
-    phase: "DISCONNECTED",
-    backend: "UNAVAILABLE",
-  });
-  expect(transport).toHaveBeenCalledOnce();
-  expect(native.prepare).not.toHaveBeenCalled();
 });
 
 it("ignores a late health check after disconnection", async () => {

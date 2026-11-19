@@ -16,8 +16,6 @@ import { loadConfig } from "../config/config";
 import type { CredentialStorage } from "../native/credentialStorage";
 import type { InstallationId } from "../native/installationId";
 import type { VpnConnectionManager } from "../vpn/connection";
-import { createVpnConnectionManager } from "../vpn/connection";
-import { RemoteCleanupPending } from "../vpn/protocol";
 import { ApplicationProvider } from "../state/application";
 import { App } from "../ui/App";
 import {
@@ -121,98 +119,6 @@ beforeEach(() => {
 });
 
 describe("authenticated Home", () => {
-  it("keeps the precise local-stop failure and retry action when shutdown is unconfirmed", async () => {
-    const vpn = createVpnConnectionManager([
-      {
-        id: "test",
-        name: "test",
-        async connect() {
-          return {
-            connected: true,
-            internetVerified: true,
-            details: {
-              protocol: "test",
-              transport: "test",
-              server: "test",
-              encryption: "test",
-              obfuscation: "test",
-            },
-          };
-        },
-        async disconnect() {
-          throw new Error("LOCAL_TUNNEL_STOP_FAILED");
-        },
-      },
-    ]);
-    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
-    fireEvent.click(await screen.findByRole("button", { name: "CONNECT" }));
-    fireEvent.click(await screen.findByRole("button", { name: "DISCONNECT" }));
-    expect(
-      await screen.findByText(
-        "Не удалось подтвердить остановку VPN на этом компьютере. Повторите отключение.",
-      ),
-    ).toBeVisible();
-    expect(screen.getByRole("button", { name: "DISCONNECT" })).toBeEnabled();
-    expect(
-      screen.queryByRole("heading", { name: "ОТКЛЮЧЕНО" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows disconnected immediately after local stop and a server warning on remote failure", async () => {
-    let rejectRemoval!: (error: Error) => void;
-    const vpn = createVpnConnectionManager([
-      {
-        id: "test",
-        name: "test",
-        async connect() {
-          return {
-            connected: true,
-            internetVerified: true,
-            details: {
-              protocol: "test",
-              transport: "test",
-              server: "test",
-              encryption: "test",
-              obfuscation: "test",
-            },
-          };
-        },
-        async disconnect(onLocalStopped) {
-          onLocalStopped?.();
-          await new Promise<void>((_resolve, reject) => {
-            rejectRemoval = reject;
-          });
-        },
-      },
-    ]);
-    renderRestored(mockApi(), createTestCredentialStorage(), vpn);
-    fireEvent.click(await screen.findByRole("button", { name: "CONNECT" }));
-    fireEvent.click(await screen.findByRole("button", { name: "DISCONNECT" }));
-    expect(
-      await screen.findByRole("heading", { name: "ОТКЛЮЧЕНО" }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "DISCONNECT" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "DISCONNECTING" }),
-    ).not.toBeInTheDocument();
-    await act(async () => {
-      rejectRemoval(new RemoteCleanupPending());
-    });
-    expect(
-      screen.getByText(
-        "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.",
-      ),
-    ).toBeVisible();
-    expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled();
-    expect(
-      screen.queryByText(
-        "Не удалось установить VPN-соединение. Попробуйте снова.",
-      ),
-    ).not.toBeInTheDocument();
-  });
-
   it("opens PREMIUM without starting a tunnel when the fresh FREE hour is exhausted", async () => {
     const api = mockApi(),
       storage = createTestCredentialStorage(),
@@ -848,7 +754,7 @@ describe("authenticated Home", () => {
 
     expect(screen.getByText(profile.email!)).toBeInTheDocument();
     expect(api.me).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("ОТКЛЮЧЕНО")).toBeInTheDocument();
+    expect(screen.getByText("Not connected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CONNECT" })).toBeEnabled();
     expect(
       screen.getByText("загружаем доступные локации…"),
@@ -1019,14 +925,14 @@ describe("authenticated Home", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("combobox", { name: /куда подключиться/ }),
-    ).toBeEnabled();
+    ).toBeDisabled();
     expect(
       screen.getByRole("timer", { name: "Остаток Free" }),
     ).toHaveTextContent("—");
 
     fireEvent.click(screen.getByRole("button", { name: "DISCONNECT" }));
     expect(
-      await screen.findByRole("heading", { name: "ОТКЛЮЧЕНО" }),
+      await screen.findByRole("heading", { name: "Not connected" }),
     ).toBeInTheDocument();
     expect(vpnConnection.disconnect).toHaveBeenCalledOnce();
   });

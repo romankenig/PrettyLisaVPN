@@ -1,17 +1,10 @@
 // Test-only adapters exercise the real executor without starting a VPN.
 import { createVpnConnectionManager } from "../vpn/connection";
 import { placeholderAdapters } from "./placeholders";
-import { RemoteCleanupPending } from "../vpn/protocol";
 export const createReviewVpnConnection = () =>
   createVpnConnectionManager(
     placeholderAdapters().map((adapter) => ({
       ...adapter,
-      async disconnect(onLocalStopped) {
-        await adapter.disconnect();
-        onLocalStopped?.();
-        if (document.documentElement.dataset.vpnReviewServerOffline === "1")
-          throw new RemoteCleanupPending();
-      },
       async connect(selection, signal) {
         const data = document.documentElement.dataset;
         if (data.vpnReviewConnect !== "1")
