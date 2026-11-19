@@ -1,6 +1,7 @@
 """Secondary controller isolation, stale observations and node ownership fences."""
 
 import json
+import time
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 from uuid import UUID, uuid4
@@ -178,3 +179,35 @@ def test_unknown_test_revoke_is_idempotent_but_never_mutates_node(node_guard):
     with pytest.raises(guard.node.Failure, match="SHARED_ACCESS_DENIED"):
         guard.dispatch({"action": "managed-revoke", "access_id": str(uuid4())})
     mutate.assert_not_called()
+
+
+def test_capacity_covers_relay_and_expired_grant_recreation(node_guard, monkeypatch):
+    root, mutate = node_guard
+    row = access()
+    guard.dispatch({"action": "grant", "access": row})
+    monkeypatch.setattr(guard.node, "counts", lambda: (20, 0, 0, 0))
+    # A retained ownership journal must not bypass capacity after node TTL expiry.
+    with pytest.raises(guard.node.Failure, match="SHARED_NODE_FULL"):
+        guard.dispatch({"action": "grant", "access": row})
+    clients = root / "clients"
+    clients.mkdir()
+    guard.node.write(clients / (row["id"] + ".json"), json.dumps({"expires": time.time() + 60}))
+    guard.dispatch({"action": "grant", "access": row})  # Existing live grant may renew.
+    relays = root / "relays"
+    relays.mkdir()
+    for _ in range(20):
+        guard.node.write(
+            relays / (str(uuid4()) + ".json"), json.dumps({"expires": time.time() + 60})
+        )
+    with pytest.raises(guard.node.Failure, match="SHARED_NODE_FULL"):
+        guard.dispatch(
+            {
+                "action": "grant-relay",
+                "access": access(
+                    listen_port=28000,
+                    target_host="8.8.8.8",
+                    target_port=51820,
+                ),
+            }
+        )
+    assert mutate.call_count == 2

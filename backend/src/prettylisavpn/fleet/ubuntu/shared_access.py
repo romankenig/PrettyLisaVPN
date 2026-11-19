@@ -7,6 +7,7 @@ from=<test-controller-address>,command=<this helper>. Node timers keep expiring 
 import json
 import os
 import sys
+import time
 from ipaddress import IPv4Interface
 from typing import Any
 from uuid import UUID
@@ -85,8 +86,20 @@ def dispatch(payload: dict[str, Any]) -> dict[str, Any]:
         value = validate_grant(payload, policy)
         if previous and (previous.get("closed") or previous.get("access") != value):
             raise node.Failure("SHARED_ACCESS_CONFLICT")
-        if not previous and kind != "relay":
-            count = node.counts()[0] + managed.counts()[0]
+        active_path = (
+            managed.ROOT / "leases" / f"{identifier}.json"
+            if kind == "managed"
+            else node.ROOT / ("relays" if kind == "relay" else "clients") / f"{identifier}.json"
+        )
+        if node.read(active_path).get("expires", 0) <= time.time():
+            count = (
+                sum(
+                    node.read(path).get("expires", 0) > time.time()
+                    for path in (node.ROOT / "relays").glob("*.json")
+                )
+                if kind == "relay"
+                else node.counts()[0] + managed.counts()[0]
+            )
             if count >= int(policy["capacity"]):
                 raise node.Failure("SHARED_NODE_FULL")
         node.write(journal, json.dumps({"access": value, "closed": False}))

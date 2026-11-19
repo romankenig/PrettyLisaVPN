@@ -92,7 +92,7 @@ async def import_snapshot(postgres: Postgres, snapshot: SharedSnapshot) -> None:
         await session.execute(
             update(FleetNodeRecord).where(FleetNodeRecord.id.not_in(ids)).values(enabled=False)
         )
-        for node in snapshot.nodes:
+        for node in sorted(snapshot.nodes, key=lambda item: item.id):
             values = node.model_dump()
             statement = insert(FleetNodeRecord).values(**values)
             await session.execute(
