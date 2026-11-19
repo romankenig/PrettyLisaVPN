@@ -16,6 +16,19 @@
   reconnect, including server cleanup and verified new leases. Infrastructure only;
   no application, client or schema changes. See [recovery handoff](docs/vpn-deployment-config-recovery.md).
 
+### Windows server outage disconnection — 0.31.4
+
+- Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote
+  session removal. Explain server connectivity failures instead of leaving the
+  Disconnect button or a generic cleanup failure after local shutdown.
+- Stop on the first failed health check of an established connection; retain
+  unconfirmed remote grants and require cleanup before reconnect/fallback.
+  Failed local shutdown still requires retry and never claims disconnection.
+- Keep Autopilot/country browsing available without a wait cursor during loading,
+  active connections and outages. Show unavailable countries and a saved catalog
+  with explicitly unknown availability; preserve selection and plan restrictions.
+- See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
+
 ### Direct recurring checkout — website 0.7.2 / backend 0.54.2
 
 - Put monthly consent on the offer and open Platega in the same tab immediately
@@ -49,6 +62,15 @@
   0.5.2. See [contract and validation handoff](docs/premium-location-visibility.md).
 - Gate client publication on the matching healthy backend so the API is deployed
   first; this CI release-order follow-up leaves product versions unchanged.
+
+### Japan PREMIUM node — infrastructure, version unchanged
+
+- Add `ishost-jp-001` (`38.180.7.144`, JP) for Premium/Platinum with the
+  owner-requested twenty-lease admission limit. Upgrade its existing Ubuntu 22.04
+  installation to Ubuntu 24.04 with owner authorization and repair the image's stale GRUB disk
+  reference before reboot. See [enrollment evidence](docs/ishost-jp-001-enrollment.md).
+- Verify WireGuard, managed transports, direct browser-proxy egress, tariff
+  restrictions and test-access cleanup; enable scheduled checks and IP-certificate renewal.
 
 ### Germany PREMIUM node — infrastructure, version unchanged
 
