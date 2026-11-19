@@ -30,10 +30,14 @@ historical `DEV_DEPLOY_ENABLED` remains false. New backend gates are
 `TEST_DEPLOY_ENABLED` and `PRODUCTION_DEPLOY_ENABLED`; branch/environment restrictions
 and expected host/data-source checks apply as well.
 
-The production fleet contains seven nodes: FREE Germany `5.181.49.183`, FREE USA
+At the initial clone, production contained seven nodes: FREE Germany
+`5.181.49.183`, FREE USA
 `204.48.17.50`, FREE Netherlands `81.31.245.143`, intermediate Russia `45.153.68.12`,
 Premium Austria `89.58.16.22`, Premium Germany `201.79.12.109`, Premium Japan
-`38.180.7.144`. The copied database contains their historical observations only;
+`38.180.7.144`. During this task, a parallel enrollment added Premium UK
+`38.180.140.18` (`ishost-uk-001`); the production API now lists eight enabled nodes.
+This later production enrollment is absent from the initial test snapshot.
+The copied database contains the original nodes' historical observations only;
 the clone must never control these nodes. DNS is hosted by Timeweb. TLS certificates
 renew through Caddy; VPN-node health/cleanup/certificate jobs remain on their nodes.
 
@@ -119,6 +123,9 @@ SSH identities for both VPSs, production data access through its private network
 test database credentials, DNS records and auth SMTP. Local ignored credentials:
 `keys/test-server-admin`, `keys/testing-ci-deploy`, `keys/production-ci-deploy`,
 `keys/test-dashboard-login.json`. Do not paste their contents into reports.
+Upload multiline OpenSSH keys/known-host files to GitHub as exact UTF-8 bytes with
+LF endings. Windows text-mode subprocess input can introduce CRLF and break the
+Linux SSH parser. Verify the test diagnostic before relying on a new CI identity.
 
 ## Publication and rollback checklist
 
