@@ -8,14 +8,6 @@ export const languages = [
 ] as const;
 export type Language = (typeof languages)[number]["code"];
 export const labels = {
-  premiumLocation: [
-    "доступно только в Premium",
-    "available only with Premium",
-    "nur mit Premium verfügbar",
-    "disponible uniquement avec Premium",
-    "disponible solo con Premium",
-    "仅限 Premium 使用",
-  ],
   deviceLimit: [
     "достигнут лимит устройств",
     "device limit reached",

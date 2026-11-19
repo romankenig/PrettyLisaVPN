@@ -100,12 +100,6 @@ async function mockAPI() {
         autopilot: { available: true },
         countries: [
           { country_code: "NL", available: true, quality: 98 },
-          {
-            country_code: "AT",
-            available: false,
-            quality: 0,
-            premium_required: true,
-          },
           { country_code: "DE", available: false, quality: 0 },
           // US is an advertised fixture capability, not a claim about live fleet readiness.
           { country_code: "US", available: true, quality: 90 },
@@ -265,20 +259,7 @@ try {
     .getByRole("button", { name: "попробовать без регистрации" })
     .click();
   await page.getByText("гость", { exact: true }).waitFor();
-  assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), false);
-  await page.getByRole("combobox").click();
-  assert.equal(
-    await page.getByRole("option", { name: /Австрия.*Premium/i }).isDisabled(),
-    true,
-  );
-  assert.equal(
-    await page.getByRole("option", { name: /Нидерланды/ }).isDisabled(),
-    true,
-  );
-  await page.screenshot({
-    path: path.join(output, "demo-premium-countries.png"),
-  });
-  await page.getByRole("combobox").press("Escape");
+  assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
   assert.match(await page.getByRole("combobox").textContent(), /автопилот/);
   await page.getByText("DEMO ⏳", { exact: true }).waitFor();
   assert.equal(
@@ -433,16 +414,6 @@ try {
   await picker.click();
   await page.getByRole("option", { name: "Нидерланды", exact: true }).waitFor();
   assert.equal(
-    await page.getByRole("option", { name: /Австрия.*Premium/i }).isDisabled(),
-    true,
-  );
-  assert.equal(
-    await page
-      .locator(".premium-locked .country-label")
-      .evaluate((node) => globalThis.getComputedStyle(node).filter),
-    "blur(2px)",
-  );
-  assert.equal(
     await page.getByRole("option", { name: /Германия/ }).isDisabled(),
     true,
   );
@@ -468,7 +439,7 @@ try {
   await picker.press("Escape");
   assert.equal(await page.getByRole("listbox").count(), 0);
   await picker.click();
-  await page.getByRole("img", { name: "PrettyLisaVPN", exact: true }).click();
+  await page.getByText("preview@example.com", { exact: true }).click();
   assert.equal(await page.getByRole("listbox").count(), 0);
 
   // Presentation-only snapshots exercise the connected row and every plan.

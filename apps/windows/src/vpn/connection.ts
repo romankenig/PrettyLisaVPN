@@ -1,9 +1,5 @@
 import { isTerminalVpnFailure } from "./sessionAdapter";
-import {
-  RemoteCleanupPending,
-  type ConnectionAdapter,
-  type ProtocolStatus,
-} from "./protocol";
+import type { ConnectionAdapter, ProtocolStatus } from "./protocol";
 import type { VpnLocationSelection } from "./selection";
 import type { ConnectionDetails } from "./connectionDetails";
 import type { ConnectionAttempt } from "./attempt";
@@ -31,10 +27,9 @@ export type VpnConnectionState =
     }
   | {
       readonly phase: "DISCONNECTED";
-      readonly backend: "NONE" | "PENDING" | "UNAVAILABLE";
+      readonly backend: "NONE" | "UNAVAILABLE";
       readonly tunnel: "DOWN";
       readonly session?: ConnectedVpnSession;
-      readonly failure_code?: string;
     }
   | {
       readonly phase: "CONNECTED";
@@ -102,12 +97,12 @@ export function createVpnConnectionManager(
   enabledMethods: () => readonly string[] | null = () => null,
   beforeConnect?: (signal: AbortSignal) => Promise<void>,
 ): VpnConnectionManager {
-  const idle = (): Extract<VpnConnectionState, { phase: "DISCONNECTED" }> => ({
+  const idle = (): VpnConnectionState => ({
     phase: "DISCONNECTED",
     backend: "NONE",
     tunnel: "DOWN",
   });
-  let state: VpnConnectionState = idle();
+  let state = idle();
   let details: ConnectionDetails | null = null;
   let owner: string | null = null;
   let active: ConnectionAdapter | null = null;
@@ -125,41 +120,22 @@ export function createVpnConnectionManager(
     emit({
       phase: "FAILED",
       backend: "NONE",
-      tunnel: code === "CLEANUP_FAILED" ? "UNAVAILABLE" : "DOWN",
+      tunnel: "DOWN",
       failure_code: code,
       attempt: { method, previousMethod: null, retry: false },
     });
-  const localStopped = (reason?: string) => {
-    details = null;
-    emit({
-      phase: "DISCONNECTED",
-      backend: "PENDING",
-      tunnel: "DOWN",
-      failure_code: reason,
-    });
-  };
-  const cleanupFailed = (error: unknown, method = "") => {
-    if (error instanceof RemoteCleanupPending) {
-      details = null;
-      emit({ phase: "DISCONNECTED", backend: "UNAVAILABLE", tunnel: "DOWN" });
-    } else fail(method, "CLEANUP_FAILED");
-  };
 
-  const disconnect = async (reason?: string) => {
-    run?.controller.abort();
+  const disconnect = async () => {
     if (stopping) return stopping;
+    run?.controller.abort();
     // Publish cancellation before waiting for adapter cleanup.
-    if ((run || active) && state.phase !== "DISCONNECTED")
-      emit({
-        phase: "DISCONNECTING",
-        backend: "ACTIVE",
-        tunnel: state.tunnel === "DOWN" ? "DOWN" : "UP",
-      });
+    if (run || active)
+      emit({ phase: "DISCONNECTING", backend: "ACTIVE", tunnel: "DOWN" });
     const completion = run?.done;
     stopping = (async () => {
       await completion;
       if (active) {
-        await active.disconnect(() => localStopped(reason));
+        await active.disconnect();
         active = null;
       }
       details = null;
@@ -168,7 +144,7 @@ export function createVpnConnectionManager(
     try {
       await stopping;
     } catch (error) {
-      cleanupFailed(error);
+      fail("", "CLEANUP_FAILED");
       throw error;
     } finally {
       stopping = null;
@@ -182,7 +158,7 @@ export function createVpnConnectionManager(
       return () => listeners.delete(listener);
     },
     async localTunnelStatus() {
-      return active && state.tunnel !== "DOWN" ? "UP" : "DOWN";
+      return active ? "UP" : "DOWN";
     },
     async connectionDetails() {
       return details;
@@ -204,12 +180,12 @@ export function createVpnConnectionManager(
       emit({ phase: "RECONCILING", backend: "UNKNOWN", tunnel: "UNKNOWN" });
       stopping = (async () => {
         try {
-          await adapter.recover!(localStopped);
+          await adapter.recover!();
           active = null;
           recoveredOwner = account;
           emit(idle());
-        } catch (error) {
-          cleanupFailed(error, adapter.name);
+        } catch {
+          fail(adapter.name, "CLEANUP_FAILED");
         } finally {
           stopping = null;
         }
@@ -220,31 +196,18 @@ export function createVpnConnectionManager(
       if (owner !== value) {
         intentRevision++;
         owner = value;
-        void disconnect().catch(() => {}); // disconnect publishes the precise failure.
+        void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       }
     },
     async connect(_accessToken, selection) {
-      if (
-        disposed ||
-        run ||
-        ((stopping || active) && state.phase !== "DISCONNECTED")
-      )
-        return;
+      if (disposed || run || stopping || active) return;
       intentRevision++;
-      const pendingStop = stopping;
       const current = {
         controller: new AbortController(),
         done: Promise.resolve(),
       };
       run = current;
       current.done = (async () => {
-        // Reconnect may retry remote cleanup, but may not allocate a second grant.
-        if (pendingStop) await pendingStop.catch(() => {});
-        if (current.controller.signal.aborted) return;
-        if (active) {
-          await active.disconnect(localStopped);
-          active = null;
-        }
         if (beforeConnect) {
           emit({ phase: "CONNECTING", backend: "NONE", tunnel: "DOWN" });
           try {
@@ -316,10 +279,6 @@ export function createVpnConnectionManager(
               return;
             }
           } catch (error) {
-            if (error instanceof RemoteCleanupPending) {
-              active = adapter;
-              throw error;
-            }
             const code =
               error instanceof Error
                 ? error.message
@@ -333,9 +292,7 @@ export function createVpnConnectionManager(
             /* An individual adapter failure continues after cleanup. */
           }
           try {
-            await adapter.disconnect(() => {
-              if (current.controller.signal.aborted) localStopped();
-            });
+            await adapter.disconnect();
           } catch (error) {
             active = adapter;
             throw error;
@@ -351,11 +308,12 @@ export function createVpnConnectionManager(
       })();
       try {
         await current.done;
-      } catch (error) {
-        cleanupFailed(
-          error,
-          ("attempt" in state ? state.attempt?.method : "") ?? "",
-        );
+      } catch {
+        if (!current.controller.signal.aborted)
+          fail(
+            ("attempt" in state ? state.attempt?.method : "") ?? "",
+            "CLEANUP_FAILED",
+          );
       } finally {
         if (run === current) run = null;
       }
@@ -376,21 +334,17 @@ export function createVpnConnectionManager(
     async connectionLost(code = "VPN_CONNECTION_LOST") {
       if (run || !active) return;
       const method = active.name;
-      const revision = intentRevision;
       try {
-        await disconnect(code);
-        if (revision !== intentRevision) return;
-        if (["VPN_CONNECTION_LOST", "VPN_SERVER_UNAVAILABLE"].includes(code))
-          emit({ ...idle(), failure_code: code });
-        else fail(method, code);
+        await disconnect();
+        fail(method, code);
       } catch {
-        // disconnect already distinguishes remote cleanup from a local failure.
+        fail(method, "CLEANUP_FAILED");
       }
     },
     dispose() {
       intentRevision++;
       disposed = true;
-      void disconnect().catch(() => {});
+      void disconnect().catch(() => fail("", "CLEANUP_FAILED"));
       listeners.clear();
     },
   };

@@ -1,19 +1,11 @@
 import { t, useLanguage, getLanguage } from "../i18n";
-import {
-  useEffect,
-  useLayoutEffect,
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ApiError, type VpnCountriesResponse } from "../api/client";
 import { useApplication } from "../state/application";
 import type { VpnLocationSelection } from "../vpn/selection";
 import { CountryIcon } from "./CountryIcon";
 import { useRegistration } from "../auth/useRegistration";
 import { readWithNetworkGrace } from "../api/readWithNetworkGrace";
-import { readCountryCache, saveCountryCache } from "../vpn/countryCache";
 
 const AVAILABILITY_MAX_AGE_MS = 60_000;
 type AvailabilityState =
@@ -29,9 +21,7 @@ type Choice = {
   readonly selection: VpnLocationSelection;
   readonly name: string;
   readonly quality: number;
-  readonly online?: boolean;
   readonly available: boolean;
-  readonly premiumRequired?: boolean;
 };
 
 export function ConnectionLocationSelector({
@@ -50,30 +40,20 @@ export function ConnectionLocationSelector({
   readonly refreshKey?: number;
 }) {
   useLanguage();
-  const { api, session, config } = useApplication();
+  const { api, session } = useApplication();
   const activeSession = session.current();
-  const accessToken = activeSession?.accessToken;
-  const cacheKey = JSON.stringify([
-    config.backendBaseUrl,
-    activeSession?.userId,
-    activeSession?.plan,
-  ]);
   const guest = activeSession?.plan === "DEMO";
   const registration = useRegistration();
-  const [state, setState] = useState<AvailabilityState>(() => {
-    const data = readCountryCache(cacheKey);
-    return data ? { phase: "refreshing", data } : { phase: "loading" };
-  });
+  const [state, setState] = useState<AvailabilityState>({ phase: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [dropdownHeight, setDropdownHeight] = useState(240);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!activeSession) return;
     const controller = new AbortController();
     setState((current) =>
       "data" in current
@@ -81,14 +61,11 @@ export function ConnectionLocationSelector({
         : { phase: "loading" },
     );
     void readWithNetworkGrace(
-      () => api.listVpnCountries(accessToken, controller.signal),
+      () => api.listVpnCountries(activeSession.accessToken, controller.signal),
       controller.signal,
     )
       .then((data) => {
-        if (!controller.signal.aborted) {
-          saveCountryCache(cacheKey, data);
-          setState({ phase: "ready", data });
-        }
+        if (!controller.signal.aborted) setState({ phase: "ready", data });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -103,7 +80,7 @@ export function ConnectionLocationSelector({
         );
       });
     return () => controller.abort();
-  }, [accessToken, cacheKey, api, attempt, refreshKey]);
+  }, [activeSession, api, attempt, refreshKey]);
 
   useEffect(() => {
     if (state.phase !== "ready") return;
@@ -121,7 +98,6 @@ export function ConnectionLocationSelector({
       !state.data.countries.some(
         (country) =>
           country.country_code === selection.country_code &&
-          !country.premium_required &&
           (allowUnavailable || country.available),
       )
     ) {
@@ -137,7 +113,6 @@ export function ConnectionLocationSelector({
           : state.data.countries.some(
               (country) =>
                 country.country_code === selection.country_code &&
-                !country.premium_required &&
                 country.available,
             )),
     );
@@ -162,21 +137,17 @@ export function ConnectionLocationSelector({
   const countries =
     "data" in state
       ? state.data.countries
+          .filter((country) => allowUnavailable || country.available)
           .map((country): Choice => ({
             key: country.country_code,
             selection: { mode: "COUNTRY", country_code: country.country_code },
             name: countryName(country.country_code),
             quality: country.quality,
-            online: country.available,
-            available:
-              !country.premium_required &&
-              (allowUnavailable || country.available),
-            premiumRequired: country.premium_required,
+            available: true,
           }))
           .sort((a, b) => a.name.localeCompare(b.name, getLanguage()))
       : [];
   const top = [...countries]
-    .filter((country) => !country.premiumRequired && country.online)
     .sort(
       (a, b) =>
         b.quality - a.quality || a.name.localeCompare(b.name, getLanguage()),
@@ -205,37 +176,9 @@ export function ConnectionLocationSelector({
             choice.selection.country_code === selection.country_code,
         ) ?? autopilot);
   const usable = !disabled && state.phase === "ready";
-  const expanded = open;
-  useLayoutEffect(() => {
-    if (!expanded || !root.current) return;
-    const element = root.current;
-    const workspace = element.closest(".home-workspace");
-    const measure = () => {
-      const bounds = element.getBoundingClientRect();
-      if (!bounds.height) return;
-      const bottom = Math.min(
-        globalThis.innerHeight,
-        workspace?.getBoundingClientRect().bottom ?? globalThis.innerHeight,
-      );
-      setDropdownHeight(
-        Math.max(0, Math.min(240, bottom - bounds.bottom - 18)),
-      );
-    };
-    measure();
-    const observer =
-      typeof ResizeObserver === "undefined"
-        ? undefined
-        : new ResizeObserver(measure);
-    observer?.observe(element);
-    if (workspace) observer?.observe(workspace);
-    globalThis.addEventListener("resize", measure);
-    return () => {
-      observer?.disconnect();
-      globalThis.removeEventListener("resize", measure);
-    };
-  }, [expanded]);
+  const expanded = open && usable;
   function choose(choice: Choice) {
-    if (!usable || !choice.available || choice.premiumRequired) return;
+    if (!usable || !choice.available) return;
     if (guest && choice.selection.mode === "COUNTRY") {
       setOpen(false);
       void registration.register();
@@ -246,8 +189,9 @@ export function ConnectionLocationSelector({
     trigger.current?.focus();
   }
   function keyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!usable) return;
     const enabled = choices
-      .map((choice, index) => (!usable || choice.available ? index : -1))
+      .map((choice, index) => (choice.available ? index : -1))
       .filter((index) => index >= 0);
     if (event.key === "Escape") {
       event.preventDefault();
@@ -280,7 +224,7 @@ export function ConnectionLocationSelector({
     } else if (event.key.length === 1 && event.key !== " ") {
       const index = choices.findIndex(
         (choice) =>
-          (!usable || choice.available) &&
+          choice.available &&
           choice.name
             .toLocaleLowerCase("ru")
             .startsWith(event.key.toLocaleLowerCase("ru")),
@@ -308,7 +252,11 @@ export function ConnectionLocationSelector({
           className="location-refresh"
           aria-label={t("обновить страны")}
           title={t("обновить страны")}
-          disabled={state.phase === "refreshing" || state.phase === "loading"}
+          disabled={
+            disabled ||
+            state.phase === "refreshing" ||
+            state.phase === "loading"
+          }
           onClick={() => {
             setOpen(false);
             setAttempt((value) => value + 1);
@@ -327,6 +275,7 @@ export function ConnectionLocationSelector({
         aria-expanded={expanded}
         aria-haspopup="listbox"
         aria-activedescendant={expanded ? `${id}-${active}` : undefined}
+        disabled={!usable}
         onKeyDown={keyDown}
         onClick={() => {
           setOpen(!expanded);
@@ -334,11 +283,7 @@ export function ConnectionLocationSelector({
           setActive(Math.max(0, selectedIndex));
         }}
       >
-        <ChoiceLabel
-          choice={selected}
-          id={`${id}-selection`}
-          fresh={state.phase === "ready"}
-        />
+        <ChoiceLabel choice={selected} id={`${id}-selection`} />
         <span className="location-chevron" aria-hidden="true">
           ⌄
         </span>
@@ -346,7 +291,6 @@ export function ConnectionLocationSelector({
       {expanded ? (
         <div
           className="location-dropdown"
-          style={{ maxHeight: dropdownHeight }}
           id={`${id}-list`}
           role="listbox"
           aria-labelledby={`${id}-title`}
@@ -365,42 +309,23 @@ export function ConnectionLocationSelector({
                       role="option"
                       id={`${id}-${optionIndex}`}
                       key={choice.key}
-                      className={`location-option${active === optionIndex ? " location-option--active" : ""}${choice.premiumRequired ? " premium-locked" : guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
+                      className={`location-option${active === optionIndex ? " location-option--active" : ""}${guest && choice.selection.mode === "COUNTRY" ? " demo-locked" : ""}`}
                       aria-selected={selected.key === choice.key}
-                      disabled={!usable || !choice.available}
+                      disabled={!choice.available}
                       tabIndex={-1}
                       onMouseDown={(event) => event.preventDefault()}
                       onMouseEnter={() => setActive(optionIndex)}
                       onClick={() => choose(choice)}
                     >
-                      <ChoiceLabel
-                        choice={choice}
-                        fresh={state.phase === "ready"}
-                      />
-                      {choice.premiumRequired ? (
-                        <small>{t("доступно только в Premium")}</small>
-                      ) : (
-                        guest &&
-                        choice.selection.mode === "COUNTRY" && (
-                          <small>{t("недоступно в DEMO")}</small>
-                        )
+                      <ChoiceLabel choice={choice} />
+                      {guest && choice.selection.mode === "COUNTRY" && (
+                        <small>{t("недоступно в DEMO")}</small>
                       )}
-                      {!choice.premiumRequired &&
-                        choice.online === false &&
-                        state.phase === "ready" && (
-                          <small>{t("сейчас недоступно")}</small>
-                        )}
                     </button>
                   );
                 })
               ) : (
-                <p className="location-empty">
-                  {t(
-                    "data" in state
-                      ? "нет доступных стран"
-                      : "Список стран пока не загружен.",
-                  )}
-                </p>
+                <p className="location-empty">{t("нет доступных стран")}</p>
               )}
             </div>
           ))}
@@ -409,13 +334,6 @@ export function ConnectionLocationSelector({
       {registration.error && (
         <p role="alert">
           {t("не удалось завершить гостевую сессию. попробуйте снова")}
-        </p>
-      )}
-      {"data" in state && state.phase !== "ready" && (
-        <p className="availability-note" role="status">
-          {t(
-            "Показан сохранённый список. Доступность серверов пока неизвестна.",
-          )}
         </p>
       )}
       {state.phase === "loading" || state.phase === "refreshing" ? (
@@ -442,11 +360,9 @@ export function ConnectionLocationSelector({
 function ChoiceLabel({
   choice,
   id,
-  fresh = true,
 }: {
   readonly choice: Choice;
   readonly id?: string;
-  readonly fresh?: boolean;
 }) {
   useLanguage();
   return (
@@ -464,25 +380,19 @@ function ChoiceLabel({
       {choice.selection.mode === "COUNTRY" && (
         <span
           className="location-option__quality"
-          aria-label={t(
-            fresh
-              ? `доступность ${choice.quality} из 100`
-              : "доступность неизвестна",
-          )}
+          aria-label={t(`доступность ${choice.quality} из 100`)}
         >
           <span className="quality-bars" aria-hidden="true">
             {[1, 2, 3].map((level) => (
               <i
                 key={level}
                 className={
-                  fresh && choice.quality > ((level - 1) * 100) / 3
-                    ? "filled"
-                    : ""
+                  choice.quality > ((level - 1) * 100) / 3 ? "filled" : ""
                 }
               />
             ))}
           </span>
-          {fresh ? t(choice.quality) : "—"}
+          {t(choice.quality)}
         </span>
       )}
     </>

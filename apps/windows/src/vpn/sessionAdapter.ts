@@ -1,5 +1,5 @@
 import type { HttpTransport } from "../native/http";
-import { RemoteCleanupPending, type ConnectionAdapter } from "./protocol";
+import type { ConnectionAdapter } from "./protocol";
 import type { ConnectedVpnSession } from "./connection";
 import type { ConnectionDetails } from "./connectionDetails";
 import { getDeviceTrafficSelection, selectionAnalytics } from "./traffic";
@@ -74,24 +74,19 @@ export function createSessionAdapter<C>(
     request?: string,
   ): Promise<Lease<C> | null> {
     const token = await options.bearer();
-    const response = await options
-      .transport(base.href + suffix, {
-        method,
-        redirect: "error",
-        cache: "no-store",
-        signal: AbortSignal.timeout(15_000),
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          ...(request ? { "Idempotency-Key": request } : {}),
-        },
-        ...(method === "POST" ? { body: JSON.stringify(body ?? {}) } : {}),
-      })
-      .catch(() => {
-        throw new Error("VPN_SERVER_UNAVAILABLE");
-      });
+    const response = await options.transport(base.href + suffix, {
+      method,
+      redirect: "error",
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(request ? { "Idempotency-Key": request } : {}),
+      },
+      ...(method === "POST" ? { body: JSON.stringify(body ?? {}) } : {}),
+    });
     if (!response.ok) {
-      if (response.status >= 500) throw new Error("VPN_SERVER_UNAVAILABLE");
       const value = await response.json().catch(() => null);
       const code = value?.error?.code;
       throw new Error(
@@ -130,25 +125,17 @@ export function createSessionAdapter<C>(
     lease = null;
     allocated = false;
   }
-  async function cleanup(recover = false, onLocalStopped?: () => void) {
+  async function cleanup(recover = false) {
     let localError: unknown;
     try {
       await native.stop();
       local = false;
-      onLocalStopped?.();
     } catch (error) {
       localError = error;
     }
     // Revocation is required even after a native/UAC failure. Otherwise the
     // server keeps renewing an abandoned grant and charging the whole account.
-    try {
-      if (recover) allocated = true;
-      if (recover || allocated || lease) await closeRemote();
-    } catch {
-      // Never forget the grant or permit fallback while removal is unconfirmed.
-      // A local failure takes priority: in that case shutdown is not proven.
-      throw localError ?? new RemoteCleanupPending();
-    }
+    if (recover || allocated || lease) await closeRemote();
     if (localError) throw localError;
   }
   function armDeadline(row: Lease<C>) {
@@ -200,8 +187,7 @@ export function createSessionAdapter<C>(
         if (run !== epoch || failure) return;
         const code =
           error instanceof Error ? error.message : "VPN_CONNECTION_LOST";
-        if (connected || isTerminalVpnFailure(code) || ++healthFailures >= 2)
-          lost(code);
+        if (isTerminalVpnFailure(code) || ++healthFailures >= 2) lost(code);
         else keepAlive(run);
       }
     }, 30_000);
@@ -209,7 +195,7 @@ export function createSessionAdapter<C>(
   return {
     id: method,
     name,
-    recover: (onLocalStopped) => cleanup(true, onLocalStopped),
+    recover: () => cleanup(true),
     async connect(selection, signal) {
       connected = false;
       failure = null;
@@ -289,14 +275,14 @@ export function createSessionAdapter<C>(
         details: options.details(configuration),
       };
     },
-    async disconnect(onLocalStopped) {
+    async disconnect() {
       epoch++;
       connected = false;
       failure = null;
       clearTimeout(heartbeat);
       clearTimeout(expiry);
       // Also stop an install that succeeded while its caller was being cancelled.
-      await cleanup(false, onLocalStopped);
+      await cleanup();
     },
   };
 }

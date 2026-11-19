@@ -29,7 +29,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     val status by (actions?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(VpnStatus()) }).collectAsState()
     var confirmReset by remember(actions, status.method, status.phase, country, signedIn) { mutableStateOf(false) }
     val canReset = actions != null && signedIn && canConnect && status.error != VpnError.CLEANUP
-    val active = status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING) || (status.phase == VpnPhase.FAILED && status.error == VpnError.CLEANUP)
+    val active = status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK, VpnPhase.RECONNECTING) || status.error == VpnError.CLEANUP
     if (quotaExhausted || status.error == VpnError.FREE_LIMIT) {
         Text(tr(R.string.free_quota_exhausted), Modifier.testTag("free-quota-notice"), style = MaterialTheme.typography.bodyMedium, color = Brand.Christalle)
         if (onUpgrade != null) TextButton(onUpgrade, Modifier.testTag("free-quota-buy")) { Text(tr(R.string.free_quota_buy)) }
@@ -37,7 +37,7 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         BrandActionButton(tr(if (status.phase in setOf(VpnPhase.CONNECTING, VpnPhase.RECONNECTING)) R.string.vpn_cancel else if (active) R.string.vpn_disconnect else R.string.dash_connect), {
             if (active) actions?.disconnect() else if (quotaExhausted && onUpgrade != null) onUpgrade() else actions?.connect(country)
-        }, Modifier.weight(1f).testTag("home-connect"), enabled = actions != null && signedIn && (active || canConnect) && status.phase != VpnPhase.DISCONNECTING && !status.cleanupInProgress)
+        }, Modifier.weight(1f).testTag("home-connect"), enabled = actions != null && signedIn && (active || canConnect) && status.phase != VpnPhase.DISCONNECTING)
     }
     Text(tr(when(status.phase) {
         VpnPhase.CONNECTED -> R.string.vpn_connected
@@ -75,6 +75,5 @@ internal fun VpnControls(actions: VpnActions?, country: String, signedIn: Boolea
     if (status.error != null && status.error != VpnError.FREE_LIMIT) Text(
         if (status.error == VpnError.DEMO_LIMIT) tr(R.string.demo_exhausted)
         else if (status.error == VpnError.METHODS_EXHAUSTED) tr(R.string.vpn_placeholder_exhausted, status.method?.label ?: "")
-        else if (status.error == VpnError.CLEANUP) tr(if (status.phase == VpnPhase.DISCONNECTED) R.string.vpn_remote_cleanup else R.string.vpn_cleanup)
         else tr(if (status.error == VpnError.UNSTABLE) R.string.vpn_unstable else R.string.vpn_failed), Modifier.testTag("vpn-error"), style = MaterialTheme.typography.bodySmall, color = Brand.PersianRed)
 }

@@ -243,7 +243,6 @@
     <string name="vpn_disconnecting">正在断开连接…</string>
     <string name="vpn_disconnect">断开连接</string>
     <string name="vpn_cleanup">尚未确认 VPN 断开清理已完成。请重试断开连接；清理完成前无法重新连接。</string>
-    <string name="vpn_remote_cleanup">VPN 已断开。下次连接前，应用会检查服务器上的会话是否已关闭。</string>
     <string name="vpn_failed">无法连接。请检查网络后重试。</string>
     <string name="vpn_trying_method">正在尝试 %1$s…</string>
     <string name="vpn_switching_method">%1$s 未能连接，正在尝试 %2$s…</string>
@@ -350,7 +349,6 @@
     <string name="manage_devices">管理设备</string>
     <string name="forget_local">移除此设备上的登录数据</string>
     <string name="device_pending">等待可用名额</string>
-    <string name="premium_location_hint">仅限 Premium 使用</string>
     <string name="faq_connect_q">如何开始使用？</string>
     <string name="faq_connect_a">下载应用，输入邮件中的验证码登录，然后选择国家。\n\n免费套餐每天提供一小时 VPN 时间，由整个账号共享。</string>
     <string name="faq_free_q">免费套餐包含什么？</string>

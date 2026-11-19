@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+### Test rollback — Android 0.30.2 project baseline
+
+- Restored the owner-selected `b90d9685` product baseline: Android 0.30.2/code 61,
+  Windows 0.31.2, backend 0.53.0, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1 and
+  website 0.7.1. Later product changes are reverted with their corresponding tests.
+- Retained current environment isolation, CI/publishers and deployment safeguards;
+  only the test environment is authorized for deployment. Database schema 0053,
+  business records and production remain unchanged. These rebuilt test artifacts
+  retain their actual new provenance; original artifacts and release tags are preserved.
+- Scope, compatibility and acceptance evidence: [rollback handoff](docs/rollback-android-0302.md).
+
 ### Restore production dashboard client downloads — version unchanged
 
 - Restore the private dashboard's authenticated local installer catalog and remove

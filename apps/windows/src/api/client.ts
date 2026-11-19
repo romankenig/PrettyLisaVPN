@@ -115,7 +115,6 @@ export interface VpnCountriesResponse {
     readonly country_code: string;
     readonly quality: number;
     readonly available: boolean;
-    readonly premium_required?: boolean;
   }[];
 }
 
@@ -454,7 +453,7 @@ export function createApiClient(
     },
     async listVpnCountries(accessToken, signal) {
       const value = await requestJson(
-        "/vpn/countries?include_locked=true",
+        "/vpn/countries",
         {
           method: "GET",
           headers: { authorization: `Bearer ${accessToken}` },
@@ -469,9 +468,7 @@ export function createApiClient(
   };
 }
 
-export function isVpnCountriesResponse(
-  value: unknown,
-): value is VpnCountriesResponse {
+function isVpnCountriesResponse(value: unknown): value is VpnCountriesResponse {
   return (
     hasOnlyKeys(value, ["autopilot", "countries"]) &&
     hasOnlyKeys(value.autopilot, ["quality", "available"]) &&
@@ -479,16 +476,7 @@ export function isVpnCountriesResponse(
     Array.isArray(value.countries) &&
     value.countries.every(
       (country) =>
-        (hasOnlyKeys(country, ["country_code", "quality", "available"]) ||
-          hasOnlyKeys(country, [
-            "country_code",
-            "quality",
-            "available",
-            "premium_required",
-          ])) &&
-        (!("premium_required" in country) ||
-          (typeof country.premium_required === "boolean" &&
-            (!country.premium_required || country.available === false))) &&
+        hasOnlyKeys(country, ["country_code", "quality", "available"]) &&
         /^[A-Z]{2}$/.test(String(country.country_code)) &&
         isAvailability(country),
     )

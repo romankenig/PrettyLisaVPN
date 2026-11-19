@@ -1,1 +1,1 @@
-{"autopilot":{"available":true,"quality":95},"countries":[{"country_code":"DE","available":true,"quality":98},{"country_code":"US","available":true,"quality":85},{"country_code":"AT","available":false,"quality":0,"premium_required":true}]}
+{"autopilot":{"available":true,"quality":95},"countries":[{"country_code":"DE","available":true,"quality":98},{"country_code":"US","available":true,"quality":85}]}
