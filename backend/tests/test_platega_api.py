@@ -229,3 +229,37 @@ async def test_provider_redirect_is_not_followed_with_merchant_secret():
     with pytest.raises(PlategaUnavailable):
         await api(handler).subscription(SUBSCRIPTION)
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 429, 500])
+async def test_http_failure_retains_only_safe_provider_identifiers(status, caplog):
+    trace = uuid4()
+    value = {
+        "code": "Auth:GEN_1001",
+        "traceId": str(trace),
+        "message": SECRET,
+        "data": ["payer@example.com", "https://pay.platega.io/private", "4242424242424242"],
+    }
+    with pytest.raises(PlategaUnavailable):
+        await api(lambda _: httpx.Response(status, json=value)).subscription(SUBSCRIPTION)
+    messages = [record.getMessage() for record in caplog.records]
+    assert messages == [f"platega_http_error status={status} code=Auth:GEN_1001 trace={trace}"]
+    for private in [SECRET, "payer@example.com", "https://", "4242424242424242"]:
+        assert private not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not-json-private-provider-text",
+        b'{"code":"payer@example.com","traceId":"https://private.example/secret"}',
+        b'{"code":"WRONG_INPUT_PARAMETERS\\nprivate","traceId":"not-a-uuid"}',
+        b"[]",
+    ],
+)
+async def test_untrusted_error_fields_cannot_enter_logs(body, caplog):
+    with pytest.raises(PlategaUnavailable):
+        await api(lambda _: httpx.Response(400, content=body)).subscription(SUBSCRIPTION)
+    assert [record.getMessage() for record in caplog.records] == [
+        "platega_http_error status=400 code=unknown trace=unknown"
+    ]

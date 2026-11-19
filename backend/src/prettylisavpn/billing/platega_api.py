@@ -5,6 +5,8 @@ Responses are reduced to business evidence; provider bodies/headers are never lo
 """
 
 import json
+import logging
+import re
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, Protocol
@@ -13,6 +15,30 @@ from uuid import UUID
 
 import httpx
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, SecretStr
+
+logger = logging.getLogger(__name__)
+
+
+def log_http_failure(status: int, content: bytes) -> None:
+    """Keep only bounded error identifiers, never provider text, URLs or payer data."""
+    code, trace = "unknown", "unknown"
+    try:
+        value = json.loads(content)
+        if isinstance(value, dict):
+            raw_code = value.get("code")
+            if isinstance(raw_code, str) and re.fullmatch(
+                r"(?:[A-Z][a-zA-Z]{0,31}:)?[A-Z][A-Z0-9_]{0,63}", raw_code
+            ):
+                code = raw_code
+            raw_trace = value.get("traceId")
+            if isinstance(raw_trace, str) and len(raw_trace) in (32, 36):
+                try:
+                    trace = str(UUID(raw_trace))
+                except ValueError:
+                    pass
+    except (ValueError, UnicodeError):
+        pass
+    logger.warning("platega_http_error status=%d code=%s trace=%s", status, code, trace)
 
 
 class PlategaUnavailable(RuntimeError):
@@ -128,20 +154,24 @@ class PlategaAPI:
                     json=body,
                     params=params,
                 ) as response:
-                    if response.status_code not in accepted_statuses:
-                        raise PlategaUnavailable
                     content = bytearray()
                     async for chunk in response.aiter_bytes():
                         content.extend(chunk)
                         if len(content) > 512_000:
                             raise PlategaUnavailable
+                    if response.status_code not in accepted_statuses:
+                        log_http_failure(response.status_code, bytes(content))
+                        raise PlategaUnavailable
             value = json.loads(content, parse_float=Decimal)
             if path == "/transaction/export/json" and isinstance(value, list):
                 return {"items": value}
             if not isinstance(value, dict):
                 raise PlategaUnavailable
             return value
-        except (httpx.HTTPError, ValueError, InvalidOperation):
+        except httpx.HTTPError:
+            logger.warning("platega_transport_unavailable")
+            raise PlategaUnavailable from None
+        except (ValueError, InvalidOperation):
             raise PlategaUnavailable from None
 
     async def create(

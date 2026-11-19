@@ -1,6 +1,7 @@
 """Leased, fenced reconciliation; unknown outcomes stay PENDING, never retry new keys."""
 
 import asyncio
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 from uuid import UUID, uuid4
@@ -27,6 +28,8 @@ from prettylisavpn.connections import Postgres
 from prettylisavpn.subscriptions.domain import SubscriptionPlan, SubscriptionStatus
 from prettylisavpn.subscriptions.model import SubscriptionRecord
 
+logger = logging.getLogger(__name__)
+
 
 class BillingWorkerPort(Protocol):
     async def run(self, stop: asyncio.Event) -> None: ...
@@ -34,8 +37,10 @@ class BillingWorkerPort(Protocol):
 
 class BillingWorker:
     def __init__(
-        self, postgres: Postgres, provider: BillingProvider | None, *, timeout: float = 5
+        self, postgres: Postgres, provider: BillingProvider | None, *, timeout: float = 20
     ) -> None:
+        # Allow create + authoritative GET (Platega uses an 8-second transport timeout),
+        # while remaining below the persisted 30-second worker lease.
         validate_provider(provider)
         self.postgres, self.provider, self.timeout = postgres, provider, timeout
 
@@ -135,7 +140,11 @@ class BillingWorker:
         except asyncio.CancelledError:
             # The accepted provider call may have completed: leave the durable lease for recovery.
             raise
-        except (ValueError, SQLAlchemyError, TimeoutError, OSError):
+        except TimeoutError:
+            logger.warning("billing_provider_timeout operation_id=%s", row.id)
+            await self._defer(row.id, claim, "PROVIDER_TIMEOUT")
+            return True
+        except (ValueError, SQLAlchemyError, OSError):
             await self._defer(row.id, claim, "PROVIDER_OR_PERSISTENCE_UNAVAILABLE")
             return True
         except Exception:

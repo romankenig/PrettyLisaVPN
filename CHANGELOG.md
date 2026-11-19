@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Platega website activation — backend 0.54.1
+
+- Record server-only merchant configuration, successful read-only API checks and
+  the first website billing acceptance operation. Keep purchases disabled while
+  its provider outcome remains unknown; preserve the original creation fence,
+  FREE access and manual Platinum. Website/client versions, prices and schema
+  remain unchanged.
+- Allow provider creation and verification to finish within a 20-second worker
+  deadline, below the 30-second lease. Retain redacted HTTP error identifiers and
+  timeout diagnostics without request bodies, credentials or payment URLs.
+- See [activation evidence and continuation](docs/platega-live-acceptance.md).
+
 ### Premium location visibility — backend 0.54.0 / client PATCH updates
 
 - Keep Premium-only countries visible to FREE and DEMO with blurred labels and
