@@ -31,6 +31,7 @@ class Availability(BaseModel):
 
 class Country(Availability):
     country_code: str
+    premium_required: bool | None = None
 
 
 class Countries(BaseModel):
@@ -38,11 +39,12 @@ class Countries(BaseModel):
     countries: list[Country]
 
 
-@router.get("/countries", response_model=Countries)
+@router.get("/countries", response_model=Countries, response_model_exclude_none=True)
 async def countries(
     request: Request,
     token: Annotated[str | None, Depends(bearer_token)],
     method: Literal["https_proxy"] | None = None,
+    include_locked: bool = False,
     proxy_ip: Annotated[str | None, Header(alias="X-PrettyLisaVPN-Proxy-IP")] = None,
 ) -> Countries | JSONResponse:
     if token is None:
@@ -55,12 +57,16 @@ async def countries(
                 raise DeviceAccessLimitedError
             fleet = cast(FleetService, request.app.state.fleet)
             free_only = entitlements_for_plan(account.plan).free_nodes_only
+            options = {"include_locked": True} if include_locked else {}
             snapshot = (
                 await fleet.countries(
-                    free_only=free_only, browser_proxy=True, allow_proxy_ip=proxy_ip == "1"
+                    free_only=free_only,
+                    browser_proxy=True,
+                    allow_proxy_ip=proxy_ip == "1",
+                    **options,
                 )
                 if method == "https_proxy"
-                else await fleet.countries(free_only=free_only)
+                else await fleet.countries(free_only=free_only, **options)
             )
             return Countries.model_validate(snapshot)
         await auth.authenticate(token)

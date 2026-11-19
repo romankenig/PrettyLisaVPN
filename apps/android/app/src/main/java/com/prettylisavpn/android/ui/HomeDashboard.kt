@@ -7,6 +7,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -22,6 +27,23 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+
+// Compose's RenderEffect blur starts at API 31. Keep the same obscured label on
+// API 26–30 by compositing a small, translucent neighborhood of the content.
+private fun Modifier.premiumBlur(locked: Boolean): Modifier = when {
+    !locked -> this
+    android.os.Build.VERSION.SDK_INT >= 31 -> blur(2.dp)
+    else -> drawWithContent {
+        val radius = 1.dp.toPx()
+        val paint = Paint().apply { alpha = 1f / 25f }
+        val bounds = Rect(-2 * radius, -2 * radius, size.width + 2 * radius, size.height + 2 * radius)
+        for (x in -2..2) for (y in -2..2) {
+            drawContext.canvas.saveLayer(bounds, paint)
+            translate(x * radius, y * radius) { this@drawWithContent.drawContent() }
+            drawContext.canvas.restore()
+        }
+    }
+}
 
 internal fun readableDate(raw: String?, locale: Locale, zone: ZoneId): String? = raw?.let {
     runCatching { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(zone).format(Instant.parse(it)) }.getOrNull()
@@ -123,7 +145,7 @@ internal fun LiveHome(model: ScreenModel, register: () -> Unit = {}, upgrade: ()
     val countries = state.data.countries.sortedWith { a, b -> collator.compare(Locale("", a.code).getDisplayCountry(locale), Locale("", b.code).getDisplayCountry(locale)) }
     LaunchedEffect(demo, countries, state.loads[Area.COUNTRIES]?.phase) {
         if (demo) selected = "AUTO"
-        if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected }) selected = "AUTO"
+        if (state.loads[Area.COUNTRIES]?.phase == LoadPhase.READY && selected != "AUTO" && countries.none { it.code == selected && !it.premiumRequired && it.available }) selected = "AUTO"
     }
     PhoneScreen("live-account", onRefresh = {
         scope.launch {
@@ -151,15 +173,19 @@ internal fun LiveHome(model: ScreenModel, register: () -> Unit = {}, upgrade: ()
                     DropdownMenuItem({ LocationLabel(null, tr(R.string.ui_autopilot), state.data.autopilotQuality) },
                         { selected = "AUTO"; expanded = false }, Modifier.testTag("home-country-AUTO"))
                     HorizontalDivider()
-                    countries.sortedByDescending { it.quality.toIntOrNull() ?: 0 }.take(3).takeIf { it.isNotEmpty() }?.let { top ->
+                    countries.filter { !it.premiumRequired && it.available }.sortedByDescending { it.quality.toIntOrNull() ?: 0 }.take(3).takeIf { it.isNotEmpty() }?.let { top ->
                         Text(tr(R.string.dash_top), Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
                         top.forEach { c -> DropdownMenuItem({ Column { LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull(), Modifier.alpha(if (demo) .45f else 1f)); if (demo) Text("🔒 " + tr(R.string.demo_locked_hint), style = MaterialTheme.typography.bodySmall) } },
                             { expanded = false; if (demo) register() else selected = c.code }, Modifier.testTag("home-top-${c.code}")) }
                         HorizontalDivider()
                     }
                     Text(tr(R.string.dash_all_countries), Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = Brand.Scorpion)
-                    countries.forEach { c -> DropdownMenuItem({ Column { LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull(), Modifier.alpha(if (demo) .45f else 1f)); if (demo) Text("🔒 " + tr(R.string.demo_locked_hint), style = MaterialTheme.typography.bodySmall) } },
-                        { expanded = false; if (demo) register() else selected = c.code }, Modifier.testTag("home-country-${c.code}")) }
+                    countries.forEach { c -> DropdownMenuItem({ Column {
+                        LocationLabel(c.code, Locale("", c.code).getDisplayCountry(locale), c.quality.toIntOrNull(), Modifier.alpha(if (demo || c.premiumRequired) .45f else 1f).premiumBlur(c.premiumRequired))
+                        if (c.premiumRequired) Text("🔒 " + tr(R.string.premium_location_hint), style = MaterialTheme.typography.bodySmall, color = Brand.Christalle)
+                        else if (demo) Text("🔒 " + tr(R.string.demo_locked_hint), style = MaterialTheme.typography.bodySmall)
+                    } },
+                        { if (!c.premiumRequired && c.available) { expanded = false; if (demo) register() else selected = c.code } }, Modifier.testTag("home-country-${c.code}"), enabled = !c.premiumRequired && c.available) }
                     if (countries.isEmpty()) DropdownMenuItem({ Text(tr(R.string.dash_no_countries)) }, {}, enabled = false)
                 }
             }

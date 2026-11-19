@@ -365,7 +365,8 @@ function App() {
                     value={demo ? "AUTO" : country}
                     countries={state.countries}
                     language={language}
-                    disabled={!!active || busy || demo || limited}
+                    disabled={!!active || busy || limited}
+                    demo={demo}
                     onChange={setCountry}
                   />
                   {demo && (

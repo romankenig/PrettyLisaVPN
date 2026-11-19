@@ -6,6 +6,29 @@
 
 ## Unreleased
 
+### Platega website activation — backend 0.54.1
+
+- Record server-only merchant configuration, successful read-only API checks and
+  the first website billing acceptance operation. Keep purchases disabled while
+  its provider outcome remains unknown; preserve the original creation fence,
+  FREE access and manual Platinum. Website/client versions, prices and schema
+  remain unchanged.
+- Allow provider creation and verification to finish within a 20-second worker
+  deadline, below the 30-second lease. Retain redacted HTTP error identifiers and
+  timeout diagnostics without request bodies, credentials or payment URLs.
+- See [activation evidence and continuation](docs/platega-live-acceptance.md).
+
+### Premium location visibility — backend 0.54.0 / client PATCH updates
+
+- Keep Premium-only countries visible to FREE and DEMO with blurred labels and
+  a readable Premium explanation, while preventing selection. Preserve FREE
+  country access, DEMO AUTO and existing registration transitions.
+- Add an opt-in catalog field without changing legacy responses or VPN admission.
+  Update Windows 0.31.3, Android 0.30.3/code 62, Chrome 0.5.2, iOS 0.6.2 and macOS
+  0.5.2. See [contract and validation handoff](docs/premium-location-visibility.md).
+- Gate client publication on the matching healthy backend so the API is deployed
+  first; this CI release-order follow-up leaves product versions unchanged.
+
 ### Japan PREMIUM node — infrastructure, version unchanged
 
 - Add `ishost-jp-001` (`38.180.7.144`, JP) for Premium/Platinum with the

@@ -72,6 +72,12 @@ are created. A failed catalog refresh is shown separately from fleet availabilit
 ## Automatic publication
 
 Only successful `push` builds on `develop` call `client-download-publish.yml`.
+Before publishing, the shared job waits up to 30 minutes for the HTTPS `/version`
+to match the backend package version in its source manifest and identify the
+development environment, with `/ready` confirming PostgreSQL and Valkey. An older,
+unready or unreachable backend blocks publication; the previous downloads remain.
+This gate also accepts an already-deployed backend of the same package version
+for client-only tasks, without requiring an unnecessary backend rebuild.
 Android waits for build/unit/lint/packaging and all API 26/35/36 emulator jobs.
 Windows waits for its build, UI/unit tests, Rust tests and Clippy. PR builds and
 manual workflow dispatches never publish. The reusable job downloads the artifact

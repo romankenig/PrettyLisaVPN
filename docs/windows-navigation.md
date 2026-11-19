@@ -1186,3 +1186,17 @@ dialog, retaining the DEMO registration guard. Payment-rule links call the exist
 show the existing document-open error. The old FAQ home/subscription links are
 replaced by instructions and public payment rules. No route or auth guard is added;
 no backend integration is pending. See [FAQ handoff](shared-faq.md).
+
+## Premium location visibility — Windows 0.31.3
+
+The Home country dropdown keeps Premium-only countries visible to FREE and DEMO.
+Their flag/name/rating is blurred and dimmed; “available only with Premium” stays
+readable in all six languages. These options are disabled and skipped by keyboard
+selection. A previously selected locked country returns to AUTO. Top suggestions
+remain eligible countries. DEMO FREE-country rows retain the existing registration
+transition; Premium rows do not navigate or start registration/purchase.
+
+Implemented API integration requests `include_locked=true` and consumes
+`premium_required`. Older backend responses remain accepted; the new catalog rows
+require backend 0.54.0 deployment. No route or new auth guard is introduced. See
+[all-client compatibility and validation handoff](premium-location-visibility.md).

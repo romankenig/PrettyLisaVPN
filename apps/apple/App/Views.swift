@@ -136,6 +136,7 @@ struct LoginView: View {
 struct HomeView: View {
     @ObservedObject var model: AppModel
     @Environment(\.locale) private var locale
+    @State private var choosingCountry = false
     var stateKey: String {
         switch model.connection {
         case .disconnected: return "ui_not_connected"
@@ -171,13 +172,14 @@ struct HomeView: View {
                     }.padding().frame(maxWidth: .infinity)
                 }
                 GroupBox(L("dash_where")) {
-                    Picker(L("dash_where"), selection: $model.country) {
-                        Text(L("ui_autopilot")).tag("AUTO")
-                        ForEach(model.countries?.countries ?? []) { country in
-                            Text((locale.localizedString(forRegionCode: country.country_code) ?? country.country_code) + " · \(country.quality)%")
-                                .tag(country.country_code).disabled(!country.available)
+                    Button { choosingCountry = true } label: {
+                        HStack {
+                            Text(model.country == "AUTO" ? L("ui_autopilot") : locale.localizedString(forRegionCode: model.country) ?? model.country)
+                            Spacer(); Image(systemName: "chevron.down")
                         }
                     }.disabled(model.connection != .disconnected && !isFailed).padding(8)
+                        .accessibilityIdentifier("country-picker")
+                        .popover(isPresented: $choosingCountry) { CountryOptionsView(model: model).frame(width: 360, height: 400) }
                     if model.countries?.autopilot.available == false { Text(L("dash_no_countries")).foregroundStyle(.secondary) }
                 }
                 GroupBox(L("dash_account")) {

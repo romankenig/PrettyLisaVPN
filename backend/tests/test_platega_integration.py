@@ -12,7 +12,11 @@ from sqlalchemy import select
 from test_billing_operations_integration import due
 from test_subscription_access_integration import access_state as _access_state
 
-from prettylisavpn.billing.model import BillingAccountRecord, BillingContractRecord
+from prettylisavpn.billing.model import (
+    BillingAccountRecord,
+    BillingContractRecord,
+    BillingOperationRecord,
+)
 from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.billing.operations_domain import BillingCommand, next_month
 from prettylisavpn.billing.platega import PlategaBillingProvider
@@ -41,12 +45,14 @@ class ProviderAPI:
         self.subscriptions = {}
         self.payments = {}
         self.creates = 0
+        self.create_delay = 0
         self.lose_create_response = False
         self.cancel_gate = None
         self.cancel_started = asyncio.Event()
 
     async def create(self, operation_id, amount_minor, email):
         self.creates += 1
+        await asyncio.sleep(self.create_delay)
         identity = uuid4()
         self.subscriptions[identity] = PlategaSubscription(
             id=identity,
@@ -187,6 +193,41 @@ async def test_lost_create_response_recovers_same_subscription_without_second_cr
     assert recovered.redirect_url == subscription_url(next(iter(state[3].subscriptions)))
     assert state[3].creates == 1
     assert (await state[5].start(state[2], original)).id == value.id
+
+
+async def test_creation_longer_than_five_seconds_retains_checkout_and_never_reposts(state):
+    # Real provider calls allow eight seconds each; the outer deadline must not
+    # cancel a valid response before the transport's own timeout.
+    state[3].create_delay = 5.1
+    original = await command(state)
+    operation = await state[5].start(state[2], original)
+    assert operation.status == "PENDING" and operation.redirect_url
+    async with state[0].session() as session:
+        agreement = await session.get(PlategaAgreementRecord, operation.id)
+        assert agreement.provider_id in state[3].subscriptions
+    await due(state[0], operation.id)
+    assert (await state[5].start(state[2], original)).id == operation.id
+    assert state[3].creates == 1
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
+
+
+async def test_actual_outer_timeout_preserves_creation_fence_and_unknown_outcome(state):
+    state[3].create_delay = 1
+    state[5].worker.timeout = 0.5
+    original = await command(state)
+    operation = await state[5].start(state[2], original)
+    assert operation.status == "PENDING" and operation.redirect_url is None
+    async with state[0].session() as session:
+        saved = await session.get(BillingOperationRecord, operation.id)
+        assert saved.last_error == "PROVIDER_TIMEOUT"
+        agreement = await session.get(PlategaAgreementRecord, operation.id)
+        assert agreement.create_started_at is not None and agreement.provider_id is None
+    state[5].worker.timeout = 20
+    await due(state[0], operation.id)
+    recovered = await state[5].start(state[2], original)
+    assert recovered.id == operation.id and recovered.status == "PENDING"
+    assert recovered.redirect_url is None and state[3].creates == 1
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
 
 
 async def test_missed_callback_recovers_from_bound_provider_ledger_without_new_charge(state):

@@ -705,6 +705,21 @@ async function main() {
     .filter({ hasText: "10:15" })
     .waitFor();
   await screenshot("04-home-free-balance");
+  await page.locator(".location-trigger").click();
+  await page
+    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+    .waitFor();
+  if (
+    !(await page
+      .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+      .isDisabled())
+  )
+    throw new Error("Premium-only country must be locked");
+  await page
+    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+    .scrollIntoViewIfNeeded();
+  await screenshot("04-home-free-premium-countries");
+  await page.locator(".location-trigger").press("Escape");
   await page.getByRole("link", { name: "улучшить план", exact: true }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
   await screenshot("04-home-free-upgrade-subscription");
@@ -1387,6 +1402,21 @@ async function main() {
     .click();
   await page.getByText("гость на этом устройстве", { exact: true }).waitFor();
   await screenshot("17-demo-home");
+  await page.locator(".location-trigger").click();
+  await page
+    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+    .waitFor();
+  if (
+    !(await page
+      .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+      .isDisabled())
+  )
+    throw new Error("Premium-only country must be locked");
+  await page
+    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
+    .scrollIntoViewIfNeeded();
+  await screenshot("17-demo-premium-countries");
+  await page.locator(".location-trigger").press("Escape");
   await page.getByRole("link", { name: "улучшить", exact: true }).click();
   await page.getByRole("region", { name: "PREMIUM", exact: true }).waitFor();
   await screenshot("18-demo-subscription");

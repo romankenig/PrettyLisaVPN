@@ -181,6 +181,7 @@
 "plan_register" = "register";
 "plan_split" = "all or selected traffic";
 "plan_unlimited" = "VPN without time limits";
+"premium_location_hint" = "available only with Premium";
 "processing" = "processing…";
 "randomize_methods" = "random method selection and order";
 "reply_email" = "reply email";
