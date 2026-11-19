@@ -447,6 +447,11 @@ async def main() -> None:
     settings = Settings()
     if not settings.fleet_enabled:
         raise SystemExit("Fleet is disabled")
+    if (
+        settings.public_website_origin == "https://test.prettylisavpn.com"
+        and not settings.fleet_shared_nodes
+    ):
+        raise SystemExit("The test environment cannot run an owner fleet worker")
     configure_logging(settings.log_level)
     postgres = Postgres(settings)
     stop = asyncio.Event()

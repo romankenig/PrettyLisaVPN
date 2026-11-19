@@ -88,6 +88,12 @@ class Settings(BaseSettings):
     def validate_production_otp_secret(self) -> Self:
         if self.fleet_shared_nodes and self.environment not in ("development", "test"):
             raise ValueError("Shared fleet consumer requires development or test environment")
+        if (
+            self.client_vpn_enabled
+            and self.public_website_origin == "https://test.prettylisavpn.com"
+            and not self.fleet_shared_nodes
+        ):
+            raise ValueError("Test VPN requires the restricted shared fleet controller")
         if self.demo_enabled and self.demo_identity_secret is None:
             raise ValueError("DEMO requires a stable, independent device identity key")
         if self.demo_identity_secret is not None and self.demo_identity_secret in (

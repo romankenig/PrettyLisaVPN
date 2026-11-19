@@ -77,6 +77,11 @@ owner's administrative keys.
    durable deployment configuration. Set `FLEET_SHARED_NODES=true`,
    `CLIENT_VPN_ENABLED=true`, `MANAGED_VPN_ENABLED=true`, and
    `FLEET_WORKER_ENABLED=true` only after the verified backend update and enrollment.
+   Persist `FLEET_SHARED_NODES=true` in release/canonical deployment env as well.
+   Set GitHub **testing** environment variables `DEV_FLEET_SHARED_NODES=true` and
+   `DEV_FLEET_WORKER_ENABLED=true` after activation so subsequent deploys preserve
+   the role. CI rejects an enabled test worker without the shared role; production
+   requires the owner role. The worker also refuses owner mode at the test origin.
    Keep test PostgreSQL/Valkey, OTP/DEMO identity and disabled payment/support settings.
 4. Verify the actual `/version`, refreshed country availability, real test session
    issuance, tunnel egress and confirmed cleanup. Check production leases independently.

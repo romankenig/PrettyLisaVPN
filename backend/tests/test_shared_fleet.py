@@ -55,6 +55,12 @@ def test_snapshot_freshness_fails_closed():
 def test_shared_mode_cannot_become_production_owner():
     with pytest.raises(ValidationError, match="Shared fleet consumer"):
         Settings(environment="production", fleet_shared_nodes=True)
+    with pytest.raises(ValidationError, match="Test VPN requires"):
+        Settings(
+            environment="development",
+            client_vpn_enabled=True,
+            public_website_origin="https://test.prettylisavpn.com",
+        )
     settings = Settings(environment="test", fleet_shared_nodes=True)
     with pytest.raises(FleetError, match="FLEET_SHARED_READ_ONLY"):
         FleetService(Mock(), settings).require_owner()
