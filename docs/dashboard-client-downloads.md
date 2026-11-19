@@ -1,9 +1,11 @@
 # Dashboard downloads and GMT+3 — 2026-10-28
 
 Current environment policy (2026-11-19): `develop` builds target the isolated test API
-and publish on `5.129.211.150` through GitHub Environment `testing`. The main private
-dashboard proxies only its authenticated download routes to those test files; the
-public main website continues serving its independent production download store.
+and publish on `5.129.211.150` through GitHub Environment `testing`. The dashboard
+installer serves authenticated downloads from the local store. On the main server
+this is the same production store used by the public website. See the
+[private download rollback](test-environment.md#private-download-rollback) for
+applying the route to a previously installed dashboard.
 `main` publishes production builds through Environment `production` only after the
 owner's «опубликуй» instruction and chosen release versions. The shared publisher
 checks both build provenance and the expected API origin against a server-owned

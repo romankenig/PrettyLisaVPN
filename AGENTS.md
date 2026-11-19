@@ -117,8 +117,9 @@ Owner's standing workflow (2026-11-19):
   answer. Documentation/tests/CI-only changes retain `version unchanged`.
 - «доработай»: implement and verify on the test environment `5.129.211.150`,
   update only affected component versions, commit/push and integrate into `develop`.
-  Test installers target `api.test.prettylisavpn.com` and appear in the private
-  `https://api.prettylisavpn.com/dashboard/`. This authorizes tested develop merges.
+  Test installers target `api.test.prettylisavpn.com` and appear in that server's
+  private dashboard. Production dashboard downloads use the local production
+  catalog. This authorizes tested develop merges.
   Production API, database, public website and public installers stay unchanged.
 - «опубликуй»: ask which release version(s) to use unless the owner already supplied
   them for this publication. After the versions are confirmed,

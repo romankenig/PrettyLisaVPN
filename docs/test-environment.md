@@ -82,10 +82,9 @@ only newly built test-targeted installers enter the active test download catalog
   build against `api.test.prettylisavpn.com` and publish after their required checks
   and the compatible backend readiness gate succeed. Failed builds leave previous
   downloads intact. PR/manual builds are never published as downloadable releases.
-- The owner's existing private `api.prettylisavpn.com/dashboard/downloads/*` URLs
-  serve test installers through authenticated server-side proxying. Production
-  `/downloads/*` files remain in their independent store. Dashboard monitoring still
-  reads its original server; only the private download routes are redirected.
+- The production dashboard installer renders authenticated local downloads from
+  the same production store as the main website. See the private download
+  rollback below for activation on servers that still use the old proxy.
 - An authorized `main` promotion uses production credentials and production API
   origins, deploys backend/website and publishes installers. Runtime backend changes
   apply immediately; installed client behavior changes after installing a new build.
@@ -180,6 +179,19 @@ test env-file ownership, runner UDP timing and provider SMTP failures were resol
 their failed attempts are retained. The PR records the complete workflow/job links
 and native Windows evidence. Real test VPN sessions and signed Apple distribution
 remain outside this acceptance until their separate resources are supplied.
+
+## Private download rollback
+
+The dashboard installer no longer proxies downloads to the test API. It renders
+the authenticated local route for `/etc/caddy/dashboard/downloads/current`.
+Test builds continue publishing to the test server's own store.
+
+The installer change takes effect on dashboard installation. To roll back an
+existing production proxy, use the retained `monitoring.before-test-downloads`
+or render the current dashboard template with the server's dashboard credentials.
+Validate the resulting configuration with Caddy before activation. Verify that
+the private catalog and public production catalog report the same build identities
+and APK hashes, and that an anonymous private request still returns 401.
 
 ## Publication and rollback checklist
 
