@@ -2,8 +2,12 @@
 
 Owner decision: 2026-11-19. «доработай» means implement/test, update affected clients
 and integrate verified changes into `develop`. «опубликуй» means first ask for the
-release versions, then promote the latest accepted `develop` into `main` and deploy.
+release versions (unless already supplied for this publication), then promote the
+latest accepted `develop` into `main` and deploy.
 New installers are sufficient; no automatic client updater is included.
+Before every change, explicitly name the target environment. Ask for component
+versions if the owner did not provide them, including for test changes; wait for
+the answer before changing versions or deploying the proposed release.
 
 ## Infrastructure inventory
 
@@ -118,8 +122,9 @@ test database credentials, DNS records and auth SMTP. Local ignored credentials:
 
 ## Publication and rollback checklist
 
-1. On «опубликуй», ask for release version(s), confirm affected components and the
-   accepted develop HEAD, then verify all Actions events/jobs and source identities.
+1. On «опубликуй», ask for release version(s) unless already supplied, confirm affected
+   components and the accepted develop HEAD, then verify all Actions events/jobs
+   and source identities.
 2. Back up current production business data, retain its active image/configuration
    and review forward migrations/backwards compatibility. No schema change is
    introduced by this environment task.

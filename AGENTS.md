@@ -101,14 +101,27 @@ See docs/devices-ui.md; task PR records actual validation and deployment status.
 
 ## Task Workflow
 
+Project-wide owner rules apply to every PrettyLisaVPN chat, task and worktree:
+- Before any change, explicitly name «Тестовый контур», «Продакшен», or both.
+- If the owner did not supply component versions, ask and wait before changing them.
+  This includes test work. Docs/tests/CI-only work retains `version unchanged`.
+
 Development/test environment: read `docs/test-environment.md` before deployment.
 Owner's standing workflow (2026-11-19):
+- Before every change, explicitly tell the owner whether it targets «Тестовый контур»,
+  «Продакшен», or both. Label shared repository/CI rules as affecting both and distinguish
+  documentation/configuration preparation from an actual deployment.
+- If the owner has not supplied a version, ask which version(s) to use before changing
+  component versions. This applies to test changes as well as production publication.
+  Recommend affected-component SemVer increments with a reason, but wait for the owner's
+  answer. Documentation/tests/CI-only changes retain `version unchanged`.
 - «доработай»: implement and verify on the test environment `5.129.211.150`,
   update only affected component versions, commit/push and integrate into `develop`.
   Test installers target `api.test.prettylisavpn.com` and appear in the private
   `https://api.prettylisavpn.com/dashboard/`. This authorizes tested develop merges.
   Production API, database, public website and public installers stay unchanged.
-- «опубликуй»: first ask the owner which release version(s) to use. After the answer,
+- «опубликуй»: ask which release version(s) to use unless the owner already supplied
+  them for this publication. After the versions are confirmed,
   verify and promote the latest accepted `develop` to `main`, then deploy production
   and publish production installers. Backend changes apply immediately; client UI
   changes require installation. Automatic client updating is not requested.

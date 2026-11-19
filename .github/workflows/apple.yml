@@ -82,7 +82,7 @@ jobs:
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=Config/Simulator.entitlements DEVELOPMENT_TEAM= build
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-iOS -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
           xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Debug -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
-          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'platform=macOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+          xcodebuild -project PrettyLisaVPN.xcodeproj -scheme PrettyLisaVPN-macOS -configuration Release -destination 'generic/platform=macOS' -derivedDataPath DerivedData ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
           mkdir -p artifacts
           plutil -convert json -o artifacts/macOS-app-info.json DerivedData/Build/Products/Debug/PrettyLisaVPN.app/Contents/Info.plist
       - name: Verify Release symbol tables before UI review

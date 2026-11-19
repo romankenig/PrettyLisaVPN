@@ -227,11 +227,17 @@ Backend повышает собственную версию только при
 
 ## Test-first workflow — 2026-11-19
 
+Before every change, name its target: test, production, or both. If the owner did
+not give a version, ask which version(s) to use before changing version manifests;
+this applies to test work too. SemVer rules guide the recommendation, not automatic
+selection without the owner's answer. Docs/tests/CI-only work stays version unchanged.
+
 The owner's «доработай» command means development on the isolated test environment
 and integration into `develop`. Apply the component-specific SemVer rules above.
 Private dashboard installers use the test API and do not replace public downloads.
 The owner's separate «опубликуй» command requires asking which release version(s)
-to use before promoting the latest accepted `develop` to `main`. Only this promotion
+to use unless already supplied for this publication, before promoting the latest
+accepted `develop` to `main`. Only this promotion
 deploys the main API/website and production-targeted installers. No automatic updater
 is included: backend changes apply after deployment, client changes after installation.
 Never promote by copying a test database into production. Source/runtime/artifact
