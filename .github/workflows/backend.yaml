@@ -207,6 +207,7 @@ jobs:
         env:
           DEV_PUBLIC_WEBSITE_DOMAIN: ${{ vars.DEV_PUBLIC_WEBSITE_DOMAIN || 'prettylisavpn.com' }}
           DEV_FLEET_WORKER_ENABLED: ${{ vars.DEV_FLEET_WORKER_ENABLED || 'true' }}
+          DEV_FLEET_SHARED_NODES: ${{ vars.DEV_FLEET_SHARED_NODES || 'false' }}
           DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
           DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
           DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
@@ -218,10 +219,12 @@ jobs:
           DEV_SUPPORT_SMTP_PASSWORD: ${{ secrets.DEV_SUPPORT_SMTP_PASSWORD }}
         run: |
           if [[ "$GITHUB_REF" == refs/heads/develop ]]; then
-            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == test.prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == false && -z "$DEV_SUPPORT_SMTP_PASSWORD" ]] || exit 1
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == test.prettylisavpn.com && -z "$DEV_SUPPORT_SMTP_PASSWORD" ]] || exit 1
+            [[ "$DEV_FLEET_WORKER_ENABLED" == false || "$DEV_FLEET_SHARED_NODES" == true ]] || exit 1
           else
-            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == true ]] || exit 1
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == true && "$DEV_FLEET_SHARED_NODES" == false ]] || exit 1
           fi
+          [[ "$DEV_FLEET_SHARED_NODES" == true || "$DEV_FLEET_SHARED_NODES" == false ]] || exit 1
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
           printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$SSH_DIRECTORY/id_ed25519"
@@ -229,7 +232,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_PUBLIC_WEBSITE_DOMAIN DEV_FLEET_WORKER_ENABLED DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
+          for value_name in DEV_API_DOMAIN DEV_PUBLIC_WEBSITE_DOMAIN DEV_FLEET_WORKER_ENABLED DEV_FLEET_SHARED_NODES DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -243,6 +246,7 @@ jobs:
             printf "API_DOMAIN='%s'\n" "$DEV_API_DOMAIN"
             printf "PUBLIC_WEBSITE_DOMAIN='%s'\n" "$DEV_PUBLIC_WEBSITE_DOMAIN"
             printf "FLEET_WORKER_ENABLED='%s'\n" "$DEV_FLEET_WORKER_ENABLED"
+            printf "FLEET_SHARED_NODES='%s'\n" "$DEV_FLEET_SHARED_NODES"
             printf "ACME_EMAIL='%s'\n" "$DEV_ACME_EMAIL"
             printf "BACKEND_IMAGE='%s'\n" "$DEPLOY_IMAGE"
             printf "APPLICATION_NAME='PrettyLisaVPN'\n"

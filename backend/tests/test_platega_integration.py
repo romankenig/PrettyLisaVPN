@@ -12,12 +12,17 @@ from sqlalchemy import select
 from test_billing_operations_integration import due
 from test_subscription_access_integration import access_state as _access_state
 
-from prettylisavpn.billing.model import BillingAccountRecord, BillingContractRecord
+from prettylisavpn.billing.model import (
+    BillingAccountRecord,
+    BillingContractRecord,
+    BillingOperationRecord,
+)
 from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.billing.operations_domain import BillingCommand, next_month
 from prettylisavpn.billing.platega import PlategaBillingProvider
 from prettylisavpn.billing.platega_api import (
     CreatedSubscription,
+    PlategaCreateRejected,
     PlategaPayment,
     PlategaSubscription,
     PlategaUnavailable,
@@ -27,6 +32,7 @@ from prettylisavpn.billing.platega_api import (
 from prettylisavpn.billing.platega_callbacks import InvalidPlategaCallback, PlategaCallbacks
 from prettylisavpn.billing.platega_model import PlategaAgreementRecord, PlategaChargeRecord
 from prettylisavpn.billing.service import BillingOverviewService
+from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.model import SubscriptionRecord
 
 access_state = _access_state
@@ -41,12 +47,17 @@ class ProviderAPI:
         self.subscriptions = {}
         self.payments = {}
         self.creates = 0
+        self.create_delay = 0
+        self.reject_create = False
         self.lose_create_response = False
         self.cancel_gate = None
         self.cancel_started = asyncio.Event()
 
     async def create(self, operation_id, amount_minor, email):
         self.creates += 1
+        if self.reject_create:
+            raise PlategaCreateRejected
+        await asyncio.sleep(self.create_delay)
         identity = uuid4()
         self.subscriptions[identity] = PlategaSubscription(
             id=identity,
@@ -187,6 +198,90 @@ async def test_lost_create_response_recovers_same_subscription_without_second_cr
     assert recovered.redirect_url == subscription_url(next(iter(state[3].subscriptions)))
     assert state[3].creates == 1
     assert (await state[5].start(state[2], original)).id == value.id
+
+
+async def test_creation_longer_than_five_seconds_retains_checkout_and_never_reposts(state):
+    # Real provider calls allow eight seconds each; the outer deadline must not
+    # cancel a valid response before the transport's own timeout.
+    state[3].create_delay = 5.1
+    original = await command(state)
+    operation = await state[5].start(state[2], original)
+    assert operation.status == "PENDING" and operation.redirect_url
+    async with state[0].session() as session:
+        agreement = await session.get(PlategaAgreementRecord, operation.id)
+        assert agreement.provider_id in state[3].subscriptions
+    await due(state[0], operation.id)
+    assert (await state[5].start(state[2], original)).id == operation.id
+    assert state[3].creates == 1
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
+
+
+async def test_explicit_create_rejection_releases_account_without_a_charge(state):
+    state[3].reject_create = True
+    original = await command(state)
+    failed = await state[5].start(state[2], original)
+    assert failed.status == "FAILED" and failed.redirect_url is None
+    assert (await state[5].start(state[2], original)).id == failed.id
+    assert state[3].creates == 1 and not state[3].subscriptions
+    async with state[0].session() as session:
+        fence = await session.get(PlategaAgreementRecord, failed.id)
+        assert fence.state == "CreateRejected" and fence.provider_id is None
+    view = await state[6].overview(state[2])
+    assert view.plan.value == "FREE" and "SUBSCRIBE" in view.actions
+    state[3].reject_create = False
+    fresh = await state[5].start(state[2], await command(state))
+    assert fresh.id != failed.id and fresh.redirect_url
+    assert state[3].creates == 2
+
+
+async def test_rejection_survives_lost_projection_without_reposting(state, monkeypatch):
+    state[3].reject_create = True
+    reconcile = state[4].reconcile
+
+    async def lose_projection(request):
+        await reconcile(request)
+        raise OSError("simulated lost projection")
+
+    monkeypatch.setattr(state[4], "reconcile", lose_projection)
+    operation = await state[5].start(state[2], await command(state))
+    assert operation.status == "PENDING"
+    monkeypatch.setattr(state[4], "reconcile", reconcile)
+    await due(state[0], operation.id)
+    assert (await state[5].get(state[2], operation.id)).status == "FAILED"
+    assert state[3].creates == 1 and not state[3].subscriptions
+
+
+async def test_confirmed_purchase_preserves_manual_platinum_and_existing_access(state):
+    before = datetime.now(UTC) + timedelta(days=36500)
+    async with state[0].session() as session, session.begin():
+        subscription = await session.scalar(
+            select(SubscriptionRecord).where(SubscriptionRecord.user_id == state[1])
+        )
+        subscription.plan = SubscriptionPlan.PLATINUM
+        subscription.current_period_end = before
+    await subscribe(state)
+    view = await state[6].overview(state[2])
+    assert view.plan.value == "PLATINUM" and view.paid_until > before
+    assert view.auto_renew and view.current_price.amount_minor == 19900
+
+
+async def test_actual_outer_timeout_preserves_creation_fence_and_unknown_outcome(state):
+    state[3].create_delay = 1
+    state[5].worker.timeout = 0.5
+    original = await command(state)
+    operation = await state[5].start(state[2], original)
+    assert operation.status == "PENDING" and operation.redirect_url is None
+    async with state[0].session() as session:
+        saved = await session.get(BillingOperationRecord, operation.id)
+        assert saved.last_error == "PROVIDER_TIMEOUT"
+        agreement = await session.get(PlategaAgreementRecord, operation.id)
+        assert agreement.create_started_at is not None and agreement.provider_id is None
+    state[5].worker.timeout = 20
+    await due(state[0], operation.id)
+    recovered = await state[5].start(state[2], original)
+    assert recovered.id == operation.id and recovered.status == "PENDING"
+    assert recovered.redirect_url is None and state[3].creates == 1
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
 
 
 async def test_missed_callback_recovers_from_bound_provider_ledger_without_new_charge(state):

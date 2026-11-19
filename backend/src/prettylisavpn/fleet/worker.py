@@ -447,6 +447,11 @@ async def main() -> None:
     settings = Settings()
     if not settings.fleet_enabled:
         raise SystemExit("Fleet is disabled")
+    if (
+        settings.public_website_origin == "https://test.prettylisavpn.com"
+        and not settings.fleet_shared_nodes
+    ):
+        raise SystemExit("The test environment cannot run an owner fleet worker")
     configure_logging(settings.log_level)
     postgres = Postgres(settings)
     stop = asyncio.Event()
@@ -462,10 +467,15 @@ async def main() -> None:
         if settings.managed_vpn_secret is not None:
             methods["managed"] = managed
         async with asyncio.TaskGroup() as group:
-            group.create_task(ServiceCheckWorker(postgres, method, managed).run(stop))
-            group.create_task(MethodCheckWorker(postgres, method, managed).run(stop))
-            group.create_task(TrafficWorker(postgres, transport, settings).run(stop))
-            group.create_task(FleetWorker(postgres, methods, settings).run(stop))
+            if settings.fleet_shared_nodes:
+                from prettylisavpn.fleet.shared_snapshot import SharedFleetSync
+
+                group.create_task(SharedFleetSync(postgres, transport).run(stop))
+            else:
+                group.create_task(ServiceCheckWorker(postgres, method, managed).run(stop))
+                group.create_task(MethodCheckWorker(postgres, method, managed).run(stop))
+                group.create_task(TrafficWorker(postgres, transport, settings).run(stop))
+                group.create_task(FleetWorker(postgres, methods, settings).run(stop))
             group.create_task(
                 ClientVpnWorker(
                     postgres,
@@ -473,6 +483,7 @@ async def main() -> None:
                     enabled=settings.client_vpn_enabled,
                     managed_method=managed,
                     managed_enabled=settings.managed_vpn_enabled,
+                    settings=settings,
                 ).run(stop)
             )
     finally:

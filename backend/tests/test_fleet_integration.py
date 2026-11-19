@@ -94,6 +94,84 @@ async def configured(postgres, identifiers, *, ready=True):
             )
 
 
+async def test_shared_snapshot_import_is_idempotent_and_never_enqueues_owner_jobs(fleet_state):
+    from prettylisavpn.fleet.shared_snapshot import SharedSnapshot, import_snapshot
+
+    postgres, _, ids = fleet_state
+    await configured(postgres, ids)
+    now = datetime.now(UTC)
+    async with postgres.session() as session:
+        nodes = (await session.scalars(select(FleetNodeRecord))).all()
+        methods = (await session.scalars(select(FleetMethodRecord))).all()
+        payload = {
+            "generated_at": now,
+            "safe_resources": True,
+            "nodes": [
+                {
+                    key: getattr(n, key)
+                    for key in (
+                        "id",
+                        "name",
+                        "country_code",
+                        "host",
+                        "credential_ref",
+                        "expected_egress_ips",
+                        "capacity",
+                        "is_available_for_free",
+                        "group",
+                        "enabled",
+                        "created_at",
+                    )
+                }
+                for n in nodes
+            ],
+            "methods": [
+                {
+                    key: getattr(m, key)
+                    for key in (
+                        "node_id",
+                        "method",
+                        "configuration",
+                        "state",
+                        "public_key",
+                        "configured_at",
+                    )
+                }
+                for m in methods
+            ],
+            "observations": [
+                {
+                    "id": uuid4(),
+                    "operation_id": uuid4(),
+                    "node_id": ids[0],
+                    "source_id": ids[1],
+                    "method": "wireguard",
+                    "observed_at": now,
+                    "data": healthy(now).model_dump(),
+                    "quality": 100,
+                }
+            ],
+        }
+    snapshot = SharedSnapshot.model_validate(payload)
+    await import_snapshot(postgres, snapshot)
+    await import_snapshot(postgres, snapshot)
+    async with postgres.session() as session:
+        jobs = (await session.scalars(select(FleetOperationRecord))).all()
+        samples = (await session.scalars(select(FleetObservationRecord))).all()
+        assert len(jobs) == len(samples) == 1
+        assert jobs[0].status == "IMPORTED"
+        assert samples[0].observed_at == now
+        assert (await session.get(FleetMethodRecord, (ids[0], "wireguard"))).next_check_at is None
+    assert await FleetWorker(postgres, {}).claim(datetime.now(UTC)) is None
+    shared = FleetService(postgres, settings(fleet_shared_nodes=True))
+    assert (await shared.monitoring())["nodes"][0]["available"] or any(
+        node["available"] for node in (await shared.monitoring())["nodes"]
+    )
+    invalid = snapshot.model_copy(update={"safe_resources": False})
+    with pytest.raises(FleetError, match="FLEET_SHARED_SNAPSHOT_INVALID"):
+        await import_snapshot(postgres, invalid)
+
+
 async def test_registration_and_configuration_requests_are_idempotent(fleet_state):
     postgres, service, identifiers = fleet_state
     listed = await service.nodes()
@@ -384,6 +462,15 @@ async def test_history_is_honest_and_country_rating_uses_eligible_nodes(fleet_st
     assert free["countries"] == [{"country_code": "DE", "quality": 100, "available": True}]
     assert paid["countries"][0] == {"country_code": "DE", "quality": 50, "available": True}
     assert paid["countries"][1]["available"] is False
+    catalog = await service.countries(free_only=True, include_locked=True)
+    assert catalog["autopilot"] == free["autopilot"]
+    assert catalog["countries"][0] == {**free["countries"][0], "premium_required": False}
+    assert catalog["countries"][1] == {
+        "country_code": paid["countries"][1]["country_code"],
+        "quality": 0,
+        "available": False,
+        "premium_required": True,
+    }
     with pytest.raises(FleetError, match="fleet_check_rate_limited"):
         await service.enqueue(ids[0], "wireguard", "CHECK", uuid4())
 

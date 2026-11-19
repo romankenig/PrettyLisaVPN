@@ -1,5 +1,10 @@
 # Test rollback to the Android 0.30.2 product baseline
 
+Follow-up owner instruction: preserve the rolled-back clients but use the latest
+backend to enable connections to the existing real nodes. Backend 0.54.4 replaces
+the initial 0.53.0 rollback runtime; see [shared real fleet](shared-real-fleet.md).
+The disabled-VPN/separate-test-node constraint below describes the initial rollback.
+
 Owner request, 2026-11-19: restore all clients and backend to the project state
 corresponding to Android 0.30.2, in code and the **test environment only**.
 Production and `main` are outside this rollback.
