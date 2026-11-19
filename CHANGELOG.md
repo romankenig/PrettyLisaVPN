@@ -6,6 +6,16 @@
 
 ## Unreleased
 
+### Test access to the real fleet — backend 0.54.4
+
+- Restore latest backend 0.54.3 as the owner-selected base and fix test VPN access
+  through restricted customer grants on the existing real nodes. Client versions
+  retain the Android 0.30.2 rollback baseline; schema and API contracts are unchanged.
+- Separate test address/port ranges and node ownership journals, consume actual owner
+  monitoring with bounded freshness, and reject fleet administration from the test
+  controller. Preserve account databases, production sessions and separate credentials.
+- Deployment and actual acceptance: [shared fleet handoff](docs/shared-real-fleet.md).
+
 ### Test rollback — Android 0.30.2 project baseline
 
 - Restored the owner-selected `b90d9685` product baseline: Android 0.30.2/code 61,

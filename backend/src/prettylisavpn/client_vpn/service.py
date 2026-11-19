@@ -27,6 +27,16 @@ from prettylisavpn.fleet.domain import FleetError, proxy_address_supported
 from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord
 from prettylisavpn.fleet.service import FleetService
+from prettylisavpn.fleet.shared_policy import (
+    MANAGED_END,
+    MANAGED_START,
+    OWNER_CAPACITY_LIMIT,
+    RELAY_END,
+    RELAY_START,
+    allocate_shared_address,
+    lease_id,
+    snapshot_fresh,
+)
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.domain import UserStatus
@@ -259,6 +269,11 @@ class ClientVpnService:
                     )
                     if not relay_method or relay_method.state != "READY":
                         continue
+                    if self.settings.fleet_shared_nodes and (
+                        intermediate.capacity > OWNER_CAPACITY_LIMIT
+                        or not snapshot_fresh(relay_method.configuration, now)
+                    ):
+                        continue
                     ports = set(
                         (
                             await session.scalars(
@@ -278,9 +293,12 @@ class ClientVpnService:
                                 )
                             )
                         )
-                        relay_port = next(
-                            (port for port in range(20000, 30000) if port not in ports), None
+                        port_range = (
+                            range(RELAY_START, RELAY_END)
+                            if self.settings.fleet_shared_nodes
+                            else range(20000, 30000)
                         )
+                        relay_port = next((port for port in port_range if port not in ports), None)
                         if relay_port is not None:
                             relay = intermediate
                             break
@@ -300,6 +318,11 @@ class ClientVpnService:
                     FleetMethodRecord, (node.id, "managed" if managed else "wireguard")
                 )
                 if not method or method.state != "READY" or not method.public_key:
+                    continue
+                if self.settings.fleet_shared_nodes and (
+                    node.capacity > OWNER_CAPACITY_LIMIT
+                    or not snapshot_fresh(method.configuration, now)
+                ):
                     continue
                 if data.method == "https_proxy" and not proxy_address_supported(
                     method.configuration.get("proxy_host"), allow_ip=allow_proxy_ip
@@ -321,20 +344,31 @@ class ClientVpnService:
                 engine_port: int | None = None
                 if managed:
                     used_ports = {item.engine_port for item in leases}
+                    port_range = (
+                        range(MANAGED_START, MANAGED_END)
+                        if self.settings.fleet_shared_nodes
+                        else range(40000, 49900)
+                    )
                     engine_port = next(
-                        (port for port in range(40000, 49900) if port not in used_ports), None
+                        (port for port in port_range if port not in used_ports), None
                     )
                     if engine_port is None:
                         continue
                 else:
                     try:
-                        address = allocate_address(
+                        allocator = (
+                            allocate_shared_address
+                            if self.settings.fleet_shared_nodes
+                            else allocate_address
+                        )
+                        address = allocator(
                             method.configuration,
                             {item.address for item in leases if item.address is not None},
                         )
                     except FleetError:
                         continue
                 row = ClientLeaseRecord(
+                    id=lease_id(self.settings.fleet_shared_nodes),
                     request_id=request_id,
                     user_id=identity.user_id,
                     device_id=identity.device_id,

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     application_name: str = Field(default="PrettyLisaVPN", min_length=1)
-    application_version: str = Field(default="0.53.0", min_length=1)
+    application_version: str = Field(default="0.54.4", min_length=1)
     demo_enabled: bool = False
     demo_identity_secret: SecretStr | None = Field(default=None, min_length=32)
     public_website_origin: Literal[
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     platega_secret: SecretStr | None = Field(default=None, min_length=16)
     cardlink_api_token: SecretStr | None = Field(default=None, min_length=16)
     fleet_enabled: bool = False
+    fleet_shared_nodes: bool = False
     client_vpn_enabled: bool = False
     managed_vpn_enabled: bool = False
     managed_vpn_secret: SecretStr | None = Field(default=None, min_length=32)
@@ -85,6 +86,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_otp_secret(self) -> Self:
+        if self.fleet_shared_nodes and self.environment not in ("development", "test"):
+            raise ValueError("Shared fleet consumer requires development or test environment")
         if self.demo_enabled and self.demo_identity_secret is None:
             raise ValueError("DEMO requires a stable, independent device identity key")
         if self.demo_identity_secret is not None and self.demo_identity_secret in (

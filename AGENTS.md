@@ -128,7 +128,9 @@ Owner's standing workflow (2026-11-19):
   changes require installation. Automatic client updating is not requested.
 - Ordinary implementation does not authorize a main merge, release tag or production
   application deployment. Keep databases/credentials separate; never restore the test
-  snapshot over production or start test workers against production VPN nodes.
+  snapshot over production or start an unrestricted test owner worker against real nodes.
+  Owner-authorized shared real-node access uses only the restricted secondary-controller
+  mode in `docs/shared-real-fleet.md`; production remains the configuration/monitoring owner.
 - GitHub `testing` is develop-only; `production` is main-only. Historical
   `development` deployment is retired; never re-enable `DEV_DEPLOY_ENABLED`.
   Use `TEST_DEPLOY_ENABLED` for the new backend workflow.

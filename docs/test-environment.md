@@ -1,5 +1,10 @@
 # Test environment and publication workflow
 
+Updated owner instruction, 2026-11-19: test clients use the existing real VPN fleet
+through the restricted secondary-controller mode in [shared real fleet](shared-real-fleet.md).
+This supersedes the initial separate-node requirement below. The historical clone
+and disabled-VPN acceptance remain historical evidence, not current tunnel acceptance.
+
 Owner decision: 2026-11-19. «доработай» means implement/test, update affected clients
 and integrate verified changes into `develop`. «опубликуй» means first ask for the
 release versions (unless already supplied for this publication), then promote the
@@ -20,7 +25,7 @@ the answer before changing versions or deploying the proposed release.
 | Valkey | managed `192.168.0.5:6379/0` | local `test-valkey:6379/0` |
 | GitHub deployment environment | `production`, branch `main` | `testing`, branch `develop` |
 | Backend runtime channel | `release` on the next authorized publication | `development` |
-| VPN control | existing production fleet | disabled until separate test nodes exist |
+| VPN control | sole configuration/monitoring owner | restricted customer grants on the same real nodes |
 
 The default GitHub branch is `develop`. At cutover, `main` is historical and behind
 the code actually running in production; it must not be used to reconstruct the live

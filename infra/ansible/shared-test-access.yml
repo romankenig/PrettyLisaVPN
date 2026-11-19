@@ -1,0 +1,47 @@
+---
+- name: Enroll restricted test access on existing PrettyLisaVPN nodes
+  hosts: all
+  gather_facts: false
+  become: true
+  serial: 1
+  tasks:
+    - name: Validate explicit enrollment scope
+      ansible.builtin.assert:
+        that:
+          - shared_test_source == '5.129.211.150'
+          - shared_test_public_key is match('^ssh-ed25519 [A-Za-z0-9+/=]+(?: .*)?$')
+          - shared_node_capacity | int > 0
+          - shared_node_capacity | int <= 100
+          - shared_test_helper_source is match('^/')
+          - shared_relay_targets | length > 0
+    - name: Require existing owner installation
+      ansible.builtin.stat:
+        path: /etc/prettylisavpn-fleet/state.json
+      register: owner_state
+    - name: Reject unenrolled nodes
+      ansible.builtin.assert:
+        that: owner_state.stat.exists
+    - name: Install only the restricted secondary-controller helper
+      ansible.builtin.copy:
+        src: "{{ shared_test_helper_source }}"
+        dest: /usr/local/lib/prettylisavpn-fleet/shared_access.py
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Retain independent test access policy
+      ansible.builtin.copy:
+        dest: /etc/prettylisavpn-fleet/shared-test-policy.json
+        content: "{{ {'enabled': true, 'capacity': shared_node_capacity | int, 'relay': shared_is_relay | bool, 'relay_targets': shared_relay_targets} | to_json }}\n"
+        owner: root
+        group: root
+        mode: '0600'
+        backup: true
+    - name: Authorize the test key only through the constrained JSON helper
+      ansible.builtin.lineinfile:
+        path: /root/.ssh/authorized_keys
+        line: 'restrict,from="{{ shared_test_source }}",command="/usr/bin/python3 /usr/local/lib/prettylisavpn-fleet/shared_access.py" {{ shared_test_public_key }}'
+        owner: root
+        group: root
+        mode: '0600'
+        create: false
+        backup: true
