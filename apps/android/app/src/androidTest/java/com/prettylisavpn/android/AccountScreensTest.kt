@@ -89,7 +89,7 @@ class AccountScreensTest {
         override suspend fun billingPortal(token:String):String {
             portals++;assertEquals("fake",token)
             if(portalFails)throw AuthFailure("BILLING_UNAVAILABLE")
-            return "https://prettylisavpn.com/account/#handoff="+"a".repeat(43)
+            return "${BuildConfig.WEBSITE_BASE_URL}/account/#handoff="+"a".repeat(43)
         }
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;lastIntent=intent;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
@@ -126,7 +126,7 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         val filter=android.content.IntentFilter(android.content.Intent.ACTION_VIEW).apply {
             addCategory(android.content.Intent.CATEGORY_BROWSABLE);addDataScheme("https")
-            addDataAuthority("prettylisavpn.com",null)
+            addDataAuthority(java.net.URI(BuildConfig.WEBSITE_BASE_URL).host,null)
             addDataPath("/account/",android.os.PatternMatcher.PATTERN_LITERAL)
         }
         val monitor=instrumentation.addMonitor(filter,null,true)

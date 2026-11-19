@@ -82,6 +82,22 @@ class ClientDownloadsTests(unittest.TestCase):
         if platform == "windows":
             (directory / "Wintun-Prebuilt-License.txt").write_text("Test-only license fixture")
 
+    def test_publication_rejects_a_client_from_the_other_environment(self):
+        directory = self.artifact()
+        path = directory / "build-identity.json"
+        identity = json.loads(path.read_text())
+        test_api = "https://api.test.prettylisavpn.com"
+        identity["backend"] = test_api
+        path.write_text(json.dumps(identity))
+        entry, _, _ = PUBLISHER.validate(directory, "android", SHA, 100, 1, test_api)
+        self.assertEqual(entry["backend"], test_api)
+        with self.assertRaisesRegex(ValueError, "destination environment"):
+            PUBLISHER.validate(directory, "android", SHA, 100, 1, "https://api.prettylisavpn.com")
+        del identity["backend"]
+        path.write_text(json.dumps(identity))
+        with self.assertRaisesRegex(ValueError, "destination environment"):
+            PUBLISHER.validate(directory, "android", SHA, 100, 1, test_api)
+
     def test_managed_clients_require_matching_sources_and_licenses(self):
         for platform, version in (("android", "0.15.0"), ("windows", "0.18.0")):
             directory = self.artifact(platform, version=version)

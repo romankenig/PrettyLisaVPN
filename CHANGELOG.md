@@ -18,6 +18,22 @@
   timeout diagnostics without request bodies, credentials or payment URLs.
 - See [activation evidence and continuation](docs/platega-live-acceptance.md).
 
+### Isolated development and publication — backend 0.54.2 / client PATCH updates
+
+- Prepare a separate test copy on `5.129.211.150` with its own PostgreSQL/Valkey,
+  test website/API domains and independent credentials. Keep production node
+  management, live payments and support retries inactive in the clone.
+- Route `develop` deployments and its client API/portal/probe targets to testing;
+  reserve `main` for owner-requested production publication after choosing versions.
+  Preserve public installers while private dashboard downloads follow test builds.
+- Backend 0.54.1 → 0.54.2; Windows 0.31.3 → 0.31.4; Android 0.30.3 → 0.30.4/code 63;
+  Chrome 0.5.2 → 0.5.3; iOS 0.6.2 → 0.6.3; macOS 0.5.2 → 0.5.3. Schema remains
+  0053; website remains 0.7.1. No automatic client updater or shared test VPN node.
+- Validate artifact API origins against the destination; retain exact SHA/run/attempt,
+  corresponding sources and unsigned Apple labels. Atomically publish static website
+  files only after a compatible backend is ready. See
+  [environment inventory and promotion rules](docs/test-environment.md).
+
 ### Premium location visibility — backend 0.54.0 / client PATCH updates
 
 - Keep Premium-only countries visible to FREE and DEMO with blurred labels and

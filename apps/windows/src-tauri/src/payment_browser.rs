@@ -12,7 +12,7 @@ pub fn open_payment_url(url: String) -> Result<(), &'static str> {
     let permitted = allowed
         .split(',')
         .any(|host| !host.trim().is_empty() && Some(host.trim()) == parsed.host_str());
-    let portal = parsed.host_str() == Some("prettylisavpn.com")
+    let portal = parsed.host_str() == Some(env!("PRETTYLISA_WEBSITE_HOST"))
         && parsed.path() == "/account/"
         && parsed.query().is_none()
         && (parsed.fragment().is_none()

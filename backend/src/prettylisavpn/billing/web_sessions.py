@@ -57,8 +57,15 @@ class RedisWebTokens:
 
 
 class BillingWebSessions:
-    def __init__(self, postgres: Postgres, otp: OtpVerifier, tokens: WebTokens) -> None:
+    def __init__(
+        self,
+        postgres: Postgres,
+        otp: OtpVerifier,
+        tokens: WebTokens,
+        website_origin: str = WEB_ORIGIN,
+    ) -> None:
         self.postgres, self.otp, self.tokens = postgres, otp, tokens
+        self.website_origin = website_origin
 
     async def _active(self, user_id: UUID) -> UUID:
         async with self.postgres.session() as session:
@@ -103,7 +110,7 @@ class BillingWebSessions:
         await self._active(user_id)
         token = await self.tokens.issue("handoff", user_id, HANDOFF_TTL)
         # Fragment is removed before any navigation; it is never sent in an HTTP URL.
-        return WEB_ORIGIN + "/account/#handoff=" + token
+        return self.website_origin + "/account/#handoff=" + token
 
     async def exchange(self, token: str) -> str:
         user_id = await self.tokens.resolve("handoff", token, consume=True)

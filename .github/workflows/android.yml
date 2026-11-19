@@ -204,8 +204,12 @@ jobs:
           retention-days: 14
       - name: Check language catalogs
         run: python3 scripts/check-localization.py
+      - name: Test endpoint-independent client contracts
+        run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:testDebugUnitTest
       - name: Build current checkout and instrumented tests; lint
-        run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:lintRelease
+        env:
+          ORG_GRADLE_PROJECT_apiBaseUrl: ${{ github.ref == 'refs/heads/main' && 'https://api.prettylisavpn.com' || 'https://api.test.prettylisavpn.com' }}
+        run: ./gradlew --no-daemon -PsourceSha="$GITHUB_SHA" :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :app:assembleRelease :app:lintRelease
       - name: Verify debug adapter is absent from release
         run: |
           python3 scripts/check-source-isolation.py
@@ -213,6 +217,7 @@ jobs:
       - name: Record build identity
         id: identity
         env:
+          ORG_GRADLE_PROJECT_apiBaseUrl: ${{ github.ref == 'refs/heads/main' && 'https://api.prettylisavpn.com' || 'https://api.test.prettylisavpn.com' }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           python3 scripts/record-build.py
@@ -309,7 +314,7 @@ jobs:
 
   publish-client:
     needs: [build, emulator]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     uses: ./.github/workflows/client-download-publish.yml
     with:
       platform: android

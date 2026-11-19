@@ -101,6 +101,24 @@ See docs/devices-ui.md; task PR records actual validation and deployment status.
 
 ## Task Workflow
 
+Development/test environment: read `docs/test-environment.md` before deployment.
+Owner's standing workflow (2026-11-19):
+- «доработай»: implement and verify on the test environment `5.129.211.150`,
+  update only affected component versions, commit/push and integrate into `develop`.
+  Test installers target `api.test.prettylisavpn.com` and appear in the private
+  `https://api.prettylisavpn.com/dashboard/`. This authorizes tested develop merges.
+  Production API, database, public website and public installers stay unchanged.
+- «опубликуй»: first ask the owner which release version(s) to use. After the answer,
+  verify and promote the latest accepted `develop` to `main`, then deploy production
+  and publish production installers. Backend changes apply immediately; client UI
+  changes require installation. Automatic client updating is not requested.
+- Ordinary implementation does not authorize a main merge, release tag or production
+  application deployment. Keep databases/credentials separate; never restore the test
+  snapshot over production or start test workers against production VPN nodes.
+- GitHub `testing` is develop-only; `production` is main-only. Historical
+  `development` deployment is retired; never re-enable `DEV_DEPLOY_ENABLED`.
+  Use `TEST_DEPLOY_ENABLED` for the new backend workflow.
+
 For every coding task:
 
 1. Inspect the relevant files and existing conventions.

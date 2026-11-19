@@ -65,6 +65,7 @@ def prepare(
             target.addfile(marker, io.BytesIO(data))
     payload = binary.read_bytes()
     identity = {
+        "backend": original.get("backend"),
         "source_sha": sha,
         "run_id": run,
         "run_attempt": attempt,

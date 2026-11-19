@@ -224,3 +224,15 @@ Backend повышает собственную версию только при
 отдельной задачей.
 
 
+
+## Test-first workflow — 2026-11-19
+
+The owner's «доработай» command means development on the isolated test environment
+and integration into `develop`. Apply the component-specific SemVer rules above.
+Private dashboard installers use the test API and do not replace public downloads.
+The owner's separate «опубликуй» command requires asking which release version(s)
+to use before promoting the latest accepted `develop` to `main`. Only this promotion
+deploys the main API/website and production-targeted installers. No automatic updater
+is included: backend changes apply after deployment, client changes after installation.
+Never promote by copying a test database into production. Source/runtime/artifact
+identities and complete CI checks remain mandatory. See [environment details](test-environment.md).

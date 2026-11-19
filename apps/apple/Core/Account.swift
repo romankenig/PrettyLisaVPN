@@ -183,8 +183,9 @@ public struct SupportImage: Codable, Sendable {
 
 public struct BillingPortal: Decodable, Sendable {
     public let url: String
-    public func validatedURL() throws -> URL {
-        guard url.range(of: "^https://prettylisavpn\\.com/account/#handoff=[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil,
+    public func validatedURL(websiteOrigin: String = "https://prettylisavpn.com") throws -> URL {
+        guard ["https://prettylisavpn.com", "https://test.prettylisavpn.com"].contains(websiteOrigin),
+              url.range(of: "^" + NSRegularExpression.escapedPattern(for: websiteOrigin) + "/account/#handoff=[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil,
               let value = URL(string: url) else { throw ClientError("PAYMENT_URL_NOT_ALLOWED") }
         return value
     }

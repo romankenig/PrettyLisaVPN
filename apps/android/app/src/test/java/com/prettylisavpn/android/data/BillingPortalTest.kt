@@ -6,7 +6,7 @@ import org.junit.Test
 
 class BillingPortalTest {
     @Test fun portalCannotRedirectToAnotherHostOrPutTokenInQuery() {
-        val url = "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43)
+        val url = "${com.prettylisavpn.android.BuildConfig.WEBSITE_BASE_URL}/account/#handoff=" + "a".repeat(43)
         assertTrue(validBillingPortal(url))
         for (value in listOf(url.replace(".com", ".com.evil.test"), url.replace("#", "?"), url + "&redirect=evil", "javascript:alert(1)")) {
             assertFalse(validBillingPortal(value))

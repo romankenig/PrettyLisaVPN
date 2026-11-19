@@ -9,7 +9,8 @@ const { privateDecrypt, constants } = require("node:crypto");
 const output = path.resolve("artifacts/development-acceptance");
 fs.mkdirSync(output, { recursive: true });
 const base = process.env.VITE_BACKEND_BASE_URL;
-if (base !== "https://api.prettylisavpn.com") throw new Error("Unexpected API");
+if (base !== "https://api.test.prettylisavpn.com")
+  throw new Error("Unexpected API");
 const account = JSON.parse(
   fs.readFileSync(process.env.ACCEPTANCE_CREDENTIAL_PATH, "utf8"),
 );

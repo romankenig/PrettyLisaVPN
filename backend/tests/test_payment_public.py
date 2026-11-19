@@ -86,7 +86,9 @@ def test_removed_callback_is_absent_from_browser_routes_and_openapi(client):
 
 def test_public_domain_does_not_expose_private_dashboard_or_account_api():
     caddy = Path("../infra/deployment/Caddyfile").read_text()
-    public = caddy.split("prettylisavpn.com {", 1)[1].split("{$API_DOMAIN}", 1)[0]
+    public = caddy.split("{$PUBLIC_WEBSITE_DOMAIN:prettylisavpn.com} {", 1)[1].split(
+        "{$API_DOMAIN}", 1
+    )[0]
     assert "/payment/success /payment/failure" in public
     assert "handle /api/payments/cardlink/callback {" in public
     assert "max_size 16KB" in public

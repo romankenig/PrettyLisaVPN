@@ -70,6 +70,10 @@ jobs:
         with:
           path: apps/apple/Vendor
           key: ${{ steps.engine-cache.outputs.cache-primary-key }}
+      - name: Select the branch API for all Apple targets
+        env:
+          API_HOST: ${{ github.ref == 'refs/heads/main' && 'api.prettylisavpn.com' || 'api.test.prettylisavpn.com' }}
+        run: printf 'API_HOST = %s\n' "$API_HOST" > apps/apple/Config/Local.xcconfig
       - name: Compile device/Mac targets and ad-hoc Simulator
         id: sdk-build
         working-directory: apps/apple
@@ -176,7 +180,7 @@ jobs:
 
   publish-client:
     needs: [core, build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     strategy:
       matrix:
         platform: [ios, macos]

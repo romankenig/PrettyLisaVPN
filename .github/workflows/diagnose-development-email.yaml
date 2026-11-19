@@ -14,7 +14,7 @@ jobs:
     name: Read safe email failure category
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: development
+    environment: testing
     env:
       SSH_DIRECTORY: /tmp/prettylisavpn-email-diagnostic-${{ github.run_id }}
 
