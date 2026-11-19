@@ -234,7 +234,8 @@ selection without the owner's answer. Docs/tests/CI-only work stays version unch
 
 The owner's «доработай» command means development on the isolated test environment
 and integration into `develop`. Apply the component-specific SemVer rules above.
-Private dashboard installers use the test API and do not replace public downloads.
+Test installers are available from the test server’s private dashboard. The
+production dashboard and public website use the production download store.
 The owner's separate «опубликуй» command requires asking which release version(s)
 to use unless already supplied for this publication, before promoting the latest
 accepted `develop` to `main`. Only this promotion

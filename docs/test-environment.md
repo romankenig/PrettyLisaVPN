@@ -82,10 +82,9 @@ only newly built test-targeted installers enter the active test download catalog
   build against `api.test.prettylisavpn.com` and publish after their required checks
   and the compatible backend readiness gate succeed. Failed builds leave previous
   downloads intact. PR/manual builds are never published as downloadable releases.
-- The owner's existing private `api.prettylisavpn.com/dashboard/downloads/*` URLs
-  serve test installers through authenticated server-side proxying. Production
-  `/downloads/*` files remain in their independent store. Dashboard monitoring still
-  reads its original server; only the private download routes are redirected.
+- The production dashboard installer renders authenticated local downloads from
+  the same production store as the main website. See the private download
+  rollback below for activation on servers that still use the old proxy.
 - An authorized `main` promotion uses production credentials and production API
   origins, deploys backend/website and publishes installers. Runtime backend changes
   apply immediately; installed client behavior changes after installing a new build.
