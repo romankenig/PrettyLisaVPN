@@ -183,6 +183,17 @@ remain outside this acceptance until their separate resources are supplied.
 
 ## Publication and rollback checklist
 
+For an owner-authorized website/backend-only publication, set repository variable
+`PRODUCTION_SKIP_CLIENTS_SHA` to the exact verified develop SHA **before** promoting
+that same commit to main. The shared publisher then skips production installers
+for that SHA, including reruns. Client quality/build checks still run, and testing
+publication is unchanged. No client source or product version needs modification.
+An unset variable or a different SHA preserves normal installer publication; do
+not use wildcards. Retain the selected SHA so rerunning this release cannot later
+replace the public installers. Record the public download catalog and binary
+checksums before/after publication. This selector does not enable backend deploy
+or bypass branch/environment protections.
+
 1. On «опубликуй», ask for release version(s) unless already supplied, confirm affected
    components and the accepted develop HEAD, then verify all Actions events/jobs
    and source identities.

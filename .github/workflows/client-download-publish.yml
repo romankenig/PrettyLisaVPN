@@ -16,7 +16,12 @@ permissions:
 jobs:
   publish:
     name: Publish verified client to branch environment
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    # Scope a website/backend-only release to one immutable SHA, including reruns.
+    # Quality/build jobs still run; only production installer publication is skipped.
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' ||
+       (github.ref == 'refs/heads/main' && vars.PRODUCTION_SKIP_CLIENTS_SHA != github.sha))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}

@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Website-only production publication — version unchanged
+
+- Allow one exact release SHA to exclude production installer publication while
+  keeping every client quality/build check and the normal testing channel. This
+  supports the owner's recurring-payment website release without updating apps.
+- See the [publication selector](docs/test-environment.md#publication-and-rollback-checklist).
+
 ### Preserve VPN deployment configuration — version unchanged
 
 - Persist server-owned configuration paths in release/canonical env files so a
