@@ -229,7 +229,7 @@ import PrettyLisaCore
         guard !fixtures else { error = "FIXTURE_NO_PAYMENT"; return }
         perform {
             let portal = try WireJSON.decode(BillingPortal.self, from: await self.session.request("billing/portal", method: "POST", body: Data("{}".utf8)))
-            open(try portal.validatedURL(websiteOrigin: websiteOrigin))
+            open(try portal.validatedURL(websiteOrigin: self.websiteOrigin))
         }
     }
     func saveMethods(_ selected: [String]) {

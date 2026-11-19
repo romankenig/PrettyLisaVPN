@@ -38,6 +38,7 @@ class ClientPublisherContainerTests(unittest.TestCase):
             "a" * 40,
             "123",
             "1",
+            "https://api.test.prettylisavpn.com",
         ]
 
     def test_only_download_store_is_writable_and_no_network_or_secrets_are_mounted(self):
@@ -66,10 +67,16 @@ class ClientPublisherContainerTests(unittest.TestCase):
             ],
         )
         self.assertIn("sha256:" + "b" * 64, args)
-        self.assertEqual(args[-4:], ["--run", "123", "--attempt", "1"])
+        self.assertEqual(args[-6:], ["--run", "123", "--attempt", "1", "--backend", self.args[5]])
 
     def test_rejects_unexpected_mount_paths_and_invalid_build_identity(self):
-        for index, invalid in [(0, "unknown"), (1, "/etc"), (2, "HEAD"), (3, "0")]:
+        for index, invalid in [
+            (0, "unknown"),
+            (1, "/etc"),
+            (2, "HEAD"),
+            (3, "0"),
+            (5, "https://api.prettylisavpn.com.evil.test"),
+        ]:
             args = self.args.copy()
             args[index] = invalid
             result = subprocess.run(["bash", str(SCRIPT), *args], env=self.env, check=False)
