@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+### Android split-routing DNS — Android 0.30.7 / managed engine 0.8.2
+
+- Use direct encrypted DNS for Android sites routed outside the tunnel, with VPN DNS
+  as a fallback for those sites only. Selected VPN domains and verification origins
+  continue using VPN DNS.
+- [Routing and validation](docs/split-routing.md#dns-для-прямого-маршрута-на-android).
+
 ### Restore recurring website payments — website 0.7.3 / backend 0.54.5
 
 - Test environment: restore direct same-tab monthly SBP checkout after the rollback,
