@@ -43,6 +43,10 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			p := sample("VLESS_TLS")
 			p.Routing = &Routing{Mode: mode, Domains: []string{"exact.example.com", "*.sub.example.com", "ifconfig.me", "*.ifconfig.me"}, IPv4CIDRs: []string{"91.108.4.0/22", "149.154.160.0/20"}}
+			if mode == "exclude" {
+				// Explicit exclusions must not override the API verification routes.
+				p.Routing.Domains = append(p.Routing.Domains, "api.prettylisavpn.com", "api.test.prettylisavpn.com")
+			}
 			data, _ := p.CoreConfig(true)
 			var config map[string]any
 			if json.Unmarshal(data, &config) != nil {
@@ -79,14 +83,23 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 			for _, tc := range []struct {
 				domain   string
 				selected bool
+				forceVPN bool
 			}{
-				{"exact.example.com", true}, {"www.exact.example.com", false},
-				{"x.sub.example.com", true}, {"sub.example.com", false},
-				{"evilsub.example.com", false}, {"x.sub.example.com.attacker.invalid", false},
-				{"ifconfig.me.attacker.invalid", false},
+				{domain: "exact.example.com", selected: true},
+				{domain: "www.exact.example.com"},
+				{domain: "x.sub.example.com", selected: true},
+				{domain: "sub.example.com"},
+				{domain: "evilsub.example.com"},
+				{domain: "x.sub.example.com.attacker.invalid"},
+				{domain: "ifconfig.me.attacker.invalid"},
+				{domain: "api.test.prettylisavpn.com.attacker.invalid"},
+				{domain: "api.prettylisavpn.com", forceVPN: true},
+				{domain: "api.test.prettylisavpn.com", forceVPN: true},
+				{domain: "ifconfig.me", forceVPN: true},
+				{domain: "www.ifconfig.me", forceVPN: true},
 			} {
 				expected := "D"
-				if tc.selected == (mode == "include") {
+				if tc.forceVPN || tc.selected == (mode == "include") {
 					expected = "V"
 				}
 				for _, fake := range []bool{false, true} {
@@ -128,17 +141,6 @@ func TestSplitRoutesRealFlowsAndFakeDNS(t *testing.T) {
 					if err != nil || string(buffer) != expected {
 						t.Fatalf("%s fake=%v: got %q, want %s (%v)", tc.domain, fake, buffer, expected, err)
 					}
-				}
-			}
-			for _, hostname := range []string{"api.prettylisavpn.com", "ifconfig.me", "www.ifconfig.me"} {
-				conn, err := core.Dial(ctx, instance, xnet.TCPDestination(xnet.DomainAddress(hostname), 443))
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer conn.Close()
-				marker := make([]byte, 1)
-				if _, err = io.ReadFull(conn, marker); err != nil || string(marker) != "V" {
-					t.Fatal("verification escaped VPN")
 				}
 			}
 			// Native MTProto has no DNS/domain metadata: the destination IP alone

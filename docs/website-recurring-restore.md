@@ -5,7 +5,9 @@
 **Тестовый контур**. Owner-approved website **0.7.1 → 0.7.3** and backend
 **0.54.4 → 0.54.5**, PATCH restoration/fixes after the test rollback.
 Base: `5e2fad3f0d11fe2a522bcaddd14122e44355bba3` (PR #123).
-Preserve the restricted real-fleet backend, rolled-back client sources/versions,
+Integrate current `develop` `9a27aa0b71d4a03cfb0ade971d084117aa39d3bb` (parallel
+PR #125) without changing its client sources/versions; retain both changelog entries.
+Preserve the restricted real-fleet backend, current client sources/versions,
 database schema `0053_analytics_plans`, commercial prices and immutable contracts.
 No client application changes or production publication are included.
 

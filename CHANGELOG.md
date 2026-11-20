@@ -18,6 +18,12 @@
 - Isolate website browser acceptance from client packaging/publication. Client
   sources/versions and production are unchanged. [Handoff](docs/website-recurring-restore.md).
 
+### Split routing in test builds — Android 0.30.6 / Windows 0.31.6 / managed engine 0.8.1
+
+- Send the test API's tunnel verification through the VPN in both split modes,
+  including when the API hostname is explicitly selected for exclusion.
+- See [split-routing behavior and verification](docs/split-routing.md#проверка-подключения-в-тестовых-сборках).
+
 ### Test access to the real fleet — backend 0.54.4
 
 - Restore latest backend 0.54.3 as the owner-selected base and fix test VPN access
