@@ -6,6 +6,18 @@
 
 ## Unreleased
 
+### Restore recurring website payments — website 0.7.3 / backend 0.54.5
+
+- Test environment: restore direct same-tab monthly SBP checkout after the rollback,
+  with inline unchecked recurring consent and no one-off payment fallback.
+- Send hosted-form return URLs with the operation UUID. Recover the authoritative
+  result after refresh/login: success for confirmed payment, failure for failed or
+  cancelled operations, continued verification for unknown outcomes.
+- Wait for unresolved receipts before treating a subscription failure as terminal.
+  Keep the merchant callback, durable creation fences and manual Platinum intact.
+- Isolate website browser acceptance from client packaging/publication. Client
+  sources/versions and production are unchanged. [Handoff](docs/website-recurring-restore.md).
+
 ### Split routing in test builds — Android 0.30.6 / Windows 0.31.6 / managed engine 0.8.1
 
 - Send the test API's tunnel verification through the VPN in both split modes,

@@ -171,7 +171,11 @@ def create_app(
                 assert config.platega_secret is not None
                 active_billing_provider = PlategaBillingProvider(
                     cast(Postgres, pg),
-                    PlategaAPI(config.platega_merchant_id, config.platega_secret),
+                    PlategaAPI(
+                        config.platega_merchant_id,
+                        config.platega_secret,
+                        website_origin=config.public_website_origin,
+                    ),
                 )
             cache = valkey if valkey is not None else Valkey(config)
             try:

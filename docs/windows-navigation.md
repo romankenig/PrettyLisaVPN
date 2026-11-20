@@ -1193,3 +1193,15 @@ dialog, retaining the DEMO registration guard. Payment-rule links call the exist
 show the existing document-open error. The old FAQ home/subscription links are
 replaced by instructions and public payment rules. No route or auth guard is added;
 no backend integration is pending. See [FAQ handoff](shared-faq.md).
+
+# Website recurring restoration — 0.7.3 / backend 0.54.5
+
+Test environment only; Windows and other client navigation/source versions are unchanged.
+Website offer → explicit monthly consent → Pay → Platega in the same tab.
+The provider returns to `/account/success/` or `/account/failure/` with an operation
+UUID; the authenticated API decides the rendered result. FAILED/CANCELED show failure,
+SUCCEEDED shows success, PENDING continues verification without automatic redirection.
+Refresh and repeated login preserve the operation; Retry returns to the offer without
+creating a payment. Callback remains `https://prettylisavpn.com/api/payments/platega/callback`.
+These flows are implemented/tested with a mock provider; test live billing remains
+disabled. See [restoration handoff](website-recurring-restore.md).
