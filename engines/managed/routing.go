@@ -61,12 +61,16 @@ func (r *Routing) apply(config map[string]any) {
 	config["outbounds"] = append(config["outbounds"].([]any),
 		obj{"tag": "direct", "protocol": "freedom", "settings": obj{"domainStrategy": "UseIPv4"}},
 		obj{"tag": "dns", "protocol": "dns"})
-	// Resolver and our verification/control origin always use the encrypted
+	// Resolver and both build channels' verification/control origins use the encrypted
 	// outbound, before user rules. A direct response cannot verify VPN access.
 	rules := []any{
 		obj{"type": "field", "inboundTag": []string{"resolver"}, "outboundTag": "vpn"},
 		obj{"type": "field", "inboundTag": []string{"tun"}, "port": "53", "outboundTag": "dns"},
-		obj{"type": "field", "domain": []string{"full:api.prettylisavpn.com", "domain:ifconfig.me"}, "outboundTag": "vpn"},
+		obj{"type": "field", "domain": []string{
+			"full:api.prettylisavpn.com",
+			"full:api.test.prettylisavpn.com",
+			"domain:ifconfig.me",
+		}, "outboundTag": "vpn"},
 		obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"},
 	}
 	selected, fallback := "vpn", "direct"
