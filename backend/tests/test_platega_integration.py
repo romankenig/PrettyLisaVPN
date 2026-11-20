@@ -440,6 +440,59 @@ async def test_cancellation_waits_for_successful_charge_receipt_even_if_webhook_
     assert (await state[5].get(state[2], value.id)).status == "PENDING"
 
 
+@pytest.mark.parametrize(
+    "provider_status, expected", [("Failed", "FAILED"), ("Cancelled", "CANCELED")]
+)
+async def test_unsuccessful_agreement_has_terminal_result_without_paid_access(
+    state, provider_status, expected
+):
+    value = await state[5].start(state[2], await command(state))
+    identity = next(iter(state[3].subscriptions))
+    state[3].subscriptions[identity] = (
+        state[3].subscriptions[identity].model_copy(update={"status": provider_status})
+    )
+    await due(state[0], value.id)
+    result = await state[5].get(state[2], value.id)
+    assert result.status == expected and result.redirect_url is None
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
+    assert state[3].creates == 1
+
+
+@pytest.mark.parametrize("provider_status", ["Failed", "Cancelled"])
+async def test_failure_waits_for_unverified_receipt_and_late_confirmation_can_succeed(
+    state, provider_status
+):
+    value = await state[5].start(state[2], await command(state))
+    identity = next(iter(state[3].subscriptions))
+    state[3].subscriptions[identity] = (
+        state[3].subscriptions[identity].model_copy(update={"status": provider_status})
+    )
+    payment = uuid4()
+    state[3].payments[payment] = PlategaPayment(
+        id=payment, status="CONFIRMED", amount_minor=19900, currency="RUB"
+    )
+    await notification(state, identity, payment_id=payment)
+    await due(state[0], value.id)
+    assert (await state[5].get(state[2], value.id)).status == "PENDING"
+    assert (await state[6].overview(state[2])).plan.value == "FREE"
+    state[3].payments[payment] = state[3].payments[payment].model_copy(update={"status": "PENDING"})
+    await state[4].verify_charge(payment)
+    await due(state[0], value.id)
+    assert (await state[5].get(state[2], value.id)).status == "PENDING"
+    state[3].payments[payment] = (
+        state[3].payments[payment].model_copy(update={"status": "CONFIRMED"})
+    )
+    await state[4].verify_charge(payment)
+    state[3].subscriptions[identity] = (
+        state[3]
+        .subscriptions[identity]
+        .model_copy(update={"status": "Active", "successful_charges": 1})
+    )
+    await due(state[0], value.id)
+    assert (await state[5].get(state[2], value.id)).status == "SUCCEEDED"
+    assert state[3].creates == 1
+
+
 async def test_refund_is_visible_for_operator_review_without_unproven_access_mutation(state):
     from prettylisavpn.billing.platega_audit import report
 

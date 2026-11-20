@@ -96,7 +96,8 @@ async def test_export_recovery_requires_merchant_and_exact_order_description_twi
             await api(handler).recover_payments(operation, datetime.now(UTC))
 
 
-async def test_create_uses_monthly_sbp_and_database_quote_not_client_money():
+@pytest.mark.parametrize("origin", ["https://prettylisavpn.com", "https://test.prettylisavpn.com"])
+async def test_create_uses_monthly_sbp_and_database_quote_not_client_money(origin):
     operation = uuid4()
     calls = []
 
@@ -110,6 +111,8 @@ async def test_create_uses_monthly_sbp_and_database_quote_not_client_money():
             "paymentDetails": {"amount": 199, "currency": "RUB", "interval": 3, "intervalCount": 1},
             "description": description_for(operation),
             "metadata": {"user_email": "payer@example.com"},
+            "return": f"{origin}/account/success/?operation={operation}",
+            "failedUrl": f"{origin}/account/failure/?operation={operation}",
         }
         return httpx.Response(
             200,
@@ -122,7 +125,10 @@ async def test_create_uses_monthly_sbp_and_database_quote_not_client_money():
             },
         )
 
-    result = await api(handler).create(operation, 19900, "payer@example.com")
+    client = PlategaAPI(
+        MERCHANT, SecretStr(SECRET), website_origin=origin, transport=httpx.MockTransport(handler)
+    )
+    result = await client.create(operation, 19900, "payer@example.com")
     assert result.id == SUBSCRIPTION and len(calls) == 1
     assert SECRET not in repr(result)
 
@@ -301,3 +307,17 @@ async def test_unrecognized_or_contradictory_create_failures_remain_unknown(stat
             uuid4(), 39900, "payer@example.com"
         )
     assert not isinstance(error.value, PlategaCreateRejected)
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "http://prettylisavpn.com",
+        "https://prettylisavpn.com.evil.test",
+        "https://secret@prettylisavpn.com",
+        "https://prettylisavpn.com/redirect",
+    ],
+)
+def test_checkout_cannot_send_return_to_untrusted_origin(origin):
+    with pytest.raises(ValueError, match="return origin"):
+        PlategaAPI(MERCHANT, SecretStr(SECRET), website_origin=origin)
