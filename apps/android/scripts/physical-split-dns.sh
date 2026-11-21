@@ -6,7 +6,7 @@ fixture=$(mktemp -d)
 mkdir -p split-dns-evidence
 cleanup() {
   if sudo test -f "$fixture/dnsmasq.log"; then
-    sudo grep -E '(direct|selected|uplink[^.]*)\.prettylisa\.test' "$fixture/dnsmasq.log" > split-dns-evidence/fixture-dns.txt || true
+    sudo grep -E '(direct|selected|uplink)\.prettylisa\.test' "$fixture/dnsmasq.log" > split-dns-evidence/fixture-dns.txt || true
   fi
   if [[ -f "$fixture/dnsmasq.pid" ]]; then
     sudo kill "$(cat "$fixture/dnsmasq.pid")" || true
@@ -19,32 +19,27 @@ cleanup() {
 trap cleanup EXIT
 
 printf '%s\n' direct-split-dns-proof > "$fixture/proof.txt"
-sudo dnsmasq --bind-interfaces --listen-address="${SPLIT_DNS_HOST:?Expected the runner DNS fixture address}" --no-resolv --no-hosts \
-  --address=/prettylisa.test/10.0.2.2 \
+sudo dnsmasq --bind-interfaces --listen-address=127.0.0.1 --no-resolv --no-hosts \
+  --local=/prettylisa.test/ --address=/prettylisa.test/10.0.2.2 \
   --pid-file="$fixture/dnsmasq.pid" --log-facility="$fixture/dnsmasq.log" --log-queries
 python3 -m http.server 18080 --bind 127.0.0.1 --directory "$fixture" > "$fixture/http.log" 2>&1 &
 http_pid=$!
 
 adb shell settings put global private_dns_mode off
 adb shell settings put global captive_portal_mode 0
-# Use separate names so the direct lookup can only come from the test.
-probe_uplink() {
-  local uplink
-  uplink=$(timeout 8 adb shell ping -c 1 -W 2 "$1.prettylisa.test" 2>&1 || true)
-  printf '%s\n' "$uplink" | tee -a split-dns-evidence/uplink.txt
-  [[ "$uplink" == *'(10.0.2.2)'* ]]
-}
-if ! probe_uplink uplink; then
-  # Some emulator images use an independent Wi-Fi DNS proxy. Exercise the same
-  # Android physical Network path over the emulated cellular connection.
-  adb shell svc wifi disable
-  adb shell svc data enable
-  for ((attempt = 0; attempt < 4; attempt++)); do
-    if probe_uplink "uplink-cell-$attempt"; then break; fi
-    sleep 2
-  done
-  grep -Fq '(10.0.2.2)' split-dns-evidence/uplink.txt
-fi
+# Connect netd directly to the runner fixture on the disposable API 35 image.
+# This keeps the real Android per-Network resolver and bypasses the emulator's DNS proxy.
+adb root
+adb wait-for-device
+uplink_id=$(adb shell dumpsys connectivity | sed -n 's/.*Active default network: \([0-9][0-9]*\).*/\1/p')
+[[ "$uplink_id" =~ ^[0-9]+$ ]]
+# IDnsResolver.setResolverConfiguration is transaction 3. The 92-byte
+# ResolverParamsParcel sets the network ID, resolver timings and DNS servers.
+adb shell "service call dnsresolver 3 i32 1 i32 92 i32 $uplink_id i32 1800 i32 25 i32 8 i32 64 i32 1000 i32 2 i32 1 s16 10.0.2.2 i32 0 s16 '' i32 0 i32 0 s16 '' i32 0"
+# Use a separate hostname so the direct lookup below can only come from the test.
+uplink=$(timeout 10 adb shell ping -c 1 -W 2 uplink.prettylisa.test 2>&1 || true)
+printf '%s\n' "$uplink" | tee split-dns-evidence/uplink.txt
+grep -Fq '(10.0.2.2)' split-dns-evidence/uplink.txt
 adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 # Authorize only this APK on the disposable emulator. The app still calls VpnService.prepare.

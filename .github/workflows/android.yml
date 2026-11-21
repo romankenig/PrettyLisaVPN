@@ -337,9 +337,6 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           sudo apt-get install -y dnsmasq-base
-          dns_host=$(ip -4 route get 192.0.2.1 | sed -n 's/.* src \([^ ]*\).*/\1/p')
-          test -n "$dns_host"
-          echo "SPLIT_DNS_HOST=$dns_host" >> "$GITHUB_ENV"
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -347,9 +344,7 @@ jobs:
           target: google_apis
           profile: pixel_2
           disable-animations: true
-          # Use the emulator's built-in IP network. The separate netsim Wi-Fi
-          # packet streamer does not forward the emulator's -dns-server option.
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -feature -WiFiPacketStream -feature -VirtioWifi -memory 4096 -no-snapshot -noaudio -no-boot-anim -camera-back none -dns-server ${{ env.SPLIT_DNS_HOST }}
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -memory 4096 -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: bash apps/android/scripts/physical-split-dns.sh
       - uses: actions/upload-artifact@v4
         if: always()
