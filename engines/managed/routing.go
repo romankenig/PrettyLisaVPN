@@ -48,7 +48,7 @@ func (r *Routing) validate() error {
 	return nil
 }
 
-func (r *Routing) apply(config map[string]any) {
+func (r *Routing) apply(config map[string]any, splitDNS bool) {
 	if r == nil || r.Mode == "all" {
 		return
 	}
@@ -58,15 +58,24 @@ func (r *Routing) apply(config map[string]any) {
 	config["fakedns"] = obj{"ipPool": "198.18.0.0/15", "poolSize": 32768}
 	config["dns"] = obj{"tag": "resolver", "queryStrategy": "UseIPv4", "servers": []any{"fakedns", "1.1.1.1"}}
 	config["inbounds"].([]any)[0].(obj)["sniffing"] = obj{"enabled": true, "destOverride": []string{"fakedns", "http", "tls", "quic"}, "routeOnly": true}
+	strategy := "UseIPv4"
+	if splitDNS {
+		strategy = "ForceIPv4"
+	}
 	config["outbounds"] = append(config["outbounds"].([]any),
-		obj{"tag": "direct", "protocol": "freedom", "settings": obj{"domainStrategy": "UseIPv4"}},
+		obj{"tag": "direct", "protocol": "freedom", "settings": obj{"domainStrategy": strategy}},
 		obj{"tag": "dns", "protocol": "dns"})
-	// Resolver and our verification/control origin always use the encrypted
-	// outbound, before user rules. A direct response cannot verify VPN access.
+	// Both build channels' verification/control origins use the encrypted outbound
+	// before user rules. A direct response cannot verify VPN access.
+	forcedVPN := []string{
+		"full:api.prettylisavpn.com",
+		"full:api.test.prettylisavpn.com",
+		"domain:ifconfig.me",
+	}
 	rules := []any{
 		obj{"type": "field", "inboundTag": []string{"resolver"}, "outboundTag": "vpn"},
 		obj{"type": "field", "inboundTag": []string{"tun"}, "port": "53", "outboundTag": "dns"},
-		obj{"type": "field", "domain": []string{"full:api.prettylisavpn.com", "domain:ifconfig.me"}, "outboundTag": "vpn"},
+		obj{"type": "field", "domain": forcedVPN, "outboundTag": "vpn"},
 		obj{"type": "field", "ip": []string{"::/0"}, "outboundTag": "blocked"},
 	}
 	selected, fallback := "vpn", "direct"
@@ -82,6 +91,10 @@ func (r *Routing) apply(config map[string]any) {
 			domains = append(domains, "full:"+mask)
 		}
 	}
+	if splitDNS {
+		rules = append(rules, obj{"type": "field", "inboundTag": []string{"resolver-direct"}, "outboundTag": "direct"})
+		config["dns"].(obj)["servers"] = splitDNSServers(forcedVPN, domains, selected, fallback)
+	}
 	if len(domains) > 0 {
 		rules = append(rules, obj{"type": "field", "domain": domains, "outboundTag": selected})
 	}
@@ -92,4 +105,39 @@ func (r *Routing) apply(config map[string]any) {
 	rules = append(rules, obj{"type": "field", "ip": []string{"198.18.0.0/15"}, "outboundTag": "blocked"},
 		obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": fallback})
 	config["routing"] = obj{"domainStrategy": "AsIs", "rules": rules}
+}
+
+func splitDNSServers(forcedVPN, domains []string, selected, fallback string) []any {
+	type obj = map[string]any
+	// Xray consults matching servers in order, skipping FakeDNS when an outbound
+	// needs a real address. VPN queries stop at their resolver, while direct
+	// queries can retry through the VPN if the physical network blocks DNS.
+	resolver := func(outbound string, names []string) obj {
+		server := obj{"address": "1.1.1.1", "finalQuery": true}
+		if outbound == "direct" {
+			// A literal IP avoids a bootstrap lookup. DNS is encrypted on the
+			// physical network, even if the VPN transport cannot reach its resolver.
+			server["address"] = "https://1.1.1.1/dns-query"
+			server["tag"] = "resolver-direct"
+			server["timeoutMs"] = 2000
+			server["finalQuery"] = false
+		}
+		if len(names) != 0 {
+			server["domains"] = names
+			server["skipFallback"] = true
+		}
+		return server
+	}
+	servers := []any{
+		obj{"address": "fakedns", "domains": []string{"regexp:.+"}},
+		resolver("vpn", forcedVPN),
+	}
+	if len(domains) != 0 {
+		servers = append(servers, resolver(selected, domains))
+	}
+	servers = append(servers, resolver(fallback, nil))
+	if fallback == "direct" {
+		servers = append(servers, resolver("vpn", nil))
+	}
+	return servers
 }

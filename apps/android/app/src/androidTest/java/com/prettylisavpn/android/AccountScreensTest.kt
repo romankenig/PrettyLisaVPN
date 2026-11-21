@@ -46,7 +46,6 @@ class AccountScreensTest {
     private var deviceReads=0
     private var profileReads=0
     private var countryReads=0
-    private var lockedCountryReview=false
     private var uploadGate:kotlinx.coroutines.CompletableDeferred<Unit>?=null
     private var submitted:SupportSubmission?=null
     private var receipt:SupportReceipt?=null
@@ -74,7 +73,7 @@ class AccountScreensTest {
             return Device(current,"Current phone",true,"2026-10-21T00:00:00Z",null)
         }
         override suspend fun locations(token:String):LocationOptions { countryReads++; return LocationOptions(countries(token),80) }
-        override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true)) + if(lockedCountryReview)listOf(Country("AT","AT","0",false,true))else emptyList()
+        override suspend fun countries(token:String)=listOf(Country("DE","DE","80",true),Country("FR","FR","60",true))
         override suspend fun messages(token:String)=if(messages)listOf(AccountMessage(message,2,"Account notice","Synthetic test message",if(mandatoryMessage || messageMode == MessageDismissalMode.NEXT_VISIT)null else "SUBSCRIPTION",expiresAt=messageExpiry,dismissalMode=if(mandatoryMessage)MessageDismissalMode.REQUIRE_LINK else messageMode,links=listOf(MessageLink("Download update","https://prettylisavpn.com/"))))else emptyList()
         override suspend fun acknowledge(token:String,id:String,revision:Int) { if(ackFail)throw AuthFailure("offline");messages=false }
         override suspend fun overview(token:String): BillingOverview {
@@ -89,7 +88,7 @@ class AccountScreensTest {
         override suspend fun billingPortal(token:String):String {
             portals++;assertEquals("fake",token)
             if(portalFails)throw AuthFailure("BILLING_UNAVAILABLE")
-            return "https://prettylisavpn.com/account/#handoff="+"a".repeat(43)
+            return "${BuildConfig.WEBSITE_BASE_URL}/account/#handoff="+"a".repeat(43)
         }
         override suspend fun start(token:String,intent:BillingIntent):OperationReceipt { starts++;lastIntent=intent;return OperationReceipt(device,"PENDING") }
         override suspend fun operation(token:String,id:String)=OperationReceipt(id,"PENDING")
@@ -126,7 +125,7 @@ class AccountScreensTest {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
         val filter=android.content.IntentFilter(android.content.Intent.ACTION_VIEW).apply {
             addCategory(android.content.Intent.CATEGORY_BROWSABLE);addDataScheme("https")
-            addDataAuthority("prettylisavpn.com",null)
+            addDataAuthority(java.net.URI(BuildConfig.WEBSITE_BASE_URL).host,null)
             addDataPath("/account/",android.os.PatternMatcher.PATTERN_LITERAL)
         }
         val monitor=instrumentation.addMonitor(filter,null,true)
@@ -224,18 +223,6 @@ class AccountScreensTest {
         compose.onNodeWithText("DEMO ⏳").assertExists()
         compose.onNodeWithText("15:00").assertExists()
         screenshot("demo-home")
-    }
-
-    @Test fun premiumCountriesStayVisibleAndDisabledForFreeAndDemo() {
-        for (tariff in listOf("Free","Demo")) {
-            compose.runOnUiThread { plan=tariff;lockedCountryReview=true;model.load(Area.HOME);model.load(Area.COUNTRIES) }
-            compose.waitUntil(10_000) { model.state.value.data.countries.any { it.premiumRequired } && model.state.value.data.plan==tariff }
-            click("home-country")
-            compose.onNodeWithTag("home-country-AT").assertIsNotEnabled().assertTextContains("available only with Premium",substring=true)
-            screenshot("premium-countries-${tariff.lowercase()}")
-            click("home-country-AUTO")
-        }
-        assertEquals(0,starts)
     }
 
     @Test fun demoLocksLeadToRegistrationAndFreeHasItsFullHour() {

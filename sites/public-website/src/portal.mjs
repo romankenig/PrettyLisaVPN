@@ -41,10 +41,24 @@ export async function mountPortal(root) {
     location.pathname === accountPath + "unavailable/" ||
     (location.pathname === accountPath + "success/" &&
       new URLSearchParams(location.search).get("preview") === "1");
+  let returning =
+    !isPaymentUnavailable() &&
+    [accountPath + "success/", accountPath + "failure/"].includes(
+      location.pathname,
+    );
+  const candidate = new URLSearchParams(location.search).get("operation");
+  let returnedOperation =
+    returning &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+      candidate ?? "",
+    )
+      ? candidate
+      : null;
   const pagePath = () =>
     (isPaymentUnavailable() ? accountPath : location.pathname) +
     "?currency=" +
-    currency;
+    currency +
+    (returnedOperation ? "&operation=" + returnedOperation : "");
   const savedPrices = () => {
     try {
       return cachedPrices(localStorage);
@@ -298,6 +312,10 @@ export async function mountPortal(root) {
       if (journal?.redirected && journal.operation_id)
         redirectedOperation = journal.operation_id;
     }
+    if (returnedOperation)
+      return watch(
+        await request("/operations/" + encodeURIComponent(returnedOperation)),
+      );
     if (overview.pending_operation_id)
       return watch(
         await request(
@@ -388,6 +406,9 @@ export async function mountPortal(root) {
   }
   async function begin(action, offer_id, payment_route) {
     redirectedOperation = null;
+    returning = false;
+    returnedOperation = null;
+    history.replaceState(null, "", accountPath + "?currency=" + currency);
     const command = {
       action,
       offer_id,
@@ -425,14 +446,21 @@ export async function mountPortal(root) {
   }
   async function watch(operation) {
     if (operation.status !== "PENDING") {
-      localStorage.removeItem(journalKey());
+      try {
+        localStorage.removeItem(journalKey());
+      } catch {
+        /* A verified return result remains readable when storage is disabled. */
+      }
       const value = await request("/overview");
       overview = value.billing;
       const success = operation.status === "SUCCEEDED";
       history.replaceState(
         null,
         "",
-        success ? "/account/success/" : "/account/failure/",
+        accountPath +
+          (success ? "success/" : "failure/") +
+          "?operation=" +
+          operation.id,
       );
       screen(
         success ? t.success : t.failure,
@@ -440,14 +468,35 @@ export async function mountPortal(root) {
       );
       if (overview.paid_until)
         root.append(el("p", t.paidUntil + " " + date(overview.paid_until)));
-      root.append(button(success ? t.manage : t.retry, load, true));
+      returnedOperation = operation.id;
+      returning = true;
+      root.append(
+        button(
+          success ? t.manage : t.retry,
+          async () => {
+            returnedOperation = null;
+            returning = false;
+            history.replaceState(
+              null,
+              "",
+              accountPath + "?currency=" + currency,
+            );
+            await load();
+          },
+          true,
+        ),
+      );
       root.append(el("p", t.returnApp));
       const home = el("a", t.home, "portal-secondary");
-      home.href = "/";
+      home.href = languagePrefix ? "/" + languagePrefix + "/" : "/";
       root.append(home);
       return;
     }
-    if (operation.redirect_url && redirectedOperation !== operation.id) {
+    if (
+      !returning &&
+      operation.redirect_url &&
+      redirectedOperation !== operation.id
+    ) {
       const destination = providerURL(operation.redirect_url);
       localStorage.setItem(
         journalKey(),
@@ -462,6 +511,12 @@ export async function mountPortal(root) {
       const link = el("a", t.openBank, "button");
       link.href = providerURL(operation.redirect_url);
       link.rel = "noreferrer";
+      link.addEventListener("click", () => {
+        localStorage.setItem(
+          journalKey(),
+          JSON.stringify({ operation_id: operation.id, redirected: true }),
+        );
+      });
       root.append(link);
     }
     root.append(button(t.check, () => poll(operation.id)));

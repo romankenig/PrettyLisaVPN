@@ -1,5 +1,7 @@
 package com.prettylisavpn.android.vpn
 
+import com.prettylisavpn.android.BuildConfig
+
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -18,7 +20,7 @@ import kotlin.coroutines.resume
 internal class TunnelHealthProbe(
     private val client: OkHttpClient,
     private val ipUrl: String = "https://ifconfig.me/all.json",
-    private val apiUrl: String = "https://api.prettylisavpn.com/version",
+    private val apiUrl: String = "${BuildConfig.API_BASE_URL}/version",
 ) {
     private data class Observation(val body: JsonObject? = null, val transportFailed: Boolean = false)
     private suspend fun read(url: String): Observation = suspendCancellableCoroutine { continuation ->

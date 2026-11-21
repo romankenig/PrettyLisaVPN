@@ -1,3 +1,4 @@
+import { websiteOrigin } from "../config/config";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useRegistration } from "../auth/useRegistration";
@@ -8,7 +9,7 @@ import { PlanComparison, referenceOffer } from "./PlanComparison";
 
 export function GuestSubscription() {
   useLanguage();
-  const { billing, paymentBrowser } = useApplication();
+  const { billing, paymentBrowser, config } = useApplication();
   const [offer, setOffer] = useState<Offer>(referenceOffer);
   const [currency, setCurrency] = useState<Currency>("RUB");
   const [attempt, setAttempt] = useState(0);
@@ -22,7 +23,9 @@ export function GuestSubscription() {
     setPortalError(false);
     try {
       if (!paymentBrowser) throw new Error("PAYMENT_BROWSER_UNAVAILABLE");
-      await paymentBrowser.open("https://prettylisavpn.com/account/");
+      await paymentBrowser.open(
+        `${websiteOrigin(config.backendBaseUrl)}/account/`,
+      );
     } catch {
       setPortalError(true);
     } finally {

@@ -4,6 +4,9 @@ root=$(cd "$(dirname "$0")/../../.." && pwd)
 out="$root/apps/apple/artifacts"
 mkdir -p "$out/source"
 git -C "$root" archive HEAD apps/apple engines/managed | tar -x -C "$out/source"
+if [[ -f "$root/apps/apple/Config/Local.xcconfig" ]]; then
+  cp "$root/apps/apple/Config/Local.xcconfig" "$out/source/apps/apple/Config/Local.xcconfig"
+fi
 cp -R "$root/engines/managed/patched" "$out/source/engines/managed/patched"
 cd "$root/engines/managed"
 go mod vendor -o "$out/source/engines/managed/vendor"
@@ -29,6 +32,7 @@ identity = {'source_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], 
             'run': os.environ.get('GITHUB_RUN_ID'), 'attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
             'ios_version': version('DerivedData/Build/Products/Release-iphoneos/PrettyLisaVPN.app/Info.plist'),
             'macos_version': version('DerivedData/Build/Products/Release/PrettyLisaVPN.app/Contents/Info.plist'),
+            'backend': plistlib.loads(Path('DerivedData/Build/Products/Release-iphoneos/PrettyLisaVPN.app/Info.plist').read_bytes())['APIBaseURL'],
             'real_vpn_verified': False,
             'signing': 'unsigned/ad-hoc; no Apple team or provisioning profiles'}
 Path('artifacts/build-identity.json').write_text(json.dumps(identity, indent=2) + '\n')

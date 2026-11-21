@@ -135,10 +135,14 @@ class PlategaAPI:
         merchant_id: UUID,
         secret: SecretStr,
         *,
+        website_origin: str = "https://prettylisavpn.com",
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if merchant_id.int == 0 or len(secret.get_secret_value()) < 16:
             raise ValueError("Platega merchant credentials are not configured")
+        if website_origin not in ("https://prettylisavpn.com", "https://test.prettylisavpn.com"):
+            raise ValueError("Platega return origin is not allowed")
+        self.website_origin = website_origin
         self.merchant_id, self._secret, self._transport = merchant_id, secret, transport
 
     async def _call(
@@ -210,6 +214,9 @@ class PlategaAPI:
                 },
                 "description": description_for(operation_id),
                 "metadata": {"user_email": email},
+                # Hosted-form navigation only; callbacks/API verification own settlement.
+                "return": f"{self.website_origin}/account/success/?operation={operation_id}",
+                "failedUrl": f"{self.website_origin}/account/failure/?operation={operation_id}",
             },
         )
         try:

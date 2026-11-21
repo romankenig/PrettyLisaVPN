@@ -1,11 +1,5 @@
 # Platega: ежемесячная СБП-подписка и кабинет оплаты
 
-Актуальный follow-up от 2026-11-19: серверный режим Platega включён (LIVE).
-Кабинет мерчанта показывает только СБП QR и криптовалюту; Subscription отклоняется
-API. Сайт 0.7.2 / backend 0.54.2 исправляют прямой переход и явные отказы создания;
-разовые ссылки удалены по поручению владельца. См. [текущий handoff](website-direct-checkout.md).
-Ниже — историческое описание первоначальной реализации.
-
 ## Website price correction — 0.4.1
 
 Owner-requested follow-up: website 0.4.0 → 0.4.1 (PATCH for the acquisition button).

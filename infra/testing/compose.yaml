@@ -1,0 +1,43 @@
+# Separate project: normal application deployments never remove these data services.
+name: prettylisavpn-test-data
+
+services:
+  test-postgres:
+    image: ${TEST_POSTGRES_IMAGE:?Set the verified PostgreSQL 17 image}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: default_db
+      POSTGRES_USER: prettylisa_test
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:?Set a separate test password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [application]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U prettylisa_test -d default_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  test-valkey:
+    image: ${TEST_VALKEY_IMAGE:?Set the verified Valkey image}
+    restart: unless-stopped
+    command: [valkey-server, /etc/valkey/test.conf]
+    volumes:
+      - ./valkey.conf:/etc/valkey/test.conf:ro
+      - valkey_data:/data
+    networks: [application]
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+networks:
+  application:
+    external: true
+    name: prettylisavpn-development_application
+
+volumes:
+  postgres_data:
+  valkey_data:

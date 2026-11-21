@@ -55,7 +55,7 @@ function mockApi(): ApiClient {
 
 function renderSelector(
   api = mockApi(),
-  plan: "DEMO" | "FREE" | "PREMIUM" | "PLATINUM" = "FREE",
+  plan: "FREE" | "PREMIUM" = "FREE",
   initial: VpnLocationSelection = DEFAULT_VPN_LOCATION_SELECTION,
 ) {
   const session = createTestAuthenticationSession();
@@ -333,72 +333,3 @@ describe("connection location dropdown", () => {
     expect(api.listVpnCountries).toHaveBeenCalledTimes(2);
   });
 });
-
-it.each(["FREE", "DEMO"] as const)(
-  "shows locked Premium countries without allowing mouse or keyboard selection for %s",
-  async (plan) => {
-    const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockResolvedValue({
-      autopilot: availability.autopilot,
-      countries: [
-        ...availability.countries,
-        {
-          country_code: "AT",
-          quality: 0,
-          available: false,
-          premium_required: true,
-        },
-      ],
-    });
-    renderSelector(api, plan, { mode: "COUNTRY", country_code: "AT" });
-    await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
-    await waitFor(() =>
-      expect(screen.getByText(/"mode":"AUTO"/)).toBeInTheDocument(),
-    );
-    const combo = screen.getByRole("combobox");
-    fireEvent.click(combo);
-    const locked = within(
-      screen.getByRole("group", { name: "все страны" }),
-    ).getByRole("option", { name: /Австрия/ });
-    expect(locked).toBeDisabled();
-    expect(locked).toHaveClass("premium-locked");
-    expect(locked).toHaveTextContent("доступно только в Premium");
-    fireEvent.click(locked);
-    expect(screen.getByText(/"mode":"AUTO"/)).toBeInTheDocument();
-    fireEvent.keyDown(combo, { key: "End" });
-    expect(combo.getAttribute("aria-activedescendant")).not.toBe(locked.id);
-    expect(
-      within(screen.getByRole("group", { name: "топ" })).queryByRole("option", {
-        name: /Австрия/,
-      }),
-    ).toBeNull();
-  },
-);
-
-it.each(["PREMIUM", "PLATINUM"] as const)(
-  "allows the same country when the server grants %s access",
-  async (plan) => {
-    const api = mockApi();
-    vi.mocked(api.listVpnCountries).mockResolvedValue({
-      autopilot: availability.autopilot,
-      countries: [
-        {
-          country_code: "AT",
-          quality: 90,
-          available: true,
-          premium_required: false,
-        },
-      ],
-    });
-    renderSelector(api, plan);
-    await waitFor(() => expect(screen.getByRole("combobox")).toBeEnabled());
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(
-      within(screen.getByRole("group", { name: "все страны" })).getByRole(
-        "option",
-        { name: /Австрия/ },
-      ),
-    );
-    expect(screen.getByText(/"country_code":"AT"/)).toBeInTheDocument();
-  },
-);

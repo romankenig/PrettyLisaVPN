@@ -7,6 +7,10 @@ plugins {
 val sourceSha = providers.gradleProperty("sourceSha").orElse("local").get()
 require(sourceSha == "local" || sourceSha.matches(Regex("[0-9a-f]{40}")))
 
+val apiBaseUrl = providers.gradleProperty("apiBaseUrl").orElse("https://api.prettylisavpn.com").get()
+require(apiBaseUrl in listOf("https://api.prettylisavpn.com", "https://api.test.prettylisavpn.com"))
+val websiteBaseUrl = if (apiBaseUrl == "https://api.test.prettylisavpn.com") "https://test.prettylisavpn.com" else "https://prettylisavpn.com"
+
 android {
     namespace = "com.prettylisavpn.android"
     compileSdk = 36
@@ -15,9 +19,11 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 62
-        versionName = "0.30.3"
+        versionCode = 66
+        versionName = "0.30.7"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "WEBSITE_BASE_URL", "\"$websiteBaseUrl\"")
         buildConfigField("String", "SOURCE_SHA", "\"$sourceSha\"")
     }
     // Public development key only. Never use this identity for release signing.

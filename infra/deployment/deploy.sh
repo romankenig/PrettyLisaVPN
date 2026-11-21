@@ -41,6 +41,12 @@ backend_image="$(read_environment_value BACKEND_IMAGE)"
 application_version="$(read_environment_value APPLICATION_VERSION)"
 project_name="$(read_environment_value COMPOSE_PROJECT_NAME)"
 project_name="${project_name:-prettylisavpn}"
+fleet_worker_enabled="$(read_environment_value FLEET_WORKER_ENABLED)"
+fleet_worker_enabled="${fleet_worker_enabled:-true}"
+if [[ "$fleet_worker_enabled" != "true" && "$fleet_worker_enabled" != "false" ]]; then
+    printf 'FLEET_WORKER_ENABLED must be true or false.\n' >&2
+    exit 1
+fi
 
 if [[ ! "$api_domain" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]]; then
     printf 'API_DOMAIN must be an unquoted public DNS hostname: %s\n' "$api_domain" >&2
@@ -63,28 +69,23 @@ if ! getent ahosts "$api_domain" >/dev/null 2>&1; then
     exit 1
 fi
 
+# Owner-managed enrollment is separate from CI-generated deployment credentials.
+# Persist resolved paths so a later plain Compose recreation uses the same files.
+python3 "$deployment_dir/deployment_config.py" prepare --environment-file "$environment_file"
+unset DASHBOARD_DIR FLEET_ENV_FILE FLEET_CREDENTIALS_DIR CARDLINK_ENV_FILE \
+    DEMO_ENV_FILE PLATEGA_ENV_FILE PUBLIC_WEBSITE_DIR \
+    FLEET_ENV_REQUIRED DEMO_ENV_REQUIRED CARDLINK_ENV_REQUIRED PLATEGA_ENV_REQUIRED
 compose=(docker compose --project-name "$project_name" \
     --env-file "$environment_file" --file "$deployment_dir/compose.yaml")
-
-# Owner-managed enrollment is separate from CI-generated deployment credentials.
-# It survives a routine development release without copying secrets into CI.
-export DASHBOARD_DIR="${DASHBOARD_DIR:-$(dirname "$environment_file")/dashboard}"
-export FLEET_ENV_FILE="${FLEET_ENV_FILE:-$(dirname "$environment_file")/fleet.env}"
-export FLEET_CREDENTIALS_DIR="${FLEET_CREDENTIALS_DIR:-$(dirname "$environment_file")/fleet}"
-export CARDLINK_ENV_FILE="${CARDLINK_ENV_FILE:-$(dirname "$environment_file")/cardlink.env}"
-if [[ -f "$CARDLINK_ENV_FILE" && "$(stat -c '%a' "$CARDLINK_ENV_FILE")" != "600" ]]; then
-    printf 'Cardlink environment file must have mode 600.\n' >&2
-    exit 1
-fi
-if [[ -f "$FLEET_ENV_FILE" ]]; then
-    if [[ "$(stat -c '%a' "$FLEET_ENV_FILE")" != "600" ]]; then
-        printf 'Fleet environment file must have mode 600.\n' >&2
-        exit 1
-    fi
+if [[ "$(read_environment_value FLEET_ENV_REQUIRED)" == "true" && "$fleet_worker_enabled" == "true" ]]; then
     compose+=(--profile fleet)
 fi
 
 "${compose[@]}" config --quiet
+if [[ "$fleet_worker_enabled" == "false" ]]; then
+    # A repeated test deployment must also stop a previously enabled worker.
+    "${compose[@]}" --profile fleet stop fleet-worker
+fi
 if [[ "$deploy_mode" == "rollback" ]]; then
     # A rollback must use an already retained artifact and must not rebuild or pull.
     docker image inspect "$backend_image" >/dev/null
@@ -96,13 +97,15 @@ fi
 
 if [[ "$deploy_mode" == "deploy" ]]; then
     printf 'Applying database migrations...\n'
-    "${compose[@]}" run --rm --no-deps --no-tty backend alembic upgrade head </dev/null
+    "${compose[@]}" run --rm --no-deps -T backend alembic upgrade head </dev/null
 else
     printf 'Application rollback: keeping the database schema unchanged.\n'
 fi
 
 printf 'Recreating application containers...\n'
 "${compose[@]}" up --detach --remove-orphans --pull never --wait --wait-timeout 120
+python3 "$deployment_dir/deployment_config.py" verify --environment-file "$environment_file" \
+    --compose-file "$deployment_dir/compose.yaml" --project "$project_name"
 
 curl --fail --silent --show-error --retry 12 --retry-delay 5 \
     --retry-connrefused --max-time 10 "https://${api_domain}/health" >/dev/null

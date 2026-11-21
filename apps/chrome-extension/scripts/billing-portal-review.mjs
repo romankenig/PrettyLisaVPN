@@ -262,37 +262,99 @@ try {
     }
     return reply({ error: { code: "NOT_FOUND" } }, 404);
   });
-  // Unavailable checkout stays on the offer: no dead-end page or payment POST.
+  // Follow the actual purchase link, including the selected currency, through OTP.
   providerMode = "DISABLED";
   offersAvailable = false;
   catalogAvailable = false;
   await page.goto(origin + "/");
   await page.getByText("$ USD", { exact: true }).click();
   await page.locator('.price-option[data-currency="USD"] .button').click();
+  await page.getByLabel("Электронная почта").waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
+  assert.match(await page.locator(".portal-price strong").textContent(), /5/);
+  await page.screenshot({
+    path: `${output}/11-purchase-login.png`,
+    fullPage: true,
+  });
   await page.getByLabel("Электронная почта").fill("subscriber@example.test");
   await page.getByRole("button", { name: "получить код" }).click();
   await page.getByLabel("Код из письма").fill("123456");
   await page.getByRole("button", { name: "войти", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
+  assert.match(await page.locator(".portal-price strong").textContent(), /5/);
+  await page.screenshot({
+    path: `${output}/12-purchase-free-usd.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
   await page.locator("[data-payment-unavailable]").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/account/");
+  assert.equal(new URL(page.url()).pathname, "/account/unavailable/");
+  assert.equal(new URL(page.url()).searchParams.has("preview"), false);
   assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
   assert.equal(
-    await page
-      .getByRole("button", { name: "оплатить", exact: true })
-      .isDisabled(),
+    await page.getByText(portalCopy.ru.paymentUnavailableText).isVisible(),
     true,
   );
   assert.equal(commands.length, 0);
+  assert.equal(state, "FREE", "unavailable payments cannot grant Premium");
+  await page.reload();
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(
+    await page.locator("[data-payment-unavailable]").textContent(),
+    portalCopy.ru.paymentUnavailableText,
+  );
+  await page.screenshot({
+    path: `${output}/13-payment-unavailable.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "назад", exact: true }).click();
+  await page.getByLabel("RUB", { exact: true }).check();
+  assert.equal(
+    await page
+      .getByLabel("RUB", { exact: true })
+      .evaluate((input) => input === globalThis.document.activeElement),
+    true,
+  );
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await page.getByLabel("USD", { exact: true }).isChecked(), true);
+  await page.keyboard.press("ArrowUp");
+  assert.equal(await page.getByLabel("RUB", { exact: true }).isChecked(), true);
+  await page.reload();
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "RUB");
+  assert.match(await page.locator(".portal-price strong").textContent(), /399/);
+  assert.match(await page.locator(".portal-price s").textContent(), /499/);
+  await page.screenshot({
+    path: `${output}/14-purchase-free-rub.png`,
+    fullPage: true,
+  });
+  await page.goto(origin + "/account/success/");
+  await page.getByRole("button", { name: "оплатить", exact: true }).waitFor();
+  assert.equal(
+    await page.locator("[data-payment-unavailable]").count(),
+    0,
+    "the success path alone cannot assert a payment result",
+  );
+  await page.goto(origin + "/account/success/?preview=1&currency=USD");
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(new URL(page.url()).pathname, "/account/unavailable/");
+  assert.equal(new URL(page.url()).searchParams.has("preview"), false);
+  assert.equal(new URL(page.url()).searchParams.get("currency"), "USD");
+  assert.equal(
+    await page.locator(".portal-success-icon, .portal-preview-label").count(),
+    0,
+  );
+  state = "PLATINUM";
   for (const language of ["", "en", "de", "fr", "es", "zh"]) {
     for (const width of [320, 390, 1280]) {
-      await page.setViewportSize({ width, height: 1000 });
-      const prefix = language ? `/${language}` : "";
-      await page.goto(origin + prefix + "/account/unavailable/?currency=RUB");
-      await page.locator("[data-payment-unavailable]").waitFor();
-      assert.equal(new URL(page.url()).pathname, prefix + "/account/");
-      assert.equal(
-        await page.locator("[data-purchase-offer] > .button").isDisabled(),
-        true,
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(
+        origin + (language ? `/${language}` : "") + "/account/?currency=RUB",
+      );
+      await page.locator("[data-purchase-offer] > .button").waitFor();
+      assert.match(
+        await page.locator(".portal-price strong").textContent(),
+        /399/,
       );
       assert.equal(
         await page.evaluate(
@@ -302,17 +364,67 @@ try {
         ),
         true,
       );
+      if (!language && width === 390)
+        assert.ok(
+          (await page.locator("[data-purchase-offer] > .button").boundingBox())
+            .y < 844,
+          "payment action should be visible on the initial mobile screen",
+        );
+      if (!language && width === 390)
+        await page.screenshot({
+          path: `${output}/15-purchase-platinum-mobile.png`,
+          fullPage: true,
+        });
+      await page.locator("[data-purchase-offer] > .button").click();
+      await page.locator("[data-payment-unavailable]").waitFor();
+      const prefix = language ? `/${language}` : "";
+      const copy = portalCopy[language === "zh" ? "zh-CN" : language || "ru"];
+      assert.equal(
+        new URL(page.url()).pathname,
+        prefix + "/account/unavailable/",
+      );
+      assert.equal(
+        await page
+          .getByRole("heading", {
+            name: copy.paymentUnavailableTitle,
+            exact: true,
+          })
+          .isVisible(),
+        true,
+      );
+      assert.equal(
+        await page.getByText(copy.paymentUnavailableText).isVisible(),
+        true,
+      );
+      assert.equal(
+        await page
+          .locator(".portal-success-icon, .portal-preview-label")
+          .count(),
+        0,
+      );
+      assert.equal(
+        await page.getByRole("link", { name: copy.home }).getAttribute("href"),
+        prefix + "/",
+      );
+      assert.equal(
+        await page.evaluate(
+          () =>
+            globalThis.document.documentElement.scrollWidth <=
+            globalThis.innerWidth,
+        ),
+        true,
+      );
+      if (!language && width === 390)
+        await page.screenshot({
+          path: `${output}/16-payment-unavailable-mobile.png`,
+          fullPage: true,
+        });
     }
   }
-  await page.goto(origin + "/account/success/?preview=1&currency=USD");
-  await page.locator("[data-payment-unavailable]").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/account/");
-  assert.equal(new URL(page.url()).searchParams.has("preview"), false);
-  assert.equal(
-    await page.locator(".portal-success-icon, .portal-preview-label").count(),
-    0,
-  );
+  assert.equal(commands.length, 0, "disabled checkout never creates a payment");
   const privatePage = await browser.newPage();
+  privatePage.on("pageerror", (error) => errors.push(error.message));
+  let privateMutations = 0;
   await privatePage.addInitScript(() => {
     Object.defineProperty(globalThis, "localStorage", {
       get() {
@@ -320,102 +432,91 @@ try {
       },
     });
   });
-  let privateMutations = 0;
   await privatePage.route("**/api/web/billing/**", (route) => {
     if (route.request().method() === "POST") privateMutations++;
     return route.fulfill({ json: overview() });
   });
   await privatePage.goto(origin + "/account/");
+  await privatePage
+    .getByRole("button", { name: "оплатить", exact: true })
+    .click();
   await privatePage.locator("[data-payment-unavailable]").waitFor();
-  assert.equal(privateMutations, 0);
+  assert.equal(
+    privateMutations,
+    0,
+    "blocked optional storage must not hide the purchase or create payments",
+  );
   await privatePage.close();
+  // Sandbox and unsupported USD show payment unavailability without charging.
   offersAvailable = true;
-  for (const [mode, currency] of [
-    ["SANDBOX", "RUB"],
-    ["LIVE", "USD"],
-  ]) {
-    providerMode = mode;
-    await page.goto(origin + "/account/?currency=" + currency);
-    await page.locator("[data-payment-unavailable]").waitFor();
-    assert.equal(
-      await page.locator("[data-purchase-offer] > .button").isDisabled(),
-      true,
-    );
-    assert.equal(commands.length, 0);
-  }
-  // Single Pay action opens the provider in the SAME tab; consent is on the offer.
-  providerMode = "LIVE";
-  let providerVisits = 0;
-  const checkoutURL = "https://pay.platega.io/subscription/" + operationID;
-  await page.route("https://pay.platega.io/**", (route) => {
-    providerVisits++;
-    return route.fulfill({
-      contentType: "text/html",
-      body: "<h1>Provider checkout fixture</h1>",
-    });
-  });
-  for (const language of ["", "en", "de", "fr", "es", "zh"]) {
-    for (const width of [320, 390, 1280]) {
-      await page.setViewportSize({ width, height: 1000 });
-      await page.goto(origin + (language ? `/${language}` : "") + "/account/");
-      await page.getByRole("checkbox").waitFor();
-      assert.equal(
-        await page.locator("[data-purchase-offer] > .button").isDisabled(),
-        true,
-      );
-      await page.getByRole("checkbox").check();
-      assert.equal(
-        await page.locator("[data-purchase-offer] > .button").isEnabled(),
-        true,
-      );
-      assert.equal(
-        await page.evaluate(
-          () =>
-            globalThis.document.documentElement.scrollWidth <=
-            globalThis.innerWidth,
-        ),
-        true,
-      );
-      if (!language && [390, 1280].includes(width))
-        await page.screenshot({
-          path: `${output}/direct-checkout-${width}.png`,
-          fullPage: true,
-        });
-    }
-  }
+  providerMode = "SANDBOX";
+  state = "FREE";
   await page.goto(origin + "/account/");
-  await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.waitForURL(checkoutURL);
-  assert.equal(commands.length, 1);
-  assert.equal(providerVisits, 1);
+  await page.locator("[data-payment-unavailable]").waitFor();
+  providerMode = "LIVE";
+  await page.goto(origin + "/account/?currency=USD");
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
+  await page.locator("[data-payment-unavailable]").waitFor();
   assert.equal(
-    page.context().pages().length,
+    commands.length,
+    0,
+    "unsupported currency cannot silently charge RUB",
+  );
+  authenticated = false;
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto(origin + "/account/unavailable/");
+  await page.getByLabel("Электронная почта").waitFor();
+  assert.equal(await page.locator("[data-payment-unavailable]").count(), 0);
+  await page.goto(origin + "/account/");
+  await page.getByLabel("Электронная почта").fill("subscriber@example.test");
+  await page.getByRole("button", { name: "получить код" }).click();
+  await page.getByLabel("Код из письма").waitFor();
+  await page.screenshot({ path: `${output}/01-otp.png`, fullPage: true });
+  await page.getByLabel("Код из письма").fill("123456");
+  await page.getByRole("button", { name: "войти", exact: true }).click();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
+  await page.screenshot({ path: `${output}/02-free.png`, fullPage: true });
+  await page.getByRole("button", { name: "оплатить" }).click();
+  const pay = page.getByRole("button", { name: "оплатить" });
+  assert.equal(await pay.isDisabled(), true);
+  await page.getByRole("checkbox").check();
+  await page.screenshot({ path: `${output}/03-consent.png`, fullPage: true });
+  loseResponse = true;
+  await pay.click();
+  await page.getByRole("alert").waitFor();
+  await page.reload();
+  await page.getByRole("heading", { name: "ждём подтверждения" }).waitFor();
+  assert.equal(
+    commands.length,
     1,
-    "checkout must not require a popup",
+    "lost response must not create a new charge",
   );
-  await page.goBack();
-  await page.getByRole("button", { name: "проверить оплату" }).waitFor();
-  assert.equal(providerVisits, 1, "Back must not cause a redirect loop");
+  await page.screenshot({ path: `${output}/04-pending.png`, fullPage: true });
+  await page.goto(origin + "/account/unavailable/");
+  await page.getByRole("heading", { name: "ждём подтверждения" }).waitFor();
   assert.equal(
-    await page
-      .getByRole("link", { name: "открыть оплату platega" })
-      .getAttribute("target"),
-    null,
+    await page.locator("[data-payment-unavailable]").count(),
+    0,
+    "pending provider operation takes precedence over the unavailable route",
   );
+  assert.equal(commands.length, 1);
   status = "SUCCEEDED";
   await page.getByRole("button", { name: "проверить оплату" }).click();
   await page.getByRole("heading", { name: "всё получилось" }).waitFor();
+  await page.screenshot({ path: `${output}/05-success.png`, fullPage: true });
   await page.getByRole("button", { name: "управлять подпиской" }).click();
   await page.getByText(portalCopy.ru.sbpAccount, { exact: true }).waitFor();
   assert.equal(
     await page.locator("[data-purchase-offer]").count(),
     0,
-    "active contract keeps its fixed price",
+    "active contract must not adopt new catalog price",
   );
+  await page.screenshot({ path: `${output}/06-premium.png`, fullPage: true });
   await page
     .getByRole("button", { name: "отвязать счёт и отключить продление" })
     .click();
+  await page.screenshot({ path: `${output}/07-cancel.png`, fullPage: true });
   await page
     .getByRole("button", {
       name: "отвязать и отключить продление",
@@ -426,56 +527,50 @@ try {
   await page.getByRole("button", { name: "управлять подпиской" }).click();
   await page.getByText("автопродление отключено.", { exact: false }).waitFor();
   assert.match(await page.locator(".portal-price strong").textContent(), /299/);
-  // Lost POST response recovers the accepted operation and redirects without a new POST.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: `${output}/08-canceled-mobile.png`,
+    fullPage: true,
+  });
   state = "FREE";
-  status = "PENDING";
-  operation = null;
-  await page.goto(origin + "/account/");
-  await page.getByRole("checkbox").check();
-  loseResponse = true;
-  await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.getByRole("alert").waitFor();
-  const afterLostResponse = commands.length;
-  await page.reload();
-  await page.waitForURL(checkoutURL);
-  assert.equal(commands.length, afterLostResponse);
-  await page.goto(origin + "/account/unavailable/");
-  await page.getByRole("button", { name: "проверить оплату" }).waitFor();
-  assert.equal(await page.locator("[data-payment-unavailable]").count(), 0);
   status = "FAILED";
-  await page.getByRole("button", { name: "проверить оплату" }).click();
-  await page.getByRole("heading", { name: "оплата не завершена" }).waitFor();
-  await page.getByRole("button", { name: "попробовать снова" }).click();
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "оплатить", exact: true }).click();
-  await page.getByRole("heading", { name: "оплата не завершена" }).waitFor();
-  await page.getByRole("button", { name: "попробовать снова" }).click();
-  // An unknown operation without a URL must never fabricate one or make a new charge.
-  status = "PENDING";
-  operation = { id: operationID, status, redirect_url: null };
-  const beforeUnknown = commands.length;
-  await page.reload();
-  await page.getByRole("button", { name: "проверить оплату" }).waitFor();
-  assert.equal(
-    await page.getByRole("link", { name: "открыть оплату platega" }).count(),
-    0,
-  );
-  await page.getByRole("button", { name: "проверить оплату" }).click();
-  assert.equal(commands.length, beforeUnknown);
   operation = null;
+  await page.reload();
+  await page.getByRole("button", { name: "оплатить" }).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "оплатить" }).click();
+  await page.getByRole("heading", { name: "оплата не завершена" }).waitFor();
+  await page.screenshot({
+    path: `${output}/09-failure-mobile.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "попробовать снова" }).click();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
+  const commandCount = commands.length;
   overviewAvailable = false;
   await page.reload();
   await page.locator("[data-reference-prices]").waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", { name: "оплатить", exact: true })
-      .isDisabled(),
-    true,
+  assert.match(
+    await page.locator("[data-reference-prices]").textContent(),
+    /399/,
   );
-  assert.equal(commands.length, beforeUnknown);
+  assert.equal(await page.getByRole("button", { name: "оплатить" }).count(), 1);
+  assert.equal(commands.length, commandCount);
+  await page.getByRole("button", { name: "оплатить", exact: true }).click();
+  await page.locator("[data-payment-unavailable]").waitFor();
+  assert.equal(
+    commands.length,
+    commandCount,
+    "an outage cannot authorize a payment from stale data",
+  );
+  await page.screenshot({
+    path: `${output}/10-overview-offline.png`,
+    fullPage: true,
+  });
   overviewAvailable = true;
+  await page.getByRole("button", { name: "назад", exact: true }).click();
   await page.getByRole("button", { name: "обновить", exact: true }).click();
-  await page.getByRole("checkbox").waitFor();
+  await page.getByRole("button", { name: "оплатить" }).waitFor();
   // Public Chrome downloads share the publisher's verified metadata, across locales.
   await page.route("**/downloads/index.json", (route) =>
     route.fulfill({

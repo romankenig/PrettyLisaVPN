@@ -6,6 +6,64 @@
 
 ## Unreleased
 
+### Android split-routing DNS — Android 0.30.7 / managed engine 0.8.2
+
+- Use direct encrypted DNS for Android sites routed outside the tunnel, with VPN DNS
+  as a fallback for those sites only. Selected VPN domains and verification origins
+  continue using VPN DNS.
+- [Routing and validation](docs/split-routing.md#dns-для-прямого-маршрута-на-android).
+
+### Restore recurring website payments — website 0.7.3 / backend 0.54.5
+
+- Test environment: restore direct same-tab monthly SBP checkout after the rollback,
+  with inline unchecked recurring consent and no one-off payment fallback.
+- Send hosted-form return URLs with the operation UUID. Recover the authoritative
+  result after refresh/login: success for confirmed payment, failure for failed or
+  cancelled operations, continued verification for unknown outcomes.
+- Wait for unresolved receipts before treating a subscription failure as terminal.
+  Keep the merchant callback, durable creation fences and manual Platinum intact.
+- Isolate website browser acceptance from client packaging/publication. Client
+  sources/versions and production are unchanged. [Handoff](docs/website-recurring-restore.md).
+
+### Split routing in test builds — Android 0.30.6 / Windows 0.31.6 / managed engine 0.8.1
+
+- Send the test API's tunnel verification through the VPN in both split modes,
+  including when the API hostname is explicitly selected for exclusion.
+- See [split-routing behavior and verification](docs/split-routing.md#проверка-подключения-в-тестовых-сборках).
+
+### Test access to the real fleet — backend 0.54.4
+
+- Restore latest backend 0.54.3 as the owner-selected base and fix test VPN access
+  through restricted customer grants on the existing real nodes. Client versions
+  retain the Android 0.30.2 rollback baseline; schema and API contracts are unchanged.
+- Separate test address/port ranges and node ownership journals, consume actual owner
+  monitoring with bounded freshness, and reject fleet administration from the test
+  controller. Preserve account databases, production sessions and separate credentials.
+- Deployment and actual acceptance: [shared fleet handoff](docs/shared-real-fleet.md).
+
+### Test rollback — Android 0.30.2 project baseline
+
+- Restored the owner-selected `b90d9685` product baseline: Android 0.30.2/code 61,
+  Windows 0.31.2, backend 0.53.0, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1 and
+  website 0.7.1. Later product changes are reverted with their corresponding tests.
+- Retained current environment isolation, CI/publishers and deployment safeguards;
+  only the test environment is authorized for deployment. Database schema 0053,
+  business records and production remain unchanged. These rebuilt test artifacts
+  retain their actual new provenance; original artifacts and release tags are preserved.
+- Scope, compatibility and acceptance evidence: [rollback handoff](docs/rollback-android-0302.md).
+
+### Restore production dashboard client downloads — version unchanged
+
+- Restore the private dashboard's authenticated local installer catalog and remove
+  its automatic test-server proxy. Keep development artifacts on the test server.
+
+### Android offline disconnect — 0.30.5
+
+- Open the app while VPN startup recovery runs. An unavailable VPN API no longer
+  shows a connection error before the user connects.
+- Show the VPN as disconnected after local shutdown and bound server cleanup.
+  An unconfirmed server session must be cleared before a new tunnel starts.
+
 ### United Kingdom PREMIUM node — infrastructure, version unchanged
 
 - Enroll `ishost-uk-001` (`38.180.140.18`, GB) in the owner-designated production
@@ -13,6 +71,36 @@
   browser-only HTTPS proxy. Keep FREE/DEMO excluded and start with a conservative
   ten-lease admission limit for this 1 GiB VPS.
 - See [enrollment evidence](docs/ishost-uk-001-enrollment.md).
+
+### Website-only production publication — version unchanged
+
+- Allow one exact release SHA to exclude production installer publication while
+  keeping every client quality/build check and the normal testing channel. This
+  supports the owner's recurring-payment website release without updating apps.
+- See the [publication selector](docs/test-environment.md#publication-and-rollback-checklist).
+
+### Preserve VPN deployment configuration — version unchanged
+
+- Persist server-owned configuration paths in release/canonical env files so a
+  later backend recreation retains fleet and VPN settings without shell exports.
+- Require previously present configuration files and verify running backend/worker
+  settings after deployment; health/readiness alone cannot detect disabled VPN.
+- Restore the existing backend image and confirm Windows/Android disconnect and
+  reconnect, including server cleanup and verified new leases. Infrastructure only;
+  no application, client or schema changes. See [recovery handoff](docs/vpn-deployment-config-recovery.md).
+
+### Windows server outage disconnection — 0.31.4
+
+- Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote
+  session removal. Explain server connectivity failures instead of leaving the
+  Disconnect button or a generic cleanup failure after local shutdown.
+- Stop on the first failed health check of an established connection; retain
+  unconfirmed remote grants and require cleanup before reconnect/fallback.
+  Failed local shutdown still requires retry and never claims disconnection.
+- Keep Autopilot/country browsing available without a wait cursor during loading,
+  active connections and outages. Show unavailable countries and a saved catalog
+  with explicitly unknown availability; preserve selection and plan restrictions.
+- See [behavior, compatibility and validation handoff](docs/windows-offline-disconnect.md).
 
 ### Direct recurring checkout — website 0.7.2 / backend 0.54.2
 
@@ -37,6 +125,22 @@
   timeout diagnostics without request bodies, credentials or payment URLs.
 - See [activation evidence and continuation](docs/platega-live-acceptance.md).
 
+### Isolated development and publication — backend 0.54.3 / client PATCH updates
+
+- Prepare a separate test copy on `5.129.211.150` with its own PostgreSQL/Valkey,
+  test website/API domains and independent credentials. Keep production node
+  management, live payments and support retries inactive in the clone.
+- Route `develop` deployments and its client API/portal/probe targets to testing;
+  reserve `main` for owner-requested production publication after choosing versions.
+  Preserve public installers while private dashboard downloads follow test builds.
+- Backend 0.54.2 → 0.54.3; Windows 0.31.4 → 0.31.5; Android 0.30.3 → 0.30.4/code 63;
+  Chrome 0.5.2 → 0.5.3; iOS 0.6.2 → 0.6.3; macOS 0.5.2 → 0.5.3. Schema remains
+  0053; website 0.7.2 from #115 is retained. No automatic client updater or shared test VPN node.
+- Validate artifact API origins against the destination; retain exact SHA/run/attempt,
+  corresponding sources and unsigned Apple labels. Atomically publish static website
+  files only after a compatible backend is ready. See
+  [environment inventory and promotion rules](docs/test-environment.md).
+
 ### Premium location visibility — backend 0.54.0 / client PATCH updates
 
 - Keep Premium-only countries visible to FREE and DEMO with blurred labels and
@@ -47,6 +151,15 @@
   0.5.2. See [contract and validation handoff](docs/premium-location-visibility.md).
 - Gate client publication on the matching healthy backend so the API is deployed
   first; this CI release-order follow-up leaves product versions unchanged.
+
+### Japan PREMIUM node — infrastructure, version unchanged
+
+- Add `ishost-jp-001` (`38.180.7.144`, JP) for Premium/Platinum with the
+  owner-requested twenty-lease admission limit. Upgrade its existing Ubuntu 22.04
+  installation to Ubuntu 24.04 with owner authorization and repair the image's stale GRUB disk
+  reference before reboot. See [enrollment evidence](docs/ishost-jp-001-enrollment.md).
+- Verify WireGuard, managed transports, direct browser-proxy egress, tariff
+  restrictions and test-access cleanup; enable scheduled checks and IP-certificate renewal.
 
 ### Germany PREMIUM node — infrastructure, version unchanged
 

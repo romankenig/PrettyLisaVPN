@@ -1,3 +1,4 @@
+import { target } from "./deployment";
 export interface Money {
   amount_minor: number;
   currency: "RUB" | "USD";
@@ -7,8 +8,9 @@ export function portalURL(value: unknown): string {
   const raw = object(value).url;
   if (
     typeof raw !== "string" ||
-    !/^https:\/\/prettylisavpn\.com\/account\/#handoff=[A-Za-z0-9_-]{43}$/.test(
-      raw,
+    !raw.startsWith(`${target.website}/account/#handoff=`) ||
+    !/^[A-Za-z0-9_-]{43}$/.test(
+      raw.slice(`${target.website}/account/#handoff=`.length),
     )
   )
     throw new Error("PAYMENT_URL_NOT_ALLOWED");

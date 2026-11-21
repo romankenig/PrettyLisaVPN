@@ -1,5 +1,5 @@
 import { chromium } from "@playwright/test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
@@ -7,6 +7,13 @@ import assert from "node:assert/strict";
 // Production artifact in an isolated browser profile; only the API is a fixture.
 // These screenshots and navigation tests do not claim live proxy acceptance.
 const extension = path.resolve("dist");
+const { backend } = JSON.parse(
+  await readFile(path.join(extension, "build-identity.json"), "utf8"),
+);
+const website =
+  backend === "https://api.test.prettylisavpn.com"
+    ? "https://test.prettylisavpn.com"
+    : "https://prettylisavpn.com";
 const profile = await mkdtemp(path.join(tmpdir(), "pl-chrome-review-"));
 const output = path.resolve("review");
 await mkdir(output, { recursive: true });
@@ -38,13 +45,13 @@ async function mockAPI() {
   context.on("page", (page) =>
     page.on("pageerror", (e) => errors.push(e.message)),
   );
-  await context.route("https://prettylisavpn.com/account/**", (route) =>
+  await context.route(`${website}/account/**`, (route) =>
     route.fulfill({
       contentType: "text/html",
       body: "<title>Fixture billing portal</title>",
     }),
   );
-  await context.route("https://api.prettylisavpn.com/**", async (route) => {
+  await context.route(`${backend}/**`, async (route) => {
     const p = new URL(route.request().url()).pathname;
     if (limited && /^\/(vpn|billing|support|messages)\b/.test(p)) {
       restrictedRequests.push(p);
@@ -93,12 +100,6 @@ async function mockAPI() {
         autopilot: { available: true },
         countries: [
           { country_code: "NL", available: true, quality: 98 },
-          {
-            country_code: "AT",
-            available: false,
-            quality: 0,
-            premium_required: true,
-          },
           { country_code: "DE", available: false, quality: 0 },
           // US is an advertised fixture capability, not a claim about live fleet readiness.
           { country_code: "US", available: true, quality: 90 },
@@ -180,7 +181,7 @@ async function mockAPI() {
       };
     else if (p === "/billing/portal")
       value = {
-        url: "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
+        url: `${website}/account/#handoff=` + "a".repeat(43),
       };
     else if (p === "/support/requests") value = { status: "ACCEPTED" };
     else if (p === "/vpn/sessions/current") value = null;
@@ -258,20 +259,7 @@ try {
     .getByRole("button", { name: "попробовать без регистрации" })
     .click();
   await page.getByText("гость", { exact: true }).waitFor();
-  assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), false);
-  await page.getByRole("combobox").click();
-  assert.equal(
-    await page.getByRole("option", { name: /Австрия.*Premium/i }).isDisabled(),
-    true,
-  );
-  assert.equal(
-    await page.getByRole("option", { name: /Нидерланды/ }).isDisabled(),
-    true,
-  );
-  await page.screenshot({
-    path: path.join(output, "demo-premium-countries.png"),
-  });
-  await page.getByRole("combobox").press("Escape");
+  assert.equal(await page.getByLabel("куда подключаемся").isDisabled(), true);
   assert.match(await page.getByRole("combobox").textContent(), /автопилот/);
   await page.getByText("DEMO ⏳", { exact: true }).waitFor();
   assert.equal(
@@ -426,16 +414,6 @@ try {
   await picker.click();
   await page.getByRole("option", { name: "Нидерланды", exact: true }).waitFor();
   assert.equal(
-    await page.getByRole("option", { name: /Австрия.*Premium/i }).isDisabled(),
-    true,
-  );
-  assert.equal(
-    await page
-      .locator(".premium-locked .country-label")
-      .evaluate((node) => globalThis.getComputedStyle(node).filter),
-    "blur(2px)",
-  );
-  assert.equal(
     await page.getByRole("option", { name: /Германия/ }).isDisabled(),
     true,
   );
@@ -461,7 +439,7 @@ try {
   await picker.press("Escape");
   assert.equal(await page.getByRole("listbox").count(), 0);
   await picker.click();
-  await page.getByRole("img", { name: "PrettyLisaVPN", exact: true }).click();
+  await page.getByText("preview@example.com", { exact: true }).click();
   assert.equal(await page.getByRole("listbox").count(), 0);
 
   // Presentation-only snapshots exercise the connected row and every plan.
@@ -613,18 +591,18 @@ try {
   const billingWorker =
     context.serviceWorkers()[0] ??
     (await context.waitForEvent("serviceworker"));
-  await billingWorker.evaluate(() => {
+  await billingWorker.evaluate((website) => {
     const createTab = chrome.tabs.create.bind(chrome.tabs);
     globalThis.billingReviewDestination = null;
     chrome.tabs.create = (details, ...args) => {
-      if (details.url?.startsWith("https://prettylisavpn.com/account/")) {
+      if (details.url?.startsWith(`${website}/account/`)) {
         globalThis.billingReviewDestination = details.url;
         chrome.tabs.create = createTab;
         return createTab({ ...details, url: "about:blank" }, ...args);
       }
       return createTab(details, ...args);
     };
-  });
+  }, website);
   const billingOpened = context.waitForEvent("page");
   await page
     .getByRole("button", { name: "управлять подпиской и оплатой", exact: true })
@@ -633,10 +611,7 @@ try {
   const destination = await billingWorker.evaluate(
     () => globalThis.billingReviewDestination,
   );
-  assert.equal(
-    destination,
-    "https://prettylisavpn.com/account/#handoff=" + "a".repeat(43),
-  );
+  assert.equal(destination, `${website}/account/#handoff=` + "a".repeat(43));
   await portal.goto(destination);
   assert.equal(portal.url(), destination);
   assert.equal(await portal.title(), "Fixture billing portal");

@@ -42,6 +42,7 @@ import PrettyLisaCore
     let session: Session
     let vpn: VPNCoordinator
     let vault: KeychainStore
+    let websiteOrigin: String
     let platform: String
     let version: String
     let simulation: Bool
@@ -52,6 +53,7 @@ import PrettyLisaCore
     init() throws {
         guard let address = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String,
               let url = URL(string: address) else { throw ClientError("INVALID_API_URL") }
+        websiteOrigin = url.host == "api.test.prettylisavpn.com" ? "https://test.prettylisavpn.com" : "https://prettylisavpn.com"
         let api = try API(base: url)
         #if targetEnvironment(simulator)
         vault = KeychainStore(group: nil)
@@ -163,8 +165,7 @@ import PrettyLisaCore
         guard ["FREE", "PREMIUM", "PLATINUM"].contains(current.plan), (0...5).contains(current.active_device_count) else { throw ClientError("INVALID_RESPONSE") }
         profile = current
         if deviceLimited { countries = nil; messages = []; billing = nil; return }
-        countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries", query: [URLQueryItem(name: "include_locked", value: "true")]))
-        if country != "AUTO", countries?.countries.contains(where: { $0.country_code == country && $0.selectable }) != true { country = "AUTO" }
+        countries = try WireJSON.decode(Countries.self, from: await session.request("vpn/countries"))
     }
     func loadMessages() async {
         messageNow = Date()
@@ -227,7 +228,7 @@ import PrettyLisaCore
         guard !fixtures else { error = "FIXTURE_NO_PAYMENT"; return }
         perform {
             let portal = try WireJSON.decode(BillingPortal.self, from: await self.session.request("billing/portal", method: "POST", body: Data("{}".utf8)))
-            open(try portal.validatedURL())
+            open(try portal.validatedURL(websiteOrigin: self.websiteOrigin))
         }
     }
     func saveMethods(_ selected: [String]) {
@@ -238,7 +239,6 @@ import PrettyLisaCore
     }
     func connect() {
         guard !deviceLimited else { return }
-        guard country == "AUTO" || countries?.countries.contains(where: { $0.country_code == country && $0.selectable }) == true else { return }
         if simulation {
             controller.connect(country: country, methods: methods)
             return

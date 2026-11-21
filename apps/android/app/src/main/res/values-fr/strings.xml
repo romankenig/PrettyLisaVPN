@@ -349,7 +349,6 @@
     <string name="manage_devices">gérer les appareils</string>
     <string name="forget_local">supprimer les données de connexion de cet appareil</string>
     <string name="device_pending">en attente d’une place libre</string>
-    <string name="premium_location_hint">disponible uniquement avec Premium</string>
     <string name="faq_connect_q">comment commencer ?</string>
     <string name="faq_connect_a">téléchargez l’application, connectez-vous avec le code reçu par e-mail et choisissez un pays.\n\nle forfait gratuit offre une heure de VPN par jour, partagée sur le compte.</string>
     <string name="faq_free_q">que comprend free ?</string>

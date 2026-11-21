@@ -3,6 +3,13 @@ import XCTest
 @testable import PrettyLisaCore
 
 final class BillingTests: XCTestCase {
+    func testPortalCannotCrossDeploymentEnvironments() throws {
+        let origin = "https://test.prettylisavpn.com"
+        let url = origin + "/account/#handoff=" + String(repeating: "a", count: 43)
+        XCTAssertEqual(try BillingPortal(url: url).validatedURL(websiteOrigin: origin).absoluteString, url)
+        XCTAssertThrowsError(try BillingPortal(url: url).validatedURL())
+        XCTAssertThrowsError(try BillingPortal(url: url.replacingOccurrences(of: "test.", with: "")).validatedURL(websiteOrigin: origin))
+    }
     func testPortalRequiresFixedOriginPathAndFragment() throws {
         let url = "https://prettylisavpn.com/account/#handoff=" + String(repeating: "a", count: 43)
         let portal = BillingPortal(url: url)

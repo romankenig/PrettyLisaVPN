@@ -1,5 +1,7 @@
 package com.prettylisavpn.android.data
 
+import com.prettylisavpn.android.BuildConfig
+
 import androidx.lifecycle.ViewModel
 import com.prettylisavpn.android.auth.AuthFailure
 import kotlinx.coroutines.CancellationException
@@ -97,8 +99,8 @@ class ScreenModel(private val source: ScreenSource) : ViewModel() {
         scope.launch {
             try {
                 val demo = mutable.value.data.plan.equals("DEMO", ignoreCase = true)
-                val url = if (demo) "https://prettylisavpn.com/account/" else source.billingPortal()
-                require(if (demo) url == "https://prettylisavpn.com/account/" else validBillingPortal(url))
+                val url = if (demo) "${BuildConfig.WEBSITE_BASE_URL}/account/" else source.billingPortal()
+                require(if (demo) url == "${BuildConfig.WEBSITE_BASE_URL}/account/" else validBillingPortal(url))
                 if (owner == epoch) open(url)
             } catch (failure: Exception) {
                 if (failure is CancellationException) throw failure

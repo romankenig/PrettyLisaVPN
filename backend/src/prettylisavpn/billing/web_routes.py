@@ -16,7 +16,7 @@ from prettylisavpn.billing.operations import BillingOperationsService
 from prettylisavpn.billing.operations_domain import BillingCommand, BillingOperation
 from prettylisavpn.billing.router import BillingRoute
 from prettylisavpn.billing.service import BillingOverviewService
-from prettylisavpn.billing.web_sessions import COOKIE, SESSION_TTL, WEB_ORIGIN, BillingWebSessions
+from prettylisavpn.billing.web_sessions import COOKIE, SESSION_TTL, BillingWebSessions
 from prettylisavpn.main_errors import error_response
 from prettylisavpn.users.email_identity import EmailAliasConflictError
 
@@ -29,7 +29,7 @@ class WebRoute(BillingRoute):
             response: Response
             # Reject cross-origin requests before reading any authenticated cookie/body.
             if request.method != "GET" and (
-                request.headers.get("origin") != WEB_ORIGIN
+                request.headers.get("origin") != request.app.state.public_website_origin
                 or request.headers.get("X-PrettyLisa-Web") != "1"
                 or request.headers.get("content-type", "").split(";")[0] != "application/json"
             ):

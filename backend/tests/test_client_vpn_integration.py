@@ -81,6 +81,55 @@ async def connect(service, **kwargs):
     return await service.connect("token", ConnectRequest(public_key=KEY, **kwargs), uuid4())
 
 
+async def test_shared_node_grant_uses_disjoint_address_and_stale_snapshot_revokes(vpn_state):
+    from prettylisavpn.fleet.shared_policy import owns_lease
+
+    postgres, service, worker, provider, _ = vpn_state
+    service.settings.fleet_shared_nodes = True
+    worker.shared = True
+    async with postgres.session() as session, session.begin():
+        for method in await session.scalars(select(FleetMethodRecord)):
+            method.configuration = {
+                **method.configuration,
+                "shared_snapshot_at": datetime.now(UTC).isoformat(),
+            }
+    result = await connect(service, country="DE")
+    assert owns_lease(UUID(result["id"]))
+    assert await worker.tick()
+    ready = await service.get("token", UUID(result["id"]))
+    assert ready["status"] == "READY"
+    assert ready["configuration"]["address"].endswith(".128/32")
+    provider.grant_access.assert_awaited_once()
+    async with postgres.session() as session, session.begin():
+        for method in await session.scalars(select(FleetMethodRecord)):
+            method.configuration = {
+                **method.configuration,
+                "shared_snapshot_at": (datetime.now(UTC) - timedelta(seconds=121)).isoformat(),
+            }
+        await session.execute(update(ClientLeaseRecord).values(next_attempt_at=datetime.now(UTC)))
+    assert await worker.tick()
+    provider.revoke_access.assert_awaited_once()
+    assert (await service.get("token", UUID(result["id"])))["status"] == "CLOSED"
+
+
+async def test_shared_worker_refuses_imported_owner_lease(vpn_state):
+    _, service, worker, provider, _ = vpn_state
+    await connect(service)
+    worker.shared = True
+    with pytest.raises(FleetError, match="FLEET_IMPORTED_LEASES_NOT_DETACHED"):
+        await worker.tick()
+    provider.grant_access.assert_not_awaited()
+    provider.revoke_access.assert_not_awaited()
+
+
+async def test_shared_connect_requires_current_owner_snapshot(vpn_state):
+    _, service, _, provider, _ = vpn_state
+    service.settings.fleet_shared_nodes = True
+    with pytest.raises(FleetError, match="VPN_NO_AVAILABLE_NODE"):
+        await connect(service)
+    provider.grant_access.assert_not_awaited()
+
+
 @pytest.mark.parametrize("platform", ["ANDROID", "WINDOWS", "IOS", "MACOS"])
 async def test_grant_probe_scope_idempotency_and_confirmed_quota_release(vpn_state, platform):
     postgres, service, worker, provider, identity = vpn_state

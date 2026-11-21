@@ -15,6 +15,7 @@ from prettylisavpn.client_vpn.methods import MANAGED_METHODS, base_method
 from prettylisavpn.client_vpn.model import ClientLeaseRecord
 from prettylisavpn.client_vpn.quota import ClientQuotaRepository
 from prettylisavpn.client_vpn.service import principals_valid
+from prettylisavpn.config import Settings
 from prettylisavpn.connections import Postgres
 from prettylisavpn.fleet.domain import (
     Access,
@@ -28,6 +29,7 @@ from prettylisavpn.fleet.method_check_model import MethodCheckRecord
 from prettylisavpn.fleet.model import FleetMethodRecord, FleetNodeRecord, FleetOperationRecord
 from prettylisavpn.fleet.service import node_value
 from prettylisavpn.fleet.service_check_model import ServiceCheckRecord
+from prettylisavpn.fleet.shared_policy import OWNER_CAPACITY_LIMIT, owns_lease, snapshot_fresh
 from prettylisavpn.subscriptions.domain import SubscriptionPlan
 from prettylisavpn.subscriptions.repository import SubscriptionRepository
 from prettylisavpn.users.model import UserRecord
@@ -56,10 +58,12 @@ class ClientVpnWorker:
         enabled: bool = True,
         managed_method: VpnMethod | None = None,
         managed_enabled: bool = False,
+        settings: Settings | None = None,
     ) -> None:
         self.postgres, self.method = postgres, method
         self.enabled = enabled
         self.managed_method, self.managed_enabled = managed_method, managed_enabled
+        self.shared = bool(settings and settings.fleet_shared_nodes)
 
     async def claim(self, now: datetime) -> Claim | None:
         async with self.postgres.session() as session, session.begin():
@@ -81,6 +85,8 @@ class ClientVpnWorker:
                 )
             ).all()
             for row in rows:
+                if self.shared and not owns_lease(row.id):
+                    raise FleetError("FLEET_IMPORTED_LEASES_NOT_DETACHED", 503)
                 # Admission and every extension serialize on the same account.
                 # Skip busy accounts so one connect cannot stall all node grants.
                 account = await session.scalar(
@@ -150,6 +156,15 @@ class ClientVpnWorker:
                 relay = next((item for item in locked if item.id == row.relay_node_id), None)
                 identity = AccessIdentity(row.user_id, row.device_id, row.auth_session_id)
                 valid = self.enabled and await principals_valid(session, identity, now, row.method)
+                if self.shared:
+                    for resource in locked:
+                        config = await session.get(FleetMethodRecord, (resource.id, "wireguard"))
+                        valid = bool(
+                            valid
+                            and resource.capacity <= OWNER_CAPACITY_LIMIT
+                            and config
+                            and snapshot_fresh(config.configuration, now)
+                        )
                 is_managed = base_method(row.method) != "wireguard"
                 if is_managed and not self.managed_enabled:
                     valid = False

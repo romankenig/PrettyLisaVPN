@@ -74,14 +74,14 @@ jobs:
     name: Native Windows against development HTTPS
     runs-on: windows-2022
     timeout-minutes: 45
-    environment: development
+    environment: testing
     defaults:
       run:
         working-directory: apps/windows
         shell: pwsh
     env:
       VITE_APP_ENVIRONMENT: development
-      VITE_BACKEND_BASE_URL: https://api.prettylisavpn.com
+      VITE_BACKEND_BASE_URL: https://api.test.prettylisavpn.com
       ACCEPTANCE_MANUAL_OTP: ${{ inputs.manual_otp && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4

@@ -29,6 +29,7 @@ for element in output["elements"]:
     assert len(payload) <= 40_000_000, f"{abi} APK exceeds the 40 MB download limit"
     (destination / "app-debug.apk").write_bytes(payload)
     record = {
+        "backend": os.environ.get("ORG_GRADLE_PROJECT_apiBaseUrl", "https://api.prettylisavpn.com"),
         "product": "PrettyLisaVPN",
         "platform": "ANDROID",
         "source_sha": source_sha,

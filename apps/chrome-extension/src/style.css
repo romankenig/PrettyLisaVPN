@@ -238,18 +238,6 @@ strong {
 .country-options small {
   font-size: 10px;
 }
-.country-options button.premium-locked {
-  flex-direction: column;
-  align-items: flex-start;
-  opacity: 1;
-}
-.country-options .premium-locked .country-label {
-  filter: blur(2px);
-  opacity: 0.45;
-}
-.country-options .premium-locked small {
-  color: #2c016d;
-}
 .plan-name {
   text-transform: none;
 }

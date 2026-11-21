@@ -2586,21 +2586,12 @@ input,
 .plan-name {
   text-transform: none;
 }
-.location-option.demo-locked,
-.location-option.premium-locked {
+.location-option.demo-locked {
   flex-wrap: wrap;
   color: var(--color-scorpion);
   background: rgb(172 115 255 / 8%);
 }
-.location-option.premium-locked:disabled {
-  opacity: 1;
-}
-.location-option.premium-locked > :not(small) {
-  filter: blur(2px);
-  opacity: 0.5;
-}
-.location-option.demo-locked > small,
-.location-option.premium-locked > small {
+.location-option.demo-locked > small {
   flex-basis: 100%;
   padding-left: 34px;
   font-size: 11px;

@@ -58,7 +58,15 @@ class DeploymentScriptTests(unittest.TestCase):
             "getent": "exit 0\n",
             "docker": 'printf "%s\\n" "$*" >> "$COMMAND_LOG"\n'
             'if [[ "$*" == "image inspect "* ]]; then exit "${IMAGE_EXIT:-0}"; fi\n'
-            'if [[ "$*" == *"alembic upgrade"* ]]; then exit "${MIGRATION_EXIT:-0}"; fi\n',
+            'if [[ "$*" == *"alembic upgrade"* ]]; then exit "${MIGRATION_EXIT:-0}"; fi\n'
+            'case "$*" in\n'
+            '*"config --format json") echo \'{"services":{"backend":{"image":"test",'
+            '"environment":{}},"fleet-worker":{"image":"test","environment":{}}}}\';;\n'
+            '*"ps --format json backend") echo \'{"ID":"backend-test"}\';;\n'
+            '*"ps --format json fleet-worker") if [[ "${TEST_WORKER_DISABLED:-0}" == 1 ]]; '
+            'then exit 0; else echo \'{"ID":"worker-test"}\'; fi;;\n'
+            "'inspect backend-test'|'inspect worker-test') echo '[{\"State\":{\"Running\":true},"
+            '"Config":{"Image":"test","Env":[]}}]\';;\nesac\n',
             "curl": 'case "${!#}" in\n*/version) printf "%s" "$VERSION_JSON";;\nesac\n'
             'exit "${CURL_EXIT:-0}"\n',
         }.items():
@@ -73,6 +81,8 @@ class DeploymentScriptTests(unittest.TestCase):
             "IMAGE_EXIT": "0",
             "MIGRATION_EXIT": "0",
             "CURL_EXIT": "0",
+            "DEMO_ENV_FILE": str(self.directory / "demo.env"),
+            "PLATEGA_ENV_FILE": str(self.directory / "platega.env"),
         }
 
     def run_deployment(self, mode="deploy"):
@@ -125,6 +135,33 @@ class DeploymentScriptTests(unittest.TestCase):
 
     def test_secret_file_permissions_checked_before_docker(self):
         self.env_file.chmod(0o644)
+        self.assertNotEqual(self.run_deployment().returncode, 0)
+        self.assertFalse(self.log.exists())
+
+    def test_test_clone_does_not_start_fleet_worker(self):
+        fleet = self.directory / "fleet.env"
+        fleet.write_text("FLEET_ENABLED=true\n")
+        fleet.chmod(0o600)
+        with self.env_file.open("a") as output:
+            output.write("FLEET_WORKER_ENABLED='false'\n")
+        self.environment["TEST_WORKER_DISABLED"] = "1"
+        self.assertEqual(self.run_deployment().returncode, 0)
+        commands = self.log.read_text()
+        self.assertIn("--profile fleet stop fleet-worker", commands)
+        for command in commands.splitlines():
+            if "alembic upgrade" in command or "up --detach" in command:
+                self.assertNotIn("--profile fleet", command)
+
+    def test_existing_fleet_deploy_keeps_worker_enabled_by_default(self):
+        fleet = self.directory / "fleet.env"
+        fleet.write_text("FLEET_ENABLED=true\n")
+        fleet.chmod(0o600)
+        self.assertEqual(self.run_deployment().returncode, 0)
+        self.assertIn("--profile fleet", self.log.read_text())
+
+    def test_invalid_worker_switch_fails_before_docker(self):
+        with self.env_file.open("a") as output:
+            output.write("FLEET_WORKER_ENABLED='maybe'\n")
         self.assertNotEqual(self.run_deployment().returncode, 0)
         self.assertFalse(self.log.exists())
 

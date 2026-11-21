@@ -15,12 +15,18 @@ permissions:
 
 jobs:
   publish:
-    name: Publish verified client on main server
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    name: Publish verified client to branch environment
+    # Scope a website/backend-only release to one immutable SHA, including reruns.
+    # Quality/build jobs still run; only production installer publication is skipped.
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' ||
+       (github.ref == 'refs/heads/main' && vars.PRODUCTION_SKIP_CLIENTS_SHA != github.sha))
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    environment: development
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'testing' }}
     env:
+      EXPECTED_BACKEND: ${{ github.ref == 'refs/heads/main' && 'https://api.prettylisavpn.com' || 'https://api.test.prettylisavpn.com' }}
       PLATFORM: ${{ inputs.platform }}
       SOURCE_SHA: ${{ github.sha }}
       DEV_VPS_HOST: ${{ secrets.DEV_VPS_HOST }}
@@ -31,7 +37,7 @@ jobs:
       - name: Wait for matching healthy backend before publishing clients
         env:
           DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
-        run: python3 infra/deployment/wait_backend.py --url "https://$DEV_API_DOMAIN"
+        run: python3 infra/deployment/wait_backend.py --url "https://$DEV_API_DOMAIN" --environment "${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}"
       - uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact }}
@@ -51,7 +57,7 @@ jobs:
           spec = importlib.util.spec_from_file_location("publisher", "infra/deployment/publish_client.py")
           module = importlib.util.module_from_spec(spec)
           spec.loader.exec_module(module)
-          module.validate(Path("client-download"), os.environ["PLATFORM"], os.environ["SOURCE_SHA"], int(os.environ["GITHUB_RUN_ID"]), int(os.environ["GITHUB_RUN_ATTEMPT"]))
+          module.validate(Path("client-download"), os.environ["PLATFORM"], os.environ["SOURCE_SHA"], int(os.environ["GITHUB_RUN_ID"]), int(os.environ["GITHUB_RUN_ATTEMPT"]), os.environ["EXPECTED_BACKEND"])
           PY
           umask 077
           ssh_dir="$RUNNER_TEMP/client-publish-ssh"
@@ -64,4 +70,4 @@ jobs:
           incoming="/opt/prettylisavpn/incoming/client-${PLATFORM}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "install -d -m 700 '$incoming'"
           scp "${common[@]}" -P "$DEV_VPS_PORT" client-download/* infra/deployment/publish_client.py infra/deployment/publish_client_container.sh "$remote:$incoming/"
-          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "bash '$incoming/publish_client_container.sh' '$PLATFORM' '$incoming' '$SOURCE_SHA' '$GITHUB_RUN_ID' '$GITHUB_RUN_ATTEMPT'"
+          ssh "${common[@]}" -p "$DEV_VPS_PORT" "$remote" "bash '$incoming/publish_client_container.sh' '$PLATFORM' '$incoming' '$SOURCE_SHA' '$GITHUB_RUN_ID' '$GITHUB_RUN_ATTEMPT' '$EXPECTED_BACKEND'"

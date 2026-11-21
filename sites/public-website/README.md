@@ -1,8 +1,9 @@
-# PrettyLisaVPN website · 0.7.2
+# PrettyLisaVPN website · 0.7.3
 
-Pay now opens recurring Platega checkout in the same tab, with monthly consent
-on the offer and unavailable states inline. No one-off checkout. See the
-[current handoff](../../docs/website-direct-checkout.md).
+Test restoration: monthly recurring SBP opens directly in the same tab after
+inline consent. Return pages recover the authenticated operation after refresh/login
+and show its verified result; unknown outcomes keep waiting. Unavailable checkout
+disables Pay on the offer. See the [handoff](../../docs/website-recurring-restore.md).
 
 Current-plan badges include matching emoji; the language picker uses local flags
 for its current language and options. See the [handoff](../../docs/website-plan-emojis-language-flags.md).
@@ -21,9 +22,9 @@ installations still require replacing files and reloading. See the
 [Chrome handoff](../../docs/chrome-ui-demo.md) for exact publication evidence.
 
 The account page keeps PREMIUM, its monthly price and a visible Pay button
-through email sign-in and unavailable-provider/catalog states. Unavailable checkout disables Pay inline without charging or changing access.
-Existing authenticated checkout and pending-operation recovery remain available;
-there is no simulated success or promise to send notification email.
+through email sign-in and unavailable-provider/catalog states. Pay is enabled only
+for a fresh supported offer with live recurring capability and explicit consent.
+Pending-operation recovery never creates another payment after an unknown result.
 
 Version 0.5.2 combined the already live legal templates with Windows guest identity
 disclosure; see the [publication handoff](../../docs/windows-android-parity.md#website-publication-reconciliation).
@@ -44,7 +45,10 @@ the database API, and purchase/manage links open the authenticated billing porta
 
 ## Run and verify
 
-Node.js 24, no external npm dependencies. From this directory:
+Node.js 24, no website runtime npm dependencies. Rendered acceptance reuses the
+locked Playwright dependency from `apps/chrome-extension`; run
+`node tests/browser-review.mjs` after installing that workspace's dev dependencies.
+From this directory:
 
 ```text
 npm run dev

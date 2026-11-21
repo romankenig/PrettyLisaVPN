@@ -537,17 +537,3 @@ describe("proxy credential boundaries", () => {
     }
   });
 });
-
-it("rejects a cached Premium-only selection before issuing or replacing a proxy lease", async () => {
-  const { controller, calls } = fixture();
-  controller.state.countries = [
-    {
-      country_code: "AT",
-      quality: 0,
-      available: false,
-      premium_required: true,
-    },
-  ];
-  await expect(controller.connect("AT")).rejects.toThrow("INVALID_COUNTRY");
-  expect(calls).toEqual([]);
-});
