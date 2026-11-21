@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application>
         <provider android:name="com.prettylisavpn.android.SupportTestProvider" android:authorities="com.prettylisavpn.android.test.images" android:exported="true" />
+        <provider android:name="com.prettylisavpn.android.PhysicalSplitDnsClient"
+            android:authorities="com.prettylisavpn.android.test.physical-dns"
+            android:process=":split_dns_client" android:exported="true" />
     </application>
 </manifest>

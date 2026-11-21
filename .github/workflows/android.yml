@@ -27,6 +27,10 @@ on:
         description: Real managed tunnels with a disposable account on an isolated emulator
         type: boolean
         default: false
+      live_split:
+        description: Run the managed test in selected-traffic mode
+        type: boolean
+        default: false
       force_relay:
         description: Block direct WireGuard on the isolated runner and verify automatic RU fallback
         type: boolean
@@ -124,6 +128,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Real client method matrix
+        env:
+          LIVE_SPLIT: ${{ inputs.live_split }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -337,7 +343,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           sudo apt-get install -y dnsmasq-base
-      - uses: reactivecircus/android-emulator-runner@v2
+      - name: Exercise split routing with a separate Android client UID
+        env:
+          NETSIM_ARGS: --no-slirp-native
+        uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64

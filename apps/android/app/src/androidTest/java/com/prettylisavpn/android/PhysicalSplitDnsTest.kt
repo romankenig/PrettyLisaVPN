@@ -1,9 +1,12 @@
 package com.prettylisavpn.android
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.net.VpnService
+import android.os.Bundle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.gson.Gson
@@ -16,14 +19,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
-import java.io.IOException
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.nio.ByteBuffer
 
 /** Real Android TUN and protected sockets with DNS records available only on the emulator's uplink. */
 class PhysicalSplitDnsTest {
@@ -52,11 +47,11 @@ class PhysicalSplitDnsTest {
             assertTrue("The fixture must use Wi-Fi", connectivity.getNetworkCapabilities(uplink)
                 ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true)
             // A separate hostname checks the fixture without warming the direct site's DNS cache.
-            assertTrue("Android's Wi-Fi resolver must reach the fixture", uplink.getAllByName("uplink.prettylisa.test")
-                .any { it.hostAddress == "10.0.2.2" })
+            val baseline = fetch(context, "uplink.prettylisa.test")
+            assertTrue("The Android Wi-Fi fixture must answer HTTP: $baseline", proof(baseline))
             assertNull("The disposable emulator must authorize VPN for the test APK", VpnService.prepare(context))
             try {
-                val vpn = runBlocking {
+                runBlocking {
                     runtime.start(profile)
                     withTimeout(15_000) {
                         @Suppress("DEPRECATION")
@@ -69,11 +64,14 @@ class PhysicalSplitDnsTest {
                         requireNotNull(route)
                     }
                 }
-                assertTrue("Direct site should respond through the Android uplink",
-                    fetch(vpn, direct, fakeAddress(vpn, direct)).contains("direct-split-dns-proof"))
-                val selectedAddress = fakeAddress(vpn, selected)
-                val selectedResponse = try { fetch(vpn, selected, selectedAddress) } catch (_: IOException) { "" }
-                assertTrue("A selected domain must not reach the physical fixture", selectedResponse.isEmpty())
+                val directReply = fetch(context, direct)
+                assertTrue("The separate client must receive a FakeDNS address through VPN: $directReply",
+                    directReply.getBoolean("vpn") && directReply.getBoolean("fake"))
+                assertTrue("Direct site should respond through the Android uplink: $directReply", proof(directReply))
+                val selectedReply = fetch(context, selected)
+                assertTrue("FakeDNS must also answer for selected domains: $selectedReply",
+                    selectedReply.getBoolean("vpn") && selectedReply.getBoolean("fake"))
+                assertTrue("A selected domain must not reach the physical fixture", !selectedReply.getBoolean("responded"))
             } finally {
                 if (runtime.isOwned) runBlocking { runtime.stop() }
             }
@@ -84,66 +82,9 @@ class PhysicalSplitDnsTest {
         connectivity.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true &&
             connectivity.getLinkProperties(network)?.linkAddresses?.any { it.address.hostAddress == "172.30.255.1" } == true
 
-    private fun fetch(vpn: Network, host: String, fake: InetAddress): String {
-        return vpn.socketFactory.createSocket().use { socket ->
-            socket.soTimeout = 5_000
-            socket.connect(InetSocketAddress(fake, 18_080), 5_000)
-            socket.getOutputStream().write("GET /proof.txt HTTP/1.0\r\nHost: $host\r\n\r\n".toByteArray())
-            socket.getInputStream().bufferedReader().readText()
-        }
-    }
+    private fun fetch(context: Context, host: String): Bundle = requireNotNull(context.contentResolver.call(
+        Uri.parse("content://com.prettylisavpn.android.test.physical-dns"), "fetch", host, null,
+    ))
 
-    private fun fakeAddress(vpn: Network, host: String): InetAddress {
-        val query = ByteArrayOutputStream().apply {
-            DataOutputStream(this).apply {
-                writeShort(0x506c) // Transaction ID.
-                writeShort(0x0100) // Recursion desired.
-                writeShort(1)
-                writeShort(0)
-                writeShort(0)
-                writeShort(0)
-                for (label in host.split('.')) {
-                    writeByte(label.length)
-                    writeBytes(label)
-                }
-                writeByte(0)
-                writeShort(1) // A record.
-                writeShort(1) // IN class.
-            }
-        }.toByteArray()
-        // The VPN owner's Android name-service calls can use the physical DNS.
-        // Bind the packet itself to the VPN so FakeDNS receives it through TUN.
-        val response = DatagramSocket(null).use { socket ->
-            vpn.bindSocket(socket)
-            socket.soTimeout = 5_000
-            socket.connect(InetSocketAddress("1.1.1.1", 53))
-            socket.send(DatagramPacket(query, query.size))
-            DatagramPacket(ByteArray(512), 512).also { socket.receive(it) }
-        }
-        val packet = ByteBuffer.wrap(response.data, 0, response.length)
-        assertTrue("FakeDNS must answer the A query", packet.getShort(0) == 0x506c.toShort() && packet.getShort(6) == 1.toShort())
-        packet.position(12)
-        skipDnsName(packet)
-        packet.position(packet.position() + 4)
-        skipDnsName(packet)
-        assertTrue("FakeDNS answer must be an IPv4 A record", packet.short == 1.toShort())
-        packet.position(packet.position() + 6) // Class and TTL.
-        assertTrue("FakeDNS A record must have four bytes", packet.short == 4.toShort())
-        val address = ByteArray(4).also { packet.get(it) }
-        assertTrue("Expected an address in the FakeDNS pool", (address[0].toInt() and 0xff) == 198 &&
-            (address[1].toInt() and 0xfe) == 18)
-        return InetAddress.getByAddress(address)
-    }
-
-    private fun skipDnsName(packet: ByteBuffer) {
-        while (true) {
-            val length = packet.get().toInt() and 0xff
-            if (length == 0) return
-            if (length and 0xc0 == 0xc0) {
-                packet.get()
-                return
-            }
-            packet.position(packet.position() + length)
-        }
-    }
+    private fun proof(reply: Bundle): Boolean = reply.getBoolean("proof")
 }

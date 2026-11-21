@@ -12,7 +12,7 @@ collect() {
   done
 }
 trap collect EXIT
-adb shell am instrument -w -r -e liveManaged true \
+adb shell am instrument -w -r -e liveManaged true -e liveSplit "${LIVE_SPLIT:-false}" \
   -e class com.prettylisavpn.android.LiveManagedTest \
   com.prettylisavpn.android.dev.test/com.prettylisavpn.android.AcceptanceRunner \
   > managed-evidence/instrumentation.txt &
