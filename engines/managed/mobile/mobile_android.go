@@ -3,18 +3,23 @@ package mobile
 
 import (
 	"errors"
+	"net/netip"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 
 	managed "github.com/romankenig/PrettyLisaVPN/engines/managed"
+	"github.com/xtls/xray-core/app/dns"
+	"github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/transport/internet"
 )
 
 type Platform interface {
 	Protect(fd int32) bool
-	OpenTun() (int32, error)
+	OpenTun(usePhysicalDNS bool) (int32, error)
+	LookupPhysicalIPv4(host string) string
 }
 type Engine struct{ runtime *managed.Runtime }
 
@@ -28,6 +33,24 @@ var sockets struct {
 }
 var controllers sync.Once
 var controllerError error
+var fakeDNSPool = netip.MustParsePrefix("198.18.0.0/15")
+
+func lookupPhysicalIPv4(host string) []net.IP {
+	sockets.RLock()
+	platform := sockets.platform
+	sockets.RUnlock()
+	if platform == nil {
+		return nil
+	}
+	var ips []net.IP
+	for _, answer := range strings.Fields(platform.LookupPhysicalIPv4(host)) {
+		ip, err := netip.ParseAddr(answer)
+		if err == nil && ip.Is4() && !ip.IsUnspecified() && !ip.IsMulticast() && !fakeDNSPool.Contains(ip) {
+			ips = append(ips, net.IP(ip.AsSlice()))
+		}
+	}
+	return ips
+}
 
 // One controller for this dedicated process. It fails closed while stopped and
 // covers UDP listeners as well as TCP dialers.
@@ -53,7 +76,8 @@ func (e *Engine) Start(profile string, host Platform) error {
 	if owner.engine != nil {
 		return managed.ErrRunning
 	}
-	if _, err := managed.ParseProfile(profile); err != nil {
+	parsed, err := managed.ParseProfile(profile)
+	if err != nil {
 		return managed.ErrProfile
 	}
 	controllers.Do(func() {
@@ -61,11 +85,12 @@ func (e *Engine) Start(profile string, host Platform) error {
 		if controllerError == nil {
 			controllerError = internet.RegisterListenerController(protect)
 		}
+		dns.SetAndroidDirectDNSResolver(lookupPhysicalIPv4)
 	})
 	if controllerError != nil || host == nil {
 		return managed.ErrStart
 	}
-	fd, err := host.OpenTun()
+	fd, err := host.OpenTun(parsed.Routing != nil && parsed.Routing.Mode != "all")
 	if err != nil || fd <= 0 {
 		return managed.ErrStart
 	}

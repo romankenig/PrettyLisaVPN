@@ -14,6 +14,8 @@ SUM = "h1:Eqz6sj4Up2NtymyVY2UtXNpHZqJGrMwKsXnGOySyUNI="
 FILE = Path("transport/internet/hysteria/conn.go")
 ORIGINAL = "d14c8699bc3c749ee0d186faebc0c8ae1fe56813854bfefc2c4d777fb6258c72"
 MARKER = ".prettylisa-patch.json"
+DNS_NAMESERVER = Path("app/dns/nameserver.go")
+DNS_ORIGINAL = "ed7a8438714e9e3a2f84e164aa5719e6ab948afe01a49ce71e8767b71ed2ee68"
 GRPC_FILES = {
     "transport/internet/grpc/encoding/hunkconn.go": (
         "819e20f5d2ba14e3636adcf81f4fa78ccce702f298c3c785b803fce803aa3d3f"
@@ -101,6 +103,52 @@ def patched(source: bytes) -> bytes:
     ).encode()
 
 
+def android_dns_patched(source: bytes) -> bytes:
+    if hashlib.sha256(source).hexdigest() != DNS_ORIGINAL:
+        raise ValueError("Pinned DNS nameserver source changed; review the patch")
+    text = source.decode("utf-8").replace('"strings"', '"strings"\n\t"sync/atomic"')
+    text = text.replace(
+        'case strings.EqualFold(u.String(), "localhost"):',
+        'case strings.EqualFold(u.String(), "android-direct"):\n'
+        '\t\t\treturn androidDirectNameServer{}, nil\n'
+        '\t\tcase strings.EqualFold(u.String(), "localhost"):',
+    )
+    return (
+        "// SPDX-License-Identifier: MPL-2.0\n"
+        "// PrettyLisaVPN modification: a scoped resolver backed by Android's physical network.\n"
+        + text
+        + '''
+var androidDirectLookup atomic.Pointer[func(string) []net.IP]
+
+// SetAndroidDirectDNSResolver registers the platform callback before starting the mobile core.
+func SetAndroidDirectDNSResolver(lookup func(string) []net.IP) {
+	if lookup == nil {
+		androidDirectLookup.Store(nil)
+		return
+	}
+	androidDirectLookup.Store(&lookup)
+}
+
+type androidDirectNameServer struct{}
+
+func (androidDirectNameServer) Name() string { return "android-direct" }
+func (androidDirectNameServer) IsDisableCache() bool { return true }
+
+func (androidDirectNameServer) QueryIP(ctx context.Context, host string, option dns.IPOption) ([]net.IP, uint32, error) {
+	lookup := androidDirectLookup.Load()
+	if lookup == nil || !option.IPv4Enable || option.FakeEnable || ctx.Err() != nil {
+		return nil, 0, dns.ErrEmptyResponse
+	}
+	ips := (*lookup)(host)
+	if ctx.Err() != nil || len(ips) == 0 {
+		return nil, 0, dns.ErrEmptyResponse
+	}
+	return ips, dns.DefaultTTL, nil
+}
+'''
+    ).encode()
+
+
 def prepare(go: str) -> None:
     root = Path(__file__).resolve().parent
     info = json.loads(
@@ -113,6 +161,7 @@ def prepare(go: str) -> None:
     changes.update(
         {Path(path): grpc_patched(path, (origin / path).read_bytes()) for path in GRPC_FILES}
     )
+    changes[DNS_NAMESERVER] = android_dns_patched((origin / DNS_NAMESERVER).read_bytes())
     target = root / "patched" / "xray-core"
     if target.resolve().parent != (root / "patched").resolve() or target.is_symlink():
         raise ValueError("Unexpected generated source location")
@@ -155,7 +204,7 @@ def prepare(go: str) -> None:
         ),
         encoding="utf-8",
     )
-    print("Pinned MPL core prepared with Hysteria and gRPC shutdown fixes")
+    print("Pinned MPL core prepared with Hysteria, gRPC and Android DNS fixes")
 
 
 if __name__ == "__main__":
