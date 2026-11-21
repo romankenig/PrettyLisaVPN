@@ -5,12 +5,17 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.annotation.SuppressLint
 import android.net.VpnService
+import androidx.core.content.ContextCompat
 import com.prettylisavpn.android.MainActivity
 import com.prettylisavpn.android.R
 import kotlinx.coroutines.*
@@ -49,6 +54,15 @@ internal fun vpnNotification(context: android.content.Context, status: VpnStatus
 /** Keeps the single-APK tunnel process alive while the screen is off. */
 class TunnelForegroundService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var watchingIdle = false
+    private val idleReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED &&
+                !context.getSystemService(PowerManager::class.java).isDeviceIdleMode) {
+                AndroidVpnHost.current()?.controller?.checkAfterWake()
+            }
+        }
+    }
     override fun onBind(intent: Intent?): IBinder? = null
     @SuppressLint("ForegroundServicePermission") // Approved VPN is a documented systemExempted alternative to alarm permissions.
     override fun onCreate() {
@@ -60,6 +74,9 @@ class TunnelForegroundService : Service() {
         val notification = vpnNotification(this, host?.status?.value ?: VpnStatus(VpnPhase.CONNECTING))
         if (Build.VERSION.SDK_INT >= 34) startForeground(VPN_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
         else startForeground(VPN_NOTIFICATION_ID, notification)
+        ContextCompat.registerReceiver(this, idleReceiver, IntentFilter(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED)
+        watchingIdle = true
         if (host != null) scope.launch {
             host.status.combine(com.prettylisavpn.android.ui.PresentationStore.get(this@TunnelForegroundService).preference.language) { status, language -> status to language }
                 .collect { (status, language) ->
@@ -79,9 +96,9 @@ class TunnelForegroundService : Service() {
         return START_NOT_STICKY
     }
     override fun onDestroy() {
+        if (watchingIdle) unregisterReceiver(idleReceiver)
         scope.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
-        AndroidVpnHost.current()?.serviceLost()
         super.onDestroy()
     }
 }

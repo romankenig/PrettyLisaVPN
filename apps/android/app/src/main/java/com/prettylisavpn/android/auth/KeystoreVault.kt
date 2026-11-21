@@ -43,6 +43,7 @@ class KeystoreVault(context: Context) : CredentialVault {
         cipher.updateAAD(alias.toByteArray(Charsets.UTF_8))
         val value = gson.fromJson(String(cipher.doFinal(bytes.copyOfRange(13, bytes.size)), Charsets.UTF_8), Credentials::class.java)
         UUID.fromString(value.sessionId); java.time.Instant.parse(value.expiresAt)
+        value.rotationId?.let { UUID.fromString(it) }
         require(value.refreshToken.isNotBlank() && value.refreshToken.length <= 512)
         return value
     }

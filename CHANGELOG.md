@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+### Сессия и стабильность VPN на Android — Android 0.30.8 / managed engine 0.8.3
+
+- Восстанавливать авторизацию после потерянного ответа на обновление токена.
+- Показывать «Подключить», пока VPN выключен после входа. Первое нажатие дожидается очистки старой аренды.
+- Проверять туннель сразу после выхода из Doze и сохранять его при временных ошибках API.
+- Сохранять прямой доступ к сайтам вне списка в режиме разделения трафика при сбое основного DNS.
+- [Авторизация](docs/android-auth-session.md#сессия-и-безопасность) · [Сон и восстановление](docs/android-sleep-stability.md#android-0308--восстановление-сессии-и-туннеля) · [Разделение трафика](docs/split-routing.md#резервирование-dns-для-прямого-маршрута)
+
 ### Android split-routing DNS — Android 0.30.7 / managed engine 0.8.2
 
 - Use direct encrypted DNS for Android sites routed outside the tunnel, with VPN DNS

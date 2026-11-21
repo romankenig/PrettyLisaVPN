@@ -39,11 +39,23 @@ Android retains its foreground VPN service and uses no permanent wake lock or
 repeating exact alarm to defeat battery saving. It does not put a disconnect timer
 around sleep-sensitive heartbeat delays. HTTP requests remain individually bounded;
 temporary offline/network/service errors retry while the same tunnel stays up.
-An ambiguous refresh is not replayed and does not itself revoke the existing VPN
-grant; account recovery still requires the existing OTP flow. Confirmed denial,
+The original Android release required OTP after an ambiguous refresh. Android
+0.30.8 reconciles a pending renewal through the existing operation UUID. Confirmed denial,
 closed lease, deadline or Android VPN revocation stops the tunnel. Android may
 defer background network activity during Doze; the goal is preserving the tunnel
 and resuming traffic after wake, not forcing all applications to run while asleep.
+
+## Android 0.30.8 — восстановление сессии и туннеля
+
+Тестовый контур. Android 0.30.7 (код 66) → 0.30.8 (код 67). Используется контракт
+backend 0.54.5. Ошибки получения ответа об аренде оставляют действующий туннель
+под серверным контролем. Подтверждённое завершение доступа или срок аренды закрывают
+туннель. После выхода из Doze и возврата в приложение проверка запускается сразу.
+При восстановлении используются актуальная Android VPN Network и тот же выбор страны.
+
+После входа очистка старой аренды идёт в фоне. Первое нажатие «Подключить» ждёт
+эту очистку или повторяет её после ошибки, прежде чем запрашивать новую аренду.
+Для тестов с имитацией Doze, CI и APK указываются отдельные результаты в PR.
 
 ## Full checks with customers
 

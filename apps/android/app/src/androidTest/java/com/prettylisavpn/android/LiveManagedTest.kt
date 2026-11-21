@@ -66,6 +66,16 @@ class LiveManagedTest {
                 }
             } finally { connection.disconnect() }
         }
+        fun yandexReachable(network: android.net.Network): Boolean {
+            val connection = network.openConnection(URL("https://ya.ru/"), Proxy.NO_PROXY) as HttpsURLConnection
+            return try {
+                connection.connectTimeout = 15_000
+                connection.readTimeout = 15_000
+                connection.instanceFollowRedirects = false
+                connection.useCaches = false
+                connection.responseCode in 200..399
+            } finally { connection.disconnect() }
+        }
         // A newly booted emulator can report boot_completed before physical DNS
         // is ready. Only retry this pre-VPN prerequisite; tunnel checks below
         // still require both distinct routes on each single connection attempt.
@@ -102,7 +112,7 @@ class LiveManagedTest {
                 try {
                     val idleDeadline = SystemClock.elapsedRealtime() + 45_000
                     while (AndroidVpnHost.current()?.status?.value?.phase != VpnPhase.DISCONNECTED && SystemClock.elapsedRealtime() < idleDeadline) SystemClock.sleep(200)
-                    assertEquals("Session recovery must finish before connect", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
+                    assertEquals("VPN must start disconnected", VpnPhase.DISCONNECTED, AndroidVpnHost.current()?.status?.value?.phase)
                     scenario.onActivity {
                         val masks = TrafficList(services = listOf(TrafficService(
                             "11111111-1111-4111-8111-111111111111", "telegram", "Telegram", "telegram",
@@ -161,6 +171,10 @@ class LiveManagedTest {
                                     val direct = runBlocking { PresentationStore.get(context).directLocation()?.ip }
                                     row["direct_location_verified"] = direct == baseline[2] && direct !in exits
                                     check(row["direct_location_verified"] == true)
+                                }
+                                if (mode == "include") {
+                                    row["unselected_yandex_https"] = yandexReachable(vpn)
+                                    check(row["unselected_yandex_https"] == true)
                                 }
                                 val page = vpn.openConnection(URL("https://ifconfig.me/"), Proxy.NO_PROXY) as HttpsURLConnection
                                 try {

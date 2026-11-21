@@ -19,8 +19,8 @@ android {
         applicationId = "com.prettylisavpn.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 66
-        versionName = "0.30.7"
+        versionCode = 67
+        versionName = "0.30.8"
         testInstrumentationRunner = "com.prettylisavpn.android.AcceptanceRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         buildConfigField("String", "WEBSITE_BASE_URL", "\"$websiteBaseUrl\"")

@@ -57,9 +57,15 @@ class HttpAuthApiTest {
     }
     @Test fun refreshContractAndBearerScope() = runBlocking {
         server.enqueue(MockResponse().setBody(tokens)); server.enqueue(MockResponse().setBody("""{"id":"c21132ac-0d2e-4da7-96ac-8a6ceeb019ba","email":"person@example.com","plan":"FREE","active_device_count":1,"entitlements":{"extra":true}}"""))
-        val result = api.refresh(Credentials("c21132ac-0d2e-4da7-96ac-8a6ceeb019ba", "old-private", "2030-01-01T00:00:00Z"))
+        val rotationId = "a1d3475f-0155-49e9-88a9-27125a19b12d"
+        val result = api.refresh(Credentials("c21132ac-0d2e-4da7-96ac-8a6ceeb019ba", "old-private",
+            "2030-01-01T00:00:00Z", rotationPending = true, rotationId = rotationId))
         assertEquals("Free", api.me(result.access).plan)
-        val refresh = server.takeRequest(); assertNull(refresh.getHeader("Authorization")); assertEquals("old-private", JsonParser.parseString(refresh.body.readUtf8()).asJsonObject["refresh_token"].asString)
+        val refresh = server.takeRequest()
+        assertNull(refresh.getHeader("Authorization"))
+        val body = JsonParser.parseString(refresh.body.readUtf8()).asJsonObject
+        assertEquals("old-private", body["refresh_token"].asString)
+        assertEquals(rotationId, body["rotation_id"].asString)
         assertEquals("Bearer bearer-private", server.takeRequest().getHeader("Authorization"))
     }
     @Test fun redirectsCannotLeakBearerOrReplayOtp() = runBlocking {

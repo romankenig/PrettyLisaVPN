@@ -92,7 +92,6 @@ func (r *Routing) apply(config map[string]any, splitDNS bool) {
 		}
 	}
 	if splitDNS {
-		rules = append(rules, obj{"type": "field", "inboundTag": []string{"resolver-direct"}, "outboundTag": "direct"})
 		config["dns"].(obj)["servers"] = splitDNSServers(forcedVPN, domains, selected, fallback)
 	}
 	if len(domains) > 0 {
@@ -109,35 +108,42 @@ func (r *Routing) apply(config map[string]any, splitDNS bool) {
 
 func splitDNSServers(forcedVPN, domains []string, selected, fallback string) []any {
 	type obj = map[string]any
-	// Xray consults matching servers in order, skipping FakeDNS when an outbound
-	// needs a real address. VPN queries stop at their resolver, while direct
-	// queries can retry through the VPN if the physical network blocks DNS.
-	resolver := func(outbound string, names []string) obj {
-		server := obj{"address": "1.1.1.1", "finalQuery": true}
-		if outbound == "direct" {
-			// A literal IP avoids a bootstrap lookup. DNS is encrypted on the
-			// physical network, even if the VPN transport cannot reach its resolver.
-			server["address"] = "https://1.1.1.1/dns-query"
-			server["tag"] = "resolver-direct"
-			server["timeoutMs"] = 2000
-			server["finalQuery"] = false
-		}
+	scoped := func(server obj, names []string) obj {
 		if len(names) != 0 {
 			server["domains"] = names
 			server["skipFallback"] = true
 		}
 		return server
 	}
+	vpnResolver := func(names []string) obj {
+		return scoped(obj{"address": "1.1.1.1", "finalQuery": true}, names)
+	}
+	directResolvers := func(names []string) []any {
+		// +local dials protected physical sockets without going through the
+		// TUN dispatcher. Literal IPs avoid bootstrap DNS and verify TLS by IP.
+		// A second provider and tunneled TCP avoid depending on any one
+		// provider or on UDP working through the VPN method.
+		return []any{
+			scoped(obj{"address": "https+local://1.1.1.1/dns-query", "tag": "resolver-direct", "timeoutMs": 2000}, names),
+			scoped(obj{"address": "https+local://8.8.8.8/dns-query", "tag": "resolver-direct-backup", "timeoutMs": 2000}, names),
+			scoped(obj{"address": "tcp://1.1.1.1:53", "tag": "resolver", "timeoutMs": 2000}, names),
+		}
+	}
+	// FakeDNS keeps the name for matching. A VPN name stops at its tunneled
+	// resolver before either physical resolver can see the real lookup.
 	servers := []any{
 		obj{"address": "fakedns", "domains": []string{"regexp:.+"}},
-		resolver("vpn", forcedVPN),
+		vpnResolver(forcedVPN),
 	}
 	if len(domains) != 0 {
-		servers = append(servers, resolver(selected, domains))
+		if selected == "direct" {
+			servers = append(servers, directResolvers(domains)...)
+		} else {
+			servers = append(servers, vpnResolver(domains))
+		}
 	}
-	servers = append(servers, resolver(fallback, nil))
 	if fallback == "direct" {
-		servers = append(servers, resolver("vpn", nil))
+		servers = append(servers, directResolvers(nil)...)
 	}
-	return servers
+	return append(servers, vpnResolver(nil))
 }

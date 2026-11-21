@@ -16,7 +16,7 @@ unchanged. Base: develop `454014cb6dc5e0a2d4208622cd06f662d0f5fbaf` (PR #23).
 | --- | --- |
 | POST /auth/request-otp | email; accepted, invalid input, rate limit, unavailable; cooldown 30s |
 | POST /auth/verify-otp | email/code, постоянный installation UUID, ANDROID, manufacturer/model |
-| POST /auth/refresh | session_id/refresh_token, сериализованная rotation, новая пара до /me |
+| POST /auth/refresh | session_id/refresh_token/rotation_id, сериализованное обновление, новая пара до /me |
 | GET /me | подтверждённые email, effective plan и active_device_count; дополнительные поля допускаются |
 | POST /auth/logout | Bearer; локальная очистка только после receipt либо подтверждённой недействительности сессии |
 
@@ -43,7 +43,7 @@ instrumentation runner в процессе тестов. Обычный launcher
 - Access token и OTP только в памяти; OTP не попадает в SavedStateHandle, preferences,
   bundle или backup. Activity recreation очищает OTP, но сохраняет ViewModel/операцию.
 - KeystoreVault: AES-256-GCM, случайный nonce, AAD/version, AndroidKeyStore key.
-  session_id/refresh_token/expires_at/pending marker — один encrypted AtomicFile в
+  session_id/refresh_token/expires_at/rotation_id — один encrypted AtomicFile в
   noBackupFilesDir. allowBackup=false, cloud backup и device transfer исключены.
   Installation UUID сохраняется отдельно там же и переживает logout; это не секрет.
 - Один process-wide SessionCoordinator, Mutex на login/refresh/me/logout. Параллельные
@@ -52,10 +52,11 @@ instrumentation runner в процессе тестов. Обычный launcher
 - Новая refresh-пара записывается до публикации авторизации и /me. Offline после
   успешного verify не требует повторно использовать уже потреблённый OTP: UI предлагает
   retry восстановления. Данные аккаунта не публикуются до успешного /me.
-- До refresh атомарно сохраняется pending marker. DNS/connect failure и подтверждённый
-  service_unavailable снимают marker и допускают retry. Timeout/обрыв/невалидный ответ,
-  process death во время rotation или ошибка записи новой пары требуют reauth и не
-  повторяют старый token. Backend не обещает recovery после потерянного rotation response.
+- Начиная с Android 0.30.8 (код 67), обновление атомарно сохраняет UUID операции вместе
+  с текущим refresh-токеном. После сетевого сбоя, перезапуска или ошибки сохранения
+  следующая попытка повторяет ту же операцию. После успешного ответа запись заменяется
+  новым токеном. Ранее сохранённый pending marker без UUID требует нового входа.
+  Механизм использует существующий [контракт сервера](windows-session-resilience.md).
 - invalid_refresh_token/invalid_session/device_revoked/user_blocked очищают память и vault.
   Проверка /me выполняется при возврате Activity на передний план и вручную; push-уведомления
   об отзыве и фоновый polling не добавлялись. Нет обещания немедленного обнаружения offline.

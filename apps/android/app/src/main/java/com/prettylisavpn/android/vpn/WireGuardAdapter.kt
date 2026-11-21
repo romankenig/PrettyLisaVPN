@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.vpn
 
 import com.prettylisavpn.android.BuildConfig
+import com.prettylisavpn.android.auth.AuthFailure
 
 import android.content.Context
 import android.content.Intent
@@ -121,6 +122,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
             @Suppress("UNREACHABLE_CODE") error("VPN_SETUP_FAILED")
         }
         lease = ready
+        armDeadline(ready)
         val config = requireNotNull(ready.configuration)
         require(config.allowed_ips == listOf("0.0.0.0/0", "::/0") && config.mtu in 1280..1420)
         require(config.address.matches(Regex("[0-9.]+/32")) && config.endpoint.matches(Regex("[0-9.]+:[0-9]{1,5}")))
@@ -172,9 +174,7 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
         }
         // API renewal and public metadata must use the same working VPN route
         // as verification, with fresh pools instead of pre-tunnel TCP sessions.
-        HttpRoutes.vpn(network.socketFactory, object : okhttp3.Dns {
-            override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
-        })
+        HttpRoutes.vpn(network)
         // Network-bound DNS and sockets cannot silently fall back to Wi-Fi or mobile Internet.
         var verified = false
         for (attempt in 0..1) {
@@ -243,17 +243,24 @@ class WireGuardAdapter(private val context: Context, private val sessions: Sessi
     override suspend fun health(): TunnelHealth {
         val row = lease ?: return TunnelHealth.UNKNOWN
         val config = row.configuration ?: return TunnelHealth.UNKNOWN
-        val result = checkTunnelNetwork(context, vpnNetwork(if (routed) "172.30.255.1" else config.address.substringBefore('/')),
+        val network = vpnNetwork(if (routed) "172.30.255.1" else config.address.substringBefore('/'))
+        val result = checkTunnelNetwork(context, network,
             config.expected_egress_ips) { expectingUp && (if (routed) routedRuntime.isUp() else withContext(Dispatchers.IO) { backend?.getState(tunnel) == Tunnel.State.UP }) }
-        return if (lease?.id == row.id && expectingUp) result else TunnelHealth.UNKNOWN
+        if (lease?.id != row.id || !expectingUp) return TunnelHealth.UNKNOWN
+        if (result == TunnelHealth.HEALTHY && network != null) HttpRoutes.vpn(network)
+        return result
     }
 
     private suspend fun closeRemote() {
         val current = lease ?: api.current() ?: run { acquired = false; return }
         lease = current
         if (current.status != "CLOSED") {
-            api.revoke(current.id)
-            vpnDeadline(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
+            try {
+                api.revoke(current.id)
+                vpnDeadline(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
+            } catch (failure: AuthFailure) {
+                if (failure.code != "VPN_SESSION_NOT_FOUND") throw failure
+            }
         }
         lease = null
         acquired = false
