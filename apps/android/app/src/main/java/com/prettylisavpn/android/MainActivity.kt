@@ -35,7 +35,10 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         if (!screenModel.fixture) com.prettylisavpn.android.diagnostics.AppDiagnostics.get(applicationContext).record(com.prettylisavpn.android.diagnostics.DiagnosticKind.APP_FOREGROUND)
-        if (!screenModel.fixture && screenModel.state.value.data.signedIn) screenModel.load(com.prettylisavpn.android.data.Area.HOME)
+        if (!screenModel.fixture && screenModel.state.value.data.signedIn) {
+            com.prettylisavpn.android.vpn.AndroidVpnHost.current()?.controller?.checkAfterWake()
+            screenModel.load(com.prettylisavpn.android.data.Area.HOME)
+        }
     }
     override fun onStop() {
         if (!screenModel.fixture) com.prettylisavpn.android.diagnostics.AppDiagnostics.get(applicationContext).record(com.prettylisavpn.android.diagnostics.DiagnosticKind.APP_BACKGROUND)

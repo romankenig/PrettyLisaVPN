@@ -26,11 +26,13 @@ class FakeApi : AuthApi {
     var meError: String? = null
     var rejectAccessOnce = false
     var beforeMe: (() -> Unit)? = null
+    val refreshRequests = mutableListOf<Credentials>()
     override suspend fun requestOtp(email: String) { error?.let { throw AuthFailure(it) } }
     override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String): Tokens {
         verifies++; error?.let { throw AuthFailure(it) }; return issued
     }
     override suspend fun refresh(credentials: Credentials): Tokens {
+        refreshRequests += credentials
         refreshes++; delay(10); refreshError?.let { throw AuthFailure(it) }
         return issued.copy(access = "access-${refreshes+1}", credentials = issued.credentials.copy(refreshToken = "refresh-${refreshes+1}"))
     }
@@ -62,6 +64,7 @@ class SessionCoordinatorTest {
         assertNotNull(coordinator().restore())
         assertEquals("refresh-2", vault.value!!.refreshToken)
         assertFalse(vault.value!!.rotationPending)
+        assertNull(vault.value!!.rotationId)
         assertTrue(vault.history.any { it.rotationPending })
     }
     @Test fun concurrentExpiredRequestsHaveOneRotation() = runBlocking {
@@ -95,20 +98,33 @@ class SessionCoordinatorTest {
     }
     @Test fun offlineRestoreRetainsCredentialsAndCanRetry() = runBlocking {
         vault.value = api.issued.credentials; api.refreshError = "offline"; val sessions = coordinator()
-        expect("offline") { sessions.restore() }; assertEquals(api.issued.credentials, vault.value)
+        expect("offline") { sessions.restore() }
+        val pending = vault.value!!
+        assertEquals(api.issued.credentials.refreshToken, pending.refreshToken)
         api.refreshError = null; assertNotNull(sessions.restore())
+        assertEquals(listOf(pending, pending), api.refreshRequests)
     }
     @Test fun serviceUnavailableCanRetryRotation() = runBlocking {
         vault.value = api.issued.credentials; api.refreshError = "service_unavailable"
-        expect("service_unavailable") { coordinator().restore() }; assertFalse(vault.value!!.rotationPending)
-    }
-    @Test fun lostRefreshResponseIsNotReplayedAfterRestart() = runBlocking {
-        vault.value = api.issued.credentials; api.refreshError = "network_uncertain"
-        expect("network_uncertain") { coordinator().restore() }; assertTrue(vault.value!!.rotationPending)
+        expect("service_unavailable") { coordinator().restore() }
+        val pending = vault.value!!
+        assertNotNull(pending.rotationId)
         api.refreshError = null
-        expect("rotation_uncertain") { coordinator().restore() }; assertEquals(1, api.refreshes)
+        coordinator().restore()
+        assertEquals(listOf(pending, pending), api.refreshRequests)
     }
-    @Test fun processDeathDuringRotationRequiresNewLogin() = runBlocking {
+    @Test fun lostRefreshResponseResumesTheSameRotationAfterRestart() = runBlocking {
+        vault.value = api.issued.credentials; api.refreshError = "network_uncertain"
+        expect("network_uncertain") { coordinator().restore() }
+        val pending = vault.value!!
+        assertTrue(pending.rotationPending)
+        assertNotNull(pending.rotationId)
+        api.refreshError = null
+        assertNotNull(coordinator().restore())
+        assertEquals(listOf(pending, pending), api.refreshRequests)
+        assertNull(vault.value!!.rotationId)
+    }
+    @Test fun upgradeDoesNotReplayALegacyPendingRotationWithoutAnOperationId() = runBlocking {
         vault.value = api.issued.credentials.copy(rotationPending = true)
         expect("rotation_uncertain") { coordinator().restore() }; assertEquals(0, api.refreshes)
     }
@@ -151,21 +167,28 @@ class SessionCoordinatorTest {
         api.meError = null; sessions.restore()
         assertFalse(sessions.needsRecovery); assertEquals(1, api.verifies)
     }
-    @Test fun failureWritingRotatedCredentialKeepsPendingAndNeverReplaysOldToken() = runBlocking {
+    @Test fun failedSecureWritePreservesProfileAndCanRecoverTheCommittedRotation() = runBlocking {
         val sessions = coordinator(); sessions.login("person@example.com", "123456"); elapsed = 60_000
         vault.failAtWrite = 3
         expect("storage_unavailable") { sessions.refreshProfile() }
-        assertNull(sessions.profile); assertTrue(vault.value!!.rotationPending)
-        expect("rotation_uncertain") { coordinator().restore() }; assertEquals(1, api.refreshes)
+        assertNotNull(sessions.profile)
+        val pending = vault.value!!
+        assertNotNull(pending.rotationId)
+        assertNotNull(sessions.refreshProfile())
+        assertEquals(listOf(pending, pending), api.refreshRequests)
+        assertNull(vault.value!!.rotationId)
     }
     @Test fun unauthorizedTwiceStopsAfterOneRefresh() = runBlocking {
         val sessions = coordinator(); sessions.login("person@example.com", "123456"); api.meError = "invalid_access_token"
         expect("invalid_access_token") { sessions.refreshProfile() }
-        assertEquals(1, api.refreshes); assertNull(vault.value)
+        assertEquals(1, api.refreshes); assertNotNull(vault.value); assertNotNull(sessions.profile)
     }
     @Test fun expiredAccessAndOfflineLogoutKeepsDurableRefresh() = runBlocking {
         val sessions = coordinator(); sessions.login("person@example.com", "123456"); elapsed = 60_000; api.refreshError = "offline"
-        expect("offline") { sessions.logout() }; assertEquals(api.issued.credentials, vault.value); assertEquals(0, api.logouts)
+        expect("offline") { sessions.logout() }
+        assertEquals(api.issued.credentials.refreshToken, vault.value!!.refreshToken)
+        assertNotNull(vault.value!!.rotationId)
+        assertEquals(0, api.logouts)
     }
     @Test fun localForgetNeverClaimsRemoteLogout() = runBlocking {
         val sessions = coordinator(); sessions.login("person@example.com", "123456"); sessions.forgetLocalSession()

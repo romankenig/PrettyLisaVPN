@@ -15,13 +15,14 @@ class LeaseHeartbeatTest {
                     2 -> throw AuthFailure("offline")
                     3 -> throw AuthFailure("network_uncertain")
                     4 -> throw AuthFailure("service_unavailable")
-                    5 -> throw AuthFailure("rotation_uncertain") // Never replay an ambiguous refresh.
-                    6 -> true
+                    5 -> throw AuthFailure("VPN_UNAVAILABLE")
+                    6 -> throw AuthFailure("invalid_response")
+                    7 -> true
                     else -> false // A confirmed revoked/expired lease still ends the tunnel.
                 }
             }, lost = { lost++ })
         }
-        assertEquals(7, calls); assertEquals(1, lost)
+        assertEquals(8, calls); assertEquals(1, lost)
     }
 
     @Test fun sleepTolerantAccessStillStopsOnRevocationAndCancelsPromptly() = runBlocking {

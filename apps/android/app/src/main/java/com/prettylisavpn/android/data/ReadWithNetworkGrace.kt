@@ -13,7 +13,7 @@ internal suspend fun <T> readWithNetworkGrace(
     var failedAt: Long? = null
     while (true) {
         try { return read() } catch (error: AuthFailure) {
-            if (error.code !in setOf("offline", "network_uncertain")) throw error
+            if (error.code !in setOf("offline", "network_uncertain", "service_unavailable")) throw error
             val start = failedAt ?: now().also { failedAt = it }
             val remaining = graceMillis - (now() - start)
             if (remaining <= 0) throw error

@@ -43,7 +43,13 @@ class AuthFailure(val code: String) : Exception(when (code) {
     "rotation_uncertain" -> "Session renewal could not be confirmed. Sign in again to continue safely."
     else -> "The service is temporarily unavailable. Please retry."
 })
-data class Credentials(val sessionId: String, val refreshToken: String, val expiresAt: String, val rotationPending: Boolean = false) {
+data class Credentials(
+    val sessionId: String,
+    val refreshToken: String,
+    val expiresAt: String,
+    val rotationPending: Boolean = false,
+    val rotationId: String? = null,
+) {
     override fun toString() = "Credentials([redacted])"
 }
 data class Tokens(val access: String, val ttlSeconds: Long, val credentials: Credentials) {
@@ -103,7 +109,7 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
                         code in setOf("VPN_SESSION_NOT_FOUND", "VPN_SESSION_ALREADY_ACTIVE", "VPN_UNAVAILABLE", "COUNTRY_UNAVAILABLE", "FREE_DAILY_LIMIT_REACHED", "FREE_QUOTA_EXHAUSTED", "FREE_QUOTA_RESERVED", "VPN_ADDRESS_POOL_EXHAUSTED", "VPN_SETUP_FAILED", "VPN_TERMINATION_UNAVAILABLE", "VPN_SESSION_STATUS_UNAVAILABLE") -> code!!
                         code in setOf("SUPPORT_NOT_FOUND", "IDEMPOTENCY_CONFLICT", "RATE_LIMITED", "ATTACHMENT_REJECTED", "INVALID_REQUEST", "MESSAGE_NOT_FOUND", "BILLING_DISABLED", "BILLING_REVISION_CHANGED", "BILLING_ACTION_UNAVAILABLE", "BILLING_ROUTE_UNAVAILABLE", "BILLING_OFFER_UNAVAILABLE", "BILLING_CURRENCY_LOCKED", "BILLING_IDEMPOTENCY_CONFLICT", "BILLING_OPERATION_IN_PROGRESS", "BILLING_OPERATION_NOT_FOUND", "device_not_found") -> code!!
                         code in setOf("DEMO_UNAVAILABLE", "DEMO_RATE_LIMITED", "DEMO_QUOTA_EXHAUSTED", "REGISTRATION_REQUIRED", "otp_invalid_or_expired", "otp_rate_limited", "device_limit_reached", "device_revoked", "user_blocked", "invalid_refresh_token", "invalid_access_token", "invalid_session", "authentication_required") -> code!!
-                        response.code == 503 -> "service_unavailable"
+                        response.code in 500..599 -> "service_unavailable"
                         else -> "http_error"
                     })
                 }
@@ -134,7 +140,11 @@ class HttpAuthApi(baseUrl: String, allowLoopbackForTests: Boolean = false, priva
         if (call("auth/request-otp", mapOf("email" to email)).text("status") != "accepted") throw AuthFailure("invalid_response")
     }
     override suspend fun verifyOtp(email: String, code: String, installationId: String, deviceName: String) = tokens(call("auth/verify-otp", mapOf("email" to email, "code" to code, "installation_id" to installationId, "platform" to "ANDROID", "device_name" to deviceName, "allow_device_management" to true)))
-    override suspend fun refresh(credentials: Credentials) = tokens(call("auth/refresh", mapOf("session_id" to credentials.sessionId, "refresh_token" to credentials.refreshToken)))
+    override suspend fun refresh(credentials: Credentials): Tokens {
+        val body = mutableMapOf("session_id" to credentials.sessionId, "refresh_token" to credentials.refreshToken)
+        credentials.rotationId?.let { body["rotation_id"] = it }
+        return tokens(call("auth/refresh", body))
+    }
     override suspend fun demo(deviceKey: String) = tokens(call("auth/demo", mapOf("device_key" to deviceKey)))
     override suspend fun me(access: String): Profile {
         val json = call("me", access = access)

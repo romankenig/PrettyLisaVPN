@@ -198,7 +198,8 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 		}
 		question := query.Question[0]
 		requests <- r.URL.Path + " " + question.Name
-		if r.URL.Path == "/direct" && question.Name == "backup.example.com." {
+		if r.URL.Path == "/direct" && strings.HasPrefix(question.Name, "blocked-") ||
+			r.URL.Path == "/secondary" && question.Name == "blocked-both.example.com." {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
@@ -218,12 +219,16 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 
 	for _, tc := range []struct {
 		name, mode, directHost, vpnHost string
+		directQueries                   []string
 		splitDNS, vpnAvailable          bool
 	}{
-		{"previous Android", "include", "outside.example.com", "", false, false},
-		{"include", "include", "outside.example.com", "sub.selected.example.com", true, false},
-		{"exclude", "exclude", "sub.selected.example.com", "selected.example.com", true, false},
-		{"direct resolver unavailable", "include", "backup.example.com", "sub.selected.example.com", true, true},
+		{"previous Android", "include", "outside.example.com", "", nil, false, false},
+		{"include", "include", "outside.example.com", "sub.selected.example.com", []string{"/direct"}, true, false},
+		{"exclude", "exclude", "sub.selected.example.com", "selected.example.com", []string{"/direct"}, true, false},
+		{"primary resolver unavailable", "include", "blocked-primary.example.com", "sub.selected.example.com",
+			[]string{"/direct", "/secondary"}, true, false},
+		{"both physical resolvers unavailable", "include", "blocked-both.example.com", "sub.selected.example.com",
+			[]string{"/direct", "/secondary", "/vpn-tcp"}, true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			type obj = map[string]any
@@ -234,6 +239,9 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 			data, err := p.coreConfig(true, tc.splitDNS)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if _, err := serial.LoadJSONConfig(bytes.NewReader(data)); err != nil {
+				t.Fatalf("production resolver configuration: %v", err)
 			}
 			var config obj
 			if err := json.Unmarshal(data, &config); err != nil {
@@ -251,12 +259,22 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 				resolverURL := "h2c://" + strings.TrimPrefix(resolver.URL, "http://")
 				for _, entry := range dnsConfig["servers"].([]any) {
 					server := entry.(obj)
-					if server["tag"] == "resolver-direct" {
-						server["address"] = resolverURL + "/direct"
-					} else if server["address"] != "fakedns" {
+					switch server["tag"] {
+					case "resolver-direct":
+						server["address"] = "h2c+local://" + strings.TrimPrefix(resolver.URL, "http://") + "/direct"
+					case "resolver-direct-backup":
+						server["address"] = "h2c+local://" + strings.TrimPrefix(resolver.URL, "http://") + "/secondary"
+					default:
+						if server["address"] == "fakedns" {
+							continue
+						}
 						server["timeoutMs"] = 150
 						if tc.vpnAvailable {
-							server["address"] = resolverURL + "/vpn"
+							path := "/vpn"
+							if server["address"] == "tcp://1.1.1.1:53" {
+								path = "/vpn-tcp"
+							}
+							server["address"] = resolverURL + path
 							server["timeoutMs"] = 2000
 						}
 					}
@@ -325,9 +343,8 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 					t.Fatalf("missing %s DNS query for %s", path, domain)
 				}
 			}
-			checkRequest("/direct", tc.directHost)
-			if tc.vpnAvailable {
-				checkRequest("/vpn", tc.directHost)
+			for _, path := range tc.directQueries {
+				checkRequest(path, tc.directHost)
 			}
 			for _, domain := range []string{tc.vpnHost, "api.test.prettylisavpn.com", "www.ifconfig.me"} {
 				ips, _, err := client.LookupIP(domain, xdns.IPOption{IPv4Enable: true})

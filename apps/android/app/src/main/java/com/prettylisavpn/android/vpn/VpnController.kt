@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.vpn
 
 import com.prettylisavpn.android.auth.AuthFailure
+import com.prettylisavpn.android.data.readWithNetworkGrace
 import com.prettylisavpn.android.diagnostics.*
 
 import kotlinx.coroutines.*
@@ -44,6 +45,8 @@ class VpnController(
     private var operation: Job? = null
     private var stopping: Job? = null
     private var active: ConnectionAdapter? = null
+    private var remoteCleanupPending = false
+    private var startupRecovery: Job? = null
     private var recoveredOwner: String? = null
     private var restart: Job? = null
     private var resetRequested = false
@@ -51,14 +54,26 @@ class VpnController(
     private val healthWake = Channel<Unit>(Channel.CONFLATED)
 
     override fun connect(country: String) {
-        if (operation?.isActive == true || stopping?.isActive == true || active != null) return
+        if (operation?.isActive == true || stopping?.isActive == true || (active != null && !remoteCleanupPending)) return
         if (country != "AUTO" && !country.matches(Regex("[A-Z]{2}"))) return
         val id = owner() ?: return
         record(DiagnosticKind.VPN_CONNECT, country = country)
         intentRevision++
+        mutable.value = VpnStatus(VpnPhase.CONNECTING)
         operation = scope.launch {
             val recoveries = ArrayDeque<Long>()
             try {
+                startupRecovery?.join()
+                if (owner() != id) { mutable.value = VpnStatus(); return@launch }
+                if (remoteCleanupPending) finishCleanup()
+                if (recovery != null && recoveredOwner != id) {
+                    try { recoverStartup(id) }
+                    catch (cancel: CancellationException) { throw cancel }
+                    catch (_: Exception) {
+                        mutable.value = VpnStatus(error = VpnError.CLEANUP)
+                        return@launch
+                    }
+                }
                 while (true) {
                     ensureActive()
                     if (owner() != id) { mutable.value = VpnStatus(); return@launch }
@@ -119,7 +134,7 @@ class VpnController(
                     ensureActive()
                     if (broken) preference.failedAfterConnection(adapter.method.id)
                     mutable.value = VpnStatus(VpnPhase.RECONNECTING, method = adapter.method)
-                    withContext(NonCancellable) { adapter.disconnect(); active = null }
+                    finishCleanup(retryNetwork = broken)
                     ensureActive()
                     if (!broken || owner() != id) { mutable.value = VpnStatus(VpnPhase.FAILED, VpnError.ACCESS); return@launch }
                     val instant = elapsedMillis()
@@ -131,8 +146,29 @@ class VpnController(
                     delay(policy.recoveryBackoffMillis)
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutable.value = VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP) }
+            catch (error: Exception) { reportCleanupFailure(error) }
         }
+    }
+    private suspend fun finishCleanup(retryNetwork: Boolean = false) {
+        try {
+            withContext(NonCancellable) { active?.disconnect() }
+        } catch (error: RemoteCleanupFailure) {
+            remoteCleanupPending = true
+            if (!retryNetwork) throw error
+            // Local shutdown succeeded. Retry the idempotent lease revocation
+            // while the system's default network settles.
+            readWithNetworkGrace(now = elapsedMillis) {
+                try { withContext(NonCancellable) { active?.disconnect() } }
+                catch (retry: RemoteCleanupFailure) { throw (retry.cause as? AuthFailure ?: retry) }
+            }
+        }
+        active = null
+        remoteCleanupPending = false
+    }
+    private fun reportCleanupFailure(error: Exception) {
+        if (error is RemoteCleanupFailure) remoteCleanupPending = true
+        mutable.value = if (remoteCleanupPending) VpnStatus(error = VpnError.CLEANUP)
+            else VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP)
     }
     override fun disconnect() {
         record(DiagnosticKind.VPN_DISCONNECT, active?.method)
@@ -147,10 +183,12 @@ class VpnController(
         mutable.value = VpnStatus(VpnPhase.DISCONNECTING)
         stopping = scope.launch {
             operation?.join()
+            startupRecovery?.join()
             try {
-                active?.disconnect(); active = null
+                finishCleanup()
                 mutable.value = VpnStatus(if (resetRequested) VpnPhase.RECONNECTING else VpnPhase.DISCONNECTED)
-            } catch (_: Exception) { mutable.value = VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP) }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (error: Exception) { reportCleanupFailure(error) }
         }
     }
     override fun resetMethods(country: String) {
@@ -177,6 +215,12 @@ class VpnController(
         if (healthPolicy != null && active?.method?.id == method && stopping?.isActive != true &&
             mutable.value.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK)) {
             mutable.value = VpnStatus(VpnPhase.CHECKING, method = active?.method)
+            healthWake.trySend(Unit)
+        }
+    }
+    fun checkAfterWake() {
+        if (active != null && operation?.isActive == true &&
+            mutable.value.phase in setOf(VpnPhase.CONNECTED, VpnPhase.CHECKING, VpnPhase.WAITING_NETWORK)) {
             healthWake.trySend(Unit)
         }
     }
@@ -212,16 +256,19 @@ class VpnController(
     suspend fun beforeLogout() { disconnect(); stopping?.join() }
     suspend fun beforeForget() = beforeLogout()
     suspend fun confirmedDeviceRevocation() = beforeLogout()
-    suspend fun recover() {
+    fun recover() {
         val id = owner() ?: return
-        if (recovery == null || recoveredOwner == id || active != null || operation?.isActive == true || stopping?.isActive == true) return
+        if (recovery == null || recoveredOwner == id || startupRecovery?.isActive == true ||
+            active != null || operation?.isActive == true || stopping?.isActive == true) return
+        startupRecovery = scope.launch {
+            try { recoverStartup(id) }
+            catch (error: CancellationException) { throw error }
+            catch (_: Exception) { /* An explicit Connect can retry before creating a new lease. */ }
+        }
+    }
+    private suspend fun recoverStartup(id: String) {
         record(DiagnosticKind.VPN_RECOVER, outcome = DiagnosticOutcome.STARTED)
-        active = recovery
-        mutable.value = VpnStatus(VpnPhase.DISCONNECTING)
-        try {
-            recovery.recover()
-            active = null; recoveredOwner = id; mutable.value = VpnStatus()
-        } catch (error: CancellationException) { throw error }
-        catch (_: Exception) { mutable.value = VpnStatus(VpnPhase.FAILED, VpnError.CLEANUP) }
+        recovery?.recover()
+        recoveredOwner = id
     }
 }

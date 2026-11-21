@@ -19,16 +19,19 @@ internal suspend fun maintainLeaseHeartbeat(
     heartbeatRequired: Boolean = true,
 ) {
     if (!heartbeatRequired) {
+        var wait = intervalMillis
         while (true) {
-            delay(intervalMillis)
+            delay(wait)
             val acknowledged = try { renew() }
             catch (cancel: CancellationException) { throw cancel }
             catch (failure: AuthFailure) {
-                // An ambiguous refresh remains unreplayable in SessionCoordinator.
-                // It is not proof that the server revoked this existing VPN lease.
-                if (failure.code in setOf("offline", "network_uncertain", "service_unavailable", "rotation_uncertain")) null else false
-            } catch (_: Exception) { false }
+                // The server enforces the lease deadline. An unavailable or
+                // malformed response does not establish that it ended the lease.
+                if (failure.code in setOf("invalid_refresh_token", "invalid_session", "device_revoked", "user_blocked",
+                        "authentication_required", "reauth_required", "VPN_SESSION_NOT_FOUND")) false else null
+            } catch (_: Exception) { null }
             if (acknowledged == false) { lost(); return }
+            wait = if (acknowledged == true) intervalMillis else retryMillis
         }
     }
     while (true) {

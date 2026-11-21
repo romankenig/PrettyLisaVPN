@@ -1,5 +1,6 @@
 package com.prettylisavpn.android.network
 
+import android.net.Network
 import okhttp3.ConnectionPool
 import okhttp3.Dns
 import okhttp3.OkHttpClient
@@ -7,12 +8,20 @@ import java.net.Proxy
 import javax.net.SocketFactory
 
 /** A route change must not reuse TCP/HTTP2 sockets opened before the VPN. */
-internal class HttpRoute(val sockets: SocketFactory? = null, val dns: Dns? = null)
+internal class HttpRoute(val sockets: SocketFactory? = null, val dns: Dns? = null, val network: Network? = null)
 
 internal object HttpRoutes {
     @Volatile var current = HttpRoute()
         private set
     fun vpn(sockets: SocketFactory, dns: Dns) { current = HttpRoute(sockets, dns) }
+    fun vpn(network: Network) {
+        if (current.network != network) {
+            val dns = object : Dns {
+                override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
+            }
+            current = HttpRoute(network.socketFactory, dns, network)
+        }
+    }
     fun default() { current = HttpRoute() }
 }
 

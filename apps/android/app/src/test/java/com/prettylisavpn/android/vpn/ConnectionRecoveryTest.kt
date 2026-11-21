@@ -110,7 +110,11 @@ class ConnectionRecoveryTest {
         advanceTimeBy(300_000); runCurrent()
         assertEquals(VpnPhase.CONNECTED, controller.status.value.phase)
         assertEquals(1, events.count { it.startsWith("start:") })
-        adapter.result = TunnelHealth.HEALTHY; advanceTimeBy(30_000); runCurrent()
+        adapter.result = TunnelHealth.HEALTHY
+        val previousProbes = events.count { it.startsWith("probe:") }
+        controller.checkAfterWake()
+        runCurrent()
+        assertEquals(previousProbes + 1, events.count { it.startsWith("probe:") })
         assertEquals(VpnPhase.CONNECTED, controller.status.value.phase); controller.beforeLogout()
     }
     @Test fun manualDisconnectCancelsInFlightHealthAndDoesNotResurrect() = runTest {

@@ -1,6 +1,7 @@
 package com.prettylisavpn.android.auth
 
 import java.time.Instant
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
@@ -15,7 +16,7 @@ interface CredentialVault {
 }
 
 /** One process-wide owner. All refresh/login/logout transitions share this mutex.
- * The durable pending marker prevents replay after a timeout or death during rotation.
+ * The durable operation UUID makes refresh recoverable after a timeout or process death.
  */
 class SessionCoordinator(
     private val api: AuthApi,
@@ -33,7 +34,7 @@ class SessionCoordinator(
     var needsRecovery = false
         private set
     private val terminal = setOf("invalid_refresh_token", "invalid_session", "device_revoked", "user_blocked", "authentication_required")
-    private suspend fun storage(block: () -> Unit) { try { withContext(Dispatchers.IO) { block() } } catch (failure: CancellationException) { throw failure } catch (_: Exception) { access = null; profile = null; throw AuthFailure("storage_unavailable") } }
+    private suspend fun storage(block: () -> Unit) { try { withContext(Dispatchers.IO) { block() } } catch (failure: CancellationException) { throw failure } catch (_: Exception) { throw AuthFailure("storage_unavailable") } }
     private suspend fun credentials(): Credentials? = try { withContext(Dispatchers.IO) { vault.read() } } catch (failure: CancellationException) { throw failure } catch (_: Exception) { throw AuthFailure("storage_unavailable") }
     private suspend fun clear() { access = null; profile = null; storage { vault.clear() }; needsRecovery = false }
     suspend fun requestOtp(email: String) = mutex.withLock { api.requestOtp(email) }
@@ -51,7 +52,7 @@ class SessionCoordinator(
     }
     private suspend fun accept(tokens: Tokens) {
         // Persist the new refresh credential BEFORE using its bearer or publishing authentication.
-        needsRecovery = true
+        needsRecovery = profile == null
         storage { vault.write(tokens.credentials) }
         access = tokens.access
         accessUntil = elapsedMillis() + (tokens.ttlSeconds.coerceAtMost(86_400) * 1_000 - 5_000).coerceAtLeast(0)
@@ -59,16 +60,16 @@ class SessionCoordinator(
     private suspend fun bearer(): String {
         access?.takeIf { elapsedMillis() < accessUntil }?.let { return it }
         val stored = credentials() ?: throw AuthFailure("reauth_required")
-        if (!Instant.parse(stored.expiresAt).isAfter(now())) { clear(); throw AuthFailure("reauth_required") }
-        if (stored.rotationPending) { access = null; profile = null; throw AuthFailure("rotation_uncertain") }
-        storage { vault.write(stored.copy(rotationPending = true)) }
-        val tokens = try { api.refresh(stored) } catch (failure: AuthFailure) {
-            access = null
-            if (failure.code in terminal) { clear(); throw failure }
-            // These outcomes prove no successful rotation. All ambiguous outcomes retain the marker.
-            if (failure.code in setOf("offline", "service_unavailable")) storage { vault.write(stored) }
-            throw failure
+        if (stored.rotationId == null && !Instant.parse(stored.expiresAt).isAfter(now())) {
+            clear()
+            throw AuthFailure("reauth_required")
         }
+        // An operation created by an older client has no UUID to reconcile on the server.
+        if (stored.rotationPending && stored.rotationId == null) throw AuthFailure("rotation_uncertain")
+        val pending = if (stored.rotationId != null) stored else stored.copy(
+            rotationPending = true, rotationId = UUID.randomUUID().toString(),
+        ).also { storage { vault.write(it) } }
+        val tokens = api.refresh(pending)
         if (tokens.credentials.sessionId != stored.sessionId) throw AuthFailure("rotation_uncertain")
         accept(tokens)
         return tokens.access
@@ -82,7 +83,8 @@ class SessionCoordinator(
                 action(bearer()) // One bounded refresh/retry, never an interceptor replay of POST refresh.
             }
         } catch (failure: AuthFailure) {
-            if (failure.code in terminal || failure.code == "invalid_access_token") clear()
+            if (failure.code in terminal) clear()
+            if (failure.code == "invalid_access_token") access = null
             throw failure
         }
     }
@@ -95,7 +97,7 @@ class SessionCoordinator(
     suspend fun logout() = mutex.withLock {
         try { authenticated { api.logout(it) } } catch (failure: AuthFailure) {
             // A confirmed unusable session is already signed out. Offline/timeout retain credentials.
-            if (failure.code !in terminal && failure.code != "invalid_access_token" && failure.code != "reauth_required") throw failure
+            if (failure.code !in terminal && failure.code != "reauth_required") throw failure
         }
         clear()
     }

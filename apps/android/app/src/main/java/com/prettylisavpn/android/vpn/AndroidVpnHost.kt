@@ -45,7 +45,7 @@ class AndroidVpnHost private constructor(context: Context, private val sessions:
             diagnostics.record(
                 com.prettylisavpn.android.diagnostics.DiagnosticKind.VPN_STATE,
                 method = (state.method ?: state.attempt?.method)?.id, phase = state.phase.name,
-                failure = state.error?.let { com.prettylisavpn.android.diagnostics.DiagnosticFailure.valueOf(it.name) })
+                failure = supportFailureCode(state.error)?.let(com.prettylisavpn.android.diagnostics.DiagnosticFailure::valueOf))
             if (state.phase == VpnPhase.DISCONNECTED || (state.phase == VpnPhase.FAILED && state.error != VpnError.CLEANUP))
                 context.stopService(android.content.Intent(context, TunnelForegroundService::class.java))
         } }

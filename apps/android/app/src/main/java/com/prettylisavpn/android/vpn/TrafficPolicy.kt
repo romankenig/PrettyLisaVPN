@@ -105,7 +105,7 @@ suspend fun applyTrafficSelection(next: TrafficSelection, store: TrafficPreferen
     if (vpn != null && vpn.status.value.phase != VpnPhase.DISCONNECTED) {
         vpn.disconnect()
         val stopped = withTimeout(45_000) { vpn.status.first { it.phase == VpnPhase.DISCONNECTED || it.phase == VpnPhase.FAILED } }
-        check(stopped.phase == VpnPhase.DISCONNECTED)
+        check(stopped.phase == VpnPhase.DISCONNECTED && stopped.error != VpnError.CLEANUP)
     }
     store.save(next)
 }

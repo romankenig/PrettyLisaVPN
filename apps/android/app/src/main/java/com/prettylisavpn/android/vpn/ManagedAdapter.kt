@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.google.gson.JsonParser
+import com.prettylisavpn.android.auth.AuthFailure
 import com.prettylisavpn.android.auth.HttpAuthApi
 import com.prettylisavpn.android.auth.SessionCoordinator
 import com.prettylisavpn.android.network.HttpRoutes
@@ -92,6 +93,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
             @Suppress("UNREACHABLE_CODE") error("VPN_SETUP_FAILED")
         }
         lease = ready
+        armDeadline(ready)
         val config = requireNotNull(ready.configuration)
         val profile = config.engine_profile
         require(ready.method == method.id && profile.get("session").asString == ready.id)
@@ -107,9 +109,7 @@ internal class ManagedAdapter(private val context: Context, private val sessions
             while (true) { vpnNetwork()?.let { return@vpnDeadline it }; delay(100) }
             @Suppress("UNREACHABLE_CODE") error("VPN_NETWORK_MISSING")
         }
-        HttpRoutes.vpn(network.socketFactory, object : okhttp3.Dns {
-            override fun lookup(hostname: String) = network.getAllByName(hostname).toList()
-        })
+        HttpRoutes.vpn(network)
         val verified = verifyConnection(isUp = runtime::isUp) { verify(network, ready, config) }
         return if (verified && runtime.isUp()) {
             stage = "VERIFIED"; ConnectionResult.Verified
@@ -155,15 +155,22 @@ internal class ManagedAdapter(private val context: Context, private val sessions
     override suspend fun health(): TunnelHealth {
         val row = lease ?: return TunnelHealth.UNKNOWN
         val config = row.configuration ?: return TunnelHealth.UNKNOWN
-        val result = checkTunnelNetwork(context, vpnNetwork(), config.expected_egress_ips, runtime::isUp)
-        return if (lease?.id == row.id) result else TunnelHealth.UNKNOWN
+        val network = vpnNetwork()
+        val result = checkTunnelNetwork(context, network, config.expected_egress_ips, runtime::isUp)
+        if (lease?.id != row.id) return TunnelHealth.UNKNOWN
+        if (result == TunnelHealth.HEALTHY && network != null) HttpRoutes.vpn(network)
+        return result
     }
     private suspend fun closeRemote() {
         val current = lease ?: api.current() ?: run { acquired = false; return }
         lease = current
         if (current.status != "CLOSED") {
-            api.revoke(current.id)
-            vpnDeadline(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
+            try {
+                api.revoke(current.id)
+                vpnDeadline(30_000) { while (api.get(current.id).status != "CLOSED") delay(1_000) }
+            } catch (failure: AuthFailure) {
+                if (failure.code != "VPN_SESSION_NOT_FOUND") throw failure
+            }
         }
         lease = null; acquired = false
     }
