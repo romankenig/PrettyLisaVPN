@@ -34,11 +34,15 @@ adb wait-for-device
 test "$(adb shell id -u | tr -d '\r')" = 0
 adb shell svc data disable
 adb shell svc wifi enable
+adb shell cmd wifi set-ipreach-disconnect disabled
 adb shell cmd wifi connect-network AndroidWifi open
 wifi_ready=false
 for ((attempt = 0; attempt < 30; attempt++)); do
-  uplink_id=$(adb shell dumpsys connectivity | sed -n 's/.*Active default network: \([0-9][0-9]*\).*/\1/p')
-  if [[ "$uplink_id" =~ ^[0-9]+$ ]] && adb shell cmd wifi status | grep -F 'Wifi is connected to "AndroidWifi"'; then
+  networks=$(adb shell dumpsys connectivity)
+  uplink_id=$(sed -n 's/.*Active default network: \([0-9][0-9]*\).*/\1/p' <<< "$networks")
+  if [[ "$uplink_id" =~ ^[0-9]+$ ]] &&
+      grep -qE "NetworkAgentInfo\\{network\\{$uplink_id\\}.*WIFI CONNECTED.*10\\.0\\.2\\.[0-9]+/24" <<< "$networks" &&
+      adb shell ping -c 1 -W 1 10.0.2.2 >/dev/null 2>&1; then
     wifi_ready=true
     break
   fi
