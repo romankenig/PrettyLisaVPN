@@ -48,7 +48,7 @@ class PhysicalSplitDnsTest {
                 ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true)
             // A separate hostname checks the fixture without warming the direct site's DNS cache.
             val baseline = fetch(context, "uplink.prettylisa.test")
-            assertTrue("The Android Wi-Fi fixture must answer HTTP: $baseline", proof(baseline))
+            assertTrue("The Android Wi-Fi fixture must answer HTTP: ${details(baseline)}", proof(baseline))
             assertNull("The disposable emulator must authorize VPN for the test APK", VpnService.prepare(context))
             try {
                 runBlocking {

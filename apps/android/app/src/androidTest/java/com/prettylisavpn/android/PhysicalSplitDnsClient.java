@@ -62,14 +62,15 @@ public final class PhysicalSplitDnsClient extends ContentProvider {
             return result;
         }
         boolean expectVpn = !UPLINK.equals(host);
-        if (network == null || vpn != expectVpn) return result;
+        if (vpn != expectVpn) return result;
 
         try {
-            for (InetAddress address : network.getAllByName(host)) {
+            InetAddress[] addresses = expectVpn ? network.getAllByName(host) : InetAddress.getAllByName(host);
+            for (InetAddress address : addresses) {
                 byte[] bytes = address.getAddress();
                 if (bytes.length != 4 || (expectVpn && !isFake(bytes))) continue;
                 result.putBoolean("fake", isFake(bytes));
-                try (Socket socket = network.getSocketFactory().createSocket()) {
+                try (Socket socket = expectVpn ? network.getSocketFactory().createSocket() : new Socket()) {
                     socket.connect(new InetSocketAddress(address, 18080), 5000);
                     socket.setSoTimeout(5000);
                     String request = "GET /proof.txt HTTP/1.0\r\nHost: " + host + "\r\n\r\n";
