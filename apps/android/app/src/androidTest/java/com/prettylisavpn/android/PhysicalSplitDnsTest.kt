@@ -6,16 +6,13 @@ import android.net.NetworkCapabilities
 import android.net.VpnService
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import com.google.gson.Gson
 import com.prettylisavpn.android.vpn.ManagedRuntime
 import com.wireguard.crypto.KeyPair
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -44,17 +41,10 @@ class PhysicalSplitDnsTest {
             "public_key" to KeyPair().publicKey.toBase64(),
             "routing" to mapOf("mode" to "include", "domains" to listOf(selected)),
         ))
-        ActivityScenario.launch(MainActivity::class.java).use { activity ->
-            VpnService.prepare(context)?.let { consent ->
-                activity.onActivity { it.startActivity(consent) }
-                val allow = UiDevice.getInstance(instrumentation)
-                    .wait(Until.findObject(By.res("android", "button1")), 10_000)
-                assertNotNull("VPN consent dialog did not open", allow)
-                allow!!.click()
-            }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            assertNull("The disposable emulator must authorize VPN for the test APK", VpnService.prepare(context))
             try {
                 val vpn = runBlocking {
-                    withTimeout(20_000) { while (VpnService.prepare(context) != null) delay(100) }
                     runtime.start(profile)
                     withTimeout(15_000) {
                         @Suppress("DEPRECATION")
