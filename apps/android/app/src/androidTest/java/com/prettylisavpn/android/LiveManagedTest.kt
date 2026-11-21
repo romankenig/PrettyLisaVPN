@@ -50,7 +50,11 @@ class LiveManagedTest {
         require(country in setOf("DE", "US"))
         val methods = credential.getAsJsonArray("methods").map { it.asString }
         require(methods.isNotEmpty() && methods.all { id -> connectionMethods.any { it.id == id } })
-        val modes = credential.getAsJsonArray("routing_modes")?.map { it.asString } ?: listOf("all")
+        val modes = if (InstrumentationRegistry.getArguments().getString("liveSplit") == "true") {
+            listOf("include")
+        } else {
+            credential.getAsJsonArray("routing_modes")?.map { it.asString } ?: listOf("all")
+        }
         require(modes.isNotEmpty() && modes.all { it in setOf("all", "include", "exclude") })
         // Fixed diagnostic origins only, no customer destinations or DNS logs.
         val origins = listOf("https://api.ipify.org", "https://ipv4.icanhazip.com", "https://ifconfig.me/ip")
@@ -153,7 +157,7 @@ class LiveManagedTest {
                             manager.allNetworks.firstOrNull { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
                         }
                         row["tunnel_https"] = host.status.value.phase == VpnPhase.CONNECTED && vpn != null && runCatching {
-                            val connection = vpn.openConnection(URL("https://api.prettylisavpn.com/health"), Proxy.NO_PROXY) as HttpsURLConnection
+                            val connection = vpn.openConnection(URL("${BuildConfig.API_BASE_URL}/health"), Proxy.NO_PROXY) as HttpsURLConnection
                             try {
                                 connection.connectTimeout = 8_000; connection.readTimeout = 8_000
                                 connection.instanceFollowRedirects = false

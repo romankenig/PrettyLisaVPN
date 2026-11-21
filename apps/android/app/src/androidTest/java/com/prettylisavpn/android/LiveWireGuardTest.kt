@@ -110,7 +110,7 @@ class LiveWireGuardTest {
                     manager.allNetworks.firstOrNull { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
                 }
                 val tunnelHttps = state.phase == VpnPhase.CONNECTED && vpn != null && runCatching {
-                    val connection = vpn.openConnection(URL("https://api.prettylisavpn.com/health"), Proxy.NO_PROXY) as HttpsURLConnection
+                    val connection = vpn.openConnection(URL("${BuildConfig.API_BASE_URL}/health"), Proxy.NO_PROXY) as HttpsURLConnection
                     try {
                         connection.connectTimeout = 8_000; connection.readTimeout = 8_000
                         connection.instanceFollowRedirects = false

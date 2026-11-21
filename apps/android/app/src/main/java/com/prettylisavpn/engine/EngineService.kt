@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
 import android.net.VpnService
 import android.os.Build
 import android.os.Handler
@@ -30,6 +31,7 @@ class EngineService : VpnService() {
     private val handler = Handler(Looper.getMainLooper())
     private val engine = Mobile.newEngine()
     @Volatile private var tun: ParcelFileDescriptor? = null
+    @Volatile private var physicalDns: PhysicalDns? = null
     @Volatile private var owner: IBinder? = null
     @Volatile var running = false
         private set
@@ -82,7 +84,9 @@ class EngineService : VpnService() {
     }
     private fun closeOwned() {
         try {
-            engine.stop(); tun?.close(); tun = null
+            engine.stop()
+            physicalDns?.close(); physicalDns = null
+            tun?.close(); tun = null
             try { owner?.unlinkToDeath(death, 0) } catch (_: NoSuchElementException) { }
             owner = null; running = false
         } catch (_: Exception) {
@@ -95,8 +99,10 @@ class EngineService : VpnService() {
     } catch (_: Exception) { requestStop(); failed }
     private val platform = object : Platform {
         override fun protect(fd: Int): Boolean = this@EngineService.protect(fd)
-        override fun openTun(): Int {
+        override fun lookupPhysicalIPv4(host: String): String = physicalDns?.lookupIPv4(host).orEmpty()
+        override fun openTun(usePhysicalDNS: Boolean): Int {
             check(tun == null && prepare(this@EngineService) == null)
+            if (usePhysicalDNS) physicalDns = PhysicalDns(getSystemService(ConnectivityManager::class.java))
             return Builder().setSession("PrettyLisaVPN").setMtu(1280)
                 .addAddress("172.30.255.1", 30).addAddress("fd7a:115c:a1e0::1", 126)
                 .addDnsServer("1.1.1.1").addRoute("0.0.0.0", 0).addRoute("::", 0)

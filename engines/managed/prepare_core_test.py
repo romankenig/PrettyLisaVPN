@@ -18,6 +18,9 @@ class PreparationTest(unittest.TestCase):
             original = cache / prepare_core.FILE
             original.parent.mkdir(parents=True)
             original.write_bytes(b"original")
+            dns = cache / prepare_core.DNS_NAMESERVER
+            dns.parent.mkdir(parents=True)
+            dns.write_bytes(b"original DNS")
             for directory in [cache, *original.parents]:
                 if directory == root:
                     break
@@ -33,6 +36,7 @@ class PreparationTest(unittest.TestCase):
                     patch.object(prepare_core.subprocess, "check_output", return_value=metadata),
                     patch.object(prepare_core.subprocess, "run"),
                     patch.object(prepare_core, "patched", return_value=b"patched"),
+                    patch.object(prepare_core, "android_dns_patched", return_value=b"patched DNS"),
                     patch.object(prepare_core, "GRPC_FILES", {}),
                 ):
                     prepare_core.prepare("go")
@@ -40,6 +44,8 @@ class PreparationTest(unittest.TestCase):
                 target = script.parent / "patched" / "xray-core"
                 self.assertEqual((target / prepare_core.FILE).read_bytes(), b"patched")
                 self.assertEqual(original.read_bytes(), b"original")
+                self.assertEqual((target / prepare_core.DNS_NAMESERVER).read_bytes(), b"patched DNS")
+                self.assertEqual(dns.read_bytes(), b"original DNS")
                 self.assertTrue((target / prepare_core.MARKER).is_file())
                 # Windows does not implement Unix directory write permissions.
                 import os

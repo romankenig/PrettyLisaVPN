@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	xraydns "github.com/xtls/xray-core/app/dns"
 	xnet "github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/common/session"
 	"github.com/xtls/xray-core/core"
@@ -198,7 +199,8 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 		}
 		question := query.Question[0]
 		requests <- r.URL.Path + " " + question.Name
-		if r.URL.Path == "/direct" && strings.HasPrefix(question.Name, "blocked-") ||
+		if question.Name == "router-only.example.com." ||
+			r.URL.Path == "/direct" && strings.HasPrefix(question.Name, "blocked-") ||
 			r.URL.Path == "/secondary" && question.Name == "blocked-both.example.com." {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
@@ -221,16 +223,49 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 		name, mode, directHost, vpnHost string
 		directQueries                   []string
 		splitDNS, vpnAvailable          bool
+		physicalDNS, oldAndroid         bool
 	}{
-		{"previous Android", "include", "outside.example.com", "", nil, false, false},
-		{"include", "include", "outside.example.com", "sub.selected.example.com", []string{"/direct"}, true, false},
-		{"exclude", "exclude", "sub.selected.example.com", "selected.example.com", []string{"/direct"}, true, false},
+		{"tunneled DNS only", "include", "outside.example.com", "", nil, false, false, false, false},
+		{"include", "include", "outside.example.com", "sub.selected.example.com", []string{"/direct"}, true, false, false, false},
+		{"exclude", "exclude", "sub.selected.example.com", "selected.example.com", []string{"/direct"}, true, false, false, false},
 		{"primary resolver unavailable", "include", "blocked-primary.example.com", "sub.selected.example.com",
-			[]string{"/direct", "/secondary"}, true, false},
+			[]string{"/direct", "/secondary"}, true, false, false, false},
 		{"both physical resolvers unavailable", "include", "blocked-both.example.com", "sub.selected.example.com",
-			[]string{"/direct", "/secondary", "/vpn-tcp"}, true, true},
+			[]string{"/direct", "/secondary", "/vpn-tcp"}, true, true, false, false},
+		{"Android 0.30.8 without public DNS", "include", "router-only.example.com", "",
+			[]string{"/direct", "/secondary", "/vpn-tcp", "/vpn"}, true, true, false, true},
+		{"device network DNS in include", "include", "router-only.example.com", "sub.selected.example.com",
+			[]string{"/android"}, true, true, true, false},
+		{"device network DNS in exclude", "exclude", "sub.selected.example.com", "selected.example.com",
+			[]string{"/android"}, true, true, true, false},
+		{"device DNS stalls", "include", "slow-device.example.com", "sub.selected.example.com",
+			[]string{"/android", "/direct"}, true, true, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			stall := tc.directHost == "slow-device.example.com"
+			if tc.physicalDNS {
+				release := make(chan struct{})
+				defer close(release)
+				xraydns.SetAndroidDirectDNSResolver(func(host string) []xnet.IP {
+					requests <- "/android " + host + "."
+					if stall {
+						<-release
+					}
+					return []xnet.IP{net.IPv4(127, 0, 0, 1)}
+				})
+				t.Cleanup(func() { xraydns.SetAndroidDirectDNSResolver(nil) })
+			}
+			checkRequest := func(path, domain string) {
+				t.Helper()
+				select {
+				case request := <-requests:
+					if request != path+" "+domain+"." {
+						t.Fatalf("wanted %s DNS query for %s, got %s", path, domain, request)
+					}
+				default:
+					t.Fatalf("missing %s DNS query for %s", path, domain)
+				}
+			}
 			type obj = map[string]any
 			p := sample("VLESS_TLS")
 			p.Routing = &Routing{Mode: tc.mode, Domains: []string{
@@ -257,8 +292,19 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 			dnsConfig := config["dns"].(obj)
 			if tc.splitDNS {
 				resolverURL := "h2c://" + strings.TrimPrefix(resolver.URL, "http://")
+				servers := make([]any, 0)
 				for _, entry := range dnsConfig["servers"].([]any) {
 					server := entry.(obj)
+					if tc.oldAndroid && server["address"] == "android-direct" {
+						continue
+					}
+					servers = append(servers, server)
+					if server["address"] == "android-direct" {
+						if stall {
+							server["timeoutMs"] = 100
+						}
+						continue
+					}
 					switch server["tag"] {
 					case "resolver-direct":
 						server["address"] = "h2c+local://" + strings.TrimPrefix(resolver.URL, "http://") + "/direct"
@@ -279,6 +325,7 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 						}
 					}
 				}
+				dnsConfig["servers"] = servers
 			} else {
 				dnsConfig["servers"].([]any)[1] = obj{"address": "1.1.1.1", "timeoutMs": 150}
 			}
@@ -308,9 +355,12 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 				t.Fatalf("FakeDNS sent a real query for %s", domain)
 			default:
 			}
-			if !tc.splitDNS {
+			if !tc.splitDNS || tc.oldAndroid {
 				if ips, _, _ := client.LookupIP(tc.directHost, xdns.IPOption{IPv4Enable: true}); len(ips) != 0 {
-					t.Fatalf("previous direct DNS unexpectedly worked without the VPN resolver: %v", ips)
+					t.Fatalf("previous direct DNS unexpectedly resolved without an available resolver: %v", ips)
+				}
+				for _, path := range tc.directQueries {
+					checkRequest(path, tc.directHost)
 				}
 				return
 			}
@@ -331,17 +381,6 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 			response, err := io.ReadAll(conn)
 			if err != nil || !bytes.Contains(response, []byte("direct site")) {
 				t.Fatalf("direct request failed: %q (%v)", response, err)
-			}
-			checkRequest := func(path, domain string) {
-				t.Helper()
-				select {
-				case request := <-requests:
-					if request != path+" "+domain+"." {
-						t.Fatalf("wanted %s DNS query for %s, got %s", path, domain, request)
-					}
-				default:
-					t.Fatalf("missing %s DNS query for %s", path, domain)
-				}
 			}
 			for _, path := range tc.directQueries {
 				checkRequest(path, tc.directHost)
