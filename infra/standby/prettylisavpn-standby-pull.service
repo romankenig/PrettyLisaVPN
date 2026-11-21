@@ -1,0 +1,13 @@
+[Unit]
+Description=Verify and stage the PrettyLisaVPN standby mirror
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /usr/local/lib/prettylisavpn-standby/mirror.py pull
+TimeoutStartSec=300
+Nice=10

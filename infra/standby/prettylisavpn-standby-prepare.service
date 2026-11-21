@@ -1,0 +1,14 @@
+[Unit]
+Description=Prepare current PrettyLisaVPN standby snapshot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /usr/local/lib/prettylisavpn-standby/mirror.py prepare
+TimeoutStartSec=300
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

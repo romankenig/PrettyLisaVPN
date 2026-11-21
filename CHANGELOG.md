@@ -97,6 +97,17 @@
   reconnect, including server cleanup and verified new leases. Infrastructure only;
   no application, client or schema changes. See [recovery handoff](docs/vpn-deployment-config-recovery.md).
 
+### Production standby preparation — version unchanged
+
+- Stage verified copies of the primary's actual runtime images, configuration,
+  active website, dashboard and client downloads on `130.0.234.51` every minute.
+  Keep the standby application stopped and preserve the single PostgreSQL/Valkey.
+- Add restricted transfer, integrity checks, snapshot retention, Ansible setup
+  and CI. Require future deployments to verify both servers.
+- Automatic traffic takeover is **not enabled**: independent protected access to
+  the existing private Valkey is unresolved. See [evidence and remaining
+  requirements](docs/production-standby.md).
+
 ### Windows server outage disconnection — 0.31.4
 
 - Show «ОТКЛЮЧЕНО» as soon as native shutdown succeeds, independently of remote

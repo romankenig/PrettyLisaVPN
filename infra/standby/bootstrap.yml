@@ -1,0 +1,39 @@
+---
+# Prepare an idle control-plane standby. Does not start the application,
+# connect to production storage, publish ports, or change public DNS.
+- name: Prepare PrettyLisaVPN standby host
+  hosts: standby
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Require the explicitly selected Ubuntu standby
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - standby_expected_ip is defined
+          - standby_expected_ip in ansible_facts['all_ipv4_addresses']
+          - standby_expected_ip != '95.140.152.42'
+          - standby_expected_ip != '5.129.211.150'
+    - name: Install distribution container and transfer tools
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose-v2, rsync, python3, ca-certificates]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Enable Docker without starting any application containers
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Protect standby staging directories
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      loop:
+        - /opt/prettylisavpn-standby
+        - /opt/prettylisavpn-standby/incoming
+        - /opt/prettylisavpn-standby/snapshots
+        - /etc/prettylisavpn-standby

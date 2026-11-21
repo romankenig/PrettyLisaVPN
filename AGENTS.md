@@ -135,6 +135,15 @@ Owner's standing workflow (2026-11-19):
   `development` deployment is retired; never re-enable `DEV_DEPLOY_ENABLED`.
   Use `TEST_DEPLOY_ENABLED` for the new backend workflow.
 
+Production primary/standby: every future deployed application, runtime configuration,
+website, dashboard and client-download change must also reach the inactive standby
+at `130.0.234.51`. After deployment, verify snapshot and image identities on both
+hosts; extend `infra/standby/mirror.py` when adding services or mount roots.
+OS packages, firewall rules and host-specific changes require paired Ansible work;
+snapshot copying is not whole-machine replication. PostgreSQL and Valkey remain
+the same single shared instances. Read `docs/production-standby.md` first: automatic
+traffic takeover is currently blocked on independent protected Valkey access.
+
 For every coding task:
 
 1. Inspect the relevant files and existing conventions.
