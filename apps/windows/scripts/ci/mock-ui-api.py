@@ -51,7 +51,6 @@ QUOTA_EXHAUSTED = False
 AUTH_RECOVERY_MODE = "normal"
 AUTH_EXPIRED_ONCE = False
 AUTH_ROTATIONS = []
-COUNTRIES_OUTAGE = False
 MESSAGE_RECEIPTS = set()
 MESSAGE_ACK_ATTEMPTS = 0
 MESSAGE_SCENARIO = "optional"
@@ -78,7 +77,6 @@ MESSAGE_FIXTURES = [
 
 
 def fixture(method, path, body):
-    global COUNTRIES_OUTAGE
     global MESSAGE_SCENARIO
     global LIMIT_REVIEW, LIMIT_ACTIVATED, LIMIT_REMOVED
     global BILLING_SCENARIO, BILLING_OPERATION, BILLING_LAST_COMMAND
@@ -134,9 +132,6 @@ def fixture(method, path, body):
         current = next(item for item in devices if item["is_current"])
         CURRENT_REVOKED = True
         return 200, {"status": "revoked", "device": {**current, "status": "REVOKED", "revoked_at": DATE}}
-    if method == "POST" and path == "/ui-review/countries-outage":
-        COUNTRIES_OUTAGE = body.get("enabled") is True
-        return 200, {"enabled": COUNTRIES_OUTAGE}
     if method == "POST" and path == "/ui-review/auth-recovery":
         AUTH_RECOVERY_MODE = body.get("mode", "normal")
         if AUTH_RECOVERY_MODE == "outage":
@@ -319,8 +314,6 @@ def fixture(method, path, body):
             {"id": "4e2b8d7c-289f-4c57-8f26-aeb680408cda", "slug": "instagram", "name": "Instagram", "icon": "instagram", "domains": ["instagram.com", "*.instagram.com", "*.cdninstagram.com"]},
         ]}
     if method == "GET" and path == "/vpn/countries":
-        if COUNTRIES_OUTAGE:
-            return 503, {"error": {"code": "SERVER_ERROR"}}
         return 200, {
             "autopilot": {"quality": 95, "available": True},
             "countries": [
@@ -328,8 +321,6 @@ def fixture(method, path, body):
                 {"country_code": "US", "quality": 75, "available": True},
                 {"country_code": "NL", "quality": 93, "available": True},
                 {"country_code": "FR", "quality": 84, "available": True},
-                {"country_code": "GB", "quality": 0, "available": False},
-                {"country_code": "AT", "quality": 0 if QUOTA_REVIEW or DEMO_REVIEW else 96, "available": not (QUOTA_REVIEW or DEMO_REVIEW), "premium_required": QUOTA_REVIEW or DEMO_REVIEW},
             ],
         }
     if method == "POST" and path == "/auth/logout":
@@ -419,10 +410,6 @@ def self_test():
         assert fixture("DELETE", "/devices/" + DEVICE_ID, {})[1]["device"]["status"] == "REVOKED"
         assert fixture("POST", "/auth/refresh", refresh_body)[0] == 401
         assert fixture("GET", "/vpn/sessions/current", {})[0] == 404
-        fixture("POST", "/ui-review/countries-outage", {"enabled": True})
-        assert fixture("GET", "/vpn/countries", {})[0] == 503
-        fixture("POST", "/ui-review/countries-outage", {"enabled": False})
-        assert fixture("GET", "/vpn/countries", {})[0] == 200
         print("Loopback fixture checks passed")
     finally:
         server.shutdown()

@@ -79,15 +79,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Check formatting
-        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
+        run: uv run ruff format --diff . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py ../infra/deployment/deployment_config.py
 
       - name: Lint
-        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
+        run: uv run ruff check . ../infra/deployment/runtime_version.py ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py ../infra/deployment/deployment_config.py
 
       - name: Type check
         run: |
           uv run mypy
-          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py
+          uv run mypy --strict ../infra/deployment/publish_client.py ../infra/deployment/prepare_client_download.py ../infra/deployment/wait_backend.py ../infra/deployment/publish_website.py ../infra/deployment/deployment_config.py
 
       - name: Run unit tests
         run: uv run pytest -m "not integration and not docker"
@@ -207,6 +207,7 @@ jobs:
         env:
           DEV_PUBLIC_WEBSITE_DOMAIN: ${{ vars.DEV_PUBLIC_WEBSITE_DOMAIN || 'prettylisavpn.com' }}
           DEV_FLEET_WORKER_ENABLED: ${{ vars.DEV_FLEET_WORKER_ENABLED || 'true' }}
+          DEV_FLEET_SHARED_NODES: ${{ vars.DEV_FLEET_SHARED_NODES || 'false' }}
           DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
           DEV_SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
           DEV_API_DOMAIN: ${{ secrets.DEV_API_DOMAIN }}
@@ -218,10 +219,12 @@ jobs:
           DEV_SUPPORT_SMTP_PASSWORD: ${{ secrets.DEV_SUPPORT_SMTP_PASSWORD }}
         run: |
           if [[ "$GITHUB_REF" == refs/heads/develop ]]; then
-            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == test.prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == false && -z "$DEV_SUPPORT_SMTP_PASSWORD" ]] || exit 1
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == test.prettylisavpn.com && -z "$DEV_SUPPORT_SMTP_PASSWORD" ]] || exit 1
+            [[ "$DEV_FLEET_WORKER_ENABLED" == false || "$DEV_FLEET_SHARED_NODES" == true ]] || exit 1
           else
-            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == true ]] || exit 1
+            [[ "$DEV_PUBLIC_WEBSITE_DOMAIN" == prettylisavpn.com && "$DEV_FLEET_WORKER_ENABLED" == true && "$DEV_FLEET_SHARED_NODES" == false ]] || exit 1
           fi
+          [[ "$DEV_FLEET_SHARED_NODES" == true || "$DEV_FLEET_SHARED_NODES" == false ]] || exit 1
           umask 077
           mkdir -p "$SSH_DIRECTORY" "$TRANSFER_DIRECTORY"
           printf '%s\n' "$DEV_SSH_PRIVATE_KEY" > "$SSH_DIRECTORY/id_ed25519"
@@ -229,7 +232,7 @@ jobs:
           chmod 600 "$SSH_DIRECTORY/id_ed25519" "$SSH_DIRECTORY/known_hosts"
           ssh-keygen -y -f "$SSH_DIRECTORY/id_ed25519" >/dev/null
 
-          for value_name in DEV_API_DOMAIN DEV_PUBLIC_WEBSITE_DOMAIN DEV_FLEET_WORKER_ENABLED DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
+          for value_name in DEV_API_DOMAIN DEV_PUBLIC_WEBSITE_DOMAIN DEV_FLEET_WORKER_ENABLED DEV_FLEET_SHARED_NODES DEV_ACME_EMAIL DEV_POSTGRES_URL DEV_VALKEY_URL DEV_OTP_HMAC_SECRET DEV_EMAIL_SMTP_PASSWORD DEV_SUPPORT_SMTP_PASSWORD
           do
             value="${!value_name}"
             if [[ "$value" == *$'\n'* || "$value" == *$'\r'* || "$value" == *"'"* ]]; then
@@ -243,6 +246,7 @@ jobs:
             printf "API_DOMAIN='%s'\n" "$DEV_API_DOMAIN"
             printf "PUBLIC_WEBSITE_DOMAIN='%s'\n" "$DEV_PUBLIC_WEBSITE_DOMAIN"
             printf "FLEET_WORKER_ENABLED='%s'\n" "$DEV_FLEET_WORKER_ENABLED"
+            printf "FLEET_SHARED_NODES='%s'\n" "$DEV_FLEET_SHARED_NODES"
             printf "ACME_EMAIL='%s'\n" "$DEV_ACME_EMAIL"
             printf "BACKEND_IMAGE='%s'\n" "$DEPLOY_IMAGE"
             printf "APPLICATION_NAME='PrettyLisaVPN'\n"
@@ -275,7 +279,7 @@ jobs:
           } > "$TRANSFER_DIRECTORY/development.env"
 
           tar -czf "$TRANSFER_DIRECTORY/deployment.tar.gz" \
-            -C infra/deployment Caddyfile compose.yaml deploy.sh
+            -C infra/deployment Caddyfile compose.yaml deploy.sh deployment_config.py
           cp runtime-identity.json "$TRANSFER_DIRECTORY/runtime-identity.json"
           docker save "$DEPLOY_IMAGE" | gzip -1 > "$TRANSFER_DIRECTORY/backend-image.tar.gz"
 
@@ -356,18 +360,19 @@ jobs:
               > "${release_directory}/previous-image-id"
             readlink -f "${deployment_root}/current" > "${release_directory}/previous-release"
           fi
+          python3 "${release_directory}/deployment_config.py" prepare \
+            --environment-file "${incoming_directory}/development.env" \
+            --previous-environment-file "$environment_file" \
+            --configuration-root "${deployment_root}/secrets"
           install -m 0600 "${incoming_directory}/development.env" "${release_directory}/deployment.env"
           install -m 0600 "${incoming_directory}/runtime-identity.json" "${release_directory}/runtime-identity.json"
           docker image inspect --format '{{.Id}}' "$expected_image" > "${release_directory}/image-id"
 
           SKIP_BACKEND_PULL=1 \
-            DASHBOARD_DIR="${deployment_root}/secrets/dashboard" \
-            FLEET_ENV_FILE="${deployment_root}/secrets/fleet.env" \
-            FLEET_CREDENTIALS_DIR="${deployment_root}/secrets/fleet" \
-            "${release_directory}/deploy.sh" "${incoming_directory}/development.env"
+            "${release_directory}/deploy.sh" "${release_directory}/deployment.env"
 
           install -d -m 0700 "${deployment_root}/secrets"
-          install -m 0600 "${incoming_directory}/development.env" "$environment_file"
+          install -m 0600 "${release_directory}/deployment.env" "$environment_file"
           ln -sfn "$release_directory" "${deployment_root}/current.next"
           mv -Tf "${deployment_root}/current.next" "${deployment_root}/current"
           printf 'Development revision %s deployed as %s.\n' "$revision" "$expected_version"

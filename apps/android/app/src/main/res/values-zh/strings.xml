@@ -349,7 +349,6 @@
     <string name="manage_devices">管理设备</string>
     <string name="forget_local">移除此设备上的登录数据</string>
     <string name="device_pending">等待可用名额</string>
-    <string name="premium_location_hint">仅限 Premium 使用</string>
     <string name="faq_connect_q">如何开始使用？</string>
     <string name="faq_connect_a">下载应用，输入邮件中的验证码登录，然后选择国家。\n\n免费套餐每天提供一小时 VPN 时间，由整个账号共享。</string>
     <string name="faq_free_q">免费套餐包含什么？</string>

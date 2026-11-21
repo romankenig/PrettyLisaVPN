@@ -6,6 +6,81 @@
 
 ## Unreleased
 
+### Android split-routing DNS — Android 0.30.7 / managed engine 0.8.2
+
+- Use direct encrypted DNS for Android sites routed outside the tunnel, with VPN DNS
+  as a fallback for those sites only. Selected VPN domains and verification origins
+  continue using VPN DNS.
+- [Routing and validation](docs/split-routing.md#dns-для-прямого-маршрута-на-android).
+
+### Restore recurring website payments — website 0.7.3 / backend 0.54.5
+
+- Test environment: restore direct same-tab monthly SBP checkout after the rollback,
+  with inline unchecked recurring consent and no one-off payment fallback.
+- Send hosted-form return URLs with the operation UUID. Recover the authoritative
+  result after refresh/login: success for confirmed payment, failure for failed or
+  cancelled operations, continued verification for unknown outcomes.
+- Wait for unresolved receipts before treating a subscription failure as terminal.
+  Keep the merchant callback, durable creation fences and manual Platinum intact.
+- Isolate website browser acceptance from client packaging/publication. Client
+  sources/versions and production are unchanged. [Handoff](docs/website-recurring-restore.md).
+
+### Split routing in test builds — Android 0.30.6 / Windows 0.31.6 / managed engine 0.8.1
+
+- Send the test API's tunnel verification through the VPN in both split modes,
+  including when the API hostname is explicitly selected for exclusion.
+- See [split-routing behavior and verification](docs/split-routing.md#проверка-подключения-в-тестовых-сборках).
+
+### Test access to the real fleet — backend 0.54.4
+
+- Restore latest backend 0.54.3 as the owner-selected base and fix test VPN access
+  through restricted customer grants on the existing real nodes. Client versions
+  retain the Android 0.30.2 rollback baseline; schema and API contracts are unchanged.
+- Separate test address/port ranges and node ownership journals, consume actual owner
+  monitoring with bounded freshness, and reject fleet administration from the test
+  controller. Preserve account databases, production sessions and separate credentials.
+- Deployment and actual acceptance: [shared fleet handoff](docs/shared-real-fleet.md).
+
+### Test rollback — Android 0.30.2 project baseline
+
+- Restored the owner-selected `b90d9685` product baseline: Android 0.30.2/code 61,
+  Windows 0.31.2, backend 0.53.0, Chrome 0.5.1, iOS 0.6.1, macOS 0.5.1 and
+  website 0.7.1. Later product changes are reverted with their corresponding tests.
+- Retained current environment isolation, CI/publishers and deployment safeguards;
+  only the test environment is authorized for deployment. Database schema 0053,
+  business records and production remain unchanged. These rebuilt test artifacts
+  retain their actual new provenance; original artifacts and release tags are preserved.
+- Scope, compatibility and acceptance evidence: [rollback handoff](docs/rollback-android-0302.md).
+
+### Restore production dashboard client downloads — version unchanged
+
+- Restore the private dashboard's authenticated local installer catalog and remove
+  its automatic test-server proxy. Keep development artifacts on the test server.
+
+### Android offline disconnect — 0.30.5
+
+- Open the app while VPN startup recovery runs. An unavailable VPN API no longer
+  shows a connection error before the user connects.
+- Show the VPN as disconnected after local shutdown and bound server cleanup.
+  An unconfirmed server session must be cleared before a new tunnel starts.
+
+### Website-only production publication — version unchanged
+
+- Allow one exact release SHA to exclude production installer publication while
+  keeping every client quality/build check and the normal testing channel. This
+  supports the owner's recurring-payment website release without updating apps.
+- See the [publication selector](docs/test-environment.md#publication-and-rollback-checklist).
+
+### Preserve VPN deployment configuration — version unchanged
+
+- Persist server-owned configuration paths in release/canonical env files so a
+  later backend recreation retains fleet and VPN settings without shell exports.
+- Require previously present configuration files and verify running backend/worker
+  settings after deployment; health/readiness alone cannot detect disabled VPN.
+- Restore the existing backend image and confirm Windows/Android disconnect and
+  reconnect, including server cleanup and verified new leases. Infrastructure only;
+  no application, client or schema changes. See [recovery handoff](docs/vpn-deployment-config-recovery.md).
+
 ### Production standby preparation — version unchanged
 
 - Stage verified copies of the primary's actual runtime images, configuration,

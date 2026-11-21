@@ -1,5 +1,10 @@
 # Test environment and publication workflow
 
+Updated owner instruction, 2026-11-19: test clients use the existing real VPN fleet
+through the restricted secondary-controller mode in [shared real fleet](shared-real-fleet.md).
+This supersedes the initial separate-node requirement below. The historical clone
+and disabled-VPN acceptance remain historical evidence, not current tunnel acceptance.
+
 Owner decision: 2026-11-19. «доработай» means implement/test, update affected clients
 and integrate verified changes into `develop`. «опубликуй» means first ask for the
 release versions (unless already supplied for this publication), then promote the
@@ -20,7 +25,7 @@ the answer before changing versions or deploying the proposed release.
 | Valkey | managed `192.168.0.5:6379/0` | local `test-valkey:6379/0` |
 | GitHub deployment environment | `production`, branch `main` | `testing`, branch `develop` |
 | Backend runtime channel | `release` on the next authorized publication | `development` |
-| VPN control | existing production fleet | disabled until separate test nodes exist |
+| VPN control | sole configuration/monitoring owner | restricted customer grants on the same real nodes |
 
 The default GitHub branch is `develop`. At cutover, `main` is historical and behind
 the code actually running in production; it must not be used to reconstruct the live
@@ -82,10 +87,9 @@ only newly built test-targeted installers enter the active test download catalog
   build against `api.test.prettylisavpn.com` and publish after their required checks
   and the compatible backend readiness gate succeed. Failed builds leave previous
   downloads intact. PR/manual builds are never published as downloadable releases.
-- The owner's existing private `api.prettylisavpn.com/dashboard/downloads/*` URLs
-  serve test installers through authenticated server-side proxying. Production
-  `/downloads/*` files remain in their independent store. Dashboard monitoring still
-  reads its original server; only the private download routes are redirected.
+- The production dashboard installer renders authenticated local downloads from
+  the same production store as the main website. See the private download
+  rollback below for activation on servers that still use the old proxy.
 - An authorized `main` promotion uses production credentials and production API
   origins, deploys backend/website and publishes installers. Runtime backend changes
   apply immediately; installed client behavior changes after installing a new build.
@@ -126,8 +130,86 @@ test database credentials, DNS records and auth SMTP. Local ignored credentials:
 Upload multiline OpenSSH keys/known-host files to GitHub as exact UTF-8 bytes with
 LF endings. Windows text-mode subprocess input can introduce CRLF and break the
 Linux SSH parser. Verify the test diagnostic before relying on a new CI identity.
+Compose also reads `/etc/prettylisavpn/demo.env` as the deployment user: on the test
+server it is owned by `prettylisa-deploy:prettylisa-deploy`, mode `0600`. Keep
+owner-managed env files readable by that existing deployment identity without
+making their contents public.
+
+Timeweb initially blocked outbound SMTP at provider level. Its server API listed
+465/587 among `blocked_ports`, while local OUTPUT rules allowed them. These two
+ports were unblocked during acceptance; TLS/authentication against the configured
+mailbox passed on both. This diagnostic does not send an email. A future new VPS
+may need the same provider-side change through its dashboard or support; changing
+Ubuntu firewall rules cannot remove this provider restriction.
+
+## Completed deployment acceptance — 2026-11-19
+
+PR [#114](https://github.com/romankenig/PrettyLisaVPN/pull/114) is merged into
+`develop`. Product/deployment source is `bca9c2a2fbaa54a5ed56738afd94ae37b4c53c57`;
+subsequent handoff commits change documentation only. No main promotion or
+production application publication was performed.
+
+| Component | Version | Successful build/deploy run and attempt |
+| --- | --- | --- |
+| Backend | 0.54.3 | 44531573162 / 3 |
+| Website | 0.7.2 | 44531573025 / 2 |
+| Windows | 0.31.5 | 44531573047 / 1 |
+| Android | 0.30.4, code 63 | 44531573139 / 1 |
+| Chrome | 0.5.3 | 44531573249 / 1 |
+| iOS | 0.6.3 | 44531573228 / 1 |
+| macOS | 0.5.3 | 44531573228 / 1 |
+
+Live test `/version` reports
+`0.54.3-dev.44531573162+gbca9c2a2fbaa54a5ed56738afd94ae37b4c53c57`.
+HTTPS health/readiness and website/account checks passed; the running backend uses
+`test-postgres`, `test-valkey`, the test website origin and disabled live billing,
+client VPN, managed VPN and support delivery. No fleet worker is running there.
+
+All five published client entries target `https://api.test.prettylisavpn.com`
+and preserve that exact product SHA and their original run/attempt. Authenticated
+downloads from the existing production dashboard URL verified all eleven file
+hashes: five clients, four source packages, Windows licenses and iOS Simulator.
+Anonymous UI/catalog/binary requests return 401; authenticated UI/downloads return
+200 with private/no-store downloads. Apple device/macOS packages remain unsigned.
+
+The private-download route was activated with one production Caddy restart.
+Before/after checks confirmed the production backend container ID, website release
+and content hash, and every public installer/source/catalog hash were unchanged.
+The previous route is retained in `monitoring.before-test-downloads`; the existing
+dashboard login and production fleet monitoring remain in use.
+
+All eleven PR-head workflow runs and all ten product-merge push workflows completed
+successfully, including reusable publisher jobs. Initial SSH timeout/key-format,
+test env-file ownership, runner UDP timing and provider SMTP failures were resolved;
+their failed attempts are retained. The PR records the complete workflow/job links
+and native Windows evidence. Real test VPN sessions and signed Apple distribution
+remain outside this acceptance until their separate resources are supplied.
+
+## Private download rollback
+
+The dashboard installer no longer proxies downloads to the test API. It renders
+the authenticated local route for `/etc/caddy/dashboard/downloads/current`.
+Test builds continue publishing to the test server's own store.
+
+The installer change takes effect on dashboard installation. To roll back an
+existing production proxy, use the retained `monitoring.before-test-downloads`
+or render the current dashboard template with the server's dashboard credentials.
+Validate the resulting configuration with Caddy before activation. Verify that
+the private catalog and public production catalog report the same build identities
+and APK hashes, and that an anonymous private request still returns 401.
 
 ## Publication and rollback checklist
+
+For an owner-authorized website/backend-only publication, set repository variable
+`PRODUCTION_SKIP_CLIENTS_SHA` to the exact verified develop SHA **before** promoting
+that same commit to main. The shared publisher then skips production installers
+for that SHA, including reruns. Client quality/build checks still run, and testing
+publication is unchanged. No client source or product version needs modification.
+An unset variable or a different SHA preserves normal installer publication; do
+not use wildcards. Retain the selected SHA so rerunning this release cannot later
+replace the public installers. Record the public download catalog and binary
+checksums before/after publication. This selector does not enable backend deploy
+or bypass branch/environment protections.
 
 1. On «опубликуй», ask for release version(s) unless already supplied, confirm affected
    components and the accepted develop HEAD, then verify all Actions events/jobs

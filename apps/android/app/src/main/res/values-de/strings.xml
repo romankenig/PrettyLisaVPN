@@ -349,7 +349,6 @@
     <string name="manage_devices">geräte verwalten</string>
     <string name="forget_local">anmeldedaten von diesem Gerät entfernen</string>
     <string name="device_pending">wartet auf einen freien Platz</string>
-    <string name="premium_location_hint">nur mit Premium verfügbar</string>
     <string name="faq_connect_q">wie fange ich an?</string>
     <string name="faq_connect_a">lade die App herunter, melde dich mit dem Code aus der E-Mail an und wähle ein Land.\n\nim kostenlosen Tarif erhält dein Konto täglich eine gemeinsame Stunde VPN.</string>
     <string name="faq_free_q">was bietet Free?</string>

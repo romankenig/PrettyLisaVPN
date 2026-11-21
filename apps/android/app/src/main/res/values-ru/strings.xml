@@ -349,7 +349,6 @@
     <string name="manage_devices">управлять устройствами</string>
     <string name="forget_local">удалить данные входа с этого устройства</string>
     <string name="device_pending">ожидает свободного места</string>
-    <string name="premium_location_hint">доступно только в Premium</string>
     <string name="faq_connect_q">как начать?</string>
     <string name="faq_connect_a">скачайте приложение, войдите по коду из письма и выберите страну.\n\nбесплатный тариф даёт один общий час подключения в сутки на аккаунт.</string>
     <string name="faq_free_q">что входит в free?</string>

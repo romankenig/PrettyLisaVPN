@@ -155,19 +155,23 @@ class PlategaBillingProvider:
                 renewal_canceled=authority.status == "Cancelled",
             )
         # A subscription status or success URL alone is never proof of payment.
-        if authority.status == "Failed" and authority.successful_charges == 0:
-            return ProviderResult(operation_id=request.operation_id, status="FAILED")
-        if authority.status == "Cancelled":
+        if authority.status in ("Failed", "Cancelled"):
             # Reconcile pending receipts before releasing the account for a fresh purchase.
             async with self.postgres.session() as session:
                 pending = await session.scalar(
                     select(PlategaChargeRecord.id).where(
                         PlategaChargeRecord.agreement_id == request.operation_id,
-                        PlategaChargeRecord.verified_at.is_(None),
+                        or_(
+                            PlategaChargeRecord.verified_at.is_(None),
+                            PlategaChargeRecord.status == "PENDING",
+                        ),
                     )
                 )
             if pending is None and authority.successful_charges == 0:
-                return ProviderResult(operation_id=request.operation_id, status="CANCELED")
+                return ProviderResult(
+                    operation_id=request.operation_id,
+                    status="FAILED" if authority.status == "Failed" else "CANCELED",
+                )
         return ProviderResult(
             operation_id=request.operation_id,
             status="PENDING",

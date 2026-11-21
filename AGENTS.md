@@ -117,8 +117,9 @@ Owner's standing workflow (2026-11-19):
   answer. Documentation/tests/CI-only changes retain `version unchanged`.
 - «доработай»: implement and verify on the test environment `5.129.211.150`,
   update only affected component versions, commit/push and integrate into `develop`.
-  Test installers target `api.test.prettylisavpn.com` and appear in the private
-  `https://api.prettylisavpn.com/dashboard/`. This authorizes tested develop merges.
+  Test installers target `api.test.prettylisavpn.com` and appear in that server's
+  private dashboard. Production dashboard downloads use the local production
+  catalog. This authorizes tested develop merges.
   Production API, database, public website and public installers stay unchanged.
 - «опубликуй»: ask which release version(s) to use unless the owner already supplied
   them for this publication. After the versions are confirmed,
@@ -127,7 +128,9 @@ Owner's standing workflow (2026-11-19):
   changes require installation. Automatic client updating is not requested.
 - Ordinary implementation does not authorize a main merge, release tag or production
   application deployment. Keep databases/credentials separate; never restore the test
-  snapshot over production or start test workers against production VPN nodes.
+  snapshot over production or start an unrestricted test owner worker against real nodes.
+  Owner-authorized shared real-node access uses only the restricted secondary-controller
+  mode in `docs/shared-real-fleet.md`; production remains the configuration/monitoring owner.
 - GitHub `testing` is develop-only; `production` is main-only. Historical
   `development` deployment is retired; never re-enable `DEV_DEPLOY_ENABLED`.
   Use `TEST_DEPLOY_ENABLED` for the new backend workflow.

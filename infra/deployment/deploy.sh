@@ -69,27 +69,16 @@ if ! getent ahosts "$api_domain" >/dev/null 2>&1; then
     exit 1
 fi
 
+# Owner-managed enrollment is separate from CI-generated deployment credentials.
+# Persist resolved paths so a later plain Compose recreation uses the same files.
+python3 "$deployment_dir/deployment_config.py" prepare --environment-file "$environment_file"
+unset DASHBOARD_DIR FLEET_ENV_FILE FLEET_CREDENTIALS_DIR CARDLINK_ENV_FILE \
+    DEMO_ENV_FILE PLATEGA_ENV_FILE PUBLIC_WEBSITE_DIR \
+    FLEET_ENV_REQUIRED DEMO_ENV_REQUIRED CARDLINK_ENV_REQUIRED PLATEGA_ENV_REQUIRED
 compose=(docker compose --project-name "$project_name" \
     --env-file "$environment_file" --file "$deployment_dir/compose.yaml")
-
-# Owner-managed enrollment is separate from CI-generated deployment credentials.
-# It survives a routine development release without copying secrets into CI.
-export DASHBOARD_DIR="${DASHBOARD_DIR:-$(dirname "$environment_file")/dashboard}"
-export FLEET_ENV_FILE="${FLEET_ENV_FILE:-$(dirname "$environment_file")/fleet.env}"
-export FLEET_CREDENTIALS_DIR="${FLEET_CREDENTIALS_DIR:-$(dirname "$environment_file")/fleet}"
-export CARDLINK_ENV_FILE="${CARDLINK_ENV_FILE:-$(dirname "$environment_file")/cardlink.env}"
-if [[ -f "$CARDLINK_ENV_FILE" && "$(stat -c '%a' "$CARDLINK_ENV_FILE")" != "600" ]]; then
-    printf 'Cardlink environment file must have mode 600.\n' >&2
-    exit 1
-fi
-if [[ -f "$FLEET_ENV_FILE" ]]; then
-    if [[ "$(stat -c '%a' "$FLEET_ENV_FILE")" != "600" ]]; then
-        printf 'Fleet environment file must have mode 600.\n' >&2
-        exit 1
-    fi
-    if [[ "$fleet_worker_enabled" == "true" ]]; then
-        compose+=(--profile fleet)
-    fi
+if [[ "$(read_environment_value FLEET_ENV_REQUIRED)" == "true" && "$fleet_worker_enabled" == "true" ]]; then
+    compose+=(--profile fleet)
 fi
 
 "${compose[@]}" config --quiet
@@ -115,6 +104,8 @@ fi
 
 printf 'Recreating application containers...\n'
 "${compose[@]}" up --detach --remove-orphans --pull never --wait --wait-timeout 120
+python3 "$deployment_dir/deployment_config.py" verify --environment-file "$environment_file" \
+    --compose-file "$deployment_dir/compose.yaml" --project "$project_name"
 
 curl --fail --silent --show-error --retry 12 --retry-delay 5 \
     --retry-connrefused --max-time 10 "https://${api_domain}/health" >/dev/null

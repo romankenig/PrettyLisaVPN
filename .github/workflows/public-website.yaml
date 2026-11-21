@@ -48,8 +48,32 @@ jobs:
           name: PrettyLisaVPN-website-preview-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: sites/public-website/dist/
           if-no-files-found: error
+  browser:
+    name: Rendered recurring checkout and return flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "12.3.4"
+      - run: pnpm install --frozen-lockfile
+        working-directory: apps/chrome-extension
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: apps/chrome-extension
+      - run: node tests/browser-review.mjs
+        working-directory: sites/public-website
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: website-browser-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sites/public-website/review/
+          if-no-files-found: error
   deploy:
-    needs: check
+    needs: [check, browser]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 40

@@ -2,15 +2,35 @@ name: Chrome extension
 on:
   workflow_dispatch:
   push:
-    paths: ["apps/chrome-extension/**", "sites/public-website/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
+    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
   pull_request:
-    paths: ["apps/chrome-extension/**", "sites/public-website/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
+    paths: ["apps/chrome-extension/**", ".github/workflows/chrome-extension.yml", ".github/workflows/client-download-publish.yml", "infra/deployment/prepare_client_download.py", "infra/deployment/publish_client.py", "infra/deployment/publish_client_container.sh"]
 permissions:
   contents: read
 concurrency:
   group: chrome-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  publication-scope:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.scope.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          BASE_SHA: ${{ github.event.before }}
+        run: |
+          if git diff --quiet "$BASE_SHA" "$GITHUB_SHA" -- apps/chrome-extension infra/deployment/prepare_client_download.py infra/deployment/publish_client.py infra/deployment/publish_client_container.sh .github/workflows/client-download-publish.yml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            result=$?
+            [[ "$result" == 1 ]] || exit "$result"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
   check:
     name: MV3 build, lifecycle tests and installed browser UI
     runs-on: ubuntu-latest
@@ -36,7 +56,6 @@ jobs:
           VITE_BACKEND_BASE_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.prettylisavpn.com' || 'https://api.test.prettylisavpn.com' }}
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/review.mjs
-      - run: node scripts/billing-portal-review.mjs
       - name: Package installable extension directory
         run: >-
           python ../../infra/deployment/prepare_client_download.py --platform chrome
@@ -57,8 +76,8 @@ jobs:
             apps/chrome-extension/review/
           if-no-files-found: error
   publish-client:
-    needs: check
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    needs: [check, publication-scope]
+    if: github.event_name == 'push' && needs.publication-scope.outputs.changed == 'true' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     uses: ./.github/workflows/client-download-publish.yml
     with:
       platform: chrome

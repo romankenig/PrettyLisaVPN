@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/netip"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/xtls/xray-core/core"
 )
 
-const Version = "0.8.0"
+const Version = "0.8.2"
 const CoreVersion = "26.10.21"
 const MaxProfileBytes = 64 * 1024
 
@@ -176,9 +177,12 @@ func (p Profile) Validate() error {
 	return nil
 }
 
-// CoreConfig uses only IP uplinks: resolving TLS SNI outside the tunnel is never
-// necessary. All application DNS packets follow the same encrypted outbound.
+// CoreConfig uses only IP uplinks, so the VPN endpoint needs no DNS lookup.
 func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
+	return p.coreConfig(mobile, mobile && runtime.GOOS == "android")
+}
+
+func (p Profile) coreConfig(mobile, splitDNS bool) ([]byte, error) {
 	if p.Validate() != nil {
 		return nil, ErrProfile
 	}
@@ -272,7 +276,7 @@ func (p Profile) CoreConfig(mobile bool) ([]byte, error) {
 			obj{"type": "field", "inboundTag": []string{"tun"}, "outboundTag": "vpn"},
 		}}
 	}
-	p.Routing.apply(config)
+	p.Routing.apply(config, splitDNS)
 	return json.Marshal(config)
 }
 

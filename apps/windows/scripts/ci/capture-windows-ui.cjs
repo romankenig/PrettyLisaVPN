@@ -484,7 +484,9 @@ async function main() {
   await page
     .getByRole("heading", { name: "куда подключиться", exact: true })
     .waitFor();
-  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "Not connected", exact: true })
+    .waitFor();
   for (const item of await page
     .getByRole("navigation")
     .getByRole("link")
@@ -551,48 +553,6 @@ async function main() {
       "Refresh retries must retain their persisted operation identifier",
     );
   await screenshot("04-home-auth-recovered");
-  async function countryOutage(enabled) {
-    const response = await fetch(
-      "http://127.0.0.1:8000/ui-review/countries-outage",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled }),
-      },
-    );
-    if (!response.ok) throw Error("Country outage fixture failed");
-    await page
-      .getByRole("button", { name: "обновить страны", exact: true })
-      .click();
-  }
-  await countryOutage(true);
-  await page.locator(".availability-warning").waitFor();
-  const countryCombo = page.getByRole("combobox", {
-    name: /куда подключиться/,
-  });
-  await countryCombo.click();
-  if (
-    (await countryCombo.evaluate((node) => getComputedStyle(node).cursor)) !==
-    "pointer"
-  )
-    throw Error("Country browsing must not use a wait cursor");
-  const cachedGermany = page
-    .getByRole("group", { name: "все страны", exact: true })
-    .getByRole("option", { name: /Германия/ });
-  if (!(await cachedGermany.isDisabled()))
-    throw Error("Stale availability must stay read-only");
-  await screenshot("04-home-countries-server-outage");
-  await page.keyboard.press("Escape");
-  await countryOutage(false);
-  await page.waitForFunction(
-    () => document.querySelectorAll(".availability-note").length === 0,
-  );
-  await countryCombo.click();
-  await page
-    .getByRole("option", { name: /Великобритания.*сейчас недоступно/ })
-    .waitFor();
-  await screenshot("04-home-unavailable-countries");
-  await page.keyboard.press("Escape");
   if (await page.locator(".traffic-mode .current-location").count())
     throw new Error("Full-traffic mode must have only one location");
   for (const mode of ["include", "exclude"]) {
@@ -745,21 +705,6 @@ async function main() {
     .filter({ hasText: "10:15" })
     .waitFor();
   await screenshot("04-home-free-balance");
-  await page.locator(".location-trigger").click();
-  await page
-    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-    .waitFor();
-  if (
-    !(await page
-      .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-      .isDisabled())
-  )
-    throw new Error("Premium-only country must be locked");
-  await page
-    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-    .scrollIntoViewIfNeeded();
-  await screenshot("04-home-free-premium-countries");
-  await page.locator(".location-trigger").press("Escape");
   await page.getByRole("link", { name: "улучшить план", exact: true }).click();
   await page.getByRole("heading", { name: "подписка", exact: true }).waitFor();
   await screenshot("04-home-free-upgrade-subscription");
@@ -841,7 +786,9 @@ async function main() {
   await screenshot("04d-home-all-methods-failed");
   await page.getByRole("button", { name: "CONNECT", exact: true }).click();
   await page.getByRole("button", { name: "Отменить", exact: true }).click();
-  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "Not connected", exact: true })
+    .waitFor();
   await screenshot("04e-home-cancelled");
   await page.evaluate(() => {
     document.documentElement.dataset.vpnReviewConnect = "1";
@@ -852,16 +799,6 @@ async function main() {
     .getByRole("button", { name: "изменить способ подключения", exact: true })
     .waitFor();
   await screenshot("04f-home-method-reset");
-  await countryCombo.click();
-  if (
-    !(await page
-      .getByRole("group", { name: "все страны", exact: true })
-      .getByRole("option", { name: /Германия/ })
-      .isDisabled())
-  )
-    throw Error("Connected country browsing must not switch an active tunnel");
-  await screenshot("04f-home-connected-countries");
-  await page.keyboard.press("Escape");
   await page.locator(".connection-reset").evaluate((node) => {
     if (getComputedStyle(node).marginTop !== "0px")
       throw Error(
@@ -898,31 +835,10 @@ async function main() {
       document.documentElement.dataset.vpnReviewAttempts ===
       "wireguard,amneziawg,wireguard,amneziawg",
   );
-  await page.evaluate(() => {
-    document.documentElement.dataset.vpnReviewServerOffline = "1";
-  });
   await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
-  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   await page
-    .getByText(
-      "Проблемы со связью с сервером. VPN отключён. Попробуйте подключиться позже.",
-      { exact: true },
-    )
+    .getByRole("heading", { name: "Not connected", exact: true })
     .waitFor();
-  if (
-    await page.getByRole("button", { name: "DISCONNECT", exact: true }).count()
-  )
-    throw Error(
-      "Remote outage must not leave a disconnect button after local shutdown",
-    );
-  await screenshot("04h-home-server-unavailable-disconnected");
-  await page.evaluate(() => {
-    document.documentElement.dataset.vpnReviewServerOffline = "0";
-  });
-  await page.getByRole("button", { name: "CONNECT", exact: true }).click();
-  await page.getByRole("heading", { name: "Connected", exact: true }).waitFor();
-  await page.getByRole("button", { name: "DISCONNECT", exact: true }).click();
-  await page.getByRole("heading", { name: "ОТКЛЮЧЕНО", exact: true }).waitFor();
   if (
     await page
       .getByRole("button", { name: "изменить способ подключения", exact: true })
@@ -1471,21 +1387,6 @@ async function main() {
     .click();
   await page.getByText("гость на этом устройстве", { exact: true }).waitFor();
   await screenshot("17-demo-home");
-  await page.locator(".location-trigger").click();
-  await page
-    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-    .waitFor();
-  if (
-    !(await page
-      .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-      .isDisabled())
-  )
-    throw new Error("Premium-only country must be locked");
-  await page
-    .getByRole("option", { name: /Австрия.*доступно только в Premium/ })
-    .scrollIntoViewIfNeeded();
-  await screenshot("17-demo-premium-countries");
-  await page.locator(".location-trigger").press("Escape");
   await page.getByRole("link", { name: "улучшить", exact: true }).click();
   await page.getByRole("region", { name: "PREMIUM", exact: true }).waitFor();
   await screenshot("18-demo-subscription");

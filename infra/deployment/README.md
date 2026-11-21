@@ -19,6 +19,31 @@ backend, SHA, run и attempt. Проверять фактические health/r
 [Caddyfile](Caddyfile), [deploy.sh](deploy.sh).
 Общий контекст: [backend handoff](../../docs/backend-cloud-handoff.md).
 
+## Durable owner configuration
+
+`deployment_config.py prepare` records absolute paths for fleet enrollment,
+dashboard, website and optional DEMO/payment environment files in `deployment.env`.
+On development updates it inherits only these paths and required-file markers from
+the previous canonical env; application credentials still come from the new build's
+protected input. Existing owner files remain on the server and must have mode 0600.
+Once present, an env file becomes required. A missing enrolled file aborts before
+migrations or container replacement, including on rollback. Disable a feature in
+its retained protected file rather than deleting the file.
+
+CI deploys using the retained **release** env, then copies that same prepared file
+to the canonical secrets directory. It no longer launches Compose against a deleted
+incoming env or depends on temporary `FLEET_ENV_FILE` exports. A manual recreation
+uses the same project, release env and Compose file, with `--no-deps --pull never`
+when updating only backend. Do not substitute a newly generated or historical env.
+
+After `up`, the helper compares the running backend and enrolled fleet-worker with
+the resolved Compose image and environment. A missing worker or configuration drift
+fails deployment even when `/health`, `/ready` and `/version` are green. Comparison
+stays in memory and never logs secret values or resolved Compose configuration.
+
+See [VPN configuration recovery](../../docs/vpn-deployment-config-recovery.md) for
+the November 19 incident, verification and rollback boundaries.
+
 ## Public draft website
 
 The owner authorized publishing the website on https://prettylisavpn.com and then

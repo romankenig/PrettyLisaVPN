@@ -1,19 +1,9 @@
-# Server outage disconnection — Windows 0.31.4
+# Test baseline rollback — 2026-11-19
 
-Home → Disconnect / detected connection loss → native shutdown → ОТКЛЮЧЕНО.
-The server response no longer gates this status. A failed remote cleanup or
-connection health check displays a localized server-connectivity notice and
-Connect instead of an apparent stuck Disconnect action. Connect retries retained
-cleanup before allocating a new session; failed local shutdown retains retry
-Disconnect and an explicit local-stop warning. Startup recovery uses the same
-local/remote distinction. Existing APIs are used; no backend integration is pending.
-Build, native screenshot and publication status: [handoff](windows-offline-disconnect.md).
-
-Home → Autopilot/country dropdown remains browsable during loading, connection,
-refresh and outage. Unavailable countries remain listed. A saved per-account/plan
-catalog is available after restart, explicitly read-only with unknown availability
-until a fresh response. No cache → an honest list-not-loaded message. Opening the
-list never switches the tunnel; active-connection and Premium/DEMO guards remain.
+The test client returns to Windows 0.31.2 alongside Android 0.30.2. The navigation
+below is restored from `b90d9685`; later Premium-country and outage UI changes are
+reverted. API and purchase handoffs still use the selected test environment's
+origins. See [rollback scope and verification](rollback-android-0302.md).
 
 # Website checkout — Windows 0.31.1 / Android 0.30.1
 
@@ -1204,39 +1194,14 @@ show the existing document-open error. The old FAQ home/subscription links are
 replaced by instructions and public payment rules. No route or auth guard is added;
 no backend integration is pending. See [FAQ handoff](shared-faq.md).
 
-## Premium location visibility — Windows 0.31.3
+# Website recurring restoration — 0.7.3 / backend 0.54.5
 
-The Home country dropdown keeps Premium-only countries visible to FREE and DEMO.
-Their flag/name/rating is blurred and dimmed; “available only with Premium” stays
-readable in all six languages. These options are disabled and skipped by keyboard
-selection. A previously selected locked country returns to AUTO. Top suggestions
-remain eligible countries. DEMO FREE-country rows retain the existing registration
-transition; Premium rows do not navigate or start registration/purchase.
-
-Implemented API integration requests `include_locked=true` and consumes
-`premium_required`. Older backend responses remain accepted; the new catalog rows
-require backend 0.54.0 deployment. No route or new auth guard is introduced. See
-[all-client compatibility and validation handoff](premium-location-visibility.md).
-
-## Test and production navigation — 2026-11-19
-
-Windows 0.31.5 chooses the API at build time. A `develop` installer uses
-`https://api.test.prettylisavpn.com`; DEMO Buy and authenticated billing handoffs
-open only `https://test.prettylisavpn.com/account/`. The frontend and native browser
-allowlists agree, including the exact single-use handoff fragment. A `main` build
-retains the production API/account site. This is implemented navigation with the
-existing backend portal contract; payment-provider activation is separate.
-Public read-only legal documents retain their existing production URLs. No screen
-layout, auth guard, token transport or automatic update behavior changes.
-See [environment workflow and verification](test-environment.md).
-
-## Website 0.7.2 — direct recurring checkout
-
-Client purchase/manage still opens the authenticated website; no Windows route
-or auth guard changes. The website offer includes monthly consent. Pay creates
-the account operation and navigates directly to the validated Platega page in the
-same tab. Back resumes that operation without automatically redirecting again.
-Legacy unavailable/preview routes normalize to the localized account page; an
-unavailable quote disables Pay inline. Server-confirmed outcomes remain authoritative.
-Implementation is complete; provider recurring activation and live bank acceptance
-remain outstanding. See [direct checkout](website-direct-checkout.md).
+Test environment only; Windows and other client navigation/source versions are unchanged.
+Website offer → explicit monthly consent → Pay → Platega in the same tab.
+The provider returns to `/account/success/` or `/account/failure/` with an operation
+UUID; the authenticated API decides the rendered result. FAILED/CANCELED show failure,
+SUCCEEDED shows success, PENDING continues verification without automatic redirection.
+Refresh and repeated login preserve the operation; Retry returns to the offer without
+creating a payment. Callback remains `https://prettylisavpn.com/api/payments/platega/callback`.
+These flows are implemented/tested with a mock provider; test live billing remains
+disabled. See [restoration handoff](website-recurring-restore.md).
