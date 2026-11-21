@@ -42,6 +42,12 @@ class PhysicalSplitDnsTest {
             "routing" to mapOf("mode" to "include", "domains" to listOf(selected)),
         ))
         ActivityScenario.launch(MainActivity::class.java).use {
+            val uplink = requireNotNull(connectivity.activeNetwork) { "No physical Android uplink" }
+            assertTrue("The fixture must use Wi-Fi", connectivity.getNetworkCapabilities(uplink)
+                ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true)
+            // A separate hostname checks the fixture without warming the direct site's DNS cache.
+            assertTrue("Android's Wi-Fi resolver must reach the fixture", uplink.getAllByName("uplink.prettylisa.test")
+                .any { it.hostAddress == "10.0.2.2" })
             assertNull("The disposable emulator must authorize VPN for the test APK", VpnService.prepare(context))
             try {
                 val vpn = runBlocking {

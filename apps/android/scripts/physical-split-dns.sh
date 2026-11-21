@@ -31,15 +31,26 @@ adb shell settings put global captive_portal_mode 0
 # This keeps the real Android per-Network resolver and bypasses the emulator's DNS proxy.
 adb root
 adb wait-for-device
-uplink_id=$(adb shell dumpsys connectivity | sed -n 's/.*Active default network: \([0-9][0-9]*\).*/\1/p')
-[[ "$uplink_id" =~ ^[0-9]+$ ]]
+test "$(adb shell id -u | tr -d '\r')" = 0
+adb shell svc data disable
+adb shell svc wifi enable
+adb shell cmd wifi connect-network AndroidWifi open
+wifi_ready=false
+for ((attempt = 0; attempt < 30; attempt++)); do
+  uplink_id=$(adb shell dumpsys connectivity | sed -n 's/.*Active default network: \([0-9][0-9]*\).*/\1/p')
+  if [[ "$uplink_id" =~ ^[0-9]+$ ]] && adb shell cmd wifi status | grep -F 'Wifi is connected to "AndroidWifi"'; then
+    wifi_ready=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$wifi_ready" != true ]]; then
+  echo 'The isolated Wi-Fi network did not acquire a default route'
+  exit 1
+fi
 # IDnsResolver.setResolverConfiguration is transaction 3. The 92-byte
 # ResolverParamsParcel sets the network ID, resolver timings and DNS servers.
 adb shell "service call dnsresolver 3 i32 1 i32 92 i32 $uplink_id i32 1800 i32 25 i32 8 i32 64 i32 1000 i32 2 i32 1 s16 10.0.2.2 i32 0 s16 '' i32 0 i32 0 s16 '' i32 0"
-# Use a separate hostname so the direct lookup below can only come from the test.
-uplink=$(timeout 10 adb shell ping -c 1 -W 2 uplink.prettylisa.test 2>&1 || true)
-printf '%s\n' "$uplink" | tee split-dns-evidence/uplink.txt
-grep -Fq '(10.0.2.2)' split-dns-evidence/uplink.txt
 adb install -r apk/app-debug.apk
 adb install -r test-apk/app-debug-androidTest.apk
 # Authorize only this APK on the disposable emulator. The app still calls VpnService.prepare.
