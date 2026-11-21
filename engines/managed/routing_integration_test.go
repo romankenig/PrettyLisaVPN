@@ -238,11 +238,19 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 			[]string{"/android"}, true, true, true, false},
 		{"device network DNS in exclude", "exclude", "sub.selected.example.com", "selected.example.com",
 			[]string{"/android"}, true, true, true, false},
+		{"device DNS stalls", "include", "slow-device.example.com", "sub.selected.example.com",
+			[]string{"/android", "/direct"}, true, true, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			stall := tc.directHost == "slow-device.example.com"
 			if tc.physicalDNS {
+				release := make(chan struct{})
+				defer close(release)
 				xraydns.SetAndroidDirectDNSResolver(func(host string) []xnet.IP {
 					requests <- "/android " + host + "."
+					if stall {
+						<-release
+					}
 					return []xnet.IP{net.IPv4(127, 0, 0, 1)}
 				})
 				t.Cleanup(func() { xraydns.SetAndroidDirectDNSResolver(nil) })
@@ -292,6 +300,9 @@ func TestAndroidSplitDirectDNSWithUnavailableVPNResolver(t *testing.T) {
 					}
 					servers = append(servers, server)
 					if server["address"] == "android-direct" {
+						if stall {
+							server["timeoutMs"] = 100
+						}
 						continue
 					}
 					switch server["tag"] {

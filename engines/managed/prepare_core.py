@@ -119,6 +119,7 @@ def android_dns_patched(source: bytes) -> bytes:
         + text
         + '''
 var androidDirectLookup atomic.Pointer[func(string) []net.IP]
+var androidDirectQueries = make(chan struct{}, 16)
 
 // SetAndroidDirectDNSResolver registers the platform callback before starting the mobile core.
 func SetAndroidDirectDNSResolver(lookup func(string) []net.IP) {
@@ -139,11 +140,26 @@ func (androidDirectNameServer) QueryIP(ctx context.Context, host string, option 
 	if lookup == nil || !option.IPv4Enable || option.FakeEnable || ctx.Err() != nil {
 		return nil, 0, dns.ErrEmptyResponse
 	}
-	ips := (*lookup)(host)
-	if ctx.Err() != nil || len(ips) == 0 {
+	// Android's Network.getAllByName is synchronous and can outlive this request.
+	// Bound in-flight calls and allow configured DNS fallbacks at the deadline.
+	select {
+	case androidDirectQueries <- struct{}{}:
+	default:
 		return nil, 0, dns.ErrEmptyResponse
 	}
-	return ips, dns.DefaultTTL, nil
+	result := make(chan []net.IP, 1)
+	go func() {
+		defer func() { <-androidDirectQueries }()
+		result <- (*lookup)(host)
+	}()
+	select {
+	case ips := <-result:
+		if len(ips) > 0 && ctx.Err() == nil {
+			return ips, dns.DefaultTTL, nil
+		}
+	case <-ctx.Done():
+	}
+	return nil, 0, dns.ErrEmptyResponse
 }
 '''
     ).encode()

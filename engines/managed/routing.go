@@ -124,7 +124,7 @@ func splitDNSServers(forcedVPN, domains []string, selected, fallback string) []a
 		// A second provider and tunneled TCP avoid depending on any one
 		// provider or on UDP working through the VPN method.
 		return []any{
-			scoped(obj{"address": "android-direct"}, names),
+			scoped(obj{"address": "android-direct", "timeoutMs": 2000}, names),
 			scoped(obj{"address": "https+local://1.1.1.1/dns-query", "tag": "resolver-direct", "timeoutMs": 2000}, names),
 			scoped(obj{"address": "https+local://8.8.8.8/dns-query", "tag": "resolver-direct-backup", "timeoutMs": 2000}, names),
 			scoped(obj{"address": "tcp://1.1.1.1:53", "tag": "resolver", "timeoutMs": 2000}, names),
