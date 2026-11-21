@@ -54,22 +54,16 @@ class PhysicalSplitDnsTest {
                 runBlocking {
                     runtime.start(profile)
                     withTimeout(15_000) {
-                        @Suppress("DEPRECATION")
-                        var route = connectivity.allNetworks.firstOrNull { ownsTun(connectivity, it) }
-                        while (route == null) {
-                            delay(100)
-                            @Suppress("DEPRECATION")
-                            route = connectivity.allNetworks.firstOrNull { ownsTun(connectivity, it) }
-                        }
-                        requireNotNull(route)
+                        while (!ownsTun(connectivity)) delay(100)
+                        while (!clientCall(context, "ready", null).getBoolean("ready")) delay(100)
                     }
                 }
                 val directReply = fetch(context, direct)
-                assertTrue("The separate client must receive a FakeDNS address through VPN: $directReply",
+                assertTrue("The separate client must receive a FakeDNS address through VPN: ${details(directReply)}",
                     directReply.getBoolean("vpn") && directReply.getBoolean("fake"))
-                assertTrue("Direct site should respond through the Android uplink: $directReply", proof(directReply))
+                assertTrue("Direct site should respond through the Android uplink: ${details(directReply)}", proof(directReply))
                 val selectedReply = fetch(context, selected)
-                assertTrue("FakeDNS must also answer for selected domains: $selectedReply",
+                assertTrue("FakeDNS must also answer for selected domains: ${details(selectedReply)}",
                     selectedReply.getBoolean("vpn") && selectedReply.getBoolean("fake"))
                 assertTrue("A selected domain must not reach the physical fixture", !selectedReply.getBoolean("responded"))
             } finally {
@@ -78,13 +72,20 @@ class PhysicalSplitDnsTest {
         }
     }
 
-    private fun ownsTun(connectivity: ConnectivityManager, network: Network): Boolean =
+    @Suppress("DEPRECATION")
+    private fun ownsTun(connectivity: ConnectivityManager): Boolean = connectivity.allNetworks.any { network ->
         connectivity.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true &&
             connectivity.getLinkProperties(network)?.linkAddresses?.any { it.address.hostAddress == "172.30.255.1" } == true
+    }
 
-    private fun fetch(context: Context, host: String): Bundle = requireNotNull(context.contentResolver.call(
-        Uri.parse("content://com.prettylisavpn.android.test.physical-dns"), "fetch", host, null,
+    private fun fetch(context: Context, host: String): Bundle = clientCall(context, "fetch", host)
+
+    private fun clientCall(context: Context, method: String, host: String?): Bundle = requireNotNull(context.contentResolver.call(
+        Uri.parse("content://com.prettylisavpn.android.test.physical-dns"), method, host, null,
     ))
+
+    private fun details(reply: Bundle): String =
+        "vpn=${reply.getBoolean("vpn")}, fake=${reply.getBoolean("fake")}, error=${reply.getString("error")}"
 
     private fun proof(reply: Bundle): Boolean = reply.getBoolean("proof")
 }

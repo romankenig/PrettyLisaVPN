@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
@@ -36,32 +37,39 @@ public final class PhysicalSplitDnsClient extends ContentProvider {
         if (!targetPackage.equals(getCallingPackage())) {
             throw new SecurityException("Only the target APK can run the routing fixture");
         }
-        if (!"fetch".equals(method) || !(UPLINK.equals(host) || DIRECT.equals(host) || SELECTED.equals(host))) {
+        boolean ready = "ready".equals(method);
+        if (!ready && (!"fetch".equals(method) || !(UPLINK.equals(host) || DIRECT.equals(host) || SELECTED.equals(host)))) {
             throw new IllegalArgumentException("Unknown routing fixture request");
         }
         long caller = Binder.clearCallingIdentity();
         try {
-            return fetch(context, host);
+            return fetch(context, host, ready);
         } finally {
             Binder.restoreCallingIdentity(caller);
         }
     }
 
-    private static Bundle fetch(Context context, String host) {
+    private static Bundle fetch(Context context, String host, boolean checkReady) {
         ConnectivityManager manager = context.getSystemService(ConnectivityManager.class);
         Network network = manager.getActiveNetwork();
         NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
         Bundle result = new Bundle();
-        result.putBoolean("vpn", capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN));
+        boolean vpn = capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+        result.putBoolean("vpn", vpn);
+        if (checkReady) {
+            LinkProperties links = manager.getLinkProperties(network);
+            result.putBoolean("ready", vpn && links != null && !links.getDnsServers().isEmpty());
+            return result;
+        }
         boolean expectVpn = !UPLINK.equals(host);
-        if (result.getBoolean("vpn") != expectVpn) return result;
+        if (network == null || vpn != expectVpn) return result;
 
         try {
-            for (InetAddress address : InetAddress.getAllByName(host)) {
+            for (InetAddress address : network.getAllByName(host)) {
                 byte[] bytes = address.getAddress();
                 if (bytes.length != 4 || (expectVpn && !isFake(bytes))) continue;
                 result.putBoolean("fake", isFake(bytes));
-                try (Socket socket = new Socket()) {
+                try (Socket socket = network.getSocketFactory().createSocket()) {
                     socket.connect(new InetSocketAddress(address, 18080), 5000);
                     socket.setSoTimeout(5000);
                     String request = "GET /proof.txt HTTP/1.0\r\nHost: " + host + "\r\n\r\n";
