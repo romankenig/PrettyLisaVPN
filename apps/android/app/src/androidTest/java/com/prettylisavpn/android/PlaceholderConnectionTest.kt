@@ -91,9 +91,7 @@ class PlaceholderConnectionTest {
         compose.runOnUiThread {
             scope.launch {
                 controller.status.collect { status ->
-                    if (status.phase == VpnPhase.CONNECTING) {
-                        visited += status.attempt!!.method.id
-                    }
+                    status.attempt?.let { visited += it.method.id }
                 }
             }
             compose.activity.setContent { PrettyLisaTheme { LocalizedApp { LiveHome(model) {} } } }

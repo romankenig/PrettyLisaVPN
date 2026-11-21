@@ -59,10 +59,12 @@ class VpnController(
         val id = owner() ?: return
         record(DiagnosticKind.VPN_CONNECT, country = country)
         intentRevision++
-        mutable.value = VpnStatus(VpnPhase.CONNECTING)
         operation = scope.launch {
             val recoveries = ArrayDeque<Long>()
             try {
+                if (startupRecovery?.isActive == true || remoteCleanupPending || (recovery != null && recoveredOwner != id)) {
+                    mutable.value = VpnStatus(VpnPhase.CONNECTING)
+                }
                 startupRecovery?.join()
                 if (owner() != id) { mutable.value = VpnStatus(); return@launch }
                 if (remoteCleanupPending) finishCleanup()

@@ -43,6 +43,7 @@ class RecoveryTest {
         controller.connect("AUTO")
         runCurrent()
         assertEquals(VpnPhase.CONNECTING, controller.status.value.phase)
+        assertNull(controller.status.value.attempt)
         assertEquals(0, attempts)
         finish.complete(Unit)
         runCurrent()
